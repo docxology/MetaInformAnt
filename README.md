@@ -77,8 +77,5 @@ working directory. So just create a new folder, and run the scripts from there. 
 will do just fine.
 2. I used an additional OS module to write and read json files from the device which
 is applicable for Windows operating systems only (probably).
-3. If the client wants, for additional prices, I can create exe format and batch files of
-these scripts to run/rerun from command prompt easily.
 4. Attached all the corresponding json files that were generated in the last test run.
 Used scrape_ncbi_01.py.
-5. Feel free to ask questions if facing any confusion. 
