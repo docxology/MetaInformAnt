@@ -2,9 +2,9 @@
  Integration for Ants and Beyond
 
 The project was divided into 3 fundamental modules.
-1. NCBI scrapping for species vs txid
-2. AntWiki scrapping page/species and corresponding data across all 10 given cargo
-tables and sorting duplicate species with different data among them into a single species
+1. From the NCBI Taxonomy Browser https://www.ncbi.nlm.nih.gov/Taxonomy/Browser/wwwtax.cgi , scrape for species vs. Taxon ID txid https://www.ncbi.nlm.nih.gov/taxonomy
+2. From the AntWiki https://antwiki.org/wiki/Welcome_to_AntWiki scrapping page/species and corresponding data across all 10 given cargo
+tables https://antwiki.org/wiki/Special:CargoTables and sorting duplicate species with different data among them into a single species
 3. Merging 1 & 2
 For the same purposes, 4 different python scripts are attached.
 
