@@ -9,4 +9,4 @@
 # export $POSTGRES_PASSWORD=metainformant
 # export $POSTGRES_NAME=postgres-ant
 
-sudo docker-compose up
+sudo docker-compose up -d
