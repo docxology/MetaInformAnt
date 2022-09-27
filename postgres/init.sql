@@ -1,8 +1,9 @@
 CREATE USER genome_manager;
 CREATE schema metainformant;
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-CREATE TABLE metainformant.taxonomic_names (
+CREATE TABLE metainformant.taxonomic_names (  
     id UUID NOT NULL DEFAULT uuid_generate_v4() , 
+    tx_id  VARCHAR(255) NOT NULL,
     genus VARCHAR(255) NOT NULL,
     epithet VARCHAR(255) NOT NULL,
     created_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,

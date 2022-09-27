@@ -3,6 +3,11 @@ from ncbi_datasets_helper import (
     download_genome_data_package,
     get_metadata_by_single_accesion,
 )
+from utils import save_file_to_local_dir
+import logging
+
+import os
+from pathlib import Path
 
 
 @dataclass
@@ -18,10 +23,12 @@ class NCBIGenome:
 
     search_term: str
     search_term_type: str
+    mode: str
 
     def __init__(self, search_term, search_term_type) -> None:
         self.search_term = search_term
         self.search_type = search_term_type
+        self.mode = "local"
 
     def search_router(self):
         if self.search_type == "assembly_accession_id":
@@ -29,7 +36,9 @@ class NCBIGenome:
             self.assembly_metadata = get_metadata_by_single_accesion([self.accesion_id])
             self._set_taxon_name()
             self._set_filename()
-            data = download_genome_data_package([self.accesion_id], self.filename)
+            data = download_genome_data_package(
+                [self.accesion_id], filename=self.filename
+            )
         # implement other search types here
 
     def _set_taxon_name(self):
@@ -39,4 +48,11 @@ class NCBIGenome:
         pass
 
     def _set_filename(self):
-        self.filename = f"{self.taxon_name, self.accesion_id}"
+        taxon_underscore = self.taxon_name.replace(" ", "_")
+        if self.mode == "local":
+            dir_path = os.path.dirname(os.path.realpath(__file__))
+            dir_path = dir_path.replace("src", "test_data")
+            Path(f"{dir_path}/{taxon_underscore}").mkdir(parents=True, exist_ok=True)
+
+        self.filename = f"{dir_path}/{taxon_underscore}/{self.accesion_id}.zip"
+        logging.debug(self.filename)

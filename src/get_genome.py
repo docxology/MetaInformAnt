@@ -9,7 +9,8 @@ from ncbi_datasets_helper import (
     download_genome_data_package,
     get_metadata_by_single_accesion,
 )
-from base_classes import OrganismGenome
+from base_classes import NCBIGenome, OrganismGenome
+from utils import save_file_to_local_dir
 
 logging.getLogger().setLevel(logging.DEBUG)
 logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
@@ -17,8 +18,13 @@ logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
 
 def fetch_genome(search_term, search_term_type):
     # genome_organism = download_genome_data_package([search_term], "test.zip")
-    md = get_metadata_by_single_accesion([search_term])
-    logging.debug(md["assembly"]["org"]["sci_name"])
+    # md = get_metadata_by_single_accesion([search_term])
+    new_genome = NCBIGenome(search_term=search_term, search_term_type=search_term_type)
+    new_genome.search_router()
+    logging.debug(new_genome)
+    return new_genome
+
+    # return md
 
 
 def check_db_if_exists(
@@ -54,21 +60,34 @@ def check_db_if_exists(
     return genome_obj
 
 
-def add_record_to_db(OrganismGenome, postgresdb) -> bool:
+def check_for_taxonomic_name(NCBIGenome):
+    pass
+
+
+def add_record_to_db(NCBIGenome) -> bool:
+    conn, db_cursor = get_db_client()
+    db_cursor.execute(
+        "INSERT INTO metainformant.taxonomic_names (tx_id, genus, epithet) VALUES(%s, %s, %s)",
+        ("test", "test", "Stest"),
+    )
+    conn.commit()  # <- We MUST commit to reflect the inserted data
+    db_cursor.close()
+    conn.close()
+
     pass
 
 
 def get_genome(search_term, search_term_type="assembly_accession_id") -> OrganismGenome:
-    db_cursor = get_db_client()
+    _, db_cursor = get_db_client()
     # check db first, if exists fetch object
     genome_obj = check_db_if_exists(search_term, db_cursor, search_term_type)
     logging.info(genome_obj)
     if not genome_obj:
-        seq = fetch_genome(search_term, search_term_type)
-        logging.debug(seq)
+        new_genome = fetch_genome(search_term, search_term_type)
+        add_record_to_db(new_genome)
         pass
         # otherwise generate new object
     return genome_obj
 
 
-get_genome("GCA_000001215.4")
+# get_genome("GCA_000001215.4")

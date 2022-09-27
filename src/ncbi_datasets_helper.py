@@ -17,6 +17,7 @@ from utils import save_file_to_local_dir
 
 def download_genome_data_package(
     accessions: List[str],
+    filename: str,
     annotation_types_include=["RNA_FASTA", "PROT_FASTA"],
 ):
     # download an NCBI Datasets Genome Data Package given a list of NCBI Assembly accessions
@@ -26,11 +27,12 @@ def download_genome_data_package(
             logging.info("Begin download of genome data package ...")
             genome_ds_download = genome_api.download_assembly_package(
                 accessions,
-                include_annotation_type=annotation_types_include,
-                _preload_content=False,
+                # include_annotation_type=annotation_types_include,
+                # _preload_content=False,
+                filename=filename,
             )
+            logging.info(genome_ds_download)
             logging.info(f"Download completed")
-            return genome_ds_download
         except DatasetsApiException as e:
             raise (f"Exception when calling download_assembly_package: {e}\n")
 
@@ -41,6 +43,10 @@ def get_metadata_by_single_accesion(genome_assembly_accessions: List[str]):
         genome_metadata = genome_api.assembly_descriptors_by_accessions(
             genome_assembly_accessions
         )
+        # raise error if empty
+        if not genome_metadata:
+            logging.info("Genome not found for: %s", genome_assembly_accessions)
+            return None
         return genome_metadata["assemblies"][0]
 
 

@@ -23,7 +23,7 @@ def get_db_client():
     except Exception as e:
         logging.error("Problem initializing db")
         raise e
-    return cur
+    return conn, cur
 
 
 def get_entrez_options():
