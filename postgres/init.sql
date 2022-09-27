@@ -14,8 +14,7 @@ CREATE TABLE metainformant.taxonomic_names (
 CREATE TABLE metainformant.genome (
     assembly_accession_id VARCHAR(255) PRIMARY KEY,
     taxon_name UUID NOT NULL REFERENCES metainformant.taxonomic_names,
-    infraspecies_connecting_term TEXT NULL,
-    infraspecies_name TEXT NULL,
+    ncbi_metadata JSON NOT NULL,
     file_path TEXT NOT NULL,
     created_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );

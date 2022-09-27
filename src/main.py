@@ -2,6 +2,8 @@
 - pass a txt file (eg genome.txt a simple list of genome ids)
 - get_genome.py
 
+- acccesion id {id} not found
+- 89 files found, 80 downloaded, 17 does not exist for text files
 
 test command: "python src/main.py --get_single_genome_by_id=GCA_000001215.4"
 """

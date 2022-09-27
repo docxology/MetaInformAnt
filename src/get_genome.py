@@ -1,7 +1,9 @@
 """Accepts a genome ID, fetches it from NCBI and pushes it to the db + file storage"""
 import email
+import json
 import sys
 from Bio import Entrez, SeqIO
+import json
 import logging
 from utils import get_db_client, get_entrez_options
 from typing import Optional
@@ -21,7 +23,7 @@ def fetch_genome(search_term, search_term_type):
     # md = get_metadata_by_single_accesion([search_term])
     new_genome = NCBIGenome(search_term=search_term, search_term_type=search_term_type)
     new_genome.search_router()
-    logging.debug(new_genome)
+    logging.debug(new_genome.epithet)
     return new_genome
 
     # return md
@@ -32,12 +34,10 @@ def check_db_if_exists(
 ) -> (None | OrganismGenome):
     """Checks db for genome id and if it exists calls query to create genome obj."""
     logging.debug("Checking if genome exists...")
-    search_term = search_term.strip().lower()
     db_cursor.execute(
-        "SELECT count(*) from metainformant.genome where %s=%s",
-        (search_field, search_term),
+        f"SELECT count(*) from metainformant.genome where {search_field}='{search_term}'",
     )
-
+    logging.debug(db_cursor.query)
     row_count = db_cursor.fetchone()[0]
     logging.debug("Count: %d", row_count)
 
@@ -54,23 +54,42 @@ def check_db_if_exists(
     # )
     # logging.debug(db_cursor.fetchone()[0])
     genome_metadata = db_cursor.fetchone()
-    genome_obj = OrganismGenome(
-        genome_id=genome_metadata[0], file_path=genome_metadata[1]
-    )
-    return genome_obj
+    # TO DO: recreate NCBI object here
+    return 1
 
 
 def check_for_taxonomic_name(NCBIGenome):
     pass
 
 
-def add_record_to_db(NCBIGenome) -> bool:
+def add_record_to_db(genome: NCBIGenome) -> bool:
     conn, db_cursor = get_db_client()
+
+    # Insert the taxonomic name
     db_cursor.execute(
-        "INSERT INTO metainformant.taxonomic_names (tx_id, genus, epithet) VALUES(%s, %s, %s)",
-        ("test", "test", "Stest"),
+        "INSERT INTO metainformant.taxonomic_names (tx_id, genus, epithet) VALUES(%s, %s, %s) ON CONFLICT DO NOTHING",
+        (genome.tx_id, genome.taxon_name, genome.epithet),
     )
     conn.commit()  # <- We MUST commit to reflect the inserted data
+
+    # fetch taxonomic_name id
+    db_cursor.execute(
+        f"SELECT id FROM metainformant.taxonomic_names where tx_id = '{genome.tx_id}'",
+    )
+    row_id = db_cursor.fetchone()[0]
+    logging.debug(row_id)
+
+    # Insert genome into table
+    db_cursor.execute(
+        "INSERT INTO metainformant.genome (assembly_accession_id, taxon_name, ncbi_metadata, file_path) VALUES(%s, %s, %s, %s)",
+        (
+            genome.accesion_id,
+            row_id,
+            json.dumps(genome.assembly_metadata.to_dict()),
+            genome.filename,
+        ),
+    )
+    conn.commit()
     db_cursor.close()
     conn.close()
 
