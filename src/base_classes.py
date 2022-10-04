@@ -3,7 +3,6 @@ from ncbi_datasets_helper import (
     download_genome_data_package,
     get_metadata_by_single_accesion,
 )
-from utils import save_file_to_local_dir
 import logging
 
 import os
@@ -43,9 +42,9 @@ class NCBIGenome:
             self._set_epithet()
             self._set_tx_id()
             self._set_filename()
+            download_genome_data_package([self.accesion_id], filename=self.filename)
         else:
             raise Exception("Only search by assembly_accession_id implemented.")
-            # download_genome_data_package([self.accesion_id], filename=self.filename)
         # implement other search types here
 
     def _set_taxon_name(self):

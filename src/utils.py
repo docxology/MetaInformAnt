@@ -1,8 +1,15 @@
+from typing import Set
 import psycopg2
 import os
 import logging
 
 from Bio import Entrez
+
+
+class GenomeFetchFailure(Exception):
+    """Raised when ncbi call fails"""
+
+    pass
 
 
 def get_db_client():
@@ -43,3 +50,7 @@ def save_file_to_local_dir(filename, data, path="test_data/") -> bool:
 
 def upload_file_to_cloud(filename, bucket) -> bool:
     pass
+
+
+def load_file_to_set(filename) -> Set:
+    return set(line.strip() for line in open(filename))

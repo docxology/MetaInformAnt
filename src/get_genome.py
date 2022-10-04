@@ -14,16 +14,12 @@ from ncbi_datasets_helper import (
 from base_classes import NCBIGenome, OrganismGenome
 from utils import save_file_to_local_dir
 
-logging.getLogger().setLevel(logging.DEBUG)
-logging.getLogger().addHandler(logging.StreamHandler(sys.stdout))
-
 
 def fetch_genome(search_term, search_term_type):
     # genome_organism = download_genome_data_package([search_term], "test.zip")
     # md = get_metadata_by_single_accesion([search_term])
     new_genome = NCBIGenome(search_term=search_term, search_term_type=search_term_type)
     new_genome.search_router()
-    logging.debug(new_genome.epithet)
     return new_genome
 
     # return md
@@ -100,7 +96,6 @@ def get_genome(search_term, search_term_type="assembly_accession_id") -> Organis
     _, db_cursor = get_db_client()
     # check db first, if exists fetch object
     genome_obj = check_db_if_exists(search_term, db_cursor, search_term_type)
-    logging.info(genome_obj)
     if not genome_obj:
         new_genome = fetch_genome(search_term, search_term_type)
         add_record_to_db(new_genome)
