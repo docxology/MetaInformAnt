@@ -46,6 +46,25 @@ def get_metadata_by_single_accesion(genome_assembly_accessions: List[str]):
         return metadata
 
 
+def get_accession_by_tax_id(tax_id: str):
+    with DatasetsApiClient() as api_client:
+        genome_api = DatasetsGenomeApi(api_client)
+        genome_metadata = genome_api.assembly_descriptors_by_taxon(tax_id)
+        assembly_list = []
+        total_count = genome_metadata["total_count"]
+
+        for i in range(0, total_count):
+            assembly_list.append(
+                genome_metadata["assemblies"][0]["assembly"]["assembly_accession"]
+            )
+        return assembly_list
+        # try:
+        #     metadata = genome_metadata["assemblies"][0]
+        # except:
+        #     raise GenomeFetchFailure
+        # return metadata
+
+
 # # open the package zip archive so we can retrieve files from it
 # package = dataset.AssemblyDataset(zipfile_name)
 # # print the names and types of all files in the downloaded zip file

@@ -16,8 +16,6 @@ from utils import save_file_to_local_dir
 
 
 def fetch_genome(search_term, search_term_type):
-    # genome_organism = download_genome_data_package([search_term], "test.zip")
-    # md = get_metadata_by_single_accesion([search_term])
     new_genome = NCBIGenome(search_term=search_term, search_term_type=search_term_type)
     new_genome.search_router()
     return new_genome
