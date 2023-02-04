@@ -55,7 +55,7 @@ def get_accession_by_tax_id(tax_id: str):
 
         for i in range(0, total_count):
             assembly_list.append(
-                genome_metadata["assemblies"][0]["assembly"]["assembly_accession"]
+                genome_metadata["assemblies"][i]["assembly"]["assembly_accession"]
             )
         return assembly_list
         # try:

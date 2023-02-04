@@ -7,7 +7,7 @@ CREATE TABLE metainformant.taxonomic_names (
     genus VARCHAR(255) NOT NULL,
     epithet VARCHAR(255) NOT NULL,
     created_on TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(genus, epithet),
+    UNIQUE(tx_id, genus, epithet),
     CONSTRAINT taxonomic_names_pkey_ PRIMARY KEY (id)
 );
 

@@ -52,33 +52,38 @@ def check_db_if_exists(
     return 1
 
 
-def check_for_taxonomic_name(NCBIGenome):
-    pass
+def get_taxonomic_name(genome: NCBIGenome, conn, db_cursor):
+    # Check for existence
+    db_cursor.execute(
+        f"SELECT count(*) from metainformant.taxonomic_names where tx_id='{genome.tx_id}'",
+    )
+    row_count = db_cursor.fetchone()[0]
+    if row_count == 0:
+        # Insert the taxonomic name
+        db_cursor.execute(
+            "INSERT INTO metainformant.taxonomic_names (tx_id, genus, epithet) VALUES(%s, %s, %s) ON CONFLICT DO NOTHING",
+            (genome.tx_id, genome.taxon_name, genome.epithet),
+        )
+        conn.commit()
+    db_cursor.execute(
+        f"SELECT id FROM metainformant.taxonomic_names where tx_id = '{genome.tx_id}'",
+    )
+    return db_cursor.fetchone()[0]
 
 
 def add_record_to_db(genome: NCBIGenome) -> bool:
     conn, db_cursor = get_db_client()
 
-    # Insert the taxonomic name
-    db_cursor.execute(
-        "INSERT INTO metainformant.taxonomic_names (tx_id, genus, epithet) VALUES(%s, %s, %s) ON CONFLICT DO NOTHING",
-        (genome.tx_id, genome.taxon_name, genome.epithet),
-    )
-    conn.commit()  # <- We MUST commit to reflect the inserted data
-
     # fetch taxonomic_name id
-    db_cursor.execute(
-        f"SELECT id FROM metainformant.taxonomic_names where tx_id = '{genome.tx_id}'",
-    )
-    row_id = db_cursor.fetchone()[0]
-    logging.debug(row_id)
+    taxonomix_row_id = get_taxonomic_name(genome, conn, db_cursor)
+    logging.debug(taxonomix_row_id)
 
     # Insert genome into table
     db_cursor.execute(
         "INSERT INTO metainformant.genome (assembly_accession_id, taxon_name, ncbi_metadata, file_path) VALUES(%s, %s, %s, %s)",
         (
             genome.accesion_id,
-            row_id,
+            taxonomix_row_id,
             json.dumps(genome.assembly_metadata.to_dict()),
             genome.filename,
         ),

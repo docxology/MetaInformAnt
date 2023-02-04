@@ -24,6 +24,7 @@ def process_ids(genome_ids: Set[str]):
     failed_genomes = []
     succeded_genomes = []
     log.info("Starting to process %s genome ids", len(genome_ids))
+    # TODO: if there is more than one i should really batch them
     for idx, genome_id in enumerate(genome_ids):
         try:
             log.info("Processing %s of %s", idx + 1, len(genome_ids))
@@ -43,12 +44,12 @@ def process_ids(genome_ids: Set[str]):
 
 def fetch_and_handle_ids_for_species(tax_id: str):
     list_genomes = get_accession_by_tax_id(tax_id)
-    log.info(
-        "Fethced %s accesion ids for %s. Download all? y/n", len(list_genomes), tax_id
+    str_prompt = (
+        f"Fetched {len(list_genomes)} accession ids for {tax_id}. Download all? y/n \n"
     )
-    # fetch answer
-    # dpass to process_ids
-    # handle erros
+    if input(str_prompt) != "y":
+        exit()
+    process_ids(list_genomes)
 
 
 def route_query(args):
