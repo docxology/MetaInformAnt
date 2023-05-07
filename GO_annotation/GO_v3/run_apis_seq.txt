@@ -1,0 +1,2 @@
+ 
+python 1_uniprot_ID_extract.py && echo "Script 1 finished successfully" || (echo "Script 1 failed" && exit 1) && python 2_genetogo.py && echo "Script 2 finished successfully" || (echo "Script 2 failed" && exit 1) && python 3_genetogotoanno.py && echo "Script 3 finished successfully" || (echo "Script 3 failed" && exit 1) && python 4_genetogo_summary.py && echo "Script 4 finished successfully" || echo "Script 4 failed"
