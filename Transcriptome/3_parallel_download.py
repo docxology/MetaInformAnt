@@ -15,6 +15,7 @@ def download_fastq_file(entry, fastp_option: str) -> None:
     entry.to_frame().T.to_csv(temp_metadata_file, sep='\t', index=False)
 
     subprocess.run(["amalgkit", "getfastq", "--threads", "1", "--fastp", fastp_option, "--metadata", temp_metadata_file])
+#    subprocess.run(["amalgkit", "getfastq", "--threads", "4", "--fastp", fastp_option, "--metadata", temp_metadata_file])
 
     os.remove(temp_metadata_file)
 
