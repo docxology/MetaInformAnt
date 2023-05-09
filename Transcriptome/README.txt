@@ -1,54 +1,47 @@
-# Amalgkit RNA-Seq Analysis
+Bioinformatics Pipeline README
 
-This repository contains a series of shell scripts for running RNA-seq analysis using the Amalgkit pipeline. For detailed information on function use, config files, tissue/genome selection, etc., please refer to the [Amalgkit repository and wiki](https://github.com/kfuku52/amalgkit/wiki/).
+This bioinformatics pipeline consists of six scripts designed to facilitate the process of downloading, processing, and analyzing transcriptomic data. The pipeline includes the following scripts:
 
-## Getting Started
+0_setEnv.sh: Set up the environment by installing required dependencies and tools.
+1_download_genome.py: Download the reference genome sequence.
+2_get_metadata.py: Generate metadata for the genomic data and organize the output.
+3_parallel_download.py: Download SRA files using a specified number of parallel threads and a fastp option.
+4_quant.py: Perform transcript quantification using kallisto and amalgkit.
+5_curate.py: Merge and curate the expression data using amalgkit.
+Requirements
 
-1. Download the shell script files from [this repository](https://github.com/docxology/apis-seq) into a new folder.
+To run the pipeline, you need Python 3.6 or higher installed on your system, as well as the required bioinformatics tools, which will be installed by the 0_setEnv.sh script.
 
-2. Run `0_setEnv.sh` to set up the environment and install dependencies:
+Getting Started
 
-```
-bash 0_setEnv.sh
-```
+1. Set up the environment
+Before running the pipeline, execute the 0_setEnv.sh script to install required dependencies and tools:
 
-During the installation process, you may need to press enter or write "y" multiple times. This step may take several minutes. `0_setEnv.sh` will also create config files for later steps.
+chmod +x 0_setEnv.sh ./0_setEnv.sh
 
-3. Run `1_metadata.sh` to create a metadata file with selected SRA and reference genome downloaded:
+2. Download the reference genome
+Run the 1_download_genome.py script to download the reference genome sequence:
 
-```
-bash 1_metadata.sh
-```
+python3 1_download_genome.py
 
-This exact script is also provided as 1_metadata.py , a python script.
+3. Generate and organize metadata
+Use the 2_get_metadata.py script to generate metadata for the genomic data and organize the output:
 
-Note there is an optional script 1_1_split_metadata.py , this splits the big metadata.tsv file into sections, which can be useful for speeding up the downloading of files in a federated environment.
+python3 2_get_metadata.py
 
-4. Inspect the metadata file in `/metadata/metadata/metadata.tsv`. Check all the columns, especially the "exclusion" column. If exclusion=no, the sample is included in the next analysis.
+4. Download SRA files in parallel
+To download SRA files using a specified number of parallel threads and a fastp option, run the 3_parallel_download.py script:
 
-5. Download the raw FASTQ RNA-seq reads for the target included libraries:
+python3 3_parallel_download.py <number_threads> --fastp <fastp_option>
 
-```
-bash 2_getfastq.sh
-```
+Replace <number_threads> with the desired number of parallel threads and <fastp_option> with either "yes" or "no" (default is yes).
 
-This step may take a while, especially if it's your first time downloading the SRA. Each SRA can be several GB in size, so downloading dozens or hundreds of SRAs may take a long time depending on your connection. After each SRA is downloaded, `parallel-fastq-dump` performs filtering (for low-quality and duplicate reads, adapter trimming), which may also take some time depending on your processor.
+5. Perform transcript quantification
+Execute the 4_quant.py script to perform transcript quantification using kallisto and amalgkit:
 
-6. Run `3_quant.sh`:
+python3 4_quant.py
 
-```
-bash 3_quant.sh
-```
+6. Merge and curate expression data
+Finally, run the 5_curate.py script to merge and curate the expression data using amalgkit:
 
-This uses kallisto to quantify gene expression for each SRA.
-
-
-7. Run `curate.sh`:
-
-```
-bash curate.sh
-```
-
-This script uses amalgkit curate (default output is "log2p1-fpkm" normalized) to harmonize expression across SRA, preparing the dataset for downstream analysis.
-
-**Note:** If you encounter a "fastq-dump error! exit code: 3", ensure that your disk is in NTFS format to handle files over 4 GB.
+python3 5_curate.py
