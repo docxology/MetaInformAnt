@@ -4,6 +4,9 @@ import os
 import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
 
+# Example use
+#  python 3_parallel_download.py 8 ./metadata/metadata.tsv
+
 def download_fastq_file(entry, fastp_option: str) -> None:
     """
     Download fastq files using amalgkit with the specified entry and fastp option.

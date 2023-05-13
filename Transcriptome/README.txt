@@ -37,7 +37,7 @@ python3 3_parallel_download.py <number_threads> --fastp <fastp_option> --metadat
 Replace <number_threads> with the desired number of parallel threads and <fastp_option> with either "yes" or "no" (default is yes).
 
 Example  with normal metadata location, and 8 threads.
-python 3_parallel_download.py 8 ./metadata/metadata/metadata.tsv
+python 3_parallel_download.py 8 ./metadata/metadata.tsv
 
 5. Perform transcript quantification
 Execute the 4_quant.py script to perform transcript quantification using kallisto and amalgkit:
