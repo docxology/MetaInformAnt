@@ -1,4 +1,4 @@
-# Bioinformatics Pipeline README
+# Tissue-specific gene expression meta-analysis pipeline with amalgkit
 
 This bioinformatics pipeline consists of six scripts designed to facilitate the process of downloading, processing, and analyzing transcriptomic data. 
 
