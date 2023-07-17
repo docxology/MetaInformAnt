@@ -11,7 +11,6 @@ def run_command(command):
         sys.exit(process.returncode)
 
 # Generate metadata using amalgkit
-# run_command("amalgkit metadata --config_dir config --overwrite yes --max_sample 10")
 run_command("amalgkit metadata --config_dir config")
 
 # Organize metadata output

@@ -37,11 +37,11 @@ def run_amalgkit_quant(fasta_dir: str, number_threads: int, index_dir: str) -> N
 
 def main() -> None:
     kmer_length = 31
-    number_threads = 14
+    number_threads = 10
     index_dir = "index"
     input_fasta = "./seq/Apis_mellifera.fasta"
 
-    create_kallisto_index(kmer_length, index_dir, input_fasta)
+ #   create_kallisto_index(kmer_length, index_dir, input_fasta)
     run_amalgkit_quant("seq", number_threads, index_dir)
 
 if __name__ == "__main__":
