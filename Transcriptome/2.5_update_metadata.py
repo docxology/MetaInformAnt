@@ -17,6 +17,7 @@ def load_and_update_tsv(file_path):
 
     # Define a dictionary for the replacements, organized alphabetically by body part
     replacement_dict_curate = {
+    
     # Abdomen replacements
     "apis mellifera rectum": "rectum",
     "ovary": "ovaries",
@@ -89,7 +90,6 @@ def load_and_update_tsv(file_path):
     "whole larvae inoculated with c6 rep 2": "larvae",    
     "whole larvae inoculated with c6 rep 3": "larvae",
     
-    
     # Mushroom body replacements
     "mushroom bodies": "mushroom body",
     "mushroom bodies (mb) region of the brain": "mushroom body",
@@ -156,7 +156,6 @@ replacement_dict_scientific_name = {
     "Apis mellifrea": "Apis mellifera",
     }
 
-
     # Replace the values in the "curate_group" column
 df['curate_group'] = df['curate_group'].replace(replacement_dict_curate)
 df['scientific_name'] = df['scientific_name'].replace(replacement_dict_scientific_name)
@@ -166,7 +165,6 @@ try:
     df.to_csv(file_path, sep='\t', index=False)
 except Exception as e:
     print(f"Error writing to file: {e}")
-        
 
 def main():
     file_path = './metadata/metadata.tsv'
