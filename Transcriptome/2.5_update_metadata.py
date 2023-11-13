@@ -144,27 +144,27 @@ def load_and_update_tsv(file_path):
     "whole_body_28": "whole adult body",
     }
 
-replacement_dict_scientific_name = {
-    "": "Apis mellifera",
-    "Apis mellifera capensis": "Apis mellifera",
-    "Apis mellifera carnica": "Apis mellifera",
-    "Apis mellifera intermissa": "Apis mellifera",
-    "Apis mellifera ligustica": "Apis mellifera",
-    "Apis mellifera mellifera": "Apis mellifera",
-    "Apis mellifera scutellata": "Apis mellifera",
-    "Apis mellifera syriaca": "Apis mellifera",
-    "Apis mellifrea": "Apis mellifera",
-    }
+    replacement_dict_scientific_name = {
+        "": "Apis mellifera",
+        "Apis mellifera capensis": "Apis mellifera",
+        "Apis mellifera carnica": "Apis mellifera",
+        "Apis mellifera intermissa": "Apis mellifera",
+        "Apis mellifera ligustica": "Apis mellifera",
+        "Apis mellifera mellifera": "Apis mellifera",
+        "Apis mellifera scutellata": "Apis mellifera",
+        "Apis mellifera syriaca": "Apis mellifera",
+        "Apis mellifrea": "Apis mellifera",
+        }
 
-    # Replace the values in the "curate_group" column
-df['curate_group'] = df['curate_group'].replace(replacement_dict_curate)
-df['scientific_name'] = df['scientific_name'].replace(replacement_dict_scientific_name)
+        # Replace the values in the "curate_group" column
+    df['curate_group'] = df['curate_group'].replace(replacement_dict_curate)
+    df['scientific_name'] = df['scientific_name'].replace(replacement_dict_scientific_name)
 
-    # Write the data back to the .tsv file
-try:
-    df.to_csv(file_path, sep='\t', index=False)
-except Exception as e:
-    print(f"Error writing to file: {e}")
+        # Write the data back to the .tsv file
+    try:
+        df.to_csv(file_path, sep='\t', index=False)
+    except Exception as e:
+        print(f"Error writing to file: {e}")
 
 def main():
     file_path = './metadata/metadata.tsv'
