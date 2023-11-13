@@ -8,3 +8,4 @@ Transcriptome/quant/DRR087071/DRR087071_run_info.json
 *.json
 Transcriptome/getfastq/SRR10030212/.fuse_hidden0000643c00000001
 Transcriptome/getfastq/SRR10030264/.fuse_hidden0000648100000002
+seq/Apis_mellifera.fasta

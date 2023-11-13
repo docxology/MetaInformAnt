@@ -66,8 +66,6 @@ def load_and_update_tsv(file_path):
     "pupa": "pupae",
     "rna of the whole pupae": "pupae",
     "intestine": "gut",
-
-,
     "pooled pylori from 7 honey bees": "pylori",
     "membranous wings": "wings",
     "second thoracic ganglia": "2nd thoracic ganglia",
@@ -78,7 +76,7 @@ def load_and_update_tsv(file_path):
     
     # Larvae
     "larvea": "larvae",
-    "whole body larvae": "larvae"    
+    "whole body larvae": "larvae",    
     "larva": "larvae",
     "larvae body": "larvae",
     "whole larva": "larvae",
@@ -160,14 +158,14 @@ replacement_dict_scientific_name = {
 
 
     # Replace the values in the "curate_group" column
-    df['curate_group'] = df['curate_group'].replace(replacement_dict_curate)
-    df['scientific_name'] = df['scientific_name'].replace(replacement_dict_scientific_name)
+df['curate_group'] = df['curate_group'].replace(replacement_dict_curate)
+df['scientific_name'] = df['scientific_name'].replace(replacement_dict_scientific_name)
 
     # Write the data back to the .tsv file
-    try:
-        df.to_csv(file_path, sep='\t', index=False)
-    except Exception as e:
-        print(f"Error writing to file: {e}")
+try:
+    df.to_csv(file_path, sep='\t', index=False)
+except Exception as e:
+    print(f"Error writing to file: {e}")
         
 
 def main():

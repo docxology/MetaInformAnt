@@ -11,7 +11,8 @@ def run_command(command):
         sys.exit(process.returncode)
 
 # Generate metadata using amalgkit
-run_command("amalgkit metadata --config_dir config")
+run_command("amalgkit metadata --out_dir \"./\" --entrez_email \"DanielAriFriedman@gmail.com\" --search_string '(\"platform illumina\"[Properties]) AND (\"type rnaseq\"[Filter]) AND (\"Apis mellifera\"[Organism]) NOT (\"DNA\"[Source])'")
+# amalgkit metadata --out_dir "./" --entrez_email "example@gmail.com" --search_string '("platform illumina"[Properties]) AND ("type rnaseq"[Filter]) AND ("Apis mellifera"[Organism]) NOT ("DNA"[Source])'
 
 # Organize metadata output
 os.makedirs("intermediates/metadata", exist_ok=True)
