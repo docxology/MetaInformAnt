@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
+from pathlib import Path
 import os
 import shutil
 import subprocess
-from pathlib import Path
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any
+from datetime import datetime
 
 
 AmalgkitParams = Mapping[str, Any]
@@ -48,7 +50,7 @@ def build_cli_args(params: AmalgkitParams | None) -> list[str]:
                 args.append(flag)
             continue
 
-        if isinstance(value, (list, tuple)):
+        if isinstance(value, list | tuple):
             for item in value:
                 args.append(flag)
                 args.append(_ensure_str(item))
@@ -86,6 +88,8 @@ def run_amalgkit(
     env: Mapping[str, str] | None = None,
     check: bool = False,
     capture_output: bool = True,
+    log_dir: str | Path | None = None,
+    step_name: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """Execute an amalgkit subcommand.
 
@@ -102,7 +106,7 @@ def run_amalgkit(
     if env:
         run_env.update(env)
 
-    return subprocess.run(
+    result = subprocess.run(
         cmd,
         cwd=str(work_dir) if work_dir is not None else None,
         env=run_env,
@@ -110,6 +114,15 @@ def run_amalgkit(
         text=True,
         check=check,
     )
+    # Optionally write logs per step
+    if log_dir is not None:
+        log_path = Path(log_dir)
+        log_path.mkdir(parents=True, exist_ok=True)
+        ts = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+        base = step_name or subcommand
+        (log_path / f"{ts}.{base}.stdout.log").write_text(result.stdout or "")
+        (log_path / f"{ts}.{base}.stderr.log").write_text(result.stderr or "")
+    return result
 
 
 # Convenience wrappers for each documented amalgkit module command

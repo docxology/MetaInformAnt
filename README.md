@@ -1,7 +1,7 @@
 # METAINFORMANT: Integrated Multi-Omic Biological Systems Modeling
 
 METAINFORMANT is a unified, modular toolkit for integrated multi-omic analysis across domains:
-- DNA: genome retrieval, metadata, and storage, at population and phylogenetic levels
+- DNA: genome retrieval, metadata, storage, plus alignment, MSA, phylogeny, and population genetics
 - RNA: transcriptomic metadata, download, quantification, and curation
 - Protein: proteome retrieval and descriptive analytics
 - Epigenome: DNA modifications (e.g., chromatin/methylation) and other epigenetics pipelines
@@ -34,10 +34,19 @@ METAINFORMANT/
         logging.py
       dna/
         __init__.py
-        genomes.py                # Fetch + parse + register genomes
+        genomes.py                # Accession validation
+        entrez.py                 # Entrez fetch helpers
+        ncbi.py                   # NCBI Datasets wrappers
+        sequences.py              # FASTA I/O
+        alignment.py              # Pairwise alignment
+        msa.py                    # Lightweight MSA (progressive)
+        phylogeny.py              # NJ tree + Newick export
+        population.py             # Popgen stats (alleles, pi, Tajima's D, Fst)
       rna/
         __init__.py
-        pipeline.py               # Metadata → download → quant → curate
+         pipeline.py               # Utility helpers
+         amalgkit.py               # Thin modular wrapper around amalgkit CLI
+         workflow.py               # Plan/execute complete amalgkit workflows
       protein/
         __init__.py
         proteomes.py
@@ -93,6 +102,58 @@ pytest -q
 Notes
 - All dependencies are declared in `pyproject.toml`. Use `uv add <pkg>` to add more.
 - Pr
+
+### DNA quickstart
+
+```python
+from metainformant.dna import sequences, alignment, phylogeny, population
+
+seqs = sequences.read_fasta("tests/data/dna/toy.fasta")
+aln = alignment.global_align(seqs["A"], seqs["B"])  # .score, .aligned_seq1, .aligned_seq2
+tree = phylogeny.neighbor_joining_tree(seqs)
+print(phylogeny.to_newick(tree))
+
+pi = population.nucleotide_diversity(["AAAA", "AAAT"])  # 0.25
+```
+
+### RNA: Transcriptomic meta-analysis via amalgkit
+
+Install amalgkit (external dependency):
+
+```bash
+pip install git+https://github.com/kfuku52/amalgkit
+amalgkit -h  # verify
+```
+
+Programmatic usage in Python:
+
+```python
+from pathlib import Path
+from metainformant.rna import (
+    check_cli_available,
+    metadata, integrate, config, select, getfastq, quant, merge, cstmm, curate, csca, sanity,
+    AmalgkitWorkflowConfig, plan_workflow, execute_workflow,
+)
+
+ok, help_text = check_cli_available()
+assert ok, help_text
+
+# Run a single step
+result = metadata({"threads": 4})
+print(result.returncode, result.stdout[:200])
+
+# Plan and execute a full workflow
+cfg = AmalgkitWorkflowConfig(work_dir=Path("/path/to/work"), threads=8, species_list=["Apis_mellifera"])
+steps = plan_workflow(cfg)
+codes = execute_workflow(cfg)
+```
+
+CLI usage:
+
+```bash
+python -m metainformant rna plan --work-dir /tmp/amg --threads 4 --species Apis_mellifera
+python -m metainformant rna run --work-dir /tmp/amg --threads 4 --species Apis_mellifera --check
+```
 
 ### License
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this work except in compliance with the License. You may obtain a copy of the License at `https://www.apache.org/licenses/LICENSE-2.0`.

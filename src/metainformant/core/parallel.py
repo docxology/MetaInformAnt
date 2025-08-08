@@ -1,20 +1,28 @@
 from __future__ import annotations
 
 from concurrent.futures import ThreadPoolExecutor
-from typing import Callable, Iterable, List, Sequence, TypeVar
+from collections.abc import Callable, Iterable, Sequence
+from typing import TypeVar
+
 
 T = TypeVar("T")
 U = TypeVar("U")
 
 
-def thread_map(func: Callable[[T], U], items: Sequence[T] | Iterable[T], *, max_workers: int = 8, chunk_size: int | None = None) -> List[U]:
+def thread_map(
+    func: Callable[[T], U],
+    items: Sequence[T] | Iterable[T],
+    *,
+    max_workers: int = 8,
+    chunk_size: int | None = None,
+) -> list[U]:
     """Map a function across items using threads, preserving order.
 
     If items is not a sequence, it will be materialized to preserve order.
     """
     if not isinstance(items, Sequence):
         items = list(items)
-    results: List[U] = [None] * len(items)  # type: ignore[list-item]
+    results: list[U] = [None] * len(items)  # type: ignore[assignment]
 
     def _wrap(idx: int, x: T) -> None:
         results[idx] = func(x)
@@ -31,5 +39,3 @@ def thread_map(func: Callable[[T], U], items: Sequence[T] | Iterable[T], *, max_
                 pool.submit(_wrap, i, x)
             pool.shutdown(wait=True)
     return results
-
-
