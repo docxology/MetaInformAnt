@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from typing import Dict
+import shutil
+import subprocess
+from pathlib import Path
 
 from Bio.Align import MultipleSeqAlignment
 from Bio.Seq import Seq
@@ -57,5 +60,38 @@ def align_msa(id_to_seq: Dict[str, str], method: str = "auto") -> Dict[str, str]
     for k in list(aligned.keys()):
         aligned[k] = pad_to_length(aligned[k], max_len)
     return aligned
+
+
+def align_with_cli(id_to_seq: Dict[str, str], tool: str = "muscle") -> Dict[str, str]:
+    """Align with external CLI (MUSCLE/Clustal Omega) if present.
+
+    Requires the tool to be available in PATH. Writes temporary FASTA and reads back.
+    """
+    exe = shutil.which(tool)
+    if exe is None:
+        raise RuntimeError(f"{tool} not found in PATH")
+    tmpdir = Path.cwd() / ".tmp_msa"
+    tmpdir.mkdir(exist_ok=True)
+    in_fa = tmpdir / "in.fasta"
+    out_fa = tmpdir / "out.fasta"
+    # write
+    with in_fa.open("w") as fh:
+        for k, v in id_to_seq.items():
+            fh.write(f">{k}\n{v}\n")
+    # call
+    if tool.lower() == "muscle":
+        cmd = [exe, "-align", str(in_fa), "-output", str(out_fa)]
+    elif tool.lower() in {"clustalo", "clustalomega"}:
+        cmd = [exe, "-i", str(in_fa), "-o", str(out_fa), "--force"]
+    else:
+        raise RuntimeError(f"Unsupported tool: {tool}")
+    subprocess.run(cmd, check=True)
+    # read
+    from Bio import SeqIO
+
+    out: Dict[str, str] = {}
+    for rec in SeqIO.parse(str(out_fa), "fasta"):
+        out[rec.id] = str(rec.seq)
+    return out
 
 

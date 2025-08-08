@@ -8,6 +8,7 @@ METAINFORMANT is a unified, modular toolkit for integrated multi-omic analysis a
 - Ontology: functional annotation (e.g., GO) and taxonomic utilities
 - Phenotype: morphological and behavioral phenotype curation and web scraping (e.g., AntWiki)
 - Ecology: ecology metadata, download, curation
+- Visualization: cohesive plotting and animation utilities for figures and trees
 
 This repository organizes practical pipelines and utilities that can be composed within and across omic layers to support systems-level biological modeling.
 
@@ -47,6 +48,15 @@ METAINFORMANT/
          pipeline.py               # Utility helpers
          amalgkit.py               # Thin modular wrapper around amalgkit CLI
          workflow.py               # Plan/execute complete amalgkit workflows
+      visualization/
+        __init__.py                 # Unified plotting/animation API
+        plots.py                    # Line plots, heatmaps, pairplots (matplotlib/seaborn)
+        animations.py               # Simple time-series animations
+        trees.py                    # Biopython Phylo tree -> matplotlib
+      math/                       # Theoretical & quantitative biology
+        __init__.py               # Price eq., kin/multilevel selection, DDM
+      simulation/                 # Synthetic data and agent-based simulators
+        __init__.py               # DNA/RNA/protein generators, grid agents
       protein/
         __init__.py
         proteomes.py
@@ -123,6 +133,61 @@ Install amalgkit (external dependency):
 ```bash
 pip install git+https://github.com/kfuku52/amalgkit
 amalgkit -h  # verify
+```
+
+### Visualization quickstart
+
+```python
+import matplotlib.pyplot as plt
+from metainformant.visualization import lineplot, heatmap, animate_time_series
+
+# Line plot
+ax = lineplot(None, [0.1, 0.4, 0.2, 0.6], label="signal")
+ax.set_xlabel("index"); ax.set_ylabel("value")
+plt.close(ax.figure)
+
+# Heatmap
+ax = heatmap([[1, 0], [0, 1]])
+plt.close(ax.figure)
+
+# Animation (save as GIF/MP4 using matplotlib writers installed in your env)
+fig, anim = animate_time_series([0, 1, 0, 1], interval_ms=100)
+# Example save (requires imagemagick/ffmpeg):
+# anim.save("timeseries.gif", writer="imagemagick", fps=10)
+plt.close(fig)
+```
+
+## Math: Theoretical and quantitative biology
+
+- Price equation decomposition: `metainformant.math.price_equation`
+- Kin selection (Hamilton's rule): `metainformant.math.kin_selection_response`
+- Multilevel selection partition: `metainformant.math.multilevel_selection_decomposition`
+- Drift–Diffusion Model (DDM): `metainformant.math.ddm_analytic_accuracy`, `metainformant.math.ddm_mean_decision_time`
+
+Example:
+
+```python
+from metainformant.math import price_equation, kin_selection_response
+
+cov, trans, total = price_equation([1.0, 1.2, 0.9], [0.2, 0.4, 0.1], [0.25, 0.35, 0.15])
+resp = kin_selection_response(relatedness=0.5, benefit=0.4, cost=0.1)
+```
+
+## Simulation: Synthetic data and agents
+
+- DNA/protein generators: `generate_random_dna`, `generate_random_protein`, `mutate_sequence`
+- RNA counts (NB): `simulate_counts_negative_binomial`
+- Minimal agent-based grid: `GridWorld`, `Agent`
+
+Example:
+
+```python
+from metainformant.simulation import generate_random_dna, simulate_counts_negative_binomial, GridWorld
+
+seq = generate_random_dna(1000)
+counts = simulate_counts_negative_binomial(100, 6)
+world = GridWorld(10, 10, num_agents=5)
+world.step()
 ```
 
 Programmatic usage in Python:

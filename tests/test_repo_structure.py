@@ -18,6 +18,7 @@ def test_expected_package_layout_exists():
         "ontology",
         "phenotype",
         "ecology",
+        "visualization",
     ]:
         assert os.path.isdir(os.path.join(pkg_dir, subpkg)), f"Missing subpackage: {subpkg}"
 

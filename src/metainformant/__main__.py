@@ -5,6 +5,8 @@ from pathlib import Path
 from .tests import run_all_tests
 from .dna.genomes import is_valid_assembly_accession
 from .rna.workflow import AmalgkitWorkflowConfig, execute_workflow
+from .rna.configs import SpeciesProfile, AmalgkitRunLayout, build_step_params
+from .rna.workflow import plan_workflow_with_params
 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="metainformant", description="METAINFORMANT CLI")
@@ -29,6 +31,12 @@ def main() -> None:
     rna_run.add_argument("--threads", type=int, default=4)
     rna_run.add_argument("--species", action="append", default=[], help="Species name (repeatable)")
     rna_run.add_argument("--check", action="store_true", help="Stop on first failure")
+
+    rna_plan_species = rna_sub.add_parser("plan-species", help="Plan workflow with species/tissue params")
+    rna_plan_species.add_argument("--work-dir", required=True)
+    rna_plan_species.add_argument("--threads", type=int, default=4)
+    rna_plan_species.add_argument("--taxon-id", type=int, required=False)
+    rna_plan_species.add_argument("--tissue", action="append", default=[])
 
     # tests subcommand
     tests_parser = subparsers.add_parser("tests", help="Run repository test suite")
@@ -59,6 +67,17 @@ def main() -> None:
             codes = execute_workflow(cfg, check=args.check)
             print("Return codes:", codes)
             sys.exit(max(codes) if codes else 0)
+
+        if args.rna_cmd == "plan-species":
+            base = Path(args.work_dir)
+            cfg = AmalgkitWorkflowConfig(work_dir=base, threads=args.threads)
+            species = SpeciesProfile(name="", taxon_id=args.taxon_id, tissues=args.tissue or None)
+            layout = AmalgkitRunLayout(base_dir=base)
+            params_map = build_step_params(species, layout)
+            steps = plan_workflow_with_params(cfg, params_map)
+            for name, params in steps:
+                print(name, params)
+            return
 
     if args.command == "tests":
         exit_code = run_all_tests(args.pytest_args)

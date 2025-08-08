@@ -9,6 +9,9 @@ __all__ = [
     "ontology",
     "phenotype",
     "ecology",
+    "math",
+    "visualization",
+    "simulation",
 ]
 
 
