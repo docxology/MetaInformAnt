@@ -1,4 +1,4 @@
-### RNA: Configs
+# RNA: Configs
 
 High-level helpers for building per-step parameter maps.
 
@@ -22,5 +22,7 @@ spec = SpeciesProfile(name="Apis mellifera", taxon_id=7460, tissues=["head", "ab
 layout = AmalgkitRunLayout(base_dir=Path("./work/Apis_mellifera"))
 params = build_step_params(spec, layout)
 ```
+
+Convention: prefer `output/` for working directories, e.g. `base_dir=Path("output/amalgkit/Apis_mellifera")`.
 
 

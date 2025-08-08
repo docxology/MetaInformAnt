@@ -2,7 +2,19 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Callable, Dict, Mapping
+
+# Lightweight, optional YAML/TOML support without hard deps
+try:  # pragma: no cover - optional dependency
+    import yaml  # type: ignore
+except Exception:  # pragma: no cover - optional
+    yaml = None  # type: ignore
+
+try:  # pragma: no cover - optional dependency
+    import tomllib  # Python 3.11+
+except Exception:  # pragma: no cover - optional
+    tomllib = None  # type: ignore
 
 
 @dataclass(frozen=True)
@@ -64,4 +76,78 @@ def load_typed_env(*, prefix: str, keys: Mapping[str, type]) -> Dict[str, Any]:
         else:
             out[key] = val
     return out
+
+
+#
+# Generic configuration loader used across the project
+#
+
+def _read_text(path: Path) -> str:
+    with open(path, "rt", encoding="utf-8") as fh:
+        return fh.read()
+
+
+def load_mapping_from_file(config_path: str | Path) -> Dict[str, Any]:
+    """Load a structured mapping from YAML, TOML or JSON file.
+
+    - Supports .yaml/.yml (if PyYAML available), .toml (if tomllib available), and .json via stdlib
+    - Returns a Python dict; raises ValueError if format unsupported or parsing fails
+    """
+    p = Path(config_path)
+    if not p.exists():
+        raise FileNotFoundError(f"Config file not found: {p}")
+
+    suffix = p.suffix.lower()
+    text = _read_text(p)
+
+    if suffix in {".yaml", ".yml"}:
+        if yaml is None:
+            raise ValueError("YAML requested but PyYAML not installed. Install pyyaml or use JSON/TOML.")
+        data = yaml.safe_load(text)
+        if data is None:
+            return {}
+        if not isinstance(data, dict):
+            raise ValueError("Top-level YAML must be a mapping")
+        return dict(data)
+
+    if suffix == ".toml":
+        if tomllib is None:
+            raise ValueError("TOML requested but tomllib unavailable. Use Python 3.11+ or use JSON/YAML.")
+        return dict(tomllib.loads(text))
+
+    if suffix == ".json":
+        import json
+
+        return dict(json.loads(text))
+
+    raise ValueError(f"Unsupported config format: {suffix}")
+
+
+def apply_env_overrides(config: Mapping[str, Any], *, prefix: str = "AK") -> Dict[str, Any]:
+    """Apply simple environment overrides to a shallow config mapping.
+
+    Supported keys via env:
+    - {prefix}_THREADS -> int
+    - {prefix}_WORK_DIR -> str
+    - {prefix}_LOG_DIR -> str
+    """
+    out: Dict[str, Any] = dict(config)
+
+    threads = os.getenv(f"{prefix}_THREADS")
+    if threads is not None:
+        try:
+            out["threads"] = int(threads)
+        except ValueError:
+            pass
+
+    work_dir = os.getenv(f"{prefix}_WORK_DIR")
+    if work_dir:
+        out["work_dir"] = work_dir
+
+    log_dir = os.getenv(f"{prefix}_LOG_DIR")
+    if log_dir:
+        out["log_dir"] = log_dir
+
+    return out
+
 

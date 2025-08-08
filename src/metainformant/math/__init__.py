@@ -12,6 +12,26 @@ composition with `core` utilities and `dna`/`rna`/`protein` domain modules.
 from .price import price_equation, covariance, expectation
 from .selection import kin_selection_response, multilevel_selection_decomposition
 from .ddm import ddm_analytic_accuracy, ddm_mean_decision_time
+from .popgen import (
+    hardy_weinberg_genotype_freqs,
+    selection_update,
+    mutation_update,
+    fixation_probability,
+    watterson_theta,
+)
+from .ld import ld_coefficients, r_squared, ld_decay_r2
+from .coalescent import expected_time_to_mrca, expected_total_branch_length
+from .quantgen import (
+    narrow_sense_heritability,
+    breeders_equation_response,
+    lande_equation_response,
+    realized_heritability,
+)
+from .dynamics import logistic_map, lotka_volterra_step
+from .egt import replicator_step, replicator_derivative
+from .epidemiology import sir_step, basic_reproduction_number
+from .fst import fst_from_heterozygosity, fst_from_allele_freqs
+from .effective_size import harmonic_mean_effective_size, effective_size_sex_ratio
 
 __all__ = [
     "price_equation",
@@ -21,6 +41,39 @@ __all__ = [
     "multilevel_selection_decomposition",
     "ddm_analytic_accuracy",
     "ddm_mean_decision_time",
+    # population genetics
+    "hardy_weinberg_genotype_freqs",
+    "selection_update",
+    "mutation_update",
+    "fixation_probability",
+    "watterson_theta",
+    # linkage disequilibrium
+    "ld_coefficients",
+    "r_squared",
+    "ld_decay_r2",
+    # coalescent
+    "expected_time_to_mrca",
+    "expected_total_branch_length",
+    # quantitative genetics
+    "narrow_sense_heritability",
+    "breeders_equation_response",
+    "lande_equation_response",
+    "realized_heritability",
+    # simple dynamics
+    "logistic_map",
+    "lotka_volterra_step",
+    # evolutionary game theory
+    "replicator_step",
+    "replicator_derivative",
+    # epidemiology
+    "sir_step",
+    "basic_reproduction_number",
+    # population structure
+    "fst_from_heterozygosity",
+    "fst_from_allele_freqs",
+    # effective size
+    "harmonic_mean_effective_size",
+    "effective_size_sex_ratio",
 ]
 
 

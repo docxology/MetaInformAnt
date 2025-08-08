@@ -1,32 +1,9 @@
 from __future__ import annotations
 
 from collections import Counter
-from typing import Dict
 
 
-def consensus_from_alignment(id_to_aligned_seq: Dict[str, str]) -> str:
-    if not id_to_aligned_seq:
-        return ""
-    seqs = list(id_to_aligned_seq.values())
-    L = min(len(s) for s in seqs)
-    out: list[str] = []
-    for pos in range(L):
-        col = [s[pos] for s in seqs]
-        col = [c for c in col if c != "-"]
-        if not col:
-            out.append("-")
-            continue
-        c, _ = Counter(col).most_common(1)[0]
-        out.append(c)
-    return "".join(out)
-
-from __future__ import annotations
-
-from collections import Counter
-from typing import Dict
-
-
-def consensus_from_alignment(id_to_seq: Dict[str, str]) -> str:
+def consensus_from_alignment(id_to_seq: dict[str, str]) -> str:
     """Return a simple majority-rule consensus sequence.
 
     Gaps ('-') are ignored when determining the majority at each position.

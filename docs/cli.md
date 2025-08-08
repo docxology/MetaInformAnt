@@ -1,13 +1,19 @@
-### CLI
+# CLI
 
 Entry: `python -m metainformant` or the `metainformant` console script.
 
 ```text
 metainformant dna fetch --assembly GCF_000001405.40
-metainformant rna plan --work-dir ./work --threads 8 --species Apis_mellifera
-metainformant rna run  --work-dir ./work --threads 8 --species Apis_mellifera --check
+metainformant rna plan --work-dir output/amalgkit/work --threads 8 --species Apis_mellifera
+metainformant rna run  --work-dir output/amalgkit/work --threads 8 --species Apis_mellifera --check
 metainformant tests -q
 ```
+
+Subcommands
+- **dna fetch**: validates assembly accessions (see [DNA Accessions](./dna/accessions.md))
+- **rna plan**: prints an ordered plan of subcommands and parameters (see [RNA Workflow](./rna/workflow.md))
+- **rna run**: executes the workflow; use `--check` to stop on first failure; logs written in `work-dir/logs` (default examples place this under `output/`)
+- **tests**: runs the repo tests (see [Testing](./testing.md))
 
 ```mermaid
 sequenceDiagram

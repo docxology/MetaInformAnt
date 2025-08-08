@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, Literal
+from typing import Dict, Literal, Optional
 import random
 
 from Bio import Phylo
@@ -47,10 +47,12 @@ def upgma_tree(id_to_seq: Dict[str, str]):
     return constructor.upgma(dm)
 
 
-def bootstrap_support(id_to_seq: Dict[str, str], n_replicates: int = 100, method: str = "nj") -> Dict[str, float]:
-    """Simple bootstrap: resample alignment columns and compute split supports.
+def bootstrap_support(
+    id_to_seq: Dict[str, str], n_replicates: int = 100, method: str = "nj", random_state: int | None = None
+) -> Dict[str, float]:
+    """Simple bootstrap with optional deterministic seed.
 
-    Returns mapping of clade name to support fraction. This is intentionally light for tests.
+    Returns mapping of clade name (sorted, semicolon-joined) to support fraction.
     """
     seq_ids = list(id_to_seq.keys())
     if not seq_ids:
@@ -58,6 +60,8 @@ def bootstrap_support(id_to_seq: Dict[str, str], n_replicates: int = 100, method
     L = min(len(s) for s in id_to_seq.values())
     if L == 0:
         return {}
+
+    rng = random.Random(random_state)
 
     def build_tree(resampled: Dict[str, str]):
         if method == "nj":
@@ -70,7 +74,7 @@ def bootstrap_support(id_to_seq: Dict[str, str], n_replicates: int = 100, method
 
     counts: Dict[tuple[str, ...], int] = {}
     for _ in range(n_replicates):
-        idxs = [random.randrange(L) for _ in range(L)]
+        idxs = [rng.randrange(L) for _ in range(L)]
         resampled = {k: "".join(v[i] for i in idxs) for k, v in id_to_seq.items()}
         tree = build_tree(resampled)
         for s in splits(tree):
@@ -96,7 +100,7 @@ def basic_tree_stats(tree) -> Dict[str, int]:
 
 
 def bootstrap_support(
-    id_to_seq: Dict[str, str], *, n_replicates: int = 100, method: Literal["nj", "upgma"] = "nj"
+    id_to_seq: Dict[str, str], *, n_replicates: int = 100, method: Literal["nj", "upgma"] = "nj", random_state: Optional[int] = None
 ) -> Dict[frozenset[str], float]:
     """Bootstrap clade support using simple column resampling.
 
@@ -127,9 +131,10 @@ def bootstrap_support(
     counts: dict[frozenset[str], int] = {s: 0 for s in base_splits}
 
     import random
+    rng = random.Random(random_state)
 
     for _ in range(n_replicates):
-        positions = [random.randrange(L) for _ in range(L)]
+        positions = [rng.randrange(L) for _ in range(L)]
         boot_data: Dict[str, str] = {
             i: "".join(id_to_seq[i][pos] for pos in positions) for i in ids
         }
@@ -139,5 +144,25 @@ def bootstrap_support(
                 counts[s] += 1
 
     return {s: counts[s] / n_replicates for s in counts}
+
+
+def nj_tree_from_kmer(id_to_seq: Dict[str, str], *, k: int = 3, metric: str = "cosine"):
+    """Build NJ tree from k-mer distances via `distances.kmer_distance_matrix`."""
+    from . import distances as distances_mod
+    from Bio.Phylo.TreeConstruction import DistanceMatrix, DistanceTreeConstructor
+
+    ids = list(id_to_seq.keys())
+    dm_values = distances_mod.kmer_distance_matrix(id_to_seq, k=k, metric=metric)
+    # Biopython DistanceMatrix expects lower-triangular distances without diagonal
+    matrix: list[list[float]] = []
+    for i in range(len(ids)):
+        row = []
+        for j in range(i):
+            row.append(dm_values[i][j])
+        row.append(0.0)  # diagonal element
+        matrix.append(row)
+    dm = DistanceMatrix(names=ids, matrix=matrix)
+    constructor = DistanceTreeConstructor()
+    return constructor.nj(dm)
 
 

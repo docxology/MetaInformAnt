@@ -1,4 +1,26 @@
-from __future__ import annotations
+import matplotlib
+
+matplotlib.use("Agg", force=True)
+import matplotlib.pyplot as plt  # noqa: E402
+
+from metainformant.visualization import lineplot, heatmap, animate_time_series
+
+
+def test_lineplot_and_heatmap_render():
+    ax1 = lineplot(None, [0.1, 0.2, 0.3], label="a")
+    assert ax1 is not None
+    plt.close(ax1.figure)
+
+    ax2 = heatmap([[1, 0], [0, 1]])
+    assert ax2 is not None
+    plt.close(ax2.figure)
+
+
+def test_animation_constructs():
+    fig, anim = animate_time_series([0, 1, 0], interval_ms=50)
+    assert fig is not None
+    assert anim is not None
+    plt.close(fig)
 
 import matplotlib
 

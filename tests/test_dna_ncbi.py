@@ -3,8 +3,17 @@ from __future__ import annotations
 import pytest
 
 from metainformant.dna import ncbi
+import importlib.util
+import os
 
 
+try:
+    installed = importlib.util.find_spec("ncbi.datasets") is not None
+except ModuleNotFoundError:
+    installed = False
+
+
+@pytest.mark.skipif(installed, reason="ncbi-datasets installed; expecting runtime error only when missing")
 def test_ncbi_datasets_optional_dependency_errors():
     # Expect a clear error if ncbi-datasets-pylib is not installed
     with pytest.raises(RuntimeError):

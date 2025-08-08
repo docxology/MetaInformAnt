@@ -1,4 +1,4 @@
-### RNA: amalgkit Wrapper
+# RNA: amalgkit Wrapper
 
 Utilities converting parameter dicts to CLI flags and executing `amalgkit` subcommands.
 
@@ -19,6 +19,8 @@ from metainformant.rna import amalgkit as ak
 
 ok, help_text = ak.check_cli_available()
 cmd = ak.build_amalgkit_command("metadata", {"species-list": ["Apis_mellifera"], "threads": 8})
+
+# Execute a step and capture output
+res = ak.run_amalgkit("metadata", {"species-list": ["Apis_mellifera"]}, work_dir="output/amalgkit/work")
+print(res.returncode, len(res.stdout))
 ```
-
-

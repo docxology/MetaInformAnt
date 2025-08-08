@@ -12,6 +12,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(prog="metainformant", description="METAINFORMANT CLI")
     subparsers = parser.add_subparsers(dest="command")
 
+    # setup subcommand
+    setup_parser = subparsers.add_parser("setup", help="Run repository setup (uv, deps)")
+    setup_parser.add_argument("--with-amalgkit", action="store_true", help="Install AMALGKIT")
+    setup_parser.add_argument("--ncbi-email", default="", help="Export NCBI_EMAIL during setup")
+
     # dna subcommand
     dna_parser = subparsers.add_parser("dna", help="DNA-related operations")
     dna_sub = dna_parser.add_subparsers(dest="dna_cmd")
@@ -42,7 +47,28 @@ def main() -> None:
     tests_parser = subparsers.add_parser("tests", help="Run repository test suite")
     tests_parser.add_argument("pytest_args", nargs=argparse.REMAINDER, help="Arguments passed to pytest")
 
+    # protein subcommand
+    protein_parser = subparsers.add_parser("protein", help="Protein-related operations")
+    protein_sub = protein_parser.add_subparsers(dest="protein_cmd")
+    taxon_ids = protein_sub.add_parser("taxon-ids", help="Print cleaned taxon IDs from a file")
+    taxon_ids.add_argument("--file", required=True, help="Path to taxon id list file")
+    comp = protein_sub.add_parser("comp", help="Compute amino acid composition for sequences in FASTA")
+    comp.add_argument("--fasta", required=True, help="Path to protein FASTA file")
+
     args = parser.parse_args()
+
+    if args.command == "setup":
+        # Execute scripts/setup_uv.sh non-interactively
+        root = Path(__file__).resolve().parents[2]
+        script = root / "scripts" / "setup_uv.sh"
+        cmd = ["bash", str(script)]
+        if args.with_amalgkit:
+            cmd.append("--with-amalgkit")
+        if args.ncbi_email:
+            cmd.extend(["--ncbi-email", args.ncbi_email])
+        import subprocess
+        rc = subprocess.run(cmd).returncode
+        sys.exit(rc)
 
     if args.command == "dna" and args.dna_cmd == "fetch":
         if not is_valid_assembly_accession(args.assembly):
@@ -77,6 +103,22 @@ def main() -> None:
             steps = plan_workflow_with_params(cfg, params_map)
             for name, params in steps:
                 print(name, params)
+            return
+
+    if args.command == "protein":
+        if args.protein_cmd == "taxon-ids":
+            from .protein.proteomes import read_taxon_ids
+            ids = read_taxon_ids(Path(args.file))
+            print("\n".join(str(i) for i in ids))
+            return
+        if args.protein_cmd == "comp":
+            from .protein.sequences import parse_fasta, calculate_aa_composition
+            recs = parse_fasta(Path(args.fasta))
+            for rid, seq in recs.items():
+                comp = calculate_aa_composition(seq)
+                # stable, compact line format: id tab then AA:frac pairs sorted by AA
+                parts = [f"{aa}:{comp[aa]:.3f}" for aa in sorted(comp.keys()) if comp[aa] > 0.0]
+                print(f"{rid}\t" + ",".join(parts))
             return
 
     if args.command == "tests":

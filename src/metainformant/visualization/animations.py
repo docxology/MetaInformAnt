@@ -10,41 +10,6 @@ import matplotlib.pyplot as plt  # noqa: E402
 from matplotlib.animation import FuncAnimation  # noqa: E402
 
 
-def animate_time_series(values: Sequence[float], *, interval_ms: int = 200):
-    """Create a simple time-series animation.
-
-    Returns (fig, animation).
-    """
-    fig, ax = plt.subplots()
-    line, = ax.plot([], [], lw=2)
-    ax.set_xlim(0, max(1, len(values)))
-    ymin = min(values) if values else 0.0
-    ymax = max(values) if values else 1.0
-    if ymin == ymax:
-        ymax = ymin + 1.0
-    ax.set_ylim(ymin, ymax)
-
-    def init():
-        line.set_data([], [])
-        return (line,)
-
-    def update(frame: int):
-        x = list(range(frame + 1))
-        y = list(values[: frame + 1])
-        line.set_data(x, y)
-        return (line,)
-
-    anim = FuncAnimation(fig, update, init_func=init, frames=len(values), interval=interval_ms, blit=True)
-    return fig, anim
-
-from __future__ import annotations
-
-from typing import Sequence, Iterable, Callable
-
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
-
-
 def animate_time_series(
     series: Sequence[float],
     *,

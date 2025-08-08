@@ -8,36 +8,7 @@ import matplotlib
 matplotlib.use("Agg", force=True)
 import matplotlib.pyplot as plt  # noqa: E402
 import seaborn as sns  # noqa: E402
-
-
-def lineplot(x: Iterable[float] | None, y: Sequence[float], *, label: str | None = None):
-    """Simple line plot; if x is None, uses index.
-
-    Returns the matplotlib Axes instance.
-    """
-    ax = plt.gca()
-    if x is None:
-        ax.plot(list(range(len(y))), y, label=label)
-    else:
-        ax.plot(list(x), y, label=label)
-    if label:
-        ax.legend()
-    return ax
-
-
-def heatmap(matrix: Sequence[Sequence[float]], *, cmap: str = "viridis"):
-    """2D heatmap using seaborn. Returns Axes.
-    """
-    ax = sns.heatmap(matrix, cmap=cmap)
-    return ax
-
-from __future__ import annotations
-
-from typing import Iterable, Sequence
-
-import matplotlib.pyplot as plt
-import seaborn as sns
-import pandas as pd
+import pandas as pd  # noqa: E402
 
 
 def lineplot(
@@ -82,7 +53,3 @@ def pairplot_dataframe(df: pd.DataFrame, *, hue: str | None = None):
     """Pairplot for a tidy DataFrame, returns seaborn PairGrid."""
     grid = sns.pairplot(df, hue=hue)
     return grid
-
-
-
-

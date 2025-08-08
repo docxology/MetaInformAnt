@@ -7,10 +7,10 @@ from datetime import datetime
 import json
 import hashlib
 
-from .amalgkit import (
-    AmalgkitParams,
-    run_amalgkit,
-)
+from .amalgkit import AmalgkitParams
+from .steps import STEP_RUNNERS
+from ..core.config import load_mapping_from_file, apply_env_overrides
+from ..core.io import ensure_directory, write_jsonl, dump_json
 
 
 @dataclass(slots=True)
@@ -21,6 +21,7 @@ class AmalgkitWorkflowConfig:
     # Additional common parameters can be added as needed
     log_dir: Path | None = None
     manifest_path: Path | None = None
+    per_step: dict[str, AmalgkitParams] = field(default_factory=dict)
 
     def to_common_params(self) -> AmalgkitParams:
         params: dict[str, Any] = {"threads": self.threads}
@@ -43,19 +44,23 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> list[tuple[str, AmalgkitPar
         merged.update(extra)
         return merged
 
-    steps: list[tuple[str, AmalgkitParams]] = [
-        ("metadata", merge_params({})),
-        ("integrate", merge_params({})),
-        ("config", merge_params({})),
-        ("select", merge_params({})),
-        ("getfastq", merge_params({})),
-        ("quant", merge_params({})),
-        ("merge", merge_params({})),
-        ("cstmm", merge_params({})),
-        ("curate", merge_params({})),
-        ("csca", merge_params({})),
-        ("sanity", merge_params({})),
+    steps: list[tuple[str, AmalgkitParams]] = []
+    ordered = [
+        "metadata",
+        "integrate",
+        "config",
+        "select",
+        "getfastq",
+        "quant",
+        "merge",
+        "cstmm",
+        "curate",
+        "csca",
+        "sanity",
     ]
+    for name in ordered:
+        extra = config.per_step.get(name, {})
+        steps.append((name, merge_params(extra)))
     return steps
 
 
@@ -96,14 +101,14 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
     return_codes: list[int] = []
     manifest_records: list[dict[str, Any]] = []
     for subcommand, params in steps:
-        result = run_amalgkit(
-            subcommand,
+        runner = STEP_RUNNERS.get(subcommand)
+        if runner is None:  # pragma: no cover - defensive
+            raise KeyError(f"No runner registered for step: {subcommand}")
+        result = runner(
             params,
             work_dir=config.work_dir,
             log_dir=(config.log_dir or (config.work_dir / "logs")),
-            step_name=subcommand,
             check=check,
-            capture_output=True,
         )
         return_codes.append(result.returncode)
         manifest_records.append(
@@ -119,17 +124,47 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
             break
     # Write manifest
     manifest_path = config.manifest_path or (config.work_dir / "amalgkit.manifest.jsonl")
-    manifest_path.parent.mkdir(parents=True, exist_ok=True)
-    with manifest_path.open("w", encoding="utf-8") as f:
-        for rec in manifest_records:
-            f.write(json.dumps(rec) + "\n")
+    ensure_directory(manifest_path.parent)
+    write_jsonl(manifest_records, manifest_path)
     return return_codes
+
+
+def load_workflow_config(config_file: str | Path) -> AmalgkitWorkflowConfig:
+    """Load `AmalgkitWorkflowConfig` from a config file with env overrides.
+
+    Expected top-level keys:
+      - work_dir (str)
+      - log_dir (str, optional)
+      - threads (int)
+      - species_list (list[str])
+      - steps (mapping of step name -> params mapping)
+    """
+    raw = load_mapping_from_file(config_file)
+    raw = apply_env_overrides(raw, prefix="AK")
+
+    work_dir = Path(raw.get("work_dir", "output/amalgkit/work")).expanduser().resolve()
+    log_dir_val = raw.get("log_dir")
+    log_dir = Path(log_dir_val).expanduser().resolve() if isinstance(log_dir_val, str) else None
+    threads = int(raw.get("threads", 4))
+    species_list = list(raw.get("species_list", []))
+    steps_map = raw.get("steps", {}) or {}
+    if not isinstance(steps_map, dict):
+        steps_map = {}
+
+    return AmalgkitWorkflowConfig(
+        work_dir=work_dir,
+        log_dir=log_dir,
+        threads=threads,
+        species_list=species_list,
+        per_step={str(k): dict(v) for k, v in steps_map.items() if isinstance(v, dict)},
+    )
 
 
 __all__ = [
     "AmalgkitWorkflowConfig",
     "plan_workflow",
     "execute_workflow",
+    "load_workflow_config",
 ]
 
 

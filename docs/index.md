@@ -5,6 +5,8 @@ Welcome to the METAINFORMANT docs. This site is organized by domain and core uti
 - [Architecture](./architecture.md)
 - [CLI](./cli.md)
 - [Core Utilities](./core.md)
+- [Setup](./setup.md)
+- [Testing](./testing.md)
 
 - DNA
   - [Overview](./dna/index.md)
@@ -44,6 +46,8 @@ Welcome to the METAINFORMANT docs. This site is organized by domain and core uti
   - [Phenotype](./phenotype/index.md)
   - [Epigenome](./epigenome/index.md)
   - [Ecology](./ecology/index.md)
+
+See also: the top-level project README for quickstarts.
 
 ```mermaid
 graph TD

@@ -6,6 +6,9 @@ Capabilities
 - Lightweight MSA (`msa.align_msa`, optional external tools)
 - Phylogeny (NJ/UPGMA, Newick export)
 - Population genetics (diversity, Tajima's D, Fst)
+ - Accession checks and Entrez fetch (NCBI)
+- Consensus sequence from alignment
+- FASTQ quality summaries
 
 ```mermaid
 flowchart TD
@@ -17,5 +20,11 @@ flowchart TD
 ```
 
 See: [Sequences](./sequences.md), [Alignment](./alignment.md), [MSA](./msa.md), [Phylogeny](./phylogeny.md), [Population](./population.md).
+
+- Extras
+  - [Entrez/NCBI](./ncbi.md)
+  - [Accession Validation](./accessions.md)
+  - [Consensus](./consensus.md)
+  - [FASTQ](./fastq.md)
 
 

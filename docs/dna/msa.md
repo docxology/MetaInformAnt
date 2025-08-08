@@ -16,6 +16,9 @@ Example
 from metainformant.dna import msa
 
 aligned = msa.align_msa({"A": "ACGT", "B": "AG-T"})
+
+# External tools (if installed):
+# msa.align_with_cli(id_to_seq, tool="muscle")  # or "clustalo"
 ```
 
 
