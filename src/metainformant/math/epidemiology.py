@@ -64,3 +64,20 @@ def herd_immunity_threshold(R0: float) -> float:
     return max(0.0, min(1.0, val))
 
 
+def sis_step(S: float, I: float, beta: float, gamma: float, dt: float = 0.01) -> tuple[float, float]:
+    """Single Euler step for SIS model (no removed class)."""
+    S = max(0.0, S)
+    I = max(0.0, I)
+    dS = -beta * S * I + gamma * I
+    dI = beta * S * I - gamma * I
+    Sn = max(0.0, S + dt * dS)
+    In = max(0.0, I + dt * dI)
+    return Sn, In
+
+
+def effective_reproduction_number(R0: float, susceptible_fraction: float) -> float:
+    """Effective reproduction number R_e = R0 * S."""
+    S = max(0.0, min(1.0, susceptible_fraction))
+    return max(0.0, R0 * S)
+
+

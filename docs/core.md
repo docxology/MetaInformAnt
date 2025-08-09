@@ -39,4 +39,3 @@ from metainformant.core import io, parallel, hash
 io.ensure_directory("output")
 checksums = parallel.thread_map(hash.sha256_file, ["README.md"])  # list[str]
 ```
-

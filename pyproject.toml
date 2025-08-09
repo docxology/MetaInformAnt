@@ -33,6 +33,8 @@ dependencies = [
   "requests>=2.31",
   "urllib3==1.26.18",
   "jsonlines>=3.0.0",
+  # Config formats
+  "PyYAML>=6.0",
 
   # NCBI datasets
   "ncbi-datasets-pylib==13.8.0",
@@ -48,6 +50,7 @@ dependencies = [
   # Scraping
   "beautifulsoup4>=4.12",
   "lxml>=5.2",
+  "pyyaml>=6.0.1",
 ]
 
 [project.scripts]

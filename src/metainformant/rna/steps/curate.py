@@ -1,7 +1,10 @@
+"""Step runner for `amalgkit curate` (outlier removal and bias checks)."""
+
 from __future__ import annotations
 
-from typing import Mapping, Any
+from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
 
 from ..amalgkit import curate as _curate
 
@@ -13,6 +16,7 @@ def run(
     log_dir: str | Path | None = None,
     check: bool = False,
 ):
+    """Run `amalgkit curate`."""
     return _curate(params, work_dir=work_dir, log_dir=log_dir, step_name="curate", check=check)
 
 

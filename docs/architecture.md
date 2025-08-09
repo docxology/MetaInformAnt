@@ -61,7 +61,7 @@ flowchart LR
   C8 -.-> R2
 ```
 
-#### Project directories and conventions
+## Project directories and conventions
 
 - **`config/`**: Declarative configuration and options for runs. Read by `metainformant.core.config` and consumed across domains. Environment variables may override values.
 - **`data/`**: Canonical datasets and local databases. Treated as read-mostly inputs and long-lived artifacts under versioned subfolders.

@@ -6,13 +6,16 @@ Entry: `python -m metainformant` or the `metainformant` console script.
 metainformant dna fetch --assembly GCF_000001405.40
 metainformant rna plan --work-dir output/amalgkit/work --threads 8 --species Apis_mellifera
 metainformant rna run  --work-dir output/amalgkit/work --threads 8 --species Apis_mellifera --check
+metainformant rna run-config --config config/amalgkit_pbarbatus.yaml --check
 metainformant tests -q
 ```
 
 Subcommands
+
 - **dna fetch**: validates assembly accessions (see [DNA Accessions](./dna/accessions.md))
 - **rna plan**: prints an ordered plan of subcommands and parameters (see [RNA Workflow](./rna/workflow.md))
 - **rna run**: executes the workflow; use `--check` to stop on first failure; logs written in `work-dir/logs` (default examples place this under `output/`)
+- **rna run-config**: executes the workflow from a config file under `config/`; logs and manifest written under paths specified by the config
 - **tests**: runs the repo tests (see [Testing](./testing.md))
 
 ```mermaid
@@ -31,5 +34,3 @@ sequenceDiagram
 ```
 
 See: [RNA Workflow](./rna/workflow.md), [DNA](./dna/index.md).
-
-

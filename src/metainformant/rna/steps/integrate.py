@@ -1,7 +1,10 @@
+"""Step runner for `amalgkit integrate` (augment metadata with local FASTQs)."""
+
 from __future__ import annotations
 
-from typing import Mapping, Any
+from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
 
 from ..amalgkit import integrate as _integrate
 
@@ -13,6 +16,7 @@ def run(
     log_dir: str | Path | None = None,
     check: bool = False,
 ):
+    """Run `amalgkit integrate`."""
     return _integrate(params, work_dir=work_dir, log_dir=log_dir, step_name="integrate", check=check)
 
 

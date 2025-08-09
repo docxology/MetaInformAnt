@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+"""Step runner for `amalgkit merge` (combine per-sample quantifications)."""
+
 from typing import Mapping, Any
 from pathlib import Path
 
@@ -13,6 +15,7 @@ def run(
     log_dir: str | Path | None = None,
     check: bool = False,
 ):
+    """Run `amalgkit merge` (aggregating quantifications)."""
     return _merge(params, work_dir=work_dir, log_dir=log_dir, step_name="merge", check=check)
 
 

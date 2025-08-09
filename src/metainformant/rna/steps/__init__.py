@@ -12,9 +12,9 @@ from .curate import run as run_curate
 from .getfastq import run as run_getfastq
 from .integrate import run as run_integrate
 from .merge import run as run_merge
-from .select import run as run_select
 from .metadata import run as run_metadata
 from .quant import run as run_quant
+from .select import run as run_select
 from .sanity import run as run_sanity
 
 

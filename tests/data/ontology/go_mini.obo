@@ -1,0 +1,29 @@
+format-version: 1.2
+data-version: releases/2024-01-01
+subsetdef: goslim_generic "Generic GO slim"
+
+[Term]
+id: GO:0000001
+name: root biological process
+namespace: biological_process
+def: "A root term for testing" []
+
+[Term]
+id: GO:0000002
+name: child process A
+namespace: biological_process
+is_a: GO:0000001 ! root biological process
+
+[Term]
+id: GO:0000003
+name: child process B
+namespace: biological_process
+is_a: GO:0000001 ! root biological process
+
+[Term]
+id: GO:0000004
+name: grandchild process C
+namespace: biological_process
+is_a: GO:0000002 ! child process A
+
+

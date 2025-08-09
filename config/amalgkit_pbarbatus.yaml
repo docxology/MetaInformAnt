@@ -1,0 +1,45 @@
+# Comprehensive amalgkit run configuration
+# Species: Pogonomyrmex barbatus (NCBI:txid144034)
+
+work_dir: output/amalgkit/pbarbatus/work
+log_dir: output/amalgkit/pbarbatus/logs
+threads: 8
+
+# Common filters
+species_list:
+  - Pogonomyrmex_barbatus
+# Alternatively, you could specify taxonomy id if supported by your amalgkit build:
+# taxon_id: 144034
+
+# Per-step parameters (merged on top of common params)
+steps:
+  metadata:
+    # Example filters: fetch metadata for the species
+    # include-public: true
+    # db: sra
+  integrate:
+    # resolve sample matrices, indices; customize if needed
+  config:
+    # Let amalgkit generate default config for downstream tools
+  select:
+    # e.g., select tissue transcriptomes, paired-end only, Illumina
+    # library-source: TRANSCRIPTOMIC
+    # instrument: ILLUMINA
+    # layout: PAIRED
+  getfastq:
+    out-dir: output/amalgkit/pbarbatus/fastq
+  quant:
+    # Example: salmon index path (if prebuilt); otherwise amalgkit may build
+    # index: data/salmon/pbarbatus/index
+    threads: 8
+  merge:
+    # merged abundance table output path (file)
+    out: output/amalgkit/pbarbatus/merged/merged_abundance.tsv
+  cstmm:
+    # optional normalization parameters
+  curate:
+    # optional curation flags
+  csca:
+    # sample clustering/assessment options
+  sanity:
+    # final checks

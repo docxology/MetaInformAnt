@@ -12,6 +12,11 @@ from . import (
     distances,
     fastq,
     motifs,
+    restriction,
     variants,
+    transcription,
+    mutations,
+    codon,
+    composition,
 )  # noqa: F401
 

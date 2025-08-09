@@ -1,7 +1,10 @@
+"""Step runner for `amalgkit cstmm` (cross-species TMM normalization)."""
+
 from __future__ import annotations
 
-from typing import Mapping, Any
+from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
 
 from ..amalgkit import cstmm as _cstmm
 
@@ -13,6 +16,7 @@ def run(
     log_dir: str | Path | None = None,
     check: bool = False,
 ):
+    """Run `amalgkit cstmm` (normalization)."""
     return _cstmm(params, work_dir=work_dir, log_dir=log_dir, step_name="cstmm", check=check)
 
 

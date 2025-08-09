@@ -7,8 +7,8 @@ from datetime import datetime
 import json
 import hashlib
 
-from .amalgkit import AmalgkitParams
-from .steps import STEP_RUNNERS
+from .amalgkit import AmalgkitParams, build_amalgkit_command, check_cli_available
+from . import steps as _steps_mod
 from ..core.config import load_mapping_from_file, apply_env_overrides
 from ..core.io import ensure_directory, write_jsonl, dump_json
 
@@ -97,19 +97,48 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
 
     Returns a list of return codes per step in order.
     """
+    # Preflight: ensure amalgkit is available
+    ok, help_or_msg = check_cli_available()
+    if not ok:
+        ensure_directory(config.work_dir)
+        manifest_path = config.manifest_path or (config.work_dir / "amalgkit.manifest.jsonl")
+        ensure_directory(manifest_path.parent)
+        write_jsonl(
+            [
+                {
+                    "step": "preflight",
+                    "return_code": 127,
+                    "stdout_bytes": 0,
+                    "stderr_bytes": len(help_or_msg or ""),
+                    "started_utc": datetime.utcnow().isoformat() + "Z",
+                    "finished_utc": datetime.utcnow().isoformat() + "Z",
+                    "duration_seconds": 0.0,
+                    "work_dir": str(config.work_dir),
+                    "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                    "params": {},
+                    "command": "amalgkit -h",
+                    "note": "amalgkit not available on PATH",
+                }
+            ],
+            manifest_path,
+        )
+        return [127]
     steps = plan_workflow(config)
     return_codes: list[int] = []
     manifest_records: list[dict[str, Any]] = []
     for subcommand, params in steps:
-        runner = STEP_RUNNERS.get(subcommand)
+        runner = _steps_mod.STEP_RUNNERS.get(subcommand)
         if runner is None:  # pragma: no cover - defensive
             raise KeyError(f"No runner registered for step: {subcommand}")
+        start_ts = datetime.utcnow()
         result = runner(
             params,
             work_dir=config.work_dir,
             log_dir=(config.log_dir or (config.work_dir / "logs")),
             check=check,
         )
+        end_ts = datetime.utcnow()
+        duration_s = max(0.0, (end_ts - start_ts).total_seconds())
         return_codes.append(result.returncode)
         manifest_records.append(
             {
@@ -117,7 +146,13 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
                 "return_code": result.returncode,
                 "stdout_bytes": len(result.stdout or ""),
                 "stderr_bytes": len(result.stderr or ""),
-                "timestamp_utc": datetime.utcnow().isoformat() + "Z",
+                "started_utc": start_ts.isoformat() + "Z",
+                "finished_utc": end_ts.isoformat() + "Z",
+                "duration_seconds": duration_s,
+                "work_dir": str(config.work_dir),
+                "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                "params": dict(params),
+                "command": " ".join(build_amalgkit_command(subcommand, params)),
             }
         )
         if check and result.returncode != 0:
@@ -126,7 +161,47 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
     manifest_path = config.manifest_path or (config.work_dir / "amalgkit.manifest.jsonl")
     ensure_directory(manifest_path.parent)
     write_jsonl(manifest_records, manifest_path)
+    # Also write a compact JSON and Markdown report
+    _write_run_reports(config, manifest_records)
     return return_codes
+
+
+def _write_run_reports(config: AmalgkitWorkflowConfig, records: list[dict[str, Any]]) -> None:
+    """Emit JSON and Markdown summaries next to the manifest.
+
+    Files:
+      - amalgkit.report.json
+      - amalgkit.report.md
+    """
+    report_json = config.work_dir / "amalgkit.report.json"
+    report_md = config.work_dir / "amalgkit.report.md"
+    ensure_directory(config.work_dir)
+
+    # JSON: include config summary and records
+    summary = {
+        "work_dir": str(config.work_dir),
+        "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+        "threads": config.threads,
+        "species_list": list(config.species_list),
+        "num_steps": len(records),
+        "return_codes": [r.get("return_code", -1) for r in records],
+    }
+    dump_json({"summary": summary, "records": records}, report_json, indent=2)
+
+    # Markdown: brief human-readable view
+    lines: list[str] = []
+    lines.append(f"# Amalgkit Run Report\n")
+    lines.append(f"Work dir: `{config.work_dir}`  ")
+    lines.append(f"Logs: `{config.log_dir or (config.work_dir / 'logs')}`  ")
+    lines.append(f"Threads: {config.threads}  ")
+    if config.species_list:
+        lines.append(f"Species: {', '.join(config.species_list)}  ")
+    lines.append("")
+    lines.append("| Step | Code | Duration (s) |")
+    lines.append("|------|------|--------------|")
+    for rec in records:
+        lines.append(f"| {rec['step']} | {rec['return_code']} | {rec.get('duration_seconds', 0.0):.2f} |")
+    report_md.write_text("\n".join(lines), encoding="utf-8")
 
 
 def load_workflow_config(config_file: str | Path) -> AmalgkitWorkflowConfig:
@@ -146,17 +221,37 @@ def load_workflow_config(config_file: str | Path) -> AmalgkitWorkflowConfig:
     log_dir_val = raw.get("log_dir")
     log_dir = Path(log_dir_val).expanduser().resolve() if isinstance(log_dir_val, str) else None
     threads = int(raw.get("threads", 4))
-    species_list = list(raw.get("species_list", []))
+    # Accept YAML list for species_list
+    species_raw = raw.get("species_list", [])
+    if isinstance(species_raw, list):
+        species_list = [str(x) for x in species_raw]
+    else:
+        species_list = []
     steps_map = raw.get("steps", {}) or {}
     if not isinstance(steps_map, dict):
         steps_map = {}
+    # Keep only known step names if provided
+    allowed = {
+        "metadata",
+        "integrate",
+        "config",
+        "select",
+        "getfastq",
+        "quant",
+        "merge",
+        "cstmm",
+        "curate",
+        "csca",
+        "sanity",
+    }
+    steps_map = {k: v for k, v in steps_map.items() if str(k) in allowed and isinstance(v, dict)}
 
     return AmalgkitWorkflowConfig(
         work_dir=work_dir,
         log_dir=log_dir,
         threads=threads,
         species_list=species_list,
-        per_step={str(k): dict(v) for k, v in steps_map.items() if isinstance(v, dict)},
+        per_step={str(k): dict(v) for k, v in steps_map.items()},
     )
 
 

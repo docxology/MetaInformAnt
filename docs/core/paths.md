@@ -22,4 +22,3 @@ out_dir = expand_and_resolve("output/run_001")
 assert is_within(out_dir, root)
 Path(out_dir).mkdir(parents=True, exist_ok=True)
 ```
-

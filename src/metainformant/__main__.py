@@ -32,6 +32,9 @@ def main() -> None:
     rna_plan.add_argument("--species", action="append", default=[], help="Species name (repeatable)")
 
     rna_run = rna_sub.add_parser("run", help="Execute the amalgkit workflow")
+    rna_run_cfg = rna_sub.add_parser("run-config", help="Run amalgkit workflow from a config file")
+    rna_run_cfg.add_argument("--config", required=True, help="Path to YAML/TOML/JSON config file under config/")
+    rna_run_cfg.add_argument("--check", action="store_true", help="Stop on first failure")
     rna_run.add_argument("--work-dir", required=True, help="Working directory for the run")
     rna_run.add_argument("--threads", type=int, default=4)
     rna_run.add_argument("--species", action="append", default=[], help="Species name (repeatable)")
@@ -54,6 +57,9 @@ def main() -> None:
     taxon_ids.add_argument("--file", required=True, help="Path to taxon id list file")
     comp = protein_sub.add_parser("comp", help="Compute amino acid composition for sequences in FASTA")
     comp.add_argument("--fasta", required=True, help="Path to protein FASTA file")
+    rmsd_ca = protein_sub.add_parser("rmsd-ca", help="Compute Kabsch RMSD using CA atoms from two PDB files")
+    rmsd_ca.add_argument("--pdb-a", required=True)
+    rmsd_ca.add_argument("--pdb-b", required=True)
 
     args = parser.parse_args()
 
@@ -105,6 +111,13 @@ def main() -> None:
                 print(name, params)
             return
 
+        if args.rna_cmd == "run-config":
+            from .rna.workflow import load_workflow_config
+            cfg = load_workflow_config(args.config)
+            codes = execute_workflow(cfg, check=args.check)
+            print("Return codes:", codes)
+            sys.exit(max(codes) if codes else 0)
+
     if args.command == "protein":
         if args.protein_cmd == "taxon-ids":
             from .protein.proteomes import read_taxon_ids
@@ -119,6 +132,22 @@ def main() -> None:
                 # stable, compact line format: id tab then AA:frac pairs sorted by AA
                 parts = [f"{aa}:{comp[aa]:.3f}" for aa in sorted(comp.keys()) if comp[aa] > 0.0]
                 print(f"{rid}\t" + ",".join(parts))
+            return
+        if args.protein_cmd == "rmsd-ca":
+            from .protein.structure_io import read_pdb_ca_coordinates
+            from .protein.structure import compute_rmsd_kabsch
+            ca_a = read_pdb_ca_coordinates(Path(args.pdb_a))
+            ca_b = read_pdb_ca_coordinates(Path(args.pdb_b))
+            import numpy as np
+            A = np.array(ca_a, dtype=float)
+            B = np.array(ca_b, dtype=float)
+            # Align by the first min_len atoms
+            min_len = min(len(A), len(B))
+            if min_len == 0:
+                print("0.0")
+                return
+            rmsd = compute_rmsd_kabsch(A[:min_len], B[:min_len])
+            print(f"{rmsd}")
             return
 
     if args.command == "tests":
