@@ -249,6 +249,13 @@ def run_amalgkit(
     base = step_name or subcommand
 
     if stream:
+        # Announce start
+        try:
+            start_hhmm = datetime.utcnow().strftime("%H:%M:%S")
+            sys.stdout.write(f"[{start_hhmm}] starting step '{base}' -> {' '.join(cmd)}\n")
+            sys.stdout.flush()
+        except Exception:
+            pass
         log_path = Path(log_dir)
         log_path.mkdir(parents=True, exist_ok=True)
         stdout_file = log_path / f"{ts}.{base}.stdout.log"
@@ -285,9 +292,36 @@ def run_amalgkit(
             t_err.start()
             threads.append(t_err)
 
+        # Heartbeat reporter for long-running quiet periods
+        stop_heartbeat = threading.Event()
+
+        def _heartbeat():
+            while not stop_heartbeat.is_set():
+                # Every 30s, emit a heartbeat if still running
+                stop_heartbeat.wait(30.0)
+                if stop_heartbeat.is_set():
+                    break
+                if proc.poll() is None:
+                    try:
+                        now_hhmm = datetime.utcnow().strftime("%H:%M:%S")
+                        sys.stdout.write(f"[{now_hhmm}] still running step '{base}' (pid={proc.pid})...\n")
+                        sys.stdout.flush()
+                    except Exception:
+                        pass
+
+        hb = threading.Thread(target=_heartbeat, daemon=True)
+        hb.start()
+
         rc = proc.wait()
+        stop_heartbeat.set()
         for t in threads:
             t.join(timeout=1.0)
+        try:
+            end_hhmm = datetime.utcnow().strftime("%H:%M:%S")
+            sys.stdout.write(f"[{end_hhmm}] finished step '{base}' with code {rc}\n")
+            sys.stdout.flush()
+        except Exception:
+            pass
 
         # Build a CompletedProcess with empty captured text (logs are in files and console)
         result = subprocess.CompletedProcess(cmd, rc, stdout="", stderr="")
@@ -296,6 +330,12 @@ def run_amalgkit(
         return result
 
     # Default: capture then write logs
+    try:
+        start_hhmm = datetime.utcnow().strftime("%H:%M:%S")
+        sys.stdout.write(f"[{start_hhmm}] starting step '{base}' -> {' '.join(cmd)}\n")
+        sys.stdout.flush()
+    except Exception:
+        pass
     result = subprocess.run(
         cmd,
         cwd=str(work_dir) if work_dir is not None else None,
@@ -304,6 +344,12 @@ def run_amalgkit(
         text=True,
         check=check,
     )
+    try:
+        end_hhmm = datetime.utcnow().strftime("%H:%M:%S")
+        sys.stdout.write(f"[{end_hhmm}] finished step '{base}' with code {result.returncode}\n")
+        sys.stdout.flush()
+    except Exception:
+        pass
     # Optionally write logs per step
     if log_dir is not None:
         log_path = Path(log_dir)

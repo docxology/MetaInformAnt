@@ -4,7 +4,8 @@ import argparse
 import sys
 from pathlib import Path
 
-from .tests import run_all_tests
+# Explicitly import the test runner module to avoid confusion with the repo's root-level tests/
+from .tests.runner import run_all_tests
 # defer DNA imports until the DNA subcommand is used to avoid optional deps at import time
 from .rna.workflow import AmalgkitWorkflowConfig, execute_workflow
 from .rna.configs import SpeciesProfile, AmalgkitRunLayout, build_step_params

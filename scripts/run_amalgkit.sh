@@ -42,7 +42,8 @@ fi
 
 # 0) Setup environment (uv, venv, project, amalgkit, default email if none)
 #    Pass --skip-tests to avoid running the full repo tests here.
-bash scripts/setup_uv.sh --with-amalgkit --skip-tests || true
+#    Try to install external CLI deps as well for an end-to-end run.
+bash scripts/setup_uv.sh --with-amalgkit --with-deps --skip-tests || true
 
 # Use the repo's virtualenv Python if available; fall back to system python3
 VENV_PY=".venv/bin/python"
@@ -102,8 +103,12 @@ PY
 CMD=( "$VENV_PY" -m metainformant rna run-config --config "$CONFIG" )
 if [[ "$CHECK_FLAG" -eq 1 ]]; then CMD+=( --check ); fi
 
-echo "Running: ${CMD[*]}"
+echo "[RUN] $(date -u +%Y-%m-%dT%H:%M:%SZ) ${CMD[*]}"
+start_ts=$(date +%s)
 "${CMD[@]}"
+rc=$?
+end_ts=$(date +%s)
+echo "[DONE] $(date -u +%Y-%m-%dT%H:%M:%SZ) code=$rc duration=$((end_ts-start_ts))s"
 
 # Print pointers for monitoring
 WORK_DIR=$($VENV_PY - <<PY

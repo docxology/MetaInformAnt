@@ -1,0 +1,12 @@
+AMALGKIT version: 0.12.19
+AMALGKIT command: /Users/4d/miniforge3/bin/amalgkit integrate --threads 8 --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work --fastq_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/fastq
+AMALGKIT bug report: https://github.com/kfuku52/amalgkit/issues
+amalgkit integrate: start
+SeqKit dependency satisfied. Moving on.
+Merging existing metadata and private fastq info: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/metadata.tsv
+2025-08-10 12:44:34.197854: Loading metadata from: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/metadata.tsv
+scanning for getfastq output
+checking for getfastq outputs: 
+Could not find getfastq output folder  /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/getfastq . Have you run getfastq yet?
+writing SRA IDs without getfastq output to:  /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/SRA_IDs_without_fastq.txt
+Starting integration of fastq-file metadata...

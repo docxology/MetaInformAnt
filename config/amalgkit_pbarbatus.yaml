@@ -7,6 +7,10 @@ threads: 8
 
 auto_install_amalgkit: true
 
+# Apply pre-selection filtering rules
+filters:
+  require_tissue: true
+
 # Common filters
 species_list:
   - Pogonomyrmex_barbatus

@@ -10,11 +10,12 @@ import os
 
 from .amalgkit import AmalgkitParams, build_amalgkit_command, check_cli_available, ensure_cli_available
 from . import steps as _steps_mod
+from .deps import check_step_dependencies
 from ..core.config import load_mapping_from_file, apply_env_overrides
-from ..core.io import ensure_directory, write_jsonl, dump_json
+from ..core.io import ensure_directory, write_jsonl, dump_json, read_delimited, write_delimited
 
 
-@dataclass(slots=True)
+@dataclass
 class AmalgkitWorkflowConfig:
     work_dir: Path
     threads: int = 4
@@ -25,6 +26,7 @@ class AmalgkitWorkflowConfig:
     per_step: dict[str, AmalgkitParams] = field(default_factory=dict)
     auto_install_amalgkit: bool = False
     genome: dict[str, Any] | None = None  # e.g., { accession: GCF_*, index_out: path, dest_dir: path, ftp_url: str, include: [...] }
+    filters: dict[str, Any] = field(default_factory=dict)  # e.g., { require_tissue: true }
 
     def to_common_params(self) -> AmalgkitParams:
         params: dict[str, Any] = {"threads": self.threads}
@@ -60,12 +62,16 @@ def _apply_step_defaults(config: AmalgkitWorkflowConfig) -> None:
 
     # directories
     defaults = {
+        "integrate": {"out_dir": str(config.work_dir), "fastq_dir": str(config.work_dir / "fastq")},
+        "config": {"out_dir": str(config.work_dir)},
+        "select": {"out_dir": str(config.work_dir)},
         "getfastq": {"out_dir": str(config.work_dir / "fastq")},
         "quant": {"out_dir": str(config.work_dir / "quant")},
-        "merge": {"out": str(config.work_dir.parent / "merged" / "merged_abundance.tsv")},
+        "merge": {"out_dir": str(config.work_dir.parent / "merged")},
         "cstmm": {"out_dir": str(config.work_dir / "cstmm")},
         "curate": {"out_dir": str(config.work_dir / "curate")},
         "csca": {"out_dir": str(config.work_dir / "csca")},
+        "sanity": {"out_dir": str(config.work_dir)},
     }
     for step, d in defaults.items():
         cur = dict(ps.get(step, {}))
@@ -146,10 +152,23 @@ def _sanitize_params_for_subcommand(subcommand: str, params: Mapping[str, Any]) 
 
     Currently, `amalgkit metadata` accepts only: out_dir, redo, search_string, entrez_email.
     """
-    if subcommand == "metadata":
-        allowed = {"out_dir", "redo", "search_string", "entrez_email"}
-        return {k: v for k, v in params.items() if k in allowed}
-    return dict(params)
+    allowed_map: dict[str, set[str]] = {
+        "metadata": {"out_dir", "redo", "search_string", "entrez_email"},
+        "integrate": {"out_dir", "metadata", "threads", "fastq_dir", "id", "id_list"},
+        "config": {"out_dir", "config"},
+        "select": {"out_dir", "metadata", "sample_group", "config_dir"},
+        "getfastq": {"out_dir", "metadata", "threads", "redo", "entrez_email", "id", "id_list"},
+        "quant": {"out_dir", "metadata", "threads", "redo", "index_dir"},
+        "merge": {"out", "out_dir", "metadata"},
+        "cstmm": {"out_dir", "metadata", "orthogroup_table"},
+        "curate": {"out_dir", "metadata", "input_dir", "sample_group", "sample_group_color", "redo"},
+        "csca": {"out_dir", "metadata", "sample_group", "sample_group_color", "orthogroup_table"},
+        "sanity": {"out_dir", "metadata", "index"},
+    }
+    allowed = allowed_map.get(subcommand)
+    if allowed is None:
+        return dict(params)
+    return {k: v for k, v in params.items() if k in allowed}
 
 
 def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> list[int]:
@@ -248,13 +267,136 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
         _write_manifest_records(manifest_path, manifest_records)
         return return_codes
 
-    # 3) Run amalgkit steps
+    # 3) Inspect metadata table (if present) to inform downstream decisions
+    metadata_table_path = config.work_dir / "metadata" / "metadata.tsv"
+    has_metadata_rows = False
+    try:
+        if metadata_table_path.exists():
+            rows = list(read_delimited(metadata_table_path, delimiter="\t"))
+            has_metadata_rows = len(rows) > 0
+    except Exception:
+        has_metadata_rows = False
+
+    # 4) Run amalgkit steps
     steps = plan_workflow(config)
     for subcommand, params in steps:
         runner = _steps_mod.STEP_RUNNERS.get(subcommand)
         if runner is None:  # pragma: no cover - defensive
             raise KeyError(f"No runner registered for step: {subcommand}")
         filtered = _sanitize_params_for_subcommand(subcommand, params)
+
+        # Skip downstream steps when no metadata rows exist
+        if not has_metadata_rows and subcommand in {
+            "integrate",
+            "select",
+            "getfastq",
+            "quant",
+            "merge",
+            "cstmm",
+            "curate",
+            "csca",
+        }:
+            manifest_records.append(
+                {
+                    "step": subcommand,
+                    "return_code": 204,  # No Content
+                    "stdout_bytes": 0,
+                    "stderr_bytes": 0,
+                    "started_utc": datetime.utcnow().isoformat() + "Z",
+                    "finished_utc": datetime.utcnow().isoformat() + "Z",
+                    "duration_seconds": 0.0,
+                    "work_dir": str(config.work_dir),
+                    "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                    "params": dict(filtered),
+                    "command": " ".join(build_amalgkit_command(subcommand, filtered)),
+                    "note": f"skipped: metadata has no records at {metadata_table_path}",
+                }
+            )
+            return_codes.append(204)
+            continue
+
+        # Optional pre-filter: require tissue metadata before selection
+        if subcommand == "select" and bool(config.filters.get("require_tissue", False)):
+            # Infer the metadata path if not provided
+            meta_path = filtered.get("metadata")
+            if not meta_path or meta_path == "inferred":
+                meta_path = str(config.work_dir / "metadata" / "metadata.tsv")
+            meta_path_p = Path(str(meta_path))
+            if meta_path_p.exists():
+                out_filtered = meta_path_p.with_name("metadata.filtered.tissue.tsv")
+                try:
+                    rows = [row for row in read_delimited(meta_path_p, delimiter="\t") if (row.get("tissue", "").strip() != "")]
+                    write_delimited(rows, out_filtered, delimiter="\t")
+                    filtered["metadata"] = str(out_filtered)
+                    manifest_records.append(
+                        {
+                            "step": "preselect-filter",
+                            "return_code": 0,
+                            "stdout_bytes": 0,
+                            "stderr_bytes": 0,
+                            "started_utc": datetime.utcnow().isoformat() + "Z",
+                            "finished_utc": datetime.utcnow().isoformat() + "Z",
+                            "duration_seconds": 0.0,
+                            "work_dir": str(config.work_dir),
+                            "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                            "params": {"require_tissue": True, "input": str(meta_path_p), "output": str(out_filtered)},
+                            "command": f"filter-metadata require_tissue=1 < {meta_path_p} > {out_filtered}",
+                        }
+                    )
+                except Exception as exc:  # pragma: no cover - defensive
+                    manifest_records.append(
+                        {
+                            "step": "preselect-filter",
+                            "return_code": 1,
+                            "stdout_bytes": 0,
+                            "stderr_bytes": len(str(exc)),
+                            "started_utc": datetime.utcnow().isoformat() + "Z",
+                            "finished_utc": datetime.utcnow().isoformat() + "Z",
+                            "duration_seconds": 0.0,
+                            "work_dir": str(config.work_dir),
+                            "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                            "params": {"require_tissue": True, "input": str(meta_path_p)},
+                            "command": "filter-metadata require_tissue=1",
+                            "note": "metadata filter failed; proceeding with original metadata",
+                        }
+                    )
+
+        # Inject select.config_dir if not provided: prefer config_base produced by `amalgkit config`
+        if subcommand == "select":
+            cfg_dir = filtered.get("config_dir")
+            if not cfg_dir or cfg_dir == "inferred":
+                preferred = config.work_dir / "config_base"
+                fallback = config.work_dir / "config"
+                use_dir = preferred if preferred.exists() else fallback
+                filtered["config_dir"] = str(use_dir)
+        if subcommand == "merge":
+            # Ensure 'out' has a default when only out_dir provided
+            if "out" not in filtered:
+                default_out = config.work_dir.parent / "merged" / "merged_abundance.tsv"
+                filtered["out"] = str(default_out)
+        # Preflight dependency checks for steps that require extra CLIs
+        dep = check_step_dependencies(subcommand)
+        if not dep.ok:
+            # Record skip with a conventional code (126) and continue
+            manifest_records.append(
+                {
+                    "step": subcommand,
+                    "return_code": 126,
+                    "stdout_bytes": 0,
+                    "stderr_bytes": 0,
+                    "started_utc": datetime.utcnow().isoformat() + "Z",
+                    "finished_utc": datetime.utcnow().isoformat() + "Z",
+                    "duration_seconds": 0.0,
+                    "work_dir": str(config.work_dir),
+                    "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                    "params": dict(filtered),
+                    "command": " ".join(build_amalgkit_command(subcommand, filtered)),
+                    "note": f"skipped: missing dependencies: {', '.join(dep.missing)}",
+                }
+            )
+            return_codes.append(126)
+            continue
+
         start_ts = datetime.utcnow()
         result = runner(
             filtered,
@@ -372,6 +514,7 @@ def load_workflow_config(config_file: str | Path) -> AmalgkitWorkflowConfig:
 
     auto_install_amalgkit = bool(raw.get("auto_install_amalgkit", False))
     genome_cfg = raw.get("genome") if isinstance(raw.get("genome"), dict) else None
+    filters = raw.get("filters") if isinstance(raw.get("filters"), dict) else {}
 
     return AmalgkitWorkflowConfig(
         work_dir=work_dir,
@@ -381,6 +524,7 @@ def load_workflow_config(config_file: str | Path) -> AmalgkitWorkflowConfig:
         per_step={str(k): dict(v) for k, v in steps_map.items()},
         auto_install_amalgkit=auto_install_amalgkit,
         genome=genome_cfg,
+        filters=filters,
     )
 
 

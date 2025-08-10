@@ -23,3 +23,24 @@ build/
 
 # Data and sequence files
 *.fna
+*.sra
+*.fastq
+*.fasta
+*.fq
+*.fa
+*.fq.gz
+*.fa.gz
+*.fq.gz.part
+*.fa.gz.part
+*.fq.gz.part.1
+*.fa.gz.part.1
+*.fastq.gz
+*.fasta.gz
+*.fq.gz.part.1
+*.fa.gz.part.1
+*.fastq.gz.part
+*.fasta.gz.part
+*.fq.gz.part.1
+*.fa.gz.part.1
+*.fastq.gz.part.1
+*.fasta.gz.part.1

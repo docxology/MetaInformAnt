@@ -9,10 +9,11 @@ set -euo pipefail
 
 usage() {
   cat <<EOF
-Usage: bash scripts/setup_uv.sh [--with-amalgkit] [--ncbi-email EMAIL] [--skip-tests]
+Usage: bash scripts/setup_uv.sh [--with-amalgkit] [--with-deps] [--ncbi-email EMAIL] [--skip-tests]
 
 Options:
   --with-amalgkit       Install AMALGKIT from GitHub (optional)
+  --with-deps           Install external CLI deps (seqkit, sra-tools, kallisto, R); pip install parallel-fastq-dump
   --ncbi-email EMAIL    Export NCBI_EMAIL for this session and write to output/setup/ncbi_email.txt
   --skip-tests          Do not run repository tests during setup
 
@@ -24,11 +25,16 @@ WITH_AMALGKIT=0
 NCBI_EMAIL=""
 DEFAULT_EMAIL="DanielAriFriedman@gmail.com"
 SKIP_TESTS=0
+WITH_DEPS=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --with-amalgkit)
       WITH_AMALGKIT=1
+      shift
+      ;;
+    --with-deps)
+      WITH_DEPS=1
       shift
       ;;
     --ncbi-email)
@@ -102,6 +108,34 @@ if [[ -n "$NCBI_EMAIL" ]]; then
   printf "%s\n" "$NCBI_EMAIL" > output/setup/ncbi_email.txt
 else
   echo "[5/5] NCBI_EMAIL not provided; you can pass --ncbi-email to set it"
+fi
+
+# Optional: install external CLI dependencies
+if [[ "$WITH_DEPS" -eq 1 ]]; then
+  echo "Installing external CLI dependencies (requires Homebrew on macOS)..."
+  if command -v brew >/dev/null 2>&1; then
+    # Ensure useful taps are present for bio tools
+    brew tap brewsci/bio || true
+    # Install individually to avoid one missing formula aborting the rest
+    for pkg in wget curl pigz parallel seqkit samtools kallisto r; do
+      echo "brew install $pkg (best-effort)"
+      brew install "$pkg" || true
+    done
+    # Salmon may live under brewsci/bio
+    echo "Attempting to install salmon (best-effort)"
+    brew install salmon || brew install brewsci/bio/salmon || true
+    # SRA Toolkit may be packaged as sratoolkit; try formula and cask
+    echo "Attempting to install sratoolkit (best-effort)"
+    brew install sratoolkit || brew install --cask sratoolkit || true
+    # Ensure Homebrew bin dir is on PATH for this shell
+    if [[ -d "/opt/homebrew/bin" ]]; then
+      export PATH="/opt/homebrew/bin:$PATH"
+    fi
+  else
+    echo "Homebrew not found; please install wget, curl, pigz, parallel, seqkit, samtools, kallisto, salmon, sratoolkit, and R manually." >&2
+  fi
+  # Install parallel-fastq-dump as a Python console script into the venv
+  uv pip install parallel-fastq-dump || true
 fi
 
 echo "Verifying environment:"
