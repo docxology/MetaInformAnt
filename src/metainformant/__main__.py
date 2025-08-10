@@ -1,12 +1,15 @@
+from __future__ import annotations
+
 import argparse
 import sys
 from pathlib import Path
 
 from .tests import run_all_tests
-from .dna.genomes import is_valid_assembly_accession
+# defer DNA imports until the DNA subcommand is used to avoid optional deps at import time
 from .rna.workflow import AmalgkitWorkflowConfig, execute_workflow
 from .rna.configs import SpeciesProfile, AmalgkitRunLayout, build_step_params
 from .rna.workflow import plan_workflow_with_params
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(prog="metainformant", description="METAINFORMANT CLI")
@@ -46,6 +49,10 @@ def main() -> None:
     rna_plan_species.add_argument("--taxon-id", type=int, required=False)
     rna_plan_species.add_argument("--tissue", action="append", default=[])
 
+    # NEW: plan-config subcommand (plan from config without executing)
+    rna_plan_cfg = rna_sub.add_parser("plan-config", help="Plan the amalgkit workflow from a config file")
+    rna_plan_cfg.add_argument("--config", required=True, help="Path to YAML/TOML/JSON config file under config/")
+
     # tests subcommand
     tests_parser = subparsers.add_parser("tests", help="Run repository test suite")
     tests_parser.add_argument("pytest_args", nargs=argparse.REMAINDER, help="Arguments passed to pytest")
@@ -77,6 +84,8 @@ def main() -> None:
         sys.exit(rc)
 
     if args.command == "dna" and args.dna_cmd == "fetch":
+        # Lazy import here to avoid importing optional Bio dependencies unless needed
+        from .dna.genomes import is_valid_assembly_accession
         if not is_valid_assembly_accession(args.assembly):
             print(f"Invalid assembly accession: {args.assembly}")
             sys.exit(2)
@@ -107,6 +116,14 @@ def main() -> None:
             layout = AmalgkitRunLayout(base_dir=base)
             params_map = build_step_params(species, layout)
             steps = plan_workflow_with_params(cfg, params_map)
+            for name, params in steps:
+                print(name, params)
+            return
+
+        if args.rna_cmd == "plan-config":
+            from .rna.workflow import load_workflow_config, plan_workflow
+            cfg = load_workflow_config(args.config)
+            steps = plan_workflow(cfg)
             for name, params in steps:
                 print(name, params)
             return

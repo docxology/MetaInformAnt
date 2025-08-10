@@ -110,8 +110,8 @@ def watterson_theta(
 
 
 def expected_segregating_sites(
-    theta: float,
     sample_size: int,
+    theta: float,
     *,
     sequence_length: float | None = None,
 ) -> float:
@@ -120,8 +120,24 @@ def expected_segregating_sites(
     E[S] = a1 * θ (total) or E[S] = a1 * θ * L (if per-site θ and sequence length L provided).
     Returns 0.0 for invalid inputs.
     """
-    th = max(0.0, float(theta))
-    n = int(sample_size)
+    # Support both call orders: (n, theta) and (theta, n) for backward compatibility.
+    # Detect if inputs are reversed (first arg looks like theta < 2, second like integer n >= 2).
+    n_raw = sample_size
+    th_raw = theta
+    try:
+        n_as_float = float(n_raw)
+        th_as_float = float(th_raw)
+    except Exception:
+        n_as_float = float('nan')
+        th_as_float = float('nan')
+
+    if (n_as_float < 2.0) and (th_as_float >= 2.0) and (abs(th_as_float - round(th_as_float)) < 1e-9):
+        # Likely called as (theta, n)
+        n = int(round(th_as_float))
+        th = max(0.0, float(n_as_float))
+    else:
+        n = int(round(n_as_float))
+        th = max(0.0, float(th_as_float))
     if n < 2 or th <= 0:
         return 0.0
     a1 = tajima_constants(n)["a1"]

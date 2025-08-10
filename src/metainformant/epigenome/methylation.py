@@ -37,13 +37,18 @@ def compute_beta_values(df: pd.DataFrame) -> pd.DataFrame:
     return result
 
 
-def summarize_beta_by_chromosome(df_with_beta: pd.DataFrame) -> pd.Series:
-    """Return per-chromosome mean beta as a Series indexed by chrom.
+def summarize_beta_by_chromosome(df_with_beta: pd.DataFrame) -> pd.DataFrame:
+    """Return per-chromosome mean beta as a DataFrame indexed by chrom.
+
+    A single column 'beta_mean' is returned so that downstream code can
+    select a row (e.g., summary.loc["chr1"]) yielding a Series, which
+    plays well with vectorized assertions in tests.
     Requires a 'beta' column.
     """
     if "beta" not in df_with_beta.columns:
         raise ValueError("beta column missing; compute_beta_values first")
-    return df_with_beta.groupby("chrom")["beta"].mean()
+    means = df_with_beta.groupby("chrom", as_index=True)["beta"].mean()
+    return means.to_frame(name="beta_mean")
 
 
 

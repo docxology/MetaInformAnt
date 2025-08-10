@@ -1,13 +1,13 @@
 # CLI
 
-Entry: `python -m metainformant` or the `metainformant` console script.
+Entry: `uv run python -m metainformant` or `uv run metainformant`.
 
 ```text
-metainformant dna fetch --assembly GCF_000001405.40
-metainformant rna plan --work-dir output/amalgkit/work --threads 8 --species Apis_mellifera
-metainformant rna run  --work-dir output/amalgkit/work --threads 8 --species Apis_mellifera --check
-metainformant rna run-config --config config/amalgkit_pbarbatus.yaml --check
-metainformant tests -q
+uv run metainformant dna fetch --assembly GCF_000001405.40
+uv run metainformant rna plan --work-dir output/amalgkit/work --threads 8 --species Apis_mellifera
+uv run metainformant rna run  --work-dir output/amalgkit/work --threads 8 --species Apis_mellifera --check
+uv run metainformant rna run-config --config config/amalgkit_pbarbatus.yaml --check
+uv run metainformant tests -q
 ```
 
 Subcommands
@@ -24,10 +24,10 @@ sequenceDiagram
   participant CLI as __main__.py
   participant DNA as dna/*
   participant RNA as rna/*
-  U->>CLI: metainformant rna plan --work-dir W
+  U->>CLI: uv run metainformant rna plan --work-dir W
   CLI->>RNA: plan_workflow(config)
   RNA-->>CLI: steps: [(name, params)...]
-  U->>CLI: metainformant rna run --work-dir W --check
+  U->>CLI: uv run metainformant rna run --work-dir W --check
   CLI->>RNA: execute_workflow(config, check=True)
   RNA->>RNA: run_amalgkit(step, params)
   RNA-->>CLI: return codes

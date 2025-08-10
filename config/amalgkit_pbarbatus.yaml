@@ -5,41 +5,45 @@ work_dir: output/amalgkit/pbarbatus/work
 log_dir: output/amalgkit/pbarbatus/logs
 threads: 8
 
+auto_install_amalgkit: true
+
 # Common filters
 species_list:
   - Pogonomyrmex_barbatus
 # Alternatively, you could specify taxonomy id if supported by your amalgkit build:
 # taxon_id: 144034
 
+# Genome package retrieval (best-effort via CLI/API/FTP)
+genome:
+  accession: GCF_000187915.1
+  dest_dir: output/amalgkit/pbarbatus/genome
+  include: [genome, gff3, rna, cds, protein, seq-report]
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/187/915/GCF_000187915.1_Pbar_UMD_V03/
+
 # Per-step parameters (merged on top of common params)
 steps:
   metadata:
-    # Example filters: fetch metadata for the species
-    # include-public: true
-    # db: sra
-  integrate:
-    # resolve sample matrices, indices; customize if needed
-  config:
-    # Let amalgkit generate default config for downstream tools
-  select:
-    # e.g., select tissue transcriptomes, paired-end only, Illumina
-    # library-source: TRANSCRIPTOMIC
-    # instrument: ILLUMINA
-    # layout: PAIRED
+    # Required by amalgkit metadata
+    out_dir: output/amalgkit/pbarbatus/work
+    # Uses NCBI_EMAIL from environment; override here if needed
+    # entrez_email: you@example.com
+    search_string: '"Pogonomyrmex barbatus"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
+    redo: yes
+  integrate: {}
+  config: {}
+  select: {}
   getfastq:
-    out-dir: output/amalgkit/pbarbatus/fastq
+    out_dir: output/amalgkit/pbarbatus/fastq
   quant:
-    # Example: salmon index path (if prebuilt); otherwise amalgkit may build
-    # index: data/salmon/pbarbatus/index
+    # If a Salmon/Kallisto index is available, set it; otherwise genome_dir is injected from genome step
+    out_dir: output/amalgkit/pbarbatus/quant
     threads: 8
   merge:
-    # merged abundance table output path (file)
     out: output/amalgkit/pbarbatus/merged/merged_abundance.tsv
   cstmm:
-    # optional normalization parameters
+    out_dir: output/amalgkit/pbarbatus/cstmm
   curate:
-    # optional curation flags
+    out_dir: output/amalgkit/pbarbatus/curate
   csca:
-    # sample clustering/assessment options
-  sanity:
-    # final checks
+    out_dir: output/amalgkit/pbarbatus/csca
+  sanity: {}

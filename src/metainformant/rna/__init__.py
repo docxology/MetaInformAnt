@@ -9,6 +9,7 @@ from .amalgkit import (
     build_amalgkit_command,
     build_cli_args,
     check_cli_available,
+    ensure_cli_available,
     run_amalgkit,
     metadata,
     integrate,
@@ -22,17 +23,25 @@ from .amalgkit import (
     csca,
     sanity,
 )
-from .workflow import (
-    AmalgkitWorkflowConfig,
-    plan_workflow,
-    execute_workflow,
-)
+# Lazy workflow imports to avoid import-time failures on older Python during
+# light-weight uses that only need the thin CLI wrappers. Full workflow
+# functionality requires Python 3.11+ per project configuration.
+try:  # pragma: no cover - exercised in integration tests under py311
+    from .workflow import (
+        AmalgkitWorkflowConfig,
+        plan_workflow,
+        execute_workflow,
+    )
+    _HAS_WORKFLOW = True
+except Exception:  # pragma: no cover - defensive for environments <3.11
+    _HAS_WORKFLOW = False
 
 __all__ = [
     "AmalgkitParams",
     "build_cli_args",
     "build_amalgkit_command",
     "check_cli_available",
+    "ensure_cli_available",
     "run_amalgkit",
     "metadata",
     "integrate",
@@ -45,10 +54,15 @@ __all__ = [
     "curate",
     "csca",
     "sanity",
-    "AmalgkitWorkflowConfig",
-    "plan_workflow",
-    "execute_workflow",
 ]
+
+if _HAS_WORKFLOW:
+    __all__ += [
+        "AmalgkitWorkflowConfig",
+        "plan_workflow",
+        "execute_workflow",
+    ]
+ 
 
 
 

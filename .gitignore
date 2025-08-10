@@ -4,6 +4,7 @@ __pycache__/
 uv.lock
 *.pyc
 *.pyo
+*.fna
 *.DS_Store
 dist/
 build/

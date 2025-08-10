@@ -1,0 +1,3 @@
+usage: amalgkit metadata [-h] [--out_dir PATH] [--redo yes|no]
+                         --search_string PATH [--entrez_email aaa@bbb.com]
+amalgkit metadata: error: argument --redo: expected one argument

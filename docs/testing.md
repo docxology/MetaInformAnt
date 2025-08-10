@@ -8,7 +8,7 @@ Policy
 Running
 
 ```bash
-pytest -q
+uv run pytest -q
 ```
 
 Conventions in tests
@@ -16,12 +16,12 @@ Conventions in tests
 - Use `metainformant.core.io.ensure_directory` to create subfolders under `output/`.
 - Keep input fixtures under `tests/data/` or `data/` as appropriate.
 
-Run tests via CLI wrapper or directly with pytest.
+Run tests via CLI wrapper or directly with pytest (prefer uv run).
 
 ```bash
-metainformant tests -q
+uv run metainformant tests -q
 # or
-pytest -q
+uv run pytest -q
 ```
 
 Structure

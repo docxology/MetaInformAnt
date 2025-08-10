@@ -93,12 +93,12 @@ git clone <your-fork-or-repo-url>
 cd METAINFORMANT
 ```
 
-2. Run setup (installs uv if missing, creates venv, installs deps)
+2. Run setup (uses uv; creates venv, installs deps)
 ```bash
 bash scripts/setup_uv.sh
 ```
 
-3. Activate the environment (subsequent shells)
+3. Activate the environment (subsequent shells) or use uv run directly
 ```bash
 source .venv/bin/activate
 ```
@@ -106,12 +106,12 @@ source .venv/bin/activate
 4. Sanity check
 ```bash
 uv run python -V
-pytest -q
+uv run pytest -q
 ```
 
 Notes
-- All dependencies are declared in `pyproject.toml`. Use `uv add <pkg>` to add more.
-- Pr
+- All dependencies are declared in `pyproject.toml`. Use `uv add <pkg>` to add more, or `uv pip install <pkg>`.
+- Prefer `uv run <cmd>` over activating the environment when scripting/CI.
 
 ### DNA quickstart
 

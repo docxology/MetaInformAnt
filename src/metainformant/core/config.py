@@ -160,12 +160,19 @@ def _parse_simple_yaml_mapping(text: str) -> Dict[str, Any]:
       - key: value (ints and bare strings)
       - key: {} and key: []
       - inline dict: key: { a: 1, b: 2 }
-      - simple nested mapping one level deep with indentation
+      - simple nested mapping one or two levels deep with indentation
+      - simple block lists under a key:
+            key:
+              - item1
+              - item2
     This is not a general YAML parser.
     """
     result: Dict[str, Any] = {}
     lines = [ln.rstrip("\n") for ln in text.splitlines()]
     i = 0
+
+    def indent_of(s: str) -> int:
+        return len(s) - len(s.lstrip(" "))
 
     def parse_scalar(s: str) -> Any:
         s = s.strip()
@@ -191,6 +198,59 @@ def _parse_simple_yaml_mapping(text: str) -> Dict[str, Any]:
             items[k.strip()] = parse_scalar(v)
         return items
 
+    def collect_block_list(start_index: int, parent_indent: int) -> tuple[list[Any], int]:
+        items: list[Any] = []
+        j = start_index
+        while j < len(lines):
+            nxt = lines[j]
+            if indent_of(nxt) <= parent_indent:
+                break
+            stripped = nxt.lstrip()
+            if stripped.startswith("- "):
+                items.append(parse_scalar(stripped[2:]))
+                j += 1
+                continue
+            break
+        return items, j
+
+    def collect_child_mapping(start_index: int, parent_indent: int, depth: int = 1) -> tuple[Dict[str, Any], int]:
+        children: Dict[str, Any] = {}
+        j = start_index
+        while j < len(lines):
+            nxt = lines[j]
+            if indent_of(nxt) <= parent_indent:
+                break
+            stripped = nxt.lstrip()
+            if ":" not in stripped:
+                j += 1
+                continue
+            ckey, crest = stripped.split(":", 1)
+            ckey = ckey.strip()
+            crest = crest.strip()
+            if crest:
+                if crest.startswith("{") and crest.endswith("}"):
+                    children[ckey] = parse_inline_dict(crest)
+                else:
+                    children[ckey] = parse_scalar(crest)
+                j += 1
+                continue
+            # Empty value: could be a list or a nested mapping one level deeper
+            # Check for list items
+            if j + 1 < len(lines) and lines[j + 1].lstrip().startswith("- "):
+                items, j2 = collect_block_list(j + 1, indent_of(nxt))
+                children[ckey] = items
+                j = j2
+                continue
+            # Nested mapping one level deeper (only descend once more to keep simple)
+            if depth < 2:
+                grand_children, j2 = collect_child_mapping(j + 1, indent_of(nxt), depth=depth + 1)
+                children[ckey] = grand_children
+                j = j2
+            else:
+                children[ckey] = {}
+                j += 1
+        return children, j
+
     while i < len(lines):
         line = lines[i]
         i += 1
@@ -207,25 +267,15 @@ def _parse_simple_yaml_mapping(text: str) -> Dict[str, Any]:
             else:
                 result[key] = parse_scalar(rest)
             continue
-        # Collect indented child lines
-        children: Dict[str, Any] = {}
-        while i < len(lines):
-            nxt = lines[i]
-            if not nxt.startswith(" "):
-                break
-            stripped = nxt.lstrip()
-            if ":" in stripped:
-                ckey, crest = stripped.split(":", 1)
-                ckey = ckey.strip()
-                crest = crest.strip()
-                if crest:
-                    if crest.startswith("{") and crest.endswith("}"):
-                        children[ckey] = parse_inline_dict(crest)
-                    else:
-                        children[ckey] = parse_scalar(crest)
-                else:
-                    children[ckey] = {}
-            i += 1
+        # No inline value: could be a list or mapping
+        parent_indent = indent_of(line)
+        # Block list under this key
+        if i < len(lines) and lines[i].lstrip().startswith("- "):
+            items, i = collect_block_list(i, parent_indent)
+            result[key] = items
+            continue
+        # Child mapping (support up to two levels deep)
+        children, i = collect_child_mapping(i, parent_indent, depth=1)
         result[key] = children
 
     return result

@@ -12,4 +12,10 @@ Analytical helpers for evolutionary and behavioral models.
 
 See: [Price](./price.md), [Selection](./selection.md), [DDM](./ddm.md), [LD](./ld.md), [Coalescent](./coalescent.md), [Epidemiology](./epidemiology.md), [Population genetics](./popgen.md).
 
+Run examples with uv:
+
+```bash
+uv run python -c "from metainformant.math import coalescent as c; print(c.expected_time_to_mrca(10,1e3))"
+```
+
 

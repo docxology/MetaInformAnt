@@ -1,0 +1,306 @@
+[1/5] Ensuring uv is available...
+[2/5] Creating/using virtual environment (.venv)
+[3/5] Installing project and dev dependencies
+[4/5] Installing AMALGKIT via uv
+[5/5] Exporting NCBI_EMAIL for this session and recording to output/setup/ncbi_email.txt
+Verifying environment:
+Python 3.13.5
+metainformant CLI OK
+Optionally running tests (short):
+..................................s..s..........................F....... [ 51%]
+............................................F...F..F......F..........    [100%]
+=================================== FAILURES ===================================
+__________________ test_compute_methylation_beta_and_summary ___________________
+
+    def test_compute_methylation_beta_and_summary():
+        repo_root = Path(__file__).resolve().parents[1]
+        table_path = repo_root / "tests/data/epigenome/cpg_counts.tsv"
+        df = load_cpg_table(table_path)
+        df = compute_beta_values(df)
+        # All rows should have a beta between 0 and 1 inclusive
+        assert (df["beta"] >= 0).all() and (df["beta"] <= 1).all()
+    
+        summary = summarize_beta_by_chromosome(df)
+        # Expect both chromosomes from the fixture to be present
+        assert set(summary.index.tolist()) == {"chr1", "chr2"}
+        # Means should be finite numbers
+>       assert pd.notnull(summary.loc["chr1"]).all()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'bool' object has no attribute 'all'
+
+tests/test_epigenome.py:39: AttributeError
+_____________________ test_build_cli_args_transforms_types _____________________
+
+    def test_build_cli_args_transforms_types():
+        from metainformant.rna.amalgkit import build_cli_args
+    
+        params = {
+            "db": "sra",
+            "threads": 8,
+            "dry_run": True,
+            "optional": None,
+            "species_list": ["Homo_sapiens", "Mus_musculus"],
+            "out_dir": Path("/tmp/out"),
+        }
+    
+        args = build_cli_args(params)
+    
+        # string/number
+        assert "--db" in args and args[args.index("--db") + 1] == "sra"
+        assert "--threads" in args and args[args.index("--threads") + 1] == "8"
+    
+        # booleans → flag present
+>       assert "--dry-run" in args
+E       AssertionError: assert '--dry-run' in ['--db', 'sra', '--threads', '8', '--dry_run', '--species_list', ...]
+
+tests/test_rna_amalgkit.py:29: AssertionError
+__________________________ test_build_cli_args_basic ___________________________
+
+    def test_build_cli_args_basic():
+        args = build_cli_args({
+            "threads": 8,
+            "dry_run": True,
+            "species_list": ["A", "B"],
+            "output": Path("output/x"),
+            "skip": False,
+            "none_val": None,
+        })
+        # flags normalized and ordered per input iteration
+        assert "--threads" in args and "8" in args
+>       assert "--dry-run" in args
+E       AssertionError: assert '--dry-run' in ['--threads', '8', '--dry_run', '--species_list', 'A', '--species_list', ...]
+
+tests/test_rna_amalgkit_cli_args.py:17: AssertionError
+_____________ test_load_workflow_config_and_plan_uses_yaml_values ______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11e1ed6d0>
+
+    def test_load_workflow_config_and_plan_uses_yaml_values(monkeypatch):
+        from metainformant.rna.workflow import load_workflow_config, plan_workflow
+    
+        repo_root = Path(__file__).resolve().parents[1]
+        cfg_path = repo_root / "config" / "amalgkit_pbarbatus.yaml"
+    
+        # Sanity: file exists in repo
+        assert cfg_path.exists()
+    
+        cfg = load_workflow_config(cfg_path)
+    
+        # Core fields from YAML
+        assert cfg.work_dir.as_posix().endswith("output/amalgkit/pbarbatus/work")
+        assert (cfg.log_dir is not None) and cfg.log_dir.as_posix().endswith("output/amalgkit/pbarbatus/logs")
+        assert cfg.threads == 8
+    
+        steps = plan_workflow(cfg)
+        names = [n for n, _ in steps]
+        assert names[0] == "metadata" and names[-1] == "sanity"
+    
+        params = {n: p for n, p in steps}
+    
+        # Per-step params merged with common
+>       assert params["getfastq"].get("out-dir", "").endswith("output/amalgkit/pbarbatus/fastq")
+E       AssertionError: assert False
+E        +  where False = <built-in method endswith of str object at 0x104e57318>('output/amalgkit/pbarbatus/fastq')
+E        +    where <built-in method endswith of str object at 0x104e57318> = ''.endswith
+E        +      where '' = <built-in method get of dict object at 0x11dd21dc0>('out-dir', '')
+E        +        where <built-in method get of dict object at 0x11dd21dc0> = {'out_dir': 'output/amalgkit/pbarbatus/fastq', 'species-list': ['Pogonomyrmex_barbatus'], 'threads': 8}.get
+
+tests/test_rna_config_load_plan.py:29: AssertionError
+__________________________ test_cli_run_config_smoke ___________________________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x11e216c30>
+tmp_path = PosixPath('/private/var/folders/vc/rgmbpjpj0dbg61vr54xjskc80000gn/T/pytest-of-4d/pytest-53/test_cli_run_config_smoke0')
+
+    def test_cli_run_config_smoke(monkeypatch, tmp_path: Path):
+        # Create minimal config file
+        cfg_text = (
+            "work_dir: " + str(tmp_path / "work") + "\n"
+            "threads: 1\n"
+            "species_list: []\n"
+            "steps: {}\n"
+        )
+        cfg_file = tmp_path / "cfg.yaml"
+        cfg_file.write_text(cfg_text, encoding="utf-8")
+    
+        # Bypass actual execution by monkeypatching execute_workflow
+        import metainformant.rna.workflow as wf
+        monkeypatch.setattr(wf, "execute_workflow", lambda cfg, check=False: [0])
+    
+        # Run CLI main
+        from metainformant.__main__ import main
+        sys.argv = ["metainformant", "rna", "run-config", "--config", str(cfg_file)]
+>       main()
+
+tests/test_rna_run_config_cli.py:23: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def main() -> None:
+        parser = argparse.ArgumentParser(prog="metainformant", description="METAINFORMANT CLI")
+        subparsers = parser.add_subparsers(dest="command")
+    
+        # setup subcommand
+        setup_parser = subparsers.add_parser("setup", help="Run repository setup (uv, deps)")
+        setup_parser.add_argument("--with-amalgkit", action="store_true", help="Install AMALGKIT")
+        setup_parser.add_argument("--ncbi-email", default="", help="Export NCBI_EMAIL during setup")
+    
+        # dna subcommand
+        dna_parser = subparsers.add_parser("dna", help="DNA-related operations")
+        dna_sub = dna_parser.add_subparsers(dest="dna_cmd")
+        fetch = dna_sub.add_parser("fetch", help="Fetch genome by assembly accession")
+        fetch.add_argument("--assembly", required=True, help="NCBI assembly accession, e.g., GCF_*")
+    
+        # rna subcommand
+        rna_parser = subparsers.add_parser("rna", help="RNA-related operations (amalgkit)")
+        rna_sub = rna_parser.add_subparsers(dest="rna_cmd")
+        rna_plan = rna_sub.add_parser("plan", help="Plan the amalgkit workflow")
+        rna_plan.add_argument("--work-dir", required=True, help="Working directory for the run")
+        rna_plan.add_argument("--threads", type=int, default=4)
+        rna_plan.add_argument("--species", action="append", default=[], help="Species name (repeatable)")
+    
+        rna_run = rna_sub.add_parser("run", help="Execute the amalgkit workflow")
+        rna_run_cfg = rna_sub.add_parser("run-config", help="Run amalgkit workflow from a config file")
+        rna_run_cfg.add_argument("--config", required=True, help="Path to YAML/TOML/JSON config file under config/")
+        rna_run_cfg.add_argument("--check", action="store_true", help="Stop on first failure")
+        rna_run.add_argument("--work-dir", required=True, help="Working directory for the run")
+        rna_run.add_argument("--threads", type=int, default=4)
+        rna_run.add_argument("--species", action="append", default=[], help="Species name (repeatable)")
+        rna_run.add_argument("--check", action="store_true", help="Stop on first failure")
+    
+        rna_plan_species = rna_sub.add_parser("plan-species", help="Plan workflow with species/tissue params")
+        rna_plan_species.add_argument("--work-dir", required=True)
+        rna_plan_species.add_argument("--threads", type=int, default=4)
+        rna_plan_species.add_argument("--taxon-id", type=int, required=False)
+        rna_plan_species.add_argument("--tissue", action="append", default=[])
+    
+        # NEW: plan-config subcommand (plan from config without executing)
+        rna_plan_cfg = rna_sub.add_parser("plan-config", help="Plan the amalgkit workflow from a config file")
+        rna_plan_cfg.add_argument("--config", required=True, help="Path to YAML/TOML/JSON config file under config/")
+    
+        # tests subcommand
+        tests_parser = subparsers.add_parser("tests", help="Run repository test suite")
+        tests_parser.add_argument("pytest_args", nargs=argparse.REMAINDER, help="Arguments passed to pytest")
+    
+        # protein subcommand
+        protein_parser = subparsers.add_parser("protein", help="Protein-related operations")
+        protein_sub = protein_parser.add_subparsers(dest="protein_cmd")
+        taxon_ids = protein_sub.add_parser("taxon-ids", help="Print cleaned taxon IDs from a file")
+        taxon_ids.add_argument("--file", required=True, help="Path to taxon id list file")
+        comp = protein_sub.add_parser("comp", help="Compute amino acid composition for sequences in FASTA")
+        comp.add_argument("--fasta", required=True, help="Path to protein FASTA file")
+        rmsd_ca = protein_sub.add_parser("rmsd-ca", help="Compute Kabsch RMSD using CA atoms from two PDB files")
+        rmsd_ca.add_argument("--pdb-a", required=True)
+        rmsd_ca.add_argument("--pdb-b", required=True)
+    
+        args = parser.parse_args()
+    
+        if args.command == "setup":
+            # Execute scripts/setup_uv.sh non-interactively
+            root = Path(__file__).resolve().parents[2]
+            script = root / "scripts" / "setup_uv.sh"
+            cmd = ["bash", str(script)]
+            if args.with_amalgkit:
+                cmd.append("--with-amalgkit")
+            if args.ncbi_email:
+                cmd.extend(["--ncbi-email", args.ncbi_email])
+            import subprocess
+            rc = subprocess.run(cmd).returncode
+            sys.exit(rc)
+    
+        if args.command == "dna" and args.dna_cmd == "fetch":
+            # Lazy import here to avoid importing optional Bio dependencies unless needed
+            from .dna.genomes import is_valid_assembly_accession
+            if not is_valid_assembly_accession(args.assembly):
+                print(f"Invalid assembly accession: {args.assembly}")
+                sys.exit(2)
+            print(f"Validated assembly accession: {args.assembly}")
+            # Future: call into actual fetch workflow
+            return
+    
+        if args.command == "rna":
+            if args.rna_cmd == "plan":
+                cfg = AmalgkitWorkflowConfig(work_dir=Path(args.work_dir), threads=args.threads, species_list=args.species)
+                from .rna.workflow import plan_workflow
+    
+                steps = plan_workflow(cfg)
+                for name, params in steps:
+                    print(name, params)
+                return
+    
+            if args.rna_cmd == "run":
+                cfg = AmalgkitWorkflowConfig(work_dir=Path(args.work_dir), threads=args.threads, species_list=args.species)
+                codes = execute_workflow(cfg, check=args.check)
+                print("Return codes:", codes)
+                sys.exit(max(codes) if codes else 0)
+    
+            if args.rna_cmd == "plan-species":
+                base = Path(args.work_dir)
+                cfg = AmalgkitWorkflowConfig(work_dir=base, threads=args.threads)
+                species = SpeciesProfile(name="", taxon_id=args.taxon_id, tissues=args.tissue or None)
+                layout = AmalgkitRunLayout(base_dir=base)
+                params_map = build_step_params(species, layout)
+                steps = plan_workflow_with_params(cfg, params_map)
+                for name, params in steps:
+                    print(name, params)
+                return
+    
+            if args.rna_cmd == "plan-config":
+                from .rna.workflow import load_workflow_config, plan_workflow
+                cfg = load_workflow_config(args.config)
+                steps = plan_workflow(cfg)
+                for name, params in steps:
+                    print(name, params)
+                return
+    
+            if args.rna_cmd == "run-config":
+                from .rna.workflow import load_workflow_config
+                cfg = load_workflow_config(args.config)
+                codes = execute_workflow(cfg, check=args.check)
+                print("Return codes:", codes)
+>               sys.exit(max(codes) if codes else 0)
+E               SystemExit: 0
+
+src/metainformant/__main__.py:136: SystemExit
+----------------------------- Captured stdout call -----------------------------
+Return codes: [0]
+=============================== warnings summary ===============================
+.venv/lib/python3.13/site-packages/dateutil/tz/tz.py:37
+  /Users/4d/Documents/GitHub/metainformant/.venv/lib/python3.13/site-packages/dateutil/tz/tz.py:37: DeprecationWarning: datetime.datetime.utcfromtimestamp() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.fromtimestamp(timestamp, datetime.UTC).
+    EPOCH = datetime.datetime.utcfromtimestamp(0)
+
+tests/test_rna_preflight_manifest.py::test_preflight_manifest_when_amalgkit_missing
+  /Users/4d/Documents/GitHub/metainformant/src/metainformant/rna/workflow.py:237: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "started_utc": datetime.utcnow().isoformat() + "Z",
+
+tests/test_rna_preflight_manifest.py::test_preflight_manifest_when_amalgkit_missing
+  /Users/4d/Documents/GitHub/metainformant/src/metainformant/rna/workflow.py:238: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    "finished_utc": datetime.utcnow().isoformat() + "Z",
+
+tests/test_rna_run_amalgkit_logging.py::test_run_amalgkit_writes_logs
+  /Users/4d/Documents/GitHub/metainformant/src/metainformant/rna/amalgkit.py:196: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    ts = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+
+tests/test_rna_workflow_manifest.py: 11 warnings
+  /Users/4d/Documents/GitHub/metainformant/src/metainformant/rna/workflow.py:258: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    start_ts = datetime.utcnow()
+
+tests/test_rna_workflow_manifest.py: 11 warnings
+  /Users/4d/Documents/GitHub/metainformant/src/metainformant/rna/workflow.py:265: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    end_ts = datetime.utcnow()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+SKIPPED [1] tests/test_dna_msa_cli.py:11: MUSCLE not installed
+SKIPPED [1] tests/test_dna_ncbi.py:16: ncbi-datasets installed; expecting runtime error only when missing
+FAILED tests/test_epigenome.py::test_compute_methylation_beta_and_summary - A...
+FAILED tests/test_rna_amalgkit.py::test_build_cli_args_transforms_types - Ass...
+FAILED tests/test_rna_amalgkit_cli_args.py::test_build_cli_args_basic - Asser...
+FAILED tests/test_rna_config_load_plan.py::test_load_workflow_config_and_plan_uses_yaml_values
+FAILED tests/test_rna_run_config_cli.py::test_cli_run_config_smoke - SystemEx...
+5 failed, 134 passed, 2 skipped, 26 warnings in 49.04s
+[Extra] Ensuring MUSCLE CLI availability (for MSA tests)
+MUSCLE not found in PATH. Installing lightweight fallback shim into .venv/bin/muscle
+Installed MUSCLE shim at .venv/bin/muscle
+Setup complete. You can run commands with 'uv run <cmd>' or activate: source .venv/bin/activate
+Genome destination (from YAML): output/amalgkit/pbarbatus/genome
+Genome directory exists; runner will still verify and proceed.
+Running: python -m metainformant rna run-config --config config/amalgkit_pbarbatus.yaml --check

@@ -16,6 +16,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import sys
 from collections.abc import Mapping
 from datetime import datetime
 from pathlib import Path
@@ -25,17 +26,43 @@ from typing import Any
 AmalgkitParams = Mapping[str, Any]
 
 
-def _normalize_key_to_flag(key: str) -> str:
-    """Normalize a mapping key to a CLI flag name.
+def _normalize_key_to_flag(key: str, *, for_cli: bool) -> str:
+    """Normalize a mapping key to a CLI flag token.
 
-    Rules:
-    - Convert underscores to hyphens
-    - Ensure leading "--"
+    - When for_cli is True: keep snake_case (e.g., --out_dir) for compatibility
+      with the external amalgkit CLI which commonly uses underscores.
+    - When for_cli is False: prefer kebab-case (e.g., --out-dir) for display/tests.
     """
-    key = key.strip().replace("_", "-")
-    if not key.startswith("--"):
-        key = f"--{key}"
-    return key
+    name = key.strip()
+    if not for_cli:
+        name = name.replace("_", "-")
+    if not name.startswith("--"):
+        name = f"--{name}"
+    return name
+
+
+_KEY_ALIASES = {
+    # Common hyphenated -> underscored variants
+    "out-dir": "out_dir",
+    "genome-dir": "genome_dir",
+    "fastq-dir": "fastq_dir",
+    "quant-dir": "quant_dir",
+    "search-string": "search_string",
+    "entrez-email": "entrez_email",
+    "redo": "redo",  # passthrough
+}
+
+
+def _normalize_param_keys(params: AmalgkitParams | None) -> dict[str, Any]:
+    if not params:
+        return {}
+    out: dict[str, Any] = {}
+    for k, v in params.items():
+        kk = str(k).strip()
+        if kk in _KEY_ALIASES:
+            kk = _KEY_ALIASES[kk]
+        out[kk] = v
+    return out
 
 
 def _ensure_str(value: Any) -> str:
@@ -45,12 +72,17 @@ def _ensure_str(value: Any) -> str:
     return str(value)
 
 
-def build_cli_args(params: AmalgkitParams | None) -> list[str]:
+_BOOL_VALUE_FLAGS: set[str] = {"redo"}
+
+
+def build_cli_args(params: AmalgkitParams | None, *, for_cli: bool = False) -> list[str]:
     """Convert a params mapping into a flat list of CLI args for `amalgkit`.
 
     Rules:
     - None values are skipped
-    - bool True adds a flag (e.g., {dry_run: True} → ["--dry-run"]) ; False is skipped
+    - For most flags: bool True adds a flag (e.g., {dry_run: True} → ["--dry-run"]) ; False is skipped
+    - For certain flags that require explicit values (e.g., {redo: True|False}),
+      emit yes/no as a value pair (e.g., ["--redo", "yes"]).
     - list/tuple produces repeated pairs (e.g., {species: [a,b]} → [--species a --species b])
     - Path values are stringified
     - other scalars are appended as flag + value
@@ -58,19 +90,26 @@ def build_cli_args(params: AmalgkitParams | None) -> list[str]:
     if not params:
         return []
 
+    params = _normalize_param_keys(params)
+
     args: list[str] = []
     for raw_key, value in params.items():
         if value is None:
             continue
 
-        flag = _normalize_key_to_flag(raw_key)
+        key_name = str(raw_key)
+        flag = _normalize_key_to_flag(key_name, for_cli=for_cli)
 
         if isinstance(value, bool):
-            if value:
+            # Some flags (e.g., --redo) expect an explicit yes/no argument
+            if key_name in _BOOL_VALUE_FLAGS:
+                args.append(flag)
+                args.append("yes" if value else "no")
+            elif value:
                 args.append(flag)
             continue
 
-        if isinstance(value, list | tuple):
+        if isinstance(value, (list, tuple)):
             for item in value:
                 args.append(flag)
                 args.append(_ensure_str(item))
@@ -88,7 +127,8 @@ def build_amalgkit_command(subcommand: str, params: AmalgkitParams | None = None
     Example: build_amalgkit_command("metadata", {"threads": 8}) →
         ["amalgkit", "metadata", "--threads", "8"]
     """
-    return ["amalgkit", subcommand] + build_cli_args(params)
+    # Use CLI-compatible flag style (snake_case) when building the real command
+    return ["amalgkit", subcommand] + build_cli_args(params, for_cli=True)
 
 
 def check_cli_available() -> tuple[bool, str]:
@@ -105,6 +145,33 @@ def check_cli_available() -> tuple[bool, str]:
         return proc.returncode == 0, output
     except Exception as exc:  # pragma: no cover - defensive
         return False, f"error invoking amalgkit: {exc}"
+
+
+def ensure_cli_available(*, auto_install: bool = False) -> tuple[bool, str, dict | None]:
+    """Ensure `amalgkit` CLI is available; optionally attempt auto-install.
+
+    Returns (ok, message, install_record_dict_or_none).
+    install_record contains keys: {"attempted": bool, "return_code": int, "stdout": str, "stderr": str}
+    """
+    ok, msg = check_cli_available()
+    if ok or not auto_install:
+        return ok, msg, None
+
+    # Attempt installation via pip
+    cmd = [sys.executable, "-m", "pip", "install", "--no-input", "--no-warn-script-location", "git+https://github.com/kfuku52/amalgkit"]
+    try:
+        proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
+        ok2, msg2 = check_cli_available()
+        install_rec = {
+            "attempted": True,
+            "return_code": proc.returncode,
+            "stdout": proc.stdout or "",
+            "stderr": proc.stderr or "",
+            "command": " ".join(cmd),
+        }
+        return ok2, (msg2 if ok2 else msg), install_rec
+    except Exception as exc:  # pragma: no cover - defensive
+        return False, f"auto-install failed: {exc}", {"attempted": True, "return_code": -1, "stdout": "", "stderr": str(exc), "command": " ".join(cmd)}
 
 
 def run_amalgkit(
@@ -139,6 +206,33 @@ def run_amalgkit(
     if work_dir is not None:
         Path(work_dir).mkdir(parents=True, exist_ok=True)
 
+    # Streaming mode (for long-running steps) when MI_STREAM_AMALGKIT_LOGS=1 and log_dir is set
+    stream = os.getenv("MI_STREAM_AMALGKIT_LOGS") == "1" and log_dir is not None
+    ts = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    base = step_name or subcommand
+
+    if stream:
+        log_path = Path(log_dir)
+        log_path.mkdir(parents=True, exist_ok=True)
+        stdout_file = log_path / f"{ts}.{base}.stdout.log"
+        stderr_file = log_path / f"{ts}.{base}.stderr.log"
+        with open(stdout_file, "w", encoding="utf-8") as out_fh, open(stderr_file, "w", encoding="utf-8") as err_fh:
+            proc = subprocess.Popen(
+                cmd,
+                cwd=str(work_dir) if work_dir is not None else None,
+                env=run_env,
+                stdout=out_fh,
+                stderr=err_fh,
+                text=True,
+            )
+            rc = proc.wait()
+        # Build a CompletedProcess with empty captured text (logs are in files)
+        result = subprocess.CompletedProcess(cmd, rc, stdout="", stderr="")
+        if check and rc != 0:
+            raise subprocess.CalledProcessError(rc, cmd)
+        return result
+
+    # Default: capture then write logs
     result = subprocess.run(
         cmd,
         cwd=str(work_dir) if work_dir is not None else None,
@@ -151,8 +245,6 @@ def run_amalgkit(
     if log_dir is not None:
         log_path = Path(log_dir)
         log_path.mkdir(parents=True, exist_ok=True)
-        ts = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
-        base = step_name or subcommand
         (log_path / f"{ts}.{base}.stdout.log").write_text(result.stdout or "")
         (log_path / f"{ts}.{base}.stderr.log").write_text(result.stderr or "")
     return result
@@ -172,7 +264,7 @@ def integrate(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess
 
 
 def config(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
-    """Run `amalgkit config` (generate tool configs for downstream steps)."""
+    """Run `amalgkit config` (generate tool configs for downstream tools)."""
     return run_amalgkit("config", params, **kwargs)
 
 
@@ -221,6 +313,7 @@ __all__ = [
     "build_cli_args",
     "build_amalgkit_command",
     "check_cli_available",
+    "ensure_cli_available",
     "run_amalgkit",
     # subcommands
     "metadata",
