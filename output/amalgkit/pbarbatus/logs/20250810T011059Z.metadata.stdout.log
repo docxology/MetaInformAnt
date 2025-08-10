@@ -1,0 +1,15 @@
+AMALGKIT version: 0.12.19
+AMALGKIT command: /Users/4d/Documents/GitHub/metainformant/.venv/bin/amalgkit metadata --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work --search_string "Pogonomyrmex barbatus"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform] --redo yes
+AMALGKIT bug report: https://github.com/kfuku52/amalgkit/issues
+amalgkit metadata: start
+Creating directory: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata
+Entrez search term: "Pogonomyrmex barbatus"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]
+Number of SRA records: 120
+2025-08-09 18:11:00: SRA XML retrieval started.
+2025-08-09 18:11:00: Retrieving SRA XML: 0-120 of 120 records
+2025-08-09 18:12:12: SRA XML retrieval ended.
+SRA XML retrieval time: 71.0 sec
+2025-08-09 18:12:13: Converting 0th sample from XML to DataFrame
+2025-08-09 18:12:13: Finished converting 120 samples
+Time elapsed: 73 sec
+amalgkit metadata: end

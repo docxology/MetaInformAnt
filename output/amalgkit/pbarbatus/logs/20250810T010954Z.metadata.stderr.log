@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/Users/4d/Documents/GitHub/metainformant/.venv/bin/amalgkit", line 398, in <module>
+    args.handler(args)
+    ~~~~~~~~~~~~^^^^^^
+  File "/Users/4d/Documents/GitHub/metainformant/.venv/bin/amalgkit", line 26, in command_metadata
+    metadata_main(args)
+    ~~~~~~~~~~~~~^^^^^^
+  File "/Users/4d/Documents/GitHub/metainformant/.venv/lib/python3.13/site-packages/amalgkit/metadata.py", line 77, in metadata_main
+    os.mkdir(path_dir)
+    ~~~~~~~~^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'output/amalgkit/pbarbatus/work'

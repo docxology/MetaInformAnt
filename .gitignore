@@ -1,16 +1,25 @@
+# Python bytecode and cache
 __pycache__/
-.pytest_cache/
-.venv/
-uv.lock
 *.pyc
 *.pyo
-*.fna
-*.DS_Store
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Virtual environments and dependencies
+.venv/
+uv.lock
+
+# Build artifacts
 dist/
 build/
 *.egg-info/
-.mypy_cache/
-.ruff_cache/
-/.idea/
-/.vscode/
+*.zip
 
+# IDE/editor settings
+.idea/
+.vscode/
+*.DS_Store
+
+# Data and sequence files
+*.fna

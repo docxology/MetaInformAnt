@@ -1,0 +1,5 @@
+AMALGKIT version: 0.12.19
+AMALGKIT command: /Users/4d/Documents/GitHub/metainformant/.venv/bin/amalgkit metadata --out_dir output/amalgkit/pbarbatus/work --search_string "Pogonomyrmex barbatus"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform] --redo yes
+AMALGKIT bug report: https://github.com/kfuku52/amalgkit/issues
+amalgkit metadata: start
+Creating directory: output/amalgkit/pbarbatus/work

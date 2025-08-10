@@ -14,6 +14,8 @@ from __future__ import annotations
 
 
 import os
+import sys
+import threading
 import shutil
 import subprocess
 import sys
@@ -197,7 +199,42 @@ def run_amalgkit(
     - log_dir: if provided, write timestamped stdout/stderr logs per step
     - step_name: optional label to prefix log filenames
     """
-    cmd = build_amalgkit_command(subcommand, params)
+    # Prepare safe, mutable params and ensure important directories exist
+    safe_params: dict[str, Any] = {}
+    if params:
+        safe_params.update({str(k): v for k, v in params.items()})
+
+    # Normalize and pre-create output directories used by amalgkit
+    def _mkdir_parent(path_str: str) -> str:
+        p = Path(path_str).expanduser()
+        # If relative, resolve relative to repository root
+        try:
+            p = p.resolve()
+        except Exception:
+            p = p
+        p.parent.mkdir(parents=True, exist_ok=True)
+        # Some subcommands expect the directory itself to exist (metadata)
+        if subcommand in {"metadata", "getfastq", "quant", "cstmm", "curate", "csca"}:
+            p.mkdir(parents=True, exist_ok=True)
+        return str(p)
+
+    # out_dir style
+    for key in ("out_dir", "out-dir"):
+        if key in safe_params and isinstance(safe_params[key], (str, Path)):
+            safe_params["out_dir"] = _mkdir_parent(str(safe_params[key]))
+            break
+    # merge 'out' file path
+    if subcommand == "merge" and isinstance(safe_params.get("out"), (str, Path)):
+        out_path = Path(str(safe_params["out"]))
+        out_path = out_path.expanduser()
+        try:
+            out_path = out_path.resolve()
+        except Exception:
+            pass
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        safe_params["out"] = str(out_path)
+
+    cmd = build_amalgkit_command(subcommand, safe_params)
     run_env = os.environ.copy()
     if env:
         run_env.update(env)
@@ -216,17 +253,43 @@ def run_amalgkit(
         log_path.mkdir(parents=True, exist_ok=True)
         stdout_file = log_path / f"{ts}.{base}.stdout.log"
         stderr_file = log_path / f"{ts}.{base}.stderr.log"
-        with open(stdout_file, "w", encoding="utf-8") as out_fh, open(stderr_file, "w", encoding="utf-8") as err_fh:
-            proc = subprocess.Popen(
-                cmd,
-                cwd=str(work_dir) if work_dir is not None else None,
-                env=run_env,
-                stdout=out_fh,
-                stderr=err_fh,
-                text=True,
-            )
-            rc = proc.wait()
-        # Build a CompletedProcess with empty captured text (logs are in files)
+
+        proc = subprocess.Popen(
+            cmd,
+            cwd=str(work_dir) if work_dir is not None else None,
+            env=run_env,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+        )
+
+        def _tee(stream_in, stream_out, file_path: Path):
+            with open(file_path, "w", encoding="utf-8") as fh:
+                for line in iter(stream_in.readline, ""):
+                    fh.write(line)
+                    fh.flush()
+                    try:
+                        stream_out.write(line)
+                        stream_out.flush()
+                    except Exception:
+                        pass
+
+        threads: list[threading.Thread] = []
+        if proc.stdout is not None:
+            t_out = threading.Thread(target=_tee, args=(proc.stdout, sys.stdout, stdout_file), daemon=True)
+            t_out.start()
+            threads.append(t_out)
+        if proc.stderr is not None:
+            t_err = threading.Thread(target=_tee, args=(proc.stderr, sys.stderr, stderr_file), daemon=True)
+            t_err.start()
+            threads.append(t_err)
+
+        rc = proc.wait()
+        for t in threads:
+            t.join(timeout=1.0)
+
+        # Build a CompletedProcess with empty captured text (logs are in files and console)
         result = subprocess.CompletedProcess(cmd, rc, stdout="", stderr="")
         if check and rc != 0:
             raise subprocess.CalledProcessError(rc, cmd)
