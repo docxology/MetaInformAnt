@@ -1,13 +1,11 @@
 # METAINFORMANT Cursor Rules
 
 ## Directories
-
 - output/: All outputs from tests and real runs must go here by default. Treat as ephemeral and reproducible.
 - config/: Repository-level configuration files and options. Read via metainformant.core.config; allow env overrides.
 - data/: Inputs such as datasets and local databases. Read-mostly, organized by domain and version.
 
-## Path and I/O Conventions
-
+## Path and I/O
 - Do not write outside output/ unless an explicit user path is provided.
 - Prefer functional APIs that accept a destination path; if omitted, default to output/ with a sensible subpath.
 - Use metainformant.core.io for file I/O (JSON/JSONL/CSV/TSV) and gzip-aware open.
@@ -15,32 +13,27 @@
 - Use metainformant.core.cache for small JSON caches under output/ if needed.
 
 ## Configuration
-
-- Centralize config loading in metainformant.core.config:
-  - load_typed_env for typed env vars (prefix required)
-  - load_postgres_config_from_env for DB settings
+- Centralize config loading in metainformant.core.config.
 - Allow env vars to override files in config/.
-- Domain modules should not hardcode absolute paths; accept config objects/paths from callers.
+- Domain modules must not hardcode absolute paths; accept config objects/paths from callers.
 
-## Testing
-
-- Tests must write artifacts only under output/. Clean up large intermediates when possible.
-- Avoid networked writes and external side effects unless explicitly required by an integration test.
-- Prefer deterministic seeds and stable filenames in output/ to ease diffing and CI reproducibility.
+## Testing Policy (No Mocks/Fakes)
+- Never use fake/mocked/stubbed methods, objects, or network shims in code or tests.
+- Tests must exercise real code paths and real external behavior.
+  - Networked tests: perform real HTTP requests with short timeouts. If offline, skip gracefully.
+  - CLI-dependent tests (e.g., amalgkit): run only when the dependency is available on PATH; otherwise skip.
+- It is acceptable to set environment variables for test setup, but do not monkeypatch or replace functions.
+- Tests must write artifacts only under output/.
+- Prefer deterministic seeds and stable filenames for reproducibility.
 
 ## Documentation
-
-- Keep docs concise and reference core utilities. Show usage that respects the directories policy.
-- When adding examples that write files, write to output/ and mention how to override paths.
+- Keep docs concise and reference core utilities. Examples that write files must write under output/ and mention how to override paths.
 
 ## Style
-
-- Follow repository code style and typing practices (Python 3.11+).
-- Use clear, modular functions; avoid hidden global state.
-- No mocks for analysis modules; integration tests may hit real small inputs located in tests/data/.
+- Python 3.11+. Clear, modular functions; avoid hidden global state.
+- Follow the repository code style and typing practices.
 
 ## Contributions
-
 - New modules should: (1) read configs from config/ (with env overrides), (2) read inputs from data/, and (3) write outputs to output/ by default.
 
 

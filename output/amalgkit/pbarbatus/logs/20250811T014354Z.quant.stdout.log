@@ -1,0 +1,5 @@
+AMALGKIT version: 0.12.19
+AMALGKIT command: /Users/4d/miniforge3/bin/amalgkit quant --threads 6 --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/quant
+AMALGKIT bug report: https://github.com/kfuku52/amalgkit/issues
+amalgkit quant: start
+2025-08-10 18:43:54.960953: Loading metadata from: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/quant/metadata/metadata.tsv

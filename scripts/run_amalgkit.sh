@@ -105,10 +105,118 @@ if [[ "$CHECK_FLAG" -eq 1 ]]; then CMD+=( --check ); fi
 
 echo "[RUN] $(date -u +%Y-%m-%dT%H:%M:%SZ) ${CMD[*]}"
 start_ts=$(date +%s)
+# Allow the workflow to fail without aborting this orchestrator, so we can run verification
+set +e
 "${CMD[@]}"
 rc=$?
+set -e
 end_ts=$(date +%s)
 echo "[DONE] $(date -u +%Y-%m-%dT%H:%M:%SZ) code=$rc duration=$((end_ts-start_ts))s"
+
+# After initial run, ensure all filtered/selected SRR entries have FASTQs present.
+# We will retry missing ones with robust fallbacks (amalgkit with pfd=no, and as a last resort prefetch+fasterq-dump).
+
+# Determine effective work_dir, getfastq out_dir, and threads from config
+WORK_DIR=$($VENV_PY - <<PY
+from metainformant.rna.workflow import load_workflow_config
+cfg = load_workflow_config("$CONFIG")
+print(str(cfg.work_dir.resolve()))
+PY
+)
+
+THREADS=$($VENV_PY - <<PY
+from metainformant.rna.workflow import load_workflow_config
+cfg = load_workflow_config("$CONFIG")
+print(int(cfg.threads))
+PY
+)
+
+FASTQ_DIR_CFG=$($VENV_PY - <<PY
+from metainformant.rna.workflow import load_workflow_config
+from pathlib import Path
+cfg = load_workflow_config("$CONFIG")
+ps = cfg.per_step.get("getfastq", {}) if isinstance(cfg.per_step, dict) else {}
+outd = ps.get("out_dir") or str(cfg.work_dir/"fastq")
+print(str(Path(outd).expanduser().resolve()))
+PY
+)
+
+META_FILTERED="$WORK_DIR/metadata/metadata.filtered.tissue.tsv"
+META_DEFAULT="$WORK_DIR/metadata/metadata.tsv"
+META=""
+if [[ -f "$META_FILTERED" ]]; then META="$META_FILTERED"; elif [[ -f "$META_DEFAULT" ]]; then META="$META_DEFAULT"; fi
+
+if [[ -n "$META" ]]; then
+  echo "[VERIFY] Ensuring FASTQs present for all SRR in: $META"
+  # Find the 'run' column index (SRR IDs)
+  RUN_COL=$(awk -F"\t" 'NR==1{for(i=1;i<=NF;i++) if($i=="run"){print i; exit}}' "$META") || RUN_COL=""
+  if [[ -n "$RUN_COL" ]]; then
+    echo "[VERIFY] Enumerating SRR IDs from metadata..."
+    missing_any=0
+    pass=1
+    max_pass=2
+    while [[ $pass -le $max_pass ]]; do
+      echo "[PASS $pass/$max_pass] Checking and fetching missing FASTQs into: $FASTQ_DIR_CFG/getfastq/<SRR>"
+      missing_this_pass=0
+      tail -n +2 "$META" | awk -v c="$RUN_COL" -F"\t" 'NF>=c {print $c}' | sort -u | while read -r SRR; do
+        [[ -z "$SRR" ]] && continue
+        SRR_DIR="$FASTQ_DIR_CFG/getfastq/$SRR"
+        f1a="$SRR_DIR/${SRR}_1.fastq.gz"; f2a="$SRR_DIR/${SRR}_2.fastq.gz"
+        f1b="$SRR_DIR/${SRR}_1.fastq";    f2b="$SRR_DIR/${SRR}_2.fastq"
+        fsa="$SRR_DIR/${SRR}.fastq.gz";   fsb="$SRR_DIR/${SRR}.fastq"
+        if [[ -f "$f1a" || -f "$f1b" || -f "$fsa" ]]; then
+          echo "[OK] $SRR already present"
+          continue
+        fi
+        missing_any=1
+        missing_this_pass=1
+        echo "[MISSING] $SRR -> attempting robust download"
+        mkdir -p "$SRR_DIR"
+        # Attempt 1: amalgkit getfastq with pfd=no (sra-tools path), prefer prefetch if available
+        if command -v amalgkit >/dev/null 2>&1; then
+          PREFETCH_BIN=$(command -v prefetch || true)
+          if [[ -n "$PREFETCH_BIN" ]]; then
+            amalgkit getfastq --id "$SRR" --out_dir "$FASTQ_DIR_CFG" --threads "$THREADS" --pfd no --prefetch_exe "$PREFETCH_BIN" --fastp no --redo yes | sed -n '1,80p' || true
+          else
+            amalgkit getfastq --id "$SRR" --out_dir "$FASTQ_DIR_CFG" --threads "$THREADS" --pfd no --fastp no --redo yes | sed -n '1,80p' || true
+          fi
+        fi
+        # Check again
+        if [[ -f "$f1a" || -f "$f1b" || -f "$fsa" ]]; then
+          echo "[OK] $SRR obtained via amalgkit"
+          continue
+        fi
+        # Attempt 2: direct sra-tools fallback: prefetch + fasterq-dump
+        if command -v prefetch >/dev/null 2>&1 && command -v fasterq-dump >/dev/null 2>&1; then
+          echo "[FALLBACK] prefetch+fasterq-dump for $SRR"
+          prefetch --output-directory "$SRR_DIR" "$SRR" || true
+          if [[ -f "$SRR_DIR/$SRR.sra" ]]; then
+            fasterq-dump --threads "$THREADS" --split-files -O "$SRR_DIR" "$SRR_DIR/$SRR.sra" || true
+            # gzip to save space
+            if command -v pigz >/dev/null 2>&1; then
+              pigz -f "$SRR_DIR/${SRR}_1.fastq" "$SRR_DIR/${SRR}_2.fastq" 2>/dev/null || true
+            else
+              gzip -f "$SRR_DIR/${SRR}_1.fastq" "$SRR_DIR/${SRR}_2.fastq" 2>/dev/null || true
+            fi
+          fi
+        fi
+      done
+      if [[ $missing_this_pass -eq 0 ]]; then
+        break
+      fi
+      pass=$((pass+1))
+    done
+    if [[ $missing_any -eq 1 ]]; then
+      echo "[VERIFY] Completed retries. Remaining missing (if any) can be inspected under: $FASTQ_DIR_CFG"
+    else
+      echo "[VERIFY] All SRR FASTQs present."
+    fi
+  else
+    echo "[WARN] Could not locate 'run' column in $META; skipping FASTQ verification"
+  fi
+else
+  echo "[INFO] Metadata table not found; skipping FASTQ verification loop"
+fi
 
 # Print pointers for monitoring
 WORK_DIR=$($VENV_PY - <<PY

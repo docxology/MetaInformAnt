@@ -3,12 +3,14 @@ from __future__ import annotations
 from pathlib import Path
 
 
-def test_preflight_manifest_when_amalgkit_missing(monkeypatch, tmp_path: Path):
+def test_preflight_manifest_when_amalgkit_missing(tmp_path: Path):
     from metainformant.rna.workflow import AmalgkitWorkflowConfig, execute_workflow
-    import metainformant.rna.workflow as wf
+    from metainformant.rna.amalgkit import check_cli_available
 
-    # Force preflight failure
-    monkeypatch.setattr(wf, "check_cli_available", lambda: (False, "missing"))
+    ok, _ = check_cli_available()
+    if ok:
+        import pytest
+        pytest.skip("amalgkit present; this test targets missing CLI scenario")
 
     cfg = AmalgkitWorkflowConfig(work_dir=tmp_path / "work", threads=1)
     codes = execute_workflow(cfg, check=False)

@@ -1,0 +1,6 @@
+AMALGKIT version: 0.12.19
+AMALGKIT command: /Users/4d/miniforge3/bin/amalgkit config --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work
+AMALGKIT bug report: https://github.com/kfuku52/amalgkit/issues
+amalgkit config: start
+Output directory already exists: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/config_base
+--overwrite is set to "no". Exiting.

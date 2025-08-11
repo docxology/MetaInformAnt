@@ -1,0 +1,25 @@
+AMALGKIT version: 0.12.19
+AMALGKIT command: /Users/4d/miniforge3/bin/amalgkit getfastq --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/metadata.filtered.tissue.tsv --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/fastq --threads 6 --id SRR14740487 --redo yes
+AMALGKIT bug report: https://github.com/kfuku52/amalgkit/issues
+amalgkit getfastq: start
+SeqKit dependency satisfied. Moving on.
+--id is specified. Downloading SRA metadata from Entrez.
+Entrez search term: SRR14740487
+Number of SRA records: 1
+processing SRA records: 0 - 1
+2025-08-10 13:06:30: Converting 0th sample from XML to DataFrame
+2025-08-10 13:06:30: Finished converting 1 samples
+Filtering SRA entry with --layout: auto
+Individual SRA size of SRR14740487: 7,823,434,800.0 bp
+Number of SRAs to be processed: 1
+Total target size (--max_bp): 999,999,999,999,999 bp
+The sum of SRA sizes: 7,823,434,800.0 bp
+Target size per SRA: 999,999,999,999,999 bp
+
+Processing SRA ID: SRR14740487
+spot_length cannot be obtained directly from metadata. Using total_bases/total_spots instead: 300
+Library layout: paired
+Number of reads: 26,078,116
+Single/Paired read length: 300 bp
+Total bases: 7,823,434,800 bp
+Processing SRR14740487 as publicly available data from SRA.

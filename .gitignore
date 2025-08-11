@@ -15,6 +15,7 @@ dist/
 build/
 *.egg-info/
 *.zip
+*.tmp
 
 # IDE/editor settings
 .idea/

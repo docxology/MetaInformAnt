@@ -1,0 +1,13 @@
+/Users/4d/Documents/GitHub/metainformant/.venv/lib/python3.12/site-packages/amalgkit/integrate.py:42: SyntaxWarning: invalid escape sequence '\.'
+  fastq_files = [ os.path.join(args.fastq_dir, f) for f in all_fastq_files if re.search(id+'[\._]', f) ]
+Traceback (most recent call last):
+  File "/Users/4d/Documents/GitHub/metainformant/.venv/bin/amalgkit", line 398, in <module>
+    args.handler(args)
+  File "/Users/4d/Documents/GitHub/metainformant/.venv/bin/amalgkit", line 94, in command_integrate
+    integrate_main(args)
+  File "/Users/4d/Documents/GitHub/metainformant/.venv/lib/python3.12/site-packages/amalgkit/integrate.py", line 137, in integrate_main
+    tmp_metadata = get_fastq_stats(args)
+                   ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/4d/Documents/GitHub/metainformant/.venv/lib/python3.12/site-packages/amalgkit/integrate.py", line 16, in get_fastq_stats
+    raise ValueError("PATH to fastq directory does not exist: {}".format(args.fastq_dir))
+ValueError: PATH to fastq directory does not exist: output/amalgkit/pbarbatus/fastq

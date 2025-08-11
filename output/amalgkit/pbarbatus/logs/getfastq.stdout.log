@@ -1,9 +1,9 @@
 AMALGKIT version: 0.12.19
-AMALGKIT command: /Users/4d/miniforge3/bin/amalgkit getfastq --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/metadata.filtered.tissue.tsv --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/fastq --threads 4
+AMALGKIT command: /Users/4d/miniforge3/bin/amalgkit getfastq --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/metadata.filtered.tissue.tsv --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/fastq --threads 6 --pfd no --prefetch_exe /opt/homebrew/bin/prefetch --redo yes
 AMALGKIT bug report: https://github.com/kfuku52/amalgkit/issues
 amalgkit getfastq: start
 SeqKit dependency satisfied. Moving on.
-2025-08-10 12:44:33.534955: Loading metadata from: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/metadata.filtered.tissue.tsv
+2025-08-10 14:56:26.721263: Loading metadata from: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/metadata.filtered.tissue.tsv
 Individual SRA size of SRR14740487: 7,823,434,800.0 bp
 Individual SRA size of SRR14740488: 8,125,547,700.0 bp
 Individual SRA size of SRR14740489: 9,297,122,700.0 bp
@@ -11,86 +11,16 @@ Individual SRA size of SRR14740490: 8,496,461,700.0 bp
 Individual SRA size of SRR14740491: 7,776,993,000.0 bp
 Individual SRA size of SRR14740492: 7,906,436,100.0 bp
 Individual SRA size of SRR14740493: 7,595,032,800.0 bp
-Individual SRA size of SRR14740494: 8,564,005,200.0 bp
-Individual SRA size of SRR14740495: 8,102,274,300.0 bp
-Individual SRA size of SRR14740496: 7,052,964,600.0 bp
-Individual SRA size of SRR14740497: 8,300,818,200.0 bp
-Individual SRA size of SRR14740498: 6,997,330,800.0 bp
-Individual SRA size of SRR14740499: 8,108,886,000.0 bp
-Individual SRA size of SRR14740500: 5,871,791,400.0 bp
-Individual SRA size of SRR14740501: 7,774,241,100.0 bp
-Individual SRA size of SRR14740502: 7,675,328,400.0 bp
-Individual SRA size of SRR14740503: 8,250,340,800.0 bp
-Individual SRA size of SRR14740504: 7,834,257,900.0 bp
-Individual SRA size of SRR14740505: 9,007,507,200.0 bp
-Individual SRA size of SRR14740506: 7,494,389,100.0 bp
-Individual SRA size of SRR14740507: 9,036,937,200.0 bp
-Individual SRA size of SRR14740508: 6,562,469,400.0 bp
-Individual SRA size of SRR14740509: 6,575,462,400.0 bp
-Individual SRA size of SRR14740510: 6,434,365,800.0 bp
-Individual SRA size of SRR14740511: 6,074,108,400.0 bp
-Individual SRA size of SRR14740512: 7,198,915,500.0 bp
-Individual SRA size of SRR14740513: 6,604,599,600.0 bp
-Individual SRA size of SRR14740514: 7,014,090,900.0 bp
-Individual SRA size of SRR14740515: 6,564,828,300.0 bp
-Individual SRA size of SRR14740516: 7,360,289,400.0 bp
-Individual SRA size of SRR14740517: 9,201,490,200.0 bp
-Individual SRA size of SRR14740518: 6,874,681,500.0 bp
-Individual SRA size of SRR14740519: 7,046,496,300.0 bp
-Individual SRA size of SRR14740520: 6,837,084,000.0 bp
-Individual SRA size of SRR14740521: 6,840,511,500.0 bp
-Individual SRA size of SRR14740522: 7,422,419,100.0 bp
-Individual SRA size of SRR14740523: 7,182,779,400.0 bp
-Individual SRA size of SRR14740524: 6,626,744,100.0 bp
-Individual SRA size of SRR14740525: 7,030,822,800.0 bp
-Individual SRA size of SRR14740526: 7,224,869,100.0 bp
-Individual SRA size of SRR14740527: 7,174,803,000.0 bp
-Individual SRA size of SRR14740528: 8,386,864,500.0 bp
-Individual SRA size of SRR14740529: 7,326,866,100.0 bp
-Individual SRA size of SRR14740530: 6,333,885,900.0 bp
-Individual SRA size of SRR14740531: 7,215,958,800.0 bp
-Individual SRA size of SRR14740532: 7,044,255,600.0 bp
-Individual SRA size of SRR14740533: 8,000,822,400.0 bp
-Individual SRA size of SRR14740534: 7,173,846,300.0 bp
-Individual SRA size of SRR14740535: 7,700,212,500.0 bp
-Individual SRA size of SRR14740536: 8,118,708,900.0 bp
-Individual SRA size of SRR14740537: 6,846,986,700.0 bp
-Individual SRA size of SRR14740538: 7,292,745,600.0 bp
-Individual SRA size of SRR14740539: 7,356,602,100.0 bp
-Individual SRA size of SRR14740540: 7,049,777,400.0 bp
-Individual SRA size of SRR14740541: 7,545,420,000.0 bp
-Individual SRA size of SRR14740542: 6,083,215,500.0 bp
-Individual SRA size of SRR14740543: 8,003,280,300.0 bp
-Individual SRA size of SRR14740544: 6,314,663,700.0 bp
-Individual SRA size of SRR14740545: 7,333,486,500.0 bp
-Individual SRA size of SRR14740546: 6,641,950,800.0 bp
-Individual SRA size of SRR14740547: 7,336,467,600.0 bp
-Individual SRA size of SRR14740548: 6,625,206,900.0 bp
-Individual SRA size of SRR14740549: 7,602,905,400.0 bp
-Individual SRA size of SRR14740550: 8,324,720,700.0 bp
-Individual SRA size of SRR14740551: 7,114,630,500.0 bp
-Individual SRA size of SRR1817189: 1,026,151,500.0 bp
-Individual SRA size of SRR1817188: 1,396,715,550.0 bp
-Individual SRA size of SRR1817187: 1,420,291,200.0 bp
-Individual SRA size of SRR1817186: 1,478,398,650.0 bp
-Individual SRA size of SRR1817185: 1,229,440,500.0 bp
-Individual SRA size of SRR1817183: 1,495,432,200.0 bp
-Individual SRA size of SRR1817182: 1,776,837,900.0 bp
-Individual SRA size of SRR1817181: 1,975,241,700.0 bp
-Individual SRA size of SRR1817180: 1,320,032,100.0 bp
-Individual SRA size of SRR1817179: 1,661,928,150.0 bp
-Individual SRA size of SRR1817178: 1,265,559,900.0 bp
-Individual SRA size of SRR1817177: 1,751,690,250.0 bp
 Individual SRA size of SRR1817176: 1,500,835,650.0 bp
 Individual SRA size of SRR1817175: 1,246,562,250.0 bp
 Individual SRA size of SRR1817174: 1,548,054,750.0 bp
 Individual SRA size of SRR1814138: 1,768,726,350.0 bp
 Individual SRA size of SRR1814129: 1,859,763,300.0 bp
 Individual SRA size of SRR1910415: 1,334,284,650.0 bp
-Number of SRAs to be processed: 83
+Number of SRAs to be processed: 13
 Total target size (--max_bp): 999,999,999,999,999 bp
-The sum of SRA sizes: 508,773,358,950.0 bp
-Target size per SRA: 12,048,192,771,084 bp
+The sum of SRA sizes: 66,279,255,750.0 bp
+Target size per SRA: 76,923,076,923,076 bp
 
 Processing SRA ID: SRR14740487
 spot_length cannot be obtained directly from metadata. Using total_bases/total_spots instead: 300
@@ -99,3 +29,297 @@ Number of reads: 26,078,116
 Single/Paired read length: 300 bp
 Total bases: 7,823,434,800 bp
 Processing SRR14740487 as publicly available data from SRA.
+Previously-downloaded sra file was detected at: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/fastq/getfastq/SRR14740487/SRR14740487.sra
+Time elapsed for 1st-round sequence extraction: SRR14740487, 0.0 sec
+
+--- getfastq 1st-round sequence generation report ---
+Individual target size: 76,923,076,923,076 bp
+Sum of fastp input reads: 0 bp
+Sum of fastp output reads: 0 bp
+
+nan% of reads were obtained in the 1st-round sequence generation: 0 bp out of the individual target amount of 76,923,076,923,076 bp
+Time elapsed for 1st-round sequence extraction: SRR14740487, 0.0 sec
+
+
+Processing SRA ID: SRR14740488
+spot_length cannot be obtained directly from metadata. Using total_bases/total_spots instead: 300
+Library layout: paired
+Number of reads: 27,085,159
+Single/Paired read length: 300 bp
+Total bases: 8,125,547,700 bp
+Processing SRR14740488 as publicly available data from SRA.
+Previously-downloaded sra file was not detected. New sra file will be downloaded.
+Trying to fetch SRR14740488 from AWS: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR14740488/SRR14740488
+SRA file was downloaded with urllib.request from AWS
+Time elapsed for 1st-round sequence extraction: SRR14740488, 2,670.0 sec
+
+--- getfastq 1st-round sequence generation report ---
+Individual target size: 76,923,076,923,076 bp
+Sum of fastp input reads: 0 bp
+Sum of fastp output reads: 0 bp
+
+nan% of reads were obtained in the 1st-round sequence generation: 0 bp out of the individual target amount of 76,923,076,923,076 bp
+Time elapsed for 1st-round sequence extraction: SRR14740488, 0.0 sec
+
+
+Processing SRA ID: SRR14740489
+spot_length cannot be obtained directly from metadata. Using total_bases/total_spots instead: 300
+Library layout: paired
+Number of reads: 30,990,409
+Single/Paired read length: 300 bp
+Total bases: 9,297,122,700 bp
+Processing SRR14740489 as publicly available data from SRA.
+Previously-downloaded sra file was not detected. New sra file will be downloaded.
+Trying to fetch SRR14740489 from AWS: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR14740489/SRR14740489
+SRA file was downloaded with urllib.request from AWS
+Time elapsed for 1st-round sequence extraction: SRR14740489, 5,733.0 sec
+
+--- getfastq 1st-round sequence generation report ---
+Individual target size: 76,923,076,923,076 bp
+Sum of fastp input reads: 0 bp
+Sum of fastp output reads: 0 bp
+
+nan% of reads were obtained in the 1st-round sequence generation: 0 bp out of the individual target amount of 76,923,076,923,076 bp
+Time elapsed for 1st-round sequence extraction: SRR14740489, 0.1 sec
+
+
+Processing SRA ID: SRR14740490
+spot_length cannot be obtained directly from metadata. Using total_bases/total_spots instead: 300
+Library layout: paired
+Number of reads: 28,321,539
+Single/Paired read length: 300 bp
+Total bases: 8,496,461,700 bp
+Processing SRR14740490 as publicly available data from SRA.
+Previously-downloaded sra file was not detected. New sra file will be downloaded.
+Trying to fetch SRR14740490 from AWS: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR14740490/SRR14740490
+SRA file was downloaded with urllib.request from AWS
+Time elapsed for 1st-round sequence extraction: SRR14740490, 6,829.0 sec
+
+--- getfastq 1st-round sequence generation report ---
+Individual target size: 76,923,076,923,076 bp
+Sum of fastp input reads: 0 bp
+Sum of fastp output reads: 0 bp
+
+nan% of reads were obtained in the 1st-round sequence generation: 0 bp out of the individual target amount of 76,923,076,923,076 bp
+Time elapsed for 1st-round sequence extraction: SRR14740490, 0.0 sec
+
+
+Processing SRA ID: SRR14740491
+spot_length cannot be obtained directly from metadata. Using total_bases/total_spots instead: 300
+Library layout: paired
+Number of reads: 25,923,310
+Single/Paired read length: 300 bp
+Total bases: 7,776,993,000 bp
+Processing SRR14740491 as publicly available data from SRA.
+Previously-downloaded sra file was not detected. New sra file will be downloaded.
+Trying to fetch SRR14740491 from AWS: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR14740491/SRR14740491
+SRA file was downloaded with urllib.request from AWS
+Time elapsed for 1st-round sequence extraction: SRR14740491, 7,508.0 sec
+
+--- getfastq 1st-round sequence generation report ---
+Individual target size: 76,923,076,923,076 bp
+Sum of fastp input reads: 0 bp
+Sum of fastp output reads: 0 bp
+
+nan% of reads were obtained in the 1st-round sequence generation: 0 bp out of the individual target amount of 76,923,076,923,076 bp
+Time elapsed for 1st-round sequence extraction: SRR14740491, 0.0 sec
+
+
+Processing SRA ID: SRR14740492
+spot_length cannot be obtained directly from metadata. Using total_bases/total_spots instead: 300
+Library layout: paired
+Number of reads: 26,354,787
+Single/Paired read length: 300 bp
+Total bases: 7,906,436,100 bp
+Processing SRR14740492 as publicly available data from SRA.
+Previously-downloaded sra file was not detected. New sra file will be downloaded.
+Trying to fetch SRR14740492 from AWS: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR14740492/SRR14740492
+SRA file was downloaded with urllib.request from AWS
+Time elapsed for 1st-round sequence extraction: SRR14740492, 8,331.0 sec
+
+--- getfastq 1st-round sequence generation report ---
+Individual target size: 76,923,076,923,076 bp
+Sum of fastp input reads: 0 bp
+Sum of fastp output reads: 0 bp
+
+nan% of reads were obtained in the 1st-round sequence generation: 0 bp out of the individual target amount of 76,923,076,923,076 bp
+Time elapsed for 1st-round sequence extraction: SRR14740492, 0.1 sec
+
+
+Processing SRA ID: SRR14740493
+spot_length cannot be obtained directly from metadata. Using total_bases/total_spots instead: 300
+Library layout: paired
+Number of reads: 25,316,776
+Single/Paired read length: 300 bp
+Total bases: 7,595,032,800 bp
+Processing SRR14740493 as publicly available data from SRA.
+Previously-downloaded sra file was not detected. New sra file will be downloaded.
+Trying to fetch SRR14740493 from AWS: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR14740493/SRR14740493
+SRA file was downloaded with urllib.request from AWS
+Time elapsed for 1st-round sequence extraction: SRR14740493, 9,289.0 sec
+
+--- getfastq 1st-round sequence generation report ---
+Individual target size: 76,923,076,923,076 bp
+Sum of fastp input reads: 0 bp
+Sum of fastp output reads: 0 bp
+
+nan% of reads were obtained in the 1st-round sequence generation: 0 bp out of the individual target amount of 76,923,076,923,076 bp
+Time elapsed for 1st-round sequence extraction: SRR14740493, 0.1 sec
+
+
+Processing SRA ID: SRR1817176
+spot_length cannot be obtained directly from metadata. Using total_bases/total_spots instead: 150
+Deleting old intermediate file: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/fastq/getfastq/SRR1817176/SRR1817176_1.fastq.gz
+Deleting old intermediate file: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/fastq/getfastq/SRR1817176/SRR1817176_2.fastq.gz
+Library layout: paired
+Number of reads: 10,005,571
+Single/Paired read length: 150 bp
+Total bases: 1,500,835,650 bp
+Processing SRR1817176 as publicly available data from SRA.
+Previously-downloaded sra file was not detected. New sra file will be downloaded.
+Trying to fetch SRR1817176 from AWS: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1817176/SRR1817176
+SRA file was downloaded with urllib.request from AWS
+Time elapsed for 1st-round sequence extraction: SRR1817176, 9,548.0 sec
+
+--- getfastq 1st-round sequence generation report ---
+Individual target size: 76,923,076,923,076 bp
+Sum of fastp input reads: 0 bp
+Sum of fastp output reads: 0 bp
+
+nan% of reads were obtained in the 1st-round sequence generation: 0 bp out of the individual target amount of 76,923,076,923,076 bp
+Time elapsed for 1st-round sequence extraction: SRR1817176, 0.1 sec
+
+
+Processing SRA ID: SRR1817175
+spot_length cannot be obtained directly from metadata. Using total_bases/total_spots instead: 150
+Library layout: paired
+Number of reads: 8,310,415
+Single/Paired read length: 150 bp
+Total bases: 1,246,562,250 bp
+Processing SRR1817175 as publicly available data from SRA.
+Previously-downloaded sra file was not detected. New sra file will be downloaded.
+Trying to fetch SRR1817175 from AWS: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1817175/SRR1817175
+SRA file was downloaded with urllib.request from AWS
+Time elapsed for 1st-round sequence extraction: SRR1817175, 10,182.0 sec
+
+--- getfastq 1st-round sequence generation report ---
+Individual target size: 76,923,076,923,076 bp
+Sum of fastp input reads: 0 bp
+Sum of fastp output reads: 0 bp
+
+nan% of reads were obtained in the 1st-round sequence generation: 0 bp out of the individual target amount of 76,923,076,923,076 bp
+Time elapsed for 1st-round sequence extraction: SRR1817175, 0.1 sec
+
+
+Processing SRA ID: SRR1817174
+spot_length cannot be obtained directly from metadata. Using total_bases/total_spots instead: 150
+Library layout: paired
+Number of reads: 10,320,365
+Single/Paired read length: 150 bp
+Total bases: 1,548,054,750 bp
+Processing SRR1817174 as publicly available data from SRA.
+Previously-downloaded sra file was not detected. New sra file will be downloaded.
+Trying to fetch SRR1817174 from AWS: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1817174/SRR1817174
+SRA file was downloaded with urllib.request from AWS
+Time elapsed for 1st-round sequence extraction: SRR1817174, 10,933.0 sec
+
+--- getfastq 1st-round sequence generation report ---
+Individual target size: 76,923,076,923,076 bp
+Sum of fastp input reads: 0 bp
+Sum of fastp output reads: 0 bp
+
+nan% of reads were obtained in the 1st-round sequence generation: 0 bp out of the individual target amount of 76,923,076,923,076 bp
+Time elapsed for 1st-round sequence extraction: SRR1817174, 0.1 sec
+
+
+Processing SRA ID: SRR1814138
+spot_length cannot be obtained directly from metadata. Using total_bases/total_spots instead: 150
+Library layout: paired
+Number of reads: 11,791,509
+Single/Paired read length: 150 bp
+Total bases: 1,768,726,350 bp
+Processing SRR1814138 as publicly available data from SRA.
+Previously-downloaded sra file was not detected. New sra file will be downloaded.
+Trying to fetch SRR1814138 from AWS: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1814138/SRR1814138
+SRA file was downloaded with urllib.request from AWS
+Time elapsed for 1st-round sequence extraction: SRR1814138, 11,772.0 sec
+
+--- getfastq 1st-round sequence generation report ---
+Individual target size: 76,923,076,923,076 bp
+Sum of fastp input reads: 0 bp
+Sum of fastp output reads: 0 bp
+
+nan% of reads were obtained in the 1st-round sequence generation: 0 bp out of the individual target amount of 76,923,076,923,076 bp
+Time elapsed for 1st-round sequence extraction: SRR1814138, 0.0 sec
+
+
+Processing SRA ID: SRR1814129
+spot_length cannot be obtained directly from metadata. Using total_bases/total_spots instead: 150
+Library layout: paired
+Number of reads: 12,398,422
+Single/Paired read length: 150 bp
+Total bases: 1,859,763,300 bp
+Processing SRR1814129 as publicly available data from SRA.
+Previously-downloaded sra file was not detected. New sra file will be downloaded.
+Trying to fetch SRR1814129 from AWS: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1814129/SRR1814129
+SRA file was downloaded with urllib.request from AWS
+Time elapsed for 1st-round sequence extraction: SRR1814129, 12,375.0 sec
+
+--- getfastq 1st-round sequence generation report ---
+Individual target size: 76,923,076,923,076 bp
+Sum of fastp input reads: 0 bp
+Sum of fastp output reads: 0 bp
+
+nan% of reads were obtained in the 1st-round sequence generation: 0 bp out of the individual target amount of 76,923,076,923,076 bp
+Time elapsed for 1st-round sequence extraction: SRR1814129, 0.1 sec
+
+
+Processing SRA ID: SRR1910415
+spot_length cannot be obtained directly from metadata. Using total_bases/total_spots instead: 150
+Library layout: paired
+Number of reads: 8,895,231
+Single/Paired read length: 150 bp
+Total bases: 1,334,284,650 bp
+Processing SRR1910415 as publicly available data from SRA.
+Previously-downloaded sra file was not detected. New sra file will be downloaded.
+Trying to fetch SRR1910415 from AWS: https://sra-pub-run-odp.s3.amazonaws.com/sra/SRR1910415/SRR1910415
+SRA file was downloaded with urllib.request from AWS
+Time elapsed for 1st-round sequence extraction: SRR1910415, 12,562.0 sec
+
+--- getfastq 1st-round sequence generation report ---
+Individual target size: 76,923,076,923,076 bp
+Sum of fastp input reads: 0 bp
+Sum of fastp output reads: 0 bp
+
+nan% of reads were obtained in the 1st-round sequence generation: 0 bp out of the individual target amount of 76,923,076,923,076 bp
+Time elapsed for 1st-round sequence extraction: SRR1910415, 0.1 sec
+
+Sufficient data were obtained in the 1st-round sequence extraction. Proceeding without the 2nd round.
+2nd round read extraction improved % bp from 0.00% to 0.00%
+Starting SRA file removal.
+Deleting SRA file: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/fastq/getfastq/SRR14740487/SRR14740487.sra
+Deleting SRA file: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/fastq/getfastq/SRR14740488/SRR14740488.sra
+Deleting SRA file: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/fastq/getfastq/SRR14740489/SRR14740489.sra
+Deleting SRA file: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/fastq/getfastq/SRR14740490/SRR14740490.sra
+Deleting SRA file: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/fastq/getfastq/SRR14740491/SRR14740491.sra
+Deleting SRA file: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/fastq/getfastq/SRR14740492/SRR14740492.sra
+Deleting SRA file: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/fastq/getfastq/SRR14740493/SRR14740493.sra
+Deleting SRA file: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/fastq/getfastq/SRR1817176/SRR1817176.sra
+Deleting SRA file: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/fastq/getfastq/SRR1817175/SRR1817175.sra
+Deleting SRA file: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/fastq/getfastq/SRR1817174/SRR1817174.sra
+Deleting SRA file: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/fastq/getfastq/SRR1814138/SRR1814138.sra
+Deleting SRA file: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/fastq/getfastq/SRR1814129/SRR1814129.sra
+Deleting SRA file: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/fastq/getfastq/SRR1910415/SRR1910415.sra
+
+
+
+--- getfastq final report ---
+Target size (--max_bp): 999,999,999,999,999 bp
+Sum of fastp input reads: 0 bp
+Sum of fastp output reads: 0 bp
+Individual SRA IDs: SRR14740487 SRR14740488 SRR14740489 SRR14740490 SRR14740491 SRR14740492 SRR14740493 SRR1817176 SRR1817175 SRR1817174 SRR1814138 SRR1814129 SRR1910415
+Individual fastp input reads (bp): 0 0 0 0 0 0 0 0 0 0 0 0 0
+Individual fastp output reads (bp): 0 0 0 0 0 0 0 0 0 0 0 0 0
+
+Time elapsed: 12,563 sec
+amalgkit getfastq: end

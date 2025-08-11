@@ -1,0 +1,12 @@
+AMALGKIT version: 0.12.19
+AMALGKIT command: /Users/4d/miniforge3/bin/amalgkit quant --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/metadata.subset.tsv --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/quant --threads 6 --index_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/quant/index --redo yes
+AMALGKIT bug report: https://github.com/kfuku52/amalgkit/issues
+amalgkit quant: start
+2025-08-10 14:50:15.278719: Loading metadata from: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/metadata.subset.tsv
+
+Species: Pogonomyrmex barbatus
+SRA Run ID: SRR1817176
+Looking for index folder in  /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/quant
+Kallisto index file found: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/quant/index/Pogonomyrmex_barbatus.idx
+Output file was not detected: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/quant/quant/SRR1817176/SRR1817176_abundance.tsv
+spot_length cannot be obtained directly from metadata. Using total_bases/total_spots instead: 150

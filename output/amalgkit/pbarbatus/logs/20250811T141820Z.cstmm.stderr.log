@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "/Users/4d/Documents/GitHub/metainformant/.venv/bin/amalgkit", line 398, in <module>
+    args.handler(args)
+  File "/Users/4d/Documents/GitHub/metainformant/.venv/bin/amalgkit", line 62, in command_cstmm
+    cstmm_main(args)
+  File "/Users/4d/Documents/GitHub/metainformant/.venv/lib/python3.12/site-packages/amalgkit/cstmm.py", line 47, in cstmm_main
+    check_ortholog_parameter_compatibility(args)
+  File "/Users/4d/Documents/GitHub/metainformant/.venv/lib/python3.12/site-packages/amalgkit/util.py", line 565, in check_ortholog_parameter_compatibility
+    raise Exception('One of --orthogroup_table and --dir_busco should be specified.')
+Exception: One of --orthogroup_table and --dir_busco should be specified.

@@ -1,0 +1,20 @@
+AMALGKIT version: 0.12.19
+AMALGKIT command: /Users/4d/Documents/GitHub/metainformant/.venv/bin/amalgkit select --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/metadata.filtered.tissue.tsv --config_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/config_base
+AMALGKIT bug report: https://github.com/kfuku52/amalgkit/issues
+amalgkit select: start
+Config file found: group_attribute.config
+Config file found: exclude_keyword.config
+Config file found: control_term.config
+2025-08-11 07:18:19.989875: Loading metadata from: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/metadata.filtered.tissue.tsv
+2025-08-11 07:18:19.993986: Marking SRAs with less than 5,000,000 reads
+2025-08-11 07:18:20.010917: Marking SRAs with bad keywords
+2025-08-11 07:18:20.012727: Marking 0 SRAs with keyword "single cell"
+2025-08-11 07:18:20.013128: Marking 0 SRAs with keyword "miRNA"
+2025-08-11 07:18:20.013681: Marking SRAs with non-control terms
+2025-08-11 07:18:20.013874: Applying control term "mock" to "treatment": Detected control and treatment SRAs: 0 and 0
+2025-08-11 07:18:20.014037: Applying control term "0 days post infection" to "exp_title": Detected control and treatment SRAs: 0 and 0
+2025-08-11 07:18:20.014054: Selecting subsets of SRA IDs for >99,999 samples per sample_group per species
+Original metadata copy exists and will not be renewed: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/metadata_original.tsv
+Updating metadata table at: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/metadata.tsv
+Time elapsed: 0 sec
+amalgkit select: end

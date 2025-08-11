@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 
 
-def test_load_workflow_config_and_plan_uses_yaml_values(monkeypatch):
+def test_load_workflow_config_and_plan_uses_yaml_values():
     from metainformant.rna.workflow import load_workflow_config, plan_workflow
 
     repo_root = Path(__file__).resolve().parents[1]
@@ -32,14 +32,20 @@ def test_load_workflow_config_and_plan_uses_yaml_values(monkeypatch):
     assert all(p.get("threads") == 8 for p in params.values())
 
 
-def test_env_overrides_for_config_threads(monkeypatch, tmp_path: Path):
+def test_env_overrides_for_config_threads(tmp_path: Path):
     from metainformant.rna.workflow import load_workflow_config
 
     repo_root = Path(__file__).resolve().parents[1]
     cfg_path = repo_root / "config" / "amalgkit_pbarbatus.yaml"
 
-    monkeypatch.setenv("AK_THREADS", "3")
+    import os
+    old = os.environ.get("AK_THREADS")
+    os.environ["AK_THREADS"] = "3"
     cfg = load_workflow_config(cfg_path)
     assert cfg.threads == 3
+    if old is None:
+        del os.environ["AK_THREADS"]
+    else:
+        os.environ["AK_THREADS"] = old
 
 

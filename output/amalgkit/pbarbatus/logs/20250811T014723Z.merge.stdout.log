@@ -1,0 +1,5 @@
+AMALGKIT version: 0.12.19
+AMALGKIT command: /Users/4d/miniforge3/bin/amalgkit merge --out /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/merged/merged_abundance.tsv --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/merged
+AMALGKIT bug report: https://github.com/kfuku52/amalgkit/issues
+amalgkit merge: start
+2025-08-10 18:47:24.051581: Loading metadata from: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/merged/metadata/metadata.tsv

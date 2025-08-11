@@ -18,7 +18,7 @@ from ..core.io import ensure_directory, write_jsonl, dump_json, read_delimited, 
 @dataclass
 class AmalgkitWorkflowConfig:
     work_dir: Path
-    threads: int = 4
+    threads: int = 6
     species_list: list[str] = field(default_factory=list)
     # Additional common parameters can be added as needed
     log_dir: Path | None = None
@@ -157,7 +157,28 @@ def _sanitize_params_for_subcommand(subcommand: str, params: Mapping[str, Any]) 
         "integrate": {"out_dir", "metadata", "threads", "fastq_dir", "id", "id_list"},
         "config": {"out_dir", "config"},
         "select": {"out_dir", "metadata", "sample_group", "config_dir"},
-        "getfastq": {"out_dir", "metadata", "threads", "redo", "entrez_email", "id", "id_list"},
+        # getfastq: allow robust flags pass-through
+        "getfastq": {
+            "out_dir",
+            "metadata",
+            "threads",
+            "redo",
+            "entrez_email",
+            "id",
+            "id_list",
+            # robustness/diagnostics
+            "pfd",
+            "pfd_exe",
+            "prefetch_exe",
+            "fastp",
+            "fastp_exe",
+            "pfd_print",
+            "fastp_print",
+            # cloud source toggles
+            "aws",
+            "ncbi",
+            "gcp",
+        },
         "quant": {"out_dir", "metadata", "threads", "redo", "index_dir"},
         "merge": {"out", "out_dir", "metadata"},
         "cstmm": {"out_dir", "metadata", "orthogroup_table"},

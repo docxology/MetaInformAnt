@@ -4,6 +4,7 @@ Policy
 
 - All tests must write artifacts only under `output/`. Avoid networked writes and other side effects unless explicitly required by an integration test.
 - Prefer deterministic seeds and stable filenames to enable reproducible CI diffs.
+- No mocks/fakes/stubs. Tests must exercise real code paths and real external behavior. If a required external dependency or network is unavailable, skip the test gracefully.
 
 Running
 

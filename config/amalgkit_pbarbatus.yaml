@@ -3,7 +3,7 @@
 
 work_dir: output/amalgkit/pbarbatus/work
 log_dir: output/amalgkit/pbarbatus/logs
-threads: 8
+threads: 6
 
 auto_install_amalgkit: true
 
@@ -36,12 +36,14 @@ steps:
   integrate: {}
   config: {}
   select: {}
+  integrate:
+    fastq_dir: output/amalgkit/pbarbatus/fastq
   getfastq:
     out_dir: output/amalgkit/pbarbatus/fastq
   quant:
     # If a Salmon/Kallisto index is available, set it; otherwise genome_dir is injected from genome step
     out_dir: output/amalgkit/pbarbatus/quant
-    threads: 8
+    threads: 6
   merge:
     out: output/amalgkit/pbarbatus/merged/merged_abundance.tsv
   cstmm:
