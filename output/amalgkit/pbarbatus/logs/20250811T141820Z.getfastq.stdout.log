@@ -1,3 +1,0 @@
-AMALGKIT version: 0.12.19
-AMALGKIT command: /Users/4d/Documents/GitHub/metainformant/.venv/bin/amalgkit getfastq --threads 6 --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/fastq --entrez_email DanielAriFriedman@gmail.com --pfd_exe /Users/4d/Documents/GitHub/metainformant/.venv/bin/parallel-fastq-dump --prefetch_exe /opt/homebrew/bin/prefetch --pfd_print --fastp_print
-AMALGKIT bug report: https://github.com/kfuku52/amalgkit/issues

@@ -1,6 +1,0 @@
-AMALGKIT version: 0.12.19
-AMALGKIT command: /Users/4d/miniforge3/bin/amalgkit curate --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/curate
-AMALGKIT bug report: https://github.com/kfuku52/amalgkit/issues
-amalgkit curate: start
-Subdirectory for amalgkit merge will be used as input: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/curate/merge
-2025-08-10 20:06:14.226820: Loading metadata from: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/curate/merge/metadata.tsv

@@ -1,5 +1,0 @@
-AMALGKIT version: 0.12.19
-AMALGKIT command: /Users/4d/Documents/GitHub/metainformant/.venv/bin/amalgkit quant --threads 6 --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/quant
-AMALGKIT bug report: https://github.com/kfuku52/amalgkit/issues
-amalgkit quant: start
-2025-08-11 07:20:05.422229: Loading metadata from: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/quant/metadata/metadata.tsv

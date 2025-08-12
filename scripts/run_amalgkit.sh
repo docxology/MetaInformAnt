@@ -158,49 +158,27 @@ if [[ -n "$META" ]]; then
     while [[ $pass -le $max_pass ]]; do
       echo "[PASS $pass/$max_pass] Checking and fetching missing FASTQs into: $FASTQ_DIR_CFG/getfastq/<SRR>"
       missing_this_pass=0
-      tail -n +2 "$META" | awk -v c="$RUN_COL" -F"\t" 'NF>=c {print $c}' | sort -u | while read -r SRR; do
-        [[ -z "$SRR" ]] && continue
-        SRR_DIR="$FASTQ_DIR_CFG/getfastq/$SRR"
-        f1a="$SRR_DIR/${SRR}_1.fastq.gz"; f2a="$SRR_DIR/${SRR}_2.fastq.gz"
-        f1b="$SRR_DIR/${SRR}_1.fastq";    f2b="$SRR_DIR/${SRR}_2.fastq"
-        fsa="$SRR_DIR/${SRR}.fastq.gz";   fsb="$SRR_DIR/${SRR}.fastq"
-        if [[ -f "$f1a" || -f "$f1b" || -f "$fsa" ]]; then
-          echo "[OK] $SRR already present"
-          continue
-        fi
+      # Count how many SRRs currently have FASTQs
+      HAVE=$(find "$FASTQ_DIR_CFG/getfastq" -type f -name "*.fastq*" 2>/dev/null | sed -E 's@.*/(SRR[0-9]+)/.*@\1@' | sort -u | wc -l | tr -d ' ')
+      TOTAL=$(tail -n +2 "$META" | awk -v c="$RUN_COL" -F"\t" 'NF>=c {print $c}' | sort -u | wc -l | tr -d ' ')
+      echo "[VERIFY] Current FASTQ coverage: $HAVE/$TOTAL"
+      # Launch accelerated parallel downloader to fill gaps
+      JOBS=$(( THREADS > 8 ? 8 : THREADS ))
+      [[ "$JOBS" -lt 2 ]] && JOBS=2
+      TPJ=$(( THREADS / JOBS ))
+      [[ "$TPJ" -lt 2 ]] && TPJ=2
+      if [[ -x scripts/force_fasterq_parallel.sh ]]; then
+        echo "[ACCEL] Starting parallel downloader: jobs=$JOBS threads-per-job=$TPJ"
+        bash scripts/force_fasterq_parallel.sh --config "$CONFIG" --jobs "$JOBS" --threads-per-job "$TPJ" | sed -n '1,60p' || true
+      else
+        echo "[WARN] scripts/force_fasterq_parallel.sh not found or not executable; skipping parallel acceleration"
+      fi
+      # Recompute coverage to determine if another pass is needed
+      HAVE2=$(find "$FASTQ_DIR_CFG/getfastq" -type f -name "*.fastq*" 2>/dev/null | sed -E 's@.*/(SRR[0-9]+)/.*@\1@' | sort -u | wc -l | tr -d ' ')
+      if [[ "$HAVE2" -gt "$HAVE" ]]; then
         missing_any=1
         missing_this_pass=1
-        echo "[MISSING] $SRR -> attempting robust download"
-        mkdir -p "$SRR_DIR"
-        # Attempt 1: amalgkit getfastq with pfd=no (sra-tools path), prefer prefetch if available
-        if command -v amalgkit >/dev/null 2>&1; then
-          PREFETCH_BIN=$(command -v prefetch || true)
-          if [[ -n "$PREFETCH_BIN" ]]; then
-            amalgkit getfastq --id "$SRR" --out_dir "$FASTQ_DIR_CFG" --threads "$THREADS" --pfd no --prefetch_exe "$PREFETCH_BIN" --fastp no --redo yes | sed -n '1,80p' || true
-          else
-            amalgkit getfastq --id "$SRR" --out_dir "$FASTQ_DIR_CFG" --threads "$THREADS" --pfd no --fastp no --redo yes | sed -n '1,80p' || true
-          fi
-        fi
-        # Check again
-        if [[ -f "$f1a" || -f "$f1b" || -f "$fsa" ]]; then
-          echo "[OK] $SRR obtained via amalgkit"
-          continue
-        fi
-        # Attempt 2: direct sra-tools fallback: prefetch + fasterq-dump
-        if command -v prefetch >/dev/null 2>&1 && command -v fasterq-dump >/dev/null 2>&1; then
-          echo "[FALLBACK] prefetch+fasterq-dump for $SRR"
-          prefetch --output-directory "$SRR_DIR" "$SRR" || true
-          if [[ -f "$SRR_DIR/$SRR.sra" ]]; then
-            fasterq-dump --threads "$THREADS" --split-files -O "$SRR_DIR" "$SRR_DIR/$SRR.sra" || true
-            # gzip to save space
-            if command -v pigz >/dev/null 2>&1; then
-              pigz -f "$SRR_DIR/${SRR}_1.fastq" "$SRR_DIR/${SRR}_2.fastq" 2>/dev/null || true
-            else
-              gzip -f "$SRR_DIR/${SRR}_1.fastq" "$SRR_DIR/${SRR}_2.fastq" 2>/dev/null || true
-            fi
-          fi
-        fi
-      done
+      fi
       if [[ $missing_this_pass -eq 0 ]]; then
         break
       fi
@@ -208,8 +186,20 @@ if [[ -n "$META" ]]; then
     done
     if [[ $missing_any -eq 1 ]]; then
       echo "[VERIFY] Completed retries. Remaining missing (if any) can be inspected under: $FASTQ_DIR_CFG"
+      echo "[CONTINUE] Launching a second pipeline pass to proceed into quant/merge with newly downloaded FASTQs"
+      set +e
+      "${CMD[@]}"
+      rc2=$?
+      set -e
+      echo "[CONTINUE DONE] code=$rc2"
     else
       echo "[VERIFY] All SRR FASTQs present."
+      echo "[CONTINUE] All reads present; running pipeline to finalize downstream steps"
+      set +e
+      "${CMD[@]}"
+      rc2=$?
+      set -e
+      echo "[CONTINUE DONE] code=$rc2"
     fi
   else
     echo "[WARN] Could not locate 'run' column in $META; skipping FASTQ verification"

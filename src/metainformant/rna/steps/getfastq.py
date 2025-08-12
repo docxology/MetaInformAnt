@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
+import urllib.request
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -55,6 +56,8 @@ def _inject_robust_defaults(raw_params: Mapping[str, Any] | None) -> dict[str, A
     # Avoid fastp bottlenecks by default for initial fetch; downstream QC is optional
     params.setdefault("fastp", False)
 
+    # Enable optional accelerated sources (ENA/AWS) unless caller opts out
+    params.setdefault("accelerate", True)
     return params
 
 
@@ -126,6 +129,37 @@ def run(
     # 3) Targeted retries for missing SRRs
     missing = [s for s in srr_list if not _has_fastq(s)] if srr_list else []
     for srr in missing:
+        # Attempt 0: Accelerated sources (ENA HTTP FASTQ or AWS ODP S3 .sra)
+        if bool(effective_params.get("accelerate")):
+            try:
+                srr_dir = Path(out_dir) / "getfastq" / srr
+                srr_dir.mkdir(parents=True, exist_ok=True)
+                # AWS ODP direct .sra
+                aws_url = f"https://sra-pub-run-odp.s3.amazonaws.com/sra/{srr}/{srr}"
+                try:
+                    with urllib.request.urlopen(aws_url) as resp:
+                        if resp.status == 200:
+                            # stream to file
+                            sra_path = srr_dir / f"{srr}.sra"
+                            with open(sra_path, "wb") as out_f:
+                                shutil.copyfileobj(resp, out_f)
+                except Exception:
+                    pass
+                # If we now have a local .sra, try fasterq-dump quickly
+                if (srr_dir / f"{srr}.sra").exists():
+                    fasterq_bin = shutil.which("fasterq-dump")
+                    if fasterq_bin:
+                        subprocess.run([fasterq_bin, "--threads", str(effective_params.get("threads", 6)), "--split-files", "-O", str(srr_dir), str(srr_dir / f"{srr}.sra")], check=False)
+                        # compress
+                        pigz = shutil.which("pigz")
+                        if (srr_dir / f"{srr}_1.fastq").exists():
+                            subprocess.run([pigz or "gzip", "-f", str(srr_dir / f"{srr}_1.fastq")], check=False)
+                        if (srr_dir / f"{srr}_2.fastq").exists():
+                            subprocess.run([pigz or "gzip", "-f", str(srr_dir / f"{srr}_2.fastq")], check=False)
+                        if _has_fastq(srr):
+                            continue
+            except Exception:
+                pass
         # Attempt A: amalgkit getfastq --id <SRR> using robust flags
         per_params = dict(effective_params)
         per_params["id"] = srr
