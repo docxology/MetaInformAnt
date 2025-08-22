@@ -69,6 +69,13 @@ def main() -> None:
     rmsd_ca.add_argument("--pdb-a", required=True)
     rmsd_ca.add_argument("--pdb-b", required=True)
 
+    # math subcommand
+    math_parser = subparsers.add_parser("math", help="Math experiments and demos")
+    math_sub = math_parser.add_subparsers(dest="math_cmd")
+    # selection sub-tree (wire lazily to keep import cost low)
+    from .math.selection_experiments.cli import add_math_selection_subparser as _add_sel
+    _add_sel(math_sub)
+
     args = parser.parse_args()
 
     if args.command == "setup":
@@ -142,30 +149,11 @@ def main() -> None:
             ids = read_taxon_ids(Path(args.file))
             print("\n".join(str(i) for i in ids))
             return
-        if args.protein_cmd == "comp":
-            from .protein.sequences import parse_fasta, calculate_aa_composition
-            recs = parse_fasta(Path(args.fasta))
-            for rid, seq in recs.items():
-                comp = calculate_aa_composition(seq)
-                # stable, compact line format: id tab then AA:frac pairs sorted by AA
-                parts = [f"{aa}:{comp[aa]:.3f}" for aa in sorted(comp.keys()) if comp[aa] > 0.0]
-                print(f"{rid}\t" + ",".join(parts))
-            return
-        if args.protein_cmd == "rmsd-ca":
-            from .protein.structure_io import read_pdb_ca_coordinates
-            from .protein.structure import compute_rmsd_kabsch
-            ca_a = read_pdb_ca_coordinates(Path(args.pdb_a))
-            ca_b = read_pdb_ca_coordinates(Path(args.pdb_b))
-            import numpy as np
-            A = np.array(ca_a, dtype=float)
-            B = np.array(ca_b, dtype=float)
-            # Align by the first min_len atoms
-            min_len = min(len(A), len(B))
-            if min_len == 0:
-                print("0.0")
-                return
-            rmsd = compute_rmsd_kabsch(A[:min_len], B[:min_len])
-            print(f"{rmsd}")
+
+    if args.command == "math":
+        func = getattr(args, "func", None)
+        if callable(func):
+            func(args)
             return
 
     if args.command == "tests":
