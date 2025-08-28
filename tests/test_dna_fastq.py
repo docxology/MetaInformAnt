@@ -82,6 +82,9 @@ HHHH
     assert summary["num_reads"] == 2
     assert summary["length_min"] == 4
     assert summary["length_max"] == 4
-    assert abs(summary["gc_mean"] - ((2/4)+(3/4))/2) < 1e-9
+    # Read 1: "ACGT" -> GC = 2/4 = 0.5 (C,G)
+    # Read 2: "AGGT" -> GC = 2/4 = 0.5 (G,G) 
+    # Expected mean: (0.5 + 0.5)/2 = 0.5
+    assert abs(summary["gc_mean"] - 0.5) < 1e-9
     assert len(summary["avg_phred_by_pos"]) == 4
 

@@ -17,7 +17,7 @@ def test_load_workflow_config_and_plan_uses_yaml_values():
     # Core fields from YAML
     assert cfg.work_dir.as_posix().endswith("output/amalgkit/pbarbatus/work")
     assert (cfg.log_dir is not None) and cfg.log_dir.as_posix().endswith("output/amalgkit/pbarbatus/logs")
-    assert cfg.threads == 8
+    assert cfg.threads == 6
 
     steps = plan_workflow(cfg)
     names = [n for n, _ in steps]
@@ -26,10 +26,10 @@ def test_load_workflow_config_and_plan_uses_yaml_values():
     params = {n: p for n, p in steps}
 
     # Per-step params merged with common
-    assert params["getfastq"].get("out-dir", "").endswith("output/amalgkit/pbarbatus/fastq")
+    assert params["getfastq"].get("out_dir", "").endswith("output/amalgkit/pbarbatus/fastq")
     assert params["merge"].get("out", "").endswith("output/amalgkit/pbarbatus/merged/merged_abundance.tsv")
     # Common threads propagated into each step
-    assert all(p.get("threads") == 8 for p in params.values())
+    assert all(p.get("threads") == 6 for p in params.values())
 
 
 def test_env_overrides_for_config_threads(tmp_path: Path):

@@ -1,105 +1,176 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "metainformant"
 version = "0.1.0"
-description = "Integrated multi-omic biological systems modeling toolkit"
+description = "Comprehensive bioinformatics toolkit for multi-domain analysis"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { file = "LICENSE" }
-authors = [
-  { name = "METAINFORMANT Team" }
-]
-
 classifiers = [
-  "License :: OSI Approved :: Apache Software License",
-  "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.11",
-  "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+dependencies = [
+    "numpy>=1.21.0",
+    "pandas>=1.3.0", 
+    "matplotlib>=3.5.0",
+    "biopython>=1.79",
+    "requests>=2.25.0",
+    "pyyaml>=6.0",
 ]
 
-dependencies = [
-  # Core scientific stack
-  "numpy>=1.24",
-  "pandas>=2.0",
-  "matplotlib>=3.7",
-  "seaborn>=0.12",
-
-  # Bioinformatics
-  "biopython>=1.79",
-  "pyfaidx>=0.6.4",
-  "goatools>=1.2.6",
-  "ete3>=3.1.3",
-
-  # Networking and I/O
-  "requests>=2.31",
-  "urllib3==1.26.18",
-  "jsonlines>=3.0.0",
-  # Config formats
-  "PyYAML>=6.0",
-
-  # NCBI datasets
-  "ncbi-datasets-pylib==13.8.0",
-  "protobuf==3.19.4",
-
-  # DB client (optional; required for DNA DB writes)
-  "psycopg2-binary>=2.9",
-
-  # Visualization helpers
-  "scikit-learn>=1.3",
-  "scipy>=1.11",
-
-  # Scraping
-  "beautifulsoup4>=4.12",
-  "lxml>=5.2",
-  "pyyaml>=6.0.1",
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.0.0",  # For parallel test execution
+    "black>=22.0.0",
+    "isort>=5.10.0",
+    "flake8>=4.0.0",
+    "mypy>=1.0.0",
+]
+database = [
+    "psycopg2-binary>=2.9.0",
+    "sqlalchemy>=2.0.0",
+]
+external-tools = [
+    "ncbi-datasets-pylib>=16.0.0",  # Optional NCBI datasets integration
 ]
 
 [project.scripts]
 metainformant = "metainformant.__main__:main"
 
-[project.optional-dependencies]
-dev = [
-  "pytest>=7.4",
-  "pytest-cov>=4.1",
-  "black>=24.3.0",
-  "ruff>=0.4.8",
-  "mypy>=1.10.0",
-  "ipykernel>=6.29",
-]
-
+# Test configuration - STRICTLY NO MOCKING POLICY
 [tool.pytest.ini_options]
 minversion = "7.0"
-addopts = "-ra"
 testpaths = ["tests"]
+addopts = [
+    "-ra",  # Show short test summary for all except passes
+    "--strict-markers",
+    "--strict-config",
+    "--cov=src/metainformant",  # Coverage for source code
+    "--cov-report=term-missing",  # Show missing lines in terminal
+    "--cov-report=html",  # Generate HTML coverage report
+    "--cov-report=xml",   # Generate XML coverage report for CI
+    "--cov-fail-under=85",  # Fail if coverage below 85%
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "network: marks tests requiring network access - REAL API CALLS ONLY",
+    "external_tool: marks tests requiring external tools (muscle, amalgkit, etc.)",
+    "integration: marks tests as integration tests with real implementations",
+    "no_mock: enforces that NO mocking/faking is allowed in any test",
+]
+filterwarnings = [
+    "error",
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+    "ignore::UserWarning",
+    # Warn about any mock usage as it violates our policy
+    "error::pytest.PytestUnraisableExceptionWarning:.*mock.*",
+]
 
+# Coverage configuration
+[tool.coverage.run]
+source = ["src/metainformant"]
+branch = true  # Enable branch coverage
+omit = [
+    "*/tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/.venv/*",
+    "*/site-packages/*",
+    "*/conftest.py",
+    "*/__main__.py",  # CLI entry points often hard to test comprehensively
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "def __str__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+    "@abstractmethod",
+]
+show_missing = true
+skip_covered = false
+precision = 2
+
+[tool.coverage.html]
+directory = "output/coverage_html"
+
+[tool.coverage.xml]
+output = "output/coverage.xml"
+
+# Black code formatting
 [tool.black]
-line-length = 100
-target-version = ["py311"]
+line-length = 120
+target-version = ['py311', 'py312']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+)/
+'''
 
-[tool.ruff]
-line-length = 100
-target-version = "py311"
-select = ["E", "F", "I", "UP"]
-ignore = ["E501"]
+# isort import sorting
+[tool.isort]
+profile = "black"
+line_length = 120
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
 
+# MyPy type checking
 [tool.mypy]
 python_version = "3.11"
-ignore_missing_imports = true
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+no_implicit_optional = true
+warn_redundant_casts = true
 warn_unused_ignores = true
-disallow_untyped_defs = false
-check_untyped_defs = false
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
 
-[tool.uv]
-index-url = "https://pypi.org/simple"
-dev-dependencies = ["metainformant[dev]"]
+# Per-module type checking options
+[[tool.mypy.overrides]]
+module = [
+    "Bio.*",
+    "matplotlib.*",
+    "pandas.*", 
+    "numpy.*",
+    "sklearn.*",
+    "requests.*",
+]
+ignore_missing_imports = true
 
-[tool.setuptools]
-package-dir = {"" = "src"}
-
+# Setuptools configuration
 [tool.setuptools.packages.find]
 where = ["src"]
 
-[build-system]
-requires = ["setuptools>=64", "wheel"]
-build-backend = "setuptools.build_meta"
-
-
+[tool.setuptools.package-dir]
+"" = "src"

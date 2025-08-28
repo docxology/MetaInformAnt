@@ -149,6 +149,28 @@ def main() -> None:
             ids = read_taxon_ids(Path(args.file))
             print("\n".join(str(i) for i in ids))
             return
+        
+        if args.protein_cmd == "comp":
+            from .protein.sequences import parse_fasta, calculate_aa_composition
+            sequences = parse_fasta(Path(args.fasta))
+            for seq_id, seq in sequences.items():
+                comp = calculate_aa_composition(seq)
+                comp_str = ",".join(f"{aa}:{freq:.3f}" for aa, freq in comp.items() if freq > 0)
+                print(f"{seq_id}\t{comp_str}")
+            return
+        
+        if args.protein_cmd == "rmsd-ca":
+            from .protein.structure_io import read_pdb_ca_coordinates
+            from .protein.structure import compute_rmsd_kabsch
+            import numpy as np
+            coords_a = read_pdb_ca_coordinates(Path(args.pdb_a))
+            coords_b = read_pdb_ca_coordinates(Path(args.pdb_b))
+            if len(coords_a) != len(coords_b):
+                print("Error: PDB files have different numbers of CA atoms")
+                sys.exit(1)
+            rmsd = compute_rmsd_kabsch(np.array(coords_a), np.array(coords_b))
+            print(f"{rmsd:.6f}")
+            return
 
     if args.command == "math":
         func = getattr(args, "func", None)

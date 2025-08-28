@@ -17,14 +17,19 @@
 - Allow env vars to override files in config/.
 - Domain modules must not hardcode absolute paths; accept config objects/paths from callers.
 
-## Testing Policy (No Mocks/Fakes)
-- Never use fake/mocked/stubbed methods, objects, or network shims in code or tests.
-- Tests must exercise real code paths and real external behavior.
-  - Networked tests: perform real HTTP requests with short timeouts. If offline, skip gracefully.
-  - CLI-dependent tests (e.g., amalgkit): run only when the dependency is available on PATH; otherwise skip.
-- It is acceptable to set environment variables for test setup, but do not monkeypatch or replace functions.
-- Tests must write artifacts only under output/.
-- Prefer deterministic seeds and stable filenames for reproducibility.
+## Testing Policy (STRICTLY NO MOCKS/FAKES)
+- **ABSOLUTE PROHIBITION**: Never use fake/mocked/stubbed methods, objects, or network shims in code or tests.
+- **Real Implementation Only**: Tests must exercise real code paths and real external behavior without exceptions.
+  - Networked tests: perform real HTTP requests with short timeouts. If offline, skip gracefully with clear messages.
+  - CLI-dependent tests (e.g., amalgkit): run only when the dependency is available on PATH; otherwise skip with dependency notes.
+  - Database tests: use real database connections or skip when unavailable.
+  - API tests: make real API calls or skip when network/credentials unavailable.
+- **Anti-Pattern Enforcement**: Mocking is an anti-pattern that creates brittle tests disconnected from reality.
+- **Quality Assurance**: Real implementations reveal actual bugs, performance issues, and integration problems.
+- **Environment Setup**: It is acceptable to set environment variables for test setup, but do not monkeypatch or replace functions.
+- **Test Artifacts**: Tests must write all artifacts only under output/ directory.
+- **Reproducibility**: Prefer deterministic seeds and stable filenames for reproducible test runs.
+- **Clear Documentation**: When external dependencies are unavailable, tests must clearly document what is being skipped and why.
 
 ## Documentation
 - Keep docs concise and reference core utilities. Examples that write files must write under output/ and mention how to override paths.
