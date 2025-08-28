@@ -22,6 +22,19 @@ Welcome to the METAINFORMANT docs. This site is organized by domain and core uti
   - [Workflow](./rna/workflow.md)
   - [Configs](./rna/configs.md)
 
+- Single-Cell Genomics
+  - [Overview](./singlecell/index.md)
+  - [Preprocessing](./singlecell/preprocessing.md)
+  - [Dimensionality Reduction](./singlecell/dimensionality.md)
+  - [Clustering](./singlecell/clustering.md)
+  - [Trajectory Analysis](./singlecell/trajectory.md)
+  - [Visualization](./singlecell/visualization.md)
+  - [Integration](./singlecell/integration.md)
+
+- Quality Control
+  - [Overview](./quality/index.md)
+  - [FASTQ Analysis](./quality/fastq.md)
+
 - Simulation
   - [Overview](./simulation/index.md)
   - [Sequence Generators](./simulation/sequences.md)
@@ -53,6 +66,8 @@ See also: the top-level project README for quickstarts.
 graph TD
   A[CLI] --> B[DNA]
   A --> C[RNA]
+  A --> SC[Single-Cell]
+  A --> QC[Quality Control]
   A --> D[Simulation]
   A --> E[Math]
   A --> F[Visualization]
@@ -68,15 +83,24 @@ graph TD
     O[text]
     P[parallel]
     Q[hash]
+    R[paths]
+    S[cache]
+    T[db]
   end
   L -.-> B
   M -.-> B
   L -.-> C
   M -.-> C
+  L -.-> SC
+  M -.-> SC
+  L -.-> QC
+  M -.-> QC
   L -.-> D
   M -.-> D
   L -.-> E
   M -.-> F
+  P -.-> SC
+  S -.-> SC
 ```
 
 

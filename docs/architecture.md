@@ -31,6 +31,17 @@ flowchart LR
     R2[workflow]
     R3[configs]
   end
+  subgraph SingleCell[Single-Cell Genomics]
+    SC1[preprocessing]
+    SC2[dimensionality]
+    SC3[clustering]
+    SC4[trajectory]
+    SC5[visualization]
+    SC6[integration]
+  end
+  subgraph QualityControl[Quality Control]
+    QC1[fastq]
+  end
   subgraph Simulation
     S1[sequences]
     S2[rna]
@@ -48,6 +59,8 @@ flowchart LR
   end
   A --> D1 & D2 & D3 & D4 & D5
   A --> R1 & R2
+  A --> SC1 & SC2 & SC3 & SC4 & SC5 & SC6
+  A --> QC1
   A --> S1 & S2 & S3
   A --> M1 & M2 & M3
   A --> V1 & V2 & V3
@@ -57,6 +70,10 @@ flowchart LR
   C2 -.-> D1
   C1 -.-> R2
   C2 -.-> R1
+  C2 -.-> SC1
+  C5 -.-> SC2
+  C8 -.-> SC6
+  C2 -.-> QC1
   C5 -.-> R2
   C8 -.-> R2
 ```
