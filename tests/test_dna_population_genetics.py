@@ -30,5 +30,3 @@ def test_observed_heterozygosity() -> None:
     h_obs = population.observed_heterozygosity(genotypes)
     # 2 heterozygotes of 4 -> 0.5
     assert h_obs == 0.5
-
-

@@ -13,5 +13,3 @@ def test_find_restriction_sites_with_ambiguity() -> None:
     sites = restriction.find_restriction_sites(seq, {"Fake": "GGNCR"})
     assert isinstance(sites["Fake"], list)
     assert all(isinstance(x, int) for x in sites["Fake"])  # positions list
-
-

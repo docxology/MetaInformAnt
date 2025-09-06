@@ -12,5 +12,3 @@ def test_transcribe_handles_lowercase_and_empty() -> None:
 
 def test_reverse_transcribe_rna_to_dna() -> None:
     assert transcription.reverse_transcribe_rna_to_dna("AUGC") == "ATGC"
-
-

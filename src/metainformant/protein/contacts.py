@@ -3,7 +3,9 @@ from __future__ import annotations
 from typing import Iterable, List, Tuple
 
 
-def compute_ca_contact_pairs(coords: Iterable[tuple[float, float, float]], *, threshold: float = 8.0) -> List[Tuple[int, int]]:
+def compute_ca_contact_pairs(
+    coords: Iterable[tuple[float, float, float]], *, threshold: float = 8.0
+) -> List[Tuple[int, int]]:
     """Return index pairs (i,j) with i<j for which Euclidean distance < threshold.
 
     coords: iterable of (x,y,z). Threshold in Angstroms.
@@ -21,5 +23,3 @@ def compute_ca_contact_pairs(coords: Iterable[tuple[float, float, float]], *, th
             if dx * dx + dy * dy + dz * dz < thr2:
                 pairs.append((i, j))
     return pairs
-
-

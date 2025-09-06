@@ -16,5 +16,3 @@ def get_genome_from_ncbi(genome_id: str, *, email: str) -> Any:
     with Entrez.efetch(db="nuccore", id=genome_id, rettype="fasta", retmode="text") as handle:
         record = SeqIO.read(handle, "fasta")
     return record
-
-

@@ -37,5 +37,3 @@ def multilevel_selection_decomposition(
     between = selection_strength_group * variance(group_means)
     within = selection_strength_individual * variance(individual_deviations)
     return between, within, between + within
-
-

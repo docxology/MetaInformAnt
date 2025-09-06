@@ -9,5 +9,3 @@ def test_find_motif_positions_iupac() -> None:
     pos = motifs.find_motif_positions(seq, "ATN")
     # positions of 'ATG' occur at index 3 and 6 and 10; ATN also includes index 11? (ATG at 3, 6, 10)
     assert 3 in pos and 6 in pos and 10 in pos
-
-

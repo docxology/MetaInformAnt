@@ -1,12 +1,6 @@
 from __future__ import annotations
 
-from metainformant.math import (
-    haldane_c_to_d,
-    haldane_d_to_c,
-    kosambi_c_to_d,
-    kosambi_d_to_c,
-    expected_r2_from_Ne_c,
-)
+from metainformant.math import expected_r2_from_Ne_c, haldane_c_to_d, haldane_d_to_c, kosambi_c_to_d, kosambi_d_to_c
 
 
 def test_haldane_and_kosambi_mapping_functions():
@@ -28,6 +22,3 @@ def test_expected_r2_from_Ne_c():
     c = 0.01
     r2 = expected_r2_from_Ne_c(Ne, c)
     assert abs(r2 - (1.0 / (1.0 + 4.0 * Ne * c))) < 1e-18
-
-
-

@@ -163,4 +163,3 @@ def wattersons_theta(seqs: Sequence[str]) -> float:
 
 
 # (single definitions above)
-

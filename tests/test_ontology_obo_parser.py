@@ -14,5 +14,3 @@ def test_parse_obo_minimal_fields() -> None:
         "GO:0000004",
     ]:
         assert onto.has_term(tid)
-
-

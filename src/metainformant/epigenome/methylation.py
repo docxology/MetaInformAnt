@@ -27,11 +27,11 @@ def compute_beta_values(df: pd.DataFrame) -> pd.DataFrame:
 
     Returns a new DataFrame with an added 'beta' column.
     """
-    total = (df["methylated"].astype(float) + df["unmethylated"].astype(float))
+    total = df["methylated"].astype(float) + df["unmethylated"].astype(float)
     # Avoid division by zero; where total is 0, define beta as 0.0
     beta = pd.Series(0.0, index=df.index)
     nonzero = total > 0
-    beta.loc[nonzero] = (df.loc[nonzero, "methylated"].astype(float) / total.loc[nonzero])
+    beta.loc[nonzero] = df.loc[nonzero, "methylated"].astype(float) / total.loc[nonzero]
     result = df.copy()
     result["beta"] = beta
     return result
@@ -49,6 +49,3 @@ def summarize_beta_by_chromosome(df_with_beta: pd.DataFrame) -> pd.DataFrame:
         raise ValueError("beta column missing; compute_beta_values first")
     means = df_with_beta.groupby("chrom", as_index=True)["beta"].mean()
     return means.to_frame(name="beta_mean")
-
-
-

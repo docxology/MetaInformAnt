@@ -20,5 +20,3 @@ def test_fst_fixed_differences_is_one() -> None:
     pop2 = ["TTTT", "TTTT"]
     fst = population.hudson_fst(pop1, pop2)
     assert abs(fst - 1.0) < 1e-9
-
-

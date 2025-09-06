@@ -46,5 +46,3 @@ def melting_temperature(seq: str) -> float:
     if n <= 14:
         return 2.0 * (a + t) + 4.0 * (g + c)
     return 64.9 + 41.0 * (g + c - 16.4) / n
-
-

@@ -21,5 +21,3 @@ def test_kabsch_rmsd_invariant_to_rotation_translation():
     B = (A @ Rz) + np.array([10.0, -5.0, 2.0])
     rmsd = compute_rmsd_kabsch(A, B)
     assert rmsd < 1e-6
-
-

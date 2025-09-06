@@ -24,5 +24,3 @@ def test_protein_cli_comp(tmp_path: Path):
     out = r.stdout.strip().splitlines()
     assert out and out[0].startswith("a\t") and "," in out[0]
     assert any(line.startswith("b\tG:") for line in out)
-
-

@@ -20,5 +20,3 @@ pnext = pg.island_model_update(0.2, migration_rate=0.1, migrant_pool_frequency=0
 q_rec = pg.mutation_selection_balance_recessive(mutation_rate=1e-6, selection_coefficient=1e-2)
 q_dom = pg.mutation_selection_balance_dominant(mutation_rate=1e-6, selection_coefficient=1e-2)
 ```
-
-

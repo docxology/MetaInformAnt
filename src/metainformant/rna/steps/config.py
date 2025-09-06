@@ -24,5 +24,3 @@ def run(
     Parameters follow the common wrapper contract; see `metainformant.rna.amalgkit.run_amalgkit`.
     """
     return _config(params, work_dir=work_dir, log_dir=log_dir, step_name="config", check=check)
-
-

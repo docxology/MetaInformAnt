@@ -3,20 +3,20 @@ from __future__ import annotations
 import math
 
 from metainformant.math import (
-    expectation,
-    variance,
-    standard_deviation,
-    weighted_variance,
-    covariance,
-    weighted_covariance,
     correlation,
-    weighted_correlation,
+    covariance,
+    delta_mean_trait,
+    expectation,
+    price_equation,
     relative_fitness,
     selection_differential,
     selection_gradient,
     selection_intensity,
-    price_equation,
-    delta_mean_trait,
+    standard_deviation,
+    variance,
+    weighted_correlation,
+    weighted_covariance,
+    weighted_variance,
 )
 
 
@@ -83,7 +83,3 @@ def test_selection_metrics_and_price_equation():
     cov2, trans2, total2 = price_equation(w, z)
     assert abs(trans2) < 1e-15
     assert math.isclose(total2, cov2, rel_tol=0, abs_tol=1e-15)
-
-
-
-

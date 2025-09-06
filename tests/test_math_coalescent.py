@@ -3,16 +3,16 @@ from __future__ import annotations
 import math
 
 from metainformant.math.coalescent import (
-    expected_time_to_mrca,
-    expected_total_branch_length,
+    expected_coalescent_waiting_times,
     expected_pairwise_diversity,
     expected_pairwise_diversity_from_theta,
-    watterson_theta,
     expected_segregating_sites,
     expected_sfs_counts,
-    expected_coalescent_waiting_times,
+    expected_time_to_mrca,
+    expected_total_branch_length,
     tajima_constants,
     tajimas_D,
+    watterson_theta,
 )
 
 
@@ -61,6 +61,7 @@ def test_waiting_times_and_tajimas_D_stability():
     # Tajima's D handles zero-variance gracefully
     assert tajimas_D(0, 0.0, 10) == 0.0
 
+
 from metainformant.math import expected_time_to_mrca, expected_total_branch_length
 
 
@@ -73,6 +74,3 @@ def test_expected_total_branch_length_harmonic():
     # n=4: H_{3} = 1 + 1/2 + 1/3 = 1.833333...
     val = expected_total_branch_length(4, 100)
     assert abs(val - (4 * 100 * (1.0 + 0.5 + 1.0 / 3.0))) < 1e-9
-
-
-

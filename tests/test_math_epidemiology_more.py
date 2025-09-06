@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from metainformant.math import sis_step, effective_reproduction_number
+from metainformant.math import effective_reproduction_number, sis_step
 
 
 def test_sis_step_and_effective_R():
@@ -12,6 +12,3 @@ def test_sis_step_and_effective_R():
     R0 = beta / gamma
     Re = effective_reproduction_number(R0, Sn)
     assert abs(Re - R0 * Sn) < 1e-12
-
-
-

@@ -41,5 +41,3 @@ class Ontology:
 
     def num_terms(self) -> int:
         return len(self.terms)
-
-

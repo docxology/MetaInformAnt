@@ -13,5 +13,3 @@ def test_segregating_sites_and_watterson_theta() -> None:
     assert S >= 1
     theta_w = population.wattersons_theta(seqs)
     assert theta_w > 0
-
-

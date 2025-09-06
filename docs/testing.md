@@ -346,5 +346,3 @@ uv run pytest -x tests/test_core_text.py
 ```
 
 Related: [CLI](./cli.md), [Core](./core.md)
-
-

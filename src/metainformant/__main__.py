@@ -4,12 +4,13 @@ import argparse
 import sys
 from pathlib import Path
 
+from .rna.configs import AmalgkitRunLayout, SpeciesProfile, build_step_params
+
+# defer DNA imports until the DNA subcommand is used to avoid optional deps at import time
+from .rna.workflow import AmalgkitWorkflowConfig, execute_workflow, plan_workflow_with_params
+
 # Explicitly import the test runner module to avoid confusion with the repo's root-level tests/
 from .tests.runner import run_all_tests
-# defer DNA imports until the DNA subcommand is used to avoid optional deps at import time
-from .rna.workflow import AmalgkitWorkflowConfig, execute_workflow
-from .rna.configs import SpeciesProfile, AmalgkitRunLayout, build_step_params
-from .rna.workflow import plan_workflow_with_params
 
 
 def main() -> None:
@@ -74,6 +75,7 @@ def main() -> None:
     math_sub = math_parser.add_subparsers(dest="math_cmd")
     # selection sub-tree (wire lazily to keep import cost low)
     from .math.selection_experiments.cli import add_math_selection_subparser as _add_sel
+
     _add_sel(math_sub)
 
     args = parser.parse_args()
@@ -88,12 +90,14 @@ def main() -> None:
         if args.ncbi_email:
             cmd.extend(["--ncbi-email", args.ncbi_email])
         import subprocess
+
         rc = subprocess.run(cmd).returncode
         sys.exit(rc)
 
     if args.command == "dna" and args.dna_cmd == "fetch":
         # Lazy import here to avoid importing optional Bio dependencies unless needed
         from .dna.genomes import is_valid_assembly_accession
+
         if not is_valid_assembly_accession(args.assembly):
             print(f"Invalid assembly accession: {args.assembly}")
             sys.exit(2)
@@ -130,6 +134,7 @@ def main() -> None:
 
         if args.rna_cmd == "plan-config":
             from .rna.workflow import load_workflow_config, plan_workflow
+
             cfg = load_workflow_config(args.config)
             steps = plan_workflow(cfg)
             for name, params in steps:
@@ -138,6 +143,7 @@ def main() -> None:
 
         if args.rna_cmd == "run-config":
             from .rna.workflow import load_workflow_config
+
             cfg = load_workflow_config(args.config)
             codes = execute_workflow(cfg, check=args.check)
             print("Return codes:", codes)
@@ -146,23 +152,27 @@ def main() -> None:
     if args.command == "protein":
         if args.protein_cmd == "taxon-ids":
             from .protein.proteomes import read_taxon_ids
+
             ids = read_taxon_ids(Path(args.file))
             print("\n".join(str(i) for i in ids))
             return
-        
+
         if args.protein_cmd == "comp":
-            from .protein.sequences import parse_fasta, calculate_aa_composition
+            from .protein.sequences import calculate_aa_composition, parse_fasta
+
             sequences = parse_fasta(Path(args.fasta))
             for seq_id, seq in sequences.items():
                 comp = calculate_aa_composition(seq)
                 comp_str = ",".join(f"{aa}:{freq:.3f}" for aa, freq in comp.items() if freq > 0)
                 print(f"{seq_id}\t{comp_str}")
             return
-        
+
         if args.protein_cmd == "rmsd-ca":
-            from .protein.structure_io import read_pdb_ca_coordinates
-            from .protein.structure import compute_rmsd_kabsch
             import numpy as np
+
+            from .protein.structure import compute_rmsd_kabsch
+            from .protein.structure_io import read_pdb_ca_coordinates
+
             coords_a = read_pdb_ca_coordinates(Path(args.pdb_a))
             coords_b = read_pdb_ca_coordinates(Path(args.pdb_b))
             if len(coords_a) != len(coords_b):
@@ -187,5 +197,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
-

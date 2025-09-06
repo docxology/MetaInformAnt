@@ -10,6 +10,7 @@ def test_each_step_runner_invokes_real_subcommand_or_skips(tmp_path: Path):
     ok, _ = check_cli_available()
     if not ok:
         import pytest
+
         pytest.skip("amalgkit not available on PATH")
 
     called: list[str] = []
@@ -34,5 +35,3 @@ def test_each_step_runner_invokes_real_subcommand_or_skips(tmp_path: Path):
         "sanity",
     }
     assert expected.issubset(set(called))
-
-

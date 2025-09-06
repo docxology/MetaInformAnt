@@ -27,5 +27,3 @@ def compute_rmsd_kabsch(coords_ref: np.ndarray, coords_mobile: np.ndarray) -> fl
     diff = A - B_rot
     rmsd = np.sqrt((diff * diff).sum() / a.shape[0])
     return float(rmsd)
-
-

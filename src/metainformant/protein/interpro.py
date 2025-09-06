@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Dict
+from typing import Dict, List
 
 import requests
 
@@ -21,5 +21,3 @@ def fetch_interpro_domains(uniprot_acc: str) -> List[Dict]:
     if isinstance(js, list):
         return js
     return []
-
-

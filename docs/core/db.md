@@ -15,5 +15,3 @@ Notes
 
 - Credentials are sourced from environment variables (see `core.config`). Do not store secrets under `config/`.
 - Query results and diagnostics written to disk should go under `output/`.
-
-

@@ -5,7 +5,8 @@ import matplotlib
 
 def test_plot_phylo_tree_smoke():
     matplotlib.use("Agg")
-    from Bio.Phylo.TreeConstruction import DistanceTreeConstructor, DistanceMatrix
+    from Bio.Phylo.TreeConstruction import DistanceMatrix, DistanceTreeConstructor
+
     from metainformant.visualization import plot_phylo_tree
 
     # small 3-tip tree
@@ -15,5 +16,3 @@ def test_plot_phylo_tree_smoke():
 
     ax = plot_phylo_tree(tree)
     assert ax is not None
-
-

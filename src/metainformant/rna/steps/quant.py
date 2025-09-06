@@ -18,5 +18,3 @@ def run(
 ):
     """Run `amalgkit quant` (quantification, e.g., Salmon)."""
     return _quant(params, work_dir=work_dir, log_dir=log_dir, step_name="quant", check=check)
-
-

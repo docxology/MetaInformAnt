@@ -24,5 +24,3 @@ def read_pdb_ca_coordinates(pdb_path: Path) -> List[tuple[float, float, float]]:
             continue
         coords.append((x, y, z))
     return coords
-
-

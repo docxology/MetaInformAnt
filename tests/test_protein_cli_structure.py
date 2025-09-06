@@ -32,5 +32,3 @@ def test_protein_cli_rmsd_ca(tmp_path: Path):
     assert r.returncode == 0
     val = float(r.stdout.strip())
     assert 0.0 <= val < 2.0
-
-

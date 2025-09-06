@@ -34,3 +34,37 @@ def load_cached_json(cache_dir: Path, key: str, *, ttl_seconds: int) -> Any | No
     return core_io.load_json(path)
 
 
+def get_json_cache(cache_file: Path, default: Any = None, max_age_seconds: float | None = None) -> Any:
+    """Get data from JSON cache file with optional TTL check.
+
+    Args:
+        cache_file: Path to cache file
+        default: Default value if cache miss or expired
+        max_age_seconds: Maximum age in seconds, None for no TTL check
+
+    Returns:
+        Cached data or default value
+    """
+    if not cache_file.exists():
+        return default
+
+    if max_age_seconds is not None:
+        age = time.time() - cache_file.stat().st_mtime
+        if age > max_age_seconds:
+            return default
+
+    try:
+        return core_io.load_json(cache_file)
+    except Exception:
+        return default
+
+
+def set_json_cache(cache_file: Path, data: Any) -> None:
+    """Set data in JSON cache file.
+
+    Args:
+        cache_file: Path to cache file
+        data: Data to cache
+    """
+    core_io.ensure_directory(cache_file.parent)
+    core_io.dump_json(data, cache_file)

@@ -52,7 +52,7 @@ runner = STEP_RUNNERS["quant"]
 res = runner({"threads": 4}, work_dir=Path("./work"), log_dir=Path("./work/logs"), check=False)
 ```
 
-Related: [Workflow](./workflow.md), [amalgkit](./amalgkit.md)
+Related: [Workflow](./workflow.md), [amalgkit](amalgkit/amalgkit.md)
 
 ## Step-by-step details
 

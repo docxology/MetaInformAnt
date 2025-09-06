@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from metainformant.dna import sequences, msa
+from metainformant.dna import msa, sequences
 
 
 def test_align_msa_returns_equal_length_alignment() -> None:
@@ -12,5 +12,3 @@ def test_align_msa_returns_equal_length_alignment() -> None:
     assert set(aln.keys()) == set(seqs.keys())
     lengths = {len(s) for s in aln.values()}
     assert len(lengths) == 1  # all aligned sequences have same length
-
-

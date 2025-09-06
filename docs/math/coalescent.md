@@ -57,5 +57,3 @@ Notes
 
 - These helpers assume standard neutral coalescent and per-site mutation rates when θ is used.
 - For outputs generated in examples or notebooks, write files under `output/` by default.
-
-

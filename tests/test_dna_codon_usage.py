@@ -12,5 +12,3 @@ def test_codon_usage_counts_and_freqs() -> None:
     seq2 = "ATGAAAAT"  # 2 full codons + partial
     counts2 = codon.codon_counts(seq2)
     assert sum(counts2.values()) == 2
-
-

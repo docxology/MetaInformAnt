@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from metainformant.dna import sequences, phylogeny
+from metainformant.dna import phylogeny, sequences
 
 
 def test_neighbor_joining_tree_from_toy_fasta() -> None:
@@ -16,5 +16,3 @@ def test_neighbor_joining_tree_from_toy_fasta() -> None:
 
     newick = phylogeny.to_newick(tree)
     assert isinstance(newick, str) and ";" in newick
-
-

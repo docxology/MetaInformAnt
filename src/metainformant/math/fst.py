@@ -27,6 +27,3 @@ def fst_from_allele_freqs(subpop_allele_freqs: Iterable[float]) -> float:
     Hs = sum(2.0 * p * (1.0 - p) for p in ps) / len(ps)
     Ht = 2.0 * pbar * (1.0 - pbar)
     return fst_from_heterozygosity(Hs, Ht)
-
-
-

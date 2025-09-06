@@ -14,5 +14,3 @@ def read_taxon_ids(taxon_id_file: Path) -> list[int]:
         except ValueError:
             continue
     return ids
-
-

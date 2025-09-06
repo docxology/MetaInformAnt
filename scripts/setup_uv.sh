@@ -189,5 +189,3 @@ else
 fi
 
 echo "Setup complete. You can run commands with 'uv run <cmd>' or activate: source .venv/bin/activate"
-
-

@@ -11,5 +11,3 @@ def is_valid_assembly_accession(accession: str) -> bool:
     Examples: GCF_000001405.39, GCA_000001405
     """
     return bool(_ASSEMBLY_REGEX.match(accession))
-
-

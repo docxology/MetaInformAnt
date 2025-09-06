@@ -10,5 +10,3 @@ def double(x: int) -> int:
 
 out = parallel.thread_map(double, [1, 2, 3], max_workers=4)
 ```
-
-

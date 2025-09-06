@@ -13,5 +13,3 @@ ax = trees.plot_phylo_tree(tree)
 
 # Cross-link: build trees in [DNA: Phylogeny](../dna/phylogeny.md) and render here.
 ```
-
-

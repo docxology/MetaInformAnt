@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 from metainformant.math import (
+    equilibrium_heterozygosity_infinite_alleles,
     heterozygosity_decay,
     inbreeding_coefficient,
-    equilibrium_heterozygosity_infinite_alleles,
     island_model_update,
-    mutation_selection_balance_recessive,
     mutation_selection_balance_dominant,
+    mutation_selection_balance_recessive,
 )
 
 
@@ -43,6 +43,3 @@ def test_island_model_update_and_mutation_selection_balance():
     q_dom = mutation_selection_balance_dominant(mu, s)
     assert abs(q_rec - (mu / s) ** 0.5) < 1e-18
     assert abs(q_dom - (mu / s)) < 1e-18
-
-
-

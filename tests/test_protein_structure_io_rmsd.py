@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from pathlib import Path
+
 import numpy as np
 
 
 def test_read_pdb_ca_and_rmsd(tmp_path: Path):
-    from metainformant.protein.structure_io import read_pdb_ca_coordinates
     from metainformant.protein.structure import compute_rmsd_kabsch
+    from metainformant.protein.structure_io import read_pdb_ca_coordinates
 
     pdb_text = (
         "ATOM      1  N   ALA A   1      11.104  13.207   9.479  1.00 20.00           N\n"
@@ -27,5 +28,3 @@ def test_read_pdb_ca_and_rmsd(tmp_path: Path):
     B = (A @ Rz) + np.array([2.0, -1.0, 0.5])
     rmsd = compute_rmsd_kabsch(A, B)
     assert rmsd < 1e-6
-
-

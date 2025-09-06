@@ -16,5 +16,3 @@ def test_manifest_written_and_logs_directory(tmp_path: Path):
     default_manifest = tmp_path / "amalgkit.manifest.jsonl"
     assert default_log_dir.as_posix().endswith("/logs")
     assert default_manifest.name == "amalgkit.manifest.jsonl"
-
-

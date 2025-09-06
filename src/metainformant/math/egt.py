@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Iterable, List
 
 
-def replicator_step(frequencies: Iterable[float], payoff_matrix: Iterable[Iterable[float]] ) -> list[float]:
+def replicator_step(frequencies: Iterable[float], payoff_matrix: Iterable[Iterable[float]]) -> list[float]:
     """Discrete replicator update x_i' = x_i * ( (A x)_i ) / (x^T A x).
 
     Frequencies are clamped to be non-negative and renormalized to sum to 1.
@@ -26,7 +26,7 @@ def replicator_step(frequencies: Iterable[float], payoff_matrix: Iterable[Iterab
     return [max(0.0, v) / s if s > 0 else 0.0 for v in x_next]
 
 
-def replicator_derivative(frequencies: Iterable[float], payoff_matrix: Iterable[Iterable[float]] ) -> list[float]:
+def replicator_derivative(frequencies: Iterable[float], payoff_matrix: Iterable[Iterable[float]]) -> list[float]:
     """Continuous-time replicator equation derivative: dx_i/dt = x_i[(A x)_i - x^T A x]."""
     x = [max(0.0, float(v)) for v in frequencies]
     total = sum(x)
@@ -37,6 +37,3 @@ def replicator_derivative(frequencies: Iterable[float], payoff_matrix: Iterable[
     Ax = [sum(A[i][j] * x[j] for j in range(len(x))) for i in range(len(x))]
     xTAx = sum(x[i] * Ax[i] for i in range(len(x)))
     return [x[i] * (Ax[i] - xTAx) for i in range(len(x))]
-
-
-

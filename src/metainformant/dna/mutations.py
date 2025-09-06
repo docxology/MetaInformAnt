@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Dict
 import random
+from typing import Dict
 
 
 def apply_point_mutations(seq: str, changes: Dict[int, str]) -> str:
@@ -46,5 +46,3 @@ def random_point_mutations(seq: str, *, num_mutations: int, seed: int | None = N
         new_base = rng.choice(options)
         arr[pos] = new_base if arr[pos].isupper() else new_base.lower()
     return "".join(arr)
-
-

@@ -25,5 +25,3 @@ def run_all_tests(pytest_args: list[str] | None = None) -> int:
     if pytest_args:
         args.extend(pytest_args)
     return pytest.main(args)
-
-

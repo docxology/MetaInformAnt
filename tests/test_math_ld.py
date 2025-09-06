@@ -13,6 +13,3 @@ def test_ld_coefficients_and_r2():
     r2 = r_squared(0.6, 0.4, 0.7, 0.3, 0.5)
     denom = 0.6 * 0.4 * 0.7 * 0.3
     assert abs(r2 - ((0.08 * 0.08) / denom)) < 1e-12
-
-
-

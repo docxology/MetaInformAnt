@@ -33,5 +33,3 @@ For comprehensive QC, trimming, and preprocessing, we recommend using specialize
 - Additional utilities: fqtools, NGSUtils (fastqutils), fastQ_brew
 
 These tools provide metrics such as per-base quality, GC content distributions, adapter content, and duplication levels that complement our lightweight summaries.
-
-

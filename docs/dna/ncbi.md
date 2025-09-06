@@ -17,5 +17,3 @@ rec = entrez.get_genome_from_ncbi("NC_001422.1", email="you@example.com")
 ```
 
 Note: Entrez requires a valid email and network access.
-
-

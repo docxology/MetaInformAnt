@@ -4,7 +4,6 @@ from collections import Counter
 from pathlib import Path
 from typing import Dict
 
-
 VALID_AA = set("ACDEFGHIKLMNPQRSTVWY")
 
 
@@ -54,5 +53,3 @@ def kmer_frequencies(seq: str, *, k: int) -> Dict[str, int]:
             continue
         freq[kmer] = freq.get(kmer, 0) + 1
     return freq
-
-

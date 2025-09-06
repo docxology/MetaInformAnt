@@ -18,5 +18,3 @@ def run(
 ):
     """Run `amalgkit metadata` (fetch SRA/ENA metadata)."""
     return _metadata(params, work_dir=work_dir, log_dir=log_dir, step_name="metadata", check=check)
-
-

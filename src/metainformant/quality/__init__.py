@@ -19,7 +19,7 @@ Key Features:
 
 Real Implementation Policy:
 All functions perform actual quality control computations without mocking.
-External tools like FastQC may be used when available, with graceful 
+External tools like FastQC may be used when available, with graceful
 degradation to internal implementations when not.
 """
 
@@ -28,33 +28,33 @@ from __future__ import annotations
 # Core quality control imports (only import existing modules)
 try:
     from .fastq import (
+        adapter_content,
         analyze_fastq_quality,
+        duplication_levels,
+        gc_content_distribution,
+        overrepresented_sequences,
         per_base_quality,
         per_sequence_quality,
         sequence_length_distribution,
-        gc_content_distribution,
-        adapter_content,
-        overrepresented_sequences,
-        duplication_levels,
     )
 except ImportError:
     pass
 
 # TODO: Implement these modules
 # from .contamination import (...)
-# from .metrics import (...) 
+# from .metrics import (...)
 # from .reporting import (...)
 # from .filtering import (...)
 
 __all__ = [
     # FASTQ analysis (implemented)
     "analyze_fastq_quality",
-    "per_base_quality", 
+    "per_base_quality",
     "per_sequence_quality",
     "sequence_length_distribution",
     "gc_content_distribution",
     "adapter_content",
-    "overrepresented_sequences", 
+    "overrepresented_sequences",
     "duplication_levels",
     # TODO: Add other modules when implemented
 ]

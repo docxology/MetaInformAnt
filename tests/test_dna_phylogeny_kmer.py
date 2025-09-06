@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from metainformant.dna import sequences, phylogeny
+from metainformant.dna import phylogeny, sequences
 
 
 def test_neighbor_joining_tree_from_kmer_distance() -> None:
@@ -11,5 +11,3 @@ def test_neighbor_joining_tree_from_kmer_distance() -> None:
     tree = phylogeny.nj_tree_from_kmer(seqs, k=2, metric="cosine")
     assert tree is not None
     assert len(tree.get_terminals()) == len(seqs)
-
-

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import List
 
-
 # Very simple helix propensity scale (normalized roughly 0..1)
 HELIX_PROP = {
     "A": 1.00,
@@ -38,5 +37,3 @@ def simple_helix_coil_propensity(seq: str) -> List[float]:
     for c in seq.upper():
         out.append(HELIX_PROP.get(c, 0.0))
     return out
-
-

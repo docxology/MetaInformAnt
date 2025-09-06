@@ -1,14 +1,13 @@
 from __future__ import annotations
 
-from typing import Dict
 import shutil
 import subprocess
 from pathlib import Path
+from typing import Dict
 
-from Bio.Align import MultipleSeqAlignment
+from Bio.Align import MultipleSeqAlignment, PairwiseAligner
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
-from Bio.Align import PairwiseAligner
 
 
 def align_msa(id_to_seq: Dict[str, str], method: str = "auto") -> Dict[str, str]:
@@ -45,7 +44,7 @@ def align_msa(id_to_seq: Dict[str, str], method: str = "auto") -> Dict[str, str]
         new_aligned: Dict[str, str] = {}
         ref_pointer = 0
         for i, ch in enumerate(gapped_ref):
-            if ch != '-':
+            if ch != "-":
                 ref_pointer += 1
         # For simplicity, pad all existing sequences with '-' to match new length
         new_len = len(gapped_ref)
@@ -93,5 +92,3 @@ def align_with_cli(id_to_seq: Dict[str, str], tool: str = "muscle") -> Dict[str,
     for rec in SeqIO.parse(str(out_fa), "fasta"):
         out[rec.id] = str(rec.seq)
     return out
-
-

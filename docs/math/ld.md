@@ -16,5 +16,3 @@ d = kosambi_c_to_d(c)     # inverse mapping under Kosambi
 
 E_r2 = expected_r2_from_Ne_c(Ne=1000, recombination_fraction=0.01)
 ```
-
-

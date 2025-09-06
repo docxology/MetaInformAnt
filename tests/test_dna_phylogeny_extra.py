@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from metainformant.dna import sequences, phylogeny
+from metainformant.dna import phylogeny, sequences
 
 
 def test_bootstrap_support_and_upgma() -> None:
@@ -16,5 +16,3 @@ def test_bootstrap_support_and_upgma() -> None:
     # small bootstrap just to exercise path
     supports = phylogeny.bootstrap_support(seqs, n_replicates=10, method="nj")
     assert isinstance(supports, dict)
-
-

@@ -31,7 +31,6 @@ def expected_total_branch_length(sample_size: int, effective_population_size: fl
     return 4.0 * N * H
 
 
-
 def expected_pairwise_diversity(effective_population_size: float, mutation_rate: float) -> float:
     """Expected pairwise nucleotide diversity π under neutral equilibrium: π ≈ 4Neμ (diploid)."""
     Ne = max(0.0, float(effective_population_size))
@@ -55,7 +54,7 @@ def tajima_constants(sample_size: int) -> dict[str, float]:
     """
     n = int(sample_size)
     if n < 2:
-        return {k: 0.0 for k in ("a1","a2","b1","b2","c1","c2","e1","e2")}
+        return {k: 0.0 for k in ("a1", "a2", "b1", "b2", "c1", "c2", "e1", "e2")}
     a1 = sum(1.0 / i for i in range(1, n))
     a2 = sum(1.0 / (i * i) for i in range(1, n))
     b1 = (n + 1) / (3.0 * (n - 1))
@@ -82,7 +81,7 @@ def tajimas_D(num_segregating_sites: int, pairwise_diversity: float, sample_size
     var = const["e1"] * S + const["e2"] * S * (S - 1)
     if var <= 0:
         return 0.0
-    return D_num / (var ** 0.5)
+    return D_num / (var**0.5)
 
 
 def watterson_theta(
@@ -128,8 +127,8 @@ def expected_segregating_sites(
         n_as_float = float(n_raw)
         th_as_float = float(th_raw)
     except Exception:
-        n_as_float = float('nan')
-        th_as_float = float('nan')
+        n_as_float = float("nan")
+        th_as_float = float("nan")
 
     if (n_as_float < 2.0) and (th_as_float >= 2.0) and (abs(th_as_float - round(th_as_float)) < 1e-9):
         # Likely called as (theta, n)
@@ -167,9 +166,7 @@ def expected_sfs_counts(
     return [factor / i for i in range(1, n)]
 
 
-def expected_coalescent_waiting_times(
-    sample_size: int, effective_population_size: float
-) -> list[float]:
+def expected_coalescent_waiting_times(sample_size: int, effective_population_size: float) -> list[float]:
     """Expected waiting times between coalescent events T_k for k=n..2 (diploid scaling).
 
     E[T_k] = 4N / (k(k-1)). Returns a list of length n-1 in descending k.
@@ -179,6 +176,7 @@ def expected_coalescent_waiting_times(
     if n < 2 or N <= 0:
         return []
     return [4.0 * N / (k * (k - 1)) for k in range(n, 1, -1)]
+
 
 @dataclass(slots=True)
 class CoalescentSummary:
@@ -232,7 +230,3 @@ def site_frequency_spectrum_counts(derived_counts: Iterable[int], sample_size: i
             if 1 <= minor <= half:
                 sfs[minor - 1] += 1
     return sfs
-
- 
-
-

@@ -12,5 +12,3 @@ def load_antwiki_json(path: Path) -> list[dict[str, Any]]:
     if isinstance(data, dict):
         return [data]
     return []
-
-

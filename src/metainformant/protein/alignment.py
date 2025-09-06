@@ -59,5 +59,3 @@ def needleman_wunsch(a: str, b: str, *, match: int = 1, mismatch: int = -1, gap:
     align_a.reverse()
     align_b.reverse()
     return score[n][m], "".join(align_a), "".join(align_b)
-
-

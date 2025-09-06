@@ -11,5 +11,3 @@ def test_kmer_distance_identical_zero_and_diff_positive() -> None:
     d_ac = distances.kmer_distance(a, c, k=2, metric="cosine")
     assert abs(d_ab) < 1e-12
     assert d_ac > 0
-
-

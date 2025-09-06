@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from metainformant.math import seir_step, herd_immunity_threshold
+from metainformant.math import herd_immunity_threshold, seir_step
 
 
 def test_seir_step_and_herd_immunity_threshold():
@@ -14,6 +14,3 @@ def test_seir_step_and_herd_immunity_threshold():
     R0 = 3.0
     hit = herd_immunity_threshold(R0)
     assert abs(hit - (1.0 - 1.0 / R0)) < 1e-12
-
-
-

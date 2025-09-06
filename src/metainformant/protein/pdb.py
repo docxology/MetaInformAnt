@@ -27,5 +27,3 @@ def fetch_pdb_structure(pdb_id: str, out_dir: Path, *, fmt: str = "pdb") -> Path
             if chunk:
                 fh.write(chunk)
     return out_path
-
-

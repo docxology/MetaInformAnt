@@ -23,5 +23,3 @@ def parse_vcf(path: str | Path) -> Dict[str, Any]:
                 continue
             num_variants += 1
     return {"samples": samples, "num_variants": num_variants}
-
-

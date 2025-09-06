@@ -18,5 +18,3 @@ def run(
 ):
     """Run `amalgkit sanity` (final checks)."""
     return _sanity(params, work_dir=work_dir, log_dir=log_dir, step_name="sanity", check=check)
-
-

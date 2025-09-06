@@ -26,6 +26,3 @@ def read_bedgraph(path: str | Path) -> pd.DataFrame:
             chrom, start, end, value = parts[0], int(parts[1]), int(parts[2]), float(parts[3])
             rows.append((chrom, start, end, value))
     return pd.DataFrame(rows, columns=["chrom", "start", "end", "value"])
-
-
-

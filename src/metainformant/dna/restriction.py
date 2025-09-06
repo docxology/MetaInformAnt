@@ -23,5 +23,3 @@ def find_restriction_sites(seq: str, enzyme_to_motif: Dict[str, str]) -> Dict[st
         pat = re.compile(regex, re.IGNORECASE)
         results[name] = [m.start() for m in pat.finditer(seq)]
     return results
-
-

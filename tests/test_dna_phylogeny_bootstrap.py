@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from metainformant.dna import sequences, phylogeny
+from metainformant.dna import phylogeny, sequences
 
 
 def test_bootstrap_support_deterministic_with_seed() -> None:
@@ -12,5 +12,3 @@ def test_bootstrap_support_deterministic_with_seed() -> None:
     s2 = phylogeny.bootstrap_support(seqs, n_replicates=25, method="nj", random_state=42)
     assert s1 == s2
     assert all(0.0 <= v <= 1.0 for v in s1.values())
-
-

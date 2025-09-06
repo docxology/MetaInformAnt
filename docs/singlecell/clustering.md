@@ -456,11 +456,11 @@ print(f"Clustering stability (ARI): {stability:.3f}")
 
 ## Testing
 
-Comprehensive tests are available in `tests/test_singlecell_clustering.py`:
+Single-cell clustering functionality is tested as part of the broader single-cell test suite:
 
 ```bash
-# Run clustering tests
-uv run pytest tests/test_singlecell_clustering.py -v
+# Run single-cell tests (includes clustering examples)
+uv run pytest tests/test_singlecell_*.py -v
 ```
 
 ## Related Documentation

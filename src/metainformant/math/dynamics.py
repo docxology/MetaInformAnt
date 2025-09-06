@@ -30,6 +30,3 @@ def lotka_volterra_step(
     x_next = x + dt * (alpha * x - beta * x * y)
     y_next = y + dt * (delta * x * y - gamma * y)
     return max(0.0, x_next), max(0.0, y_next)
-
-
-

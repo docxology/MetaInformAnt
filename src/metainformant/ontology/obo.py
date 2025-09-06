@@ -74,5 +74,3 @@ def parse_obo(path: str | Path) -> Ontology:
                 )
                 ontology.add_term(term)
     return ontology
-
-

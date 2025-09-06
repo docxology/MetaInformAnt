@@ -38,5 +38,3 @@ Next steps
 - Explore [CLI](./cli.md)
 - DNA quickstart: [DNA overview](./dna/index.md)
 - RNA workflow: [RNA overview](./rna/index.md)
-
-

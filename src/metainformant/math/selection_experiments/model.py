@@ -5,7 +5,6 @@ from typing import Any, Callable
 
 import numpy as np
 
-
 colors: dict[str, str] = {
     "red": "#EC4C4C",
     "green": "#70D07C",
@@ -141,7 +140,9 @@ def simulate_generation(
         ratio_s=E_ws / cov_ws if cov_ws != 0 else np.nan,
         ratio_q=E_wq / cov_wq if cov_wq != 0 else np.nan,
         QSC=E_wq / (np.sqrt(np.var(w) * np.var(q))) if np.var(w) * np.var(q) > 0 else np.nan,
-        QSC_ratio=(E_wq / np.sqrt(np.var(w) * np.var(q)) / s_hat) if (np.var(w) * np.var(q) > 0 and s_hat != 0) else np.nan,
+        QSC_ratio=(
+            (E_wq / np.sqrt(np.var(w) * np.var(q)) / s_hat) if (np.var(w) * np.var(q) > 0 and s_hat != 0) else np.nan
+        ),
     )
 
 
@@ -204,5 +205,3 @@ def simulate_generations(
         rho_sq_means=np.corrcoef(s_means, q_means)[0, 1] if len(s_means) > 1 else np.nan,
     )
     return gr
-
-

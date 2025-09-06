@@ -10,5 +10,3 @@ flowchart LR
   B --> C[Newick]
   C --> D[Trees Plot]
 ```
-
-

@@ -11,5 +11,3 @@ def test_consensus_majority_ignores_gaps() -> None:
     }
     cons = consensus.consensus_from_alignment(aln)
     assert cons == "ACGT"
-
-

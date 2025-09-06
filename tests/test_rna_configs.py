@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from metainformant.rna.configs import SpeciesProfile, AmalgkitRunLayout, build_step_params
+from metainformant.rna.configs import AmalgkitRunLayout, SpeciesProfile, build_step_params
 from metainformant.rna.workflow import AmalgkitWorkflowConfig
 from metainformant.rna.workflow import plan_workflow as plan_basic
 from metainformant.rna.workflow import plan_workflow_with_params
@@ -37,7 +37,7 @@ def test_build_step_params_includes_species_tissues_and_layout(tmp_path: Path):
 
 def test_plan_workflow_with_params_merges_common_and_specific(tmp_path: Path):
     cfg = AmalgkitWorkflowConfig(work_dir=tmp_path, threads=7)
-    species = SpeciesProfile(name="Apis mellifera", taxon_id=7460, tissues=["brain"]) 
+    species = SpeciesProfile(name="Apis mellifera", taxon_id=7460, tissues=["brain"])
     layout = AmalgkitRunLayout(base_dir=tmp_path)
     params_map = build_step_params(species, layout)
 
@@ -49,5 +49,3 @@ def test_plan_workflow_with_params_merges_common_and_specific(tmp_path: Path):
         if name in ("metadata", "select"):
             assert params.get("taxon-id") == 7460
             assert params.get("tissue") == ["brain"]
-
-

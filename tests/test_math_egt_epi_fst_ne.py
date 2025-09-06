@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 from metainformant.math import (
-    replicator_step,
-    replicator_derivative,
-    sir_step,
     basic_reproduction_number,
-    fst_from_heterozygosity,
-    fst_from_allele_freqs,
-    harmonic_mean_effective_size,
     effective_size_sex_ratio,
+    fst_from_allele_freqs,
+    fst_from_heterozygosity,
+    harmonic_mean_effective_size,
+    replicator_derivative,
+    replicator_step,
+    sir_step,
 )
 
 
@@ -40,6 +40,3 @@ def test_effective_size():
     Ne = harmonic_mean_effective_size([100, 50, 200])
     assert Ne > 0
     assert abs(effective_size_sex_ratio(40, 60) - (4 * 40 * 60) / (40 + 60)) < 1e-12
-
-
-

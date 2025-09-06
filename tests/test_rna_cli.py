@@ -50,5 +50,3 @@ def test_rna_plan_species_cli_includes_species_and_tissue(tmp_path: Path):
     assert "metadata" in out and "select" in out
     assert "taxon-id" in out
     assert "brain" in out and "thorax" in out
-
-

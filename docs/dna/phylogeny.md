@@ -26,5 +26,3 @@ newick = phylogeny.to_newick(tree)
 ascii_tree = phylogeny.to_ascii(tree)
 stats = phylogeny.basic_tree_stats(tree)
 ```
-
-

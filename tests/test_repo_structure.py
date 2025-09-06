@@ -26,5 +26,3 @@ def test_expected_package_layout_exists():
 def test_pyproject_exists():
     repo_root = os.path.dirname(os.path.dirname(__file__))
     assert os.path.isfile(os.path.join(repo_root, "pyproject.toml"))
-
-

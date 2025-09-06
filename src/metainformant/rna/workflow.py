@@ -1,18 +1,18 @@
 from __future__ import annotations
 
+import hashlib
+import json
+import os
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Iterable, Mapping
-from datetime import datetime
-import json
-import hashlib
-import os
 
-from .amalgkit import AmalgkitParams, build_amalgkit_command, check_cli_available, ensure_cli_available
+from ..core.config import apply_env_overrides, load_mapping_from_file
+from ..core.io import dump_json, ensure_directory, read_delimited, write_delimited, write_jsonl
 from . import steps as _steps_mod
+from .amalgkit import AmalgkitParams, build_amalgkit_command, check_cli_available, ensure_cli_available
 from .deps import check_step_dependencies
-from ..core.config import load_mapping_from_file, apply_env_overrides
-from ..core.io import ensure_directory, write_jsonl, dump_json, read_delimited, write_delimited
 
 
 @dataclass
@@ -25,7 +25,9 @@ class AmalgkitWorkflowConfig:
     manifest_path: Path | None = None
     per_step: dict[str, AmalgkitParams] = field(default_factory=dict)
     auto_install_amalgkit: bool = False
-    genome: dict[str, Any] | None = None  # e.g., { accession: GCF_*, index_out: path, dest_dir: path, ftp_url: str, include: [...] }
+    genome: dict[str, Any] | None = (
+        None  # e.g., { accession: GCF_*, index_out: path, dest_dir: path, ftp_url: str, include: [...] }
+    )
     filters: dict[str, Any] = field(default_factory=dict)  # e.g., { require_tissue: true }
 
     def to_common_params(self) -> AmalgkitParams:
@@ -346,7 +348,11 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
             if meta_path_p.exists():
                 out_filtered = meta_path_p.with_name("metadata.filtered.tissue.tsv")
                 try:
-                    rows = [row for row in read_delimited(meta_path_p, delimiter="\t") if (row.get("tissue", "").strip() != "")]
+                    rows = [
+                        row
+                        for row in read_delimited(meta_path_p, delimiter="\t")
+                        if (row.get("tissue", "").strip() != "")
+                    ]
                     write_delimited(rows, out_filtered, delimiter="\t")
                     filtered["metadata"] = str(out_filtered)
                     manifest_records.append(
@@ -555,5 +561,3 @@ __all__ = [
     "execute_workflow",
     "load_workflow_config",
 ]
-
-

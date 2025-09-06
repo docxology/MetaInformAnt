@@ -23,5 +23,3 @@ def test_load_workflow_config_yaml(tmp_path: Path):
     # common params merged with per-step
     assert "metadata" in steps and isinstance(steps["metadata"], dict)
     assert "quant" in steps and steps["quant"]["threads"] == 2
-
-

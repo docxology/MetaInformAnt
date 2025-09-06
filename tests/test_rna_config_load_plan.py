@@ -39,6 +39,7 @@ def test_env_overrides_for_config_threads(tmp_path: Path):
     cfg_path = repo_root / "config" / "amalgkit_pbarbatus.yaml"
 
     import os
+
     old = os.environ.get("AK_THREADS")
     os.environ["AK_THREADS"] = "3"
     cfg = load_workflow_config(cfg_path)
@@ -47,5 +48,3 @@ def test_env_overrides_for_config_threads(tmp_path: Path):
         del os.environ["AK_THREADS"]
     else:
         os.environ["AK_THREADS"] = old
-
-

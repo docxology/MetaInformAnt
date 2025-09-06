@@ -10,8 +10,8 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from ..amalgkit import getfastq as _getfastq
 from ...core.io import read_delimited
+from ..amalgkit import getfastq as _getfastq
 
 
 def _inject_robust_defaults(raw_params: Mapping[str, Any] | None) -> dict[str, Any]:
@@ -149,7 +149,18 @@ def run(
                 if (srr_dir / f"{srr}.sra").exists():
                     fasterq_bin = shutil.which("fasterq-dump")
                     if fasterq_bin:
-                        subprocess.run([fasterq_bin, "--threads", str(effective_params.get("threads", 6)), "--split-files", "-O", str(srr_dir), str(srr_dir / f"{srr}.sra")], check=False)
+                        subprocess.run(
+                            [
+                                fasterq_bin,
+                                "--threads",
+                                str(effective_params.get("threads", 6)),
+                                "--split-files",
+                                "-O",
+                                str(srr_dir),
+                                str(srr_dir / f"{srr}.sra"),
+                            ],
+                            check=False,
+                        )
                         # compress
                         pigz = shutil.which("pigz")
                         if (srr_dir / f"{srr}_1.fastq").exists():
@@ -183,7 +194,18 @@ def run(
                 subprocess.run([prefetch_bin, "--output-directory", str(srr_dir), srr], check=False)
                 sra_path = srr_dir / f"{srr}.sra"
                 if sra_path.exists():
-                    subprocess.run([fasterq_bin, "--threads", str(effective_params.get("threads", 6)), "--split-files", "-O", str(srr_dir), str(sra_path)], check=False)
+                    subprocess.run(
+                        [
+                            fasterq_bin,
+                            "--threads",
+                            str(effective_params.get("threads", 6)),
+                            "--split-files",
+                            "-O",
+                            str(srr_dir),
+                            str(sra_path),
+                        ],
+                        check=False,
+                    )
                     # gzip if present
                     pigz = shutil.which("pigz")
                     if (srr_dir / f"{srr}_1.fastq").exists():
@@ -206,5 +228,3 @@ def run(
     if check and rc != 0:
         raise subprocess.CalledProcessError(rc, result.args)
     return result
-
-

@@ -13,6 +13,7 @@ except Exception:  # pragma: no cover - optional
 
 try:  # pragma: no cover - optional dependency
     import importlib
+
     tomllib = importlib.import_module("tomllib")  # Python 3.11+
 except Exception:  # pragma: no cover - optional
     tomllib = None  # type: ignore
@@ -44,6 +45,52 @@ def load_postgres_config_from_env(prefix: str = "PG") -> PostgresConfig | None:
 
     return PostgresConfig(host=host, port=port, database=database, user=user, password=password)
 
+
+def load_config_file(config_path: Path) -> Dict[str, Any]:
+    """Load configuration from YAML, TOML, or JSON file.
+
+    Args:
+        config_path: Path to configuration file
+
+    Returns:
+        Configuration dictionary
+
+    Raises:
+        ValueError: If file format not supported or file cannot be parsed
+    """
+    if not config_path.exists():
+        raise FileNotFoundError(f"Configuration file not found: {config_path}")
+
+    suffix = config_path.suffix.lower()
+    content = config_path.read_text()
+
+    if suffix in {".yaml", ".yml"}:
+        if yaml is None:
+            raise RuntimeError("PyYAML not available for YAML config files")
+        return yaml.safe_load(content)
+    elif suffix == ".toml":
+        if tomllib is None:
+            raise RuntimeError("tomllib not available for TOML config files")
+        return tomllib.loads(content)
+    elif suffix == ".json":
+        import json
+
+        return json.loads(content)
+    else:
+        raise ValueError(f"Unsupported config file format: {suffix}")
+
+
+def get_env_or_default(env_var: str, default: str) -> str:
+    """Get environment variable value or default.
+
+    Args:
+        env_var: Environment variable name
+        default: Default value if not set
+
+    Returns:
+        Environment variable value or default
+    """
+    return os.getenv(env_var, default)
 
 
 def _coerce_bool(s: str) -> bool:
@@ -82,6 +129,7 @@ def load_typed_env(*, prefix: str, keys: Mapping[str, type]) -> Dict[str, Any]:
 #
 # Generic configuration loader used across the project
 #
+
 
 def _read_text(path: Path) -> str:
     with open(path, "rt", encoding="utf-8") as fh:
@@ -279,4 +327,3 @@ def _parse_simple_yaml_mapping(text: str) -> Dict[str, Any]:
         result[key] = children
 
     return result
-

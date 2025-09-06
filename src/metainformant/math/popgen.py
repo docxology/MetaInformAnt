@@ -29,9 +29,7 @@ def selection_update(
     if not (0.0 <= p <= 1.0):
         return p
     q = 1.0 - p
-    mean_fitness = (
-        (p * p) * fitness_AA + 2.0 * p * q * fitness_Aa + (q * q) * fitness_aa
-    )
+    mean_fitness = (p * p) * fitness_AA + 2.0 * p * q * fitness_Aa + (q * q) * fitness_aa
     if mean_fitness <= 0.0:
         return p
     next_p_numerator = (p * p) * fitness_AA + p * q * fitness_Aa
@@ -90,7 +88,6 @@ def watterson_theta(num_segregating_sites: int, sample_size: int) -> float:
     return S / a1
 
 
-
 def heterozygosity_decay(initial_heterozygosity: float, effective_population_size: float, generations: int) -> float:
     """Expected heterozygosity decay under drift: H_t = H_0 (1 - 1/(2Ne))^t.
 
@@ -102,7 +99,7 @@ def heterozygosity_decay(initial_heterozygosity: float, effective_population_siz
     if Ne <= 0:
         return 0.0
     factor = 1.0 - 1.0 / (2.0 * Ne)
-    return max(0.0, min(1.0, H0 * (factor ** t)))
+    return max(0.0, min(1.0, H0 * (factor**t)))
 
 
 def inbreeding_coefficient(effective_population_size: float, generations: int) -> float:
@@ -112,7 +109,7 @@ def inbreeding_coefficient(effective_population_size: float, generations: int) -
     if Ne <= 0:
         return 0.0
     factor = 1.0 - 1.0 / (2.0 * Ne)
-    Ft = 1.0 - (factor ** t)
+    Ft = 1.0 - (factor**t)
     return max(0.0, min(1.0, Ft))
 
 
@@ -153,5 +150,3 @@ def mutation_selection_balance_dominant(mutation_rate: float, selection_coeffici
     if s <= 0:
         return 0.0
     return mu / s
-
-

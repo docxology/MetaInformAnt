@@ -1,11 +1,6 @@
 from __future__ import annotations
 
-from metainformant.math import (
-    hardy_weinberg_genotype_freqs,
-    selection_update,
-    mutation_update,
-    fixation_probability,
-)
+from metainformant.math import fixation_probability, hardy_weinberg_genotype_freqs, mutation_update, selection_update
 
 
 def test_hardy_weinberg_genotype_freqs_basic():
@@ -37,6 +32,3 @@ def test_fixation_probability_limits():
     # Certain boundaries
     assert fixation_probability(0.0, 1000, 0.1) == 0.0
     assert fixation_probability(1.0, 1000, -0.1) == 1.0
-
-
-

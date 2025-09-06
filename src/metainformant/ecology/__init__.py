@@ -1,3 +1,1 @@
 """Ecology domain functionality."""
-
-

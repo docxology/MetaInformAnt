@@ -18,9 +18,10 @@ Welcome to the METAINFORMANT docs. This site is organized by domain and core uti
 
 - RNA
   - [Overview](./rna/index.md)
-  - [amalgkit Wrapper](./rna/amalgkit.md)
+  - [amalgkit Wrapper](./rna/amalgkit/amalgkit.md)
   - [Workflow](./rna/workflow.md)
   - [Configs](./rna/configs.md)
+  - [Steps](./rna/steps.md)
 
 - Single-Cell Genomics
   - [Overview](./singlecell/index.md)
@@ -102,5 +103,3 @@ graph TD
   P -.-> SC
   S -.-> SC
 ```
-
-

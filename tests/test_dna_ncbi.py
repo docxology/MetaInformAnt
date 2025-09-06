@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import pytest
-
-from metainformant.dna import ncbi
 import importlib.util
 import os
 
+import pytest
+
+from metainformant.dna import ncbi
 
 try:
     installed = importlib.util.find_spec("ncbi.datasets") is not None
@@ -22,5 +22,3 @@ def test_ncbi_datasets_optional_dependency_errors():
         ncbi.get_metadata_by_single_accession(["GCF_000001405.39"])
     with pytest.raises(RuntimeError):
         ncbi.download_genome_data_package(["GCF_000001405.39"], filename="/tmp/out.zip")
-
-

@@ -54,5 +54,3 @@ def subgraph(onto: Ontology, roots: Iterable[str]) -> Ontology:
                 )
             )
     return new
-
-

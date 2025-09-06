@@ -27,5 +27,3 @@ def fetch_alphafold_model(uniprot_acc: str, out_dir: Path, *, version: int = 4, 
             if chunk:
                 fh.write(chunk)
     return out_path
-
-

@@ -29,5 +29,3 @@ def test_load_go_and_traverse(tmp_path: Path) -> None:
     # Write a summary under output/
     out = write_go_summary(onto)
     assert out.exists()
-
-

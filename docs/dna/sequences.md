@@ -23,5 +23,3 @@ rc = {k: sequences.reverse_complement(v) for k, v in id_to_seq.items()}
 gc = {k: sequences.gc_content(v) for k, v in id_to_seq.items()}
 k2 = sequences.kmer_counts(next(iter(id_to_seq.values())), k=2)
 ```
-
-

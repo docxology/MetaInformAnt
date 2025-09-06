@@ -187,5 +187,3 @@ fi
   wait || true
   echo "[END $(date -u +%Y-%m-%dT%H:%M:%SZ)]"
 } >> "$LOG" 2>&1
-
-

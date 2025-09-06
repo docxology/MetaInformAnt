@@ -28,7 +28,3 @@ def consensus_from_alignment(id_to_seq: dict[str, str]) -> str:
         best_char = max(sorted(counts.keys()), key=lambda c: counts[c])
         consensus_chars.append(best_char)
     return "".join(consensus_chars)
-
-
-
-

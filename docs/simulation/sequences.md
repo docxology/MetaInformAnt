@@ -9,5 +9,3 @@ dna = generate_random_dna(50)
 mut = mutate_sequence(dna, n_mut=5)
 prot = generate_random_protein(50)
 ```
-
-

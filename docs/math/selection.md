@@ -13,5 +13,3 @@ between, within, total = selection.multilevel_selection_decomposition(
     selection_strength_individual=0.3,
 )
 ```
-
-

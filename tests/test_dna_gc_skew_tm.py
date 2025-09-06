@@ -17,5 +17,3 @@ def test_melting_temp_basic() -> None:
     seq_long = "ATGC" * 10
     tm = composition.melting_temperature(seq_long)
     assert tm > 12.0
-
-

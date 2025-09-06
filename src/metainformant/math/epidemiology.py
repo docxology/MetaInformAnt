@@ -26,7 +26,6 @@ def basic_reproduction_number(beta: float, gamma: float) -> float:
     return max(0.0, beta / gamma)
 
 
-
 def seir_step(
     S: float,
     E: float,
@@ -79,5 +78,3 @@ def effective_reproduction_number(R0: float, susceptible_fraction: float) -> flo
     """Effective reproduction number R_e = R0 * S."""
     S = max(0.0, min(1.0, susceptible_fraction))
     return max(0.0, R0 * S)
-
-

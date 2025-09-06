@@ -24,5 +24,3 @@ def codon_frequencies(seq: str) -> dict[str, float]:
     if total == 0:
         return {}
     return {codon: count / total for codon, count in counts.items()}
-
-

@@ -9,5 +9,3 @@ def test_simple_secondary_structure_prediction_signature():
     assert isinstance(probs, list)
     assert len(probs) == len(seq)
     assert all(0.0 <= p <= 1.0 for p in probs)
-
-

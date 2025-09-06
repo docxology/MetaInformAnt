@@ -3,7 +3,7 @@ import matplotlib
 matplotlib.use("Agg", force=True)
 import matplotlib.pyplot as plt  # noqa: E402
 
-from metainformant.visualization import lineplot, heatmap, animate_time_series
+from metainformant.visualization import animate_time_series, heatmap, lineplot
 
 
 def test_lineplot_and_heatmap_render():
@@ -21,6 +21,7 @@ def test_animation_constructs():
     assert fig is not None
     assert anim is not None
     plt.close(fig)
+
 
 import matplotlib
 
@@ -48,5 +49,3 @@ def test_animation_builds():
 
     fig, anim = animate_time_series([0, 1, 0, 1], interval_ms=10)
     assert fig is not None and anim is not None
-
-

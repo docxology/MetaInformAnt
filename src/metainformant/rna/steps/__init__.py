@@ -2,9 +2,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-# Expose a uniform runner function per amalgkit step. Each module keeps
-# any future step-specific logic isolated from the main orchestrator.
-
 from .config import run as run_config
 from .csca import run as run_csca
 from .cstmm import run as run_cstmm
@@ -14,8 +11,11 @@ from .integrate import run as run_integrate
 from .merge import run as run_merge
 from .metadata import run as run_metadata
 from .quant import run as run_quant
-from .select import run as run_select
 from .sanity import run as run_sanity
+from .select import run as run_select
+
+# Expose a uniform runner function per amalgkit step. Each module keeps
+# any future step-specific logic isolated from the main orchestrator.
 
 
 STEP_RUNNERS: dict[str, Callable[..., object]] = {
@@ -46,5 +46,3 @@ __all__ = [
     "run_csca",
     "run_sanity",
 ]
-
-

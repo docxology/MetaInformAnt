@@ -18,5 +18,3 @@ def run(
 ):
     """Run `amalgkit integrate`."""
     return _integrate(params, work_dir=work_dir, log_dir=log_dir, step_name="integrate", check=check)
-
-

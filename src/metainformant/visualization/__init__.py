@@ -7,8 +7,8 @@ Public API returns matplotlib objects, enabling composition in scripts and
 notebooks, and keeping I/O concerns at the call site.
 """
 
-from .plots import heatmap, lineplot, pairplot_dataframe
 from .animations import animate_time_series
+from .plots import heatmap, lineplot, pairplot_dataframe
 from .trees import plot_phylo_tree
 
 # Backward-compat alias expected by tests
@@ -22,7 +22,3 @@ __all__ = [
     "plot_tree",
     "plot_phylo_tree",
 ]
-
-
-
-

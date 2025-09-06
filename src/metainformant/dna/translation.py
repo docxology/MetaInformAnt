@@ -62,5 +62,3 @@ def find_orfs(seq: str, *, min_aa: int = 50, include_reverse: bool = True) -> Li
                 else:
                     i += 3
     return orfs
-
-

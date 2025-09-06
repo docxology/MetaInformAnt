@@ -81,5 +81,3 @@ wait || true
 done_count=$(find "$FASTQ_DIR/getfastq" -type f -name "*.fastq.gz" 2>/dev/null | sed -E 's@.*/(SRR[0-9]+)/.*@\1@' | sort -u | wc -l | tr -d ' ')
 pct=0; [[ "$TOTAL" -gt 0 ]] && pct=$((100*done_count/TOTAL))
 echo "[END $(date -u +%Y-%m-%dT%H:%M:%SZ)] completed=$done_count/$TOTAL ($pct%)" | tee -a "$LOG"
-
-

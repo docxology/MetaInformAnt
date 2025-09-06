@@ -40,5 +40,3 @@
 
 ## Contributions
 - New modules should: (1) read configs from config/ (with env overrides), (2) read inputs from data/, and (3) write outputs to output/ by default.
-
-

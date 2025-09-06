@@ -21,3 +21,16 @@ def sha256_file(path: str | Path, *, chunk_size: int = 1024 * 1024) -> str:
     return h.hexdigest()
 
 
+def deterministic_seed(data: str) -> int:
+    """Generate deterministic integer seed from string data.
+
+    Args:
+        data: String to hash for seed generation
+
+    Returns:
+        Integer seed in valid range for random number generators
+    """
+    hash_digest = sha256_bytes(data.encode("utf-8"))
+    # Convert first 8 hex chars to integer and ensure it's in valid range
+    seed = int(hash_digest[:8], 16) % (2**31 - 1)
+    return seed

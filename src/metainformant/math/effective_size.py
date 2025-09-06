@@ -20,7 +20,6 @@ def effective_size_sex_ratio(num_males: float, num_females: float) -> float:
     return (4.0 * Nm * Nf) / (Nm + Nf)
 
 
-
 def effective_size_from_family_size_variance(census_size: float, variance_offspring_number: float) -> float:
     """Crow and Denniston approximation: Ne ≈ (4N - 2) / (Vk + 2).
 
@@ -32,5 +31,3 @@ def effective_size_from_family_size_variance(census_size: float, variance_offspr
     if denom <= 0:
         return 0.0
     return (4.0 * N - 2.0) / denom
-
-

@@ -9,5 +9,3 @@ s = text.normalize_whitespace("  Hello   world \n")
 slug = text.slugify("My Title: Hello World!")
 fname = text.safe_filename("My Report.pdf")
 ```
-
-

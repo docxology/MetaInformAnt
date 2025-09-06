@@ -16,5 +16,3 @@ chr1\t2\trs2\tT\tC\t.\tPASS\t.\tGT\t0/0\t0/1
     parsed = variants.parse_vcf(p)
     assert parsed["num_variants"] == 2
     assert parsed["samples"] == ["S1", "S2"]
-
-

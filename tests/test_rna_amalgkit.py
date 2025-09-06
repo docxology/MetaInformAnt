@@ -74,5 +74,3 @@ def test_curate_summary_counts_from_fixture(tmp_path: Path):
     # At least the two expected TSVs should be counted
     assert counts.get("Apis_mellifera.metadata.tsv", 0) >= 1
     assert counts.get("Apis_mellifera.uncorrected.tc.tsv", 0) >= 1
-
-

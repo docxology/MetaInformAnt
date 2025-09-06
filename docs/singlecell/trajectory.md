@@ -310,10 +310,11 @@ print(correlation_matrix)
 
 ## Testing
 
-Tests available in `tests/test_singlecell_trajectory.py`:
+Trajectory analysis functionality is tested as part of the single-cell test suite:
 
 ```bash
-uv run pytest tests/test_singlecell_trajectory.py -v
+# Run single-cell tests (includes trajectory examples)
+uv run pytest tests/test_singlecell_*.py -v
 ```
 
 ## Related Documentation

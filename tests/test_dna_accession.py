@@ -16,5 +16,3 @@ def test_is_valid_assembly_accession_invalid_cases():
         "GCA_00000140",
     ]:
         assert not is_valid_assembly_accession(invalid)
-
-

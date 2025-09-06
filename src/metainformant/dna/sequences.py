@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import Dict
 from collections import Counter
+from typing import Dict
 
 from Bio import SeqIO
 
@@ -40,5 +40,3 @@ def kmer_frequencies(seq: str, k: int) -> Dict[str, float]:
     if total == 0:
         return {}
     return {kmer: cnt / total for kmer, cnt in counts.items()}
-
-

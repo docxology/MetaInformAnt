@@ -48,7 +48,7 @@ def correlation(x: Sequence[float], y: Sequence[float]) -> float:
     var_y = variance(y)
     if var_x <= 0.0 or var_y <= 0.0:
         return 0.0
-    return cov / ((var_x ** 0.5) * (var_y ** 0.5))
+    return cov / ((var_x**0.5) * (var_y**0.5))
 
 
 def standard_deviation(values: Sequence[float]) -> float:
@@ -97,7 +97,7 @@ def weighted_correlation(x: Sequence[float], y: Sequence[float], weights: Sequen
     var_y = weighted_variance(y, weights)
     if var_x <= 0.0 or var_y <= 0.0:
         return 0.0
-    return cov_w / ((var_x ** 0.5) * (var_y ** 0.5))
+    return cov_w / ((var_x**0.5) * (var_y**0.5))
 
 
 def relative_fitness(fitness: Sequence[float]) -> list[float]:
@@ -218,5 +218,3 @@ def delta_mean_trait(
     """
     _, _, total = price_equation(fitness, trait_parent, trait_offspring)
     return total
-
-

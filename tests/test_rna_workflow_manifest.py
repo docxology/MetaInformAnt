@@ -1,14 +1,15 @@
-from pathlib import Path
 import json
+from pathlib import Path
 
-from metainformant.rna.workflow import AmalgkitWorkflowConfig, execute_workflow
 from metainformant.rna.amalgkit import check_cli_available
+from metainformant.rna.workflow import AmalgkitWorkflowConfig, execute_workflow
 
 
 def test_manifest_written_with_records(tmp_path: Path):
     ok, _ = check_cli_available()
     if not ok:
         import pytest
+
         pytest.skip("amalgkit not available on PATH")
 
     cfg = AmalgkitWorkflowConfig(work_dir=tmp_path / "work", threads=1)
@@ -25,5 +26,3 @@ def test_manifest_written_with_records(tmp_path: Path):
     assert len(lines) >= 1
     rec = json.loads(lines[0])
     assert "step" in rec and "return_code" in rec and "duration_seconds" in rec
-
-

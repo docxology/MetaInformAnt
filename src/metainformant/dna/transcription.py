@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 _DNA_TO_RNA = str.maketrans(
     {
         "A": "A",
@@ -36,4 +35,3 @@ def transcribe_dna_to_rna(seq: str) -> str:
 def reverse_transcribe_rna_to_dna(seq: str) -> str:
     """Reverse transcribe RNA to DNA (U->T). Preserves case; non-AUGC characters pass through."""
     return (seq or "").translate(_RNA_TO_DNA)
-

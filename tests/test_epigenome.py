@@ -2,12 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from metainformant.epigenome import (
-    read_bedgraph,
-    load_cpg_table,
-    compute_beta_values,
-    summarize_beta_by_chromosome,
-)
+from metainformant.epigenome import compute_beta_values, load_cpg_table, read_bedgraph, summarize_beta_by_chromosome
 
 
 def test_read_bedgraph_parses_minimal_file():
@@ -18,9 +13,7 @@ def test_read_bedgraph_parses_minimal_file():
     assert list(df.columns) == ["chrom", "start", "end", "value"]
     assert len(df) == 3
     # Ensure dtypes are as expected
-    assert pd.api.types.is_integer_dtype(df["start"]) and pd.api.types.is_integer_dtype(
-        df["end"]
-    )
+    assert pd.api.types.is_integer_dtype(df["start"]) and pd.api.types.is_integer_dtype(df["end"])
     assert pd.api.types.is_numeric_dtype(df["value"]) and df["chrom"].dtype == object
 
 
@@ -38,5 +31,3 @@ def test_compute_methylation_beta_and_summary():
     # Means should be finite numbers
     assert pd.notnull(summary.loc["chr1"]).all()
     assert pd.notnull(summary.loc["chr2"]).all()
-
-

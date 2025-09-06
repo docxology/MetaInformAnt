@@ -4,11 +4,12 @@ from pathlib import Path
 
 
 def test_run_amalgkit_writes_logs(tmp_path: Path):
-    from metainformant.rna.amalgkit import run_amalgkit, check_cli_available
+    from metainformant.rna.amalgkit import check_cli_available, run_amalgkit
 
     ok, _ = check_cli_available()
     if not ok:
         import pytest
+
         pytest.skip("amalgkit not available on PATH")
 
     logs = tmp_path / "logs"
@@ -24,5 +25,3 @@ def test_run_amalgkit_writes_logs(tmp_path: Path):
     written = list(logs.glob("*.metadata.*.log"))
     assert any(p.name.endswith("stdout.log") for p in written)
     assert any(p.name.endswith("stderr.log") for p in written)
-
-

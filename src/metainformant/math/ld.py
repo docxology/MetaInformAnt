@@ -3,9 +3,7 @@ from __future__ import annotations
 from typing import Tuple
 
 
-def ld_coefficients(
-    pA: float, pa: float, pB: float, pb: float, haplotype_pAB: float
-) -> Tuple[float, float]:
+def ld_coefficients(pA: float, pa: float, pB: float, pb: float, haplotype_pAB: float) -> Tuple[float, float]:
     """Compute linkage disequilibrium D and normalized D' given haplotype frequencies.
 
     Inputs should satisfy pA + pa = 1, pB + pb = 1, and 0 <= haplotype_pAB <= 1.
@@ -44,11 +42,11 @@ def ld_decay_r2(r2_initial: float, recombination_rate: float, generations: int) 
     return r2 * ((1.0 - c) ** (2 * t))
 
 
-
 def haldane_d_to_c(map_distance_morgans: float) -> float:
     """Haldane mapping function: c = 0.5 (1 - exp(-2d))."""
     d = max(0.0, float(map_distance_morgans))
     from math import exp
+
     c = 0.5 * (1.0 - exp(-2.0 * d))
     return max(0.0, min(0.5, c))
 
@@ -57,6 +55,7 @@ def haldane_c_to_d(recombination_fraction: float) -> float:
     """Inverse Haldane: d = -0.5 ln(1 - 2c)."""
     c = max(0.0, min(0.5, float(recombination_fraction)))
     from math import log
+
     if c >= 0.5:
         return float("inf")
     return -0.5 * log(1.0 - 2.0 * c)
@@ -66,6 +65,7 @@ def kosambi_d_to_c(map_distance_morgans: float) -> float:
     """Kosambi mapping: c = 0.5 * tanh(2d)."""
     d = max(0.0, float(map_distance_morgans))
     from math import tanh
+
     c = 0.5 * tanh(2.0 * d)
     return max(0.0, min(0.5, c))
 
@@ -74,6 +74,7 @@ def kosambi_c_to_d(recombination_fraction: float) -> float:
     """Inverse Kosambi: d = 0.25 ln((1 + 2c) / (1 - 2c))."""
     c = max(0.0, min(0.5, float(recombination_fraction)))
     from math import log
+
     if c >= 0.5:
         return float("inf")
     return 0.25 * log((1.0 + 2.0 * c) / (1.0 - 2.0 * c))
@@ -87,5 +88,3 @@ def expected_r2_from_Ne_c(effective_population_size: float, recombination_fracti
     if denom <= 0:
         return 0.0
     return 1.0 / denom
-
-

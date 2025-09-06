@@ -39,8 +39,8 @@ flowchart LR
     SC5[visualization]
     SC6[integration]
   end
-  subgraph QualityControl[Quality Control]
-    QC1[fastq]
+  subgraph Quality[Quality Control]
+    Q1[fastq]
   end
   subgraph Simulation
     S1[sequences]
@@ -60,7 +60,7 @@ flowchart LR
   A --> D1 & D2 & D3 & D4 & D5
   A --> R1 & R2
   A --> SC1 & SC2 & SC3 & SC4 & SC5 & SC6
-  A --> QC1
+  A --> Q1
   A --> S1 & S2 & S3
   A --> M1 & M2 & M3
   A --> V1 & V2 & V3
@@ -73,7 +73,7 @@ flowchart LR
   C2 -.-> SC1
   C5 -.-> SC2
   C8 -.-> SC6
-  C2 -.-> QC1
+  C2 -.-> Q1
   C5 -.-> R2
   C8 -.-> R2
 ```

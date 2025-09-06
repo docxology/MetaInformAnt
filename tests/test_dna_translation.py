@@ -14,5 +14,3 @@ def test_find_orfs_simple() -> None:
     # expect at least two ORFs (ATG...TGA and ATG...TAG)
     assert any(orf.protein.startswith("MK") for orf in orfs)
     assert any(orf.stop_codon in {"TGA", "TAG"} for orf in orfs)
-
-

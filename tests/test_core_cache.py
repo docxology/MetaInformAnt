@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+
 from metainformant.core import cache as core_cache
 
 
@@ -21,5 +22,3 @@ def test_json_cache_ttl_expired(tmp_path: Path) -> None:
     # ttl 0 => always expired
     loaded = core_cache.load_cached_json(cache_dir, key, ttl_seconds=0)
     assert loaded is None
-
-

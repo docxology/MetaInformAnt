@@ -25,7 +25,3 @@ def plot_phylo_tree(tree: Any, *, ax: plt.Axes | None = None) -> plt.Axes:
         _, ax = plt.subplots()
     Phylo.draw(tree, do_show=False, axes=ax)
     return ax
-
-
-
-

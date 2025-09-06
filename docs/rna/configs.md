@@ -24,5 +24,3 @@ params = build_step_params(spec, layout)
 ```
 
 Convention: prefer `output/` for working directories, e.g. `base_dir=Path("output/amalgkit/Apis_mellifera")`.
-
-

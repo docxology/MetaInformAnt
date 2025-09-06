@@ -80,19 +80,19 @@ clean_artifacts() {
 
 check_dependencies() {
     echo -e "${YELLOW}Checking test dependencies...${NC}"
-    
+
     # Check if pytest is available
     if ! command -v pytest &> /dev/null; then
         echo -e "${RED}✗ pytest not found. Install with: pip install pytest${NC}"
         exit 1
     fi
-    
+
     # Check if coverage is needed and available
     if [[ "$COVERAGE" == "true" ]] && ! command -v pytest-cov &> /dev/null; then
         echo -e "${YELLOW}Warning: pytest-cov not found. Coverage will be disabled.${NC}"
         COVERAGE=false
     fi
-    
+
     echo -e "${GREEN}✓ Dependencies checked${NC}"
 }
 
@@ -103,10 +103,10 @@ setup_output_dir() {
 
 build_pytest_args() {
     local args=()
-    
+
     # Basic configuration
     args+=("-v")
-    
+
     # Coverage options
     if [[ "$COVERAGE" == "true" ]]; then
         args+=("--cov=src/metainformant")
@@ -115,47 +115,47 @@ build_pytest_args() {
         args+=("--cov-report=term-missing")
         args+=("--cov-fail-under=85")
     fi
-    
+
     # Parallel execution
     if [[ "$PARALLEL" == "true" ]] && command -v pytest-xdist &> /dev/null; then
         args+=("-n" "auto")
     fi
-    
+
     # Verbose output
     if [[ "$VERBOSE" == "true" ]]; then
         args+=("-vv" "--tb=short")
     fi
-    
+
     # Test selection
     if [[ "$FAST_ONLY" == "true" ]]; then
         args+=("-m" "not slow and not network and not external_tool")
     elif [[ "$NETWORK_TESTS" == "false" ]]; then
         args+=("-m" "not network")
     fi
-    
+
     # Pattern matching
     if [[ -n "$TEST_PATTERN" ]]; then
         args+=("-k" "$TEST_PATTERN")
     fi
-    
+
     # Additional pytest options
     args+=("--strict-markers")
     args+=("--tb=short")
     args+=("--durations=10")  # Show 10 slowest tests
-    
+
     echo "${args[@]}"
 }
 
 run_tests() {
     local pytest_args
     pytest_args=($(build_pytest_args))
-    
+
     echo -e "${YELLOW}Running tests with options: ${pytest_args[*]}${NC}"
     echo ""
-    
+
     # Set environment variables
     export PYTHONPATH="${PWD}/src:${PYTHONPATH:-}"
-    
+
     # Run the tests
     if pytest "${pytest_args[@]}" tests/; then
         echo -e "${GREEN}✓ Tests passed successfully${NC}"
@@ -169,21 +169,21 @@ run_tests() {
 generate_coverage_report() {
     if [[ "$COVERAGE" == "true" ]] && [[ -f "$OUTPUT_DIR/.coverage" ]]; then
         echo -e "${YELLOW}Generating coverage reports...${NC}"
-        
+
         # Generate HTML report
         coverage html --directory="$OUTPUT_DIR/coverage_html" --data-file="$OUTPUT_DIR/.coverage"
-        
+
         # Generate console summary
         echo -e "${BLUE}Coverage Summary:${NC}"
         coverage report --data-file="$OUTPUT_DIR/.coverage" --show-missing
-        
+
         echo -e "${GREEN}✓ Coverage reports generated in $OUTPUT_DIR/coverage_html${NC}"
     fi
 }
 
 run_specific_test_suites() {
     echo -e "${BLUE}Running domain-specific test suites...${NC}"
-    
+
     local suites=(
         "core:tests/test_core_*.py"
         "dna:tests/test_dna_*.py"
@@ -192,15 +192,15 @@ run_specific_test_suites() {
         "math:tests/test_math_*.py"
         "simulation:tests/test_simulation.py"
     )
-    
+
     local results=()
-    
+
     for suite in "${suites[@]}"; do
         local name="${suite%%:*}"
         local pattern="${suite##*:}"
-        
+
         echo -e "${YELLOW}Running $name tests...${NC}"
-        
+
         if pytest -v --tb=short $pattern 2>/dev/null; then
             results+=("$name:PASS")
             echo -e "${GREEN}✓ $name tests passed${NC}"
@@ -209,7 +209,7 @@ run_specific_test_suites() {
             echo -e "${RED}✗ $name tests failed${NC}"
         fi
     done
-    
+
     echo -e "${BLUE}Test Suite Summary:${NC}"
     for result in "${results[@]}"; do
         local name="${result%%:*}"
@@ -224,14 +224,14 @@ run_specific_test_suites() {
 
 run_performance_tests() {
     echo -e "${YELLOW}Running performance benchmarks...${NC}"
-    
+
     # Run a subset of tests with timing information
     pytest --durations=0 --tb=no -q tests/test_simulation.py tests/test_math_*.py
 }
 
 generate_test_report() {
     local report_file="$OUTPUT_DIR/test_report.md"
-    
+
     cat > "$report_file" << EOF
 # METAINFORMANT Test Report
 
@@ -245,7 +245,7 @@ Generated: $(date)
 ## Test Execution Summary
 
 EOF
-    
+
     if [[ -f "$OUTPUT_DIR/coverage.xml" ]]; then
         echo "## Coverage Summary" >> "$report_file"
         echo "" >> "$report_file"
@@ -258,7 +258,7 @@ EOF
         echo "- Detailed report: [HTML Coverage Report](coverage_html/index.html)" >> "$report_file"
         echo "" >> "$report_file"
     fi
-    
+
     echo -e "${GREEN}✓ Test report generated: $report_file${NC}"
 }
 
@@ -320,16 +320,16 @@ main() {
                 ;;
         esac
     done
-    
+
     print_header
     setup_output_dir
     check_dependencies
-    
+
     # Run the main test suite
     if run_tests; then
         generate_coverage_report
         generate_test_report
-        
+
         echo ""
         echo -e "${GREEN}🎉 All tests completed successfully!${NC}"
         echo -e "${BLUE}📊 View detailed coverage report: $OUTPUT_DIR/coverage_html/index.html${NC}"

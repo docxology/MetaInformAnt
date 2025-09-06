@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import pytest
+
 from metainformant.core import text as core_text
 
 
 class TestSlugify:
     """Comprehensive tests for text slugification."""
-    
+
     def test_slugify_basic(self) -> None:
         """Test basic slugification functionality."""
         assert core_text.slugify("Hello, World!") == "hello-world"
@@ -16,23 +17,23 @@ class TestSlugify:
         """Test edge cases for slugification."""
         # Empty string
         assert core_text.slugify("") == ""
-        
+
         # Only whitespace
         assert core_text.slugify("   ") == ""
-        
+
         # Only punctuation
         assert core_text.slugify("!@#$%^&*()") == ""
-        
+
         # Mixed case with numbers
         assert core_text.slugify("Test123 File") == "test123-file"
-        
+
         # Unicode characters (accents are removed by the regex)
         result = core_text.slugify("Café résumé naïve")
         assert result == "caf-rsum-nave"  # Accented chars are removed
-        
+
         # Multiple consecutive spaces/punctuation
         assert core_text.slugify("a...b___c---d") == "abc-d"  # Keeps last dash
-        
+
         # Leading/trailing separators
         assert core_text.slugify("---test---") == "test"
 
@@ -53,9 +54,9 @@ class TestSlugify:
             ("test@domain.com", "testdomaincom"),  # @ and . are removed
             ("100% complete", "100-complete"),
             ("C++ programming", "c-programming"),  # + signs are removed
-            ("file [draft].doc", "file-draftdoc")  # Brackets and period removed
+            ("file [draft].doc", "file-draftdoc"),  # Brackets and period removed
         ]
-        
+
         for input_str, expected in test_cases:
             assert core_text.slugify(input_str) == expected
 
@@ -63,14 +64,14 @@ class TestSlugify:
         """Test error handling for non-string input."""
         with pytest.raises((TypeError, AttributeError)):
             core_text.slugify(123)
-            
+
         with pytest.raises((TypeError, AttributeError)):
             core_text.slugify(None)
 
 
 class TestNormalizeWhitespace:
     """Comprehensive tests for whitespace normalization."""
-    
+
     def test_normalize_whitespace_basic(self) -> None:
         """Test basic whitespace normalization."""
         s = "a\t\t b\n\n c"
@@ -80,23 +81,23 @@ class TestNormalizeWhitespace:
         """Test edge cases for whitespace normalization."""
         # Empty string
         assert core_text.normalize_whitespace("") == ""
-        
+
         # Only whitespace
         assert core_text.normalize_whitespace("   \t\n\r  ") == ""
-        
+
         # Single word
         assert core_text.normalize_whitespace("hello") == "hello"
-        
+
         # Mixed whitespace types
         assert core_text.normalize_whitespace("a\n\r\t b\v\f c") == "a b c"
-        
+
         # Leading/trailing whitespace
         assert core_text.normalize_whitespace("  hello world  ") == "hello world"
 
     def test_normalize_whitespace_unicode(self) -> None:
         """Test whitespace normalization with unicode characters."""
         # Unicode spaces (non-breaking space, em space, etc.)
-        unicode_text = "hello\u00A0world\u2003test"
+        unicode_text = "hello\u00a0world\u2003test"
         result = core_text.normalize_whitespace(unicode_text)
         # Should normalize various unicode whitespace
         assert "hello" in result and "world" in result and "test" in result
@@ -116,24 +117,24 @@ class TestNormalizeWhitespace:
 
 class TestSafeFilename:
     """Comprehensive tests for safe filename generation."""
-    
+
     def test_safe_filename_basic(self) -> None:
         """Test basic safe filename functionality."""
         name = "My*Weird:File?.txt"
         safe = core_text.safe_filename(name)
-        assert all(ch not in safe for ch in ['*', ':', '?'])
+        assert all(ch not in safe for ch in ["*", ":", "?"])
         assert safe.endswith(".txt")
 
     def test_safe_filename_dangerous_characters(self) -> None:
         """Test removal of dangerous filesystem characters."""
         dangerous = r'file<>:"/\|?*name.txt'
         safe = core_text.safe_filename(dangerous)
-        
+
         # Should remove all dangerous characters
         dangerous_chars = r'<>:"/\|?*'
         for char in dangerous_chars:
             assert char not in safe
-            
+
         # The result should be "name.txt" since dangerous chars are removed by slugify
         assert safe == "name.txt"
         assert "name" in safe
@@ -143,13 +144,13 @@ class TestSafeFilename:
         """Test edge cases for safe filename generation."""
         # Empty string
         assert core_text.safe_filename("") == ""
-        
+
         # Only dangerous characters
         dangerous_only = r'<>:"/\|?*'
         result = core_text.safe_filename(dangerous_only)
         # Should return empty string since all chars are stripped
         assert result == ""
-        
+
         # Very long filename - the implementation doesn't truncate
         long_name = "very_long_filename_" * 20 + ".txt"
         safe_long = core_text.safe_filename(long_name)
@@ -165,9 +166,9 @@ class TestSafeFilename:
             ("image.jpg", ".jpg"),
             ("archive.tar.gz", ".gz"),  # Should preserve last extension
             ("no_extension", ""),
-            ("multiple.dots.in.name.txt", ".txt")
+            ("multiple.dots.in.name.txt", ".txt"),
         ]
-        
+
         for filename, expected_ext in test_cases:
             safe = core_text.safe_filename(filename)
             if expected_ext:
@@ -178,7 +179,7 @@ class TestSafeFilename:
         # Windows reserved names - the current implementation doesn't handle these specially
         # It just applies slugify which lowercases them
         reserved_names = ["CON", "PRN", "AUX", "NUL", "COM1", "LPT1"]
-        
+
         for name in reserved_names:
             safe = core_text.safe_filename(name + ".txt")
             # The implementation currently just lowercases, doesn't handle reserved names
@@ -189,7 +190,7 @@ class TestSafeFilename:
         """Test handling of unicode characters in filenames."""
         unicode_name = "café_résumé_naïve.txt"
         safe = core_text.safe_filename(unicode_name)
-        
+
         # Should handle unicode gracefully (behavior may vary by implementation)
         assert len(safe) > 0
         assert ".txt" in safe
@@ -198,7 +199,7 @@ class TestSafeFilename:
         """Test handling of whitespace in filenames."""
         name_with_spaces = "  file with spaces  .txt"
         safe = core_text.safe_filename(name_with_spaces)
-        
+
         # Should handle leading/trailing spaces
         assert not safe.startswith(" ")
         assert not safe.endswith(" .txt")
@@ -207,22 +208,22 @@ class TestSafeFilename:
 
 class TestTextUtilsIntegration:
     """Integration tests for text utility functions."""
-    
+
     def test_text_processing_pipeline(self) -> None:
         """Test combining multiple text processing functions."""
         original = "  My*Weird<File>Name?.doc  "
-        
+
         # Step 1: Normalize whitespace
         normalized = core_text.normalize_whitespace(original)
         assert normalized == "My*Weird<File>Name?.doc"
-        
+
         # Step 2: Make safe filename
         safe = core_text.safe_filename(normalized)
-        dangerous_chars = r'*<>?'
+        dangerous_chars = r"*<>?"
         for char in dangerous_chars:
             assert char not in safe
         assert ".doc" in safe
-        
+
         # Step 3: Create slug
         slug = core_text.slugify(normalized.replace(".doc", ""))
         assert slug == "myweirdfilename"  # All special chars are removed
@@ -230,12 +231,12 @@ class TestTextUtilsIntegration:
     def test_empty_input_consistency(self) -> None:
         """Test that all functions handle empty input consistently."""
         empty_inputs = ["", "   ", "\t\n\r"]
-        
+
         for empty in empty_inputs:
             slug = core_text.slugify(empty)
             normalized = core_text.normalize_whitespace(empty)
             safe = core_text.safe_filename(empty)
-            
+
             # All should return empty string for empty input
             assert slug == ""
             assert normalized == ""
@@ -244,16 +245,14 @@ class TestTextUtilsIntegration:
     def test_round_trip_compatibility(self) -> None:
         """Test that functions work well together in various orders."""
         test_string = "Test File (Version 1.2).txt"
-        
+
         # Different processing orders should be stable
         order1 = core_text.safe_filename(core_text.normalize_whitespace(test_string))
         order2 = core_text.normalize_whitespace(core_text.safe_filename(test_string))
-        
+
         # Both should be safe filenames
         assert ".txt" in order1
         assert ".txt" in order2
         # Both should preserve the essential content (lowercased by slugify)
         assert "test" in order1 and "file" in order1  # Lowercase due to slugify
         assert "test" in order2 and "file" in order2
-
-

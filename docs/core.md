@@ -6,7 +6,7 @@
 - [text](./core/text.md): normalization, slugify, safe filenames
 - [parallel](./core/parallel.md): thread-based map
 - [hash](./core/hash.md): SHA-256 hashing helpers
-- [paths](./core/paths.md): expand/resolve, containment check
+- [paths](./core/paths.md): path expansion, resolution, and containment checks
 - [cache](./core/cache.md): simple JSON cache with TTL
 - [db](./core/db.md): PostgreSQL client initialization
 

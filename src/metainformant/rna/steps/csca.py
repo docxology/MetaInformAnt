@@ -18,5 +18,3 @@ def run(
 ):
     """Run `amalgkit csca` (sample clustering/assessment)."""
     return _csca(params, work_dir=work_dir, log_dir=log_dir, step_name="csca", check=check)
-
-

@@ -9,29 +9,27 @@ from .amalgkit import (
     build_amalgkit_command,
     build_cli_args,
     check_cli_available,
-    ensure_cli_available,
-    run_amalgkit,
-    metadata,
-    integrate,
     config,
-    select,
-    getfastq,
-    quant,
-    merge,
+    csca,
     cstmm,
     curate,
-    csca,
+    ensure_cli_available,
+    getfastq,
+    integrate,
+    merge,
+    metadata,
+    quant,
+    run_amalgkit,
     sanity,
+    select,
 )
+
 # Lazy workflow imports to avoid import-time failures on older Python during
 # light-weight uses that only need the thin CLI wrappers. Full workflow
 # functionality requires Python 3.11+ per project configuration.
 try:  # pragma: no cover - exercised in integration tests under py311
-    from .workflow import (
-        AmalgkitWorkflowConfig,
-        plan_workflow,
-        execute_workflow,
-    )
+    from .workflow import AmalgkitWorkflowConfig, execute_workflow, plan_workflow
+
     _HAS_WORKFLOW = True
 except Exception:  # pragma: no cover - defensive for environments <3.11
     _HAS_WORKFLOW = False
@@ -62,7 +60,3 @@ if _HAS_WORKFLOW:
         "plan_workflow",
         "execute_workflow",
     ]
- 
-
-
-

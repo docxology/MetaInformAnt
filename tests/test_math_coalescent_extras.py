@@ -1,10 +1,6 @@
 from __future__ import annotations
 
-from metainformant.math import (
-    expected_pairwise_diversity,
-    tajima_constants,
-    tajimas_D,
-)
+from metainformant.math import expected_pairwise_diversity, tajima_constants, tajimas_D
 
 
 def test_expected_pairwise_diversity_and_tajima_constants():
@@ -24,6 +20,3 @@ def test_tajimas_D_zero_when_pi_matches_S_over_a1():
     pi = S / const["a1"] if const["a1"] > 0 else 0.0
     D = tajimas_D(S, pi, n)
     assert abs(D) < 1e-9
-
-
-

@@ -330,7 +330,7 @@ output_dir = ensure_directory("output/singlecell_analysis")
 
 ## Testing
 
-Comprehensive tests are available in `tests/test_singlecell_preprocessing.py`:
+Preprocessing tests are available in `tests/test_singlecell_preprocessing.py`:
 
 ```bash
 # Run preprocessing tests

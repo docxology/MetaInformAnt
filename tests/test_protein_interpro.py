@@ -9,6 +9,7 @@ def _check_online(url: str) -> bool:
     """Check if we can reach a URL within timeout."""
     try:
         import requests
+
         resp = requests.get(url, timeout=5)
         resp.raise_for_status()
         return True
@@ -20,7 +21,7 @@ def test_fetch_interpro_domains_real_network():
     """Test real InterPro domain fetching with actual API calls."""
     if not _check_online("https://www.ebi.ac.uk/interpro"):
         pytest.skip("No network access for InterPro API - real implementation requires connectivity")
-    
+
     # Test with a well-known protein (hemoglobin alpha chain)
     try:
         results = fetch_interpro_domains("P69905")
@@ -28,8 +29,8 @@ def test_fetch_interpro_domains_real_network():
         if results:  # May be empty if API changes or protein has no domains
             assert isinstance(results[0], dict)
             # Check for typical InterPro response fields
-            if 'metadata' in results[0]:
-                assert 'accession' in results[0]['metadata']
+            if "metadata" in results[0]:
+                assert "accession" in results[0]["metadata"]
     except Exception as e:
         # API might be down or changed
         pytest.skip(f"InterPro API unavailable - real API behavior: {e}")
@@ -57,7 +58,7 @@ def test_fetch_interpro_domains_invalid_accession():
     """Test behavior with clearly invalid accession."""
     if not _check_online("https://www.ebi.ac.uk/interpro"):
         pytest.skip("No network access for InterPro API - real implementation requires connectivity")
-    
+
     # Test with obviously fake accession
     try:
         results = fetch_interpro_domains("FAKE_PROTEIN_12345")
@@ -72,10 +73,10 @@ def test_fetch_interpro_domains_multiple_proteins_real():
     """Test with multiple different proteins to verify real API behavior."""
     if not _check_online("https://www.ebi.ac.uk/interpro"):
         pytest.skip("No network access for InterPro API - real implementation requires connectivity")
-    
+
     # Test with different well-known proteins
     proteins_to_test = ["P69905", "P04637"]  # hemoglobin, p53
-    
+
     for protein in proteins_to_test:
         try:
             results = fetch_interpro_domains(protein)
@@ -103,10 +104,10 @@ def test_fetch_interpro_domains_case_sensitivity():
     """Test how real API handles case sensitivity."""
     if not _check_online("https://www.ebi.ac.uk/interpro"):
         pytest.skip("No network access for InterPro API - real implementation requires connectivity")
-    
+
     # Test same accession in different cases
     accessions = ["P69905", "p69905"]
-    
+
     results = []
     for acc in accessions:
         try:
@@ -114,7 +115,7 @@ def test_fetch_interpro_domains_case_sensitivity():
             results.append(result)
         except Exception:
             results.append(None)
-    
+
     # Document real API behavior regarding case sensitivity
     assert len(results) == 2
 

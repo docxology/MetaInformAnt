@@ -23,8 +23,7 @@ class GridWorld:
         self.height = max(1, height)
         self.rng = rng or random.Random()
         self.agents: List[Agent] = [
-            Agent(self.rng.randrange(self.width), self.rng.randrange(self.height))
-            for _ in range(max(0, num_agents))
+            Agent(self.rng.randrange(self.width), self.rng.randrange(self.height)) for _ in range(max(0, num_agents))
         ]
 
     def step(self) -> None:
@@ -33,5 +32,3 @@ class GridWorld:
 
     def positions(self) -> List[Tuple[int, int]]:
         return [(a.x, a.y) for a in self.agents]
-
-

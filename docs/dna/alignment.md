@@ -18,5 +18,3 @@ from metainformant.dna import alignment
 res = alignment.global_align("ACGT", "AGT")
 print(res.score, res.aligned_seq1, res.aligned_seq2)
 ```
-
-

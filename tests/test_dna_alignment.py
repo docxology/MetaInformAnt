@@ -23,5 +23,3 @@ def test_local_alignment_non_trivial() -> None:
     result = alignment.local_align(s1, s2)
     assert result.score > 0
     assert len(result.aligned_seq1) == len(result.aligned_seq2)
-
-

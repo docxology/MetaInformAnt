@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import Any, Iterable, List
 import os
+from typing import Any, Iterable, List
 
 try:
-    from ncbi.datasets.openapi import ApiClient as DatasetsApiClient
     from ncbi.datasets import GenomeApi as DatasetsGenomeApi
+    from ncbi.datasets.openapi import ApiClient as DatasetsApiClient
 except Exception:  # pragma: no cover - optional runtime dependency
     DatasetsApiClient = None  # type: ignore
     DatasetsGenomeApi = None  # type: ignore
@@ -57,16 +57,16 @@ def get_accession_by_tax_id(tax_id: str) -> list[str]:
 
 # ---- Best-effort download helpers (CLI/API/FTP) ----
 
+import json
 import shutil
 import subprocess
+import time
 from pathlib import Path
-from zipfile import ZipFile
 from urllib.parse import urlencode
 from urllib.request import urlopen
-import json
-import time
+from zipfile import ZipFile
 
-from ..core.io import ensure_directory, dump_json
+from ..core.io import dump_json, ensure_directory
 
 
 def datasets_cli_available() -> bool:
@@ -175,7 +175,12 @@ def download_genome_via_api(
 
     def write_progress(done: int, total: int | None) -> None:
         pct = (done / total * 100.0) if (total and total > 0) else None
-        data = {"bytes": done, "total": total or -1, "percent": (round(pct, 2) if pct is not None else None), "url": url}
+        data = {
+            "bytes": done,
+            "total": total or -1,
+            "percent": (round(pct, 2) if pct is not None else None),
+            "url": url,
+        }
         progress_json.write_text(json.dumps(data), encoding="utf-8")
         progress_txt.write_text(f"{data['bytes']}/{data['total']} bytes ({data['percent']}%)\n", encoding="utf-8")
         heartbeat.write_text(str(time.time()))
@@ -265,5 +270,3 @@ def download_genome_package_best_effort(
             record["ftp_error"] = str(exc)
     dump_json(record, out_dir / "download_record.json", indent=2)
     return record
-
-

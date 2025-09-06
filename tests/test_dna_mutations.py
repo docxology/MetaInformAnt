@@ -13,5 +13,3 @@ def test_random_mutate_reproducible() -> None:
     out1 = mutations.random_point_mutations(s, num_mutations=2, seed=42)
     out2 = mutations.random_point_mutations(s, num_mutations=2, seed=42)
     assert out1 == out2
-
-

@@ -22,5 +22,3 @@ def test_protein_cli_taxon_ids(tmp_path: Path):
     assert result.returncode == 0
     out = result.stdout.strip().split()
     assert set(out) >= {"9606", "10090", "7227"}
-
-

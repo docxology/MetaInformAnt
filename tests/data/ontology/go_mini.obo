@@ -25,5 +25,3 @@ id: GO:0000004
 name: grandchild process C
 namespace: biological_process
 is_a: GO:0000002 ! child process A
-
-

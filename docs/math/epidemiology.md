@@ -16,5 +16,3 @@ R0 = basic_reproduction_number(0.5, 0.25)
 Re = effective_reproduction_number(R0, susceptible_fraction=0.9)
 HIT = herd_immunity_threshold(R0)
 ```
-
-

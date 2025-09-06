@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+
 import pytest
 
 from metainformant.protein.alphafold import build_alphafold_url, fetch_alphafold_model
@@ -10,6 +11,7 @@ def _check_online(url: str) -> bool:
     """Check if we can reach a URL within timeout."""
     try:
         import requests
+
         resp = requests.get(url, timeout=5)
         resp.raise_for_status()
         return True
@@ -44,7 +46,7 @@ def test_build_alphafold_url_edge_cases():
     url_v2 = build_alphafold_url("P12345", version=2, fmt="pdb")
     assert "model_v1" in url_v1
     assert "model_v2" in url_v2
-    
+
     # Different accession formats
     url_short = build_alphafold_url("P123", version=4, fmt="pdb")
     url_long = build_alphafold_url("P123456789", version=4, fmt="pdb")
@@ -56,7 +58,7 @@ def test_fetch_alphafold_model_real_network(tmp_path: Path):
     """Test real AlphaFold model download with actual HTTP requests."""
     if not _check_online("https://alphafold.ebi.ac.uk"):
         pytest.skip("No network access for AlphaFold - real implementation requires connectivity")
-    
+
     # Test with a well-known protein (hemoglobin alpha chain)
     try:
         result_path = fetch_alphafold_model("P69905", tmp_path, version=4, fmt="pdb")
@@ -64,7 +66,7 @@ def test_fetch_alphafold_model_real_network(tmp_path: Path):
         assert result_path.suffix == ".pdb"
         assert result_path.name.startswith("AF-P69905")
         assert result_path.stat().st_size > 0
-        
+
         # Verify it contains PDB content
         content = result_path.read_text()
         assert "HEADER" in content or "ATOM" in content
@@ -77,13 +79,13 @@ def test_fetch_alphafold_model_cif_format_real_network(tmp_path: Path):
     """Test real AlphaFold model download in CIF format."""
     if not _check_online("https://alphafold.ebi.ac.uk"):
         pytest.skip("No network access for AlphaFold - real implementation requires connectivity")
-    
+
     try:
         result_path = fetch_alphafold_model("P69905", tmp_path, version=4, fmt="cif")
         assert result_path.exists()
         assert result_path.suffix == ".cif"
         assert result_path.stat().st_size > 0
-        
+
         # Verify it contains CIF content
         content = result_path.read_text()
         assert "data_" in content or "_atom_site" in content
@@ -95,7 +97,7 @@ def test_fetch_alphafold_model_nonexistent_protein(tmp_path: Path):
     """Test real behavior with non-existent protein ID."""
     if not _check_online("https://alphafold.ebi.ac.uk"):
         pytest.skip("No network access for AlphaFold - real implementation requires connectivity")
-    
+
     # Test with obviously fake protein ID
     with pytest.raises(Exception):
         fetch_alphafold_model("FAKE_PROTEIN_12345", tmp_path, version=4, fmt="pdb")
@@ -111,11 +113,11 @@ def test_fetch_alphafold_model_directory_creation(tmp_path: Path):
     """Test that output directory is created if it doesn't exist."""
     if not _check_online("https://alphafold.ebi.ac.uk"):
         pytest.skip("No network access for AlphaFold - real implementation requires connectivity")
-    
+
     # Use a nested directory that doesn't exist yet
     nested_dir = tmp_path / "models" / "alphafold"
     assert not nested_dir.exists()
-    
+
     try:
         result_path = fetch_alphafold_model("P69905", nested_dir, version=4, fmt="pdb")
         assert nested_dir.exists()

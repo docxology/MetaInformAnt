@@ -4,12 +4,13 @@ from pathlib import Path
 
 
 def test_preflight_manifest_when_amalgkit_missing(tmp_path: Path):
-    from metainformant.rna.workflow import AmalgkitWorkflowConfig, execute_workflow
     from metainformant.rna.amalgkit import check_cli_available
+    from metainformant.rna.workflow import AmalgkitWorkflowConfig, execute_workflow
 
     ok, _ = check_cli_available()
     if ok:
         import pytest
+
         pytest.skip("amalgkit present; this test targets missing CLI scenario")
 
     cfg = AmalgkitWorkflowConfig(work_dir=tmp_path / "work", threads=1)
@@ -21,5 +22,3 @@ def test_preflight_manifest_when_amalgkit_missing(tmp_path: Path):
     text = manifest.read_text()
     assert "amalgkit -h" in text
     assert "preflight" in text
-
-

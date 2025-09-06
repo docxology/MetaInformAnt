@@ -35,12 +35,12 @@ def _sample_negative_binomial(rng: random.Random, mean: float, dispersion: float
     d = gamma_shape - 1.0 / 3.0
     c = 1.0 / math.sqrt(9 * d)
     while True:
-        x = rng.gauss(0, 1)
+        x = rng.normal(0, 1)
         v = (1 + c * x) ** 3
         if v <= 0:
             continue
         u = rng.random()
-        if u < 1 - 0.0331 * (x ** 4) or math.log(u) < 0.5 * x * x + d * (1 - v + math.log(v)):
+        if u < 1 - 0.0331 * (x**4) or math.log(u) < 0.5 * x * x + d * (1 - v + math.log(v)):
             lam = d * v * gamma_scale
             # Poisson draw with rate lam
             L = math.exp(-lam)
@@ -67,11 +67,6 @@ def simulate_counts_negative_binomial(
     r = rng or random
     matrix: list[list[int]] = []
     for _ in range(max(0, num_genes)):
-        row = [
-            _sample_negative_binomial(r, mean_expression, dispersion)
-            for _ in range(max(0, num_samples))
-        ]
+        row = [_sample_negative_binomial(r, mean_expression, dispersion) for _ in range(max(0, num_samples))]
         matrix.append(row)
     return matrix
-
-

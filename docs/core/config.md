@@ -10,5 +10,3 @@ from metainformant.core import config
 pg = config.load_postgres_config_from_env()
 typed = config.load_typed_env(prefix="APP", keys={"PORT": int, "DEBUG": bool})
 ```
-
-

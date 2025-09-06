@@ -1,10 +1,6 @@
 from __future__ import annotations
 
-from metainformant.math import (
-    narrow_sense_heritability,
-    breeders_equation_response,
-    lande_equation_response,
-)
+from metainformant.math import breeders_equation_response, lande_equation_response, narrow_sense_heritability
 
 
 def test_narrow_sense_heritability_bounds():
@@ -25,6 +21,3 @@ def test_lande_equation_response():
     assert len(resp) == 2
     assert abs(resp[0] - 0.15) < 1e-12
     assert abs(resp[1] + 0.1) < 1e-12
-
-
-

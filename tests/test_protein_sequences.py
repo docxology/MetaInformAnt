@@ -5,10 +5,10 @@ from pathlib import Path
 
 def test_parse_fasta_and_composition(tmp_path: Path):
     from metainformant.protein.sequences import (
-        parse_fasta,
         calculate_aa_composition,
         is_valid_protein_sequence,
         kmer_frequencies,
+        parse_fasta,
     )
 
     fasta = ">seq1\nMKTAYIAKQRQISFVKSHFSRQLEERLGLIEVQANN\n>seq2\nGASGDLGKK\n"
@@ -31,6 +31,3 @@ def test_parse_fasta_and_composition(tmp_path: Path):
     km = kmer_frequencies(records["seq1"], k=2)
     assert sum(km.values()) == len(records["seq1"]) - 1
     assert all(len(k) == 2 for k in km)
-
-
-

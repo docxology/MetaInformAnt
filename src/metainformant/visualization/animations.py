@@ -56,7 +56,3 @@ def animate_time_series(
         repeat=repeat,
     )
     return fig, anim
-
-
-
-

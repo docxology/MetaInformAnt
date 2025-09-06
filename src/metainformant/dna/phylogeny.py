@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from typing import Dict, Literal, Optional
 import random
+from typing import Dict, Literal, Optional
 
 from Bio import Phylo
-from Bio.Phylo.TreeConstruction import DistanceCalculator, DistanceTreeConstructor
 from Bio.Align import MultipleSeqAlignment
+from Bio.Phylo.TreeConstruction import DistanceCalculator, DistanceTreeConstructor
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 
@@ -100,7 +100,11 @@ def basic_tree_stats(tree) -> Dict[str, int]:
 
 
 def bootstrap_support(
-    id_to_seq: Dict[str, str], *, n_replicates: int = 100, method: Literal["nj", "upgma"] = "nj", random_state: Optional[int] = None
+    id_to_seq: Dict[str, str],
+    *,
+    n_replicates: int = 100,
+    method: Literal["nj", "upgma"] = "nj",
+    random_state: Optional[int] = None,
 ) -> Dict[frozenset[str], float]:
     """Bootstrap clade support using simple column resampling.
 
@@ -131,13 +135,12 @@ def bootstrap_support(
     counts: dict[frozenset[str], int] = {s: 0 for s in base_splits}
 
     import random
+
     rng = random.Random(random_state)
 
     for _ in range(n_replicates):
         positions = [rng.randrange(L) for _ in range(L)]
-        boot_data: Dict[str, str] = {
-            i: "".join(id_to_seq[i][pos] for pos in positions) for i in ids
-        }
+        boot_data: Dict[str, str] = {i: "".join(id_to_seq[i][pos] for pos in positions) for i in ids}
         tree = build_tree(boot_data)
         for s in clade_splits(tree):
             if s in counts:
@@ -148,8 +151,9 @@ def bootstrap_support(
 
 def nj_tree_from_kmer(id_to_seq: Dict[str, str], *, k: int = 3, metric: str = "cosine"):
     """Build NJ tree from k-mer distances via `distances.kmer_distance_matrix`."""
-    from . import distances as distances_mod
     from Bio.Phylo.TreeConstruction import DistanceMatrix, DistanceTreeConstructor
+
+    from . import distances as distances_mod
 
     ids = list(id_to_seq.keys())
     dm_values = distances_mod.kmer_distance_matrix(id_to_seq, k=k, metric=metric)
@@ -164,5 +168,3 @@ def nj_tree_from_kmer(id_to_seq: Dict[str, str], *, k: int = 3, metric: str = "c
     dm = DistanceMatrix(names=ids, matrix=matrix)
     constructor = DistanceTreeConstructor()
     return constructor.nj(dm)
-
-

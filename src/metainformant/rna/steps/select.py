@@ -18,5 +18,3 @@ def run(
 ):
     """Run `amalgkit select`."""
     return _select(params, work_dir=work_dir, log_dir=log_dir, step_name="select", check=check)
-
-

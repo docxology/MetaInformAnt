@@ -17,5 +17,3 @@ def test_kmer_counts_and_freqs() -> None:
     assert counts["AT"] == 3 and counts["TA"] == 2
     freqs = sequences.kmer_frequencies(s, k=2)
     assert abs(freqs["AT"] - 3 / 5) < 1e-9
-
-

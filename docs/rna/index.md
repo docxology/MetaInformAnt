@@ -11,7 +11,7 @@ flowchart LR
   E --> F[Logs + Manifest]
 ```
 
-See: [amalgkit](./amalgkit.md), [Workflow](./workflow.md), [Configs](./configs.md).
+See: [amalgkit](amalgkit/amalgkit.md), [Workflow](./workflow.md), [Configs](./configs.md).
 Advanced: step runners in `metainformant.rna.steps` provide a stable call surface per subcommand.
 See: [RNA Steps](./steps.md)
 

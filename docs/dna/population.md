@@ -19,5 +19,3 @@ from metainformant.dna import population
 pi = population.nucleotide_diversity(["AAAA", "AAAT"])  # 0.25
 fst = population.hudson_fst(["AAAA"], ["TTTT"])        # 1.0
 ```
-
-

@@ -1,5 +1,15 @@
 from __future__ import annotations
 
+import os
+import shutil
+import subprocess
+import sys
+import threading
+from collections.abc import Mapping
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
 # Thin, typed utilities to invoke the external `amalgkit` RNA-seq toolkit.
 #
 # Provides:
@@ -11,18 +21,6 @@ from __future__ import annotations
 # - Do not persist outside `output/` by default (callers pass work_dir/log_dir)
 # - Return `subprocess.CompletedProcess[str]` for testability
 # - Avoid side effects beyond the requested execution and optional log writes
-
-
-import os
-import sys
-import threading
-import shutil
-import subprocess
-import sys
-from collections.abc import Mapping
-from datetime import datetime
-from pathlib import Path
-from typing import Any
 
 
 AmalgkitParams = Mapping[str, Any]
@@ -160,7 +158,15 @@ def ensure_cli_available(*, auto_install: bool = False) -> tuple[bool, str, dict
         return ok, msg, None
 
     # Attempt installation via pip
-    cmd = [sys.executable, "-m", "pip", "install", "--no-input", "--no-warn-script-location", "git+https://github.com/kfuku52/amalgkit"]
+    cmd = [
+        sys.executable,
+        "-m",
+        "pip",
+        "install",
+        "--no-input",
+        "--no-warn-script-location",
+        "git+https://github.com/kfuku52/amalgkit",
+    ]
     try:
         proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
         ok2, msg2 = check_cli_available()
@@ -173,7 +179,11 @@ def ensure_cli_available(*, auto_install: bool = False) -> tuple[bool, str, dict
         }
         return ok2, (msg2 if ok2 else msg), install_rec
     except Exception as exc:  # pragma: no cover - defensive
-        return False, f"auto-install failed: {exc}", {"attempted": True, "return_code": -1, "stdout": "", "stderr": str(exc), "command": " ".join(cmd)}
+        return (
+            False,
+            f"auto-install failed: {exc}",
+            {"attempted": True, "return_code": -1, "stdout": "", "stderr": str(exc), "command": " ".join(cmd)},
+        )
 
 
 def run_amalgkit(
@@ -437,5 +447,3 @@ __all__ = [
     "csca",
     "sanity",
 ]
-
-

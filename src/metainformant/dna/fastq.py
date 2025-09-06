@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from pathlib import Path
 from dataclasses import dataclass
-from typing import Iterator, Iterable, Tuple, Optional, List, Dict
+from pathlib import Path
+from typing import Dict, Iterable, Iterator, List, Optional, Tuple
 
 from metainformant.core.io import open_text_auto
 
@@ -177,5 +177,3 @@ def summarize_fastq(path: Path | str, max_reads: Optional[int] = None) -> Dict[s
         "n_content_mean": float(n_mean),
         "avg_phred_by_pos": avg_phred,
     }
-
-

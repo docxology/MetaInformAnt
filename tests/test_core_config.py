@@ -30,12 +30,15 @@ def test_load_typed_env() -> None:
     os.environ[f"{prefix}_BOOL_T"] = "true"
     os.environ[f"{prefix}_BOOL_F"] = "0"
 
-    values = core_config.load_typed_env(prefix=prefix, keys={
-        "STR": str,
-        "INT": int,
-        "BOOL_T": bool,
-        "BOOL_F": bool,
-    })
+    values = core_config.load_typed_env(
+        prefix=prefix,
+        keys={
+            "STR": str,
+            "INT": int,
+            "BOOL_T": bool,
+            "BOOL_F": bool,
+        },
+    )
 
     assert values == {"STR": "hello", "INT": 42, "BOOL_T": True, "BOOL_F": False}
     for k, v in backup.items():
@@ -43,5 +46,3 @@ def test_load_typed_env() -> None:
             os.environ.pop(k, None)
         else:
             os.environ[k] = v
-
-

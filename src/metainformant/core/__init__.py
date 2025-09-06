@@ -8,15 +8,15 @@ Modules:
 - text: small text normalization helpers
 - parallel: simple thread-based map preserving order
 - hash: content and file hashing
+- paths: path expansion, resolution, and containment checks
+- cache: simple JSON cache with TTL
 """
 
 # Import core utilities eagerly
-from . import config, io, logging, text, parallel, hash  # noqa: F401
+from . import cache, config, hash, io, logging, parallel, paths, text  # noqa: F401
 
 # Import optional modules defensively to avoid hard deps during unrelated commands
 try:  # noqa: SIM105
     from . import db  # type: ignore  # noqa: F401
 except Exception:  # pragma: no cover - optional dependency may be missing
     db = None  # type: ignore
-
-

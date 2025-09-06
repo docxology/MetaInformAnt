@@ -6,7 +6,7 @@ from metainformant.rna.workflow import AmalgkitWorkflowConfig, plan_workflow
 
 
 def test_plan_workflow_orders_steps_and_inherits_common_params(tmp_path: Path):
-    cfg = AmalgkitWorkflowConfig(work_dir=tmp_path, threads=6, species_list=["Apis_mellifera"]) 
+    cfg = AmalgkitWorkflowConfig(work_dir=tmp_path, threads=6, species_list=["Apis_mellifera"])
     steps = plan_workflow(cfg)
 
     expected_order = [
@@ -30,5 +30,3 @@ def test_plan_workflow_orders_steps_and_inherits_common_params(tmp_path: Path):
     for _, params in steps:
         assert params.get("threads") == 6
         assert params.get("species-list") == ["Apis_mellifera"]
-
-

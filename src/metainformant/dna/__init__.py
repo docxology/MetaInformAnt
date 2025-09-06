@@ -22,8 +22,8 @@ __all__ = [
     "restriction",
     "variants",
     "transcription",
+    "translation",
     "mutations",
     "codon",
     "composition",
 ]
-

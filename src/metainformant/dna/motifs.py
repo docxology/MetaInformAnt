@@ -3,7 +3,6 @@ from __future__ import annotations
 import re
 from typing import Dict, List
 
-
 _IUPAC: Dict[str, str] = {
     "A": "A",
     "C": "C",
@@ -48,5 +47,3 @@ def find_motif_positions(seq: str, motif: str) -> List[int]:
         positions = sorted(set(base_positions + extra))
         return positions
     return base_positions
-
-

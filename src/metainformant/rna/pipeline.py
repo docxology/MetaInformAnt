@@ -21,5 +21,3 @@ def summarize_curate_tables(curate_dir: Path) -> dict[str, int]:
         key = tsv.name
         counts[key] = counts.get(key, 0) + 1
     return counts
-
-

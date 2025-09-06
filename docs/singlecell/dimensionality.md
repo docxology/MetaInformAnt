@@ -414,7 +414,7 @@ data = leiden_clustering(data, use_rep='X_pca', resolution=0.5)
 
 ## Testing
 
-Comprehensive tests are available in `tests/test_singlecell_dimensionality.py`:
+Dimensionality reduction tests are available in `tests/test_singlecell_dimensionality.py`:
 
 ```bash
 # Run dimensionality reduction tests

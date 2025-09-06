@@ -8,5 +8,3 @@ from metainformant.phenotype import antwiki
 
 entries = antwiki.load_antwiki_json(Path("tests/data/phenotype/antwiki_dataset_sorted_final_01.json"))
 ```
-
-

@@ -84,3 +84,58 @@ def write_delimited(rows: Iterable[Mapping[str, Any]], path: str | Path, *, deli
             writer.writerow({k: row.get(k, "") for k in fieldnames})
 
 
+# Pandas-compatible CSV/TSV utilities
+def read_csv(path: str | Path):
+    """Read CSV file using pandas if available, fallback to native implementation."""
+    try:
+        import pandas as pd
+
+        return pd.read_csv(path)
+    except ImportError:
+        # Fallback to native implementation
+        rows = list(read_delimited(path, delimiter=","))
+        if not rows:
+            return None
+
+        # Convert to simple data structure similar to DataFrame
+        import collections
+
+        data = collections.defaultdict(list)
+        for row in rows:
+            for key, value in row.items():
+                data[key].append(value)
+        return dict(data)
+
+
+def write_csv(data, path: str | Path) -> None:
+    """Write CSV file using pandas if available, fallback to native implementation."""
+    try:
+        # Assume pandas DataFrame
+        data.to_csv(path, index=False)
+    except AttributeError:
+        # Handle dict-like data
+        if isinstance(data, dict):
+            rows = []
+            keys = list(data.keys())
+            if keys:
+                num_rows = len(data[keys[0]])
+                for i in range(num_rows):
+                    row = {key: data[key][i] for key in keys}
+                    rows.append(row)
+                write_delimited(rows, path, delimiter=",")
+
+
+def read_tsv(path: str | Path):
+    """Read TSV file."""
+    with open_text_auto(path, mode="rt") as fh:
+        reader = csv.reader(fh, delimiter="\t")
+        return list(reader)
+
+
+def write_tsv(data, path: str | Path) -> None:
+    """Write TSV file."""
+    ensure_directory(Path(path).parent)
+    with open_text_auto(path, mode="wt") as fh:
+        writer = csv.writer(fh, delimiter="\t")
+        for row in data:
+            writer.writerow(row)

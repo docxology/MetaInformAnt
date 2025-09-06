@@ -33,5 +33,3 @@ def test_selection_replay_writes_outputs(tmp_path: Path) -> None:
         path = outputs_dir / name
         assert path.exists(), f"missing {path}"
         assert path.stat().st_size > 0
-
-

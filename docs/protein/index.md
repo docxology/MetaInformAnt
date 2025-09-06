@@ -77,5 +77,3 @@ Modular tools for protein sequences and structures. Examples write to `output/` 
 Notes
 - Networked APIs (UniProt, PDB, InterPro, AlphaFold) are used via simple, modular functions so you can control I/O. Tests must use the real network; if offline, skip gracefully.
 - For reproducibility, prefer writing artifacts under `output/` and keep deterministic seeds where applicable.
-
-

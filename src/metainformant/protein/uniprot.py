@@ -5,7 +5,6 @@ from typing import Dict, Iterable
 
 import requests
 
-
 BASE = "https://rest.uniprot.org"  # documented base for UniProt REST API
 
 
@@ -68,5 +67,3 @@ def fetch_uniprot_fasta(accession: str) -> str:
     r = requests.get(url, headers={"Accept": "text/plain"}, timeout=60)
     r.raise_for_status()
     return r.text
-
-

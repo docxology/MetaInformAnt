@@ -18,5 +18,3 @@ def run(
 ):
     """Run `amalgkit curate`."""
     return _curate(params, work_dir=work_dir, log_dir=log_dir, step_name="curate", check=check)
-
-

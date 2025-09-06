@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from pathlib import Path
 import os
+from pathlib import Path
+
 from metainformant.core import paths as core_paths
 
 
@@ -26,5 +27,3 @@ def test_is_within(tmp_path: Path) -> None:
     sub.mkdir(parents=True, exist_ok=True)
     assert core_paths.is_within(sub, root)
     assert not core_paths.is_within(root, sub)
-
-

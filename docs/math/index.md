@@ -17,5 +17,3 @@ Run examples with uv:
 ```bash
 uv run python -c "from metainformant.math import coalescent as c; print(c.expected_time_to_mrca(10,1e3))"
 ```
-
-

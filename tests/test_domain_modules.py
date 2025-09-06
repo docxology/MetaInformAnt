@@ -1,9 +1,9 @@
 from pathlib import Path
 
-from metainformant.rna.pipeline import summarize_curate_tables
-from metainformant.protein.proteomes import read_taxon_ids
-from metainformant.phenotype.antwiki import load_antwiki_json
 from metainformant.ontology.go import count_go_scripts
+from metainformant.phenotype.antwiki import load_antwiki_json
+from metainformant.protein.proteomes import read_taxon_ids
+from metainformant.rna.pipeline import summarize_curate_tables
 
 
 def test_rna_curate_summary_apis_mellifera():
@@ -35,5 +35,3 @@ def test_ontology_go_dir_counts():
     go_dir = repo_root / "tests/data/ontology/GO_v3"
     n = count_go_scripts(go_dir)
     assert n >= 4
-
-

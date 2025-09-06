@@ -44,5 +44,3 @@ dz = price.delta_mean_trait(
     [0.25, 0.35, 0.15],
 )
 ```
-
-

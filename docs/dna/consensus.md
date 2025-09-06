@@ -13,5 +13,3 @@ cons = consensus.consensus_from_alignment({
 ```
 
 Assumes gapped, equal-length alignment; ignores gaps when voting.
-
-

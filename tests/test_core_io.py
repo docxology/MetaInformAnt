@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from pathlib import Path
 import json
+from pathlib import Path
 
 from metainformant.core import io as core_io
 
@@ -52,5 +52,3 @@ def test_open_text_auto_handles_gz(tmp_path: Path) -> None:
     with core_io.open_text_auto(txt_gz, mode="rt") as fh:
         content = fh.read()
     assert content.strip() == "hello world"
-
-

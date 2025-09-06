@@ -18,5 +18,3 @@ def run(
 ):
     """Run `amalgkit cstmm` (normalization)."""
     return _cstmm(params, work_dir=work_dir, log_dir=log_dir, step_name="cstmm", check=check)
-
-
