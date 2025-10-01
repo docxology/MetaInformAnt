@@ -95,3 +95,9 @@ build/
 *.part.*
 *.download
 *.log
+
+# Test and coverage files
+.coverage
+coverage.xml
+*.cover
+.pytest_cache/
