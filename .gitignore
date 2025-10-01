@@ -24,6 +24,7 @@ build/
 
 # Data and sequence files
 *.fna
+*.fna.gz
 *.sra
 *.fastq
 *.fasta
@@ -31,17 +32,66 @@ build/
 *.fa
 *.fq.gz
 *.fa.gz
+*.fasta.gz
+*.fastq.gz
 *.fq.gz.part
 *.fa.gz.part
-*.fq.gz.part.1
-*.fa.gz.part.1
-*.fastq.gz
-*.fasta.gz
-*.fq.gz.part.1
-*.fa.gz.part.1
-*.fastq.gz.part
 *.fasta.gz.part
+*.fastq.gz.part
 *.fq.gz.part.1
 *.fa.gz.part.1
-*.fastq.gz.part.1
 *.fasta.gz.part.1
+*.fastq.gz.part.1
+
+# Genomic and bioinformatics files
+*.bam
+*.bai
+*.vcf
+*.vcf.gz
+*.bcf
+*.gff
+*.gff3
+*.gtf
+*.bed
+*.bedgraph
+*.bigwig
+*.wig
+*.sam
+
+# Image and plot files (outputs)
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.pdf
+*.eps
+*.tiff
+*.bmp
+
+# Other large output files
+*.h5
+*.hdf5
+*.npz
+*.npy
+*.csv
+*.tsv
+*.xlsx
+*.xls
+
+# Compressed archives
+*.zip
+*.tar
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.7z
+*.rar
+
+# Temporary and partial files
+*.tmp
+*.temp
+*.part
+*.part.*
+*.download
+*.log
