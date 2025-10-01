@@ -159,13 +159,13 @@ def add_math_selection_subparser(subparsers: argparse._SubParsersAction[argparse
     replay = sel_sub.add_parser("replay", help="Reproduce notebook figures and outputs")
     replay.add_argument(
         "--dest",
-        default="src/metainformant/math/selection_experiments",
+        default="output/math/selection_experiments",
         help="Destination directory for outputs (outputs subfolder will be created)",
     )
 
     abstract = sel_sub.add_parser("abstract", help="Create composite graphical abstract")
     abstract.add_argument(
-        "--dest", default="src/metainformant/math/selection_experiments", help="Destination directory for the abstract"
+        "--dest", default="output/math/selection_experiments", help="Destination directory for the abstract"
     )
 
     def _dispatch(args: argparse.Namespace) -> None:

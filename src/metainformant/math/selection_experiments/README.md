@@ -129,13 +129,13 @@ Each experiment reports:
 ### Command Line
 
 ```bash
-# Run all experiments with default settings (generates individual PNG plots)
+# Run all experiments with default settings (generates individual PNG plots in output/math/selection_experiments/outputs/)
 python -m metainformant math selection replay
 
 # Run experiments with custom output directory
 python -m metainformant math selection replay --dest /path/to/output
 
-# Create composite graphical abstract (all experiments combined)
+# Create composite graphical abstract (all experiments combined) in output/math/selection_experiments/
 python -m metainformant math selection abstract
 
 # Create composite abstract with custom output directory
@@ -199,7 +199,7 @@ Links to quantitative genetics via:
 ## Output Files
 
 ### Individual Experiment Plots
-All plots are saved as high-resolution PNG files in the `outputs/` subfolder:
+All plots are saved as high-resolution PNG files in the `outputs/` subfolder of the destination directory:
 
 - **`plot-s-vs-q.png`**: Structural trait vs quality signal relationship
 - **`plot-sq-vs-w.png`**: Selection on correlated traits
@@ -210,6 +210,8 @@ All plots are saved as high-resolution PNG files in the `outputs/` subfolder:
 
 ### Composite Graphical Abstract
 - **`graphical_abstract.png`**: Comprehensive 8-panel figure combining all experiments and key insights
+
+**Default location**: `output/math/selection_experiments/` (following repository conventions for output files)
 
 ## Implementation Notes
 
