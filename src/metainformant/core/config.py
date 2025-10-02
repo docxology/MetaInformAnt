@@ -187,8 +187,10 @@ def apply_env_overrides(config: Mapping[str, Any], *, prefix: str = "AK") -> Dic
     if threads is not None:
         try:
             out["threads"] = int(threads)
-        except ValueError:
-            pass
+        except ValueError as e:
+            # Log warning but continue with default
+            import logging
+            logging.getLogger(__name__).warning(f"Invalid threads value '{threads}', using default: {e}")
 
     work_dir = os.getenv(f"{prefix}_WORK_DIR")
     if work_dir:

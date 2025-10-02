@@ -21,11 +21,20 @@ def reverse_complement(seq: str) -> str:
 
 
 def gc_content(seq: str) -> float:
+    """Calculate GC content of a DNA sequence."""
     if not seq:
         return 0.0
+
+    # Convert to uppercase for consistent counting
     upper = seq.upper()
-    gc = upper.count("G") + upper.count("C")
-    return gc / len(upper)
+
+    # Count GC bases efficiently
+    gc_count = upper.count("G") + upper.count("C")
+
+    # Handle non-standard characters by counting only ACGT
+    total_valid = sum(upper.count(base) for base in "ACGT")
+
+    return gc_count / total_valid if total_valid > 0 else 0.0
 
 
 def kmer_counts(seq: str, k: int) -> Dict[str, int]:

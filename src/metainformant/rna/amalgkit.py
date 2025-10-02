@@ -239,8 +239,10 @@ def run_amalgkit(
         out_path = out_path.expanduser()
         try:
             out_path = out_path.resolve()
-        except Exception:
-            pass
+        except Exception as e:
+            # Log error but continue - path resolution issues shouldn't block execution
+            import logging
+            logging.getLogger(__name__).debug(f"Could not resolve output path: {e}")
         out_path.parent.mkdir(parents=True, exist_ok=True)
         safe_params["out"] = str(out_path)
 
@@ -264,8 +266,10 @@ def run_amalgkit(
             start_hhmm = datetime.utcnow().strftime("%H:%M:%S")
             sys.stdout.write(f"[{start_hhmm}] starting step '{base}' -> {' '.join(cmd)}\n")
             sys.stdout.flush()
-        except Exception:
-            pass
+        except Exception as e:
+            # Log error but continue - path resolution issues shouldn't block execution
+            import logging
+            logging.getLogger(__name__).debug(f"Could not resolve output path: {e}")
         log_path = Path(log_dir)
         log_path.mkdir(parents=True, exist_ok=True)
         stdout_file = log_path / f"{ts}.{base}.stdout.log"
@@ -289,8 +293,10 @@ def run_amalgkit(
                     try:
                         stream_out.write(line)
                         stream_out.flush()
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        # Log error but continue - streaming issues shouldn't block execution
+                        import logging
+                        logging.getLogger(__name__).debug(f"Streaming output error: {e}")
 
         threads: list[threading.Thread] = []
         if proc.stdout is not None:
@@ -316,8 +322,10 @@ def run_amalgkit(
                         now_hhmm = datetime.utcnow().strftime("%H:%M:%S")
                         sys.stdout.write(f"[{now_hhmm}] still running step '{base}' (pid={proc.pid})...\n")
                         sys.stdout.flush()
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        # Log error but continue - streaming issues shouldn't block execution
+                        import logging
+                        logging.getLogger(__name__).debug(f"Streaming output error: {e}")
 
         hb = threading.Thread(target=_heartbeat, daemon=True)
         hb.start()
@@ -330,8 +338,10 @@ def run_amalgkit(
             end_hhmm = datetime.utcnow().strftime("%H:%M:%S")
             sys.stdout.write(f"[{end_hhmm}] finished step '{base}' with code {rc}\n")
             sys.stdout.flush()
-        except Exception:
-            pass
+        except Exception as e:
+            # Log error but continue - path resolution issues shouldn't block execution
+            import logging
+            logging.getLogger(__name__).debug(f"Could not resolve output path: {e}")
 
         # Build a CompletedProcess with empty captured text (logs are in files and console)
         result = subprocess.CompletedProcess(cmd, rc, stdout="", stderr="")

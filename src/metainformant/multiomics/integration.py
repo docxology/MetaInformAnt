@@ -162,8 +162,12 @@ def integrate_omics_data(
 
         # Apply sample mapping if provided
         if sample_mapping and omics_type in sample_mapping:
-            # This would implement sample ID mapping logic
-            pass
+            sample_map = sample_mapping[omics_type]
+            # Map sample IDs using the provided mapping
+            df.index = df.index.map(sample_map).fillna(df.index)
+            # Update sample metadata if provided
+            if metadata_df is not None and omics_type in sample_mapping:
+                metadata_df.index = metadata_df.index.map(sample_map).fillna(metadata_df.index)
 
         # Apply feature mapping if provided
         if feature_mapping and omics_type in feature_mapping:

@@ -40,11 +40,25 @@ try:
 except ImportError:
     pass
 
-# TODO: Implement these modules
-# from .contamination import (...)
-# from .metrics import (...)
-# from .reporting import (...)
-# from .filtering import (...)
+# Import implemented modules
+from .contamination import (
+    detect_adapter_contamination,
+    detect_cross_species_contamination,
+    detect_mycoplasma_contamination,
+    detect_rrna_contamination,
+    detect_vector_contamination,
+    generate_contamination_report,
+)
+
+from .metrics import (
+    calculate_complexity_metrics,
+    calculate_coverage_metrics,
+    calculate_duplication_metrics,
+    calculate_gc_metrics,
+    calculate_length_metrics,
+    calculate_quality_metrics,
+    generate_quality_report,
+)
 
 __all__ = [
     # FASTQ analysis (implemented)
@@ -56,5 +70,21 @@ __all__ = [
     "adapter_content",
     "overrepresented_sequences",
     "duplication_levels",
-    # TODO: Add other modules when implemented
+
+    # Contamination detection (implemented)
+    "detect_cross_species_contamination",
+    "detect_rrna_contamination",
+    "detect_mycoplasma_contamination",
+    "detect_adapter_contamination",
+    "detect_vector_contamination",
+    "generate_contamination_report",
+
+    # Quality metrics (implemented)
+    "calculate_quality_metrics",
+    "calculate_gc_metrics",
+    "calculate_length_metrics",
+    "calculate_duplication_metrics",
+    "calculate_complexity_metrics",
+    "calculate_coverage_metrics",
+    "generate_quality_report",
 ]

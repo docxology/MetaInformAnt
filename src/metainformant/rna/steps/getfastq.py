@@ -106,9 +106,11 @@ def run(
                         val = (row.get(run_key) or "").strip()
                         if val:
                             srr_list.append(val)
-        except Exception:
+        except Exception as e:
             # If metadata cannot be read, proceed without verification
-            pass
+            import logging
+            logging.getLogger(__name__).warning(f"Could not read metadata file {metadata_file}: {e}")
+            # Continue with empty metadata
 
     srr_list = sorted(set(srr_list))
 
@@ -143,8 +145,10 @@ def run(
                             sra_path = srr_dir / f"{srr}.sra"
                             with open(sra_path, "wb") as out_f:
                                 shutil.copyfileobj(resp, out_f)
-                except Exception:
-                    pass
+                except Exception as e:
+                    # Log error but continue - file copy issues shouldn't block entire download
+                    import logging
+                    logging.getLogger(__name__).debug(f"Could not copy file for {srr}: {e}")
                 # If we now have a local .sra, try fasterq-dump quickly
                 if (srr_dir / f"{srr}.sra").exists():
                     fasterq_bin = shutil.which("fasterq-dump")

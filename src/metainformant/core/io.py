@@ -37,7 +37,7 @@ def load_json(path: str | Path) -> Any:
 def dump_json(obj: Any, path: str | Path, *, indent: int | None = None) -> None:
     ensure_directory(Path(path).parent)
     with open_text_auto(path, mode="wt") as fh:
-        json.dump(obj, fh, indent=indent)
+        json.dump(obj, fh, indent=indent, sort_keys=True)  # Sort keys for consistent output
 
 
 # JSON Lines utilities
