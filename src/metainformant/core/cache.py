@@ -68,3 +68,39 @@ def set_json_cache(cache_file: Path, data: Any) -> None:
     """
     core_io.ensure_directory(cache_file.parent)
     core_io.dump_json(data, cache_file)
+
+
+def clear_cache_dir(cache_dir: Path) -> None:
+    """Clear all cache files in a directory."""
+    if cache_dir.exists():
+        for file in cache_dir.rglob("*"):
+            if file.is_file() and file.suffix in {".json", ".gz"}:
+                file.unlink()
+
+
+def get_cache_info(cache_dir: Path) -> Dict[str, Any]:
+    """Get information about cache directory contents.
+
+    Args:
+        cache_dir: Path to cache directory
+
+    Returns:
+        Dictionary with cache statistics
+    """
+    if not cache_dir.exists():
+        return {"exists": False, "total_files": 0, "total_size": 0}
+
+    total_files = 0
+    total_size = 0
+
+    for file in cache_dir.rglob("*"):
+        if file.is_file() and file.suffix in {".json", ".gz"}:
+            total_files += 1
+            total_size += file.stat().st_size
+
+    return {
+        "exists": True,
+        "total_files": total_files,
+        "total_size": total_size,
+        "directory": str(cache_dir)
+    }

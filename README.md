@@ -27,7 +27,7 @@ METAINFORMANT/
   src/
     metainformant/
       __init__.py
-      __main__.py                 # `python -m metainformant` CLI entry
+      __main__.py                 # `uv run python -m metainformant` CLI entry
       core/                       # Shared utilities, I/O, logging, config
         __init__.py
         config.py
@@ -110,7 +110,7 @@ uv run pytest -q
 ```
 
 Notes
-- All dependencies are declared in `pyproject.toml`. Use `uv add <pkg>` to add more, or `uv pip install <pkg>`.
+- All dependencies are declared in `pyproject.toml`. Prefer `uv add <pkg>` for adding new dependencies, or `uv pip install <pkg>` for one-off installations.
 - Prefer `uv run <cmd>` over activating the environment when scripting/CI.
 
 ### DNA quickstart
@@ -131,7 +131,8 @@ pi = population.nucleotide_diversity(["AAAA", "AAAT"])  # 0.25
 Install amalgkit (external dependency):
 
 ```bash
-pip install git+https://github.com/kfuku52/amalgkit
+# Install amalgkit (external dependency):
+uv pip install git+https://github.com/kfuku52/amalgkit
 amalgkit -h  # verify
 ```
 
@@ -216,8 +217,8 @@ codes = execute_workflow(cfg)
 CLI usage:
 
 ```bash
-python -m metainformant rna plan --work-dir /tmp/amg --threads 4 --species Apis_mellifera
-python -m metainformant rna run --work-dir /tmp/amg --threads 4 --species Apis_mellifera --check
+uv run python -m metainformant rna plan --work-dir /tmp/amg --threads 4 --species Apis_mellifera
+uv run python -m metainformant rna run --work-dir /tmp/amg --threads 4 --species Apis_mellifera --check
 ```
 
 ### License

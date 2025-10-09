@@ -165,7 +165,7 @@ umap_coords = data.obsm['X_umap']  # Shape: (n_cells, n_components)
 
 **Note:** Requires the optional `umap-learn` package:
 ```bash
-pip install umap-learn
+uv pip install umap-learn
 ```
 
 ## t-SNE
@@ -385,7 +385,7 @@ def global_preservation(X_orig, X_embed):
 try:
     data = compute_umap(data)
 except ImportError:
-    print("umap-learn not installed. Install with: pip install umap-learn")
+    print("umap-learn not installed. Install with: uv pip install umap-learn")
     # Fall back to t-SNE
     data = compute_tsne(data)
 

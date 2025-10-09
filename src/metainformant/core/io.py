@@ -40,6 +40,60 @@ def dump_json(obj: Any, path: str | Path, *, indent: int | None = None) -> None:
         json.dump(obj, fh, indent=indent, sort_keys=True)  # Sort keys for consistent output
 
 
+def dump_json_gz(obj: Any, path: str | Path, *, indent: int | None = None) -> None:
+    """Dump object as gzipped JSON file."""
+    ensure_directory(Path(path).parent)
+    with gzip.open(path, "wt", encoding="utf-8") as fh:
+        json.dump(obj, fh, indent=indent, sort_keys=True)
+
+
+def load_json_gz(path: str | Path) -> Any:
+    """Load object from gzipped JSON file."""
+    with gzip.open(path, "rt", encoding="utf-8") as fh:
+        return json.load(fh)
+
+
+def read_csv(path: str | Path, **kwargs) -> Any:
+    """Read CSV file with pandas, handling gzip automatically."""
+    try:
+        import pandas as pd
+        if str(path).endswith('.gz'):
+            return pd.read_csv(path, **kwargs)
+        else:
+            return pd.read_csv(path, **kwargs)
+    except ImportError:
+        raise ImportError("pandas is required for CSV reading. Install with: uv add pandas")
+
+
+def write_csv(df: Any, path: str | Path, **kwargs) -> None:
+    """Write DataFrame to CSV file."""
+    try:
+        import pandas as pd
+        ensure_directory(Path(path).parent)
+        df.to_csv(path, **kwargs)
+    except ImportError:
+        raise ImportError("pandas is required for CSV writing. Install with: uv add pandas")
+
+
+def read_parquet(path: str | Path, **kwargs) -> Any:
+    """Read Parquet file with pandas."""
+    try:
+        import pandas as pd
+        return pd.read_parquet(path, **kwargs)
+    except ImportError:
+        raise ImportError("pandas is required for Parquet reading. Install with: uv add pandas")
+
+
+def write_parquet(df: Any, path: str | Path, **kwargs) -> None:
+    """Write DataFrame to Parquet file."""
+    try:
+        import pandas as pd
+        ensure_directory(Path(path).parent)
+        df.to_parquet(path, **kwargs)
+    except ImportError:
+        raise ImportError("pandas is required for Parquet writing. Install with: uv add pandas")
+
+
 # JSON Lines utilities
 def read_jsonl(path: str | Path) -> Iterator[Dict[str, Any]]:
     with open_text_auto(path, mode="rt") as fh:
@@ -139,3 +193,143 @@ def write_tsv(data, path: str | Path) -> None:
         writer = csv.writer(fh, delimiter="\t")
         for row in data:
             writer.writerow(row)
+
+
+def download_file(url: str, dest_path: str | Path, *, chunk_size: int = 8192, timeout: int = 30) -> bool:
+    """Download a file from a URL to a local path.
+    
+    Args:
+        url: URL to download from
+        dest_path: Local path to save the file
+        chunk_size: Size of download chunks
+        timeout: Request timeout in seconds
+        
+    Returns:
+        True if download successful, False otherwise
+    """
+    import requests
+    from urllib.parse import urlparse
+    
+    try:
+        # Create parent directory if it doesn't exist
+        dest_path = Path(dest_path)
+        ensure_directory(dest_path.parent)
+        
+        # Parse URL to get filename if dest_path is a directory
+        if dest_path.is_dir():
+            parsed_url = urlparse(url)
+            filename = Path(parsed_url.path).name
+            if not filename:
+                filename = "downloaded_file"
+            dest_path = dest_path / filename
+            
+        # Download with progress tracking
+        response = requests.get(url, stream=True, timeout=timeout)
+        response.raise_for_status()
+        
+        with open(dest_path, 'wb') as f:
+            for chunk in response.iter_content(chunk_size=chunk_size):
+                if chunk:
+                    f.write(chunk)
+                    
+        return True
+        
+    except Exception:
+        return False
+
+
+def download_json(url: str, *, timeout: int = 30) -> Any:
+    """Download and parse JSON from a URL.
+    
+    Args:
+        url: URL to download JSON from
+        timeout: Request timeout in seconds
+        
+    Returns:
+        Parsed JSON data or None if failed
+    """
+    import requests
+    
+    try:
+        response = requests.get(url, timeout=timeout)
+        response.raise_for_status()
+        return response.json()
+    except Exception:
+        return None
+
+
+def download_text(url: str, *, timeout: int = 30) -> str | None:
+    """Download text content from a URL.
+    
+    Args:
+        url: URL to download text from
+        timeout: Request timeout in seconds
+        
+    Returns:
+        Text content or None if failed
+    """
+    import requests
+    
+    try:
+        response = requests.get(url, timeout=timeout)
+        response.raise_for_status()
+        return response.text
+    except Exception:
+        return None
+
+
+def download_csv(url: str, *, timeout: int = 30, **kwargs) -> Any:
+    """Download and parse CSV from a URL.
+    
+    Args:
+        url: URL to download CSV from
+        timeout: Request timeout in seconds
+        **kwargs: Additional arguments for pandas.read_csv
+        
+    Returns:
+        DataFrame or None if failed
+    """
+    try:
+        import pandas as pd
+        import io
+        
+        text_content = download_text(url, timeout=timeout)
+        if text_content:
+            return pd.read_csv(io.StringIO(text_content), **kwargs)
+    except Exception:
+        pass
+    
+    return None
+
+
+def batch_download(urls: list[str], dest_dir: str | Path, *, timeout: int = 30) -> dict[str, bool]:
+    """Download multiple files in batch.
+    
+    Args:
+        urls: List of URLs to download
+        dest_dir: Directory to save files to
+        timeout: Request timeout in seconds
+        
+    Returns:
+        Dictionary mapping URLs to success status
+    """
+    dest_dir = Path(dest_dir)
+    ensure_directory(dest_dir)
+    
+    results = {}
+    for i, url in enumerate(urls):
+        try:
+            from urllib.parse import urlparse
+            parsed_url = urlparse(url)
+            filename = Path(parsed_url.path).name
+            if not filename:
+                filename = f"download_{i}.txt"
+            
+            dest_path = dest_dir / filename
+            success = download_file(url, dest_path, timeout=timeout)
+            results[url] = success
+            
+        except Exception:
+            results[url] = False
+            
+    return results

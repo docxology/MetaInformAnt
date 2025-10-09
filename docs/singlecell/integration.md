@@ -95,7 +95,7 @@ try:
         parametric=True        # Parametric vs non-parametric
     )
 except ImportError:
-    print("ComBat not available. Install with: pip install combat")
+    print("ComBat not available. Install with: uv pip install combat")
 ```
 
 ### batch_correction_harmony()
@@ -115,7 +115,7 @@ try:
         sigma=0.1              # Ridge regression penalty
     )
 except ImportError:
-    print("Harmony not available. Install with: pip install harmony-pytorch")
+    print("Harmony not available. Install with: uv pip install harmony-pytorch")
 ```
 
 ## Integration Workflows

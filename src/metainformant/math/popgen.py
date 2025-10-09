@@ -150,3 +150,80 @@ def mutation_selection_balance_dominant(mutation_rate: float, selection_coeffici
     if s <= 0:
         return 0.0
     return mu / s
+
+
+def effective_population_size_from_heterozygosity(observed_heterozygosity: float, theta: float = 4) -> float:
+    """Estimate effective population size from observed heterozygosity.
+
+    Args:
+        observed_heterozygosity: Observed heterozygosity (H_o)
+        theta: Theta parameter (default 4 for diploids)
+
+    Returns:
+        Estimated effective population size
+    """
+    if observed_heterozygosity <= 0 or observed_heterozygosity >= 1:
+        raise ValueError("Heterozygosity must be between 0 and 1")
+
+    # H_e = theta / (theta + 1), so theta = H_e / (1 - H_e)
+    # Ne = theta / (4 * mu) for diploids, but here we estimate from H_o
+    # This is an approximation
+    expected_heterozygosity = theta / (theta + 1)
+    return observed_heterozygosity / (4 * (1 - observed_heterozygosity)) if observed_heterozygosity < 1 else float('inf')
+
+
+def inbreeding_coefficient_from_fst(fst: float, subpopulations: int = 2) -> float:
+    """Estimate inbreeding coefficient from F_ST.
+
+    Args:
+        fst: F_ST value
+        subpopulations: Number of subpopulations
+
+    Returns:
+        Estimated inbreeding coefficient
+    """
+    if not 0 <= fst <= 1:
+        raise ValueError("F_ST must be between 0 and 1")
+
+    # F_IT = F_ST + F_IS * (1 - F_ST)
+    # For Wright's F-statistics, this gives an estimate
+    return fst / (1 - fst) if fst < 1 else float('inf')
+
+
+def linkage_disequilibrium_decay_distance(r_squared: float, recombination_rate: float) -> float:
+    """Estimate physical distance over which LD decays to a given r².
+
+    Args:
+        r_squared: Target r² value
+        recombination_rate: Recombination rate per base pair per generation
+
+    Returns:
+        Physical distance in base pairs
+    """
+    if r_squared <= 0 or r_squared >= 1:
+        raise ValueError("r² must be between 0 and 1")
+
+    # LD decay: r² = e^(-2 * recombination_rate * distance)
+    # So distance = -ln(r²) / (2 * recombination_rate)
+    import math
+    return -math.log(r_squared) / (2 * recombination_rate) if recombination_rate > 0 else float('inf')
+
+
+def coalescent_time_to_mrca(sample_size: int, effective_size: float) -> float:
+    """Calculate expected time to most recent common ancestor.
+
+    Args:
+        sample_size: Number of samples
+        effective_size: Effective population size
+
+    Returns:
+        Expected TMRCA in generations
+    """
+    if sample_size < 2:
+        return 0.0
+
+    # Expected TMRCA for neutral coalescent
+    # E[T_MRCA] = 2 * Ne * sum_{k=2 to n} 1/k
+    import math
+    harmonic_sum = sum(1/k for k in range(2, sample_size + 1))
+    return 2 * effective_size * harmonic_sum

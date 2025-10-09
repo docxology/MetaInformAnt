@@ -395,3 +395,179 @@ class TestCoreLogging:
         log_output = log_stream.getvalue()
         assert "Analysis completed" in log_output
         assert "samples" in log_output
+
+
+class TestEnhancedCoreMethods:
+    """Test all the new enhanced methods added to core modules."""
+
+    def test_enhanced_hash_utilities(self, tmp_path):
+        """Test enhanced hash utilities."""
+        # Test string hashing
+        hash1 = hash.sha256_string("test1")
+        hash2 = hash.sha256_string("test2")
+        assert len(hash1) == 64
+        assert hash1 != hash2
+
+        # Test file comparison
+        file1 = tmp_path / "file1.txt"
+        file2 = tmp_path / "file2.txt"
+        file1.write_text("identical content")
+        file2.write_text("identical content")
+
+        assert hash.file_hash_comparison(file1, file2)
+
+        # Different content
+        file2.write_text("different content")
+        assert not hash.file_hash_comparison(file1, file2)
+
+        # Test directory hashing
+        dir_hashes = hash.hash_directory(tmp_path)
+        assert "file1.txt" in dir_hashes
+        assert "file2.txt" in dir_hashes
+
+        # Test file integrity verification
+        expected_hash = hash.sha256_file(file1)
+        assert hash.verify_file_integrity(file1, expected_hash)
+        assert not hash.verify_file_integrity(file1, "wrong_hash")
+
+    def test_enhanced_path_utilities(self, tmp_path):
+        """Test enhanced path utilities."""
+        # Test file finding by extension
+        txt_files = paths.find_files_by_extension(tmp_path, "txt")
+        assert isinstance(txt_files, list)
+
+        # Test file size
+        test_file = tmp_path / "size_test.txt"
+        test_file.write_text("test content")
+        size = paths.get_file_size(test_file)
+        assert size > 0
+
+        # Test directory size
+        dir_size = paths.get_directory_size(tmp_path)
+        assert dir_size > 0
+
+        # Test filename sanitization
+        unsafe = "file<name>test.txt"
+        safe = paths.sanitize_filename(unsafe)
+        assert "<" not in safe
+        assert ">" not in safe
+        assert safe == "file_name_test.txt"
+
+        # Test temp file creation
+        temp_file = paths.create_temp_file(suffix=".txt", directory=tmp_path)
+        assert temp_file.exists()
+        assert temp_file.parent == tmp_path
+
+    def test_enhanced_text_utilities(self):
+        """Test enhanced text utilities."""
+        # Test number extraction
+        text_with_numbers = "Hello 123 world 456.78 more 999"
+        numbers = text.extract_numbers(text_with_numbers)
+        assert numbers == [123.0, 456.78, 999.0]
+
+        # Test text truncation
+        long_text = "This is a very long text that should be truncated"
+        truncated = text.truncate_text(long_text, 30)
+        assert len(truncated) <= 30
+        assert truncated.endswith("...")
+
+        # Test word counting
+        word_count = text.count_words("Hello world this is a test")
+        assert word_count == 6
+
+        # Test email extraction
+        text_with_emails = "Contact us at test@example.com or admin@company.org"
+        emails = text.extract_email_addresses(text_with_emails)
+        assert "test@example.com" in emails
+        assert "admin@company.org" in emails
+
+    def test_enhanced_cache_utilities(self, tmp_path):
+        """Test enhanced cache utilities."""
+        cache_dir = tmp_path / "enhanced_cache"
+
+        # Test cache info
+        info = cache.get_cache_info(cache_dir)
+        assert not info["exists"]  # Directory doesn't exist yet
+
+        # Create cache directory and add data
+        cache.cache_json(cache_dir, "test1", {"data": "value1"})
+        cache.cache_json(cache_dir, "test2", {"data": "value2"})
+
+        # Check cache info
+        info = cache.get_cache_info(cache_dir)
+        assert info["exists"]
+        assert info["total_files"] == 2
+
+        # Test cache clearing
+        cache.clear_cache_dir(cache_dir)
+        info = cache.get_cache_info(cache_dir)
+        assert info["total_files"] == 0
+
+    def test_enhanced_io_utilities(self, tmp_path):
+        """Test enhanced I/O utilities."""
+        # Test gzipped JSON
+        test_data = {"test": "data", "numbers": [1, 2, 3]}
+        gz_path = tmp_path / "test.json.gz"
+
+        io.dump_json_gz(test_data, gz_path)
+        loaded = io.load_json_gz(gz_path)
+        assert loaded == test_data
+
+        # Test CSV operations (if pandas available)
+        try:
+            import pandas as pd
+            df = pd.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]})
+            csv_path = tmp_path / "test.csv"
+
+            io.write_csv(df, csv_path)
+            loaded_df = io.read_csv(csv_path)
+            assert isinstance(loaded_df, pd.DataFrame)
+
+            # Test gzipped CSV
+            gz_csv_path = tmp_path / "test.csv.gz"
+            io.write_csv(df, gz_csv_path)
+            loaded_gz_df = io.read_csv(gz_csv_path)
+            assert isinstance(loaded_gz_df, pd.DataFrame)
+
+        except ImportError:
+            # Pandas not available, skip CSV tests
+            pass
+
+        # Test Parquet operations (if pandas available)
+        try:
+            import pandas as pd
+            df = pd.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]})
+            parquet_path = tmp_path / "test.parquet"
+
+            io.write_parquet(df, parquet_path)
+            loaded_df = io.read_parquet(parquet_path)
+            assert isinstance(loaded_df, pd.DataFrame)
+
+        except ImportError:
+            # Pandas not available, skip Parquet tests
+            pass
+
+    def test_enhanced_parallel_utilities(self):
+        """Test enhanced parallel utilities."""
+        # Test CPU count
+        cpu_count = parallel.cpu_count()
+        assert cpu_count > 0
+
+        # Test unordered mapping
+        def square(x):
+            return x * x
+
+        results = parallel.thread_map_unordered(square, [1, 2, 3, 4, 5])
+        assert len(results) == 5
+        assert 1 in results  # 1^2 = 1
+        assert 4 in results  # 2^2 = 4
+        assert 9 in results  # 3^2 = 9
+
+        # Test batch processing
+        def process_batch(batch):
+            return [x * 2 for x in batch]
+
+        data = [1, 2, 3, 4, 5, 6, 7, 8]
+        results = parallel.parallel_batch(process_batch, data, batch_size=3)
+        expected = [2, 4, 6, 8, 10, 12, 14, 16]
+        assert sorted(results) == sorted(expected)

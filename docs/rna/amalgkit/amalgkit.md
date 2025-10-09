@@ -137,7 +137,7 @@ scripts/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --check
 
 ```bash
 # Python-based execution
-python3 -m metainformant rna run-config --config config/amalgkit_pbarbatus.yaml --stream
+uv run python -m metainformant rna run-config --config config/amalgkit_pbarbatus.yaml --stream
 
 # Verify AMALGKIT installation
 amalgkit -h | head -20

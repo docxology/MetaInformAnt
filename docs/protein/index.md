@@ -71,8 +71,8 @@ Modular tools for protein sequences and structures. Examples write to `output/` 
     ```
 
 - CLI
-  - Taxon IDs: `python -m metainformant protein taxon-ids --file tests/data/protein/taxon_id_list.txt`
-  - Composition: `python -m metainformant protein comp --fasta data/protein/example.faa`
+  - Taxon IDs: `uv run python -m metainformant protein taxon-ids --file tests/data/protein/taxon_id_list.txt`
+  - Composition: `uv run python -m metainformant protein comp --fasta data/protein/example.faa`
 
 Notes
 - Networked APIs (UniProt, PDB, InterPro, AlphaFold) are used via simple, modular functions so you can control I/O. Tests must use the real network; if offline, skip gracefully.

@@ -338,7 +338,7 @@ def test_large_dataset_processing(self):
 uv run pytest tests/test_core_text.py -v --tb=short
 
 # Watch mode for continuous testing (with external tool)
-# pip install pytest-watch
+# uv pip install pytest-watch
 ptw tests/test_core_text.py
 
 # Run with immediate failure reporting

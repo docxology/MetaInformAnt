@@ -76,3 +76,111 @@ def local_align(seq1: str, seq2: str) -> AlignmentResult:
     gapped1 = lines[0].strip()
     gapped2 = lines[2].strip()
     return AlignmentResult(aligned_seq1=gapped1, aligned_seq2=gapped2, score=a.score)
+
+
+def calculate_alignment_identity(alignment: AlignmentResult) -> float:
+    """Calculate percent identity of an alignment.
+
+    Args:
+        alignment: AlignmentResult from global_align or local_align
+
+    Returns:
+        Percent identity (0-100)
+    """
+    seq1 = alignment.aligned_seq1.replace("-", "")
+    seq2 = alignment.aligned_seq2.replace("-", "")
+
+    if len(seq1) == 0:
+        return 0.0
+
+    matches = sum(a == b for a, b in zip(seq1, seq2))
+    return (matches / len(seq1)) * 100
+
+
+def find_conserved_regions(alignment: AlignmentResult, min_length: int = 5) -> list[tuple[str, int, int]]:
+    """Find conserved regions in an alignment.
+
+    Args:
+        alignment: AlignmentResult from global_align or local_align
+        min_length: Minimum length of conserved region
+
+    Returns:
+        List of (sequence, start, end) tuples for conserved regions
+    """
+    seq1 = alignment.aligned_seq1
+    seq2 = alignment.aligned_seq2
+
+    conserved_regions = []
+    current_start = None
+
+    for i in range(len(seq1)):
+        if seq1[i] == seq2[i] and seq1[i] != "-":
+            if current_start is None:
+                current_start = i
+        else:
+            if current_start is not None:
+                length = i - current_start
+                if length >= min_length:
+                    conserved_regions.append((seq1[current_start:i], current_start, i))
+                current_start = None
+
+    # Handle case where conserved region goes to end
+    if current_start is not None:
+        length = len(seq1) - current_start
+        if length >= min_length:
+            conserved_regions.append((seq1[current_start:], current_start, len(seq1)))
+
+    return conserved_regions
+
+
+def alignment_statistics(alignment: AlignmentResult) -> dict[str, float]:
+    """Calculate comprehensive statistics for an alignment.
+
+    Args:
+        alignment: AlignmentResult from global_align or local_align
+
+    Returns:
+        Dictionary with alignment statistics
+    """
+    seq1 = alignment.aligned_seq1
+    seq2 = alignment.aligned_seq2
+
+    # Lengths
+    len1 = len(seq1)
+    len2 = len(seq2)
+
+    # Gaps
+    gaps1 = seq1.count("-")
+    gaps2 = seq2.count("-")
+
+    # Matches and mismatches (excluding gaps)
+    matches = 0
+    mismatches = 0
+
+    for i in range(len1):
+        char1 = seq1[i]
+        char2 = seq2[i]
+        if char1 != "-" and char2 != "-":
+            if char1 == char2:
+                matches += 1
+            else:
+                mismatches += 1
+
+    # Identity (excluding gaps)
+    total_positions = matches + mismatches
+    identity = (matches / total_positions * 100) if total_positions > 0 else 0.0
+
+    # Similarity (allowing for conservative substitutions)
+    similarity = identity  # For DNA, identity and similarity are the same
+
+    return {
+        "length1": len1,
+        "length2": len2,
+        "gaps1": gaps1,
+        "gaps2": gaps2,
+        "matches": matches,
+        "mismatches": mismatches,
+        "identity": identity,
+        "similarity": similarity,
+        "score": alignment.score
+    }

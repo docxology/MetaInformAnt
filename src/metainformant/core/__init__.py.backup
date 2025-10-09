@@ -10,8 +10,6 @@ Modules:
 - hash: content and file hashing
 - paths: path expansion, resolution, and containment checks
 - cache: simple JSON cache with TTL
-"""
-
 from __future__ import annotations
 
 from typing import Any
@@ -85,11 +83,11 @@ def download_and_process_data(
                 url = download_config.get("url")
                 dest_path = output_dir / download_config.get("filename", f"{name}.txt")
                 
-                if io.download_file(url, dest_path):
+                if download_file(url, dest_path):
                     download_results[name] = {
                         "success": True,
                         "path": str(dest_path),
-                        "size": paths.get_file_size(dest_path)
+                        "size": get_file_size(dest_path)
                     }
                 else:
                     download_results[name] = {
@@ -128,7 +126,7 @@ def download_and_process_data(
         
         # Save results
         results_file = output_dir / "processing_results.json"
-        io.dump_json(results, results_file)
+        dump_json(results, results_file)
         
         if verbose:
             print(f"Processing complete. Results saved to {results_file}")
@@ -156,7 +154,7 @@ def validate_config_file(config_path: str | Path) -> tuple[bool, list[str]]:
         return False, [f"Configuration file not found: {config_path}"]
     
     try:
-        config = io.load_json(config_path)
+        config = load_json(config_path)
     except Exception as e:
         return False, [f"Failed to parse configuration: {e}"]
     
@@ -183,7 +181,7 @@ def create_sample_config(output_path: str | Path, sample_type: str = "basic") ->
         sample_type: Type of sample config ('basic', 'advanced', 'scientific')
     """
     output_path = Path(output_path)
-    paths.ensure_directory(output_path.parent)
+    ensure_directory(output_path.parent)
     
     if sample_type == "basic":
         config = {
@@ -245,7 +243,7 @@ def create_sample_config(output_path: str | Path, sample_type: str = "basic") ->
             }
         }
     
-    io.dump_json(config, output_path)
+    dump_json(config, output_path)
 
 
 def run_config_based_workflow(config_path: str | Path, **kwargs) -> dict[str, Any]:
@@ -272,7 +270,7 @@ def run_config_based_workflow(config_path: str | Path, **kwargs) -> dict[str, An
         }
     
     # Load config
-    config = io.load_json(config_path)
+    config = load_json(config_path)
     
     # Run processing
     results = download_and_process_data(config, **kwargs)

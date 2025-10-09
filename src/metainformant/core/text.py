@@ -112,3 +112,59 @@ def clean_sequence_id(sequence_id: str) -> str:
     clean_id = re.split(r"[\s\[\]]", clean_id)[0]
 
     return clean_id
+
+
+def extract_numbers(text: str) -> list[float]:
+    """Extract all numeric values from text.
+
+    Args:
+        text: Text to extract numbers from
+
+    Returns:
+        List of extracted numeric values
+    """
+    # Find all sequences of digits and decimal points
+    numbers = re.findall(r'\d+\.?\d*', text)
+    return [float(num) for num in numbers if num]
+
+
+def truncate_text(text: str, max_length: int, suffix: str = "...") -> str:
+    """Truncate text to maximum length with optional suffix.
+
+    Args:
+        text: Text to truncate
+        max_length: Maximum length including suffix
+        suffix: Suffix to add when truncating
+
+    Returns:
+        Truncated text
+    """
+    if len(text) <= max_length:
+        return text
+    return text[:max_length - len(suffix)] + suffix
+
+
+def count_words(text: str) -> int:
+    """Count words in text after normalization.
+
+    Args:
+        text: Text to count words in
+
+    Returns:
+        Number of words
+    """
+    normalized = normalize_whitespace(text)
+    return len(normalized.split()) if normalized else 0
+
+
+def extract_email_addresses(text: str) -> list[str]:
+    """Extract email addresses from text.
+
+    Args:
+        text: Text to extract emails from
+
+    Returns:
+        List of email addresses found
+    """
+    email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    return re.findall(email_pattern, text)

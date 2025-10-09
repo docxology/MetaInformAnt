@@ -67,3 +67,87 @@ def thread_map(
                 pool.submit(_wrap, i, x)
             pool.shutdown(wait=True)
     return results
+
+
+def thread_map_unordered(
+    func: Callable[[T], U],
+    items: Iterable[T],
+    *,
+    max_workers: int = 8,
+    timeout: float | None = None,
+) -> list[U]:
+    """Map a function across items using threads, without preserving order.
+
+    Args:
+        func: Function to apply to each item
+        items: Items to process
+        max_workers: Maximum number of worker threads
+        timeout: Timeout in seconds for each task (None for no timeout)
+
+    Returns:
+        List of results (order not preserved for better performance)
+    """
+    results = []
+
+    def collect_result(future):
+        try:
+            if timeout is not None:
+                import signal
+                def timeout_handler(signum, frame):
+                    raise TimeoutError(f"Task timed out after {timeout} seconds")
+                old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+                signal.alarm(int(timeout))
+                try:
+                    result = future.result()
+                    results.append(result)
+                finally:
+                    signal.alarm(0)
+                    signal.signal(signal.SIGALRM, old_handler)
+            else:
+                result = future.result()
+                results.append(result)
+        except Exception as e:
+            results.append(e)
+            raise
+
+    with ThreadPoolExecutor(max_workers=max_workers) as pool:
+        futures = [pool.submit(func, item) for item in items]
+        for future in futures:
+            future.add_done_callback(lambda f: collect_result(f))
+        pool.shutdown(wait=True)
+
+    return results
+
+
+def parallel_batch(
+    func: Callable[[list[T]], list[U]],
+    items: list[T],
+    *,
+    batch_size: int = 10,
+    max_workers: int = 4,
+) -> list[U]:
+    """Process items in batches using parallel execution.
+
+    Args:
+        func: Function that takes a batch of items and returns processed results
+        items: Items to process
+        batch_size: Number of items per batch
+        max_workers: Maximum number of worker threads
+
+    Returns:
+        List of all results
+    """
+    batches = [items[i:i + batch_size] for i in range(0, len(items), batch_size)]
+    batch_results = thread_map(func, batches, max_workers=max_workers)
+    return [result for batch_result in batch_results for result in batch_result]
+
+
+def cpu_count() -> int:
+    """Get the number of CPU cores available."""
+    try:
+        import multiprocessing
+        return multiprocessing.cpu_count()
+    except ImportError:
+        # Fallback for systems without multiprocessing
+        import os
+        return os.cpu_count() or 1
