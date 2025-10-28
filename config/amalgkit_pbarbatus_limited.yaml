@@ -1,0 +1,62 @@
+# METAINFORMANT Amalgkit Configuration - Limited Sample Test
+# Species: Pogonomyrmex barbatus (Red Harvester Ant)
+# Limited to 8 samples for testing and storage efficiency
+
+work_dir: output/amalgkit/pbarbatus_limited/work
+log_dir: output/amalgkit/pbarbatus_limited/logs
+threads: 4
+
+auto_install_amalgkit: true
+
+# Species configuration
+species_list:
+  - Pogonomyrmex_barbatus
+
+# Reference genome configuration
+genome:
+  accession: GCF_000187915.1
+  assembly_name: Pbar_UMD_V03
+  annotation_release: 101
+  dest_dir: output/amalgkit/pbarbatus_limited/genome
+
+  # Files to download
+  include:
+    - genome
+    - gff3
+    - rna
+    - cds
+    - protein
+    - seq-report
+
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/187/915/GCF_000187915.1_Pbar_UMD_V03/
+
+# Steps to execute
+steps:
+  metadata:
+    out_dir: output/amalgkit/pbarbatus_limited/work
+    search_string: '"Pogonomyrmex barbatus"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
+    redo: yes
+  config:
+    out_dir: output/amalgkit/pbarbatus_limited/work
+  select:
+    out_dir: output/amalgkit/pbarbatus_limited/work
+    # Limit to 8 samples maximum for testing
+    max_sample: 8
+    min_nspots: 10000000  # 10M spots minimum
+    max_nspots: 40000000  # 40M spots maximum
+    metadata: output/amalgkit/pbarbatus_limited/work/metadata/metadata.tsv
+  getfastq:
+    out_dir: output/amalgkit/pbarbatus_limited/fastq
+    # Clean up raw files after quantification
+    cleanup_raw: yes
+    # Use fastp for quality control
+    fastp: yes
+    fastp_exe: fastp
+  quant:
+    out_dir: output/amalgkit/pbarbatus_limited/quant
+    threads: 4
+    # Use salmon for quantification
+    method: salmon
+  merge:
+    out: output/amalgkit/pbarbatus_limited/merged/merged_abundance.tsv
+  sanity: {}

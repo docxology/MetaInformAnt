@@ -118,24 +118,34 @@ Comprehensive quality assessment for FASTQ sequencing files including:
 
 - **[fastq.py](./fastq.md)**: Complete FASTQ quality analysis suite
 
-## Planned Extensions
-
-Future quality control modules will include:
+## Additional Modules
 
 ### Contamination Detection
 - **Cross-species contamination**: Detect reads from unexpected organisms
 - **rRNA contamination**: Identify ribosomal RNA sequences
 - **Mycoplasma detection**: Screen for common cell culture contaminants
+- **Adapter detection**: Identify and remove adapter sequences
+- **Vector contamination**: Detect plasmid and vector sequences
 
-### Alignment Quality  
+### Quality Metrics
+- **Quality score calculations**: Comprehensive quality scoring algorithms
+- **Completeness and accuracy metrics**: Statistical quality assessments
+- **Batch effect detection**: Identify systematic differences between samples
+- **Quality normalization**: Correct for technical artifacts
+
+## Planned Extensions
+
+Future quality control modules will include:
+
+### Alignment Quality
 - **BAM/SAM analysis**: Quality metrics for aligned reads
 - **Mapping statistics**: Alignment rates and insert size distributions
 - **Coverage analysis**: Depth and evenness of coverage
 
-### Multi-Sample Analysis
-- **Batch effects**: Identify systematic differences between samples
+### Advanced Multi-Sample Analysis
 - **Sample correlation**: Compare samples for consistency
 - **Outlier detection**: Identify problematic samples
+- **Reproducibility assessment**: Technical and biological replicate analysis
 
 ## File Format Support
 

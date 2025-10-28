@@ -60,6 +60,9 @@ Welcome to the METAINFORMANT docs. This site is organized by domain and core uti
   - [Phenotype](./phenotype/index.md)
   - [Epigenome](./epigenome/index.md)
   - [Ecology](./ecology/index.md)
+  - [Machine Learning](./ml/index.md)
+  - [Multi-omics](./multiomics/index.md)
+  - [Networks](./networks/index.md)
 
 See also: the top-level project README for quickstarts.
 
@@ -77,29 +80,38 @@ graph TD
   A --> I[Phenotype]
   A --> J[Epigenome]
   A --> K[Ecology]
+  A --> L[Machine Learning]
+  A --> M[Multi-omics]
+  A --> N[Networks]
   subgraph Core
-    L[config]
-    M[io]
-    N[logging]
-    O[text]
-    P[parallel]
-    Q[hash]
-    R[paths]
-    S[cache]
-    T[db]
+    O[config]
+    P[io]
+    Q[logging]
+    R[text]
+    S[parallel]
+    T[hash]
+    U[paths]
+    V[cache]
+    W[db]
   end
-  L -.-> B
-  M -.-> B
-  L -.-> C
-  M -.-> C
-  L -.-> SC
-  M -.-> SC
-  L -.-> QC
-  M -.-> QC
-  L -.-> D
-  M -.-> D
-  L -.-> E
-  M -.-> F
+  O -.-> B
+  P -.-> B
+  O -.-> C
+  P -.-> C
+  O -.-> SC
   P -.-> SC
+  O -.-> QC
+  P -.-> QC
+  O -.-> D
+  P -.-> D
+  O -.-> E
+  P -.-> F
   S -.-> SC
+  V -.-> SC
+  O -.-> L
+  P -.-> L
+  O -.-> M
+  P -.-> M
+  O -.-> N
+  P -.-> N
 ```

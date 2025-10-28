@@ -101,3 +101,5 @@ build/
 coverage.xml
 *.cover
 .pytest_cache/
+*.prf
+*.lock

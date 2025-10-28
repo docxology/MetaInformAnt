@@ -30,53 +30,145 @@ METAINFORMANT/
       __main__.py                 # `uv run python -m metainformant` CLI entry
       core/                       # Shared utilities, I/O, logging, config
         __init__.py
-        config.py
-        io.py
-        logging.py
-      dna/
+        cache.py                  # JSON-based caching with TTL
+        config.py                 # Configuration management
+        db.py                     # Database integration (optional)
+        hash.py                   # Content hashing utilities
+        io.py                     # File I/O utilities
+        logging.py                # Logging configuration
+        parallel.py               # Parallel processing
+        paths.py                  # Path handling utilities
+        text.py                   # Text processing utilities
+      dna/                        # DNA sequence analysis
         __init__.py
-        genomes.py                # Accession validation
-        entrez.py                 # Entrez fetch helpers
-        ncbi.py                   # NCBI Datasets wrappers
-        sequences.py              # FASTA I/O
-        alignment.py              # Pairwise alignment
-        msa.py                    # Lightweight MSA (progressive)
-        phylogeny.py              # NJ tree + Newick export
-        population.py             # Popgen stats (alleles, pi, Tajima's D, Fst)
-      rna/
+        alignment.py              # Sequence alignment algorithms
+        codon.py                  # Codon usage analysis
+        composition.py            # Sequence composition analysis
+        consensus.py              # Consensus sequence generation
+        distances.py              # Evolutionary distance calculations
+        entrez.py                 # NCBI Entrez database integration
+        fastq.py                  # FASTQ processing and quality
+        genomes.py                # Genome data handling
+        motifs.py                 # Motif discovery
+        msa.py                    # Multiple sequence alignment
+        mutations.py              # Mutation analysis
+        ncbi.py                   # NCBI database integration
+        phylogeny.py              # Phylogenetic analysis
+        population.py             # Population genetics
+        restriction.py            # Restriction enzyme analysis
+        sequences.py              # DNA sequence I/O
+        transcription.py          # DNA to RNA transcription
+        translation.py            # Genetic code translation
+        variants.py               # Variant analysis
+      rna/                        # RNA analysis and workflows
         __init__.py
-         pipeline.py               # Utility helpers
-         amalgkit.py               # Thin modular wrapper around amalgkit CLI
-         workflow.py               # Plan/execute complete amalgkit workflows
-      visualization/
-        __init__.py                 # Unified plotting/animation API
-        plots.py                    # Line plots, heatmaps, pairplots (matplotlib/seaborn)
-        animations.py               # Simple time-series animations
-        trees.py                    # Biopython Phylo tree -> matplotlib
-      math/                       # Theoretical & quantitative biology
-        __init__.py               # Price eq., kin/multilevel selection, DDM
-      simulation/                 # Synthetic data and agent-based simulators
-        __init__.py               # DNA/RNA/protein generators, grid agents
-      protein/
+        amalgkit.py               # Amalgkit CLI wrapper
+        configs.py                # Workflow configuration
+        deps.py                   # Dependency management
+        pipeline.py               # RNA analysis pipeline
+        steps/                    # Individual workflow steps
+        workflow.py               # Complete workflow orchestration
+      protein/                    # Protein analysis
         __init__.py
-        proteomes.py
-      epigenome/
+        alignment.py              # Protein sequence alignment
+        alphafold.py              # AlphaFold integration
+        contacts.py               # Protein contact analysis
+        interpro.py               # InterPro domain analysis
+        pdb.py                    # PDB structure handling
+        proteomes.py              # Proteome analysis
+        secondary.py              # Secondary structure prediction
+        sequences.py              # Protein sequence I/O
+        structure.py              # Protein structure analysis
+        structure_io.py           # Structure file I/O
+        uniprot.py                # UniProt database integration
+      math/                       # Mathematical biology
         __init__.py
-      ontology/
+        coalescent.py             # Coalescent theory
+        ddm.py                    # Drift-diffusion models
+        dynamics.py               # Population dynamics
+        effective_size.py         # Effective population size
+        epidemiology.py           # Disease modeling
+        egt.py                    # Evolutionary game theory
+        fst.py                    # F-statistics
+        ld.py                     # Linkage disequilibrium
+        popgen.py                 # Population genetics
+        price.py                  # Price equation
+        quantgen.py               # Quantitative genetics
+        selection.py              # Natural selection
+        selection_experiments/    # Selection experiment simulations
+          __init__.py
+          cli.py                  # Command-line interface
+          model.py                # Selection models
+          plotting.py             # Result visualization
+          README.md               # Experiment documentation
+      ml/                         # Machine learning
         __init__.py
-      phenotype/
+        classification.py         # Supervised classification
+        dimensionality.py         # Dimensionality reduction
+        features.py               # Feature selection
+        regression.py             # Regression models
+        validation.py             # Model validation
+      multiomics/                 # Multi-omics integration
         __init__.py
-      ecology/
+        integration.py            # Cross-omic data integration
+      networks/                   # Network analysis
         __init__.py
-      legacy/                     # Prior scripts retained for reference
-        README.md
-  tests/
-    test_repo_structure.py        # Asserts new package layout
-  metadata/
-    metadata.tsv                  # Canonical metadata sink
-  scripts/
-    setup_uv.sh                   # One-shot uv + venv + sync
-  pyproject.toml                  # uv-native dependencies + tool config
+        community.py              # Community detection
+        graph.py                  # Graph algorithms
+        pathway.py                # Pathway analysis
+        ppi.py                    # Protein-protein interactions
+        regulatory.py             # Regulatory networks
+      ontology/                   # Ontology analysis
+        __init__.py
+        go.py                     # Gene Ontology
+        obo.py                    # OBO format parsing
+        query.py                  # Ontology querying
+        types.py                  # Ontology data types
+      phenotype/                  # Phenotype analysis
+        __init__.py
+        antwiki.py                # AntWiki integration
+      ecology/                    # Ecology analysis
+        __init__.py
+        community.py              # Community ecology analysis
+      epigenome/                  # Epigenomics
+        __init__.py
+        methylation.py            # DNA methylation analysis
+        tracks.py                 # Genomic track processing
+      quality/                    # Quality assessment
+        __init__.py
+        contamination.py          # Sequence contamination detection
+        fastq.py                  # FASTQ quality analysis
+        metrics.py                # Quality metrics and scoring
+      simulation/                 # Data simulation
+        __init__.py
+        agents.py                 # Agent-based modeling
+        rna.py                    # RNA count simulation
+        sequences.py              # Sequence generation
+      singlecell/                 # Single-cell analysis
+        __init__.py
+        clustering.py             # Single-cell clustering
+        config/                   # Configuration files
+        dimensionality.py         # Dimensionality reduction
+        integration.py            # Data integration
+        preprocessing.py          # Preprocessing pipelines
+        trajectory.py             # Trajectory analysis
+        visualization.py          # Single-cell visualization
+      visualization/              # Data visualization
+        __init__.py
+        animations.py             # Animation utilities
+        plots.py                  # Plotting functions
+        trees.py                  # Phylogenetic tree plotting
+  tests/                          # Comprehensive test suite
+    test_*.py                     # Domain-specific tests
+    data/                         # Test data fixtures
+  config/                         # Configuration files
+    amalgkit_*.yaml              # RNA workflow configurations
+  scripts/                        # Utility scripts
+    *.sh                         # Shell scripts for setup/testing
+  docs/                           # Documentation
+    */README.md                   # Module documentation
+  output/                         # Output directory (ephemeral)
+  pyproject.toml                  # Project configuration
 ```
 
 ---

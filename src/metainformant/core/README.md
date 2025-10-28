@@ -247,4 +247,29 @@ cfg = config.load_config()
 data = io.read_json(paths.expand_path(cfg.input_file))
 ```
 
+### Config-Based Processing (`__init__.py`)
+High-level utilities for configuration-driven data processing workflows.
+
+**Key Features:**
+- Download and process data based on configuration files
+- Config file validation and error reporting
+- Sample configuration file generation
+- End-to-end workflow orchestration
+
+**Usage:**
+```python
+from metainformant.core import download_and_process_data, validate_config_file, create_sample_config
+
+# Process data based on configuration
+results = download_and_process_data(config_dict)
+
+# Validate configuration files
+is_valid, errors = validate_config_file("config.json")
+if not is_valid:
+    print("Config errors:", errors)
+
+# Create sample configurations
+create_sample_config("sample_config.json", "scientific")
+```
+
 This ensures consistency and reduces code duplication across the entire codebase.

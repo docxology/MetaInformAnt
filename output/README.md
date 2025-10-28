@@ -12,12 +12,44 @@ According to METAINFORMANT's cursor rules:
 
 ## Directory Structure
 
-### `ontology/` Subdirectory
+### Analysis Outputs
+
+#### `amalgkit/` Subdirectory
+Contains RNA-seq analysis outputs from AMALGKIT workflows:
+- Complete workflow consolidation results (`CONSOLIDATION_COMPLETE.md`)
+- Species-specific analysis outputs (e.g., `pbarbatus/`)
+- Sample count summaries and metadata
+- Expression quantification results
+
+#### `ontology/` Subdirectory
 Contains ontology-related output files:
-- Gene Ontology (GO) term summaries
+- Gene Ontology (GO) term summaries (`go_summary.json`)
 - Ontology enrichment results
 - Semantic similarity calculations
 - Cross-ontology mapping results
+
+#### `processing/` Subdirectory
+Contains general data processing outputs:
+- Processing status and results (`processing_results.json`)
+- Intermediate analysis files
+- Pipeline execution logs
+
+### Test Outputs
+
+#### Test-specific subdirectories
+- `test_*/` - Outputs from domain-specific test suites
+- `coverage_html/` - HTML coverage reports
+- `coverage.xml` - XML coverage data for CI/CD integration
+
+#### Test artifacts
+- `test_amalgkit/` - AMALGKIT integration test outputs
+- `test_docs/` - Documentation generation test outputs
+- `test_integration/` - Cross-module integration test outputs
+- `test_invalid_config.yaml` - Configuration validation test outputs
+- `test_performance/` - Performance benchmark results
+- `test_robustness/` - Error handling and robustness test outputs
+- `test_steps/` - Workflow step testing outputs
+- `test_workflow/` - Complete workflow testing outputs
 
 ## Usage Guidelines
 

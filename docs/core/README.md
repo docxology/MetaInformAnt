@@ -30,7 +30,7 @@ The core module provides essential utilities used across all METAINFORMANT domai
 Core utilities are used throughout METAINFORMANT:
 
 ```python
-from metainformant.core import config, io, logging
+from metainformant.core import config, io, logging, download_and_process_data
 
 # Load configuration with environment overrides
 cfg = config.load_config("config.yaml")
@@ -41,6 +41,12 @@ logger = logging.setup_logger("my_module")
 # Robust I/O operations
 data = io.read_json("data.json")
 io.write_json(data, "output.json")
+
+# High-level config-driven processing
+results = download_and_process_data({
+    "downloads": {"data": {"url": "https://example.com/data.csv"}},
+    "processing": {"analyze": {"type": "analysis"}}
+})
 ```
 
 ## Integration

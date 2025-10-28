@@ -54,6 +54,5 @@ See: [Sequences](./sequences.md), [Alignment](./alignment.md), [MSA](./msa.md), 
 ## External Data
 
 - [Entrez/NCBI](./ncbi.md): Sequence retrieval from NCBI
-- [Accession Validation](./accessions.md): Assembly accession validation
 - [Consensus](./consensus.md): Consensus sequence generation
 - [FASTQ](./fastq.md): FASTQ quality analysis

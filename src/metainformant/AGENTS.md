@@ -1,70 +1,107 @@
-# AI Agents in METAINFORMANT Development
+# AI Agents in METAINFORMANT Source Development
 
-This document outlines the AI agents and language models that have contributed to the development of the METAINFORMANT bioinformatics toolkit.
+This document outlines the AI agents and language models that have contributed to the development of the METAINFORMANT bioinformatics toolkit source code.
 
 ## AI Contributions by Module
 
 ### Core Infrastructure (`core/`)
-**Code Assistant Agent** assisted in:
-- Configuration management system design
-- I/O utility implementation
-- Logging framework development
-- Path handling and validation utilities
-- Caching mechanism implementation
+**Code Assistant Agent** (grok-code-fast-1) implemented:
+- Configuration management system with YAML/TOML support
+- Comprehensive I/O utilities (JSON, CSV, Parquet, downloads)
+- Structured logging framework with context support
+- Parallel processing utilities with thread management
+- Path handling and security validation
+- Caching mechanisms with TTL support
+- Config-driven processing workflows
+- Database integration helpers (PostgreSQL)
+- Text processing and hashing utilities
 
 ### DNA Analysis (`dna/`)
-**Documentation Agent** contributed to:
-- Sequence analysis algorithm documentation
-- Phylogenetic analysis explanations
-- Population genetics method descriptions
-- Genomic data integration workflows
+**Code Assistant Agent** developed:
+- Complete FASTA/FASTQ sequence processing pipeline
+- Multiple sequence alignment algorithms
+- Phylogenetic tree construction (Neighbor-Joining)
+- Population genetics statistics (π, Tajima's D, Fst)
+- Genomic data retrieval from NCBI/Entrez
+- Restriction enzyme analysis and virtual digestion
+- Motif discovery and PWM analysis
+- Variant calling and analysis (VCF support)
+- Codon usage and genetic code translation
+- Sequence composition analysis
+- Evolutionary distance calculations
+- Consensus sequence generation
 
 ### RNA Analysis (`rna/`)
-**Code Assistant Agent** helped implement:
-- Amalgkit CLI wrapper architecture
-- Workflow orchestration patterns
-- Error handling and validation
-- Integration with external bioinformatics tools
+**Code Assistant Agent** created:
+- Amalgkit CLI wrapper with modular step functions
+- Complete RNA-seq workflow orchestration
+- Metadata download and curation
+- FASTQ processing and quality control
+- Read quantification and merging
+- Transcriptome assembly and annotation
+- Sanity checking and validation
+- Integration with external RNA analysis tools
 
 ### Mathematical Biology (`math/`)
-**Code Assistant Agent** assisted with:
-- Price equation implementation
-- Kin selection model development
-- Drift-diffusion model algorithms
+**Code Assistant Agent** implemented:
+- Price equation decomposition analysis
+- Kin selection and multilevel selection models
+- Drift-diffusion decision making models
+- Epidemiological modeling frameworks
+- Linkage disequilibrium calculations
+- Population genetics theory implementations
 - Selection experiment simulations
 
 ### Visualization (`visualization/`)
-**Code Assistant Agent** contributed to:
-- Plotting utility framework
-- Animation system design
-- Publication-quality figure generation
-- Cross-platform visualization support
+**Code Assistant Agent** built:
+- Unified plotting API (matplotlib/seaborn)
+- Animation system for time-series data
+- Phylogenetic tree visualization
+- Network graph rendering
+- Multi-format output support (PNG, SVG, PDF)
 
 ### Machine Learning (`ml/`)
-**Code Assistant Agent** helped implement:
-- Classification algorithm integration
-- Feature selection methods
-- Model validation frameworks
-- Biological data preprocessing
+**Code Assistant Agent** developed:
+- Classification and regression pipelines
+- Feature selection and preprocessing
+- Model validation and cross-validation
+- Hyperparameter optimization integration
+- Biological data preprocessing utilities
 
 ### Networks (`networks/`)
-**Documentation Agent** assisted in:
-- Network analysis algorithm documentation
-- Community detection method explanations
-- Pathway analysis workflow descriptions
+**Code Assistant Agent** implemented:
+- Graph construction and analysis
+- Community detection algorithms (Louvain, Leiden)
+- Network centrality measures
+- Pathway analysis tools
+- Protein-protein interaction analysis
+- Regulatory network modeling
 
 ### Simulation (`simulation/`)
-**Code Assistant Agent** contributed to:
-- Agent-based modeling framework
-- Synthetic data generation algorithms
-- Evolutionary simulation implementations
+**Code Assistant Agent** created:
+- Synthetic DNA/protein sequence generators
+- RNA count simulation (Negative Binomial)
+- Agent-based grid world modeling
+- Evolutionary simulation frameworks
+- Sequence mutation and evolution models
 
 ### Single Cell (`singlecell/`)
-**Code Assistant Agent** helped implement:
-- Preprocessing pipeline design
-- Dimensionality reduction integration
-- Clustering algorithm implementation
-- Trajectory analysis workflows
+**Code Assistant Agent** developed:
+- Preprocessing pipelines for scRNA-seq data
+- Dimensionality reduction (PCA, t-SNE, UMAP)
+- Clustering algorithms (Leiden, Louvain)
+- Trajectory inference methods
+- Differential expression analysis
+- Quality control and filtering
+
+### Additional Modules
+**Code Assistant Agent** contributed to:
+- Protein analysis and proteome utilities
+- Epigenomic data processing
+- Ontology and gene annotation tools
+- Phenotype data curation and web scraping
+- Ecology metadata management
+- Quality assessment pipelines
 
 ## AI-Enhanced Development Practices
 

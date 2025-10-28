@@ -61,6 +61,20 @@ Each biological domain has its own subdirectory with detailed documentation:
 - `price.md` - Price equation and selection analysis
 - `selection.md` - Natural selection modeling
 
+#### Machine Learning (`ml/`)
+- `index.md` - Machine learning methods overview
+
+#### Multi-Omics Integration (`multiomics/`)
+- `index.md` - Multi-omics integration overview
+
+#### Network Analysis (`networks/`)
+- `community.md` - Network community detection
+- `graph.md` - Graph algorithms and analysis
+- `index.md` - Network analysis overview
+- `pathway.md` - Pathway analysis and enrichment
+- `ppi.md` - Protein-protein interaction networks
+- `regulatory.md` - Gene regulatory networks
+
 #### Specialized Domains
 - `ecology/` - Ecological metadata and community analysis
 - `epigenome/` - DNA methylation and chromatin analysis

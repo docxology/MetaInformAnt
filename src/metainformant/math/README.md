@@ -58,6 +58,37 @@ accuracy = ddm_analytic_accuracy(drift_rate=0.5, threshold=1.0, noise=0.1)
 decision_time = ddm_mean_decision_time(drift_rate=0.5, threshold=1.0, noise=0.1)
 ```
 
+### Population Dynamics (`dynamics.py`)
+Mathematical models of population dynamics and ecological processes.
+
+**Key Features:**
+- Logistic growth models
+- Lotka-Volterra competition/predation
+- Population stability analysis
+- Phase space analysis and attractors
+
+**Usage:**
+```python
+from metainformant.math import dynamics
+
+# Logistic growth simulation
+growth_curve = dynamics.logistic_growth(
+    initial_population=100,
+    carrying_capacity=1000,
+    growth_rate=0.1,
+    time_steps=100
+)
+
+# Lotka-Volterra competition
+competition_result = dynamics.lotka_volterra_competition(
+    species1_initial=100,
+    species2_initial=80,
+    alpha=1.2,  # Competition coefficient
+    beta=0.8,
+    time_steps=200
+)
+```
+
 ### Evolutionary Experiments (`selection_experiments/`)
 Natural selection simulation framework with signal processing constraints.
 

@@ -72,7 +72,10 @@ def _ensure_str(value: Any) -> str:
     return str(value)
 
 
-_BOOL_VALUE_FLAGS: set[str] = {"redo"}
+_BOOL_VALUE_FLAGS: set[str] = {
+    "redo", "pfd", "fastp", "remove_sra", "remove_tmp", "pfd_print", "fastp_print",
+    "ncbi", "aws", "gcp", "cleanup_raw"
+}
 
 
 def build_cli_args(params: AmalgkitParams | None, *, for_cli: bool = False) -> list[str]:

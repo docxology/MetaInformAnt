@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import os
 import shutil
 import subprocess
@@ -89,13 +90,36 @@ def run(
 
     # 2) Determine SRR list to verify
     srr_list: list[str] = []
-    id_val = str(effective_params.get("id", "")).strip()
+    id_val = effective_params.get("id")
     if id_val:
-        srr_list = [id_val]
+        if isinstance(id_val, (list, tuple)):
+            srr_list = [str(srr).strip() for srr in id_val]
+        else:
+            srr_list = [str(id_val).strip()]
     else:
         meta_path = effective_params.get("metadata")
         if not meta_path or meta_path == "inferred":
-            meta_path = str(Path(out_dir).parent / "metadata" / "metadata.tsv")
+            # Try to find metadata file - use absolute paths from work_dir
+            work_dir = Path(out_dir).parent.parent / "work"
+            meta_path = str(work_dir / "metadata" / "metadata.tsv")
+            # Also try the alternative location
+            alt_path = str(Path(out_dir).parent / "metadata" / "metadata.tsv")
+            if not Path(meta_path).exists() and Path(alt_path).exists():
+                meta_path = alt_path
+            # Try to find the selected samples file
+            selected_path = str(work_dir / "metadata" / "pivot_selected.tsv")
+            if Path(selected_path).exists():
+                meta_path = selected_path
+            # Try to find the qualified samples file
+            qualified_path = str(work_dir / "metadata" / "pivot_qualified.tsv")
+            if Path(qualified_path).exists():
+                meta_path = qualified_path
+            # Debug: print what we're looking for
+            import logging
+            logging.getLogger(__name__).debug(f"Looking for metadata at: {meta_path}")
+            logging.getLogger(__name__).debug(f"Work dir: {work_dir}")
+            logging.getLogger(__name__).debug(f"Out dir: {out_dir}")
+            logging.getLogger(__name__).debug(f"Selected path exists: {Path(selected_path).exists()}")
         try:
             rows = list(read_delimited(str(meta_path), delimiter="\t"))
             if rows:
@@ -109,7 +133,7 @@ def run(
         except Exception as e:
             # If metadata cannot be read, proceed without verification
             import logging
-            logging.getLogger(__name__).warning(f"Could not read metadata file {metadata_file}: {e}")
+            logging.getLogger(__name__).warning(f"Could not read metadata file {meta_path}: {e}")
             # Continue with empty metadata
 
     srr_list = sorted(set(srr_list))
@@ -228,6 +252,23 @@ def run(
     # 4) Final status: success if all SRRs (if known) have FASTQs
     final_missing = [s for s in srr_list if not _has_fastq(s)] if srr_list else []
     rc = 0 if not final_missing and bulk_result.returncode == 0 else (1 if final_missing else bulk_result.returncode)
+
+    # 5) Optional cleanup: remove raw FASTQ files if cleanup_raw is enabled
+    cleanup_raw = effective_params.get("cleanup_raw", False)
+    if cleanup_raw and rc == 0 and not final_missing:
+        logging.getLogger(__name__).info("Cleaning up raw FASTQ files after successful download")
+        try:
+            for srr in srr_list:
+                srr_dir = out_dir / "getfastq" / srr
+                if srr_dir.exists():
+                    # Remove raw FASTQ files, keep gzipped versions if they exist
+                    for fastq_file in srr_dir.glob("*.fastq"):
+                        if not fastq_file.name.endswith('.gz'):
+                            fastq_file.unlink()
+                            logging.getLogger(__name__).debug(f"Removed raw FASTQ file: {fastq_file}")
+        except Exception as e:
+            logging.getLogger(__name__).warning(f"Failed to cleanup raw FASTQ files: {e}")
+
     result = subprocess.CompletedProcess(["amalgkit", "getfastq"], rc, stdout="", stderr="")
     if check and rc != 0:
         raise subprocess.CalledProcessError(rc, result.args)

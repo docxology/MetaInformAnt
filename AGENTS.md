@@ -15,14 +15,16 @@ METAINFORMANT is developed with assistance from various AI agents and language m
 
 ### Primary Development Agent
 **Code Assistant Agent** - Cursor's AI coding assistant
-- **Model**: code-supernova-1-million
+- **Model**: grok-code-fast-1
 - **Purpose**: Real-time code assistance, file editing, and project management
 - **Capabilities**:
   - Code generation and refactoring
-  - Documentation writing
-  - Test creation
+  - Documentation writing and validation
+  - Test case generation and validation
   - Bug detection and fixing
   - Project structure optimization
+  - Multi-omic bioinformatics algorithm implementation
+  - Integration of scientific computing libraries
 
 ### Documentation Enhancement
 **Documentation Agent** - Specialized for technical writing

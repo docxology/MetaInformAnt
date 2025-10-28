@@ -1,0 +1,53 @@
+# METAINFORMANT Amalgkit Configuration - Simple Test
+# Species: Pogonomyrmex barbatus (Red Harvester Ant)
+# Simplified configuration for testing
+
+work_dir: output/amalgkit/pbarbatus_simple/work
+log_dir: output/amalgkit/pbarbatus_simple/logs
+threads: 4
+
+auto_install_amalgkit: true
+
+# Species configuration
+species_list:
+  - Pogonomyrmex_barbatus
+
+# Reference genome configuration
+genome:
+  accession: GCF_000187915.1
+  assembly_name: Pbar_UMD_V03
+  annotation_release: 101
+  dest_dir: output/amalgkit/pbarbatus_simple/genome
+
+  # Files to download
+  include:
+    - genome
+    - gff3
+    - rna
+    - cds
+    - protein
+    - seq-report
+
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/187/915/GCF_000187915.1_Pbar_UMD_V03/
+
+# Steps to execute
+steps:
+  metadata:
+    out_dir: output/amalgkit/pbarbatus_simple/work
+    search_string: '"Pogonomyrmex barbatus"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
+    redo: yes
+  config:
+    out_dir: output/amalgkit/pbarbatus_simple/work
+  select:
+    out_dir: output/amalgkit/pbarbatus_simple/work
+  getfastq:
+    out_dir: output/amalgkit/pbarbatus_simple/fastq
+  quant:
+    out_dir: output/amalgkit/pbarbatus_simple/quant
+    threads: 4
+  merge:
+    out: output/amalgkit/pbarbatus_simple/merged/merged_abundance.tsv
+  sanity: {}
+
+
+

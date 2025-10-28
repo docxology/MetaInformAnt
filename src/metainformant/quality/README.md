@@ -26,6 +26,52 @@ quality_stats = fastq.analyze_quality("reads.fastq")
 filtered_reads = fastq.filter_by_quality(reads, min_score=30)
 ```
 
+### Contamination Detection (`contamination.py`)
+Sequence contamination detection and removal.
+
+**Key Features:**
+- Adapter sequence detection and trimming
+- Cross-species contamination screening
+- Primer dimer identification
+- Vector and plasmid contamination detection
+
+**Usage:**
+```python
+from metainformant.quality import contamination
+
+# Detect adapters
+adapters_found = contamination.detect_adapters("reads.fastq")
+cleaned_reads = contamination.remove_adapters(reads, adapters_found)
+
+# Screen for contamination
+contamination_report = contamination.screen_contamination(
+    reads,
+    reference_databases=["human", "mouse", "bacteria"]
+)
+```
+
+### Quality Metrics (`metrics.py`)
+Comprehensive quality scoring and assessment.
+
+**Key Features:**
+- Quality score calculations
+- Completeness and accuracy metrics
+- Batch effect detection
+- Statistical quality summaries
+
+**Usage:**
+```python
+from metainformant.quality import metrics
+
+# Calculate quality scores
+quality_scores = metrics.calculate_quality_metrics(dataset)
+overall_score = metrics.compute_overall_quality_score(quality_scores)
+
+# Detect batch effects
+batch_effects = metrics.detect_batch_effects([dataset1, dataset2])
+corrected_data = metrics.correct_batch_effects(data, batch_effects)
+```
+
 ### Data Validation (`validation.py`)
 General data validation and quality assessment.
 
