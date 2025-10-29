@@ -79,6 +79,10 @@ def run(
     """
     effective_params = _inject_robust_defaults(params)
     out_dir = Path(str(effective_params.get("out_dir", work_dir or "."))).expanduser()
+    
+    # Extract accelerate flag for internal use only (not passed to amalgkit)
+    accelerate_enabled = bool(effective_params.pop("accelerate", False))
+    
     # 1) Bulk attempt (metadata or id)
     bulk_result = _getfastq(
         effective_params,
@@ -99,27 +103,38 @@ def run(
     else:
         meta_path = effective_params.get("metadata")
         if not meta_path or meta_path == "inferred":
-            # Try to find metadata file - use absolute paths from work_dir
-            work_dir = Path(out_dir).parent.parent / "work"
-            meta_path = str(work_dir / "metadata" / "metadata.tsv")
-            # Also try the alternative location
-            alt_path = str(Path(out_dir).parent / "metadata" / "metadata.tsv")
-            if not Path(meta_path).exists() and Path(alt_path).exists():
-                meta_path = alt_path
-            # Try to find the selected samples file
-            selected_path = str(work_dir / "metadata" / "pivot_selected.tsv")
-            if Path(selected_path).exists():
-                meta_path = selected_path
-            # Try to find the qualified samples file
-            qualified_path = str(work_dir / "metadata" / "pivot_qualified.tsv")
-            if Path(qualified_path).exists():
-                meta_path = qualified_path
+            # Try to find metadata file - use species-specific work_dir from params if available
+            # First priority: use work_dir parameter if provided
+            if work_dir:
+                actual_work_dir = Path(work_dir)
+            else:
+                # Infer from out_dir structure: output/amalgkit/<species>/fastq -> output/amalgkit/<species>/work
+                actual_work_dir = Path(out_dir).parent / "work"
+            
+            # Try multiple metadata file locations in order of preference
+            candidate_paths = [
+                actual_work_dir / "metadata" / "pivot_qualified.tsv",
+                actual_work_dir / "metadata" / "pivot_selected.tsv",
+                actual_work_dir / "metadata" / "metadata.filtered.tissue.tsv",
+                actual_work_dir / "metadata" / "metadata.tsv",
+            ]
+            
+            # Find first existing metadata file
+            meta_path = None
+            for candidate in candidate_paths:
+                if candidate.exists():
+                    meta_path = str(candidate)
+                    break
+            
+            # If still not found, use the default metadata.tsv path (will fail with clear error)
+            if not meta_path:
+                meta_path = str(actual_work_dir / "metadata" / "metadata.tsv")
+            
             # Debug: print what we're looking for
             import logging
             logging.getLogger(__name__).debug(f"Looking for metadata at: {meta_path}")
-            logging.getLogger(__name__).debug(f"Work dir: {work_dir}")
+            logging.getLogger(__name__).debug(f"Work dir: {actual_work_dir}")
             logging.getLogger(__name__).debug(f"Out dir: {out_dir}")
-            logging.getLogger(__name__).debug(f"Selected path exists: {Path(selected_path).exists()}")
         try:
             rows = list(read_delimited(str(meta_path), delimiter="\t"))
             if rows:
@@ -156,7 +171,7 @@ def run(
     missing = [s for s in srr_list if not _has_fastq(s)] if srr_list else []
     for srr in missing:
         # Attempt 0: Accelerated sources (ENA HTTP FASTQ or AWS ODP S3 .sra)
-        if bool(effective_params.get("accelerate")):
+        if accelerate_enabled:
             try:
                 srr_dir = Path(out_dir) / "getfastq" / srr
                 srr_dir.mkdir(parents=True, exist_ok=True)

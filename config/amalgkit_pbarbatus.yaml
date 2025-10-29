@@ -81,6 +81,7 @@ steps:
     threads: 6
   merge:
     out: output/amalgkit/pbarbatus/merged/merged_abundance.tsv
+    out_dir: output/amalgkit/pbarbatus/merged
   cstmm:
     out_dir: output/amalgkit/pbarbatus/cstmm
   curate:

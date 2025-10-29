@@ -180,6 +180,7 @@ def _sanitize_params_for_subcommand(subcommand: str, params: Mapping[str, Any]) 
             "aws",
             "ncbi",
             "gcp",
+            # accelerate is internal to our step runner, not passed to amalgkit CLI
         },
         "quant": {"out_dir", "metadata", "threads", "redo", "index_dir"},
         "merge": {"out", "out_dir", "metadata"},
@@ -396,6 +397,33 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
                 fallback = config.work_dir / "config"
                 use_dir = preferred if preferred.exists() else fallback
                 filtered["config_dir"] = str(use_dir)
+        
+        # Inject metadata path for steps that need it if not provided
+        if subcommand in {"integrate", "getfastq", "quant", "merge"}:
+            if "metadata" not in filtered or not filtered["metadata"]:
+                # Try to find the most appropriate metadata file
+                candidate_paths = [
+                    config.work_dir / "metadata" / "pivot_qualified.tsv",
+                    config.work_dir / "metadata" / "pivot_selected.tsv",
+                    config.work_dir / "metadata" / "metadata.filtered.tissue.tsv",
+                    config.work_dir / "metadata" / "metadata.tsv",
+                ]
+                for candidate in candidate_paths:
+                    if candidate.exists():
+                        filtered["metadata"] = str(candidate)
+                        break
+        
+        # Ensure fastq_dir exists before integrate step
+        if subcommand == "integrate":
+            fastq_dir = filtered.get("fastq_dir")
+            if fastq_dir:
+                # Resolve the path relative to work_dir or as absolute
+                fastq_path = Path(fastq_dir)
+                if not fastq_path.is_absolute():
+                    # If relative, make it relative to the repository root (where we're running from)
+                    fastq_path = Path.cwd() / fastq_dir
+                fastq_path.mkdir(parents=True, exist_ok=True)
+        
         if subcommand == "merge":
             # Ensure 'out' has a default when only out_dir provided
             if "out" not in filtered:

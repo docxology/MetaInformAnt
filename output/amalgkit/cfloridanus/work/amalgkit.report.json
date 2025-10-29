@@ -1,0 +1,253 @@
+{
+  "records": [
+    {
+      "command": "https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/GCF_003227725.1/download?include_annotation_type=GENOME_FASTA&include_annotation_type=GENOME_GFF&include_annotation_type=RNA_FASTA&include_annotation_type=CDS_FASTA&include_annotation_type=PROT_FASTA&include_annotation_type=SEQUENCE_REPORT&hydrated=FULLY_HYDRATED",
+      "duration_seconds": 20.690432,
+      "extracted_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/genome/ncbi_dataset_api_extracted",
+      "finished_utc": "2025-10-29T20:17:44.121722Z",
+      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/logs",
+      "method": "datasets-api",
+      "params": {
+        "accession": "GCF_003227725.1",
+        "dest_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/genome",
+        "ftp_url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/003/227/725/GCF_003227725.1_Cflo_v7.5/",
+        "include": [
+          "genome",
+          "gff3",
+          "rna",
+          "cds",
+          "protein",
+          "seq-report",
+          "feature-table",
+          "gene-ontology"
+        ]
+      },
+      "return_code": 0,
+      "started_utc": "2025-10-29T20:17:23.431290Z",
+      "stderr_bytes": 0,
+      "stdout_bytes": 0,
+      "step": "genome-prepare",
+      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work",
+      "zip_path": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/genome/ncbi_dataset_api.zip"
+    },
+    {
+      "command": "amalgkit metadata --out_dir output/amalgkit/cfloridanus/work --search_string \"Camponotus floridanus\"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform] --redo yes",
+      "duration_seconds": 8.092666,
+      "finished_utc": "2025-10-29T20:17:52.271705Z",
+      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/logs",
+      "params": {
+        "out_dir": "output/amalgkit/cfloridanus/work",
+        "redo": true,
+        "search_string": "\"Camponotus floridanus\"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]"
+      },
+      "return_code": 0,
+      "started_utc": "2025-10-29T20:17:44.179039Z",
+      "stderr_bytes": 0,
+      "stdout_bytes": 841,
+      "step": "metadata",
+      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work"
+    },
+    {
+      "command": "amalgkit integrate --threads 6 --fastq_dir output/amalgkit/cfloridanus/fastq --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work/metadata/pivot_qualified.tsv",
+      "duration_seconds": 0.591238,
+      "finished_utc": "2025-10-29T20:17:52.863181Z",
+      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/logs",
+      "params": {
+        "fastq_dir": "output/amalgkit/cfloridanus/fastq",
+        "metadata": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work/metadata/pivot_qualified.tsv",
+        "out_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work",
+        "threads": 6
+      },
+      "return_code": 1,
+      "started_utc": "2025-10-29T20:17:52.271943Z",
+      "stderr_bytes": 701,
+      "stdout_bytes": 1185,
+      "step": "integrate",
+      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work"
+    },
+    {
+      "command": "amalgkit config --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work",
+      "duration_seconds": 0.05451,
+      "finished_utc": "2025-10-29T20:17:52.917743Z",
+      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/logs",
+      "params": {
+        "out_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work"
+      },
+      "return_code": 0,
+      "started_utc": "2025-10-29T20:17:52.863233Z",
+      "stderr_bytes": 0,
+      "stdout_bytes": 412,
+      "step": "config",
+      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work"
+    },
+    {
+      "command": "filter-metadata require_tissue=1 < /Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work/metadata/metadata.tsv > /Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work/metadata/metadata.filtered.tissue.tsv",
+      "duration_seconds": 0.0,
+      "finished_utc": "2025-10-29T20:17:52.933420Z",
+      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/logs",
+      "params": {
+        "input": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work/metadata/metadata.tsv",
+        "output": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work/metadata/metadata.filtered.tissue.tsv",
+        "require_tissue": true
+      },
+      "return_code": 0,
+      "started_utc": "2025-10-29T20:17:52.933411Z",
+      "stderr_bytes": 0,
+      "stdout_bytes": 0,
+      "step": "preselect-filter",
+      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work"
+    },
+    {
+      "command": "amalgkit select --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work/metadata/metadata.filtered.tissue.tsv --config_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work/config_base",
+      "duration_seconds": 0.463944,
+      "finished_utc": "2025-10-29T20:17:53.397447Z",
+      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/logs",
+      "params": {
+        "config_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work/config_base",
+        "metadata": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work/metadata/metadata.filtered.tissue.tsv",
+        "out_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work"
+      },
+      "return_code": 0,
+      "started_utc": "2025-10-29T20:17:52.933503Z",
+      "stderr_bytes": 340,
+      "stdout_bytes": 1777,
+      "step": "select",
+      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work"
+    },
+    {
+      "command": "amalgkit getfastq --threads 6 --out_dir output/amalgkit/cfloridanus/fastq --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work/metadata/pivot_qualified.tsv",
+      "duration_seconds": 0.329877,
+      "finished_utc": "2025-10-29T20:17:53.727596Z",
+      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/logs",
+      "params": {
+        "metadata": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work/metadata/pivot_qualified.tsv",
+        "out_dir": "output/amalgkit/cfloridanus/fastq",
+        "threads": 6
+      },
+      "return_code": 1,
+      "started_utc": "2025-10-29T20:17:53.397719Z",
+      "stderr_bytes": 0,
+      "stdout_bytes": 0,
+      "step": "getfastq",
+      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work"
+    },
+    {
+      "command": "amalgkit quant --threads 6 --out_dir output/amalgkit/cfloridanus/quant --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work/metadata/pivot_qualified.tsv",
+      "duration_seconds": 0.346346,
+      "finished_utc": "2025-10-29T20:17:54.074120Z",
+      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/logs",
+      "params": {
+        "metadata": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work/metadata/pivot_qualified.tsv",
+        "out_dir": "output/amalgkit/cfloridanus/quant",
+        "threads": 6
+      },
+      "return_code": 1,
+      "started_utc": "2025-10-29T20:17:53.727774Z",
+      "stderr_bytes": 710,
+      "stdout_bytes": 684,
+      "step": "quant",
+      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work"
+    },
+    {
+      "command": "amalgkit merge --out output/amalgkit/cfloridanus/merged/merged_abundance.tsv --out_dir output/amalgkit/cfloridanus/merged --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work/metadata/pivot_qualified.tsv",
+      "duration_seconds": 0.926306,
+      "finished_utc": "2025-10-29T20:17:55.000508Z",
+      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/logs",
+      "params": {
+        "metadata": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work/metadata/pivot_qualified.tsv",
+        "out": "output/amalgkit/cfloridanus/merged/merged_abundance.tsv",
+        "out_dir": "output/amalgkit/cfloridanus/merged"
+      },
+      "return_code": 1,
+      "started_utc": "2025-10-29T20:17:54.074202Z",
+      "stderr_bytes": 2625,
+      "stdout_bytes": 1733,
+      "step": "merge",
+      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work"
+    },
+    {
+      "command": "amalgkit cstmm --out_dir output/amalgkit/cfloridanus/cstmm",
+      "duration_seconds": 0.358227,
+      "finished_utc": "2025-10-29T20:17:55.358908Z",
+      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/logs",
+      "params": {
+        "out_dir": "output/amalgkit/cfloridanus/cstmm"
+      },
+      "return_code": 1,
+      "started_utc": "2025-10-29T20:17:55.000681Z",
+      "stderr_bytes": 654,
+      "stdout_bytes": 255,
+      "step": "cstmm",
+      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work"
+    },
+    {
+      "command": "amalgkit curate --out_dir output/amalgkit/cfloridanus/curate",
+      "duration_seconds": 0.300036,
+      "finished_utc": "2025-10-29T20:17:55.659291Z",
+      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/logs",
+      "params": {
+        "out_dir": "output/amalgkit/cfloridanus/curate"
+      },
+      "return_code": 1,
+      "started_utc": "2025-10-29T20:17:55.359255Z",
+      "stderr_bytes": 1799,
+      "stdout_bytes": 541,
+      "step": "curate",
+      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work"
+    },
+    {
+      "command": "amalgkit csca --out_dir output/amalgkit/cfloridanus/csca",
+      "duration_seconds": 0.446427,
+      "finished_utc": "2025-10-29T20:17:56.105851Z",
+      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/logs",
+      "params": {
+        "out_dir": "output/amalgkit/cfloridanus/csca"
+      },
+      "return_code": 1,
+      "started_utc": "2025-10-29T20:17:55.659424Z",
+      "stderr_bytes": 651,
+      "stdout_bytes": 252,
+      "step": "csca",
+      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work"
+    },
+    {
+      "command": "amalgkit sanity --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work",
+      "duration_seconds": 0.301775,
+      "finished_utc": "2025-10-29T20:17:56.407706Z",
+      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/logs",
+      "params": {
+        "out_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work"
+      },
+      "return_code": 0,
+      "started_utc": "2025-10-29T20:17:56.105931Z",
+      "stderr_bytes": 0,
+      "stdout_bytes": 4781,
+      "step": "sanity",
+      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work"
+    }
+  ],
+  "summary": {
+    "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/logs",
+    "num_steps": 13,
+    "return_codes": [
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      1,
+      1,
+      1,
+      1,
+      1,
+      0
+    ],
+    "species_list": [
+      "Camponotus_floridanus"
+    ],
+    "threads": 6,
+    "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/cfloridanus/work"
+  }
+}

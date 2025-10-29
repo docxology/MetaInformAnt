@@ -1,0 +1,12 @@
+{
+  "extracted_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/amellifera/genome/ncbi_dataset_api_extracted",
+  "heartbeat": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/amellifera/genome/download.heartbeat",
+  "method": "datasets-api",
+  "progress_json": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/amellifera/genome/download.progress.json",
+  "progress_txt": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/amellifera/genome/download.progress.txt",
+  "return_code": 0,
+  "stderr": "",
+  "stdout": "",
+  "url": "https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/GCF_003254395.2/download?include_annotation_type=GENOME_FASTA&include_annotation_type=GENOME_GFF&include_annotation_type=RNA_FASTA&include_annotation_type=CDS_FASTA&include_annotation_type=PROT_FASTA&include_annotation_type=SEQUENCE_REPORT&hydrated=FULLY_HYDRATED",
+  "zip_path": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/amellifera/genome/ncbi_dataset_api.zip"
+}

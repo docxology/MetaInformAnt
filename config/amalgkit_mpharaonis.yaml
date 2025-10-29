@@ -1,0 +1,102 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Monomorium pharaonis (Pharaoh Ant)
+# NCBI Taxonomy ID: 307658
+# Assembly: GCF_013373865.1_ASM1337386v2 (ASM1337386v2)
+# Sequencing: Illumina + PacBio + Hi-C, chromosome-level assembly
+# Annotation Release: 102
+# Notes: Indoor pest species, model for caste determination and alternative splicing studies
+
+
+work_dir: output/amalgkit/mpharaonis/work
+log_dir: output/amalgkit/mpharaonis/logs
+threads: 6
+
+
+auto_install_amalgkit: true
+
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: true
+  # Additional filters for high-quality data
+  platform: Illumina
+  strategy: RNA-Seq
+  min_read_length: 50
+  min_spots: 10000000    # 10M spots minimum
+  max_spots: 400000000    # 400M spots maximum
+  library_layout: PAIRED
+
+
+# Species configuration
+species_list:
+  - Monomorium_pharaonis
+
+
+# Alternative taxonomy specification
+taxon_id: 307658
+
+
+# Reference genome configuration
+# Based on NCBI FTP: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/013/373/865/GCF_013373865.1_ASM1337386v2/
+genome:
+  accession: GCF_013373865.1
+  assembly_name: ASM1337386v2
+  annotation_release: 102
+  dest_dir: output/amalgkit/mpharaonis/genome
+
+
+  # Files to download (based on available NCBI FTP resources)
+  include:
+    - genome           # GCF_013373865.1_ASM1337386v2_genomic.fna.gz
+    - gff3            # GCF_013373865.1_ASM1337386v2_genomic.gff.gz
+    - rna             # GCF_013373865.1_ASM1337386v2_rna_from_genomic.fna.gz
+    - cds             # GCF_013373865.1_ASM1337386v2_cds_from_genomic.fna.gz
+    - protein         # GCF_013373865.1_ASM1337386v2_protein.faa.gz
+    - seq-report      # GCF_013373865.1_ASM1337386v2_assembly_report.txt
+    - feature-table   # GCF_013373865.1_ASM1337386v2_feature_table.txt.gz
+    - gene-ontology   # GCF_013373865.1_ASM1337386v2_gene_ontology.gaf.gz
+
+
+  # Direct FTP URL for all genome files
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/013/373/865/GCF_013373865.1_ASM1337386v2/
+
+
+  # Specific important files for transcriptome analysis
+  files:
+    genomic_fasta: GCF_013373865.1_ASM1337386v2_genomic.fna.gz
+    transcriptome_fasta: GCF_013373865.1_ASM1337386v2_rna_from_genomic.fna.gz
+    cds_fasta: GCF_013373865.1_ASM1337386v2_cds_from_genomic.fna.gz
+    protein_fasta: GCF_013373865.1_ASM1337386v2_protein.faa.gz
+    annotation_gff: GCF_013373865.1_ASM1337386v2_genomic.gff.gz
+    annotation_gtf: GCF_013373865.1_ASM1337386v2_genomic.gtf.gz
+
+
+# Per-step parameters (merged on top of common params)
+steps:
+  metadata:
+    # Required by amalgkit metadata
+    out_dir: output/amalgkit/mpharaonis/work
+    # Uses NCBI_EMAIL from environment; override here if needed
+    # entrez_email: you@example.com
+    search_string: '"Monomorium pharaonis"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
+    redo: yes
+  integrate:
+    fastq_dir: output/amalgkit/mpharaonis/fastq
+  config: {}
+  select: {}
+  getfastq:
+    out_dir: output/amalgkit/mpharaonis/fastq
+  quant:
+    # If a Salmon/Kallisto index is available, set it; otherwise genome_dir is injected from genome step
+    out_dir: output/amalgkit/mpharaonis/quant
+    threads: 6
+  merge:
+    out: output/amalgkit/mpharaonis/merged/merged_abundance.tsv
+    out_dir: output/amalgkit/mpharaonis/merged
+  cstmm:
+    out_dir: output/amalgkit/mpharaonis/cstmm
+  curate:
+    out_dir: output/amalgkit/mpharaonis/curate
+  csca:
+    out_dir: output/amalgkit/mpharaonis/csca
+  sanity: {}

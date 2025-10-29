@@ -1,0 +1,102 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Solenopsis invicta (Red Fire Ant)
+# NCBI Taxonomy ID: 13686
+# Assembly: GCF_016802725.1_UNIL_Sinv_3.0 (UNIL_Sinv_3.0)
+# Sequencing: PacBio HiFi + Hi-C scaffolding, chromosome-level assembly
+# Annotation Release: 101
+# Notes: Invasive eusocial species, extensive behavioral/caste studies with RNA-seq
+
+
+work_dir: output/amalgkit/sinvicta/work
+log_dir: output/amalgkit/sinvicta/logs
+threads: 6
+
+
+auto_install_amalgkit: true
+
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: true
+  # Additional filters for high-quality data
+  platform: Illumina
+  strategy: RNA-Seq
+  min_read_length: 50
+  min_spots: 10000000    # 10M spots minimum
+  max_spots: 400000000    # 400M spots maximum
+  library_layout: PAIRED
+
+
+# Species configuration
+species_list:
+  - Solenopsis_invicta
+
+
+# Alternative taxonomy specification
+taxon_id: 13686
+
+
+# Reference genome configuration
+# Based on NCBI FTP: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/016/802/725/GCF_016802725.1_UNIL_Sinv_3.0/
+genome:
+  accession: GCF_016802725.1
+  assembly_name: UNIL_Sinv_3.0
+  annotation_release: 101
+  dest_dir: output/amalgkit/sinvicta/genome
+
+
+  # Files to download (based on available NCBI FTP resources)
+  include:
+    - genome           # GCF_016802725.1_UNIL_Sinv_3.0_genomic.fna.gz
+    - gff3            # GCF_016802725.1_UNIL_Sinv_3.0_genomic.gff.gz
+    - rna             # GCF_016802725.1_UNIL_Sinv_3.0_rna_from_genomic.fna.gz
+    - cds             # GCF_016802725.1_UNIL_Sinv_3.0_cds_from_genomic.fna.gz
+    - protein         # GCF_016802725.1_UNIL_Sinv_3.0_protein.faa.gz
+    - seq-report      # GCF_016802725.1_UNIL_Sinv_3.0_assembly_report.txt
+    - feature-table   # GCF_016802725.1_UNIL_Sinv_3.0_feature_table.txt.gz
+    - gene-ontology   # GCF_016802725.1_UNIL_Sinv_3.0_gene_ontology.gaf.gz
+
+
+  # Direct FTP URL for all genome files
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/016/802/725/GCF_016802725.1_UNIL_Sinv_3.0/
+
+
+  # Specific important files for transcriptome analysis
+  files:
+    genomic_fasta: GCF_016802725.1_UNIL_Sinv_3.0_genomic.fna.gz
+    transcriptome_fasta: GCF_016802725.1_UNIL_Sinv_3.0_rna_from_genomic.fna.gz
+    cds_fasta: GCF_016802725.1_UNIL_Sinv_3.0_cds_from_genomic.fna.gz
+    protein_fasta: GCF_016802725.1_UNIL_Sinv_3.0_protein.faa.gz
+    annotation_gff: GCF_016802725.1_UNIL_Sinv_3.0_genomic.gff.gz
+    annotation_gtf: GCF_016802725.1_UNIL_Sinv_3.0_genomic.gtf.gz
+
+
+# Per-step parameters (merged on top of common params)
+steps:
+  metadata:
+    # Required by amalgkit metadata
+    out_dir: output/amalgkit/sinvicta/work
+    # Uses NCBI_EMAIL from environment; override here if needed
+    # entrez_email: you@example.com
+    search_string: '"Solenopsis invicta"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
+    redo: yes
+  integrate:
+    fastq_dir: output/amalgkit/sinvicta/fastq
+  config: {}
+  select: {}
+  getfastq:
+    out_dir: output/amalgkit/sinvicta/fastq
+  quant:
+    # If a Salmon/Kallisto index is available, set it; otherwise genome_dir is injected from genome step
+    out_dir: output/amalgkit/sinvicta/quant
+    threads: 6
+  merge:
+    out: output/amalgkit/sinvicta/merged/merged_abundance.tsv
+    out_dir: output/amalgkit/sinvicta/merged
+  cstmm:
+    out_dir: output/amalgkit/sinvicta/cstmm
+  curate:
+    out_dir: output/amalgkit/sinvicta/curate
+  csca:
+    out_dir: output/amalgkit/sinvicta/csca
+  sanity: {}

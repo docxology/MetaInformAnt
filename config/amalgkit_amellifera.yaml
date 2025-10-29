@@ -1,0 +1,102 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Apis mellifera (Western Honey Bee)
+# NCBI Taxonomy ID: 7460
+# Assembly: GCF_003254395.2_Amel_HAv3.1 (Amel_HAv3.1)
+# Sequencing: PacBio HiFi + Hi-C scaffolding, chromosome-level assembly
+# Annotation Release: 104
+# Notes: Model organism for social behavior, extensive RNA-seq datasets available
+
+
+work_dir: output/amalgkit/amellifera/work
+log_dir: output/amalgkit/amellifera/logs
+threads: 6
+
+
+auto_install_amalgkit: true
+
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: true
+  # Additional filters for high-quality data
+  platform: Illumina
+  strategy: RNA-Seq
+  min_read_length: 50
+  min_spots: 10000000    # 10M spots minimum
+  max_spots: 400000000    # 400M spots maximum
+  library_layout: PAIRED
+
+
+# Species configuration
+species_list:
+  - Apis_mellifera
+
+
+# Alternative taxonomy specification
+taxon_id: 7460
+
+
+# Reference genome configuration
+# Based on NCBI FTP: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/003/254/395/GCF_003254395.2_Amel_HAv3.1/
+genome:
+  accession: GCF_003254395.2
+  assembly_name: Amel_HAv3.1
+  annotation_release: 104
+  dest_dir: output/amalgkit/amellifera/genome
+
+
+  # Files to download (based on available NCBI FTP resources)
+  include:
+    - genome           # GCF_003254395.2_Amel_HAv3.1_genomic.fna.gz
+    - gff3            # GCF_003254395.2_Amel_HAv3.1_genomic.gff.gz
+    - rna             # GCF_003254395.2_Amel_HAv3.1_rna_from_genomic.fna.gz
+    - cds             # GCF_003254395.2_Amel_HAv3.1_cds_from_genomic.fna.gz
+    - protein         # GCF_003254395.2_Amel_HAv3.1_protein.faa.gz
+    - seq-report      # GCF_003254395.2_Amel_HAv3.1_assembly_report.txt
+    - feature-table   # GCF_003254395.2_Amel_HAv3.1_feature_table.txt.gz
+    - gene-ontology   # GCF_003254395.2_Amel_HAv3.1_gene_ontology.gaf.gz
+
+
+  # Direct FTP URL for all genome files
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/003/254/395/GCF_003254395.2_Amel_HAv3.1/
+
+
+  # Specific important files for transcriptome analysis
+  files:
+    genomic_fasta: GCF_003254395.2_Amel_HAv3.1_genomic.fna.gz
+    transcriptome_fasta: GCF_003254395.2_Amel_HAv3.1_rna_from_genomic.fna.gz
+    cds_fasta: GCF_003254395.2_Amel_HAv3.1_cds_from_genomic.fna.gz
+    protein_fasta: GCF_003254395.2_Amel_HAv3.1_protein.faa.gz
+    annotation_gff: GCF_003254395.2_Amel_HAv3.1_genomic.gff.gz
+    annotation_gtf: GCF_003254395.2_Amel_HAv3.1_genomic.gtf.gz
+
+
+# Per-step parameters (merged on top of common params)
+steps:
+  metadata:
+    # Required by amalgkit metadata
+    out_dir: output/amalgkit/amellifera/work
+    # Uses NCBI_EMAIL from environment; override here if needed
+    # entrez_email: you@example.com
+    search_string: '"Apis mellifera"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
+    redo: yes
+  integrate:
+    fastq_dir: output/amalgkit/amellifera/fastq
+  config: {}
+  select: {}
+  getfastq:
+    out_dir: output/amalgkit/amellifera/fastq
+  quant:
+    # If a Salmon/Kallisto index is available, set it; otherwise genome_dir is injected from genome step
+    out_dir: output/amalgkit/amellifera/quant
+    threads: 6
+  merge:
+    out: output/amalgkit/amellifera/merged/merged_abundance.tsv
+    out_dir: output/amalgkit/amellifera/merged
+  cstmm:
+    out_dir: output/amalgkit/amellifera/cstmm
+  curate:
+    out_dir: output/amalgkit/amellifera/curate
+  csca:
+    out_dir: output/amalgkit/amellifera/csca
+  sanity: {}
