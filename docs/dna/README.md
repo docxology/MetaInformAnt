@@ -29,9 +29,8 @@ The DNA domain provides tools for sequence analysis, alignment, phylogenetics, p
 - **`mutations.md`**: Mutation analysis and variant calling
 
 ### Genomic Data Integration
-- **`ncbi.md`**: NCBI database integration
+- **`ncbi.md`**: NCBI database integration and Entrez queries
 - **`accessions.md`**: Genome accession validation and retrieval
-- **`entrez.md`**: Entrez query construction and execution
 - **`variants.md`**: VCF variant parsing and analysis
 
 ### Sequence Quality

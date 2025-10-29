@@ -1,0 +1,83 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Pogonomyrmex barbatus (Red Harvester Ant)
+# VARIANT: ALL 120 SAMPLES (including unknown tissue)
+# NCBI Taxonomy ID: 144034
+
+work_dir: output/amalgkit/pbarbatus_all120/work
+log_dir: output/amalgkit/pbarbatus_all120/logs
+threads: 6
+
+auto_install_amalgkit: true
+
+# Pre-selection filtering rules
+# ADJUSTED: Remove tissue requirement to include all 120 samples
+filters:
+  require_tissue: false    # ⭐ CHANGED: Allow samples without tissue annotation
+  platform: Illumina
+  strategy: RNA-Seq
+  min_read_length: 50
+  min_spots: 10000000      # 10M spots minimum
+  max_spots: 400000000     # 400M spots maximum
+  # library_layout: PAIRED # ⭐ REMOVED: Allow single-end (5 samples)
+
+# Species configuration
+species_list:
+  - Pogonomyrmex_barbatus
+
+# Alternative taxonomy specification
+taxon_id: 144034
+
+# Reference genome configuration
+genome:
+  accession: GCF_000187915.1
+  assembly_name: Pbar_UMD_V03
+  annotation_release: 101
+  dest_dir: output/amalgkit/pbarbatus_all120/genome
+
+  include:
+    - genome
+    - gff3
+    - rna
+    - cds
+    - protein
+    - seq-report
+    - feature-table
+    - gene-ontology
+
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/187/915/GCF_000187915.1_Pbar_UMD_V03/
+
+  files:
+    genomic_fasta: GCF_000187915.1_Pbar_UMD_V03_genomic.fna.gz
+    transcriptome_fasta: GCF_000187915.1_Pbar_UMD_V03_rna_from_genomic.fna.gz
+    cds_fasta: GCF_000187915.1_Pbar_UMD_V03_cds_from_genomic.fna.gz
+    protein_fasta: GCF_000187915.1_Pbar_UMD_V03_protein.faa.gz
+    annotation_gff: GCF_000187915.1_Pbar_UMD_V03_genomic.gff.gz
+    annotation_gtf: GCF_000187915.1_Pbar_UMD_V03_genomic.gtf.gz
+
+# Per-step parameters
+steps:
+  metadata:
+    out_dir: output/amalgkit/pbarbatus_all120/work
+    search_string: '"Pogonomyrmex barbatus"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
+    redo: yes
+  integrate:
+    fastq_dir: output/amalgkit/pbarbatus_all120/fastq
+  config: {}
+  select: {}
+  getfastq:
+    out_dir: output/amalgkit/pbarbatus_all120/fastq
+  quant:
+    out_dir: output/amalgkit/pbarbatus_all120/quant
+    threads: 6
+  merge:
+    out: output/amalgkit/pbarbatus_all120/merged/merged_abundance.tsv
+  cstmm:
+    out_dir: output/amalgkit/pbarbatus_all120/cstmm
+  curate:
+    out_dir: output/amalgkit/pbarbatus_all120/curate
+    # Note: With mixed/unknown tissues, batch effect correction might be important
+    # Consider using: batch_effect_alg: sva (if R packages work)
+  csca:
+    out_dir: output/amalgkit/pbarbatus_all120/csca
+  sanity: {}
+

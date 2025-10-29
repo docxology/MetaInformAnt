@@ -17,7 +17,8 @@ The RNA domain provides tools for transcriptomic analysis, workflow orchestratio
 ### Amalgkit Integration
 - **`amalgkit/`**: Amalgkit CLI wrapper documentation
   - **`amalgkit.md`**: Complete transcriptomic analysis pipeline
-  - **`complete_success_summary.md`**: Production success documentation
+  - **`comprehensive_guide.md`**: Detailed workflow documentation
+  - **`testing_coverage.md`**: Testing and validation documentation
 
 ## Related Source Code
 

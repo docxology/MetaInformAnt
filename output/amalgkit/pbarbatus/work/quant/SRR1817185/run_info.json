@@ -1,0 +1,14 @@
+{
+	"n_targets": 20672,
+	"n_bootstraps": 0,
+	"n_processed": 8196270,
+	"n_pseudoaligned": 5738378,
+	"n_unique": 3700645,
+	"p_pseudoaligned": 70.0,
+	"p_unique": 45.2,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Wed Oct 29 08:02:53 2025",
+	"call": "kallisto quant -i output/amalgkit/pbarbatus/work/index/Pogonomyrmex_barbatus.idx -o output/amalgkit/pbarbatus/work/quant/SRR1817185 -t 3 output/amalgkit/pbarbatus/work/fastq/SRR1817185/SRR1817185_1.fastq.gz output/amalgkit/pbarbatus/work/fastq/SRR1817185/SRR1817185_2.fastq.gz"
+}

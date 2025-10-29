@@ -147,7 +147,6 @@ METAINFORMANT/
       singlecell/                 # Single-cell analysis
         __init__.py
         clustering.py             # Single-cell clustering
-        config/                   # Configuration files
         dimensionality.py         # Dimensionality reduction
         integration.py            # Data integration
         preprocessing.py          # Preprocessing pipelines
@@ -312,6 +311,11 @@ CLI usage:
 uv run python -m metainformant rna plan --work-dir /tmp/amg --threads 4 --species Apis_mellifera
 uv run python -m metainformant rna run --work-dir /tmp/amg --threads 4 --species Apis_mellifera --check
 ```
+
+### Documentation Parity
+- Provide both `README.md` and `AGENTS.md` in every persistent directory
+- Exempt transient locations (for example: `output/` contents, build products, `__pycache__`)
+- Update both documents whenever adding, renaming, or restructuring modules
 
 ### License
 Licensed under the Apache License, Version 2.0 (the "License"); you may not use this work except in compliance with the License. You may obtain a copy of the License at `https://www.apache.org/licenses/LICENSE-2.0`.

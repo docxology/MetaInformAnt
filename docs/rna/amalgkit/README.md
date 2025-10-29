@@ -10,7 +10,18 @@ The amalgkit integration provides a complete transcriptomic analysis pipeline fr
 
 ### Core Amalgkit Integration
 - **`amalgkit.md`**: Complete transcriptomic analysis pipeline documentation
-- **`complete_success_summary.md`**: Production deployment success documentation
+- **`comprehensive_guide.md`**: Comprehensive amalgkit workflow guide
+- **`END_TO_END_WORKFLOW.md`**: Complete end-to-end workflow documentation
+
+### Workflow Guides
+- **`quick_start.md`**: Quick start guide for sanity and curate steps (all species)
+- **`r_packages.md`**: R package setup and troubleshooting
+- **`verify_template.sh`**: Template verification script for any species
+
+### Success Documentation
+- **`FINAL_SUCCESS_REPORT.md`**: Production deployment success documentation
+- **`OFFICIAL_COMPLIANCE.md`**: Official amalgkit compliance verification
+- **`testing_coverage.md`**: Testing coverage and validation
 
 ## Related Source Code
 
@@ -62,10 +73,29 @@ When enhancing amalgkit integration:
 3. Ensure compatibility with amalgkit ecosystem
 4. Update success metrics and benchmarks
 
+## Example Dataset
+
+Complete working example with *Pogonomyrmex barbatus*:
+- **Location**: `output/amalgkit/pbarbatus/`
+- **Samples**: 83 brain RNA-seq runs
+- **Status**: Complete workflow with all visualizations
+- **Documentation**: Species-specific quick reference and analysis report
+
+See `output/amalgkit/pbarbatus/QUICK_REFERENCE.md` for immediate usage.
+
+## Quick Start for New Species
+
+1. **Review workflow guide**: `quick_start.md`
+2. **Setup R environment**: `r_packages.md`
+3. **Run amalgkit workflow**: See `END_TO_END_WORKFLOW.md`
+4. **Copy verification script**: `verify_template.sh`
+5. **Validate outputs**: Run sanity and curate steps
+
 ## Related Documentation
 
 - See `docs/rna/README.md` for RNA domain overview
 - See `docs/rna/workflow.md` for workflow orchestration details
 - See `docs/rna/steps.md` for individual step documentation
+- See `output/amalgkit/pbarbatus/` for complete working example
 
-This documentation provides complete coverage of METAINFORMANT's amalgkit integration capabilities.
+This documentation provides complete coverage of METAINFORMANT's amalgkit integration capabilities for any species.

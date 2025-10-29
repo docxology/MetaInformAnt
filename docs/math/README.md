@@ -19,6 +19,7 @@ The math domain provides implementations of key mathematical frameworks in theor
 - **`coalescent.md`**: Coalescent theory and genealogy
 - **`ld.md`**: Linkage disequilibrium analysis and genetic maps
 - **`epidemiology.md`**: Disease modeling and epidemiology
+- **`dynamics.md`**: Population dynamics and ecological modeling
 
 ## Related Source Code
 

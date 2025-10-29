@@ -18,8 +18,8 @@ filters:
   platform: Illumina
   strategy: RNA-Seq
   min_read_length: 50
-  min_spots: 10000000    # 10M spots minimum to include the samples we found
-  max_spots: 40000000    # 40M spots maximum
+  min_spots: 10000000    # 10M spots minimum
+  max_spots: 400000000    # 400M spots maximum
   library_layout: PAIRED
 
 # Species configuration

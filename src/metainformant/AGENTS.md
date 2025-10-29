@@ -94,6 +94,13 @@ This document outlines the AI agents and language models that have contributed t
 - Differential expression analysis
 - Quality control and filtering
 
+### Multi-omics Integration (`multiomics/`)
+**Code Assistant Agent** developed:
+- Cross-platform data harmonization flows
+- Joint feature alignment and scaling utilities
+- Systems-level correlation and enrichment analyses
+- Configurable reporting across DNA, RNA, and protein outputs
+
 ### Additional Modules
 **Code Assistant Agent** contributed to:
 - Protein analysis and proteome utilities

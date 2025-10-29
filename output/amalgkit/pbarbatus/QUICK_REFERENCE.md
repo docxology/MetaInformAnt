@@ -1,91 +1,132 @@
-# Quick Reference: Accessing P. barbatus Gene Expression Data
+# Quick Reference: P. barbatus Expression Data
 
-**Location**: `output/amalgkit/pbarbatus/`  
-**Updated**: October 28, 2025
-
----
-
-## 📊 Where to Find Expression Values
-
-### Individual Sample Files
-
-```bash
-# Sample 1
-output/amalgkit/pbarbatus/work/quant/SRR14740487/abundance.tsv
-
-# Sample 2
-output/amalgkit/pbarbatus/work/quant/SRR14740488/abundance.tsv
-```
-
-**Format**: TSV with columns: `target_id`, `length`, `eff_length`, `est_counts`, `tpm`  
-**Use**: `tpm` column for normalized expression values
+**Updated**: October 29, 2025  
+**Status**: ✅ **Complete** (83/83 samples)
 
 ---
 
-## 💻 Load in Python
+## 📊 Expression Matrix (Pre-built)
 
+### Load Complete Dataset
 ```python
 import pandas as pd
-from pathlib import Path
 
-# Load one sample
-base = Path("output/amalgkit/pbarbatus/work/quant")
-df = pd.read_csv(base / "SRR14740487" / "abundance.tsv", sep='\t')
+# Load TPM matrix (20,672 × 83)
+tpm = pd.read_csv("analysis/expression_matrix_tpm.csv", index_col=0)
 
-# View top expressed genes
-print(df.nlargest(20, 'tpm')[['target_id', 'tpm', 'est_counts']])
+# Load counts
+counts = pd.read_csv("analysis/expression_matrix_counts.csv", index_col=0)
 
-# Merge both samples
-df1 = pd.read_csv(base / "SRR14740487" / "abundance.tsv", sep='\t')
-df2 = pd.read_csv(base / "SRR14740488" / "abundance.tsv", sep='\t')
-
-expr_matrix = df1[['target_id', 'tpm']].merge(
-    df2[['target_id', 'tpm']],
-    on='target_id',
-    suffixes=('_SRR14740487', '_SRR14740488')
-)
+# Load sample statistics
+stats = pd.read_csv("analysis/sample_statistics.csv", index_col=0)
 ```
 
 ---
 
-## 🎯 Current Status
+## 🎯 Common Tasks
+
+### 1. Get Top Expressed Genes
+```python
+# Mean expression across all samples
+mean_expr = tpm.mean(axis=1).sort_values(ascending=False)
+print(mean_expr.head(20))
+
+# Top in specific sample
+print(tpm['SRR14740487'].nlargest(20))
+```
+
+### 2. Find Differentially Expressed Genes
+```python
+# Compare two groups (example)
+group1 = tpm[['SRR14740487', 'SRR14740488', 'SRR14740489']]
+group2 = tpm[['SRR14740490', 'SRR14740491', 'SRR14740492']]
+
+fold_change = group1.mean(axis=1) / group2.mean(axis=1)
+print(fold_change.nlargest(20))
+```
+
+### 3. Filter by Expression Level
+```python
+# Genes expressed in >50% of samples
+expressed = (tpm > 1).sum(axis=1) > (tpm.shape[1] / 2)
+expressed_genes = tpm[expressed]
+print(f"Expressed genes: {len(expressed_genes)}")
+```
+
+### 4. Sample Correlation
+```python
+# Compute pairwise correlations
+corr = tpm.corr()
+print(f"Mean correlation: {corr.values[corr.values < 1].mean():.3f}")
+```
+
+---
+
+## 📈 Visualizations
+
+Pre-generated plots in `analysis/visualizations/`:
+
+1. **sample_correlation_heatmap.png** - Sample similarity
+2. **expression_distribution.png** - Expression patterns
+3. **sample_qc_metrics.png** - Quality metrics
+4. **top_expressed_genes.png** - Top 20 genes
+
+```bash
+# View all plots
+open analysis/visualizations/*.png
+```
+
+---
+
+## 📊 Dataset Summary
 
 | Metric | Value |
 |--------|-------|
-| **Samples quantified** | 2/83 (2.4%) |
+| **Samples** | 83 |
 | **Transcripts** | 20,672 |
-| **Expression rate** | 89.9-90.6% |
-| **Mapping rate** | 64.6-65.8% |
-| **Index ready** | ✅ Yes |
+| **Expressed** | 17,191 (83.2%) |
+| **Mean genes/sample** | 16,372 |
+| **Top transcript** | XM_011631231.1 (25,871 TPM) |
+
+---
+
+## 📁 File Locations
+
+```
+analysis/
+├── expression_matrix_tpm.csv        ← Main data (12.7MB)
+├── expression_matrix_counts.csv     ← Count data (11.2MB)
+├── sample_statistics.csv            ← QC metrics
+├── ANALYSIS_REPORT.md               ← Full report
+└── visualizations/                  ← 4 plots
+
+work/
+├── quant/SRR*/abundance.tsv         ← Individual samples (83 files)
+└── merge/metadata.tsv               ← Sample metadata
+```
 
 ---
 
 ## 🚀 Next Steps
 
-Process remaining 81 samples using the pre-built index at:
-```
-output/amalgkit/pbarbatus/work/index/Pogonomyrmex_barbatus.idx
-```
+### Immediate
+- ✅ Data ready for differential expression
+- ✅ Ready for GO/KEGG enrichment
+- ✅ Ready for co-expression networks
 
-See `README.md` for full processing instructions.
-
----
-
-## 📁 Directory Structure
-
-```
-pbarbatus/
-├── README.md              ← Full documentation
-├── QUICK_REFERENCE.md     ← This file
-└── work/
-    ├── quant/
-    │   ├── SRR14740487/abundance.tsv    ← Expression values here
-    │   └── SRR14740488/abundance.tsv    ← Expression values here
-    ├── index/                            ← Kallisto index (ready to use)
-    └── metadata/metadata.tsv             ← 83 samples to process
-```
+### Advanced
+- Add functional annotations
+- Integrate with other ant species
+- Perform tissue-specific analysis
 
 ---
 
-**All variant folders removed** - This is now the single consolidated directory for P. barbatus analysis.
+## 📖 Documentation
 
+**Full analysis report**: `analysis/ANALYSIS_REPORT.md`  
+**Complete workflow**: `docs/rna/amalgkit/END_TO_END_WORKFLOW.md`  
+**Directory guide**: `README.md`
+
+---
+
+*Complete dataset with analysis ready for downstream use*
