@@ -93,3 +93,65 @@ Downstream, you can:
 - Perform GO/pathway enrichment using `metainformant.ontology` utilities or external R/Python libraries
 
 All outputs default under `output/` in keeping with repository policy; override via `work_dir` in the config.
+
+## Common Issues and Solutions
+
+### Metadata Format Selection
+
+The workflow intelligently selects metadata files for downstream steps. Steps like `getfastq`, `integrate`, `quant`, and `merge` require **row-per-sample format** with a `run` column containing SRA IDs.
+
+**Issue**: `amalgkit select` creates pivot tables that lack run IDs, causing "No SRA entry found" errors.
+
+**Solution**: The workflow automatically falls back to `metadata.filtered.tissue.tsv` or `metadata.tsv` when pivot tables are detected:
+
+```python
+# Automatic detection and fallback in workflow.py
+if rows and 'run' not in rows[0]:  # Pivot format detected
+    # Use metadata.filtered.tissue.tsv instead
+```
+
+### Filter Configuration
+
+**Issue**: Overly restrictive filters can exclude 99%+ of samples.
+
+**Solution**: Start with minimal filtering and adjust based on data quality:
+
+```yaml
+# Recommended starting point
+filters:
+  require_tissue: true  # Essential filter only
+  
+# Add stricter filters only if needed
+filters:
+  require_tissue: true
+  min_spots: 1000000  # Add only after reviewing initial results
+```
+
+### Performance Optimization
+
+**GetFASTQ Acceleration**: Enable parallel downloads and cloud sources for significant speedup:
+
+```yaml
+steps:
+  getfastq:
+    threads: 6           # Parallel processing
+    pfd: yes             # Use parallel-fastq-dump
+    accelerate: true     # Enable cloud mirrors (AWS/GCP)
+    max_size: "50GB"     # Handle large samples
+```
+
+**Disk Space Management**: Delete FASTQ files after quantification to prevent disk exhaustion:
+
+```yaml
+steps:
+  quant:
+    threads: 6
+    keep_fastq: no       # Delete FASTQs after processing
+    redo: no             # Skip already quantified samples
+```
+
+**Expected Performance** (with optimizations):
+- Download speed: 6x faster with parallel processing
+- Cloud sources: 3-5x faster than NCBI only
+- Disk usage: 90% reduction with FASTQ cleanup
+- Total runtime: ~1-2 days for 300+ samples (vs 6-13 days without optimization)

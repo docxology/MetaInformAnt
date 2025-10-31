@@ -39,9 +39,9 @@ def _inject_robust_defaults(raw_params: Mapping[str, Any] | None) -> dict[str, A
     pfd_path = shutil.which("parallel-fastq-dump")
     prefetch_path = shutil.which("prefetch")
 
-    # Prefer sra-tools path for maximum robustness; only use PFD when explicitly requested
+    # Enable parallel-fastq-dump for faster downloads when available
     if "pfd" not in params:
-        params["pfd"] = False  # default to no PFD due to observed instability
+        params["pfd"] = True if pfd_path else False  # Use PFD when available
     if pfd_path and not params.get("pfd_exe"):
         params["pfd_exe"] = pfd_path
     if prefetch_path and not params.get("prefetch_exe"):
@@ -80,8 +80,18 @@ def run(
     effective_params = _inject_robust_defaults(params)
     out_dir = Path(str(effective_params.get("out_dir", work_dir or "."))).expanduser()
     
-    # Extract accelerate flag for internal use only (not passed to amalgkit)
+    # Extract accelerate flag and apply to amalgkit params
     accelerate_enabled = bool(effective_params.pop("accelerate", False))
+    if accelerate_enabled:
+        # Enable cloud acceleration
+        effective_params.setdefault("aws", "yes")
+        effective_params.setdefault("gcp", "yes")
+        effective_params.setdefault("ncbi", "yes")
+    
+    # Remove any max_size/min_size params - these are not amalgkit parameters
+    # (they're internal to prefetch, which amalgkit manages automatically)
+    effective_params.pop("max_size", None)
+    effective_params.pop("min_size", None)
     
     # 1) Bulk attempt (metadata or id)
     bulk_result = _getfastq(

@@ -40,7 +40,7 @@ flowchart TD
 
 ```bash
 # Run complete transcriptomic analysis pipeline
-scripts/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --steps metadata,select,getfastq,quant,merge,curate,sanity --stream
+scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --steps metadata,select,getfastq,quant,merge,curate,sanity --stream
 ```
 
 ### Python API Usage
@@ -118,19 +118,19 @@ Robust shell orchestration with comprehensive features:
 
 ```bash
 # Complete workflow with streaming logs
-scripts/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --stream
+scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --stream
 
 # Run specific steps only
-scripts/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --steps quant,merge,curate
+scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --steps quant,merge,curate
 
 # Dry run to check configuration
-scripts/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --dry-run
+scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --dry-run
 
 # Force re-execution of completed steps
-scripts/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --force
+scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --force
 
 # Check dependencies and system requirements
-scripts/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --check
+scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --check
 ```
 
 ### Python CLI
@@ -360,17 +360,17 @@ Template configurations available for:
 
 ```bash
 # Production-ready execution
-scripts/run_amalgkit.sh \
+scripts/rna/amalgkit/run_amalgkit.sh \
   --config config/amalgkit_pbarbatus.yaml \
   --steps metadata,select,getfastq,quant,merge,curate,sanity \
   --stream \
   --parallel
 
 # Quality assurance before deployment
-scripts/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --check
+scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --check
 
 # Development/testing with smaller dataset
-scripts/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --steps quant --dry-run
+scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --steps quant --dry-run
 ```
 
 ### Scaling Strategies
@@ -378,14 +378,14 @@ scripts/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --steps quant --
 1. **Single Species, Multiple Experiments**
    ```bash
    # 8 samples from 2 experiments
-   scripts/run_amalgkit.sh --config config/amalgkit_pbarbatus_multi.yaml
+   scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus_multi.yaml
    ```
 
 2. **Cross-Species Comparative Analysis**
    ```bash
    # Multiple species configurations
    for species in pbarbatus amellifera melanogaster; do
-     scripts/run_amalgkit.sh --config config/amalgkit_${species}.yaml
+     scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_${species}.yaml
    done
    ```
 

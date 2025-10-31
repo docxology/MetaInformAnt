@@ -20,15 +20,25 @@ from metainformant.rna.workflow import load_workflow_config, execute_workflow
 from metainformant.rna.amalgkit import run_amalgkit
 from metainformant.core.logging import get_logger
 
-def discover_species_configs(config_dir: Path = Path("config")) -> list[tuple[str, Path]]:
+def discover_species_configs(config_dir: Path = Path("config/amalgkit")) -> list[tuple[str, Path]]:
     """Discover all species configuration files.
+    
+    Looks in config/amalgkit/ directory for amalgkit_*.yaml files.
     
     Returns:
         List of (species_name, config_path) tuples
     """
-    # Find all amalgkit_*.yaml files, excluding template
+    # Find all amalgkit_*.yaml files in config/amalgkit/, excluding template
     pattern = str(config_dir / "amalgkit_*.yaml")
     config_files = sorted(glob(pattern))
+    
+    # Also check old location for backwards compatibility
+    if not config_files:
+        old_pattern = str(Path("config") / "amalgkit_*.yaml")
+        config_files = sorted(glob(old_pattern))
+        if config_files:
+            logger = get_logger("amalgkit_discovery")
+            logger.warning(f"Found configs in old location (config/), consider moving to config/amalgkit/")
     
     species_configs = []
     for config_file in config_files:
@@ -178,8 +188,11 @@ def main():
     species_configs = discover_species_configs()
     
     if not species_configs:
-        print("❌ No species configurations found in config/ directory!")
-        print("   Looking for files matching: config/amalgkit_*.yaml (excluding template)")
+        print("❌ No species configurations found!")
+        print("   Looked in:")
+        print("     - config/amalgkit/amalgkit_*.yaml")
+        print("     - config/amalgkit_*.yaml (legacy)")
+        print("   Excluding template files")
         sys.exit(1)
     
     print("\n" + "="*80)

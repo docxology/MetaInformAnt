@@ -74,7 +74,7 @@ def _ensure_str(value: Any) -> str:
 
 _BOOL_VALUE_FLAGS: set[str] = {
     "redo", "pfd", "fastp", "remove_sra", "remove_tmp", "pfd_print", "fastp_print",
-    "ncbi", "aws", "gcp", "cleanup_raw"
+    "ncbi", "aws", "gcp", "cleanup_raw", "build_index"
 }
 
 

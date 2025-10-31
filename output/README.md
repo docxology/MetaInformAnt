@@ -7,6 +7,7 @@ This directory contains all outputs from tests and real runs by default, followi
 According to METAINFORMANT's cursor rules:
 - **All outputs from tests and real runs must go here by default**
 - **Treat as ephemeral and reproducible**
+- **Scripts belong in `scripts/`, never in `output/`**
 - **Use `metainformant.core.io` for file I/O operations**
 - **Use `metainformant.core.paths` for path handling and containment checks**
 
@@ -55,6 +56,7 @@ Contains general data processing outputs:
 
 ### For Developers
 - **Never write outside `output/` unless explicitly requested**
+- **Never write scripts to `output/`** - scripts belong in `scripts/`
 - **Use functional APIs that accept destination paths**
 - **If no destination specified, default to appropriate `output/` subpath**
 - **Clean outputs regularly to maintain repository size**
@@ -66,6 +68,20 @@ Contains general data processing outputs:
 - **Outputs may be removed in repository maintenance**
 
 ## File Management
+
+### What Belongs in `output/`
+- Analysis results and reports (.md, .json, .csv, .tsv)
+- Quantification outputs (abundance.tsv, run_info.json)
+- Downloaded data files (SRA, FASTQ, genome files)
+- Temporary processing files
+- Test artifacts and coverage reports
+- Logs and status files
+
+### What Does NOT Belong in `output/`
+- **Scripts** (.sh, .py, .R) → use `scripts/` directory
+- **Source code** → use `src/` directory
+- **Configuration files** → use `config/` directory
+- **Documentation** → use `docs/` directory
 
 ### Cleanup Recommendations
 - Remove large output files after analysis

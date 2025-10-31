@@ -27,3 +27,4 @@ This document captures AI assistance for the natural selection simulation suite.
 - Synchronize README tables with available CLI flags and outputs
 - Run real simulations after significant refactors to confirm reproducibility guarantees
 
+

@@ -2,9 +2,9 @@
   "records": [
     {
       "command": "https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/GCF_016802725.1/download?include_annotation_type=GENOME_FASTA&include_annotation_type=GENOME_GFF&include_annotation_type=RNA_FASTA&include_annotation_type=CDS_FASTA&include_annotation_type=PROT_FASTA&include_annotation_type=SEQUENCE_REPORT&hydrated=FULLY_HYDRATED",
-      "duration_seconds": 16.385401,
+      "duration_seconds": 123.271619,
       "extracted_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/genome/ncbi_dataset_api_extracted",
-      "finished_utc": "2025-10-29T20:20:12.979922Z",
+      "finished_utc": "2025-10-30T17:43:36.460828Z",
       "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/logs",
       "method": "datasets-api",
       "params": {
@@ -23,7 +23,7 @@
         ]
       },
       "return_code": 0,
-      "started_utc": "2025-10-29T20:19:56.594521Z",
+      "started_utc": "2025-10-30T17:41:33.189209Z",
       "stderr_bytes": 0,
       "stdout_bytes": 0,
       "step": "genome-prepare",
@@ -32,8 +32,8 @@
     },
     {
       "command": "amalgkit metadata --out_dir output/amalgkit/sinvicta/work --search_string \"Solenopsis invicta\"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform] --redo yes",
-      "duration_seconds": 28.654805,
-      "finished_utc": "2025-10-29T20:20:41.714472Z",
+      "duration_seconds": 8.108637,
+      "finished_utc": "2025-10-30T17:43:44.598319Z",
       "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/logs",
       "params": {
         "out_dir": "output/amalgkit/sinvicta/work",
@@ -41,140 +41,70 @@
         "search_string": "\"Solenopsis invicta\"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]"
       },
       "return_code": 0,
-      "started_utc": "2025-10-29T20:20:13.059667Z",
+      "started_utc": "2025-10-30T17:43:36.489682Z",
       "stderr_bytes": 0,
-      "stdout_bytes": 834,
+      "stdout_bytes": 832,
       "step": "metadata",
       "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work"
     },
     {
-      "command": "amalgkit integrate --threads 6 --fastq_dir output/amalgkit/sinvicta/fastq --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work/metadata/pivot_qualified.tsv",
-      "duration_seconds": 0.426478,
-      "finished_utc": "2025-10-29T20:20:42.141151Z",
-      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/logs",
-      "params": {
-        "fastq_dir": "output/amalgkit/sinvicta/fastq",
-        "metadata": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work/metadata/pivot_qualified.tsv",
-        "out_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work",
-        "threads": 6
-      },
-      "return_code": 1,
-      "started_utc": "2025-10-29T20:20:41.714673Z",
-      "stderr_bytes": 698,
-      "stdout_bytes": 1164,
-      "step": "integrate",
-      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work"
-    },
-    {
       "command": "amalgkit config --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work",
-      "duration_seconds": 0.04113,
-      "finished_utc": "2025-10-29T20:20:42.182342Z",
+      "duration_seconds": 0.033289,
+      "finished_utc": "2025-10-30T17:43:44.631642Z",
       "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/logs",
       "params": {
         "out_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work"
       },
       "return_code": 0,
-      "started_utc": "2025-10-29T20:20:42.141212Z",
+      "started_utc": "2025-10-30T17:43:44.598353Z",
       "stderr_bytes": 0,
       "stdout_bytes": 406,
       "step": "config",
       "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work"
     },
     {
-      "command": "filter-metadata require_tissue=1 < /Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work/metadata/metadata.tsv > /Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work/metadata/metadata.filtered.tissue.tsv",
-      "duration_seconds": 0.0,
-      "finished_utc": "2025-10-29T20:20:42.193740Z",
+      "command": "amalgkit select --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work/metadata/metadata.filtered.tissue.tsv",
+      "duration_seconds": 0.194506,
+      "finished_utc": "2025-10-30T17:43:44.835631Z",
       "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/logs",
       "params": {
-        "input": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work/metadata/metadata.tsv",
-        "output": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work/metadata/metadata.filtered.tissue.tsv",
-        "require_tissue": true
-      },
-      "return_code": 0,
-      "started_utc": "2025-10-29T20:20:42.193730Z",
-      "stderr_bytes": 0,
-      "stdout_bytes": 0,
-      "step": "preselect-filter",
-      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work"
-    },
-    {
-      "command": "amalgkit select --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work/metadata/metadata.filtered.tissue.tsv --config_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work/config_base",
-      "duration_seconds": 0.407992,
-      "finished_utc": "2025-10-29T20:20:42.601795Z",
-      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/logs",
-      "params": {
-        "config_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work/config_base",
         "metadata": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work/metadata/metadata.filtered.tissue.tsv",
         "out_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work"
       },
-      "return_code": 0,
-      "started_utc": "2025-10-29T20:20:42.193803Z",
-      "stderr_bytes": 340,
-      "stdout_bytes": 1759,
+      "return_code": 1,
+      "started_utc": "2025-10-30T17:43:44.641125Z",
+      "stderr_bytes": 686,
+      "stdout_bytes": 373,
       "step": "select",
       "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work"
     },
     {
-      "command": "amalgkit getfastq --threads 6 --out_dir output/amalgkit/sinvicta/fastq --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work/metadata/pivot_qualified.tsv",
-      "duration_seconds": 0.341872,
-      "finished_utc": "2025-10-29T20:20:42.944004Z",
+      "command": "amalgkit merge --out output/amalgkit/sinvicta/merged/merged_abundance.tsv --out_dir output/amalgkit/sinvicta/merged --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work/metadata/metadata.filtered.tissue.tsv",
+      "duration_seconds": 0.601263,
+      "finished_utc": "2025-10-30T17:43:45.446464Z",
       "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/logs",
       "params": {
-        "metadata": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work/metadata/pivot_qualified.tsv",
-        "out_dir": "output/amalgkit/sinvicta/fastq",
-        "threads": 6
-      },
-      "return_code": 1,
-      "started_utc": "2025-10-29T20:20:42.602132Z",
-      "stderr_bytes": 0,
-      "stdout_bytes": 0,
-      "step": "getfastq",
-      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work"
-    },
-    {
-      "command": "amalgkit quant --threads 6 --out_dir output/amalgkit/sinvicta/quant --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work/metadata/pivot_qualified.tsv",
-      "duration_seconds": 0.381813,
-      "finished_utc": "2025-10-29T20:20:43.325986Z",
-      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/logs",
-      "params": {
-        "metadata": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work/metadata/pivot_qualified.tsv",
-        "out_dir": "output/amalgkit/sinvicta/quant",
-        "threads": 6
-      },
-      "return_code": 1,
-      "started_utc": "2025-10-29T20:20:42.944173Z",
-      "stderr_bytes": 707,
-      "stdout_bytes": 669,
-      "step": "quant",
-      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work"
-    },
-    {
-      "command": "amalgkit merge --out output/amalgkit/sinvicta/merged/merged_abundance.tsv --out_dir output/amalgkit/sinvicta/merged --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work/metadata/pivot_qualified.tsv",
-      "duration_seconds": 0.997642,
-      "finished_utc": "2025-10-29T20:20:44.323732Z",
-      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/logs",
-      "params": {
-        "metadata": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work/metadata/pivot_qualified.tsv",
+        "metadata": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work/metadata/metadata.filtered.tissue.tsv",
         "out": "output/amalgkit/sinvicta/merged/merged_abundance.tsv",
         "out_dir": "output/amalgkit/sinvicta/merged"
       },
       "return_code": 1,
-      "started_utc": "2025-10-29T20:20:43.326090Z",
+      "started_utc": "2025-10-30T17:43:44.845201Z",
       "stderr_bytes": 2616,
-      "stdout_bytes": 1703,
+      "stdout_bytes": 51552,
       "step": "merge",
       "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work"
     },
     {
       "command": "amalgkit cstmm --out_dir output/amalgkit/sinvicta/cstmm",
-      "duration_seconds": 0.350695,
-      "finished_utc": "2025-10-29T20:20:44.674594Z",
+      "duration_seconds": 0.196681,
+      "finished_utc": "2025-10-30T17:43:45.643284Z",
       "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/logs",
       "params": {
         "out_dir": "output/amalgkit/sinvicta/cstmm"
       },
       "return_code": 1,
-      "started_utc": "2025-10-29T20:20:44.323899Z",
+      "started_utc": "2025-10-30T17:43:45.446603Z",
       "stderr_bytes": 654,
       "stdout_bytes": 252,
       "step": "cstmm",
@@ -182,14 +112,14 @@
     },
     {
       "command": "amalgkit curate --out_dir output/amalgkit/sinvicta/curate",
-      "duration_seconds": 0.282831,
-      "finished_utc": "2025-10-29T20:20:44.957580Z",
+      "duration_seconds": 0.202472,
+      "finished_utc": "2025-10-30T17:43:45.845894Z",
       "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/logs",
       "params": {
         "out_dir": "output/amalgkit/sinvicta/curate"
       },
       "return_code": 1,
-      "started_utc": "2025-10-29T20:20:44.674749Z",
+      "started_utc": "2025-10-30T17:43:45.643422Z",
       "stderr_bytes": 1796,
       "stdout_bytes": 532,
       "step": "curate",
@@ -197,14 +127,14 @@
     },
     {
       "command": "amalgkit csca --out_dir output/amalgkit/sinvicta/csca",
-      "duration_seconds": 0.392101,
-      "finished_utc": "2025-10-29T20:20:45.349825Z",
+      "duration_seconds": 0.193581,
+      "finished_utc": "2025-10-30T17:43:46.039611Z",
       "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/logs",
       "params": {
         "out_dir": "output/amalgkit/sinvicta/csca"
       },
       "return_code": 1,
-      "started_utc": "2025-10-29T20:20:44.957724Z",
+      "started_utc": "2025-10-30T17:43:45.846030Z",
       "stderr_bytes": 651,
       "stdout_bytes": 249,
       "step": "csca",
@@ -212,31 +142,27 @@
     },
     {
       "command": "amalgkit sanity --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work",
-      "duration_seconds": 0.314573,
-      "finished_utc": "2025-10-29T20:20:45.664459Z",
+      "duration_seconds": 0.199761,
+      "finished_utc": "2025-10-30T17:43:46.239414Z",
       "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/logs",
       "params": {
         "out_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work"
       },
       "return_code": 0,
-      "started_utc": "2025-10-29T20:20:45.349886Z",
+      "started_utc": "2025-10-30T17:43:46.039653Z",
       "stderr_bytes": 0,
-      "stdout_bytes": 5421,
+      "stdout_bytes": 6272,
       "step": "sanity",
       "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work"
     }
   ],
   "summary": {
     "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/logs",
-    "num_steps": 13,
+    "num_steps": 9,
     "return_codes": [
       0,
       0,
-      1,
       0,
-      0,
-      0,
-      1,
       1,
       1,
       1,
@@ -247,7 +173,7 @@
     "species_list": [
       "Solenopsis_invicta"
     ],
-    "threads": 6,
+    "threads": 8,
     "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work"
   }
 }

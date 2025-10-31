@@ -2,21 +2,18 @@
 
 Work dir: `/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/work`  
 Logs: `/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/logs`  
-Threads: 6  
+Threads: 8  
 Species: Monomorium_pharaonis  
 
 | Step | Code | Duration (s) |
 |------|------|--------------|
-| genome-prepare | 0 | 53.91 |
-| metadata | 0 | 15.05 |
-| integrate | 1 | 1.04 |
-| config | 0 | 0.08 |
-| preselect-filter | 0 | 0.00 |
-| select | 0 | 0.61 |
-| getfastq | 1 | 0.67 |
-| quant | 1 | 0.34 |
-| merge | 1 | 1.32 |
-| cstmm | 1 | 0.35 |
-| curate | 1 | 0.56 |
-| csca | 1 | 0.49 |
-| sanity | 0 | 0.32 |
+| genome-prepare | 0 | 116.25 |
+| metadata | 0 | 6.38 |
+| config | 0 | 0.03 |
+| select | 1 | 0.20 |
+| getfastq+quant (sequential) | 1 | 2.49 |
+| merge | 1 | 0.63 |
+| cstmm | 1 | 0.23 |
+| curate | 1 | 0.22 |
+| csca | 1 | 0.22 |
+| sanity | 0 | 0.23 |

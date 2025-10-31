@@ -33,6 +33,10 @@
 
 ## Documentation
 - Keep docs concise and reference core utilities. Examples that write files must write under output/ and mention how to override paths.
+- **NEVER create new documentation files in the repository root**. All documentation belongs in `docs/` subdirectories organized by domain.
+- **UPDATE existing documentation** rather than creating new files. Add sections to existing docs for new features, fixes, or status updates.
+- Temporary status reports and progress logs belong in `output/` and should be deleted when no longer needed.
+- Documentation structure: `docs/<domain>/<topic>.md` or `docs/<domain>/<subtopic>/<specific>.md`
 
 ## Style
 - Python 3.11+. Clear, modular functions; avoid hidden global state.

@@ -26,4 +26,5 @@ __all__ = [
     "networks",
     "ml",
     "multiomics",
+    "gwas",
 ]

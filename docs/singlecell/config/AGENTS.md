@@ -21,3 +21,4 @@ This document captures AI participation in drafting and maintaining single-cell 
 - Annotate AI-authored updates for human review prior to merging
 - Sync configuration guidance with examples in `docs/singlecell/` and workflows in `src/metainformant/singlecell`
 
+

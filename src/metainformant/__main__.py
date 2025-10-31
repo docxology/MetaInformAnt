@@ -78,6 +78,13 @@ def main() -> None:
 
     _add_sel(math_sub)
 
+    # gwas subcommand
+    gwas_parser = subparsers.add_parser("gwas", help="GWAS (Genome-Wide Association Studies) workflow")
+    gwas_sub = gwas_parser.add_subparsers(dest="gwas_cmd")
+    gwas_run = gwas_sub.add_parser("run", help="Run GWAS workflow from configuration file")
+    gwas_run.add_argument("--config", required=True, help="Path to GWAS YAML/TOML/JSON config file")
+    gwas_run.add_argument("--check", action="store_true", help="Validate configuration only, do not execute")
+
     args = parser.parse_args()
 
     if args.command == "setup":
@@ -187,6 +194,23 @@ def main() -> None:
         if callable(func):
             func(args)
             return
+
+    if args.command == "gwas":
+        if args.gwas_cmd == "run":
+            from .gwas.workflow import execute_gwas_workflow
+            from .gwas.config import load_gwas_config
+
+            cfg = load_gwas_config(args.config)
+            results = execute_gwas_workflow(cfg, check=args.check)
+            if results.get("status") == "completed":
+                print(f"GWAS workflow completed successfully. Results in {cfg.work_dir}")
+                sys.exit(0)
+            elif results.get("status") == "failed":
+                print(f"GWAS workflow failed: {results.get('error', 'Unknown error')}")
+                sys.exit(1)
+            else:
+                print(f"GWAS workflow status: {results.get('status', 'unknown')}")
+                sys.exit(0)
 
     if args.command == "tests":
         exit_code = run_all_tests(args.pytest_args)

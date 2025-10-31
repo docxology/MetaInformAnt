@@ -4,6 +4,32 @@ This directory contains centralized scripts and utilities for amalgkit workflows
 
 ## Scripts
 
+### `run_amalgkit.sh`
+**Purpose**: Comprehensive orchestrator for end-to-end amalgkit pipeline  
+**Location**: `scripts/rna/amalgkit/run_amalgkit.sh`
+
+**Features**:
+- Automatic environment setup (uv, venv, dependencies)
+- Intelligent step execution with dependency checking
+- Robust FASTQ downloading with multiple fallback sources
+- Comprehensive logging and monitoring
+- Progress tracking and resource monitoring
+
+**Usage Options**:
+```bash
+# Full pipeline run
+scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml
+
+# Run specific steps only
+scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --steps metadata,select,getfastq
+
+# Skip expensive steps for testing
+scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --skip-steps getfastq,quant
+
+# Dry run to see execution plan
+scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --dry-run
+```
+
 ### `verify_workflow.sh`
 **Purpose**: Validates amalgkit workflow outputs for any species  
 **Location**: `scripts/rna/amalgkit/verify_workflow.sh`

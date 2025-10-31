@@ -1,0 +1,153 @@
+# METAINFORMANT GWAS Configuration
+# Species: Pogonomyrmex barbatus (Red Harvester Ant)
+# NCBI Taxonomy ID: 144034
+# Assembly: GCF_000187915.1_Pbar_UMD_V03
+
+work_dir: output/gwas/pbarbatus/work
+log_dir: output/gwas/pbarbatus/logs
+threads: 8
+
+# =============================================================================
+# REFERENCE GENOME
+# =============================================================================
+# Reference genome configuration (reuses dna.ncbi infrastructure)
+genome:
+  # NCBI assembly accession for P. barbatus
+  accession: GCF_000187915.1
+
+  # Local destination directory for genome files
+  dest_dir: output/gwas/pbarbatus/genome
+
+  # Files to download from NCBI
+  include:
+    - genome         # Genomic sequences (FASTA)
+    - gff3          # Gene annotations
+
+  # Direct FTP URL for P. barbatus genome
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/187/915/GCF_000187915.1_Pbar_UMD_V03/
+
+# =============================================================================
+# VARIANT DATA SOURCES
+# =============================================================================
+variants:
+  # Option 1: Pre-called VCF file(s) - provide path(s) to existing VCF files
+  # If you have VCF files for P. barbatus samples, list them here:
+  vcf_files:
+    # - data/variants/pbarbatus/sample_set.vcf.gz
+    # - data/variants/pbarbatus/cohort.vcf.gz
+
+  # Option 2: Download from public database (if available for P. barbatus)
+  # download:
+  #   source: dbSNP
+  #   accession: GCF_000187915.1
+
+  # Option 3: Call variants from raw sequencing data (BAM/CRAM)
+  calling:
+    # List of BAM/CRAM file paths (when available)
+    bam_files: []
+    # Reference genome FASTA
+    reference: output/gwas/pbarbatus/genome/genomic.fna
+    # Calling method: bcftools, gatk, or freebayes
+    method: bcftools
+
+  # Destination directory for variant files
+  dest_dir: output/gwas/pbarbatus/variants
+
+# =============================================================================
+# QUALITY CONTROL
+# =============================================================================
+qc:
+  # Minimum minor allele frequency (MAF) threshold
+  min_maf: 0.01
+
+  # Maximum missing genotype rate per variant
+  max_missing: 0.05
+
+  # Minimum call rate per variant
+  min_call_rate: 0.95
+
+  # Hardy-Weinberg equilibrium p-value threshold
+  hwe_pval: 1e-6
+
+  # Exclude insertion/deletion variants
+  exclude_indels: true
+
+  # Minimum variant quality score
+  min_qual: 30.0
+
+# =============================================================================
+# SAMPLE METADATA
+# =============================================================================
+samples:
+  # List of sample IDs (optional, if not provided, uses all samples in VCF)
+  # sample_list: data/samples/pbarbatus/samples.txt
+
+  # Phenotype file (TSV format: sample_id, trait1, trait2, ...)
+  phenotype_file: data/phenotypes/pbarbatus/phenotypes.tsv
+
+  # Covariates file (TSV format: sample_id, age, sex, PC1, PC2, ...)
+  # covariates_file: data/covariates/pbarbatus/covariates.tsv
+
+# =============================================================================
+# POPULATION STRUCTURE
+# =============================================================================
+structure:
+  # Compute principal components (PCA)
+  compute_pca: true
+
+  # Number of principal components to compute
+  n_components: 10
+
+  # Compute kinship/relatedness matrix
+  compute_relatedness: true
+
+  # Kinship computation method: vanraden, astle, or yang
+  kinship_method: vanraden
+
+# =============================================================================
+# ASSOCIATION TESTING
+# =============================================================================
+association:
+  # Statistical model: linear, logistic, or mixed
+  model: linear
+
+  # Trait name (column name in phenotype file)
+  trait: trait1
+
+  # Covariates to include in association model
+  covariates:
+    # - age
+    # - sex
+    # - PC1
+    # - PC2
+    # - PC3
+
+  # Minimum sample size required per variant
+  min_sample_size: 50
+
+  # Relatedness matrix: auto (use computed), or path to kinship matrix file
+  relatedness_matrix: auto
+
+# =============================================================================
+# MULTIPLE TESTING CORRECTION
+# =============================================================================
+correction:
+  # Correction method: bonferroni, fdr, both, or permutation
+  method: bonferroni
+
+  # Significance level (alpha)
+  alpha: 0.05
+
+# =============================================================================
+# OUTPUT
+# =============================================================================
+output:
+  # Directory for association test results
+  results_dir: output/gwas/pbarbatus/results
+
+  # Directory for visualization plots
+  plots_dir: output/gwas/pbarbatus/plots
+
+  # Output format: json, tsv, or plink
+  format: tsv
+

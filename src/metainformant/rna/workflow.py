@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -13,6 +14,8 @@ from ..core.io import dump_json, ensure_directory, read_delimited, write_delimit
 from . import steps as _steps_mod
 from .amalgkit import AmalgkitParams, build_amalgkit_command, check_cli_available, ensure_cli_available
 from .deps import check_step_dependencies
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -86,6 +89,8 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> list[tuple[str, AmalgkitPar
     """Return an ordered list of (subcommand, params) representing a full run.
 
     This does not execute anything; it allows dry inspection and TDD.
+    
+    Note: integrate runs AFTER getfastq to integrate downloaded FASTQs into metadata.
     """
     common = config.to_common_params()
 
@@ -99,10 +104,10 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> list[tuple[str, AmalgkitPar
     steps: list[tuple[str, AmalgkitParams]] = []
     ordered = [
         "metadata",
-        "integrate",
         "config",
         "select",
         "getfastq",
+        "integrate",  # Moved after getfastq to integrate downloaded FASTQs
         "quant",
         "merge",
         "cstmm",
@@ -125,10 +130,10 @@ def plan_workflow_with_params(
 
     ordered = [
         "metadata",
-        "integrate",
         "config",
         "select",
         "getfastq",
+        "integrate",  # Moved after getfastq
         "quant",
         "merge",
         "cstmm",
@@ -200,8 +205,10 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
 
     Returns a list of return codes per step in order.
     """
+    logger.info("execute_workflow: Starting execution")
     ensure_directory(config.work_dir)
     manifest_path = config.manifest_path or (config.work_dir / "amalgkit.manifest.jsonl")
+    logger.info(f"execute_workflow: Manifest path: {manifest_path}")
 
     manifest_records: list[dict[str, Any]] = []
     return_codes: list[int] = []
@@ -302,7 +309,188 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
         has_metadata_rows = False
 
     # 4) Run amalgkit steps
+    logger.info("execute_workflow: Planning workflow steps")
     steps = plan_workflow(config)
+    logger.info(f"execute_workflow: Planned {len(steps)} steps: {[s[0] for s in steps]}")
+    
+    # 4.1) Detect if sequential download-quant-delete processing should be used
+    # This prevents disk exhaustion by processing one sample at a time
+    step_names = [s[0] for s in steps]
+    use_sequential = "getfastq" in step_names and "quant" in step_names
+    logger.info(f"execute_workflow: use_sequential={use_sequential}, getfastq={'getfastq' in step_names}, quant={'quant' in step_names}")
+    
+    if use_sequential:
+        logger.info("Detected getfastq + quant in workflow: Using batched processing to manage disk space")
+        logger.info("Each sample will be: downloaded → quantified → FASTQ deleted before next sample")
+        
+        # Find getfastq and quant params
+        getfastq_params = None
+        quant_params = None
+        getfastq_idx = None
+        quant_idx = None
+        
+        for idx, (subcommand, params) in enumerate(steps):
+            if subcommand == "getfastq":
+                getfastq_params = params
+                getfastq_idx = idx
+            elif subcommand == "quant":
+                quant_params = params
+                quant_idx = idx
+        
+        # Run all steps before getfastq normally
+        pre_steps = steps[:getfastq_idx] if getfastq_idx is not None else []
+        # Steps after quant (merge, curate, etc.)
+        post_steps = steps[quant_idx + 1:] if quant_idx is not None else []
+        
+        logger.info(f"execute_workflow: Pre-steps: {[s[0] for s in pre_steps]}, Post-steps: {[s[0] for s in post_steps]}")
+        
+        # Run pre-steps (metadata, config, select, etc.)
+        logger.info(f"execute_workflow: Executing {len(pre_steps)} pre-steps...")
+        for idx, (subcommand, params) in enumerate(pre_steps):
+            logger.info(f"execute_workflow: Pre-step {idx+1}/{len(pre_steps)}: {subcommand}")
+            runner = _steps_mod.STEP_RUNNERS.get(subcommand)
+            if runner is None:  # pragma: no cover - defensive
+                raise KeyError(f"No runner registered for step: {subcommand}")
+            
+            filtered = _sanitize_params_for_subcommand(subcommand, params)
+            
+            # Apply the same logic as the main loop for these steps
+            if subcommand == "select" and bool(config.filters.get("require_tissue", False)):
+                meta_path = filtered.get("metadata")
+                if not meta_path or meta_path == "inferred":
+                    meta_path = str(config.work_dir / "metadata" / "metadata.tsv")
+                meta_path_p = Path(str(meta_path))
+                if meta_path_p.exists():
+                    out_filtered = meta_path_p.with_name("metadata.filtered.tissue.tsv")
+                    try:
+                        rows = [
+                            row
+                            for row in read_delimited(meta_path_p, delimiter="\t")
+                            if (row.get("tissue", "").strip() != "") and (row.get("run", "").strip() != "")
+                        ]
+                        write_delimited(rows, out_filtered, delimiter="\t")
+                        filtered["metadata"] = str(out_filtered)
+                    except Exception:
+                        pass
+            
+            # Execute pre-step
+            start_ts = datetime.utcnow()
+            result = runner(
+                filtered,
+                work_dir=config.work_dir,
+                log_dir=(config.log_dir or (config.work_dir / "logs")),
+                check=check,
+            )
+            end_ts = datetime.utcnow()
+            duration_s = max(0.0, (end_ts - start_ts).total_seconds())
+            return_codes.append(result.returncode)
+            manifest_records.append(
+                {
+                    "step": subcommand,
+                    "return_code": result.returncode,
+                    "stdout_bytes": len(result.stdout or ""),
+                    "stderr_bytes": len(result.stderr or ""),
+                    "started_utc": start_ts.isoformat() + "Z",
+                    "finished_utc": end_ts.isoformat() + "Z",
+                    "duration_seconds": duration_s,
+                    "work_dir": str(config.work_dir),
+                    "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                    "params": dict(filtered),
+                    "command": " ".join(build_amalgkit_command(subcommand, filtered)),
+                }
+            )
+            logger.info(f"execute_workflow: Pre-step {subcommand} completed with code {result.returncode}")
+        
+        logger.info(f"execute_workflow: All {len(pre_steps)} pre-steps completed")
+        
+        # Now run batched download + quant
+        logger.info(f"execute_workflow: Checking for batched processing: getfastq_params={'exists' if getfastq_params else 'None'}, quant_params={'exists' if quant_params else 'None'}")
+        if getfastq_params and quant_params:
+            logger.info("execute_workflow: Starting batched processing setup")
+            # Determine metadata file to use - must have 'run' column (not a pivot table)
+            metadata_paths = [
+                config.work_dir / "metadata" / "metadata.filtered.clean.tsv",
+                config.work_dir / "metadata" / "metadata.filtered.tissue.tsv",
+                config.work_dir / "metadata" / "metadata.tsv",
+            ]
+            metadata_file = None
+            for mp in metadata_paths:
+                if mp.exists():
+                    # Check if this file has a 'run' column (not a pivot table)
+                    try:
+                        # Explicitly specify TSV delimiter
+                        rows = list(read_delimited(mp, delimiter="\t"))
+                        if rows and "run" in rows[0]:
+                            metadata_file = mp
+                            sample_count = len(rows)
+                            logger.info(f"✓ Using metadata file for parallel download workflow: {mp} ({sample_count} samples)")
+                            break
+                        else:
+                            cols = list(rows[0].keys()) if rows else []
+                            logger.warning(f"✗ Skipping {mp.name}: no 'run' column. Columns: {cols[:5]}...")
+                    except Exception as e:
+                        import traceback
+                        logger.warning(f"✗ Error checking {mp.name}: {e}")
+                        logger.debug(traceback.format_exc())
+                        continue
+            
+            if metadata_file is None:
+                logger.error("=" * 80)
+                logger.error("No metadata file with 'run' column found for parallel download workflow")
+                logger.error(f"Checked {len(metadata_paths)} paths:")
+                for p in metadata_paths:
+                    logger.error(f"  - {p} (exists: {p.exists()})")
+                logger.error("=" * 80)
+                return_codes.append(1)
+            else:
+                # Use batched download + quant
+                # Get batch size from config threads or default to 8
+                batch_size = config.threads if config.threads and config.threads > 1 else 8
+                logger.info(f"🚀 Using batched processing (batch size: {batch_size})")
+                logger.info(f"   Each batch: download {batch_size} samples → quantify → delete FASTQs → repeat")
+                
+                start_ts = datetime.utcnow()
+                stats = _steps_mod.run_batched_download_quant(
+                    metadata_path=metadata_file,
+                    getfastq_params=getfastq_params,
+                    quant_params=quant_params,
+                    work_dir=config.work_dir,
+                    log_dir=(config.log_dir or (config.work_dir / "logs")),
+                    batch_size=batch_size,
+                )
+                end_ts = datetime.utcnow()
+                duration_s = max(0.0, (end_ts - start_ts).total_seconds())
+                
+                # Record combined getfastq+quant step
+                success_rate = (stats["processed"] + stats["skipped"]) / max(1, stats["total_samples"])
+                result_code = 0 if success_rate > 0.5 else 1  # Consider successful if >50% completed
+                
+                return_codes.append(result_code)
+                manifest_records.append(
+                    {
+                        "step": "getfastq+quant (batched)",
+                        "return_code": result_code,
+                        "stdout_bytes": 0,
+                        "stderr_bytes": 0,
+                        "started_utc": start_ts.isoformat() + "Z",
+                        "finished_utc": end_ts.isoformat() + "Z",
+                        "duration_seconds": duration_s,
+                        "work_dir": str(config.work_dir),
+                        "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                        "params": {
+                            "getfastq": dict(getfastq_params),
+                            "quant": dict(quant_params),
+                            "batch_size": batch_size,
+                            "statistics": stats,
+                        },
+                        "command": f"batched_download_quant (batch_size={batch_size})",
+                        "note": f"Processed {stats['processed']}, failed {stats['failed']}/{stats['total_samples']} in {stats.get('batches', 0)} batches",
+                    }
+                )
+        
+        # Run post-steps (merge, curate, sanity, etc.)
+        steps = post_steps  # Continue with post-steps in the main loop
+    
     for subcommand, params in steps:
         runner = _steps_mod.STEP_RUNNERS.get(subcommand)
         if runner is None:  # pragma: no cover - defensive
@@ -311,9 +499,9 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
 
         # Skip downstream steps when no metadata rows exist
         if not has_metadata_rows and subcommand in {
-            "integrate",
             "select",
             "getfastq",
+            "integrate",
             "quant",
             "merge",
             "cstmm",
@@ -352,7 +540,7 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
                     rows = [
                         row
                         for row in read_delimited(meta_path_p, delimiter="\t")
-                        if (row.get("tissue", "").strip() != "")
+                        if (row.get("tissue", "").strip() != "") and (row.get("run", "").strip() != "")
                     ]
                     write_delimited(rows, out_filtered, delimiter="\t")
                     filtered["metadata"] = str(out_filtered)
@@ -399,19 +587,47 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
                 filtered["config_dir"] = str(use_dir)
         
         # Inject metadata path for steps that need it if not provided
+        # CRITICAL: getfastq, integrate, quant, merge need row-per-sample format (NOT pivot tables)
+        # Use smart fallback logic: metadata.filtered.tissue → metadata.tsv (skip pivot files)
         if subcommand in {"integrate", "getfastq", "quant", "merge"}:
-            if "metadata" not in filtered or not filtered["metadata"]:
-                # Try to find the most appropriate metadata file
+            current_metadata = filtered.get("metadata")
+            needs_fallback = False
+            
+            # Check if we need fallback: no metadata set, or existing metadata file is empty/pivot format
+            if not current_metadata:
+                needs_fallback = True
+            else:
+                # Check if current metadata file has actual data rows AND correct format (has 'run' column)
+                try:
+                    current_path = Path(str(current_metadata))
+                    if current_path.exists():
+                        rows = list(read_delimited(current_path, delimiter="\t"))
+                        if len(rows) == 0:  # Only header, no data
+                            needs_fallback = True
+                        elif rows and 'run' not in rows[0]:  # Missing 'run' column (likely pivot table)
+                            needs_fallback = True
+                    else:
+                        needs_fallback = True
+                except Exception:
+                    needs_fallback = True
+            
+            if needs_fallback:
+                # Try to find a metadata file with actual data rows in row-per-sample format
+                # SKIP pivot tables (pivot_qualified.tsv, pivot_selected.tsv) - they lack run IDs
                 candidate_paths = [
-                    config.work_dir / "metadata" / "pivot_qualified.tsv",
-                    config.work_dir / "metadata" / "pivot_selected.tsv",
                     config.work_dir / "metadata" / "metadata.filtered.tissue.tsv",
                     config.work_dir / "metadata" / "metadata.tsv",
                 ]
                 for candidate in candidate_paths:
                     if candidate.exists():
-                        filtered["metadata"] = str(candidate)
-                        break
+                        # Check if file has data rows AND 'run' column
+                        try:
+                            rows = list(read_delimited(candidate, delimiter="\t"))
+                            if len(rows) > 0 and 'run' in rows[0]:  # Has data and correct format
+                                filtered["metadata"] = str(candidate)
+                                break
+                        except Exception:
+                            continue
         
         # Ensure fastq_dir exists before integrate step
         if subcommand == "integrate":

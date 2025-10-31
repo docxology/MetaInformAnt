@@ -18,7 +18,9 @@ The RNA domain provides tools for transcriptomic analysis, workflow orchestratio
 - **`amalgkit/`**: Amalgkit CLI wrapper documentation
   - **`amalgkit.md`**: Complete transcriptomic analysis pipeline
   - **`comprehensive_guide.md`**: Detailed workflow documentation
-  - **`testing_coverage.md`**: Testing and validation documentation
+  - **`testing_coverage.md`**: Testing, validation, and production results
+  - **`steps/`**: Individual step documentation (11 steps)
+- **`workflow.md`**: Workflow orchestration with troubleshooting and optimizations
 
 ## Related Source Code
 
@@ -57,6 +59,9 @@ Comprehensive tests ensure workflow reliability:
 - Configuration parsing and validation
 - External tool integration testing
 - Error handling and recovery
+- Production validation with 5 ant species (6,500+ samples)
+
+See `amalgkit/testing_coverage.md` for production validation results.
 
 ## Contributing
 

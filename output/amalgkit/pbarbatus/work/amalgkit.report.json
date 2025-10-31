@@ -2,9 +2,9 @@
   "records": [
     {
       "command": "https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/GCF_000187915.1/download?include_annotation_type=GENOME_FASTA&include_annotation_type=GENOME_GFF&include_annotation_type=RNA_FASTA&include_annotation_type=CDS_FASTA&include_annotation_type=PROT_FASTA&include_annotation_type=SEQUENCE_REPORT&hydrated=FULLY_HYDRATED",
-      "duration_seconds": 34.399361,
+      "duration_seconds": 31.496072,
       "extracted_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/genome/ncbi_dataset_api_extracted",
-      "finished_utc": "2025-10-29T20:19:45.625121Z",
+      "finished_utc": "2025-10-30T21:21:09.565571Z",
       "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/logs",
       "method": "datasets-api",
       "params": {
@@ -23,7 +23,7 @@
         ]
       },
       "return_code": 0,
-      "started_utc": "2025-10-29T20:19:11.225760Z",
+      "started_utc": "2025-10-30T21:20:38.069499Z",
       "stderr_bytes": 0,
       "stdout_bytes": 0,
       "step": "genome-prepare",
@@ -32,8 +32,8 @@
     },
     {
       "command": "amalgkit metadata --out_dir output/amalgkit/pbarbatus/work --search_string \"Pogonomyrmex barbatus\"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform] --redo yes",
-      "duration_seconds": 7.165549,
-      "finished_utc": "2025-10-29T20:19:52.849314Z",
+      "duration_seconds": 2.88125,
+      "finished_utc": "2025-10-30T21:21:12.487713Z",
       "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/logs",
       "params": {
         "out_dir": "output/amalgkit/pbarbatus/work",
@@ -41,140 +41,199 @@
         "search_string": "\"Pogonomyrmex barbatus\"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]"
       },
       "return_code": 0,
-      "started_utc": "2025-10-29T20:19:45.683765Z",
+      "started_utc": "2025-10-30T21:21:09.606463Z",
       "stderr_bytes": 0,
       "stdout_bytes": 839,
       "step": "metadata",
       "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work"
     },
     {
-      "command": "amalgkit integrate --threads 6 --fastq_dir output/amalgkit/pbarbatus/fastq --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/pivot_qualified.tsv",
-      "duration_seconds": 0.435905,
-      "finished_utc": "2025-10-29T20:19:53.285448Z",
-      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/logs",
-      "params": {
-        "fastq_dir": "output/amalgkit/pbarbatus/fastq",
-        "metadata": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/pivot_qualified.tsv",
-        "out_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work",
-        "threads": 6
-      },
-      "return_code": 1,
-      "started_utc": "2025-10-29T20:19:52.849543Z",
-      "stderr_bytes": 699,
-      "stdout_bytes": 1171,
-      "step": "integrate",
-      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work"
-    },
-    {
       "command": "amalgkit config --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work",
-      "duration_seconds": 0.040728,
-      "finished_utc": "2025-10-29T20:19:53.326239Z",
+      "duration_seconds": 0.044597,
+      "finished_utc": "2025-10-30T21:21:12.532942Z",
       "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/logs",
       "params": {
         "out_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work"
       },
       "return_code": 0,
-      "started_utc": "2025-10-29T20:19:53.285511Z",
+      "started_utc": "2025-10-30T21:21:12.488345Z",
       "stderr_bytes": 0,
       "stdout_bytes": 408,
       "step": "config",
       "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work"
     },
     {
-      "command": "filter-metadata require_tissue=1 < /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/metadata.tsv > /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/metadata.filtered.tissue.tsv",
-      "duration_seconds": 0.0,
-      "finished_utc": "2025-10-29T20:19:53.329116Z",
+      "command": "amalgkit select --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/metadata.filtered.tissue.tsv",
+      "duration_seconds": 0.251259,
+      "finished_utc": "2025-10-30T21:21:12.787196Z",
       "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/logs",
       "params": {
-        "input": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/metadata.tsv",
-        "output": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/metadata.filtered.tissue.tsv",
-        "require_tissue": true
-      },
-      "return_code": 0,
-      "started_utc": "2025-10-29T20:19:53.329104Z",
-      "stderr_bytes": 0,
-      "stdout_bytes": 0,
-      "step": "preselect-filter",
-      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work"
-    },
-    {
-      "command": "amalgkit select --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/metadata.filtered.tissue.tsv --config_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/config_base",
-      "duration_seconds": 0.363698,
-      "finished_utc": "2025-10-29T20:19:53.692891Z",
-      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/logs",
-      "params": {
-        "config_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/config_base",
         "metadata": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/metadata.filtered.tissue.tsv",
         "out_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work"
       },
-      "return_code": 0,
-      "started_utc": "2025-10-29T20:19:53.329193Z",
-      "stderr_bytes": 340,
-      "stdout_bytes": 1765,
+      "return_code": 1,
+      "started_utc": "2025-10-30T21:21:12.535937Z",
+      "stderr_bytes": 687,
+      "stdout_bytes": 375,
       "step": "select",
       "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work"
     },
     {
-      "command": "amalgkit getfastq --threads 6 --out_dir output/amalgkit/pbarbatus/fastq --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/pivot_qualified.tsv",
-      "duration_seconds": 0.3429,
-      "finished_utc": "2025-10-29T20:19:54.036426Z",
+      "command": "batched_download_quant (batch_size=8)",
+      "duration_seconds": 26972.275203,
+      "finished_utc": "2025-10-31T04:50:45.063951Z",
       "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/logs",
+      "note": "Processed 0, failed 83/83 in 0 batches",
       "params": {
-        "metadata": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/pivot_qualified.tsv",
-        "out_dir": "output/amalgkit/pbarbatus/fastq",
-        "threads": 6
+        "batch_size": 8,
+        "getfastq": {
+          "aws": true,
+          "gcp": true,
+          "ncbi": true,
+          "out_dir": "output/amalgkit/pbarbatus/fastq",
+          "species-list": [
+            "Pogonomyrmex_barbatus"
+          ],
+          "threads": 8
+        },
+        "quant": {
+          "build_index": true,
+          "genome_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/genome/ncbi_dataset_api_extracted",
+          "keep_fastq": false,
+          "out_dir": "output/amalgkit/pbarbatus/quant",
+          "redo": false,
+          "species-list": [
+            "Pogonomyrmex_barbatus"
+          ],
+          "threads": 8
+        },
+        "statistics": {
+          "batches": 0,
+          "failed": 83,
+          "failed_runs": [
+            "SRR14740487",
+            "SRR14740488",
+            "SRR14740489",
+            "SRR14740490",
+            "SRR14740491",
+            "SRR14740492",
+            "SRR14740493",
+            "SRR14740494",
+            "SRR14740495",
+            "SRR14740496",
+            "SRR14740497",
+            "SRR14740498",
+            "SRR14740499",
+            "SRR14740500",
+            "SRR14740501",
+            "SRR14740502",
+            "SRR14740503",
+            "SRR14740504",
+            "SRR14740505",
+            "SRR14740506",
+            "SRR14740507",
+            "SRR14740508",
+            "SRR14740509",
+            "SRR14740510",
+            "SRR14740511",
+            "SRR14740512",
+            "SRR14740513",
+            "SRR14740514",
+            "SRR14740515",
+            "SRR14740516",
+            "SRR14740517",
+            "SRR14740518",
+            "SRR14740519",
+            "SRR14740520",
+            "SRR14740521",
+            "SRR14740522",
+            "SRR14740523",
+            "SRR14740524",
+            "SRR14740525",
+            "SRR14740526",
+            "SRR14740527",
+            "SRR14740528",
+            "SRR14740529",
+            "SRR14740530",
+            "SRR14740531",
+            "SRR14740532",
+            "SRR14740533",
+            "SRR14740534",
+            "SRR14740535",
+            "SRR14740536",
+            "SRR14740537",
+            "SRR14740538",
+            "SRR14740539",
+            "SRR14740540",
+            "SRR14740541",
+            "SRR14740542",
+            "SRR14740543",
+            "SRR14740544",
+            "SRR14740545",
+            "SRR14740546",
+            "SRR14740547",
+            "SRR14740548",
+            "SRR14740549",
+            "SRR14740550",
+            "SRR14740551",
+            "SRR1817189",
+            "SRR1817188",
+            "SRR1817187",
+            "SRR1817186",
+            "SRR1817185",
+            "SRR1817183",
+            "SRR1817182",
+            "SRR1817181",
+            "SRR1817180",
+            "SRR1817179",
+            "SRR1817178",
+            "SRR1817177",
+            "SRR1817176",
+            "SRR1817175",
+            "SRR1817174",
+            "SRR1814138",
+            "SRR1814129",
+            "SRR1910415"
+          ],
+          "processed": 0,
+          "skipped": 0,
+          "total_samples": 83
+        }
       },
       "return_code": 1,
-      "started_utc": "2025-10-29T20:19:53.693526Z",
+      "started_utc": "2025-10-30T21:21:12.788748Z",
       "stderr_bytes": 0,
       "stdout_bytes": 0,
-      "step": "getfastq",
+      "step": "getfastq+quant (batched)",
       "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work"
     },
     {
-      "command": "amalgkit quant --threads 6 --out_dir output/amalgkit/pbarbatus/quant --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/pivot_qualified.tsv",
-      "duration_seconds": 0.334859,
-      "finished_utc": "2025-10-29T20:19:54.371538Z",
+      "command": "amalgkit merge --out output/amalgkit/pbarbatus/merged/merged_abundance.tsv --out_dir output/amalgkit/pbarbatus/merged --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/metadata.tsv",
+      "duration_seconds": 1.183275,
+      "finished_utc": "2025-10-31T04:50:46.254553Z",
       "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/logs",
       "params": {
-        "metadata": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/pivot_qualified.tsv",
-        "out_dir": "output/amalgkit/pbarbatus/quant",
-        "threads": 6
-      },
-      "return_code": 1,
-      "started_utc": "2025-10-29T20:19:54.036679Z",
-      "stderr_bytes": 708,
-      "stdout_bytes": 676,
-      "step": "quant",
-      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work"
-    },
-    {
-      "command": "amalgkit merge --out output/amalgkit/pbarbatus/merged/merged_abundance.tsv --out_dir output/amalgkit/pbarbatus/merged --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/pivot_qualified.tsv",
-      "duration_seconds": 0.881163,
-      "finished_utc": "2025-10-29T20:19:55.252791Z",
-      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/logs",
-      "params": {
-        "metadata": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/pivot_qualified.tsv",
+        "metadata": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work/metadata/metadata.tsv",
         "out": "output/amalgkit/pbarbatus/merged/merged_abundance.tsv",
         "out_dir": "output/amalgkit/pbarbatus/merged"
       },
       "return_code": 1,
-      "started_utc": "2025-10-29T20:19:54.371628Z",
+      "started_utc": "2025-10-31T04:50:45.071278Z",
       "stderr_bytes": 2619,
-      "stdout_bytes": 1715,
+      "stdout_bytes": 18559,
       "step": "merge",
       "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work"
     },
     {
       "command": "amalgkit cstmm --out_dir output/amalgkit/pbarbatus/cstmm",
-      "duration_seconds": 0.387277,
-      "finished_utc": "2025-10-29T20:19:55.640225Z",
+      "duration_seconds": 0.31077,
+      "finished_utc": "2025-10-31T04:50:46.565944Z",
       "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/logs",
       "params": {
         "out_dir": "output/amalgkit/pbarbatus/cstmm"
       },
       "return_code": 1,
-      "started_utc": "2025-10-29T20:19:55.252948Z",
+      "started_utc": "2025-10-31T04:50:46.255174Z",
       "stderr_bytes": 654,
       "stdout_bytes": 253,
       "step": "cstmm",
@@ -182,14 +241,14 @@
     },
     {
       "command": "amalgkit curate --out_dir output/amalgkit/pbarbatus/curate",
-      "duration_seconds": 0.268256,
-      "finished_utc": "2025-10-29T20:19:55.908671Z",
+      "duration_seconds": 0.243878,
+      "finished_utc": "2025-10-31T04:50:46.809947Z",
       "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/logs",
       "params": {
         "out_dir": "output/amalgkit/pbarbatus/curate"
       },
       "return_code": 1,
-      "started_utc": "2025-10-29T20:19:55.640415Z",
+      "started_utc": "2025-10-31T04:50:46.566069Z",
       "stderr_bytes": 1797,
       "stdout_bytes": 535,
       "step": "curate",
@@ -197,14 +256,14 @@
     },
     {
       "command": "amalgkit csca --out_dir output/amalgkit/pbarbatus/csca",
-      "duration_seconds": 0.325342,
-      "finished_utc": "2025-10-29T20:19:56.234206Z",
+      "duration_seconds": 0.261831,
+      "finished_utc": "2025-10-31T04:50:47.071907Z",
       "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/logs",
       "params": {
         "out_dir": "output/amalgkit/pbarbatus/csca"
       },
       "return_code": 1,
-      "started_utc": "2025-10-29T20:19:55.908864Z",
+      "started_utc": "2025-10-31T04:50:46.810076Z",
       "stderr_bytes": 651,
       "stdout_bytes": 250,
       "step": "csca",
@@ -212,27 +271,24 @@
     },
     {
       "command": "amalgkit sanity --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work",
-      "duration_seconds": 0.356106,
-      "finished_utc": "2025-10-29T20:19:56.590364Z",
+      "duration_seconds": 0.247477,
+      "finished_utc": "2025-10-31T04:50:47.319439Z",
       "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/logs",
       "params": {
         "out_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work"
       },
       "return_code": 0,
-      "started_utc": "2025-10-29T20:19:56.234258Z",
+      "started_utc": "2025-10-31T04:50:47.071962Z",
       "stderr_bytes": 0,
-      "stdout_bytes": 1719,
+      "stdout_bytes": 2170,
       "step": "sanity",
       "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work"
     }
   ],
   "summary": {
     "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/logs",
-    "num_steps": 13,
+    "num_steps": 10,
     "return_codes": [
-      0,
-      0,
-      1,
       0,
       0,
       0,
@@ -247,7 +303,7 @@
     "species_list": [
       "Pogonomyrmex_barbatus"
     ],
-    "threads": 6,
+    "threads": 8,
     "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/pbarbatus/work"
   }
 }
