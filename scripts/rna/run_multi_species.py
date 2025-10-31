@@ -3,9 +3,27 @@
 Run amalgkit workflows for multiple ant species with cross-species analysis.
 
 This script:
-1. Auto-discovers all species configs (amalgkit_*.yaml, excluding template)
+1. Auto-discovers all species configs (amalgkit_*.yaml in config/amalgkit/, excluding template)
 2. Runs full end-to-end workflow for each species (metadata → sanity)
-3. Performs cross-species analysis (cstmm, csca) across all species
+3. Uses batched processing (download 8 → quantify 8 → delete 8 → repeat)
+4. Performs cross-species analysis (CSTMM, CSCA) across all species
+
+Processing mode:
+- Batched: Process 8 samples at a time (configurable via threads in config)
+- Disk-friendly: Only 8 samples' FASTQs on disk at once (~16-40 GB peak)
+- Fast: Parallel processing within each batch
+- Resume: Automatically skips already-quantified samples
+
+Usage:
+    # Process all discovered species
+    python3 scripts/rna/run_multi_species.py
+    
+    # The script will find all config/amalgkit/amalgkit_*.yaml files
+    # Currently configured species:
+    #   - Pogonomyrmex barbatus (pbarbatus)
+    #   - Camponotus floridanus (cfloridanus)
+    #   - Monomorium pharaonis (mpharaonis)
+    #   - Solenopsis invicta (sinvicta)
 """
 
 import sys
@@ -19,6 +37,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 from metainformant.rna.workflow import load_workflow_config, execute_workflow
 from metainformant.rna.amalgkit import run_amalgkit
 from metainformant.core.logging import get_logger
+
 
 def discover_species_configs(config_dir: Path = Path("config/amalgkit")) -> list[tuple[str, Path]]:
     """Discover all species configuration files.
@@ -55,7 +74,15 @@ def discover_species_configs(config_dir: Path = Path("config/amalgkit")) -> list
 
 
 def run_species_workflow(config_path: Path, species_name: str) -> tuple[bool, Path]:
-    """Run full workflow for a single species.
+    """Run full workflow for a single species using batched processing.
+    
+    The workflow automatically uses batched download-quant-delete processing:
+    - Downloads 8 samples (batch size from config.threads)
+    - Quantifies all 8 samples
+    - Deletes FASTQ files for those 8 samples
+    - Moves to next batch
+    
+    This keeps disk usage bounded while maintaining good performance.
     
     Returns:
         (success, work_dir) tuple
@@ -63,10 +90,11 @@ def run_species_workflow(config_path: Path, species_name: str) -> tuple[bool, Pa
     logger = get_logger(f"amalgkit_{species_name}")
     
     logger.info("="*80)
-    logger.info(f"Starting workflow for {species_name}")
+    logger.info(f"Starting batched workflow for {species_name}")
     logger.info("="*80)
     logger.info(f"Config: {config_path}")
     logger.info(f"Start time: {datetime.now()}")
+    logger.info(f"Processing mode: Batched (download → quantify → delete, 8 samples at a time)")
     
     try:
         # Load config
@@ -75,9 +103,10 @@ def run_species_workflow(config_path: Path, species_name: str) -> tuple[bool, Pa
         logger.info(f"  Work dir: {cfg.work_dir}")
         logger.info(f"  Genome: {cfg.genome.get('accession') if cfg.genome else 'None'}")
         logger.info(f"  Species: {cfg.species_list}")
+        logger.info(f"  Batch size: {cfg.threads} samples (from threads config)")
         
-        # Execute workflow
-        logger.info("\nExecuting full amalgkit workflow...")
+        # Execute workflow (automatically uses batched processing)
+        logger.info("\nExecuting full amalgkit workflow with batched processing...")
         return_codes = execute_workflow(cfg)
         
         # Check results
@@ -202,6 +231,12 @@ def main():
     print(f"Species discovered: {len(species_configs)}")
     for name, config in species_configs:
         print(f"  - {name} ({config})")
+    print("="*80)
+    print("\nProcessing mode: Batched (8 samples at a time)")
+    print("  • Download batch → Quantify batch → Delete FASTQs → Repeat")
+    print("  • Disk-friendly: Only ~16-40 GB peak usage")
+    print("  • Fast: Parallel processing within each batch")
+    print("  • Resume: Automatically skips completed samples")
     print("="*80 + "\n")
     
     # Phase 1: Individual species workflows
@@ -258,3 +293,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
