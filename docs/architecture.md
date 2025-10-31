@@ -25,11 +25,18 @@ flowchart LR
     D4[phylogeny]
     D5[population]
     D6[entrez/ncbi]
+    D7[variants]
   end
   subgraph RNA
     R1[amalgkit]
     R2[workflow]
     R3[configs]
+  end
+  subgraph GWAS[Genome-Wide Association]
+    G1[quality]
+    G2[structure]
+    G3[association]
+    G4[visualization]
   end
   subgraph SingleCell[Single-Cell Genomics]
     SC1[preprocessing]
@@ -59,6 +66,7 @@ flowchart LR
   end
   A --> D1 & D2 & D3 & D4 & D5
   A --> R1 & R2
+  A --> G1 & G2 & G3 & G4
   A --> SC1 & SC2 & SC3 & SC4 & SC5 & SC6
   A --> Q1
   A --> S1 & S2 & S3

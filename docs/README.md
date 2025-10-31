@@ -2,6 +2,18 @@
 
 This directory contains comprehensive documentation for all METAINFORMANT modules and functionality, organized by domain and feature.
 
+**📖 New to METAINFORMANT documentation?** Start with the **[Documentation Guide](DOCUMENTATION_GUIDE.md)** for complete navigation and best practices.
+
+## Quick Links
+
+- **[Documentation Guide](DOCUMENTATION_GUIDE.md)** - Complete guide to navigating all documentation
+- **[Documentation Index](index.md)** - Hierarchical navigation to all docs
+- **[Setup Guide](setup.md)** - Installation and environment configuration
+- **[Testing Guide](testing.md)** - Comprehensive testing documentation
+- **[Architecture](architecture.md)** - System design and diagrams
+- **[CLI Reference](cli.md)** - Command-line interface
+- **[AI Agents](AGENTS.md)** - AI assistance in development
+
 ## Structure
 
 ### Core Documentation (`core/`)
@@ -46,6 +58,13 @@ Each biological domain has its own subdirectory with detailed documentation:
 - `index.md` - RNA domain overview
 - `steps.md` - Individual workflow step documentation
 - `workflow.md` - Complete workflow orchestration
+
+#### GWAS (`gwas/`)
+- `README.md` - GWAS module overview and quick start
+- `workflow.md` - Step-by-step GWAS workflow guide
+- `config.md` - Configuration reference and options
+- `pbarbatus_config.md` - Example configuration for P. barbatus
+- `verification_report.md` - Verification and validation report
 
 #### Protein (`protein/`)
 - `index.md` - Protein domain overview

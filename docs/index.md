@@ -2,6 +2,11 @@
 
 Welcome to the METAINFORMANT docs. This site is organized by domain and core utilities. Use the navigation below to explore each analysis area.
 
+**📖 New to the documentation?** Check the **[Documentation Guide](DOCUMENTATION_GUIDE.md)** for complete navigation tips and best practices.
+
+## Core Documentation
+
+- [Documentation Guide](./DOCUMENTATION_GUIDE.md) - Complete guide to using this documentation
 - [Architecture](./architecture.md)
 - [CLI](./cli.md)
 - [Core Utilities](./core.md)
@@ -15,13 +20,27 @@ Welcome to the METAINFORMANT docs. This site is organized by domain and core uti
   - [Multiple Sequence Alignment (MSA)](./dna/msa.md)
   - [Phylogeny](./dna/phylogeny.md)
   - [Population Genetics](./dna/population.md)
+  - [FASTQ Processing](./dna/fastq.md)
+  - [Codon Usage](./dna/codon.md)
+  - [Sequence Composition](./dna/composition.md)
+  - [Evolutionary Distances](./dna/distances.md)
+  - [Transcription](./dna/transcription.md)
+  - [Translation](./dna/translation.md)
+  - [Variants](./dna/variants.md)
 
 - RNA
   - [Overview](./rna/index.md)
-  - [amalgkit Wrapper](./rna/amalgkit/amalgkit.md)
   - [Workflow](./rna/workflow.md)
   - [Configs](./rna/configs.md)
   - [Steps](./rna/steps.md)
+
+- GWAS (Genome-Wide Association Studies)
+  - [Overview](./gwas/index.md)
+  - [Complete README](./gwas/README.md)
+  - [Workflow](./gwas/workflow.md)
+  - [Configuration](./gwas/config.md)
+  - [P. barbatus Example](./gwas/pbarbatus_config.md)
+  - [Verification Report](./gwas/verification_report.md)
 
 - Single-Cell Genomics
   - [Overview](./singlecell/index.md)
@@ -70,6 +89,7 @@ See also: the top-level project README for quickstarts.
 graph TD
   A[CLI] --> B[DNA]
   A --> C[RNA]
+  A --> GWAS[GWAS]
   A --> SC[Single-Cell]
   A --> QC[Quality Control]
   A --> D[Simulation]
@@ -98,6 +118,8 @@ graph TD
   P -.-> B
   O -.-> C
   P -.-> C
+  O -.-> GWAS
+  P -.-> GWAS
   O -.-> SC
   P -.-> SC
   O -.-> QC

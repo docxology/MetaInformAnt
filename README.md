@@ -20,6 +20,42 @@ This repository organizes practical pipelines and utilities that can be composed
 
 ---
 
+## 📚 Documentation
+
+**Comprehensive documentation is available in the [`docs/`](docs/) directory:**
+
+- **[Documentation Index](docs/index.md)** - Complete navigation to all documentation
+- **[Documentation README](docs/README.md)** - Documentation structure and organization
+- **[Setup Guide](docs/setup.md)** - Installation and environment configuration
+- **[Testing Guide](docs/testing.md)** - Comprehensive testing documentation
+- **[Architecture](docs/architecture.md)** - System design and component relationships
+- **[CLI Reference](docs/cli.md)** - Command-line interface documentation
+- **[AI Agents](docs/AGENTS.md)** - AI assistance in development and documentation
+
+### Domain-Specific Documentation
+
+Each biological domain has comprehensive documentation with API references, examples, and workflows:
+
+- **[Core Utilities](docs/core/)** - Configuration, I/O, logging, paths, caching, hashing
+- **[DNA Analysis](docs/dna/)** - Sequences, alignment, MSA, phylogeny, population genetics, FASTQ processing
+- **[RNA Analysis](docs/rna/)** - Transcriptomic workflows, amalgkit integration, batched processing (83 P. barbatus samples validated)
+- **[GWAS](docs/gwas/)** - Genome-wide association studies, variant analysis, population structure
+- **[Protein Analysis](docs/protein/)** - Structure analysis, sequence alignment, database integration
+- **[Single-Cell Genomics](docs/singlecell/)** - Preprocessing, clustering, dimensionality reduction, trajectory analysis
+- **[Mathematical Biology](docs/math/)** - Population genetics, coalescent theory, epidemiology, selection models
+- **[Machine Learning](docs/ml/)** - Classification, regression, feature selection, model validation
+- **[Network Analysis](docs/networks/)** - Graph algorithms, community detection, pathway analysis, regulatory networks
+- **[Multi-Omics Integration](docs/multiomics/)** - Cross-omic data integration and analysis
+- **[Quality Control](docs/quality/)** - FASTQ quality analysis, contamination detection
+- **[Visualization](docs/visualization/)** - Plotting, animations, phylogenetic trees
+- **[Simulation](docs/simulation/)** - Synthetic data generation, agent-based modeling
+- **[Ontology](docs/ontology/)** - Gene Ontology, OBO format parsing
+- **[Phenotype](docs/phenotype/)** - Phenotypic data curation and analysis
+- **[Epigenome](docs/epigenome/)** - DNA methylation and chromatin analysis
+- **[Ecology](docs/ecology/)** - Community ecology and metadata curation
+
+---
+
 ### Project Structure
 
 ```
@@ -134,6 +170,17 @@ METAINFORMANT/
         __init__.py
         methylation.py            # DNA methylation analysis
         tracks.py                 # Genomic track processing
+      gwas/                       # Genome-wide association studies
+        __init__.py
+        quality.py                # Quality control filters
+        structure.py              # Population structure analysis
+        association.py            # Association testing
+        correction.py             # Multiple testing correction
+        visualization.py          # Manhattan/Q-Q plots
+        calling.py                # Variant calling integration
+        download.py               # Data acquisition
+        config.py                 # Configuration management
+        workflow.py               # Workflow orchestration
       quality/                    # Quality assessment
         __init__.py
         contamination.py          # Sequence contamination detection

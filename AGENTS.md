@@ -125,6 +125,29 @@ METAINFORMANT is developed with assistance from various AI agents and language m
 - **Method Validation**: Automated validation of computational methods
 - **Literature Integration**: AI-assisted incorporation of research findings
 
+## Documentation
+
+For detailed documentation about AI contributions to specific modules:
+
+- **General Documentation**: [`docs/AGENTS.md`](docs/AGENTS.md) - AI assistance in documentation development
+- **Core Utilities**: [`src/metainformant/core/AGENTS.md`](src/metainformant/core/AGENTS.md)
+- **DNA Analysis**: [`src/metainformant/dna/AGENTS.md`](src/metainformant/dna/AGENTS.md)
+- **RNA Analysis**: [`src/metainformant/rna/AGENTS.md`](src/metainformant/rna/AGENTS.md)
+- **GWAS**: [`docs/gwas/AGENTS.md`](docs/gwas/AGENTS.md)
+- **Protein Analysis**: [`src/metainformant/protein/AGENTS.md`](src/metainformant/protein/AGENTS.md)
+- **Mathematical Biology**: [`src/metainformant/math/AGENTS.md`](src/metainformant/math/AGENTS.md)
+- **Machine Learning**: [`src/metainformant/ml/AGENTS.md`](src/metainformant/ml/AGENTS.md)
+- **Network Analysis**: [`src/metainformant/networks/AGENTS.md`](src/metainformant/networks/AGENTS.md)
+- **Multi-Omics**: [`src/metainformant/multiomics/AGENTS.md`](src/metainformant/multiomics/AGENTS.md)
+- **Single-Cell Genomics**: [`src/metainformant/singlecell/AGENTS.md`](src/metainformant/singlecell/AGENTS.md)
+- **Quality Control**: [`src/metainformant/quality/AGENTS.md`](src/metainformant/quality/AGENTS.md)
+- **Visualization**: [`src/metainformant/visualization/AGENTS.md`](src/metainformant/visualization/AGENTS.md)
+- **Simulation**: [`src/metainformant/simulation/AGENTS.md`](src/metainformant/simulation/AGENTS.md)
+- **Ontology**: [`src/metainformant/ontology/AGENTS.md`](src/metainformant/ontology/AGENTS.md)
+- **Phenotype**: [`src/metainformant/phenotype/AGENTS.md`](src/metainformant/phenotype/AGENTS.md)
+- **Epigenome**: [`src/metainformant/epigenome/AGENTS.md`](src/metainformant/epigenome/AGENTS.md)
+- **Ecology**: [`src/metainformant/ecology/AGENTS.md`](src/metainformant/ecology/AGENTS.md)
+
 ## Contact and Support
 
 For questions about AI integration in METAINFORMANT:

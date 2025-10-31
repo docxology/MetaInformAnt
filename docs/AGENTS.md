@@ -13,7 +13,7 @@ This document outlines AI assistance in creating and maintaining METAINFORMANT's
 
 ### Content Generation
 **Documentation Agent** created:
-- Complete module documentation for all 12+ biological domains
+- Complete module documentation for all 15+ biological domains
 - API reference documentation with parameter descriptions
 - Practical usage examples and code snippets
 - Integration guides and cross-module workflows

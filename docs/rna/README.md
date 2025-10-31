@@ -59,7 +59,7 @@ Comprehensive tests ensure workflow reliability:
 - Configuration parsing and validation
 - External tool integration testing
 - Error handling and recovery
-- Production validation with 5 ant species (6,500+ samples)
+- Production validation with P. barbatus (83 samples), production-ready for 4 additional species
 
 See `amalgkit/testing_coverage.md` for production validation results.
 

@@ -42,6 +42,14 @@ Out of **697 total tests** in the repository:
 - **Workflow configuration**: YAML/TOML parsing ✅
 - **Pipeline management**: Step execution ✅
 - **Dependency checking**: External tool validation ✅
+- **Production validation**: P. barbatus (83 samples) ✅
+
+#### **GWAS Analysis** - Implementation in progress
+- **Configuration management**: YAML/TOML/JSON support ⚙️
+- **Quality control**: MAF, missingness, HWE filters ⚙️
+- **Population structure**: PCA and kinship computation ⚙️
+- **Association testing**: Linear/logistic regression ⚙️
+- **Visualization**: Manhattan and Q-Q plots ⚙️
 
 #### **Quality Control** - 89% success rate
 - **FASTQ quality analysis**: Comprehensive quality metrics ✅
