@@ -13,8 +13,8 @@ This module provides comprehensive GWAS functionality integrated with METAINFORM
 - **association.py** - Association testing (linear/logistic regression)
 - **correction.py** - Multiple testing correction (Bonferroni, FDR, genomic control)
 - **visualization.py** - Result visualization (Manhattan plots, Q-Q plots)
-- **calling.py** - Variant calling integration (bcftools, GATK)
-- **download.py** - Data acquisition (dbSNP, 1000 Genomes)
+- **calling.py** - Variant calling integration (bcftools, GATK) ✅ Integrated into workflow
+- **download.py** - Data acquisition (reference genomes ✅, variant databases ⚠️ placeholder)
 - **config.py** - Configuration management and validation
 - **workflow.py** - Complete workflow orchestration
 

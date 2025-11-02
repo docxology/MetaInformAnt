@@ -5,9 +5,9 @@
 # Sequencing: 454 pyrosequencing, high-quality assembly
 # Annotation Release: 101
 
-work_dir: output/amalgkit/pbarbatus/work
-log_dir: output/amalgkit/pbarbatus/logs
-threads: 8
+work_dir: /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/pbarbatus/work
+log_dir: /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/pbarbatus/logs
+threads: 12
 
 auto_install_amalgkit: true
 
@@ -68,16 +68,18 @@ steps:
   select: {}
   getfastq:
     out_dir: output/amalgkit/pbarbatus/fastq
-    threads: 8
+    threads: 12
     # Cloud acceleration via individual mirrors
     aws: yes
     gcp: yes
     ncbi: yes
-    # pfd: yes         # DISABLED: parallel-fastq-dump failing, use fasterq-dump
+    # pfd: no          # DISABLED: parallel-fastq-dump not installed
+    fastp: yes        # ENABLED: fastp QC tool
+    # seqkit is now installed and available
   quant:
     # If a Salmon/Kallisto index is available, set it; otherwise genome_dir is injected from genome step
     out_dir: output/amalgkit/pbarbatus/quant
-    threads: 8
+    threads: 12
     redo: no
     # Delete SRA/FASTQ files after quantification to save space
     keep_fastq: no

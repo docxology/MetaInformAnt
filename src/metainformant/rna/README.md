@@ -194,11 +194,11 @@ heatmap(results["expression_matrix"])
 ### With Statistical Analysis
 ```python
 from metainformant.rna import cstmm
-from metainformant.math import statistics
 
 # Statistical analysis of expression data
-test_results = cstmm.run_test(counts_matrix, design_matrix)
-p_values = statistics.extract_p_values(test_results)
+# cstmm returns results with p-values directly
+test_results = cstmm({"counts": counts_matrix, "design": design_matrix})
+# Extract p-values from test_results as needed
 ```
 
 ## Configuration Management

@@ -143,11 +143,12 @@ FASTQ format processing and quality analysis.
 from metainformant.dna import fastq
 
 # Quality analysis
-reads = fastq.read_fastq("reads.fastq")
-quality_stats = fastq.analyze_quality(reads)
+avg_quality = fastq.average_phred_by_position("reads.fastq")
 
-# Filtering
-high_quality = fastq.filter_by_quality(reads, min_score=30)
+# Iterate through FASTQ records
+for read_id, seq, qual in fastq.iter_fastq("reads.fastq"):
+    # Process each read
+    pass
 ```
 
 ### Motif Analysis (`motifs.py`)
@@ -163,13 +164,12 @@ DNA motif discovery and analysis.
 ```python
 from metainformant.dna import motifs
 
-# Motif detection
-sequences = ["ATCGATCG", "ATCGATCG"]
-motif = motifs.find_motif(sequences, "ATCG")
+# Find motif positions in sequence (supports IUPAC codes)
+positions = motifs.find_motif_positions("ATCGGATCGG", "ATCG")
 
-# PWM analysis
-pwm = motifs.build_pwm(sequences)
-sites = motifs.scan_pwm(pwm, target_sequence)
+# Find multiple motifs
+from metainformant.dna.sequences import find_motifs
+motif_positions = find_motifs(sequence, ["ATCG", "GCAT"])
 ```
 
 ### Restriction Enzymes (`restriction.py`)
@@ -185,12 +185,11 @@ Restriction enzyme analysis and virtual digestion.
 ```python
 from metainformant.dna import restriction
 
-# Virtual digest
+# Find restriction sites
 sequence = "ATCGATCG"
-fragments = restriction.digest(sequence, "EcoRI")
-
-# Enzyme information
-enzyme_info = restriction.get_enzyme_info("EcoRI")
+enzyme_motifs = {"EcoRI": "GAATTC", "BamHI": "GGATCC"}
+sites = restriction.find_restriction_sites(sequence, enzyme_motifs)
+# Returns: {"EcoRI": [positions], "BamHI": [positions]}
 ```
 
 ### Genetic Variants (`variants.py`)
@@ -206,11 +205,12 @@ SNP and variant detection and analysis.
 ```python
 from metainformant.dna import variants
 
-# Variant calling
-vcf_data = variants.call_variants(alignment_file)
+# Parse VCF file (basic parsing)
+vcf_info = variants.parse_vcf("variants.vcf")
+# Returns: {"samples": [...], "num_variants": count}
 
-# Variant filtering
-filtered = variants.filter_variants(vcf_data, min_quality=30)
+# For full VCF parsing and variant calling, use gwas module
+from metainformant.gwas import parse_vcf_full, apply_qc_filters
 ```
 
 ### Molecular Biology (`transcription.py`, `translation.py`, `codon.py`)
@@ -315,21 +315,25 @@ The DNA module integrates seamlessly with other METAINFORMANT modules:
 ### With RNA Module
 ```python
 from metainformant.dna import translation
-from metainformant.rna import workflow
 
-# Translate DNA to protein for expression analysis
-protein_seq = translation.translate(dna_sequence)
-expression_data = workflow.analyze_expression(rna_data, protein_seq)
+# Translate DNA to protein
+protein_seq = translation.translate_dna(dna_sequence)
+
+# RNA expression analysis uses RNA workflow module
+# See RNA module documentation for expression analysis
 ```
 
 ### With Visualization Module
 ```python
 from metainformant.dna import phylogeny
-from metainformant.visualization import trees
+from metainformant.visualization import plot_phylo_tree
+import matplotlib.pyplot as plt
 
 # Visualize phylogenetic trees
 tree = phylogeny.neighbor_joining_tree(sequences)
-trees.visualize_tree(tree, output_file="tree.png")
+ax = plot_phylo_tree(tree)
+ax.figure.savefig("tree.png", dpi=300)
+plt.close(ax.figure)
 ```
 
 ### With Population Genetics
@@ -338,7 +342,8 @@ from metainformant.dna import population, variants
 
 # Integrated population analysis
 diversity = population.nucleotide_diversity(sequences)
-variant_data = variants.call_variants(alignment)
+vcf_info = variants.parse_vcf("variants.vcf")
+# For full variant analysis, use gwas module
 ```
 
 ## Performance Considerations
@@ -381,10 +386,17 @@ for name, seq in seqs.items():
 from metainformant.dna import sequences, alignment, phylogeny
 
 # Complete phylogenetic analysis
-sequences = sequences.read_fasta("input.fasta")
-aligned = alignment.multiple_sequence_align(sequences)
-tree = phylogeny.neighbor_joining_tree(aligned)
-phylogeny.save_tree(tree, "output.nwk")
+seq_dict = sequences.read_fasta("input.fasta")
+# For pairwise alignment
+align_result = alignment.global_align(seq_dict["seq1"], seq_dict["seq2"])
+
+# Build phylogenetic tree from sequences
+tree = phylogeny.neighbor_joining_tree(seq_dict)
+
+# Export tree to Newick format
+newick_str = phylogeny.to_newick(tree)
+with open("output.nwk", "w") as f:
+    f.write(newick_str)
 ```
 
 ### Population Genetic Analysis
@@ -392,9 +404,22 @@ phylogeny.save_tree(tree, "output.nwk")
 from metainformant.dna import population, variants
 
 # Population analysis workflow
-pop_data = population.load_population_data("populations.vcf")
-diversity = population.calculate_diversity(pop_data)
-structure = population.analyze_structure(pop_data)
+# Parse VCF for basic info
+vcf_info = variants.parse_vcf("populations.vcf")
+
+# Calculate nucleotide diversity from sequences
+sequences = ["ATCGATCG", "ATCGTTCG", "ATCGATCG"]
+diversity = population.nucleotide_diversity(sequences)
+
+# Calculate allele frequencies from genotype matrix
+genotypes = [[0, 1], [1, 0], [0, 0]]
+freqs = population.allele_frequencies(genotypes)
+
+# Calculate observed heterozygosity
+het = population.observed_heterozygosity([(0, 1), (1, 1), (0, 0)])
+
+# Calculate Tajima's D
+tajimas_d = population.tajimas_d(sequences)
 ```
 
 This module provides a complete toolkit for DNA sequence analysis, from basic manipulation to advanced evolutionary and population genetic analysis.

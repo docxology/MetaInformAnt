@@ -8,7 +8,7 @@ The GWAS module provides a complete workflow for genome-wide association studies
 
 ## Features
 
-- **Variant Data Acquisition**: Support for pre-existing VCF files, downloads from public databases (dbSNP, 1000 Genomes), and variant calling from BAM/CRAM files
+- **Variant Data Acquisition**: Support for pre-existing VCF files, variant calling from BAM/CRAM files (bcftools, GATK), and reference genome downloads. Note: Direct database downloads (dbSNP, 1000 Genomes) are placeholders for future implementation.
 - **Quality Control**: MAF filtering, missing data filtering, Hardy-Weinberg equilibrium testing, indel exclusion
 - **Population Structure**: Principal component analysis (PCA) and kinship matrix computation
 - **Association Testing**: Linear and logistic regression models with covariate adjustment
@@ -152,6 +152,17 @@ See [Examples](./examples/) directory for complete usage examples.
 - `math.popgen`: Population genetics theory
 - `ml.regression`: Regression models
 - `visualization.plots`: Plotting utilities
+
+## Limitations
+
+See [Comprehensive Review](./comprehensive_review.md) for detailed assessment of functionality and gaps.
+
+**Current Status**:
+- ✅ Core GWAS workflow: Fully functional
+- ✅ Variant calling: Integrated and working
+- ⚠️ Database downloads: Placeholder (use pre-existing VCF or calling)
+- ❌ Functional annotation: Not yet implemented
+- ⚠️ Advanced methods: Basic implementation (MLM planned)
 
 ## References
 

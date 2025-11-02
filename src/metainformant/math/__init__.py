@@ -165,12 +165,28 @@ __all__ = [
 def correlation_coefficient(x: list[float], y: list[float]) -> float:
     """Calculate Pearson correlation coefficient between two lists.
     
+    Computes the linear correlation between two variables, measuring the
+    strength and direction of their linear relationship.
+    
     Args:
-        x: First list of values
-        y: Second list of values
+        x: First list of numeric values
+        y: Second list of numeric values (must match length of x)
         
     Returns:
-        Correlation coefficient (-1 to 1)
+        Pearson correlation coefficient in [-1, 1]. Returns 0.0 if:
+        - Lists have different lengths
+        - Lists have fewer than 2 elements
+        - Either list has zero variance
+        
+    Examples:
+        >>> correlation_coefficient([1, 2, 3], [2, 4, 6])
+        1.0
+        >>> correlation_coefficient([1, 2, 3], [3, 2, 1])
+        -1.0
+        
+    Note:
+        This is a convenience function. For more advanced correlation
+        analysis, use the `correlation` function from `price.py`.
     """
     if len(x) != len(y) or len(x) < 2:
         return 0.0
@@ -196,12 +212,30 @@ def correlation_coefficient(x: list[float], y: list[float]) -> float:
 def linear_regression(x: list[float], y: list[float]) -> tuple[float, float, float]:
     """Calculate linear regression: y = mx + b.
     
+    Performs least-squares linear regression to fit a line through data points
+    and calculates the goodness of fit.
+    
     Args:
         x: Independent variable values
-        y: Dependent variable values
+        y: Dependent variable values (must match length of x)
         
     Returns:
-        Tuple of (slope, intercept, r_squared)
+        Tuple of (slope, intercept, r_squared):
+        - slope: Regression coefficient (m)
+        - intercept: Y-axis intercept (b)
+        - r_squared: Coefficient of determination (0 to 1)
+        
+        Returns (0.0, 0.0, 0.0) if:
+        - Lists have different lengths
+        - Lists have fewer than 2 elements
+        - X has zero variance
+        
+    Examples:
+        >>> slope, intercept, r2 = linear_regression([1, 2, 3], [2, 4, 6])
+        >>> abs(slope - 2.0) < 0.01
+        True
+        >>> abs(r2 - 1.0) < 0.01  # Perfect fit
+        True
     """
     if len(x) != len(y) or len(x) < 2:
         return 0.0, 0.0, 0.0
@@ -234,14 +268,35 @@ def linear_regression(x: list[float], y: list[float]) -> tuple[float, float, flo
 def fisher_exact_test(a: int, b: int, c: int, d: int) -> tuple[float, float]:
     """Calculate Fisher's exact test for 2x2 contingency table.
     
+    Computes odds ratio and p-value for a 2x2 contingency table using
+    the hypergeometric distribution. Useful for testing independence
+    between two categorical variables.
+    
     Args:
-        a: Top-left cell
-        b: Top-right cell  
-        c: Bottom-left cell
-        d: Bottom-right cell
+        a: Top-left cell count
+        b: Top-right cell count
+        c: Bottom-left cell count
+        d: Bottom-right cell count
         
     Returns:
-        Tuple of (odds_ratio, p_value)
+        Tuple of (odds_ratio, p_value):
+        - odds_ratio: (a × d) / (b × c). Returns inf if b or c is zero.
+        - p_value: Currently returns placeholder value 1.0. For full
+          implementation, use scipy.stats.fisher_exact
+          
+    Examples:
+        >>> odds, p = fisher_exact_test(10, 2, 3, 15)
+        >>> odds
+        25.0
+        
+    Note:
+        This is a simplified implementation. For accurate p-values,
+        use scipy.stats.fisher_exact or similar libraries.
+        
+    References:
+        Fisher, R. A. (1922). On the interpretation of χ² from contingency
+        tables, and the calculation of P. Journal of the Royal Statistical
+        Society, 85(1), 87-94.
     """
     import math
     
@@ -259,11 +314,28 @@ def fisher_exact_test(a: int, b: int, c: int, d: int) -> tuple[float, float]:
 def shannon_entropy(values: list[float]) -> float:
     """Calculate Shannon entropy of a probability distribution.
     
+    Measures the information content or uncertainty in a probability distribution.
+    Higher entropy indicates greater uncertainty/randomness.
+    
     Args:
-        values: List of probability values (should sum to 1)
+        values: List of probability values (should sum to 1, but function
+            handles non-normalized inputs by only considering positive values)
         
     Returns:
-        Shannon entropy value
+        Shannon entropy in bits (using log base 2). Formula:
+        H = -Σ p_i × log2(p_i) for p_i > 0
+        
+    Examples:
+        >>> shannon_entropy([0.5, 0.5])  # Maximum entropy for 2 outcomes
+        1.0
+        >>> shannon_entropy([1.0, 0.0])  # Certainty (zero entropy)
+        0.0
+        >>> shannon_entropy([0.25, 0.25, 0.25, 0.25])  # Maximum for 4 outcomes
+        2.0
+        
+    References:
+        Shannon, C. E. (1948). A mathematical theory of communication.
+        Bell System Technical Journal, 27(3), 379-423.
     """
     import math
     
@@ -278,12 +350,37 @@ def shannon_entropy(values: list[float]) -> float:
 def jensen_shannon_divergence(p: list[float], q: list[float]) -> float:
     """Calculate Jensen-Shannon divergence between two probability distributions.
     
+    JS divergence is a symmetrized version of Kullback-Leibler divergence,
+    measuring the distance between two probability distributions. Always
+    bounded in [0, 1] when using log base 2.
+    
     Args:
-        p: First probability distribution
-        q: Second probability distribution
+        p: First probability distribution (list of probabilities)
+        q: Second probability distribution (must have same length as p)
         
     Returns:
-        Jensen-Shannon divergence
+        Jensen-Shannon divergence. Returns 0.0 if distributions are identical
+        or if either distribution sums to zero.
+        Formula: JS(P||Q) = H(M) - [H(P) + H(Q)]/2 where M = (P+Q)/2
+        
+    Examples:
+        >>> p = [0.5, 0.5]
+        >>> q = [0.5, 0.5]
+        >>> jensen_shannon_divergence(p, q)
+        0.0  # Identical distributions
+        
+        >>> p = [1.0, 0.0]
+        >>> q = [0.0, 1.0]
+        >>> js = jensen_shannon_divergence(p, q)
+        >>> js > 0.0  # Divergent distributions
+        True
+        
+    Raises:
+        ValueError: If distributions have different lengths
+        
+    References:
+        Lin, J. (1991). Divergence measures based on the Shannon entropy.
+        IEEE Transactions on Information Theory, 37(1), 145-151.
     """
     import math
     

@@ -4,6 +4,21 @@ from typing import Iterable, Sequence, Tuple
 
 
 def expectation(values: Iterable[float], weights: Iterable[float] | None = None) -> float:
+    """Calculate weighted or unweighted expectation (mean) of values.
+    
+    Args:
+        values: Iterable of numeric values
+        weights: Optional weights for each value. If None, computes simple mean.
+        
+    Returns:
+        Weighted mean if weights provided, else arithmetic mean. Returns 0.0 for empty input.
+        
+    Examples:
+        >>> expectation([1.0, 2.0, 3.0])
+        2.0
+        >>> expectation([1.0, 2.0, 3.0], weights=[1.0, 2.0, 1.0])
+        2.0
+    """
     vs = list(values)
     if not vs:
         return 0.0
@@ -17,6 +32,23 @@ def expectation(values: Iterable[float], weights: Iterable[float] | None = None)
 
 
 def covariance(x: Sequence[float], y: Sequence[float]) -> float:
+    """Calculate population covariance between two sequences.
+    
+    Uses population formula: Cov(X,Y) = E[(X - E[X])(Y - E[Y])] = E[XY] - E[X]E[Y]
+    
+    Args:
+        x: First sequence of values
+        y: Second sequence of values (must match length of x)
+        
+    Returns:
+        Population covariance. Returns 0.0 if inputs are empty, mismatched lengths, or invalid.
+        
+    Examples:
+        >>> covariance([1, 2, 3], [2, 4, 6])
+        1.333...
+        >>> covariance([1, 1, 1], [2, 3, 4])
+        0.0
+    """
     if not x or not y or len(x) != len(y):
         return 0.0
     n = len(x)
@@ -101,9 +133,24 @@ def weighted_correlation(x: Sequence[float], y: Sequence[float], weights: Sequen
 
 
 def relative_fitness(fitness: Sequence[float]) -> list[float]:
-    """Return fitness normalized by its mean. If mean is 0, returns zeros.
-
-    The mean of the returned values is 1.0 when mean(fitness) > 0.
+    """Normalize fitness values by their mean to obtain relative fitness.
+    
+    Relative fitness is used in evolutionary analysis where the mean fitness
+    defines the baseline. After normalization, mean relative fitness is 1.0.
+    
+    Args:
+        fitness: Sequence of absolute fitness values
+        
+    Returns:
+        List of relative fitness values (fitness / mean(fitness)). 
+        Returns zeros if mean fitness is 0 or input is empty.
+        The mean of returned values is 1.0 when mean(fitness) > 0.
+        
+    Examples:
+        >>> relative_fitness([1.0, 2.0, 3.0])
+        [0.5, 1.0, 1.5]
+        >>> sum(relative_fitness([1.0, 2.0, 3.0])) / 3
+        1.0
     """
     if not fitness:
         return []
@@ -118,11 +165,27 @@ def selection_differential(
     trait: Sequence[float],
     normalize_by_mean_fitness: bool = True,
 ) -> float:
-    """Selection differential S = Cov(w_rel, z).
-
-    If ``normalize_by_mean_fitness`` is True (default), relative fitness is
-    defined as w_rel = w / mean(w). If False, uses raw w (appropriate when w
-    are already relative and mean(w) ≈ 1).
+    """Calculate selection differential S = Cov(w_rel, z).
+    
+    The selection differential measures the change in mean trait due to selection
+    and is the covariance between relative fitness and trait values.
+    
+    Args:
+        fitness: Sequence of fitness values
+        trait: Sequence of trait values (must match length of fitness)
+        normalize_by_mean_fitness: If True (default), normalize fitness by mean.
+            If False, use raw fitness values (assumes they are already relative).
+            
+    Returns:
+        Selection differential. Returns 0.0 if inputs are empty or mismatched.
+        
+    Examples:
+        >>> selection_differential([1.0, 1.2, 0.9], [0.2, 0.4, 0.1])
+        0.0333...
+        
+    References:
+        Lande, R., & Arnold, S. J. (1983). The measurement of selection on
+        correlated characters. Evolution, 37(6), 1210-1226.
     """
     if not fitness or len(fitness) != len(trait):
         return 0.0
@@ -143,9 +206,26 @@ def selection_gradient(
     trait: Sequence[float],
     normalize_by_mean_fitness: bool = True,
 ) -> float:
-    """Lande–Arnold directional selection gradient β = Cov(w_rel, z) / Var(z).
-
-    Uses population moments (divide by n). Returns 0.0 if variance is 0.
+    """Calculate Lande–Arnold directional selection gradient β = Cov(w_rel, z) / Var(z).
+    
+    The selection gradient measures the strength of directional selection per unit
+    of phenotypic variance. Standardized by trait variance to remove scale dependence.
+    
+    Args:
+        fitness: Sequence of fitness values
+        trait: Sequence of trait values (must match length of fitness)
+        normalize_by_mean_fitness: If True (default), normalize fitness by mean.
+            
+    Returns:
+        Selection gradient. Returns 0.0 if variance is 0 or inputs are invalid.
+        
+    Examples:
+        >>> selection_gradient([1.0, 1.2, 0.9], [0.2, 0.4, 0.1])
+        0.25...
+        
+    References:
+        Lande, R., & Arnold, S. J. (1983). The measurement of selection on
+        correlated characters. Evolution, 37(6), 1210-1226.
     """
     var_z = variance(trait)
     if var_z == 0.0:
@@ -175,13 +255,35 @@ def price_equation(
     trait_parent: Sequence[float],
     trait_offspring: Sequence[float] | None = None,
 ) -> Tuple[float, float, float]:
-    """Compute a basic Price equation decomposition.
-
-    Returns (covariance_term, transmission_term, total_change)
-
-    - fitness: relative fitness (w)
-    - trait_parent: parental trait values (z)
-    - trait_offspring: offspring trait values (z') for transmission term; if None, term is 0.
+    """Compute Price equation decomposition of evolutionary change.
+    
+    The Price equation decomposes change in mean trait into selection (covariance)
+    and transmission components: Δz̄ = Cov(w, z) + E(wΔz)
+    
+    Args:
+        fitness: Sequence of fitness values (w)
+        trait_parent: Sequence of parental trait values (z)
+        trait_offspring: Optional sequence of offspring trait values (z').
+            If None, transmission term is set to 0.
+            
+    Returns:
+        Tuple of (covariance_term, transmission_term, total_change):
+        - covariance_term: Selection component Cov(w_rel, z)
+        - transmission_term: Transmission bias E(w_rel * (z' - z))
+        - total_change: Total change in mean trait
+        
+    Examples:
+        >>> fitness = [1.0, 1.2, 0.9]
+        >>> parent = [0.2, 0.4, 0.1]
+        >>> offspring = [0.25, 0.35, 0.15]
+        >>> cov, trans, total = price_equation(fitness, parent, offspring)
+        >>> abs(total - (cov + trans)) < 1e-10
+        True
+        
+    References:
+        Price, G. R. (1970). Selection and covariance. Nature, 227(5257), 520-521.
+        Frank, S. A. (2012). Natural selection. IV. The Price equation.
+        Journal of Evolutionary Biology, 25(5), 1002-1019.
     """
     if not fitness or len(fitness) != len(trait_parent):
         return 0.0, 0.0, 0.0

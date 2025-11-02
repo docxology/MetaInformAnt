@@ -1,0 +1,13 @@
+{
+	"n_targets": 25910,
+	"n_bootstraps": 0,
+	"n_processed": 46271878,
+	"n_pseudoaligned": 34823786,
+	"n_unique": 22831986,
+	"p_pseudoaligned": 75.3,
+	"p_unique": 49.3,
+	"kallisto_version": "0.48.0",
+	"index_version": 10,
+	"start_time": "Sat Nov  1 20:43:48 2025",
+	"call": "kallisto quant -i /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/cfloridanus/work/index/transcriptome.idx -o /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/cfloridanus/quant/SRR25496799 -t 12 /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/cfloridanus/fastq/SRR25496799/SRR25496799_1.fastq.gz /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/cfloridanus/fastq/SRR25496799/SRR25496799_2.fastq.gz"
+}

@@ -114,9 +114,9 @@ If genome configuration is provided, the reference genome is downloaded using NC
 
 Three options available:
 
-1. **Pre-existing VCF**: Specify paths to existing VCF files
-2. **Download**: Download from public databases (dbSNP, 1000 Genomes)
-3. **Calling**: Call variants from BAM/CRAM files using bcftools or GATK
+1. **Pre-existing VCF**: Specify paths to existing VCF files ✅ Fully supported
+2. **Download**: Download from public databases (dbSNP, 1000 Genomes) ⚠️ Placeholder (requires external tools)
+3. **Calling**: Call variants from BAM/CRAM files using bcftools or GATK ✅ Fully supported
 
 ### Quality Control
 
@@ -179,12 +179,12 @@ Outputs: beta (effect size), standard error, p-value, R² (for linear models), o
 You can use the low-level API to run custom association tests:
 
 ```python
-from metainformant.gwas import test_association_linear, parse_vcf_full
+from metainformant.gwas import association_test_linear, parse_vcf_full
 
 vcf_data = parse_vcf_full("variants.vcf")
 for variant_idx in range(len(vcf_data["variants"])):
     genotypes = [vcf_data["genotypes"][s][variant_idx] for s in range(len(vcf_data["samples"]))]
-    result = test_association_linear(genotypes, phenotypes, covariates)
+    result = association_test_linear(genotypes, phenotypes, covariates)
 ```
 
 ### Population Structure Analysis

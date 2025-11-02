@@ -13,13 +13,39 @@ from .graph import BiologicalNetwork, create_network
 
 
 class GeneRegulatoryNetwork:
-    """Gene regulatory network representation."""
+    """Gene regulatory network (GRN) representation and analysis.
+    
+    Manages regulatory interactions between transcription factors and target
+    genes, including activation/repression relationships, regulatory strengths,
+    and confidence scores. Supports network inference and motif detection.
+    
+    Attributes:
+        name: Name identifier for this regulatory network
+        regulations: List of (regulator, target, regulation_data) tuples
+        genes: Set of all gene identifiers in the network
+        transcription_factors: Set of gene IDs that act as transcription factors
+        gene_metadata: Dictionary mapping gene_id -> metadata dictionary
+        
+    Examples:
+        >>> grn = GeneRegulatoryNetwork(name="Inferred_GRN")
+        >>> grn.add_regulation(
+        ...     regulator="TF1",
+        ...     target="GENE1",
+        ...     regulation_type="activation",
+        ...     strength=0.85,
+        ...     confidence=0.9
+        ... )
+        >>> network = grn.create_network(min_confidence=0.7)
+        >>> stats = grn.regulatory_statistics()
+        >>> stats["master_regulators"]
+        ['TF1', 'TF2', ...]
+    """
 
     def __init__(self, name: str = "grn"):
         """Initialize gene regulatory network.
 
         Args:
-            name: Name of the regulatory network
+            name: Name identifier for this regulatory network
         """
         self.name = name
         self.regulations: List[Tuple[str, str, Dict[str, Any]]] = []
@@ -36,15 +62,38 @@ class GeneRegulatoryNetwork:
         confidence: float = 1.0,
         **metadata,
     ) -> None:
-        """Add regulatory interaction.
+        """Add a regulatory interaction to the network.
+        
+        Records a directed regulatory relationship where a regulator (e.g.,
+        transcription factor) controls a target gene. Automatically marks
+        the regulator as a transcription factor.
 
         Args:
-            regulator: Regulator gene/TF identifier
+            regulator: Regulator identifier (transcription factor, miRNA, etc.)
             target: Target gene identifier
-            regulation_type: Type of regulation ("activation", "repression", "unknown")
-            strength: Regulatory strength
-            confidence: Confidence in the interaction
-            **metadata: Additional regulatory metadata
+            regulation_type: Type of regulation:
+                - "activation": Positive regulation (upregulation)
+                - "repression": Negative regulation (downregulation)
+                - "unknown": Unknown or mixed effect (default)
+            strength: Regulatory strength in [0, 1] or arbitrary scale.
+                Higher values indicate stronger regulatory effect. Default 1.0.
+            confidence: Confidence in the interaction [0, 1]. Default 1.0.
+            **metadata: Additional keyword arguments for regulatory metadata
+                (e.g., condition="stress", timepoint="t0", binding_site="promoter")
+                
+        Examples:
+            >>> grn = GeneRegulatoryNetwork()
+            >>> grn.add_regulation(
+            ...     "TF1", "GENE1",
+            ...     regulation_type="activation",
+            ...     strength=0.85,
+            ...     confidence=0.9,
+            ...     binding_site="promoter"
+            ... )
+            >>> "TF1" in grn.transcription_factors
+            True
+            >>> len(grn.regulations)
+            1
         """
         regulation_data = {"type": regulation_type, "strength": strength, "confidence": confidence, **metadata}
 
@@ -56,22 +105,57 @@ class GeneRegulatoryNetwork:
         self.transcription_factors.add(regulator)
 
     def add_gene_metadata(self, gene_id: str, **metadata) -> None:
-        """Add metadata for a gene.
+        """Add or update metadata for a gene.
+        
+        Stores gene annotations such as function, expression patterns, or
+        other properties. Useful for enriching regulatory network analysis.
 
         Args:
-            gene_id: Gene identifier
-            **metadata: Gene metadata (function, location, etc.)
+            gene_id: Gene identifier (must match IDs used in regulations)
+            **metadata: Keyword arguments for gene metadata. Common fields:
+                - function: Gene function description
+                - expression_level: Expression level category
+                - pathway: Pathways the gene participates in
+                - chromosome: Chromosomal location
+                
+        Examples:
+            >>> grn = GeneRegulatoryNetwork()
+            >>> grn.add_gene_metadata(
+            ...     "GENE1",
+            ...     function="cell cycle regulation",
+            ...     pathway="p53 signaling"
+            ... )
+            >>> grn.gene_metadata["GENE1"]["function"]
+            'cell cycle regulation'
         """
         self.gene_metadata[gene_id] = metadata
 
     def get_regulators(self, target_gene: str) -> List[Tuple[str, Dict[str, Any]]]:
-        """Get regulators of a specific gene.
+        """Retrieve all regulators of a specific target gene.
+        
+        Returns all transcription factors or other regulators that control
+        the specified gene.
 
         Args:
             target_gene: Target gene identifier
 
         Returns:
-            List of (regulator, regulation_data) tuples
+            List of tuples, each containing (regulator_id, regulation_data).
+            regulation_data is a dictionary with keys:
+            - type: Regulation type ("activation", "repression", "unknown")
+            - strength: Regulatory strength
+            - confidence: Confidence score
+            - Additional metadata fields if provided
+            
+        Examples:
+            >>> grn = GeneRegulatoryNetwork()
+            >>> grn.add_regulation("TF1", "GENE1", regulation_type="activation")
+            >>> grn.add_regulation("TF2", "GENE1", regulation_type="repression")
+            >>> regulators = grn.get_regulators("GENE1")
+            >>> len(regulators)
+            2
+            >>> [r[0] for r in regulators]
+            ['TF1', 'TF2']
         """
         regulators = []
 
@@ -82,13 +166,27 @@ class GeneRegulatoryNetwork:
         return regulators
 
     def get_targets(self, regulator_gene: str) -> List[Tuple[str, Dict[str, Any]]]:
-        """Get targets of a specific regulator.
+        """Retrieve all target genes of a specific regulator.
+        
+        Returns all genes that are regulated by the specified transcription
+        factor or other regulator.
 
         Args:
             regulator_gene: Regulator gene identifier
 
         Returns:
-            List of (target, regulation_data) tuples
+            List of tuples, each containing (target_gene_id, regulation_data).
+            regulation_data structure same as in get_regulators().
+            
+        Examples:
+            >>> grn = GeneRegulatoryNetwork()
+            >>> grn.add_regulation("TF1", "GENE1", regulation_type="activation")
+            >>> grn.add_regulation("TF1", "GENE2", regulation_type="repression")
+            >>> targets = grn.get_targets("TF1")
+            >>> len(targets)
+            2
+            >>> [t[0] for t in targets]
+            ['GENE1', 'GENE2']
         """
         targets = []
 
@@ -101,14 +199,36 @@ class GeneRegulatoryNetwork:
     def create_network(
         self, min_confidence: float = 0.0, regulation_filter: Optional[List[str]] = None
     ) -> BiologicalNetwork:
-        """Create BiologicalNetwork from regulatory interactions.
+        """Convert GeneRegulatoryNetwork to BiologicalNetwork object.
+        
+        Creates a directed graph representation of regulatory interactions
+        with filtering by confidence and regulation type. Edge weights
+        combine regulatory strength and confidence.
 
         Args:
-            min_confidence: Minimum confidence for including regulations
-            regulation_filter: Only include these regulation types
-
+            min_confidence: Minimum confidence score (0-1) for including
+                regulations. Default 0.0 includes all regulations.
+            regulation_filter: Optional list of regulation types to include.
+                If provided, only regulations matching these types are included.
+                Valid values: "activation", "repression", "unknown"
+                
         Returns:
-            BiologicalNetwork object (directed)
+            BiologicalNetwork object (directed=True) with:
+            - Nodes: All genes (marked as TFs if applicable)
+            - Edges: Filtered regulatory interactions
+            - Edge weights: strength × confidence
+            - Node attributes: Gene metadata if available
+            
+        Examples:
+            >>> grn = GeneRegulatoryNetwork()
+            >>> grn.add_regulation("TF1", "GENE1", regulation_type="activation", confidence=0.8)
+            >>> grn.add_regulation("TF1", "GENE2", regulation_type="repression", confidence=0.3)
+            >>> network = grn.create_network(
+            ...     min_confidence=0.5,
+            ...     regulation_filter=["activation"]
+            ... )
+            >>> network.num_edges()
+            1  # Only high-confidence activation included
         """
         # Create directed network
         network = BiologicalNetwork(directed=True)
@@ -140,7 +260,29 @@ class GeneRegulatoryNetwork:
         return network
 
     def regulatory_statistics(self) -> Dict[str, Any]:
-        """Calculate regulatory network statistics."""
+        """Calculate comprehensive regulatory network statistics.
+        
+        Computes network topology, regulatory type counts, and identifies
+        master regulators (genes with high out-degree).
+        
+        Returns:
+            Dictionary containing:
+            - total_genes: Number of unique genes in network
+            - total_tfs: Number of transcription factors
+            - total_regulations: Number of regulatory interactions
+            - activation_regulations: Count of activation interactions
+            - repression_regulations: Count of repression interactions
+            - master_regulators: List of top 10 regulators by out-degree
+            - network_metrics: Basic network topology metrics
+            - avg_out_degree: Average number of targets per regulator
+            
+        Examples:
+            >>> stats = grn.regulatory_statistics()
+            >>> stats["total_tfs"]
+            50
+            >>> stats["master_regulators"]
+            ['TF1', 'TF2', 'TF3']
+        """
         network = self.create_network()
         from .graph import centrality_measures, network_metrics
 
@@ -178,17 +320,53 @@ def infer_grn(
     tf_list: Optional[List[str]] = None,
     threshold: float = 0.7,
 ) -> GeneRegulatoryNetwork:
-    """Infer gene regulatory network from expression data.
-
+    """Infer gene regulatory network from gene expression data.
+    
+    Constructs a regulatory network by identifying relationships between
+    regulators and target genes based on expression patterns. Multiple
+    inference methods are available.
+    
     Args:
-        expression_data: Expression matrix (samples x genes)
-        gene_names: List of gene identifiers
-        method: Inference method ("correlation", "mutual_info", "granger")
-        tf_list: List of known transcription factors
-        threshold: Threshold for regulatory interaction
-
+        expression_data: Expression matrix of shape (n_samples, n_genes).
+            Each column corresponds to one gene's expression profile.
+        gene_names: List of gene identifiers corresponding to columns
+            in expression_data. Must have length equal to expression_data.shape[1]
+        method: Inference method:
+            - "correlation": Pearson correlation between regulator and target
+              expression profiles
+            - "mutual_info": Mutual information between discretized expressions
+            - "granger": Simplified Granger causality (requires time series data)
+        tf_list: Optional list of known transcription factor gene names.
+            If provided, only these genes can act as regulators. If None,
+            all genes can be regulators.
+        threshold: Minimum correlation/mutual information for regulatory
+            interaction. Interactions with |correlation| >= threshold are included.
+            
     Returns:
-        GeneRegulatoryNetwork object
+        GeneRegulatoryNetwork object with inferred regulatory interactions.
+        Regulation type is determined by correlation sign (positive=activation,
+        negative=repression). Confidence equals correlation/mutual info strength.
+        
+    Raises:
+        ValueError: If number of gene_names doesn't match expression data columns
+        ValueError: If method is unknown
+        
+    Examples:
+        >>> expression = np.random.randn(100, 200)  # 100 samples, 200 genes
+        >>> gene_names = [f"GENE_{i}" for i in range(200)]
+        >>> tf_list = [f"GENE_{i}" for i in range(50)]  # First 50 are TFs
+        >>> grn = infer_grn(
+        ...     expression, gene_names,
+        ...     method="correlation",
+        ...     tf_list=tf_list,
+        ...     threshold=0.75
+        ... )
+        >>> grn.regulatory_statistics()["total_regulations"]
+        320
+        
+    References:
+        Bansal, M., et al. (2007). How to infer gene networks from expression
+        profiles. Molecular Systems Biology, 3(1), 78.
     """
     if len(gene_names) != expression_data.shape[1]:
         raise ValueError("Number of gene names must match expression data columns")
@@ -311,14 +489,36 @@ def infer_grn(
 def regulatory_motifs(
     grn: GeneRegulatoryNetwork, motif_types: Optional[List[str]] = None
 ) -> Dict[str, List[Dict[str, Any]]]:
-    """Identify regulatory motifs in the network.
-
+    """Identify regulatory network motifs (small recurring patterns).
+    
+    Regulatory motifs are small subnetworks that occur frequently and
+    often have specific biological functions. Common motifs include
+    feed-forward loops and feedback loops.
+    
     Args:
-        grn: Gene regulatory network
-        motif_types: Types of motifs to search for
-
+        grn: Gene regulatory network to analyze
+        motif_types: List of motif types to search for. If None, searches
+            for all supported types. Supported types:
+            - "feed_forward_loop": A -> B -> C, A -> C (common in GRNs)
+            - "feedback_loop": A -> B -> A (two-gene feedback)
+            - "bifan": Two regulators both target two common targets
+            
     Returns:
-        Dictionary of motif_type -> list of motif instances
+        Dictionary mapping motif_type to list of motif instances.
+        Each motif instance is a dictionary with relevant node identifiers.
+        
+    Examples:
+        >>> grn = GeneRegulatoryNetwork()
+        >>> grn.add_regulation("TF1", "TF2", regulation_type="activation")
+        >>> grn.add_regulation("TF2", "GENE1", regulation_type="activation")
+        >>> grn.add_regulation("TF1", "GENE1", regulation_type="activation")
+        >>> motifs = regulatory_motifs(grn, motif_types=["feed_forward_loop"])
+        >>> len(motifs["feed_forward_loop"])
+        1
+        
+    References:
+        Alon, U. (2007). Network motifs: theory and experimental approaches.
+        Nature Reviews Genetics, 8(6), 450-461.
     """
     if motif_types is None:
         motif_types = ["feed_forward_loop", "feedback_loop", "bifan"]
@@ -389,15 +589,38 @@ def regulatory_motifs(
 def pathway_regulation_analysis(
     grn: GeneRegulatoryNetwork, pathway_genes: Dict[str, List[str]], min_confidence: float = 0.5
 ) -> Dict[str, Any]:
-    """Analyze regulatory control of biological pathways.
-
+    """Analyze regulatory control structure of biological pathways.
+    
+    Examines how pathways are regulated by transcription factors,
+    distinguishing between internal regulation (within pathway) and
+    external regulation (from outside pathway).
+    
     Args:
         grn: Gene regulatory network
-        pathway_genes: Dictionary of pathway_id -> gene_list
-        min_confidence: Minimum confidence for regulations
-
+        pathway_genes: Dictionary mapping pathway_id to list of gene IDs
+            in that pathway
+        min_confidence: Minimum confidence threshold for regulatory
+            interactions to include in analysis
+            
     Returns:
-        Pathway regulation analysis results
+        Dictionary mapping pathway_id to analysis results. Each result
+        contains:
+        - pathway_size: Number of genes in pathway
+        - regulated_genes: Number of genes with regulatory inputs
+        - internal_regulations: Count of regulations within pathway
+        - external_regulators: List of regulators outside pathway
+        - pathway_regulators: List of regulators within pathway
+        - regulation_coverage: Fraction of genes with regulations
+        - internal_regulation_ratio: Ratio of internal to total regulations
+        
+    Examples:
+        >>> pathway_genes = {
+        ...     "pathway1": ["GENE1", "GENE2", "GENE3"],
+        ...     "pathway2": ["GENE4", "GENE5"]
+        ... }
+        >>> analysis = pathway_regulation_analysis(grn, pathway_genes, min_confidence=0.7)
+        >>> analysis["pathway1"]["regulation_coverage"]
+        0.666...
     """
     results = {}
 

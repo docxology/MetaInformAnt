@@ -19,16 +19,17 @@ Supervised learning methods for biological prediction tasks.
 
 **Usage:**
 ```python
-from metainformant.ml import classification
+from metainformant.ml import BiologicalClassifier, evaluate_classifier
 
-# Train classifier
-model = classification.train_classifier(features, labels, method="random_forest")
+# Create and train classifier
+classifier = BiologicalClassifier(algorithm="random_forest", random_state=42)
+classifier.fit(X_train, y_train)
 
 # Make predictions
-predictions = classification.predict(model, test_features)
+predictions = classifier.predict(X_test)
 
 # Evaluate performance
-metrics = classification.evaluate_classification(predictions, test_labels)
+metrics = evaluate_classifier(classifier, X_test, y_test)
 ```
 
 ### Regression (`regression.py`)
@@ -42,16 +43,17 @@ Continuous trait prediction and modeling.
 
 **Usage:**
 ```python
-from metainformant.ml import regression
+from metainformant.ml import BiologicalRegressor, evaluate_regressor
 
-# Train regression model
-model = regression.train_regressor(features, targets, method="xgboost")
+# Create and train regressor
+regressor = BiologicalRegressor(algorithm="linear", random_state=42)
+regressor.fit(X_train, y_train)
 
 # Make predictions
-predictions = regression.predict(model, test_features)
+predictions = regressor.predict(X_test)
 
 # Evaluate performance
-metrics = regression.evaluate_regression(predictions, test_targets)
+metrics = evaluate_regressor(regressor, X_test, y_test)
 ```
 
 ### Feature Selection (`features.py`)
@@ -65,14 +67,21 @@ Dimensionality reduction and feature importance analysis.
 
 **Usage:**
 ```python
-from metainformant.ml import features
+from metainformant.ml import (
+    select_features_univariate,
+    select_features_recursive,
+    select_features_stability,
+    biological_feature_ranking
+)
 
-# Select important features
-selected = features.select_features(features, labels, k=100)
-importance_scores = features.feature_importance(model, features)
+# Select features using univariate tests
+selected_X, selected_indices = select_features_univariate(X, y, k=100, method="f_score")
 
-# Biological interpretation
-biological_features = features.interpret_features(selected_features, annotation)
+# Recursive feature elimination
+selected_X_rfe, selected_indices_rfe = select_features_recursive(X, y, k=50)
+
+# Feature ranking
+rankings = biological_feature_ranking(X, y)
 ```
 
 ### Model Validation (`validation.py`)
@@ -86,16 +95,22 @@ Comprehensive model assessment and validation.
 
 **Usage:**
 ```python
-from metainformant.ml import validation
+from metainformant.ml import (
+    cross_validate,
+    cross_validate_biological,
+    bootstrap_validate,
+    train_test_split,
+    k_fold_split
+)
 
-# Cross-validation
-cv_scores = validation.cross_validate(model, features, labels, cv=5)
+# Cross-validation for biological data
+cv_scores = cross_validate_biological(classifier, X, y, cv=5)
 
-# Bootstrap confidence intervals
-bootstrap_results = validation.bootstrap_validation(model, features, labels)
+# Bootstrap validation
+bootstrap_results = bootstrap_validate(classifier, X, y, n_bootstrap=100)
 
-# Model comparison
-best_model = validation.compare_models([model1, model2, model3], features, labels)
+# Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 ```
 
 ### Dimensionality Reduction (`dimensionality.py`)
@@ -109,11 +124,21 @@ Manifold learning and dimensionality reduction techniques.
 
 **Usage:**
 ```python
-from metainformant.ml import dimensionality
+from metainformant.ml import (
+    reduce_dimensions_pca,
+    reduce_dimensions_umap,
+    reduce_dimensions_tsne,
+    biological_embedding
+)
 
-# Reduce dimensions
-pca_result = dimensionality.pca(features, n_components=50)
-umap_result = dimensionality.umap(features, n_neighbors=15)
+# PCA dimensionality reduction
+X_reduced, components, variance = reduce_dimensions_pca(X, n_components=50)
+
+# UMAP embedding
+X_umap = reduce_dimensions_umap(X, n_neighbors=15, n_components=2)
+
+# Biological embedding
+embedding = biological_embedding(X, method="umap")
 ```
 
 ## Biological Applications
@@ -121,37 +146,36 @@ umap_result = dimensionality.umap(features, n_neighbors=15)
 ### Sequence-Based Prediction
 ```python
 from metainformant.dna import sequences
-from metainformant.ml import classification
+from metainformant.ml import BiologicalClassifier
 
 # Classify sequences by function
 sequences = sequences.read_fasta("sequences.fasta")
-features = sequences.extract_features(sequences)
-labels = sequences.get_functional_labels(sequences)
-
-model = classification.train_classifier(features, labels)
+# Extract features and labels as needed
+classifier = BiologicalClassifier(algorithm="random_forest")
+classifier.fit(X_train, y_train)
 ```
 
 ### Expression-Based Phenotype Prediction
 ```python
 from metainformant.rna import workflow
-from metainformant.ml import regression
+from metainformant.ml import BiologicalRegressor
 
 # Predict continuous phenotypes
-expression = workflow.extract_expression_patterns(rna_data)
-phenotypes = get_phenotype_data()
-
-model = regression.train_regressor(expression, phenotypes)
-predictions = regression.predict(model, test_expression)
+# Get expression and phenotype data
+regressor = BiologicalRegressor(algorithm="ridge")
+regressor.fit(expression_train, phenotypes_train)
+predictions = regressor.predict(expression_test)
 ```
 
 ### Network-Based Learning
 ```python
 from metainformant.networks import ppi
-from metainformant.ml import classification
+from metainformant.ml import BiologicalClassifier
 
 # Use network features for prediction
-network_features = ppi.extract_network_features(interaction_network)
-model = classification.train_classifier(network_features, labels)
+# Extract network features and train classifier
+classifier = BiologicalClassifier(algorithm="random_forest")
+classifier.fit(network_features_train, labels_train)
 ```
 
 ## Performance Features
@@ -165,42 +189,33 @@ model = classification.train_classifier(network_features, labels)
 
 ### Feature Importance
 ```python
-from metainformant.ml import features
+from metainformant.ml import biological_feature_ranking
 
 # Analyze feature contributions
-importance = features.permutation_importance(model, features, labels)
-biological_interpretation = features.interpret_importance(importance, annotation)
-```
-
-### Model Explanation
-```python
-from metainformant.ml import explain
-
-# Explain individual predictions
-explanation = explain.explain_prediction(model, instance, features)
-shap_values = explain.shap_analysis(model, features)
+rankings = biological_feature_ranking(X, y)
+# Access feature importance from classifier
+importance = classifier.feature_importance_
 ```
 
 ## Integration with Other Modules
 
 ### With Visualization Module
 ```python
-from metainformant.ml import features
-from metainformant.visualization import heatmap
+from metainformant.ml import biological_feature_ranking
+from metainformant.visualization import plots
 
 # Visualize feature importance
-importance = features.feature_importance(model, features)
-heatmap(importance.reshape(1, -1), title="Feature Importance")
+importance = biological_feature_ranking(X, y)
+# Visualize using plots module
 ```
 
 ### With Statistical Analysis
 ```python
-from metainformant.ml import validation
-from metainformant.math import statistics
+from metainformant.ml import cross_validate_biological
 
 # Statistical validation of ML results
-cv_results = validation.cross_validate(model, features, labels)
-p_values = statistics.permutation_test(cv_results)
+cv_results = cross_validate_biological(classifier, X, y, cv=5)
+# Extract scores from cv_results as needed
 ```
 
 ## Testing and Validation

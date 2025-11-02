@@ -1,18 +1,19 @@
 # Amalgkit Run Report
 
-Work dir: `/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/work`  
-Logs: `/Users/4d/Documents/GitHub/metainformant/output/amalgkit/sinvicta/logs`  
+Work dir: `/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/sinvicta/work`  
+Logs: `/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/sinvicta/logs`  
 Threads: 8  
 Species: Solenopsis_invicta  
 
 | Step | Code | Duration (s) |
 |------|------|--------------|
-| genome-prepare | 0 | 123.27 |
-| metadata | 0 | 8.11 |
-| config | 0 | 0.03 |
-| select | 1 | 0.19 |
-| merge | 1 | 0.60 |
-| cstmm | 1 | 0.20 |
-| curate | 1 | 0.20 |
-| csca | 1 | 0.19 |
-| sanity | 0 | 0.20 |
+| genome-prepare | 0 | 71.32 |
+| metadata | 0 | 12.74 |
+| config | 0 | 0.04 |
+| select | 0 | 0.39 |
+| getfastq+quant (batched) | 1 | 12.24 |
+| merge | 1 | 0.27 |
+| cstmm | 126 | 0.00 |
+| curate | 126 | 0.00 |
+| csca | 126 | 0.00 |
+| sanity | 0 | 0.25 |

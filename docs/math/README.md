@@ -35,11 +35,10 @@ The math domain supports theoretical and quantitative biological analysis:
 from metainformant.math import price_equation, kin_selection_response
 
 # Price equation analysis
-cov, trans, total = price_equation.decompose_change(
-    trait_values=[1.0, 1.2, 0.9],
-    fitness_values=[0.2, 0.4, 0.1],
-    trait_changes=[0.25, 0.35, 0.15]
-)
+fitness = [0.2, 0.4, 0.1]
+trait_parent = [1.0, 1.2, 0.9]
+trait_offspring = [1.25, 1.35, 0.95]
+cov_term, trans_term, total = price_equation(fitness, trait_parent, trait_offspring)
 
 # Kin selection analysis
 response = kin_selection_response(

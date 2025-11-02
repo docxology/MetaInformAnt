@@ -4,7 +4,29 @@ from typing import Iterable
 
 
 def fst_from_heterozygosity(Hs: float, Ht: float) -> float:
-    """Wright's Fst = (Ht - Hs) / Ht, clamped to [0, 1] when valid."""
+    """Calculate Wright's Fst from heterozygosity values.
+    
+    Fst measures population differentiation: the proportion of genetic
+    diversity that is between subpopulations rather than within them.
+    
+    Args:
+        Hs: Average heterozygosity within subpopulations
+        Ht: Total heterozygosity in the entire population
+        
+    Returns:
+        Fst value in [0, 1]. Returns 0.0 if Ht <= 0.
+        Formula: Fst = (Ht - Hs) / Ht
+        
+    Examples:
+        >>> fst_from_heterozygosity(Hs=0.3, Ht=0.4)
+        0.25
+        >>> fst_from_heterozygosity(Hs=0.4, Ht=0.4)
+        0.0  # No differentiation
+        
+    References:
+        Wright, S. (1949). The genetical structure of populations.
+        Annals of Eugenics, 15(1), 323-354.
+    """
     if Ht <= 0:
         return 0.0
     fst = (Ht - max(0.0, Hs)) / Ht

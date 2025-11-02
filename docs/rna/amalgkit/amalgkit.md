@@ -433,18 +433,15 @@ This enables a clean, typed interface in Python while preserving exact `amalgkit
 ```python
 from metainformant.rna.workflow import (
     load_workflow_config,
-    execute_workflow, 
-    validate_config
+    execute_workflow
 )
 
-# Load and validate configuration
+# Load configuration
 cfg = load_workflow_config("config/amalgkit_pbarbatus.yaml")
-valid, errors = validate_config(cfg)
 
-# Execute with monitoring
-if valid:
-    results = execute_workflow(cfg, stream_logs=True)
-    print(f"Pipeline completed: {results}")
+# Execute workflow
+results = execute_workflow(cfg, check=False)
+print(f"Pipeline completed with exit codes: {results}")
 ```
 
 ---

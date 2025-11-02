@@ -1,6 +1,7 @@
 #!/bin/bash
-# Cleanup script for quantified SRA files in AmalgKit output
-# This script safely removes SRA files only after verifying quantification is complete
+# Cleanup script for quantified FASTQ files in AmalgKit output
+# This script safely removes FASTQ files only after verifying quantification is complete
+# Works with both SRA files (.sra) and ENA-downloaded FASTQs (.fastq.gz)
 
 set -euo pipefail
 
@@ -40,12 +41,17 @@ is_quantified() {
     fi
 }
 
-# Function to cleanup SRA files for a species
+# Function to cleanup FASTQ/SRA files for a species
 cleanup_species() {
     local species=$1
-    local fastq_dir="${AMALGKIT_DIR}/${species}/fastq/getfastq"
     
-    if [ ! -d "${fastq_dir}" ]; then
+    # Check both old (fastq/getfastq) and new (fastq/) directory structures
+    local fastq_dir=""
+    if [ -d "${AMALGKIT_DIR}/${species}/fastq/getfastq" ]; then
+        fastq_dir="${AMALGKIT_DIR}/${species}/fastq/getfastq"
+    elif [ -d "${AMALGKIT_DIR}/${species}/fastq" ]; then
+        fastq_dir="${AMALGKIT_DIR}/${species}/fastq"
+    else
         log_warn "No fastq directory found for ${species}"
         return
     fi
@@ -62,27 +68,40 @@ cleanup_species() {
         fi
         
         local sample=$(basename "${sample_dir}")
-        local sra_file="${sample_dir}/${sample}.sra"
         
-        if [ ! -f "${sra_file}" ]; then
+        # Check for both SRA files and FASTQ files
+        local has_files=0
+        local sra_file="${sample_dir}/${sample}.sra"
+        local fastq_files=$(find "${sample_dir}" -name "*.fastq.gz" 2>/dev/null)
+        
+        if [ -f "${sra_file}" ]; then
+            has_files=1
+        elif [ -n "${fastq_files}" ]; then
+            has_files=1
+        fi
+        
+        if [ ${has_files} -eq 0 ]; then
             continue
         fi
         
         if is_quantified "${species}" "${sample}"; then
-            local size=$(du -sk "${sra_file}" | cut -f1)
-            log_info "  Deleting ${sample}.sra ($(echo "scale=2; ${size}/1024" | bc)M)"
-            rm -f "${sra_file}"
+            local size=$(du -sk "${sample_dir}" | cut -f1)
+            local size_mb=$(echo "scale=2; ${size}/1024" | bc)
+            log_info "  Deleting ${sample} (${size_mb}M)"
+            
+            # Delete the entire sample directory (includes .sra and/or .fastq.gz files)
+            rm -rf "${sample_dir}"
             deleted_count=$((deleted_count + 1))
             deleted_size=$((deleted_size + size))
         else
-            log_warn "  Skipping ${sample}.sra (not quantified)"
+            log_warn "  Skipping ${sample} (not quantified)"
             skipped_count=$((skipped_count + 1))
         fi
     done
     
     if [ ${deleted_count} -gt 0 ]; then
         local size_gb=$(echo "scale=2; ${deleted_size}/1024/1024" | bc)
-        log_info "  Deleted ${deleted_count} SRA files, reclaimed ${size_gb}G"
+        log_info "  Deleted ${deleted_count} sample directories, reclaimed ${size_gb}G"
     fi
     
     if [ ${skipped_count} -gt 0 ]; then
@@ -92,7 +111,7 @@ cleanup_species() {
 
 # Main execution
 main() {
-    log_info "Starting SRA cleanup for quantified samples"
+    log_info "Starting FASTQ cleanup for quantified samples"
     log_info "Working directory: ${AMALGKIT_DIR}"
     echo
     
@@ -118,10 +137,11 @@ main() {
 if [ "$#" -eq 1 ] && [ "$1" = "--execute" ]; then
     main
 else
-    echo "This script will delete quantified SRA files to reclaim disk space."
+    echo "This script will delete FASTQ files for quantified samples to reclaim disk space."
     echo
-    echo "P. barbatus: ~19.83 GB can be reclaimed from 18 quantified samples"
-    echo "C. floridanus: No quantified samples yet (needs processing first)"
+    echo "Handles both:"
+    echo "  - SRA files (.sra) from SRA Toolkit downloads"
+    echo "  - FASTQ files (.fastq.gz) from ENA direct downloads"
     echo
     echo "Run with --execute flag to proceed:"
     echo "  $0 --execute"

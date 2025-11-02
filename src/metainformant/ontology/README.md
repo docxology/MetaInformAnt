@@ -4,104 +4,127 @@ The `ontology` module provides tools for functional annotation and semantic anal
 
 ## Overview
 
-This module handles functional annotation, semantic similarity, and ontology-based analysis of biological data.
+This module handles ontology parsing, hierarchy traversal, and term queries. Provides lightweight, efficient tools for working with OBO-format ontologies without requiring external database connections.
 
-## Submodules
+## Key Components
 
-### Gene Ontology (`go.py`)
-Gene Ontology annotation and enrichment analysis.
-
-**Key Features:**
-- GO term annotation retrieval
-- Enrichment analysis algorithms
-- Semantic similarity calculation
-- GO hierarchy navigation
+### Gene Ontology Loading (`go.py`)
+Load and work with Gene Ontology from OBO files.
 
 **Usage:**
 ```python
-from metainformant.ontology import go
+from metainformant.ontology import load_go_obo, write_go_summary
+from pathlib import Path
 
-# GO enrichment analysis
-gene_list = ["GENE1", "GENE2", "GENE3"]
-enriched = go.enrich_genes(gene_list, background_genes)
-similarity = go.semantic_similarity("GO:0008150", "GO:0009987")
+# Load GO ontology from OBO file
+onto = load_go_obo("data/go-basic.obo")
+
+# Get basic statistics
+print(f"Number of terms: {onto.num_terms()}")
+
+# Write summary
+summary_path = write_go_summary(onto)
+print(f"Summary written to: {summary_path}")
 ```
 
-### OBO Format (`obo.py`)
-OBO (Open Biological and Biomedical Ontologies) format parsing.
-
-**Key Features:**
-- OBO file parsing and validation
-- Ontology structure extraction
-- Term relationship analysis
-- Custom ontology support
+### Ontology Types (`types.py`)
+Core data structures for ontology representation.
 
 **Usage:**
 ```python
-from metainformant.ontology import obo
+from metainformant.ontology.types import Term, Ontology
 
-# Load ontology
-ontology = obo.load_obo("go.obo")
-terms = obo.extract_terms(ontology)
-relationships = obo.get_relationships(ontology)
+# Create a term
+term = Term(
+    term_id="GO:0008150",
+    name="biological_process",
+    namespace="biological_process",
+    definition="Any process accomplished by biological systems",
+    is_a_parents=["GO:0003674"]
+)
+
+# Create ontology and add term
+onto = Ontology()
+onto.add_term(term)
+
+# Check term existence
+if onto.has_term("GO:0008150"):
+    print("Term exists in ontology")
 ```
 
-### Query Interface (`query.py`)
-Unified interface for ontology queries and operations.
-
-**Key Features:**
-- Cross-ontology queries
-- Annotation retrieval
-- Term mapping and conversion
-- Batch processing
+### Ontology Queries (`query.py`)
+Traverse ontology hierarchies and extract subgraphs.
 
 **Usage:**
 ```python
-from metainformant.ontology import query
+from metainformant.ontology.query import ancestors, descendants, subgraph
 
-# Multi-ontology queries
-results = query.query_ontologies(["GO:0008150", "MP:0001262"])
-annotations = query.get_annotations("GENE1")
+# Get all ancestor terms (broader terms)
+onto = load_go_obo("go.obo")
+ancestors_set = ancestors(onto, "GO:0008150")
+print(f"Ancestors of biological_process: {len(ancestors_set)} terms")
+
+# Get all descendant terms (more specific terms)
+descendants_set = descendants(onto, "GO:0008150")
+print(f"Descendants: {len(descendants_set)} terms")
+
+# Extract subgraph rooted at specific terms
+roots = ["GO:0008150", "GO:0003674"]
+sub_onto = subgraph(onto, roots)
+print(f"Subgraph size: {sub_onto.num_terms()} terms")
 ```
 
-### Type System (`types.py`)
-Ontology type definitions and validation.
-
-**Key Features:**
-- Type definitions for ontology objects
-- Validation and type checking
-- Serialization support
-- Type conversion utilities
+### OBO Parsing (`obo.py`)
+Parse OBO format files into Ontology objects.
 
 **Usage:**
 ```python
-from metainformant.ontology import types
+from metainformant.ontology.obo import parse_obo
 
-# Type validation
-term = types.GOTerm(id="GO:0008150", name="biological_process")
-is_valid = types.validate_term(term)
+# Parse OBO file
+onto = parse_obo("go-basic.obo")
+
+# Access terms
+for term_id, term in onto.terms.items():
+    print(f"{term_id}: {term.name}")
+    if term.is_a_parents:
+        print(f"  Parents: {term.is_a_parents}")
 ```
+
+**Supported OBO Fields:**
+- `id`: Term identifier
+- `name`: Term name
+- `namespace`: Ontology namespace
+- `def`: Term definition
+- `alt_id`: Alternative identifiers
+- `is_a`: Parent relationships
 
 ## Integration with Other Modules
 
 ### With Networks Module
 ```python
-from metainformant.networks import ppi
-from metainformant.ontology import go
+from metainformant.networks import detect_communities
+from metainformant.ontology import load_go_obo
 
 # Functional analysis of network modules
-modules = ppi.find_modules(protein_network)
-functional_annotation = go.analyze_modules(modules)
+communities = detect_communities(protein_network)
+
+# Load GO for enrichment analysis
+go_onto = load_go_obo("go-basic.obo")
+# Use GO for functional annotation
 ```
 
 ### With Protein Module
 ```python
-from metainformant.protein import proteomes
-from metainformant.ontology import go
+from metainformant.protein import parse_fasta
+from metainformant.ontology import load_go_obo
 
-# Functional annotation of proteomes
-proteins = proteomes.get_proteome("UP000005640")
-annotations = go.annotate_proteins(proteins)
+# Load proteome
+proteins = parse_fasta(Path("proteome.fasta"))
+
+# Load GO for functional annotation
+go_onto = load_go_obo("go-basic.obo")
+# Use GO for protein functional annotation
 ```
 
 ## Performance Features

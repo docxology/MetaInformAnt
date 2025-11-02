@@ -19,11 +19,16 @@ FASTQ format quality analysis and filtering.
 
 **Usage:**
 ```python
-from metainformant.quality import fastq
+from metainformant.quality import analyze_fastq_quality, per_base_quality
+from metainformant.dna.fastq import iter_fastq, FastqRecord
 
 # Quality analysis
-quality_stats = fastq.analyze_quality("reads.fastq")
-filtered_reads = fastq.filter_by_quality(reads, min_score=30)
+# First, read FASTQ records
+reads = list(FastqRecord(read_id, seq, qual) for read_id, seq, qual in iter_fastq("reads.fastq"))
+
+# Analyze quality
+quality_stats = analyze_fastq_quality(reads)
+per_base = per_base_quality(reads)
 ```
 
 ### Contamination Detection (`contamination.py`)
@@ -37,16 +42,27 @@ Sequence contamination detection and removal.
 
 **Usage:**
 ```python
-from metainformant.quality import contamination
+from metainformant.quality import (
+    detect_adapter_contamination,
+    detect_cross_species_contamination,
+    generate_contamination_report
+)
+from metainformant.dna.fastq import iter_fastq
 
 # Detect adapters
-adapters_found = contamination.detect_adapters("reads.fastq")
-cleaned_reads = contamination.remove_adapters(reads, adapters_found)
+reads = list(iter_fastq("reads.fastq"))
+adapter_results = detect_adapter_contamination(reads)
 
-# Screen for contamination
-contamination_report = contamination.screen_contamination(
+# Screen for cross-species contamination
+contamination_results = detect_cross_species_contamination(
     reads,
-    reference_databases=["human", "mouse", "bacteria"]
+    reference_species="human"
+)
+
+# Generate contamination report
+report = generate_contamination_report(
+    adapter_results,
+    cross_species_results=contamination_results
 )
 ```
 
@@ -61,15 +77,31 @@ Comprehensive quality scoring and assessment.
 
 **Usage:**
 ```python
-from metainformant.quality import metrics
+from metainformant.quality import (
+    calculate_quality_metrics,
+    generate_quality_report,
+    calculate_gc_metrics,
+    calculate_length_metrics
+)
 
-# Calculate quality scores
-quality_scores = metrics.calculate_quality_metrics(dataset)
-overall_score = metrics.compute_overall_quality_score(quality_scores)
+# Calculate quality metrics (from quality scores: list of lists)
+quality_scores = [[33, 35, 32, 34], [34, 36, 33, 35]]
+metrics = calculate_quality_metrics(quality_scores)
 
-# Detect batch effects
-batch_effects = metrics.detect_batch_effects([dataset1, dataset2])
-corrected_data = metrics.correct_batch_effects(data, batch_effects)
+# Calculate GC metrics
+gc_values = [0.45, 0.50, 0.48, 0.52]
+gc_metrics = calculate_gc_metrics(gc_values)
+
+# Calculate length metrics
+lengths = [100, 150, 120, 140]
+length_metrics = calculate_length_metrics(lengths)
+
+# Generate comprehensive quality report
+report = generate_quality_report({
+    "quality": metrics,
+    "gc": gc_metrics,
+    "length": length_metrics
+})
 ```
 
 ### Data Validation (`validation.py`)
@@ -83,11 +115,15 @@ General data validation and quality assessment.
 
 **Usage:**
 ```python
-from metainformant.quality import validation
+from metainformant.quality import generate_quality_report
+from metainformant.quality import calculate_quality_metrics
 
-# Validate datasets
-is_valid = validation.validate_fasta("sequences.fasta")
-report = validation.generate_quality_report(dataset)
+# For sequence validation, use DNA module
+from metainformant.dna import sequences
+seqs = sequences.read_fasta("sequences.fasta")
+
+# Generate quality reports using quality module functions
+# See metrics examples above
 ```
 
 ## Integration with Other Modules
@@ -99,7 +135,10 @@ from metainformant.quality import fastq
 
 # Quality control for DNA sequences
 seqs = sequences.read_fasta("raw_sequences.fasta")
-quality_checked = fastq.validate_sequences(seqs)
+
+# Use quality module functions for FASTQ quality assessment
+from metainformant.quality import analyze_fastq_quality
+# For FASTA sequences, use DNA module validation functions
 ```
 
 ## Performance Features

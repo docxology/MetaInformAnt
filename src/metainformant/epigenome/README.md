@@ -19,11 +19,16 @@ DNA methylation pattern detection and analysis.
 
 **Usage:**
 ```python
-from metainformant.epigenome import methylation
+from metainformant.epigenome import load_cpg_table, compute_beta_values, summarize_beta_by_chromosome
 
-# Methylation analysis
-methylation_data = methylation.load_bismark_output("methylation_calls.txt")
-differential = methylation.find_differential_methylation(methylation_data, groups)
+# Load methylation data from CPG table
+cpg_df = load_cpg_table("methylation_data.tsv")
+
+# Compute beta values (methylation levels)
+cpg_df = compute_beta_values(cpg_df)
+
+# Summarize by chromosome
+summary = summarize_beta_by_chromosome(cpg_df)
 ```
 
 ### Chromatin Tracks (`tracks.py`)
@@ -37,11 +42,11 @@ Chromatin state and accessibility analysis.
 
 **Usage:**
 ```python
-from metainformant.epigenome import tracks
+from metainformant.epigenome import read_bedgraph
 
-# Chromatin analysis
-atac_data = tracks.load_atac_peaks("peaks.bed")
-accessibility = tracks.calculate_accessibility(atac_data, genome_annotation)
+# Load chromatin track data
+bedgraph_df = read_bedgraph("chromatin_track.bedgraph")
+# DataFrame columns: chromosome, start, end, value
 ```
 
 ## Integration with Other Modules
@@ -49,21 +54,33 @@ accessibility = tracks.calculate_accessibility(atac_data, genome_annotation)
 ### With DNA Module
 ```python
 from metainformant.dna import sequences
-from metainformant.epigenome import methylation
+from metainformant.epigenome import load_cpg_table, compute_beta_values
 
 # Epigenetic regulation of DNA sequences
-promoter_sequences = sequences.get_promoter_sequences(genes)
-methylation_levels = methylation.analyze_promoter_methylation(promoter_sequences)
+
+# Load DNA sequences
+seqs = sequences.read_fasta("sequences.fasta")
+
+# Load and analyze methylation
+cpg_df = load_cpg_table("methylation.tsv")
+methylation = compute_beta_values(cpg_df)
+# Analyze promoter methylation using genomic coordinates
 ```
 
 ### With Visualization Module
 ```python
-from metainformant.epigenome import methylation
-from metainformant.visualization import plots
+from metainformant.epigenome import summarize_beta_by_chromosome
+from metainformant.visualization import lineplot
 
 # Visualize methylation patterns
-methylation_profile = methylation.get_methylation_profile(genomic_region)
-plots.lineplot(methylation_profile, title="DNA Methylation Profile")
+
+# Summarize methylation by chromosome
+summary = summarize_beta_by_chromosome(methylation_df)
+
+# Visualize methylation levels
+# Use chromosome/position data from summary for plotting
+ax = lineplot(None, summary["mean_beta"].values)
+ax.set_title("DNA Methylation Profile")
 ```
 
 ## Data Formats

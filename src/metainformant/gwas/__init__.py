@@ -6,10 +6,17 @@ association testing, and visualization.
 """
 
 from .association import association_test_linear, association_test_logistic, run_gwas
+from .calling import call_variants_bcftools, call_variants_gatk, merge_vcf_files
 from .config import GWASWorkflowConfig, load_gwas_config
 from .correction import bonferroni_correction, fdr_correction, genomic_control
 from .download import download_reference_genome, download_variant_data, extract_variant_regions
 from .quality import apply_qc_filters, parse_vcf_full
+from .sra_download import (
+    check_sra_tools_available,
+    download_sra_project,
+    download_sra_run,
+    search_sra_for_organism,
+)
 from .structure import compute_pca, compute_kinship_matrix, estimate_population_structure
 from .visualization import manhattan_plot, qq_plot, regional_plot
 
@@ -26,6 +33,13 @@ __all__ = [
     "download_reference_genome",
     "download_variant_data",
     "extract_variant_regions",
+    "check_sra_tools_available",
+    "download_sra_run",
+    "download_sra_project",
+    "search_sra_for_organism",
+    "call_variants_bcftools",
+    "call_variants_gatk",
+    "merge_vcf_files",
     "parse_vcf_full",
     "apply_qc_filters",
     "compute_pca",

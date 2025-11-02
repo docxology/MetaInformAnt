@@ -2,13 +2,12 @@
 	"n_targets": 20672,
 	"n_bootstraps": 0,
 	"n_processed": 26078116,
-	"n_pseudoaligned": 16838576,
-	"n_unique": 10787130,
-	"p_pseudoaligned": 64.6,
-	"p_unique": 41.4,
-	"kallisto_version": "0.51.1",
-	"index_version": 13,
-	"k-mer length": 31,
-	"start_time": "Tue Oct 28 08:18:40 2025",
-	"call": "kallisto quant -i output/amalgkit/pbarbatus_direct/work/index/Pogonomyrmex_barbatus.idx -o output/amalgkit/pbarbatus_direct/work/quant/SRR14740487 -t 6 output/amalgkit/pbarbatus_direct/fastq/getfastq/SRR14740487/SRR14740487_1.fastq.gz output/amalgkit/pbarbatus_direct/fastq/getfastq/SRR14740487/SRR14740487_2.fastq.gz"
+	"n_pseudoaligned": 16221677,
+	"n_unique": 10162136,
+	"p_pseudoaligned": 62.2,
+	"p_unique": 39.0,
+	"kallisto_version": "0.48.0",
+	"index_version": 10,
+	"start_time": "Sat Nov  1 20:48:11 2025",
+	"call": "kallisto quant -i /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/pbarbatus/work/index/transcriptome.idx -o /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/pbarbatus/quant/SRR14740487 -t 12 --single -l 200 -s 20 /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/pbarbatus/fastq/SRR14740487/SRR14740487_1.fastq.gz"
 }

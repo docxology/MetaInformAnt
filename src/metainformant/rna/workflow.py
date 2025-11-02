@@ -68,8 +68,8 @@ def _apply_step_defaults(config: AmalgkitWorkflowConfig) -> None:
     # directories
     defaults = {
         "integrate": {"out_dir": str(config.work_dir), "fastq_dir": str(config.work_dir / "fastq")},
-        "config": {"out_dir": str(config.work_dir)},
-        "select": {"out_dir": str(config.work_dir)},
+        "config": {"out_dir": str(config.work_dir), "config": "base"},
+        "select": {"out_dir": str(config.work_dir), "config_dir": str(config.work_dir / "config_base")},
         "getfastq": {"out_dir": str(config.work_dir / "fastq")},
         "quant": {"out_dir": str(config.work_dir / "quant")},
         "merge": {"out_dir": str(config.work_dir.parent / "merged")},

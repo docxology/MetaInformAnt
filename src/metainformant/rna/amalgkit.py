@@ -255,8 +255,11 @@ def run_amalgkit(
         run_env.update(env)
 
     # Ensure working directory exists if provided
+    # NOTE: work_dir is the CWD where amalgkit runs, NOT used in command args
     if work_dir is not None:
         Path(work_dir).mkdir(parents=True, exist_ok=True)
+        # CRITICAL: Do NOT change to work_dir - let amalgkit use absolute paths in command
+        work_dir = None  # Run from current directory to avoid path resolution issues
 
     # Streaming mode (for long-running steps) when MI_STREAM_AMALGKIT_LOGS=1 and log_dir is set
     stream = os.getenv("MI_STREAM_AMALGKIT_LOGS") == "1" and log_dir is not None

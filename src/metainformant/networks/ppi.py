@@ -13,13 +13,33 @@ from .graph import BiologicalNetwork, create_network
 
 
 class ProteinNetwork:
-    """Protein-protein interaction network representation."""
+    """Protein-protein interaction (PPI) network representation and analysis.
+    
+    Manages protein-protein interactions with confidence scores, evidence types,
+    and metadata. Supports network construction, hub identification, and
+    functional enrichment analysis.
+    
+    Attributes:
+        name: Name identifier for this PPI network
+        interactions: List of (protein1, protein2, interaction_data) tuples
+        proteins: Set of all protein identifiers in the network
+        protein_metadata: Dictionary mapping protein_id -> metadata dictionary
+        
+    Examples:
+        >>> ppi = ProteinNetwork(name="STRING_PPI")
+        >>> ppi.add_interaction("P12345", "P67890", confidence=0.85,
+        ...                      evidence_types=["experimental", "database"])
+        >>> network = ppi.create_network(min_confidence=0.7)
+        >>> stats = ppi.network_statistics()
+        >>> stats["hub_proteins"]
+        ['P12345', ...]
+    """
 
     def __init__(self, name: str = "protein_network"):
         """Initialize protein network.
 
         Args:
-            name: Name of the protein network
+            name: Name identifier for this PPI network
         """
         self.name = name
         self.interactions: List[Tuple[str, str, Dict[str, Any]]] = []
@@ -34,14 +54,35 @@ class ProteinNetwork:
         evidence_types: Optional[List[str]] = None,
         **metadata,
     ) -> None:
-        """Add protein-protein interaction.
+        """Add a protein-protein interaction to the network.
+        
+        Records an interaction between two proteins with confidence score,
+        evidence types, and optional metadata. Automatically adds proteins
+        to the network if they don't exist.
 
         Args:
-            protein1: First protein identifier
+            protein1: First protein identifier (UniProt ID, gene symbol, etc.)
             protein2: Second protein identifier
-            confidence: Interaction confidence score (0-1)
-            evidence_types: Types of experimental evidence
-            **metadata: Additional interaction metadata
+            confidence: Interaction confidence score in [0, 1]. Higher values
+                indicate stronger evidence. Default 1.0 (maximum confidence).
+            evidence_types: Optional list of evidence type strings (e.g.,
+                ["experimental", "database", "textmining"]). Common types:
+                "experimental", "database", "coexpression", "textmining"
+            **metadata: Additional keyword arguments for interaction metadata
+                (e.g., publication_id="PMID:12345", method="yeast_two_hybrid")
+                
+        Examples:
+            >>> ppi = ProteinNetwork()
+            >>> ppi.add_interaction(
+            ...     "P12345", "P67890",
+            ...     confidence=0.85,
+            ...     evidence_types=["experimental", "database"],
+            ...     publication_id="PMID:12345"
+            ... )
+            >>> len(ppi.interactions)
+            1
+            >>> "P12345" in ppi.proteins
+            True
         """
         if evidence_types is None:
             evidence_types = []
@@ -53,23 +94,60 @@ class ProteinNetwork:
         self.proteins.add(protein2)
 
     def add_protein_metadata(self, protein_id: str, **metadata) -> None:
-        """Add metadata for a protein.
+        """Add or update metadata for a protein.
+        
+        Stores protein annotations such as function, localization, or other
+        properties. Useful for enriching network analysis with functional
+        context.
 
         Args:
-            protein_id: Protein identifier
-            **metadata: Protein metadata (function, localization, etc.)
+            protein_id: Protein identifier (must match IDs used in interactions)
+            **metadata: Keyword arguments for protein metadata. Common fields:
+                - function: Protein function description
+                - localization: Subcellular location
+                - pathway: Pathways the protein participates in
+                - disease: Disease associations
+                
+        Examples:
+            >>> ppi = ProteinNetwork()
+            >>> ppi.add_protein_metadata(
+            ...     "P12345",
+            ...     function="transcription factor",
+            ...     localization="nucleus",
+            ...     pathway="signaling"
+            ... )
+            >>> ppi.protein_metadata["P12345"]["function"]
+            'transcription factor'
         """
         self.protein_metadata[protein_id] = metadata
 
     def get_interactions(self, protein: str, min_confidence: float = 0.0) -> List[Tuple[str, Dict[str, Any]]]:
-        """Get interactions for a specific protein.
+        """Retrieve all interactions for a specific protein.
+        
+        Returns all protein-protein interactions involving the specified
+        protein, optionally filtered by confidence threshold.
 
         Args:
             protein: Protein identifier
-            min_confidence: Minimum confidence threshold
+            min_confidence: Minimum confidence score (0-1) for including interactions.
+                Default 0.0 includes all interactions regardless of confidence.
 
         Returns:
-            List of (partner_protein, interaction_data) tuples
+            List of tuples, each containing (partner_protein, interaction_data).
+            interaction_data is a dictionary with keys:
+            - confidence: Confidence score
+            - evidence_types: List of evidence type strings
+            - Additional metadata fields if provided
+            
+        Examples:
+            >>> ppi = ProteinNetwork()
+            >>> ppi.add_interaction("P1", "P2", confidence=0.9)
+            >>> ppi.add_interaction("P1", "P3", confidence=0.5)
+            >>> interactions = ppi.get_interactions("P1", min_confidence=0.7)
+            >>> len(interactions)
+            1  # Only P1-P2 above threshold
+            >>> interactions[0][0]
+            'P2'
         """
         interactions = []
 
@@ -87,14 +165,35 @@ class ProteinNetwork:
     def create_network(
         self, min_confidence: float = 0.4, evidence_filter: Optional[List[str]] = None
     ) -> BiologicalNetwork:
-        """Create BiologicalNetwork from protein interactions.
+        """Convert ProteinNetwork to BiologicalNetwork object.
+        
+        Creates a graph representation of the protein interactions with
+        filtering by confidence and evidence types. Edge weights represent
+        interaction confidence.
 
         Args:
-            min_confidence: Minimum confidence for including interactions
-            evidence_filter: Only include interactions with these evidence types
-
+            min_confidence: Minimum confidence score (0-1) for including
+                interactions. Default 0.4 (medium confidence). Higher values
+                create sparser, higher-quality networks.
+            evidence_filter: Optional list of evidence types to include.
+                If provided, only interactions with at least one matching
+                evidence type are included. Common values:
+                ["experimental"] - only experimentally validated
+                ["database", "experimental"] - exclude textmining
+                
         Returns:
-            BiologicalNetwork object
+            BiologicalNetwork object with:
+            - Nodes: All proteins
+            - Edges: Filtered interactions with confidence as edge weight
+            - Node attributes: Protein metadata if available
+            
+        Examples:
+            >>> ppi = ProteinNetwork()
+            >>> ppi.add_interaction("P1", "P2", confidence=0.8, evidence_types=["experimental"])
+            >>> ppi.add_interaction("P1", "P3", confidence=0.3)
+            >>> network = ppi.create_network(min_confidence=0.5)
+            >>> network.num_edges()
+            1  # Only high-confidence interaction included
         """
         # Create network with all proteins
         network = create_network(list(self.proteins))
@@ -122,7 +221,27 @@ class ProteinNetwork:
         return network
 
     def network_statistics(self) -> Dict[str, Any]:
-        """Calculate basic network statistics."""
+        """Calculate comprehensive PPI network statistics.
+        
+        Computes network topology metrics, centrality measures, and identifies
+        hub proteins (top 10% by degree centrality).
+        
+        Returns:
+            Dictionary containing:
+            - total_proteins: Number of unique proteins
+            - total_interactions: Number of interactions
+            - network_metrics: Basic topology metrics (nodes, edges, density, degrees)
+            - hub_proteins: List of hub protein IDs (top 10% by degree)
+            - avg_degree_centrality: Average degree centrality across all proteins
+            - avg_betweenness_centrality: Average betweenness centrality
+            
+        Examples:
+            >>> stats = ppi_network.network_statistics()
+            >>> stats["total_proteins"]
+            150
+            >>> len(stats["hub_proteins"])
+            15
+        """
         network = self.create_network()
         from .graph import centrality_measures, network_metrics
 
@@ -148,15 +267,37 @@ class ProteinNetwork:
 def load_string_interactions(
     string_file: str, score_threshold: int = 400, limit_organisms: Optional[List[str]] = None
 ) -> ProteinNetwork:
-    """Load protein interactions from STRING database format.
-
+    """Load protein-protein interactions from STRING database format.
+    
+    Parses STRING database interaction files (TSV format) and creates a
+    ProteinNetwork object. STRING provides confidence scores and evidence
+    types for protein interactions.
+    
     Args:
-        string_file: Path to STRING interactions file
-        score_threshold: Minimum combined score (0-1000)
-        limit_organisms: List of organism taxonomy IDs to include
-
+        string_file: Path to STRING interactions file (TSV format).
+            Expected columns: protein1, protein2, combined_score
+            Optional columns: experimental, database, textmining, coexpression
+        score_threshold: Minimum combined score (0-1000) for including interactions.
+            Default 400 (medium confidence). Higher values (e.g., 700) give
+            high-confidence interactions only.
+        limit_organisms: Optional list of organism taxonomy IDs (e.g., ["9606"])
+            to filter interactions. If None, includes all organisms.
+            
     Returns:
-        ProteinNetwork object
+        ProteinNetwork object with loaded interactions. Confidence scores
+        are converted from STRING scale (0-1000) to [0-1] range.
+        
+    Examples:
+        >>> ppi = load_string_interactions(
+        ...     "string_interactions.tsv",
+        ...     score_threshold=700,  # High confidence only
+        ...     limit_organisms=["9606"]  # Human only
+        ... )
+        >>> ppi.network_statistics()["total_interactions"]
+        5000
+        
+    References:
+        STRING database: https://string-db.org/
     """
     ppi_network = ProteinNetwork(name="STRING_PPI")
 
@@ -211,16 +352,44 @@ def load_string_interactions(
 def predict_interactions(
     protein_features: np.ndarray, protein_ids: List[str], method: str = "correlation", threshold: float = 0.7
 ) -> ProteinNetwork:
-    """Predict protein interactions from feature data.
-
+    """Predict protein-protein interactions from feature data.
+    
+    Uses correlation or coexpression patterns to predict likely protein
+    interactions based on shared feature profiles (e.g., expression levels,
+    sequence features, localization signals).
+    
     Args:
-        protein_features: Feature matrix (proteins x features)
-        protein_ids: List of protein identifiers
-        method: Prediction method ("correlation", "coexpression")
-        threshold: Minimum correlation/coexpression for interaction
-
+        protein_features: Feature matrix of shape (n_proteins, n_features).
+            Each row represents one protein's feature vector.
+        protein_ids: List of protein identifiers corresponding to rows
+            in protein_features. Must have length equal to protein_features.shape[0]
+        method: Prediction method:
+            - "correlation": Pearson correlation between feature vectors
+            - "coexpression": Cosine similarity between feature vectors
+        threshold: Minimum correlation/similarity for predicted interaction.
+            Interactions with |correlation| >= threshold are included.
+            
     Returns:
-        ProteinNetwork with predicted interactions
+        ProteinNetwork object with predicted interactions. Confidence scores
+        are set to the absolute correlation/similarity values.
+        
+    Raises:
+        ValueError: If number of protein_ids doesn't match feature matrix rows
+        
+    Examples:
+        >>> features = np.random.randn(100, 50)  # 100 proteins, 50 features
+        >>> protein_ids = [f"P{i:05d}" for i in range(100)]
+        >>> ppi = predict_interactions(
+        ...     features, protein_ids,
+        ...     method="correlation",
+        ...     threshold=0.8
+        ... )
+        >>> ppi.network_statistics()["total_interactions"]
+        245
+        
+    Note:
+        These predictions are based on feature similarity and should be
+        validated with experimental evidence for biological interpretation.
     """
     if len(protein_ids) != protein_features.shape[0]:
         raise ValueError("Number of protein IDs must match feature matrix rows")
@@ -277,15 +446,41 @@ def predict_interactions(
 def functional_enrichment_ppi(
     ppi_network: ProteinNetwork, functional_annotations: Dict[str, List[str]], min_confidence: float = 0.5
 ) -> Dict[str, Any]:
-    """Analyze functional enrichment in PPI network.
-
+    """Analyze functional enrichment in protein-protein interaction network.
+    
+    Examines which functional categories (e.g., GO terms, pathways) are
+    overrepresented in the PPI network compared to random expectation.
+    Identifies functional modules and enriched biological processes.
+    
     Args:
-        ppi_network: Protein interaction network
-        functional_annotations: Protein -> function annotations mapping
-        min_confidence: Minimum interaction confidence
-
+        ppi_network: ProteinNetwork object containing protein interactions
+        functional_annotations: Dictionary mapping protein_id to list of
+            functional annotation strings (e.g., GO terms, pathway names).
+            Example: {"P12345": ["GO:0008150", "GO:0003674"], ...}
+        min_confidence: Minimum interaction confidence (0-1) for including
+            interactions in the network. Higher values focus on high-quality
+            interactions. Default 0.5.
+            
     Returns:
-        Functional enrichment analysis results
+        Dictionary containing functional enrichment results:
+        - network_size: Number of proteins in filtered network
+        - total_functions: Number of unique functional annotations
+        - enriched_functions: List of overrepresented functions with statistics
+        - function_counts: Dictionary mapping function -> count in network
+        - expected_counts: Dictionary mapping function -> expected count
+        - enrichment_ratios: Dictionary mapping function -> enrichment ratio
+        
+    Examples:
+        >>> annotations = {
+        ...     "P1": ["GO:0008150", "GO:0003674"],
+        ...     "P2": ["GO:0008150"],
+        ...     "P3": ["GO:0003674"]
+        ... }
+        >>> results = functional_enrichment_ppi(ppi_network, annotations, min_confidence=0.7)
+        >>> results["enriched_functions"][0]["function"]
+        'GO:0008150'
+        >>> results["enriched_functions"][0]["fold_enrichment"] > 1.0
+        True
     """
     # Create high-confidence network
     network = ppi_network.create_network(min_confidence=min_confidence)

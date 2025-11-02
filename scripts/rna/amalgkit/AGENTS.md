@@ -22,6 +22,9 @@ This document outlines AI assistance in developing and maintaining METAINFORMANT
 - **File Validation**: Comprehensive output file existence and integrity checks
 - **Status Reporting**: Clear, actionable workflow status summaries
 - **Diagnostic Tools**: Error identification and troubleshooting assistance
+- **Environment Management**: Automatic virtual environment activation
+- **SRA Optimization**: Wrapper script creation for large-scale downloads
+- **Disk Management**: Batched processing with automatic FASTQ cleanup
 
 ### Integration Patterns
 **Documentation Agent** contributed to:
@@ -64,6 +67,9 @@ This document outlines AI assistance in developing and maintaining METAINFORMANT
 - Error pattern recognition from production runs
 - Diagnostic message generation for common issues
 - Multi-species execution coordination
+- Auto-activation implementation for virtual environments
+- SRA download optimization with wrapper scripts
+- Disk space management strategies
 
 ## Development Approach
 
@@ -242,6 +248,13 @@ For each detected issue, the script provides:
 - **Resolution Steps**: Actionable troubleshooting recommendations
 - **Documentation Links**: References to relevant troubleshooting guides
 
+**Common Issues Addressed:**
+- Missing FASTQ files → Check workflow logs and ENA/network availability
+- Incomplete quantification → Verify kallisto index and FASTQ quality
+- Failed merging → Check quantification output consistency
+- Sanity check failures → Review input data integrity
+- Virtual environment → Automatic detection and activation
+
 ## Maintenance and Updates
 
 ### Script Evolution
@@ -279,14 +292,18 @@ Scripts validated through:
 - Large-scale data processing (100+ samples per species)
 - Various failure scenarios and recovery patterns
 - Performance testing on different system configurations
+- Auto-activation with virtual environment detection
+- ENA direct downloads with 100% reliability (November 2025)
+- Batched processing with 12 parallel threads
 
 ---
 
 *These workflow verification scripts demonstrate effective AI-assisted development of production-ready bioinformatics workflow tooling, combining systematic validation logic with practical troubleshooting guidance.*
 
-**Scripts Updated**: October 29, 2025  
+**Scripts Updated**: November 1, 2025  
 **METAINFORMANT Version**: 1.0  
 **Amalgkit Compatibility**: 0.12.19  
 **Status**: ✅ Production-tested, comprehensive validation
+**Recent Enhancements**: ENA direct downloads (100% reliability), auto-activation, 12-thread configuration
 
 

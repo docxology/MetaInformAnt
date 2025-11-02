@@ -9,6 +9,7 @@ from typing import Any
 
 from ..core.io import dump_json, ensure_directory, read_delimited
 from .association import run_gwas
+from .calling import call_variants_bcftools, call_variants_gatk
 from .config import GWASWorkflowConfig
 from .correction import bonferroni_correction, fdr_correction, genomic_control
 from .download import download_reference_genome, download_variant_data
@@ -205,14 +206,57 @@ def _acquire_variants(config: GWASWorkflowConfig) -> dict[str, Any]:
             )
             return result
 
-    # Option 3: Call variants from BAM/CRAM (handled in calling module)
+    # Option 3: Call variants from BAM/CRAM
     if calling_cfg := variants_cfg.get("calling"):
-        logger.info("Variant calling from BAM/CRAM will be handled in calling module")
-        return {
-            "status": "pending",
-            "method": "calling",
-            "message": "Variant calling requires calling module implementation",
-        }
+        bam_files = calling_cfg.get("bam_files", [])
+        reference = calling_cfg.get("reference")
+        method = calling_cfg.get("method", "bcftools")
+        dest_dir = variants_cfg.get("dest_dir", config.work_dir / "variants")
+        threads = config.threads
+
+        if not bam_files:
+            return {
+                "status": "failed",
+                "error": "No BAM files specified for variant calling",
+            }
+
+        if not reference:
+            return {
+                "status": "failed",
+                "error": "Reference genome not specified for variant calling",
+            }
+
+        # Prepare output VCF path
+        output_vcf = Path(dest_dir) / "called_variants.vcf.gz"
+        ensure_directory(output_vcf.parent)
+
+        logger.info(f"Calling variants from {len(bam_files)} BAM file(s) using {method}")
+
+        # Call variants based on method
+        if method == "bcftools":
+            result = call_variants_bcftools(
+                bam_files=bam_files,
+                reference=reference,
+                output_vcf=output_vcf,
+                threads=threads,
+            )
+        elif method == "gatk":
+            result = call_variants_gatk(
+                bam_files=bam_files,
+                reference=reference,
+                output_vcf=output_vcf,
+                threads=threads,
+            )
+        else:
+            return {
+                "status": "failed",
+                "error": f"Unsupported variant calling method: {method}",
+            }
+
+        if result.get("status") == "success":
+            result["method"] = "calling"
+            result["calling_method"] = method
+        return result
 
     return {"status": "skipped", "message": "No variant source specified"}
 

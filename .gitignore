@@ -103,3 +103,4 @@ coverage.xml
 .pytest_cache/
 *.prf
 *.lock
+*.idx

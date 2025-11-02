@@ -26,11 +26,10 @@ Mathematical models of evolutionary processes.
 from metainformant.math import price_equation, kin_selection_response
 
 # Price equation analysis
-cov, trans, total = price_equation.decompose_change(
-    trait_values=[1.0, 1.2, 0.9],
-    fitness_values=[0.2, 0.4, 0.1],
-    trait_changes=[0.25, 0.35, 0.15]
-)
+fitness = [0.2, 0.4, 0.1]
+trait_parent = [1.0, 1.2, 0.9]
+trait_offspring = [1.25, 1.35, 0.95]
+cov_term, trans_term, total = price_equation(fitness, trait_parent, trait_offspring)
 
 # Kin selection analysis
 response = kin_selection_response(
@@ -69,23 +68,20 @@ Mathematical models of population dynamics and ecological processes.
 
 **Usage:**
 ```python
-from metainformant.math import dynamics
+from metainformant.math import logistic_map, lotka_volterra_step
 
-# Logistic growth simulation
-growth_curve = dynamics.logistic_growth(
-    initial_population=100,
-    carrying_capacity=1000,
-    growth_rate=0.1,
-    time_steps=100
-)
+# Logistic map iteration
+growth_curve = logistic_map(r=3.5, x0=0.5, steps=100)
 
-# Lotka-Volterra competition
-competition_result = dynamics.lotka_volterra_competition(
-    species1_initial=100,
-    species2_initial=80,
-    alpha=1.2,  # Competition coefficient
-    beta=0.8,
-    time_steps=200
+# Lotka-Volterra predator-prey dynamics (single step)
+prey_next, predator_next = lotka_volterra_step(
+    prey=100.0,
+    predator=10.0,
+    alpha=1.0,  # Prey growth rate
+    beta=0.1,   # Predation rate
+    delta=0.075,  # Predator efficiency
+    gamma=1.5,  # Predator death rate
+    dt=0.01
 )
 ```
 
@@ -127,16 +123,15 @@ Mathematical models of disease dynamics.
 
 **Usage:**
 ```python
-from metainformant.math import sir_model
+from metainformant.math import sir_step, seir_step, sis_step, basic_reproduction_number
 
-# Run SIR simulation
-results = sir_model.simulate(
-    population=1000,
-    initial_infected=10,
-    transmission_rate=0.3,
-    recovery_rate=0.1,
-    days=100
-)
+# SIR model single time step
+S, I, R = 990.0, 10.0, 0.0
+beta, gamma = 0.3, 0.1
+S_next, I_next, R_next = sir_step(S, I, R, beta, gamma, dt=0.01)
+
+# Calculate basic reproduction number
+R0 = basic_reproduction_number(beta=0.3, gamma=0.1)
 ```
 
 ### Population Genetics (`popgen.py`, `fst.py`, `ld.py`)
@@ -150,13 +145,21 @@ Population genetic statistics and analysis.
 
 **Usage:**
 ```python
-from metainformant.math import fst, ld
+from metainformant.math import fst_from_heterozygosity, fst_from_allele_freqs
+from metainformant.math import ld_coefficients, r_squared
 
-# Population differentiation
-fst_value = fst.calculate_fst(pop1_alleles, pop2_alleles)
+# Population differentiation from heterozygosity
+fst_value = fst_from_heterozygosity(Hs=0.4, Ht=0.5)
+
+# Fst from allele frequencies
+subpop_freqs = [0.2, 0.3, 0.25, 0.28]
+fst = fst_from_allele_freqs(subpop_freqs)
 
 # Linkage disequilibrium
-ld_coefficient = ld.calculate_ld(allele1_freq, allele2_freq, haplotype_freq)
+pA, pa, pB, pb = 0.6, 0.4, 0.7, 0.3
+haplotype_pAB = 0.5
+D, D_prime = ld_coefficients(pA, pa, pB, pb, haplotype_pAB)
+r2 = r_squared(pA, pa, pB, pb, haplotype_pAB)
 ```
 
 ### Coalescent Theory (`coalescent.py`)
@@ -170,11 +173,20 @@ Coalescent models for genealogical processes.
 
 **Usage:**
 ```python
-from metainformant.math import coalescent
+from metainformant.math import expected_time_to_mrca, expected_total_branch_length
+from metainformant.math import tajimas_D, expected_pairwise_diversity
 
-# Simulate coalescent tree
-tree = coalescent.simulate_tree(n_samples=10, theta=2.0)
-t_mrca = coalescent.time_to_mrca(tree)
+# Expected time to most recent common ancestor
+n = 10
+Ne = 1000
+t_mrca = expected_time_to_mrca(n, Ne)
+
+# Expected total branch length
+total_length = expected_total_branch_length(n, Ne)
+
+# Tajima's D calculation
+segregating_sites = [1, 0, 1, 1, 0, 1, 0, 0, 1, 1]  # Binary site pattern
+d = tajimas_D(segregating_sites, Ne=1000)
 ```
 
 ## Theoretical Background
@@ -205,7 +217,8 @@ from metainformant.math import price_equation
 
 # Theoretical analysis of DNA diversity
 pi = population.nucleotide_diversity(sequences)
-theoretical_change = price_equation.decompose_change(...)
+# Price equation with fitness and trait values
+cov, trans, total = price_equation(fitness_values, trait_parent, trait_offspring)
 ```
 
 ### With Simulation Module
@@ -254,16 +267,16 @@ Comprehensive tests ensure mathematical correctness:
 from metainformant.math import price_equation
 
 # Analyze evolutionary change
-trait_before = [1.0, 1.2, 0.9, 1.1, 0.8]
+trait_parent = [1.0, 1.2, 0.9, 1.1, 0.8]
 fitness = [0.2, 0.4, 0.1, 0.3, 0.2]
-trait_after = [1.25, 1.35, 0.95, 1.15, 0.85]
+trait_offspring = [1.25, 1.35, 0.95, 1.15, 0.85]
 
-selection, transmission, total_change = price_equation.decompose_change(
-    trait_before, fitness, trait_after
+cov_term, trans_term, total_change = price_equation(
+    fitness, trait_parent, trait_offspring
 )
 
-print(f"Selection component: {selection:.4f}")
-print(f"Transmission component: {transmission:.4f}")
+print(f"Covariance (selection) component: {cov_term:.4f}")
+print(f"Transmission component: {trans_term:.4f}")
 print(f"Total change: {total_change:.4f}")
 ```
 

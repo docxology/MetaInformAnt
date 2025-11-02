@@ -2,14 +2,14 @@
   "records": [
     {
       "command": "https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/GCF_013373865.1/download?include_annotation_type=GENOME_FASTA&include_annotation_type=GENOME_GFF&include_annotation_type=RNA_FASTA&include_annotation_type=CDS_FASTA&include_annotation_type=PROT_FASTA&include_annotation_type=SEQUENCE_REPORT&hydrated=FULLY_HYDRATED",
-      "duration_seconds": 116.248802,
-      "extracted_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/genome/ncbi_dataset_api_extracted",
-      "finished_utc": "2025-10-30T18:58:25.657006Z",
-      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/logs",
+      "duration_seconds": 15.85117,
+      "extracted_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/genome/ncbi_dataset_api_extracted",
+      "finished_utc": "2025-10-31T19:36:12.481551Z",
+      "log_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/logs",
       "method": "datasets-api",
       "params": {
         "accession": "GCF_013373865.1",
-        "dest_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/genome",
+        "dest_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/genome",
         "ftp_url": "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/013/373/865/GCF_013373865.1_ASM1337386v2/",
         "include": [
           "genome",
@@ -23,81 +23,83 @@
         ]
       },
       "return_code": 0,
-      "started_utc": "2025-10-30T18:56:29.408204Z",
+      "started_utc": "2025-10-31T19:35:56.630381Z",
       "stderr_bytes": 0,
       "stdout_bytes": 0,
       "step": "genome-prepare",
-      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/work",
-      "zip_path": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/genome/ncbi_dataset_api.zip"
+      "work_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/work",
+      "zip_path": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/genome/ncbi_dataset_api.zip"
     },
     {
       "command": "amalgkit metadata --out_dir output/amalgkit/mpharaonis/work --search_string \"Monomorium pharaonis\"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform] --redo yes",
-      "duration_seconds": 6.38485,
-      "finished_utc": "2025-10-30T18:58:32.068942Z",
-      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/logs",
+      "duration_seconds": 7.375373,
+      "finished_utc": "2025-10-31T19:36:19.888794Z",
+      "log_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/logs",
       "params": {
         "out_dir": "output/amalgkit/mpharaonis/work",
         "redo": true,
         "search_string": "\"Monomorium pharaonis\"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]"
       },
       "return_code": 0,
-      "started_utc": "2025-10-30T18:58:25.684092Z",
+      "started_utc": "2025-10-31T19:36:12.513421Z",
       "stderr_bytes": 0,
-      "stdout_bytes": 838,
+      "stdout_bytes": 860,
       "step": "metadata",
-      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/work"
+      "work_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/work"
     },
     {
-      "command": "amalgkit config --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/work",
-      "duration_seconds": 0.032782,
-      "finished_utc": "2025-10-30T18:58:32.101758Z",
-      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/logs",
+      "command": "amalgkit config --out_dir /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/work --config base",
+      "duration_seconds": 0.037213,
+      "finished_utc": "2025-10-31T19:36:19.926039Z",
+      "log_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/logs",
       "params": {
-        "out_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/work"
+        "config": "base",
+        "out_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/work"
       },
       "return_code": 0,
-      "started_utc": "2025-10-30T18:58:32.068976Z",
+      "started_utc": "2025-10-31T19:36:19.888826Z",
       "stderr_bytes": 0,
-      "stdout_bytes": 410,
+      "stdout_bytes": 444,
       "step": "config",
-      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/work"
+      "work_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/work"
     },
     {
-      "command": "amalgkit select --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/work --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/work/metadata/metadata.filtered.tissue.tsv",
-      "duration_seconds": 0.196038,
-      "finished_utc": "2025-10-30T18:58:32.301979Z",
-      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/logs",
+      "command": "amalgkit select --out_dir /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/work --config_dir /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/work/config_base",
+      "duration_seconds": 0.406218,
+      "finished_utc": "2025-10-31T19:36:20.332286Z",
+      "log_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/logs",
       "params": {
-        "metadata": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/work/metadata/metadata.filtered.tissue.tsv",
-        "out_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/work"
+        "config_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/work/config_base",
+        "out_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/work"
       },
-      "return_code": 1,
-      "started_utc": "2025-10-30T18:58:32.105941Z",
-      "stderr_bytes": 688,
-      "stdout_bytes": 377,
+      "return_code": 0,
+      "started_utc": "2025-10-31T19:36:19.926068Z",
+      "stderr_bytes": 364,
+      "stdout_bytes": 1647,
       "step": "select",
-      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/work"
+      "work_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/work"
     },
     {
-      "command": "sequential_download_quant",
-      "duration_seconds": 2.494153,
-      "finished_utc": "2025-10-30T18:58:34.797005Z",
-      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/logs",
-      "note": "Processed 0, skipped 0, failed 100/100",
+      "command": "batched_download_quant (batch_size=8)",
+      "duration_seconds": 3.469248,
+      "finished_utc": "2025-10-31T19:36:23.802610Z",
+      "log_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/logs",
+      "note": "Processed 0, failed 100/100 in 0 batches",
       "params": {
+        "batch_size": 8,
         "getfastq": {
           "aws": true,
           "gcp": true,
           "ncbi": true,
           "out_dir": "output/amalgkit/mpharaonis/fastq",
-          "pfd": true,
           "species-list": [
             "Monomorium_pharaonis"
           ],
           "threads": 8
         },
         "quant": {
-          "genome_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/genome/ncbi_dataset_api_extracted",
+          "build_index": true,
+          "genome_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/genome/ncbi_dataset_api_extracted",
           "keep_fastq": false,
           "out_dir": "output/amalgkit/mpharaonis/quant",
           "redo": false,
@@ -107,6 +109,7 @@
           "threads": 8
         },
         "statistics": {
+          "batches": 0,
           "failed": 100,
           "failed_runs": [
             "SRR9705129",
@@ -216,109 +219,112 @@
         }
       },
       "return_code": 1,
-      "started_utc": "2025-10-30T18:58:32.302852Z",
+      "started_utc": "2025-10-31T19:36:20.333362Z",
       "stderr_bytes": 0,
       "stdout_bytes": 0,
-      "step": "getfastq+quant (sequential)",
-      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/work"
+      "step": "getfastq+quant (batched)",
+      "work_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/work"
     },
     {
-      "command": "amalgkit merge --out output/amalgkit/mpharaonis/merged/merged_abundance.tsv --out_dir output/amalgkit/mpharaonis/merged --metadata /Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/work/metadata/metadata.filtered.tissue.tsv",
-      "duration_seconds": 0.634667,
-      "finished_utc": "2025-10-30T18:58:35.432618Z",
-      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/logs",
+      "command": "amalgkit merge --out output/amalgkit/mpharaonis/merged/merged_abundance.tsv --out_dir output/amalgkit/mpharaonis/merged --metadata /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/work/metadata/metadata.tsv",
+      "duration_seconds": 0.312833,
+      "finished_utc": "2025-10-31T19:36:24.116529Z",
+      "log_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/logs",
       "params": {
-        "metadata": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/work/metadata/metadata.filtered.tissue.tsv",
+        "metadata": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/work/metadata/metadata.tsv",
         "out": "output/amalgkit/mpharaonis/merged/merged_abundance.tsv",
         "out_dir": "output/amalgkit/mpharaonis/merged"
       },
       "return_code": 1,
-      "started_utc": "2025-10-30T18:58:34.797951Z",
-      "stderr_bytes": 2622,
-      "stdout_bytes": 15822,
+      "started_utc": "2025-10-31T19:36:23.803696Z",
+      "stderr_bytes": 1200,
+      "stdout_bytes": 15468,
       "step": "merge",
-      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/work"
+      "work_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/work"
     },
     {
       "command": "amalgkit cstmm --out_dir output/amalgkit/mpharaonis/cstmm",
-      "duration_seconds": 0.226767,
-      "finished_utc": "2025-10-30T18:58:35.659535Z",
-      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/logs",
+      "duration_seconds": 0.0,
+      "finished_utc": "2025-10-31T19:36:24.116856Z",
+      "log_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/logs",
+      "note": "skipped: missing dependencies: Rscript, R",
       "params": {
         "out_dir": "output/amalgkit/mpharaonis/cstmm"
       },
-      "return_code": 1,
-      "started_utc": "2025-10-30T18:58:35.432768Z",
-      "stderr_bytes": 654,
-      "stdout_bytes": 254,
+      "return_code": 126,
+      "started_utc": "2025-10-31T19:36:24.116854Z",
+      "stderr_bytes": 0,
+      "stdout_bytes": 0,
       "step": "cstmm",
-      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/work"
+      "work_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/work"
     },
     {
       "command": "amalgkit curate --out_dir output/amalgkit/mpharaonis/curate",
-      "duration_seconds": 0.220851,
-      "finished_utc": "2025-10-30T18:58:35.880510Z",
-      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/logs",
+      "duration_seconds": 0.0,
+      "finished_utc": "2025-10-31T19:36:24.117171Z",
+      "log_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/logs",
+      "note": "skipped: missing dependencies: Rscript, R",
       "params": {
         "out_dir": "output/amalgkit/mpharaonis/curate"
       },
-      "return_code": 1,
-      "started_utc": "2025-10-30T18:58:35.659659Z",
-      "stderr_bytes": 1798,
-      "stdout_bytes": 538,
+      "return_code": 126,
+      "started_utc": "2025-10-31T19:36:24.117169Z",
+      "stderr_bytes": 0,
+      "stdout_bytes": 0,
       "step": "curate",
-      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/work"
+      "work_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/work"
     },
     {
       "command": "amalgkit csca --out_dir output/amalgkit/mpharaonis/csca",
-      "duration_seconds": 0.21599,
-      "finished_utc": "2025-10-30T18:58:36.096671Z",
-      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/logs",
+      "duration_seconds": 0.0,
+      "finished_utc": "2025-10-31T19:36:24.117413Z",
+      "log_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/logs",
+      "note": "skipped: missing dependencies: Rscript, R",
       "params": {
         "out_dir": "output/amalgkit/mpharaonis/csca"
       },
-      "return_code": 1,
-      "started_utc": "2025-10-30T18:58:35.880681Z",
-      "stderr_bytes": 651,
-      "stdout_bytes": 251,
+      "return_code": 126,
+      "started_utc": "2025-10-31T19:36:24.117411Z",
+      "stderr_bytes": 0,
+      "stdout_bytes": 0,
       "step": "csca",
-      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/work"
+      "work_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/work"
     },
     {
-      "command": "amalgkit sanity --out_dir /Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/work",
-      "duration_seconds": 0.233571,
-      "finished_utc": "2025-10-30T18:58:36.330314Z",
-      "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/logs",
+      "command": "amalgkit sanity --out_dir /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/work",
+      "duration_seconds": 0.245669,
+      "finished_utc": "2025-10-31T19:36:24.363093Z",
+      "log_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/logs",
       "params": {
-        "out_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/work"
+        "out_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/work"
       },
       "return_code": 0,
-      "started_utc": "2025-10-30T18:58:36.096743Z",
+      "started_utc": "2025-10-31T19:36:24.117424Z",
       "stderr_bytes": 0,
-      "stdout_bytes": 5189,
+      "stdout_bytes": 1900,
       "step": "sanity",
-      "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/work"
+      "work_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/work"
     }
   ],
   "summary": {
-    "log_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/logs",
+    "log_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/logs",
     "num_steps": 10,
     "return_codes": [
       0,
       0,
       0,
+      0,
       1,
       1,
-      1,
-      1,
-      1,
-      1,
+      126,
+      126,
+      126,
       0
     ],
     "species_list": [
       "Monomorium_pharaonis"
     ],
     "threads": 8,
-    "work_dir": "/Users/4d/Documents/GitHub/metainformant/output/amalgkit/mpharaonis/work"
+    "work_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/work"
   }
 }

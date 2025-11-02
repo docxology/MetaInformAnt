@@ -6,100 +6,128 @@ Scripts for RNA-seq data processing, including SRA download, quantification, and
 
 ```
 scripts/rna/
-├── amalgkit/                      # Amalgkit-specific workflow scripts
-│   ├── run_amalgkit.sh           # Comprehensive pipeline orchestrator
-│   ├── verify_workflow.sh        # Workflow validation
-│   └── README.md                 # Detailed amalgkit documentation
-├── batch_ena.py                  # Fast ENA parallel downloader
-├── cleanup_quantified_sra.sh     # Safe deletion of quantified SRA files
-├── force_fasterq.sh              # SRA FASTQ processing
-├── force_fasterq_parallel.sh     # Parallel FASTQ processing
-├── list_unquantified.sh          # Report unquantified samples
-├── monitor_amalgkit_progress.sh  # Multi-species progress monitor
-├── monitor_workflow.py           # Real-time monitoring dashboard
-├── process_one_srr.sh            # Single SRR processing
-├── quant_downloaded_samples.py   # Quantify downloaded samples
-├── run_multi_species.py          # Multi-species with cross-species analysis (RECOMMENDED)
-├── test_pbarbatus_workflow.py    # P. barbatus workflow testing
-├── test_single_species.py        # Single species testing
-├── test_skip_logic.py            # Skip logic verification
-├── verify_skip_logic.sh          # Comprehensive skip verification
-├── README.md                     # This file
-└── AGENTS.md                     # AI agent documentation
+├── amalgkit/                       # Amalgkit-specific workflow scripts
+│   ├── run_amalgkit.sh            # Comprehensive pipeline orchestrator
+│   ├── verify_workflow.sh         # Workflow validation
+│   └── README.md                  # Detailed amalgkit documentation
+├── workflow_ena_integrated.py     # Integrated ENA download + quantification (PRODUCTION) ⭐
+├── download_ena_robust.py         # Robust ENA downloader with retry logic ⭐
+├── run_multi_species.py           # Multi-species with cross-species analysis (legacy SRA-based)
+├── check_environment.py           # Environment validation
+├── cleanup_quantified_sra.sh      # Safe deletion of FASTQ files after quantification
+├── monitor_comprehensive.py       # Comprehensive real-time monitoring
+├── monitor_workflow.py            # Real-time monitoring dashboard
+├── monitor_amalgkit_progress.sh   # Simple progress monitor
+├── list_unquantified.sh           # Report unquantified samples
+├── quant_downloaded_samples.py    # Quantify already-downloaded samples
+├── README.md                      # This file
+└── AGENTS.md                      # AI agent documentation
 ```
 
 ## Available Scripts
 
-### `batch_ena.py`
-**ENA-based parallel downloader and quantifier**
+### `workflow_ena_integrated.py` ⭐ **PRODUCTION**
+**Robust integrated download + quantification workflow**
 
-Fast RNA-seq processing using ENA (European Nucleotide Archive) for downloads:
-- Direct FASTQ downloads (no SRA conversion)
-- 100-500X faster than NCBI
-- Parallel downloads and quantifications
-- Automatic cleanup
-
-**Configuration:**
-```python
-MAX_CONCURRENT_DOWNLOADS = 5  # Parallel sample downloads
-MAX_CONCURRENT_QUANTS = 3     # Parallel quantifications
-KALLISTO_THREADS = 3          # Threads per kallisto process
-```
-
-**Usage:**
-```bash
-# Run from project root
-cd /path/to/metainformant
-python3 scripts/rna/batch_ena.py
-```
-
-**Requirements:**
-- wget (for downloads)
-- kallisto (for quantification)
-- Sample list in `output/amalgkit/{species}/remaining_samples.txt`
-- Kallisto index in `output/amalgkit/{species}/work/index/`
-
-### Multi-Species Workflow Script
-
-#### `run_multi_species.py` ⭐ **RECOMMENDED**
-Complete workflow for all species with batched processing and cross-species analysis:
+Production-ready workflow bypassing SRA Toolkit issues:
 
 **Features:**
-- **Auto-discovery**: Finds all `config/amalgkit/amalgkit_*.yaml` files (excludes template)
-- **Batched processing**: Downloads 8 samples → Quantifies → Deletes FASTQs → Repeats
-- **Disk-friendly**: Only ~16-40 GB peak disk usage (8 samples worth of FASTQs)
-- **Fast**: Parallel processing within each batch (8 threads by default)
-- **Resume**: Automatically skips already-quantified samples
-- **Cross-species analysis**: Runs CSTMM and CSCA for multi-species comparisons
-- **Complete pipeline**: metadata → select → getfastq → quant → merge → curate → sanity
+- **Direct ENA downloads**: Fetches FASTQs directly from European Nucleotide Archive API
+- **Robust retry logic**: Uses wget with --continue for resume capability and automatic retries
+- **Batched processing**: Download N samples → Quantify → Delete FASTQs → Repeat
+- **Disk-friendly**: Only one batch of FASTQs on disk at a time
+- **Auto-detection**: Handles both single-end and paired-end data
+- **Resume support**: Skips already-quantified samples automatically
+
+**Why ENA over SRA Toolkit:**
+- SRA Toolkit downloads fail frequently (~100% failure rate on large samples)
+- ENA provides direct FASTQ files (no SRA→FASTQ conversion needed)
+- wget --continue allows proper resumption after network interruptions
+- Much more reliable for large-scale downloads
 
 **Usage:**
 ```bash
-# Process all discovered species (pbarbatus, cfloridanus, mpharaonis, sinvicta)
-python3 scripts/rna/run_multi_species.py
-```
+# Full workflow with default settings (12 samples/batch, 12 threads)
+python3 scripts/rna/workflow_ena_integrated.py \
+  --config config/amalgkit/amalgkit_cfloridanus.yaml \
+  --batch-size 12 \
+  --threads 12
 
-**Current Species Configured:**
-- Pogonomyrmex barbatus (Red harvester ant) - 83 samples
-- Camponotus floridanus (Florida carpenter ant) - 307 samples
-- Monomorium pharaonis (Pharaoh ant) - 100 samples
-- Solenopsis invicta (Red fire ant) - 354 samples
+# Test with 3 samples
+python3 scripts/rna/workflow_ena_integrated.py \
+  --config config/amalgkit/amalgkit_cfloridanus.yaml \
+  --batch-size 3 \
+  --threads 8 \
+  --max-samples 3
 
-**Processing Mode:**
-```
-Batch 1: [Download 8] → [Quantify 8] → [Delete FASTQs] → Disk freed
-Batch 2: [Download 8] → [Quantify 8] → [Delete FASTQs] → Disk freed
-...
+# Resume (skip download, only quantify existing FASTQs)
+python3 scripts/rna/workflow_ena_integrated.py \
+  --config config/amalgkit/amalgkit_cfloridanus.yaml \
+  --skip-download
 ```
 
 **Performance:**
-- ~8x faster than strict sequential processing
-- Disk usage bounded regardless of cohort size
-- Tested with 300+ samples per species
+- Download: ~6 minutes per 3 samples (varies by sample size)
+- Quantification: ~36 seconds per sample (single-end, 8 threads)
+- Cleanup: Instant FASTQ deletion after quantification
+- Peak disk: ~1.5 GB per sample (batch size × 1.5 GB)
+
+**Requirements:**
+- wget (for robust downloads)
+- kallisto (for quantification)
+- Kallisto index must exist (built once per species)
+
+### `download_ena_robust.py` ⭐
+**Standalone robust ENA downloader**
+
+Used internally by `workflow_ena_integrated.py`, but can be used standalone:
+
+**Usage:**
+```bash
+python3 scripts/rna/download_ena_robust.py \
+  --metadata output/amalgkit/cfloridanus/work/metadata/metadata.tsv \
+  --out-dir output/amalgkit/cfloridanus/fastq \
+  --threads 12 \
+  --max-retries 3
+```
+
+### `run_multi_species.py`
+**Legacy multi-species workflow (SRA Toolkit-based)**
+
+Alternative workflow using SRA Toolkit instead of ENA direct downloads:
+- Auto-activation and environment management
+- Batched processing (10 samples at a time)
+- Cross-species analysis (CSTMM, CSCA)
+- Complete pipeline automation
+
+**Note:** Consider using `workflow_ena_integrated.py` for better reliability.
+
+**Usage:**
+```bash
+# Process all discovered species
+python3 scripts/rna/run_multi_species.py
+```
 
 ### Monitoring Scripts
 
+#### `monitor_comprehensive.py` ⭐
+**Comprehensive real-time workflow monitor**
+
+Tracks all 4 species simultaneously with detailed progress:
+- Sample counts (quantified/total)
+- Current batch numbers
+- Downloading sample counts
+- FASTQ directory sizes
+- Time estimates
+
+**Usage:**
+```bash
+python3 scripts/rna/monitor_comprehensive.py
+```
+
 #### `monitor_workflow.py`
+**Alternative monitoring dashboard**
+
 Real-time monitoring dashboard with:
 - Species progress tracking
 - Disk usage monitoring
@@ -112,12 +140,19 @@ python3 scripts/rna/monitor_workflow.py
 ```
 
 #### `monitor_amalgkit_progress.sh`
-Multi-species progress monitor (simple version):
+**Simple progress monitor**
+
+Lightweight bash-based monitoring (no Python dependencies):
 
 **Usage:**
 ```bash
 bash scripts/rna/monitor_amalgkit_progress.sh
+
+# Or watch mode
+watch -n 60 bash scripts/rna/monitor_amalgkit_progress.sh
 ```
+
+### Utility Scripts
 
 ### `list_unquantified.sh`
 **Generate reports of samples needing quantification**
@@ -137,9 +172,10 @@ bash scripts/rna/list_unquantified.sh
 - Console report with sizes and counts
 
 ### `cleanup_quantified_sra.sh`
-**Safe deletion of quantified SRA files**
+**Safe deletion of FASTQ files after quantification**
 
-Reclaims disk space by removing SRA files after successful quantification:
+Reclaims disk space by removing FASTQ files after successful quantification.
+Works with both SRA Toolkit downloads (.sra files) and ENA downloads (.fastq.gz files):
 - Verifies quantification completion before deletion
 - Detailed logging of operations
 - Safe: skips unquantified samples
@@ -155,40 +191,47 @@ bash scripts/rna/cleanup_quantified_sra.sh --execute
 
 ### Testing Scripts
 
-#### `test_pbarbatus_workflow.py`
-Test script for P. barbatus workflow:
-- Single sample end-to-end testing
-- Disk usage verification
-- Workflow execution with sample limits
+All test scripts have been moved to `tests/test_rna_ena_workflow.py`.
+See that file for comprehensive integration tests of the ENA workflow.
 
-**Usage:**
-```bash
-python3 scripts/rna/test_pbarbatus_workflow.py --check-only
-python3 scripts/rna/test_pbarbatus_workflow.py --max-samples 3
-```
+## Disk Space Management
 
-#### `test_single_species.py`
-Single species workflow testing:
-```bash
-python3 scripts/rna/test_single_species.py
-```
+The ENA-based workflow automatically manages disk space through batched processing:
 
-#### `test_skip_logic.py` and `verify_skip_logic.sh`
-Verify skip logic for already-quantified samples:
-```bash
-python3 scripts/rna/test_skip_logic.py
-bash scripts/rna/verify_skip_logic.sh
-```
+**Batched Processing:**
+- Downloads N samples from ENA (parallel, robust)
+- Quantifies all downloaded samples with kallisto
+- Deletes FASTQ files immediately after quantification
+- Repeats with next batch
+- Peak usage: ~1.5 GB per sample × batch size
+
+**FASTQ Cleanup:**
+- Automatic cleanup in `workflow_ena_integrated.py`
+- Manual cleanup available via `cleanup_quantified_sra.sh`
+- Quantification files retained permanently (~2 MB per sample)
 
 ## Output Structure
 
 All outputs go to `output/amalgkit/{species}/`:
-- `work/quant/` - Quantification results (abundance.tsv)
+- `quant/` - Quantification results (abundance.tsv, ~2 MB per sample)
 - `work/metadata/` - Filtered metadata
-- `logs/` - Processing logs
-- `*.json`, `*.log` - Status files
+- `fastq/` - FASTQ files (automatically cleaned after quantification)
+- `work/index/` - Kallisto index files
+- `logs/` - Processing logs from workflow_ena_integrated.py
 
 See `docs/rna/examples/` for complete documentation.
+
+## Troubleshooting
+
+**ENA Downloads:**
+- The workflow uses wget with automatic retry and resume
+- If downloads fail, re-run the workflow - it will resume automatically
+- Check network connectivity if many downloads fail
+
+**Virtual Environment:**
+- `run_multi_species.py` auto-activates venv if available
+- If venv missing, script provides setup instructions
+- Manual activation: `source .venv/bin/activate`
 
 ## Examples
 

@@ -14,16 +14,41 @@ from .graph import BiologicalNetwork
 def detect_communities(
     network: BiologicalNetwork, method: str = "louvain", resolution: float = 1.0, seed: Optional[int] = None
 ) -> Dict[str, int]:
-    """Detect communities in network using specified method.
-
+    """Detect communities (modules) in a biological network.
+    
+    Identifies groups of nodes that are more densely connected internally
+    than externally. Community detection is useful for finding functional
+    modules in biological networks (protein complexes, gene modules, etc.).
+    
     Args:
         network: Input biological network
-        method: Community detection method ("louvain", "greedy", "leiden")
-        resolution: Resolution parameter for modularity optimization
-        seed: Random seed for reproducibility
-
+        method: Community detection algorithm:
+            - "louvain": Fast modularity optimization (default)
+            - "greedy": Greedy modularity maximization
+            - "leiden": Leiden algorithm (improved over Louvain)
+        resolution: Resolution parameter for modularity optimization.
+            Higher values find smaller, more numerous communities.
+            Lower values find larger, fewer communities. Default 1.0.
+        seed: Random seed for reproducible results
+        
     Returns:
-        Dictionary mapping node to community ID
+        Dictionary mapping node identifier to community ID (integer).
+        Nodes in the same community share the same ID.
+        
+    Examples:
+        >>> network = create_network(["A", "B", "C", "D", "E"])
+        >>> network.add_edge("A", "B"); network.add_edge("B", "C")
+        >>> network.add_edge("D", "E")
+        >>> communities = detect_communities(network, method="louvain")
+        >>> len(set(communities.values()))  # Number of communities
+        2
+        
+    References:
+        Blondel, V. D., et al. (2008). Fast unfolding of communities in
+        large networks. Journal of Statistical Mechanics, 2008(10), P10008.
+        
+        Traag, V. A., et al. (2019). From Louvain to Leiden: guaranteeing
+        well-connected communities. Scientific Reports, 9(1), 5233.
     """
     if seed is not None:
         random.seed(seed)
@@ -40,15 +65,37 @@ def detect_communities(
 
 
 def modularity(network: BiologicalNetwork, communities: Dict[str, int], resolution: float = 1.0) -> float:
-    """Calculate modularity of network partition.
-
+    """Calculate modularity of a network partition.
+    
+    Modularity measures how much more connected nodes within communities
+    are compared to a random network with the same degree distribution.
+    Higher modularity indicates better community structure.
+    
     Args:
-        network: Input network
-        communities: Node to community mapping
-        resolution: Resolution parameter
-
+        network: Input biological network
+        communities: Dictionary mapping node identifier to community ID
+        resolution: Resolution parameter for modularity. Higher values
+            favor smaller communities, lower values favor larger communities.
+            Default 1.0.
+            
     Returns:
-        Modularity score (-1 to 1)
+        Modularity score. Typically ranges from -1 to 1, but can exceed 1
+        for very modular networks. Positive values indicate good partitioning.
+        Formula: Q = (1/2m) Σᵢⱼ [Aᵢⱼ - (γ kᵢ kⱼ)/(2m)] δ(cᵢ, cⱼ)
+        where m is total edge weight, A is adjacency, k is degree,
+        γ is resolution, and δ is community indicator.
+        
+    Examples:
+        >>> network = create_network(["A", "B", "C", "D"], directed=False)
+        >>> network.add_edge("A", "B"); network.add_edge("C", "D")
+        >>> communities = {"A": 0, "B": 0, "C": 1, "D": 1}
+        >>> mod = modularity(network, communities)
+        >>> mod > 0.0  # Should have positive modularity
+        True
+        
+    References:
+        Newman, M. E. J. (2006). Modularity and community structure in networks.
+        Proceedings of the National Academy of Sciences, 103(23), 8577-8582.
     """
     if not network.edges:
         return 0.0
@@ -89,14 +136,34 @@ def modularity(network: BiologicalNetwork, communities: Dict[str, int], resoluti
 
 
 def community_metrics(network: BiologicalNetwork, communities: Dict[str, int]) -> Dict[str, any]:
-    """Calculate metrics for community structure.
-
+    """Calculate comprehensive metrics for network community structure.
+    
+    Evaluates the quality and characteristics of a community partition,
+    including community sizes, edge distribution, and modularity.
+    
     Args:
-        network: Input network
-        communities: Community assignments
-
+        network: Input biological network
+        communities: Dictionary mapping node identifier to community ID
+        
     Returns:
-        Dictionary of community metrics
+        Dictionary containing:
+        - num_communities: Number of distinct communities
+        - avg_community_size: Average number of nodes per community
+        - community_sizes: Dictionary mapping community_id -> size
+        - internal_edges: Number of edges within communities
+        - external_edges: Number of edges between communities
+        - internal_edge_ratio: Fraction of edges that are internal
+        - modularity: Modularity score of the partition
+        
+    Examples:
+        >>> network = create_network(["A", "B", "C", "D"], directed=False)
+        >>> network.add_edge("A", "B"); network.add_edge("C", "D")
+        >>> communities = {"A": 0, "B": 0, "C": 1, "D": 1}
+        >>> metrics = community_metrics(network, communities)
+        >>> metrics["num_communities"]
+        2
+        >>> metrics["internal_edge_ratio"]
+        1.0  # All edges are internal
     """
     # Count communities and their sizes
     community_sizes = defaultdict(int)

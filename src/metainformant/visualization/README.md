@@ -20,19 +20,24 @@ Core plotting functionality for statistical data visualization.
 
 **Usage:**
 ```python
-from metainformant.visualization import plots
+from metainformant.visualization import lineplot, heatmap
+from metainformant.visualization.plots import scatter_plot, histogram
 
 # Line plot
 data = [1, 4, 2, 8, 5, 7]
-ax = plots.lineplot(data, xlabel="Time", ylabel="Value", title="Time Series")
+ax = lineplot(None, data)
+ax.set_xlabel("Time")
+ax.set_ylabel("Value")
+ax.set_title("Time Series")
 
 # Heatmap
 import numpy as np
 matrix = np.random.random((10, 10))
-ax = plots.heatmap(matrix, xlabel="X", ylabel="Y", title="Correlation Matrix")
+ax = heatmap(matrix)
 
 # Histogram
-ax = plots.histogram(data, bins=20, xlabel="Value", ylabel="Frequency")
+from metainformant.visualization.plots import histogram
+ax = histogram(data, bins=20)
 ```
 
 ### Phylogenetic Trees (`trees.py`)
@@ -47,14 +52,17 @@ Specialized visualization for phylogenetic trees and evolutionary relationships.
 
 **Usage:**
 ```python
-from metainformant.visualization import trees
+from metainformant.visualization import plot_phylo_tree
+from Bio import Phylo
 
-# Load and visualize tree
-tree = trees.load_newick("tree.nwk")
-ax = trees.plot_tree(tree, show_branch_lengths=True)
+# Load tree from Newick file (using BioPython)
+tree = Phylo.read("tree.nwk", "newick")
 
-# Compare multiple trees
-trees.compare_trees([tree1, tree2, tree3])
+# Visualize tree
+ax = plot_phylo_tree(tree)
+
+# Save figure using matplotlib
+ax.figure.savefig("tree.png", dpi=300)
 ```
 
 ### Animations (`animations.py`)
@@ -69,14 +77,16 @@ Time-series and dynamic data animation.
 
 **Usage:**
 ```python
-from metainformant.visualization import animations
+from metainformant.visualization import animate_time_series
 
 # Animate time series data
-data = [[1, 2], [2, 3], [3, 2], [4, 4]]
-fig, anim = animations.animate_time_series(data, interval_ms=500)
+data = [1, 2, 3, 2, 4, 5, 3, 6]
+fig, anim = animate_time_series(data, interval_ms=500)
 
-# Save animation
-animations.save_animation(anim, "timeseries.gif", fps=2)
+# Save animation using matplotlib's animation writer
+from matplotlib.animation import PillowWriter
+writer = PillowWriter(fps=2)
+anim.save("timeseries.gif", writer=writer)
 ```
 
 ## Integration Features
@@ -115,61 +125,54 @@ ax.set_title("Plot Title")
 ### Basic Statistical Visualization
 ```python
 import numpy as np
-from metainformant.visualization import plots
+from metainformant.visualization import lineplot
+from metainformant.visualization.plots import scatter_plot
 
 # Generate sample data
 x = np.linspace(0, 10, 100)
 y = np.sin(x) + np.random.normal(0, 0.1, 100)
 
 # Create publication-quality plot
-ax = plots.scatterplot(x, y, alpha=0.6, s=20)
-ax = plots.lineplot(x, np.sin(x), ax=ax, color='red', linewidth=2)
+ax = scatter_plot(x, y, alpha=0.6, s=20)
+ax = lineplot(x, np.sin(x), ax=ax, color='red', style='-')
 ax.set_xlabel("X Values")
 ax.set_ylabel("Y Values")
 ax.set_title("Sample Data with Trend Line")
 ax.grid(True, alpha=0.3)
-plots.save_figure(ax.figure, "sample_plot.png", dpi=300)
+ax.figure.savefig("sample_plot.png", dpi=300)
 ```
 
 ### Phylogenetic Tree Visualization
 ```python
-from metainformant.visualization import trees
+from metainformant.visualization import plot_phylo_tree
+from Bio import Phylo
+import matplotlib.pyplot as plt
 
 # Load tree from file
-tree = trees.load_newick("phylogenetic_tree.nwk")
+tree = Phylo.read("phylogenetic_tree.nwk", "newick")
 
-# Create visualization with annotations
-ax = trees.plot_tree(
-    tree,
-    show_branch_lengths=True,
-    leaf_labels=True,
-    internal_labels=False,
-    figsize=(12, 8)
-)
-
-# Customize appearance
+# Create visualization
+fig, ax = plt.subplots(figsize=(12, 8))
+ax = plot_phylo_tree(tree, ax=ax)
 ax.set_title("Phylogenetic Tree")
-trees.style_tree(ax, color_scheme="viridis")
 
 # Save high-resolution figure
-trees.save_tree_plot(ax.figure, "tree_visualization.png", dpi=300)
+fig.savefig("tree_visualization.png", dpi=300)
+plt.close(fig)
 ```
 
 ### Animation Creation
 ```python
-from metainformant.visualization import animations
+from metainformant.visualization import animate_time_series
 import numpy as np
+from matplotlib.animation import PillowWriter
 
 # Generate time series data
 time_points = np.linspace(0, 4*np.pi, 50)
-data = [np.sin(time_points + i*0.5) for i in range(20)]
+data = np.sin(time_points)
 
 # Create animation
-fig, anim = animations.animate_multiple_series(
-    data,
-    interval_ms=200,
-    colors=animations.get_color_palette("plasma", 20)
-)
+fig, anim = animate_time_series(data, interval_ms=200)
 
 # Customize animation
 ax = fig.gca()
@@ -179,7 +182,8 @@ ax.set_title("Dynamic Time Series")
 ax.grid(True, alpha=0.3)
 
 # Export animation
-animations.save_animation(anim, "dynamic_series.gif", fps=5)
+writer = PillowWriter(fps=5)
+anim.save("dynamic_series.gif", writer=writer)
 ```
 
 ## Performance Considerations
@@ -194,11 +198,12 @@ animations.save_animation(anim, "dynamic_series.gif", fps=5)
 ### With DNA Module
 ```python
 from metainformant.dna import phylogeny
-from metainformant.visualization import trees
+from metainformant.visualization import plot_phylo_tree
 
 # Visualize DNA-based phylogenetic analysis
 tree = phylogeny.neighbor_joining_tree(dna_sequences)
-trees.plot_tree(tree, title="DNA-based Phylogeny")
+ax = plot_phylo_tree(tree)
+ax.set_title("DNA-based Phylogeny")
 ```
 
 ### With Math Module
@@ -207,8 +212,14 @@ from metainformant.math import price_equation
 from metainformant.visualization import lineplot
 
 # Visualize mathematical models
-results = price_equation.simulate_evolution(...)
-lineplot(results["trait_values"], title="Trait Evolution")
+fitness = [0.2, 0.4, 0.1]
+trait_parent = [1.0, 1.2, 0.9]
+trait_offspring = [1.25, 1.35, 0.95]
+cov, trans, total = price_equation(fitness, trait_parent, trait_offspring)
+
+# Plot trait evolution
+ax = lineplot(None, trait_offspring)
+ax.set_title("Trait Evolution")
 ```
 
 ## Testing

@@ -6,9 +6,27 @@ from typing import Dict, List, Set
 
 @dataclass(slots=True)
 class Term:
-    """A minimal ontology term.
-
-    Captures essential GO-like fields sufficient for many analyses and tests.
+    """Represents an ontology term (e.g., Gene Ontology term).
+    
+    Minimal but sufficient representation for ontology terms with essential
+    fields for hierarchy traversal and basic analysis.
+    
+    Attributes:
+        term_id: Unique term identifier (e.g., "GO:0008150")
+        name: Human-readable term name
+        namespace: Ontology namespace (e.g., "biological_process", "molecular_function")
+        definition: Text definition of the term
+        alt_ids: List of alternative identifiers for this term
+        is_a_parents: List of parent term IDs (is_a relationships)
+        
+    Examples:
+        >>> term = Term(
+        ...     term_id="GO:0008150",
+        ...     name="biological_process",
+        ...     namespace="biological_process"
+        ... )
+        >>> term.term_id
+        'GO:0008150'
     """
 
     term_id: str
@@ -21,9 +39,24 @@ class Term:
 
 @dataclass(slots=True)
 class Ontology:
-    """In-memory directed acyclic graph of ontology terms.
-
-    The graph is represented as adjacency maps for fast traversal.
+    """In-memory representation of an ontology as a directed acyclic graph.
+    
+    Efficient structure for ontology terms and their hierarchical relationships.
+    Uses adjacency maps for fast parent/child lookups and traversal.
+    
+    Attributes:
+        terms: Dictionary mapping term_id -> Term objects
+        parents_of: Dictionary mapping term_id -> set of parent term IDs
+        children_of: Dictionary mapping term_id -> set of child term IDs
+        
+    Examples:
+        >>> onto = Ontology()
+        >>> term = Term(term_id="GO:001", name="test", is_a_parents=["GO:002"])
+        >>> onto.add_term(term)
+        >>> onto.has_term("GO:001")
+        True
+        >>> onto.num_terms()
+        1
     """
 
     terms: Dict[str, Term] = field(default_factory=dict)

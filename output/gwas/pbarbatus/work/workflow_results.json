@@ -1,0 +1,32 @@
+{
+  "config": {
+    "threads": 8,
+    "work_dir": "/home/q/Documents/GitHub/MetaInformAnt/output/gwas/pbarbatus/work"
+  },
+  "duration_seconds": 2.033154,
+  "end_time": "2025-11-02T00:07:05.453491",
+  "error": "VCF file not available: None",
+  "start_time": "2025-11-02T00:07:03.420337",
+  "status": "failed",
+  "steps": [
+    {
+      "result": {
+        "accession": "GCF_000187915.1",
+        "dest_dir": "output/gwas/pbarbatus/genome",
+        "error": "File is not a zip file",
+        "extracted_dir": "",
+        "method": "datasets-api",
+        "return_code": 1,
+        "status": "failed"
+      },
+      "step": "genome_prepare"
+    },
+    {
+      "result": {
+        "error": "No BAM files specified for variant calling",
+        "status": "failed"
+      },
+      "step": "variant_acquisition"
+    }
+  ]
+}

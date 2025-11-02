@@ -10,13 +10,34 @@ import numpy as np
 
 
 class BiologicalNetwork:
-    """Biological network representation with nodes and weighted edges."""
+    """Biological network representation with nodes and weighted edges.
+    
+    Represents biological networks (protein-protein interactions, regulatory networks,
+    etc.) as graphs with nodes and weighted edges. Supports both directed and
+    undirected networks with node and edge attributes.
+    
+    Attributes:
+        nodes: Set of node identifiers (strings)
+        edges: Dictionary mapping (node1, node2) tuples to edge weights
+        node_attrs: Dictionary mapping node IDs to attribute dictionaries
+        directed: Boolean indicating if network is directed
+        
+    Examples:
+        >>> network = BiologicalNetwork(directed=False)
+        >>> network.add_node("Gene1", function="transcription")
+        >>> network.add_edge("Gene1", "Gene2", weight=0.8)
+        >>> network.num_nodes()
+        2
+        >>> network.num_edges()
+        1
+    """
 
     def __init__(self, directed: bool = False):
         """Initialize empty biological network.
 
         Args:
-            directed: Whether the network is directed
+            directed: If True, network edges have direction (from -> to).
+                If False (default), edges are undirected and (A,B) == (B,A)
         """
         self.nodes: Set[str] = set()
         self.edges: Dict[Tuple[str, str], float] = {}
@@ -24,13 +45,49 @@ class BiologicalNetwork:
         self.directed = directed
 
     def add_node(self, node: str, **attrs) -> None:
-        """Add a node with optional attributes."""
+        """Add a node to the network with optional attributes.
+        
+        Args:
+            node: Node identifier (string)
+            **attrs: Optional keyword arguments for node attributes
+                (e.g., function="transcription", compartment="nucleus")
+                
+        Examples:
+            >>> network = BiologicalNetwork()
+            >>> network.add_node("Gene1", function="transcription", compartment="nucleus")
+            >>> "Gene1" in network.nodes
+            True
+            >>> network.node_attrs["Gene1"]["function"]
+            'transcription'
+        """
         self.nodes.add(node)
         if attrs:
             self.node_attrs[node].update(attrs)
 
     def add_edge(self, node1: str, node2: str, weight: float = 1.0) -> None:
-        """Add an edge between two nodes with optional weight."""
+        """Add an edge between two nodes with optional weight.
+        
+        Automatically adds nodes if they don't exist. For undirected networks,
+        the edge (A, B) is equivalent to (B, A). For directed networks,
+        edges have direction from node1 to node2.
+        
+        Args:
+            node1: First node identifier
+            node2: Second node identifier
+            weight: Edge weight (default 1.0). Can represent interaction
+                strength, confidence, or other quantitative measure.
+                
+        Examples:
+            >>> network = BiologicalNetwork(directed=False)
+            >>> network.add_edge("Gene1", "Gene2", weight=0.8)
+            >>> network.get_edge_weight("Gene2", "Gene1")  # Undirected
+            0.8
+            
+            >>> dir_net = BiologicalNetwork(directed=True)
+            >>> dir_net.add_edge("TF1", "Gene1", weight=0.9)
+            >>> dir_net.get_edge_weight("Gene1", "TF1")  # Reverse direction
+            None
+        """
         self.nodes.add(node1)
         self.nodes.add(node2)
 
@@ -38,7 +95,26 @@ class BiologicalNetwork:
         self.edges[edge] = weight
 
     def get_neighbors(self, node: str) -> List[str]:
-        """Get neighbors of a node."""
+        """Get all neighbors of a node.
+        
+        For undirected networks, returns all nodes connected by an edge.
+        For directed networks, returns only outgoing neighbors (nodes
+        reached by edges from this node).
+        
+        Args:
+            node: Node identifier
+            
+        Returns:
+            List of neighbor node identifiers. Empty list if node has no neighbors
+            or doesn't exist in the network.
+            
+        Examples:
+            >>> network = BiologicalNetwork(directed=False)
+            >>> network.add_edge("A", "B"); network.add_edge("A", "C")
+            >>> neighbors = network.get_neighbors("A")
+            >>> set(neighbors)
+            {'B', 'C'}
+        """
         neighbors = []
         for edge in self.edges:
             if self.directed:
@@ -52,20 +128,74 @@ class BiologicalNetwork:
         return neighbors
 
     def get_edge_weight(self, node1: str, node2: str) -> Optional[float]:
-        """Get weight of edge between two nodes."""
+        """Get weight of edge between two nodes.
+        
+        Args:
+            node1: First node identifier
+            node2: Second node identifier
+            
+        Returns:
+            Edge weight if edge exists, None otherwise. For undirected networks,
+            returns weight regardless of order (get_edge_weight(A, B) == get_edge_weight(B, A)).
+            
+        Examples:
+            >>> network = BiologicalNetwork(directed=False)
+            >>> network.add_edge("A", "B", weight=0.75)
+            >>> network.get_edge_weight("A", "B")
+            0.75
+            >>> network.get_edge_weight("B", "A")  # Undirected
+            0.75
+        """
         edge = (node1, node2) if self.directed else tuple(sorted([node1, node2]))
         return self.edges.get(edge)
 
     def num_nodes(self) -> int:
-        """Number of nodes in network."""
+        """Get the number of nodes in the network.
+        
+        Returns:
+            Integer count of unique nodes in the network.
+            
+        Examples:
+            >>> network = BiologicalNetwork()
+            >>> network.add_node("A"); network.add_node("B")
+            >>> network.num_nodes()
+            2
+        """
         return len(self.nodes)
 
     def num_edges(self) -> int:
-        """Number of edges in network."""
+        """Get the number of edges in the network.
+        
+        Returns:
+            Integer count of unique edges. For undirected networks,
+            each edge is counted once regardless of direction.
+            
+        Examples:
+            >>> network = BiologicalNetwork(directed=False)
+            >>> network.add_edge("A", "B"); network.add_edge("B", "C")
+            >>> network.num_edges()
+            2
+        """
         return len(self.edges)
 
     def density(self) -> float:
-        """Network density (fraction of possible edges present)."""
+        """Calculate network density (fraction of possible edges present).
+        
+        Density measures how connected a network is, ranging from 0 (no edges)
+        to 1 (fully connected). For directed networks, maximum edges is n(n-1).
+        For undirected networks, maximum edges is n(n-1)/2.
+        
+        Returns:
+            Density value in [0, 1]. Returns 0.0 if network has fewer than 2 nodes.
+            Formula: density = actual_edges / max_possible_edges
+            
+        Examples:
+            >>> network = BiologicalNetwork(directed=False)
+            >>> network.add_node("A"); network.add_node("B"); network.add_node("C")
+            >>> network.add_edge("A", "B")
+            >>> network.density()  # 1 edge out of 3 possible
+            0.333...
+        """
         n = self.num_nodes()
         if n < 2:
             return 0.0
@@ -74,14 +204,21 @@ class BiologicalNetwork:
 
 
 def create_network(nodes: List[str], directed: bool = False) -> BiologicalNetwork:
-    """Create a biological network with given nodes.
-
+    """Create a biological network with specified nodes.
+    
+    Convenience function to create a network and add nodes in one step.
+    
     Args:
-        nodes: List of node identifiers
-        directed: Whether network is directed
-
+        nodes: List of node identifier strings
+        directed: If True, network is directed. If False (default), undirected.
+        
     Returns:
-        Empty network with specified nodes
+        BiologicalNetwork object with specified nodes but no edges
+        
+    Examples:
+        >>> network = create_network(["A", "B", "C"], directed=False)
+        >>> network.num_nodes()
+        3
     """
     network = BiologicalNetwork(directed=directed)
     for node in nodes:
@@ -93,12 +230,29 @@ def add_edges_from_correlation(
     network: BiologicalNetwork, correlation_matrix: np.ndarray, node_names: List[str], threshold: float = 0.7
 ) -> None:
     """Add edges to network based on correlation matrix.
-
+    
+    Constructs network edges from pairwise correlations between nodes.
+    Only correlations above the threshold are added as edges, with edge
+    weight equal to the absolute correlation value.
+    
     Args:
-        network: Network to add edges to
-        correlation_matrix: Square correlation matrix
-        node_names: Names corresponding to matrix rows/columns
-        threshold: Minimum absolute correlation for edge creation
+        network: BiologicalNetwork object to add edges to (nodes should exist)
+        correlation_matrix: Square NumPy array of shape (n, n) containing
+            pairwise correlations. Must be symmetric for undirected networks.
+        node_names: List of node identifiers corresponding to matrix
+            rows/columns. Length must equal matrix dimension.
+        threshold: Minimum absolute correlation value (0-1) to create an edge.
+            Default 0.7. Only |correlation| >= threshold creates edges.
+            
+    Raises:
+        ValueError: If correlation matrix dimensions don't match node_names length
+        
+    Examples:
+        >>> network = create_network(["GENE1", "GENE2", "GENE3"], directed=False)
+        >>> corr_matrix = np.array([[1.0, 0.8, 0.3], [0.8, 1.0, 0.2], [0.3, 0.2, 1.0]])
+        >>> add_edges_from_correlation(network, corr_matrix, ["GENE1", "GENE2", "GENE3"], threshold=0.7)
+        >>> network.num_edges()
+        1  # Only GENE1-GENE2 above threshold
     """
     n = len(node_names)
     if correlation_matrix.shape != (n, n):
@@ -113,24 +267,53 @@ def add_edges_from_correlation(
 
 
 def add_edges_from_interactions(network: BiologicalNetwork, interactions: List[Tuple[str, str, float]]) -> None:
-    """Add edges from interaction list.
-
+    """Add edges to network from a list of interactions.
+    
+    Convenience function to add multiple edges at once from a structured
+    interaction list. Automatically adds nodes if they don't exist.
+    
     Args:
-        network: Network to add edges to
-        interactions: List of (node1, node2, weight) tuples
+        network: BiologicalNetwork object to add edges to
+        interactions: List of tuples, each containing (node1, node2, weight).
+            Node identifiers are strings, weight is float.
+            
+    Examples:
+        >>> network = create_network(["A", "B", "C"], directed=False)
+        >>> interactions = [("A", "B", 0.8), ("B", "C", 0.6), ("A", "C", 0.9)]
+        >>> add_edges_from_interactions(network, interactions)
+        >>> network.num_edges()
+        3
     """
     for node1, node2, weight in interactions:
         network.add_edge(node1, node2, weight)
 
 
 def network_metrics(network: BiologicalNetwork) -> Dict[str, float]:
-    """Calculate basic network metrics.
-
+    """Calculate basic network topology metrics.
+    
+    Computes fundamental network statistics including size, connectivity,
+    and degree distributions.
+    
     Args:
-        network: Input network
-
+        network: Input biological network
+        
     Returns:
-        Dictionary of network metrics
+        Dictionary with keys:
+        - num_nodes: Total number of nodes
+        - num_edges: Total number of edges
+        - density: Edge density (fraction of possible edges present)
+        - avg_degree: Average node degree
+        - max_degree: Maximum node degree
+        - min_degree: Minimum node degree
+        
+    Examples:
+        >>> network = create_network(["A", "B", "C"])
+        >>> network.add_edge("A", "B")
+        >>> metrics = network_metrics(network)
+        >>> metrics["num_nodes"]
+        3
+        >>> metrics["density"]
+        0.333...
     """
     metrics = {
         "num_nodes": network.num_nodes(),
@@ -156,13 +339,29 @@ def network_metrics(network: BiologicalNetwork) -> Dict[str, float]:
 
 
 def centrality_measures(network: BiologicalNetwork) -> Dict[str, Dict[str, float]]:
-    """Calculate centrality measures for all nodes.
-
+    """Calculate multiple centrality measures for all nodes.
+    
+    Computes degree, closeness, betweenness, and eigenvector centralities
+    for each node in the network. These measures identify important/hub nodes.
+    
     Args:
-        network: Input network
-
+        network: Input biological network
+        
     Returns:
-        Dictionary mapping centrality type to node centrality values
+        Dictionary mapping centrality type to nested dictionary of
+        node -> centrality_value. Centrality types:
+        - "degree": Normalized degree centrality (0 to 1)
+        - "closeness": Inverse of average shortest path distance
+        - "betweenness": Fraction of shortest paths passing through node
+        - "eigenvector": Importance based on connections to important nodes
+        
+    Examples:
+        >>> network = create_network(["A", "B", "C", "D"])
+        >>> network.add_edge("A", "B"); network.add_edge("A", "C")
+        >>> network.add_edge("B", "D")
+        >>> centralities = centrality_measures(network)
+        >>> centralities["degree"]["A"]
+        0.666...
     """
     centralities = {"degree": {}, "closeness": {}, "betweenness": {}, "eigenvector": {}}
 
@@ -196,13 +395,30 @@ def centrality_measures(network: BiologicalNetwork) -> Dict[str, Dict[str, float
 
 
 def shortest_paths(network: BiologicalNetwork) -> Dict[str, Dict[str, float]]:
-    """Calculate shortest paths between all pairs of nodes using BFS.
-
+    """Calculate shortest path distances between all pairs of nodes.
+    
+    Uses breadth-first search (BFS) for unweighted graphs or weighted
+    BFS for weighted graphs. Finds minimum path length between every
+    pair of nodes.
+    
     Args:
-        network: Input network
-
+        network: Input biological network
+        
     Returns:
-        Dictionary mapping source -> target -> distance
+        Nested dictionary mapping source_node -> target_node -> distance.
+        Distance is measured in edge weights (1.0 for unweighted edges).
+        Unreachable nodes have distance of float("inf").
+        Distance to self is always 0.0.
+        
+    Examples:
+        >>> network = create_network(["A", "B", "C", "D"], directed=False)
+        >>> network.add_edge("A", "B", weight=1.0)
+        >>> network.add_edge("B", "C", weight=2.0)
+        >>> paths = shortest_paths(network)
+        >>> paths["A"]["C"]
+        3.0  # Path A -> B -> C
+        >>> paths["A"]["D"]
+        inf  # Not reachable
     """
     distances = {}
 

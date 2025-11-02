@@ -7,9 +7,9 @@
 # Notes: Indoor pest species, model for caste determination and alternative splicing studies
 
 
-work_dir: output/amalgkit/mpharaonis/work
-log_dir: output/amalgkit/mpharaonis/logs
-threads: 8
+work_dir: /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/work
+log_dir: /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/logs
+threads: 12
 
 
 auto_install_amalgkit: true
@@ -79,16 +79,18 @@ steps:
   select: {}
   getfastq:
     out_dir: output/amalgkit/mpharaonis/fastq
-    threads: 8
+    threads: 12
     # Cloud acceleration via individual mirrors
     aws: yes
     gcp: yes
     ncbi: yes
-    # pfd: yes         # DISABLED: parallel-fastq-dump failing, use fasterq-dump
+    # pfd: no          # DISABLED: parallel-fastq-dump not installed
+    fastp: yes        # ENABLED: fastp QC tool
+    # seqkit is now installed and available
   quant:
     # If a Salmon/Kallisto index is available, set it; otherwise genome_dir is injected from genome step
     out_dir: output/amalgkit/mpharaonis/quant
-    threads: 8
+    threads: 12
     redo: no
     # Delete SRA/FASTQ files after quantification to save space
     keep_fastq: no

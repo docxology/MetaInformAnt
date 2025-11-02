@@ -178,7 +178,9 @@ Core functions:
 - [Workflow Guide](./workflow.md) - Step-by-step workflow execution
 - [Configuration Reference](./config.md) - Detailed configuration options
 - [P. barbatus Example](./pbarbatus_config.md) - Real-world example configuration
+- [A. mellifera Example](./amellifera_config.md) - Honeybee GWAS with extensive datasets
 - [Verification Report](./verification_report.md) - Validation and testing
+- [Comprehensive Review](./comprehensive_review.md) - End-to-end functionality assessment
 
 ## References
 
@@ -186,6 +188,26 @@ Core functions:
 2. VanRaden (2008). Efficient methods to compute genomic predictions. *Journal of Dairy Science*.
 3. Benjamini & Hochberg (1995). Controlling the false discovery rate. *Journal of the Royal Statistical Society*.
 4. Yang et al. (2011). GCTA: A tool for genome-wide complex trait analysis. *American Journal of Human Genetics*.
+
+## Limitations and Known Gaps
+
+### Current Limitations
+
+1. **Variant Download**: Direct downloads from dbSNP and 1000 Genomes are placeholders. Use pre-existing VCF files or variant calling from BAM/CRAM instead.
+
+2. **Functional Annotation**: Variant functional annotation (synonymous/nonsynonymous, consequences) is not yet implemented.
+
+3. **Advanced Association Methods**: Mixed linear models (MLM) and conditional analysis are not yet implemented. Basic linear/logistic regression with covariates is available.
+
+4. **Discovery Methods**: Gene-based tests, pathway analysis, and fine-mapping are not yet implemented.
+
+5. **Reporting**: Basic TSV/JSON outputs and plots are available. Comprehensive HTML reports are planned for future releases.
+
+### Recommended Workarounds
+
+- For variant downloads: Use external tools (bcftools, vcftools) or provide pre-existing VCF files
+- For functional annotation: Use external tools (VEP, SnpEff) after GWAS analysis
+- For advanced methods: Export results for analysis in specialized tools (GCTA, PLINK) if needed
 
 ## Performance Considerations
 
@@ -198,32 +220,35 @@ Core functions:
 
 ### With DNA Module
 ```python
-from metainformant.dna.variants import parse_vcf
-from metainformant.gwas import apply_qc_filters
+from metainformant.dna import variants
+from metainformant.gwas import parse_vcf_full, apply_qc_filters
 
-# Parse VCF
-variants = parse_vcf("data/variants.vcf")
+# Parse VCF (simple parsing from dna module)
+vcf_info = variants.parse_vcf("data/variants.vcf")
+
+# Full VCF parsing for GWAS (from gwas module)
+vcf_data = parse_vcf_full("data/variants.vcf")
 
 # Apply GWAS-specific QC
-filtered = apply_qc_filters(variants, min_maf=0.01)
+filtered = apply_qc_filters("data/variants.vcf", config={"min_maf": 0.01})
 ```
 
 ### With Math Module
 ```python
-from metainformant.math.popgen import hardy_weinberg_test
+from metainformant.math import hardy_weinberg_genotype_freqs
 from metainformant.gwas import run_gwas
 
-# Test Hardy-Weinberg equilibrium
-hwe_results = hardy_weinberg_test(genotypes)
+# Calculate expected Hardy-Weinberg genotype frequencies
+p = 0.5  # Allele A frequency
+p_aa, p_ab, p_bb = hardy_weinberg_genotype_freqs(p)
 
-# Run association with HWE-passing variants
-gwas_results = run_gwas(hwe_passing_variants, phenotypes)
+# Run association tests
+gwas_results = run_gwas(vcf_path, phenotype_path, config)
 ```
 
 ### With Visualization
 ```python
-from metainformant.gwas import run_gwas
-from metainformant.visualization.plots import manhattan_plot
+from metainformant.gwas import run_gwas, manhattan_plot
 
 # Run GWAS
 results = run_gwas(vcf_path, phenotype_path, config)

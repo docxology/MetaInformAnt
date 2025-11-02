@@ -1,0 +1,196 @@
+# METAINFORMANT GWAS Configuration
+# Species: Apis mellifera (Western Honey Bee)
+# NCBI Taxonomy ID: 7460
+# Assembly: GCF_003254395.2_Amel_HAv3.1 (Amel_HAv3.1)
+# Notes: Extensive genomic datasets available - many samples for population-level GWAS
+
+work_dir: output/gwas/amellifera/work
+log_dir: output/gwas/amellifera/logs
+threads: 8
+
+# =============================================================================
+# REFERENCE GENOME
+# =============================================================================
+# Reference genome configuration (reuses dna.ncbi infrastructure)
+genome:
+  # NCBI assembly accession for A. mellifera (Amel_HAv3.1)
+  accession: GCF_003254395.2
+
+  # Local destination directory for genome files
+  dest_dir: output/gwas/amellifera/genome
+
+  # Files to download from NCBI
+  include:
+    - genome         # Genomic sequences (FASTA)
+    - gff3          # Gene annotations
+
+  # Direct FTP URL for A. mellifera genome
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/003/254/395/GCF_003254395.2_Amel_HAv3.1/
+
+# =============================================================================
+# VARIANT DATA SOURCES
+# =============================================================================
+# Note: Apis mellifera has extensive genomic datasets available from multiple sources:
+# - NCBI SRA: Hundreds of honeybee whole-genome sequencing datasets
+# - Public repositories: Zenodo, ENA, GSA datasets
+# - Research consortia: i5K, Honey Bee Genomics Initiative
+variants:
+  # Option 1: Pre-called VCF file(s) - provide path(s) to existing VCF files
+  # Recommended: Use pre-called VCFs from large-scale honeybee projects when available
+  vcf_files:
+    - data/variants/amellifera/honeybee_cohort.vcf
+
+  # Option 2: Download from public database (if available for A. mellifera)
+  # Note: dbSNP may have honeybee variants, but large cohort VCFs are typically
+  # available from research projects and public repositories
+  # download:
+  #   source: dbSNP
+  #   accession: GCF_003254395.2
+  #   # Optional: filter by genomic region (format: chr:start-end)
+  #   # region: Group1:1000000-2000000
+
+  # Option 3: Call variants from raw sequencing data (BAM/CRAM)
+  # Recommended for custom cohorts: Many honeybee WGS datasets available on SRA
+  # Example SRA searches:
+  # - "Apis mellifera"[Organism] AND "whole genome"[Strategy]
+  # - Search for specific populations, traits, or experiments
+  calling:
+    # List of BAM/CRAM file paths
+    # For large cohorts, consider calling variants in batches by population/region
+    bam_files: []
+    # Example paths (populate with actual BAM files from your cohort):
+    # - data/alignments/amellifera/population_A/sample1.bam
+    # - data/alignments/amellifera/population_A/sample2.bam
+    # - data/alignments/amellifera/population_B/sample1.bam
+    
+    # Reference genome FASTA
+    reference: output/gwas/amellifera/genome/genomic.fna
+    
+    # Calling method: bcftools, gatk, or freebayes
+    # bcftools recommended for honeybee genomes (16 chromosomes)
+    method: bcftools
+
+  # Destination directory for variant files
+  dest_dir: output/gwas/amellifera/variants
+
+# =============================================================================
+# QUALITY CONTROL
+# =============================================================================
+qc:
+  # Minimum minor allele frequency (MAF) threshold
+  # For honeybee populations, 0.01 is reasonable for population-level analysis
+  min_maf: 0.01
+
+  # Maximum missing genotype rate per variant
+  # Honeybee datasets often have high coverage, can use stricter threshold
+  max_missing: 0.05
+
+  # Minimum call rate per variant
+  min_call_rate: 0.95
+
+  # Hardy-Weinberg equilibrium p-value threshold
+  # Honeybee populations can show strong population structure
+  hwe_pval: 1e-6
+
+  # Exclude insertion/deletion variants
+  exclude_indels: true
+
+  # Minimum variant quality score
+  min_qual: 30.0
+
+# =============================================================================
+# SAMPLE METADATA
+# =============================================================================
+samples:
+  # List of sample IDs (optional, if not provided, uses all samples in VCF)
+  # For large honeybee cohorts, consider subsetting by population or trait
+  # sample_list: data/samples/amellifera/european_population.txt
+
+  # Phenotype file (TSV format: sample_id, trait1, trait2, ...)
+  # Common honeybee traits: Varroa resistance, hygienic behavior, honey production,
+  #                          colony strength, overwintering success, disease resistance
+  phenotype_file: data/phenotypes/amellifera/phenotypes.tsv
+
+  # Covariates file (TSV format: sample_id, age, sex, population, PC1, PC2, ...)
+  # Important for honeybees: population/subspecies, sampling location, season
+  # covariates_file: data/covariates/amellifera/covariates.tsv
+
+# =============================================================================
+# POPULATION STRUCTURE
+# =============================================================================
+# Honeybees show strong population structure (subspecies, geographic isolation)
+# Population structure analysis is critical for honeybee GWAS
+structure:
+  # Compute principal components (PCA)
+  # Essential for honeybee GWAS due to subspecies diversity
+  compute_pca: true
+
+  # Number of principal components to compute
+  # Honeybees have 5 major subspecies lineages; 10-20 PCs recommended
+  n_components: 20
+
+  # Compute kinship/relatedness matrix
+  # Important for honeybee colonies (queen-worker relationships, inbreeding)
+  compute_relatedness: true
+
+  # Kinship computation method: vanraden, astle, or yang
+  # VanRaden method works well for honeybee population structure
+  kinship_method: vanraden
+
+# =============================================================================
+# ASSOCIATION TESTING
+# =============================================================================
+association:
+  # Statistical model: linear, logistic, or mixed
+  # Linear for continuous traits (honey production, colony size)
+  # Logistic for binary traits (disease resistance, behavioral traits)
+  model: linear
+
+  # Trait name (column name in phenotype file)
+  # Examples: varroa_resistance, hygienic_behavior, honey_yield, overwinter_survival
+  trait: varroa_resistance
+
+  # Covariates to include in association model
+  # Recommended: Include top PCs (PC1-PC10), population/subspecies, sampling location
+  covariates:
+    # - population
+    # - sampling_location
+    # - PC1
+    # - PC2
+    # - PC3
+    # - PC4
+    # - PC5
+
+  # Minimum sample size required per variant
+  # For honeybee cohorts: 50-100 samples minimum recommended
+  min_sample_size: 50
+
+  # Relatedness matrix: auto (use computed), or path to kinship matrix file
+  # Use auto to incorporate computed kinship matrix
+  relatedness_matrix: auto
+
+# =============================================================================
+# MULTIPLE TESTING CORRECTION
+# =============================================================================
+correction:
+  # Correction method: bonferroni, fdr, both, or permutation
+  # For honeybee genomes (16 chromosomes, ~260Mbp), genome-wide significance
+  # threshold is approximately 5e-8 (similar to human GWAS)
+  method: bonferroni
+
+  # Significance level (alpha)
+  alpha: 0.05
+
+# =============================================================================
+# OUTPUT
+# =============================================================================
+output:
+  # Directory for association test results
+  results_dir: output/gwas/amellifera/results
+
+  # Directory for visualization plots
+  plots_dir: output/gwas/amellifera/plots
+
+  # Output format: json, tsv, or plink
+  format: tsv
+

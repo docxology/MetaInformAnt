@@ -13,7 +13,32 @@ import pandas as pd
 
 @dataclass
 class MultiOmicsData:
-    """Container for multi-omics datasets with sample alignment."""
+    """Container for multi-omics datasets with automatic sample alignment.
+    
+    This class manages heterogeneous biological datasets from multiple omic layers
+    (genomics, transcriptomics, proteomics, metabolomics, epigenomics) and ensures
+    proper sample alignment across all layers. Only samples present in all layers
+    are retained.
+    
+    Attributes:
+        genomics: Genomic data (SNPs, mutations) as DataFrame (samples x features)
+        transcriptomics: Gene expression data as DataFrame (samples x genes)
+        proteomics: Protein abundance data as DataFrame (samples x proteins)
+        metabolomics: Metabolite data as DataFrame (samples x metabolites)
+        epigenomics: Epigenomic data as DataFrame (samples x epigenetic marks)
+        metadata: Sample metadata as DataFrame (samples x metadata columns)
+        
+    Examples:
+        >>> import pandas as pd
+        >>> import numpy as np
+        >>> genomics = pd.DataFrame(np.random.randn(10, 100), index=[f"S{i}" for i in range(10)])
+        >>> transcriptomics = pd.DataFrame(np.random.randn(10, 200), index=[f"S{i}" for i in range(10)])
+        >>> data = MultiOmicsData(genomics=genomics, transcriptomics=transcriptomics)
+        >>> len(data.samples)
+        10
+        >>> data.layer_names
+        ['genomics', 'transcriptomics']
+    """
 
     genomics: Optional[pd.DataFrame] = None
     transcriptomics: Optional[pd.DataFrame] = None
@@ -23,7 +48,12 @@ class MultiOmicsData:
     metadata: Optional[pd.DataFrame] = None
 
     def __post_init__(self):
-        """Validate and align samples across omics layers."""
+        """Validate and align samples across omics layers.
+        
+        Automatically identifies common samples across all provided omics layers
+        and filters to retain only samples present in all layers. Raises ValueError
+        if no common samples are found or no omics layers are provided.
+        """
         self.omics_layers = {}
 
         # Store non-None omics data
@@ -68,29 +98,93 @@ class MultiOmicsData:
 
     @property
     def samples(self) -> List[str]:
-        """Get list of aligned samples."""
+        """Get list of aligned samples across all omics layers.
+        
+        Returns:
+            List of sample identifiers (index values) that are present
+            in all provided omics layers. Samples are sorted alphabetically.
+            
+        Examples:
+            >>> data = MultiOmicsData(genomics=genomics_df, transcriptomics=transcriptomics_df)
+            >>> len(data.samples)
+            10
+            >>> data.samples[0]
+            'S0'
+        """
         if self.omics_layers:
             return list(next(iter(self.omics_layers.values())).index)
         return []
 
     @property
     def n_samples(self) -> int:
-        """Number of aligned samples."""
+        """Get number of aligned samples across all omics layers.
+        
+        Returns:
+            Integer count of samples present in all layers.
+            
+        Examples:
+            >>> data = MultiOmicsData(genomics=genomics_df, transcriptomics=transcriptomics_df)
+            >>> data.n_samples
+            10
+        """
         return len(self.samples)
 
     @property
     def layer_names(self) -> List[str]:
-        """Names of available omics layers."""
+        """Get names of all available omics layers.
+        
+        Returns:
+            List of layer names (e.g., ['genomics', 'transcriptomics']).
+            Only includes layers that were provided (not None).
+            
+        Examples:
+            >>> data = MultiOmicsData(genomics=genomics_df, transcriptomics=transcriptomics_df)
+            >>> data.layer_names
+            ['genomics', 'transcriptomics']
+        """
         return list(self.omics_layers.keys())
 
     def get_layer(self, layer_name: str) -> pd.DataFrame:
-        """Get specific omics layer."""
+        """Retrieve a specific omics layer as DataFrame.
+        
+        Args:
+            layer_name: Name of the omics layer (e.g., 'genomics', 'transcriptomics')
+            
+        Returns:
+            DataFrame containing the specified omics layer with aligned samples.
+            
+        Raises:
+            KeyError: If layer_name is not available in this object
+            
+        Examples:
+            >>> data = MultiOmicsData(genomics=genomics_df, transcriptomics=transcriptomics_df)
+            >>> genomics = data.get_layer("genomics")
+            >>> genomics.shape
+            (10, 100)
+        """
         if layer_name not in self.omics_layers:
             raise KeyError(f"Layer '{layer_name}' not available. Available: {self.layer_names}")
         return self.omics_layers[layer_name]
 
     def subset_samples(self, sample_list: List[str]) -> "MultiOmicsData":
-        """Create subset with specified samples."""
+        """Create a new MultiOmicsData object with subset of samples.
+        
+        Filters all omics layers and metadata to include only the specified
+        samples. Only samples present in the original data are retained.
+        
+        Args:
+            sample_list: List of sample identifiers to include
+            
+        Returns:
+            New MultiOmicsData object containing only the specified samples.
+            Sample alignment is automatically performed on the subset.
+            
+        Examples:
+            >>> data = MultiOmicsData(genomics=genomics_df, transcriptomics=transcriptomics_df)
+            >>> subset = data.subset_samples(["S0", "S1", "S2"])
+            >>> subset.n_samples
+            3
+        """
         new_data = MultiOmicsData()
 
         for layer_name, data in self.omics_layers.items():
@@ -107,7 +201,28 @@ class MultiOmicsData:
         return new_data
 
     def subset_features(self, feature_dict: Dict[str, List[str]]) -> "MultiOmicsData":
-        """Create subset with specified features per layer."""
+        """Create a new MultiOmicsData object with subset of features.
+        
+        Filters specific features (genes, proteins, metabolites, etc.) from
+        each omics layer. Layers not specified in feature_dict are retained
+        in full.
+        
+        Args:
+            feature_dict: Dictionary mapping layer names to lists of feature
+                identifiers to include (e.g., {"transcriptomics": ["GENE1", "GENE2"]})
+                
+        Returns:
+            New MultiOmicsData object with filtered features. Samples remain
+            aligned across all layers.
+            
+        Examples:
+            >>> data = MultiOmicsData(genomics=genomics_df, transcriptomics=transcriptomics_df)
+            >>> subset = data.subset_features({
+            ...     "transcriptomics": ["GENE1", "GENE2", "GENE3"]
+            ... })
+            >>> subset.get_layer("transcriptomics").shape
+            (10, 3)
+        """
         new_data = MultiOmicsData()
 
         for layer_name, data in self.omics_layers.items():
@@ -131,16 +246,39 @@ def integrate_omics_data(
     feature_mapping: Optional[Dict[str, Dict[str, str]]] = None,
     metadata: Optional[Union[pd.DataFrame, str, Path]] = None,
 ) -> MultiOmicsData:
-    """Load and integrate multiple omics datasets.
-
+    """Load and integrate multiple omics datasets into unified structure.
+    
+    Loads omics data from DataFrames or file paths, applies sample and feature
+    mappings if provided, and creates a MultiOmicsData object with automatic
+    sample alignment.
+    
     Args:
-        data_dict: Dictionary mapping omics type to DataFrame or file path
-        sample_mapping: Mapping of sample IDs across datasets
-        feature_mapping: Mapping of feature IDs within each dataset
-        metadata: Sample metadata DataFrame or file path
-
+        data_dict: Dictionary mapping omics type names ("genomics", "transcriptomics",
+            etc.) to either pandas DataFrame or file path. Supported file formats:
+            CSV (.csv), TSV (.tsv, .txt), Excel (.xlsx, .xls)
+        sample_mapping: Optional dictionary mapping dataset names to sample ID
+            transformation dictionaries for harmonizing sample IDs across datasets
+        feature_mapping: Optional nested dictionary mapping dataset names to
+            feature ID transformation dictionaries for harmonizing feature names
+        metadata: Optional sample metadata as DataFrame or file path. Metadata
+            is aligned to common samples after integration.
+            
     Returns:
-        Integrated MultiOmicsData object
+        MultiOmicsData object with all provided omics layers integrated and
+        samples aligned to common set.
+        
+    Raises:
+        ValueError: If file format is unsupported or required columns are missing
+        ValueError: If no common samples found across datasets
+        
+    Examples:
+        >>> data_dict = {
+        ...     "genomics": "data/genomics.csv",
+        ...     "transcriptomics": "data/expression.tsv"
+        ... }
+        >>> omics_data = integrate_omics_data(data_dict)
+        >>> omics_data.n_samples
+        50
     """
     omics_data = {}
 
@@ -205,16 +343,35 @@ def joint_pca(
     layer_weights: Optional[Dict[str, float]] = None,
     standardize: bool = True,
 ) -> Tuple[np.ndarray, Dict[str, np.ndarray], np.ndarray]:
-    """Joint Principal Component Analysis across omics layers.
-
+    """Perform joint Principal Component Analysis across multiple omics layers.
+    
+    Concatenates features from all omics layers (optionally weighted and standardized)
+    and performs PCA on the combined feature space. Returns joint embeddings and
+    layer-specific loadings.
+    
     Args:
-        omics_data: Multi-omics data object
-        n_components: Number of principal components
-        layer_weights: Relative weights for each omics layer
-        standardize: Whether to standardize features
-
+        omics_data: Multi-omics data object with aligned samples
+        n_components: Number of principal components to extract
+        layer_weights: Optional dictionary mapping layer names to relative weights.
+            If None, all layers weighted equally (1.0). Weights are applied as
+            sqrt(weight) scaling before concatenation.
+        standardize: If True (default), features are z-score standardized
+            (mean 0, std 1) per layer before concatenation
+            
     Returns:
-        Tuple of (joint_embeddings, layer_loadings, explained_variance)
+        Tuple containing:
+        - joint_embeddings: Array of shape (n_samples, n_components) with joint
+          low-dimensional representation
+        - layer_loadings: Dictionary mapping layer names to loading matrices
+          of shape (n_features_in_layer, n_components)
+        - explained_variance: Array of explained variance ratios for each component
+        
+    Examples:
+        >>> embeddings, loadings, var = joint_pca(omics_data, n_components=10)
+        >>> embeddings.shape
+        (100, 10)
+        >>> "genomics" in loadings
+        True
     """
     if layer_weights is None:
         layer_weights = {layer: 1.0 for layer in omics_data.layer_names}
@@ -281,17 +438,32 @@ def joint_nmf(
     regularization: float = 0.01,
     random_state: Optional[int] = None,
 ) -> Tuple[np.ndarray, Dict[str, np.ndarray]]:
-    """Joint Non-negative Matrix Factorization across omics layers.
-
+    """Perform joint Non-negative Matrix Factorization across omics layers.
+    
+    Factorizes each omics layer X_i ≈ W * H_i where W (sample factors) is shared
+    across all layers and H_i (feature factors) are layer-specific. Uses alternating
+    optimization with L2 regularization.
+    
     Args:
-        omics_data: Multi-omics data object
-        n_components: Number of components
-        max_iter: Maximum iterations
-        regularization: L2 regularization parameter
-        random_state: Random seed
-
+        omics_data: Multi-omics data object with aligned samples. All data
+            must be non-negative (will be shifted if needed)
+        n_components: Number of latent factors (components) to extract
+        max_iter: Maximum number of optimization iterations
+        regularization: L2 regularization strength for factors (default 0.01)
+        random_state: Random seed for reproducible initialization
+        
     Returns:
-        Tuple of (sample_factors, layer_feature_factors)
+        Tuple containing:
+        - sample_factors: Shared sample factor matrix W of shape (n_samples, n_components)
+        - layer_feature_factors: Dictionary mapping layer names to feature factor
+          matrices H_i of shape (n_components, n_features_in_layer)
+          
+    Examples:
+        >>> W, H = joint_nmf(omics_data, n_components=10, random_state=42)
+        >>> W.shape
+        (100, 10)
+        >>> H["transcriptomics"].shape
+        (10, 200)
     """
     if random_state is not None:
         np.random.seed(random_state)
@@ -351,16 +523,36 @@ def joint_nmf(
 def canonical_correlation(
     omics_data: MultiOmicsData, layer_pair: Tuple[str, str], n_components: int = 10, regularization: float = 0.01
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Canonical Correlation Analysis between two omics layers.
-
+    """Perform Canonical Correlation Analysis between two omics layers.
+    
+    CCA finds linear combinations of features in each layer that are maximally
+    correlated. Useful for identifying shared patterns between omics data types.
+    
     Args:
-        omics_data: Multi-omics data object
-        layer_pair: Tuple of two layer names to analyze
-        n_components: Number of canonical components
-        regularization: Regularization parameter
-
+        omics_data: Multi-omics data object with aligned samples
+        layer_pair: Tuple of (layer1_name, layer2_name) to analyze. Both layers
+            must exist in omics_data.layer_names
+        n_components: Number of canonical variate pairs to extract
+        regularization: Ridge regularization parameter for covariance matrices
+            (prevents singular matrix issues)
+            
     Returns:
-        Tuple of (X_canonical, Y_canonical, X_weights, Y_weights, correlations)
+        Tuple containing:
+        - X_canonical: Canonical variates for first layer (n_samples, n_components)
+        - Y_canonical: Canonical variates for second layer (n_samples, n_components)
+        - X_weights: Feature weights for first layer (n_features_X, n_components)
+        - Y_weights: Feature weights for second layer (n_features_Y, n_components)
+        - correlations: Canonical correlations for each component pair
+        
+    Raises:
+        ValueError: If layer names not found in omics_data
+        
+    Examples:
+        >>> X_c, Y_c, X_w, Y_w, corr = canonical_correlation(
+        ...     omics_data, ("genomics", "transcriptomics"), n_components=5
+        ... )
+        >>> corr[0]  # First canonical correlation
+        0.85...
     """
     layer1, layer2 = layer_pair
 

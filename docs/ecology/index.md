@@ -105,11 +105,13 @@ trait_community = community.trait_based_community_analysis(
 ### With Statistical Analysis
 ```python
 from metainformant.ecology import community
-from metainformant.math import statistics
 
-# Statistical analysis of community patterns
-diversity_stats = statistics.analyze_diversity_patterns(diversity_values)
-community_stats = statistics.test_community_differences(site1_data, site2_data)
+# Calculate diversity indices
+shannon = community.shannon_diversity(abundances)
+simpson = community.simpson_diversity(abundances)
+
+# Community comparison
+beta_diversity = community.bray_curtis_dissimilarity(community1, community2)
 ```
 
 ## Planned Extensions

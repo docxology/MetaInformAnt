@@ -27,9 +27,45 @@ def _iter_stanzas(lines: Iterable[str]) -> Iterator[List[str]]:
 
 
 def parse_obo(path: str | Path) -> Ontology:
-    """Parse a small subset of OBO format sufficient for GO term hierarchy.
-
-    Supports fields: id, name, namespace, def, alt_id, is_a (parent).
+    """Parse OBO (Open Biological and Biomedical Ontologies) format file.
+    
+    Parses a subset of OBO format sufficient for Gene Ontology and similar
+    hierarchical ontologies. Supports essential fields for term representation
+    and hierarchy traversal.
+    
+    Args:
+        path: Path to OBO format file (typically .obo extension)
+        
+    Returns:
+        Ontology object containing all parsed terms and their relationships.
+        Each term includes identifier, name, namespace, definition, alternative
+        IDs, and parent relationships (is_a).
+        
+    Supported OBO Fields:
+        - id: Term identifier (e.g., "GO:0008150")
+        - name: Human-readable term name
+        - namespace: Ontology namespace/category
+        - def: Term definition (with optional citations)
+        - alt_id: Alternative identifiers for the term
+        - is_a: Parent term relationships (creates hierarchy)
+        
+    Examples:
+        >>> onto = parse_obo("go-basic.obo")
+        >>> onto.num_terms()
+        45000
+        >>> onto.has_term("GO:0008150")
+        True
+        >>> term = onto.terms["GO:0008150"]
+        >>> term.name
+        'biological_process'
+        
+    Note:
+        This is a lightweight parser for standard OBO files. Complex
+        relationship types beyond is_a, qualifiers, and advanced OBO
+        features may require specialized parsing libraries.
+        
+    References:
+        OBO Format Specification: https://owlcollab.github.io/oboformat/doc/GO.format.html
     """
     p = Path(path)
     ontology = Ontology()

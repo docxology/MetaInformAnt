@@ -4,9 +4,30 @@ from typing import Iterable, List
 
 
 def replicator_step(frequencies: Iterable[float], payoff_matrix: Iterable[Iterable[float]]) -> list[float]:
-    """Discrete replicator update x_i' = x_i * ( (A x)_i ) / (x^T A x).
-
-    Frequencies are clamped to be non-negative and renormalized to sum to 1.
+    """Perform one discrete-time step of the replicator equation.
+    
+    The replicator equation models frequency-dependent selection in evolutionary
+    game theory. Strategies with above-average payoffs increase in frequency.
+    
+    Args:
+        frequencies: Current strategy frequencies (must sum to 1)
+        payoff_matrix: Payoff matrix A where A[i][j] is payoff to strategy i
+            when playing against strategy j
+            
+    Returns:
+        Updated frequencies after one generation, renormalized to sum to 1.
+        Formula: x_i' = x_i × (Ax)_i / (x^T A x)
+        
+    Examples:
+        >>> freqs = [0.5, 0.3, 0.2]
+        >>> payoff = [[1.0, 0.5, 0.3], [0.5, 1.0, 0.7], [0.3, 0.7, 1.0]]
+        >>> new_freqs = replicator_step(freqs, payoff)
+        >>> abs(sum(new_freqs) - 1.0) < 1e-10
+        True
+        
+    References:
+        Hofbauer, J., & Sigmund, K. (1998). Evolutionary games and population
+        dynamics. Cambridge University Press.
     """
     x = [max(0.0, float(v)) for v in frequencies]
     total = sum(x)
@@ -27,7 +48,31 @@ def replicator_step(frequencies: Iterable[float], payoff_matrix: Iterable[Iterab
 
 
 def replicator_derivative(frequencies: Iterable[float], payoff_matrix: Iterable[Iterable[float]]) -> list[float]:
-    """Continuous-time replicator equation derivative: dx_i/dt = x_i[(A x)_i - x^T A x]."""
+    """Calculate continuous-time replicator equation derivative.
+    
+    Returns the rate of change for each strategy frequency under continuous-time
+    replicator dynamics. Used for continuous-time simulations and stability analysis.
+    
+    Args:
+        frequencies: Current strategy frequencies
+        payoff_matrix: Payoff matrix A where A[i][j] is payoff to strategy i
+            when playing against strategy j
+            
+    Returns:
+        List of derivatives dx_i/dt for each strategy. Formula:
+        dx_i/dt = x_i × [(Ax)_i - x^T A x]
+        
+    Examples:
+        >>> freqs = [0.5, 0.3, 0.2]
+        >>> payoff = [[1.0, 0.5], [0.5, 1.0]]
+        >>> derivatives = replicator_derivative(freqs[:2], payoff)
+        >>> len(derivatives)
+        2
+        
+    References:
+        Hofbauer, J., & Sigmund, K. (1998). Evolutionary games and population
+        dynamics. Cambridge University Press.
+    """
     x = [max(0.0, float(v)) for v in frequencies]
     total = sum(x)
     x = [v / total for v in x] if total > 0 else [0.0 for _ in x]

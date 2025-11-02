@@ -19,14 +19,16 @@ Tools for retrieving and working with complete proteome datasets.
 
 **Usage:**
 ```python
-from metainformant.protein import proteomes
+from metainformant.protein import read_taxon_ids
+from pathlib import Path
 
-# Retrieve proteome data
-proteome = proteomes.get_proteome("UP000005640")  # Human proteome
-sequences = proteomes.extract_sequences(proteome)
+# Read taxon IDs from file
+taxon_file = Path("taxon_ids.txt")
+taxon_ids = read_taxon_ids(taxon_file)
 
-# Analyze proteome statistics
-stats = proteomes.proteome_statistics(proteome)
+# For full proteome analysis, use protein sequences module
+from metainformant.protein import parse_fasta
+proteome_dict = parse_fasta(Path("proteome.fasta"))
 ```
 
 ### Protein Sequences (`sequences.py`)
@@ -40,13 +42,26 @@ Protein sequence manipulation and analysis.
 
 **Usage:**
 ```python
-from metainformant.protein import sequences
+from metainformant.protein import (
+    is_valid_protein_sequence,
+    calculate_aa_composition,
+    kmer_frequencies,
+    parse_fasta
+)
+from pathlib import Path
 
-# Sequence analysis
+# Validate sequence
 seq = "MKVLWAALLVTFLAGCQAKVE"
-composition = sequences.aa_composition(seq)
-molecular_weight = sequences.molecular_weight(seq)
-hydrophobicity = sequences.hydrophobicity_profile(seq)
+is_valid = is_valid_protein_sequence(seq)
+
+# Calculate amino acid composition
+composition = calculate_aa_composition(seq)
+
+# Calculate k-mer frequencies
+kmers = kmer_frequencies(seq, k=3)
+
+# Parse FASTA file
+sequences = parse_fasta(Path("proteins.fasta"))
 ```
 
 ### Structure Integration (`structure.py`, `pdb.py`)
@@ -60,12 +75,22 @@ Protein structure data integration and analysis.
 
 **Usage:**
 ```python
-from metainformant.protein import pdb
+from metainformant.protein import fetch_pdb_structure
+from pathlib import Path
 
-# Load and analyze structure
-structure = pdb.load_pdb("protein.pdb")
-chains = pdb.extract_chains(structure)
-resolution = pdb.get_resolution(structure)
+# Download PDB structure
+pdb_id = "1A2B"
+output_dir = Path("output/pdb")
+pdb_path = fetch_pdb_structure(pdb_id, output_dir, fmt="pdb")
+
+# For structure analysis, use compute_rmsd_kabsch
+from metainformant.protein import compute_rmsd_kabsch
+import numpy as np
+
+# Compare two structures (requires coordinate arrays)
+# coords_ref = np.array([...])  # Reference coordinates
+# coords_mobile = np.array([...])  # Mobile coordinates
+# rmsd = compute_rmsd_kabsch(coords_ref, coords_mobile)
 ```
 
 ### Functional Annotation (`interpro.py`, `uniprot.py`)
@@ -79,12 +104,16 @@ Integration with InterPro and UniProt for functional annotation.
 
 **Usage:**
 ```python
-from metainformant.protein import uniprot, interpro
+from metainformant.protein import map_ids_uniprot
+from metainformant.protein.interpro import fetch_interpro_domains
 
-# Retrieve annotations
-protein_id = "P12345"
-uniprot_data = uniprot.get_protein_data(protein_id)
-domains = interpro.get_domains(uniprot_data["sequence"])
+# Map IDs to UniProt accessions
+protein_ids = ["P12345", "Q67890"]
+id_mapping = map_ids_uniprot(protein_ids)
+
+# Fetch InterPro domains for a UniProt accession
+uniprot_acc = "P12345"
+domains = fetch_interpro_domains(uniprot_acc)
 ```
 
 ## Integration with Other Modules
@@ -92,23 +121,25 @@ domains = interpro.get_domains(uniprot_data["sequence"])
 ### With DNA Module
 ```python
 from metainformant.dna import translation
-from metainformant.protein import proteomes
+from metainformant.protein import calculate_aa_composition, is_valid_protein_sequence
 
 # Translate DNA and analyze protein
 dna_sequence = "ATGGCC..."
-protein_sequence = translation.translate(dna_sequence)
-proteome_analysis = proteomes.analyze_protein(protein_sequence)
+protein_sequence = translation.translate_dna(dna_sequence)
+is_valid = is_valid_protein_sequence(protein_sequence)
+composition = calculate_aa_composition(protein_sequence)
 ```
 
 ### With Visualization Module
 ```python
-from metainformant.protein import sequences
+from metainformant.protein import simple_helix_coil_propensity
 from metainformant.visualization import lineplot
 
 # Visualize protein properties
 seq = "MKVLWAALLVTFLAGCQAKVE"
-hydrophobicity = sequences.hydrophobicity_profile(seq)
-lineplot(hydrophobicity, title="Hydrophobicity Profile")
+propensity = simple_helix_coil_propensity(seq)
+ax = lineplot(None, propensity)
+ax.set_title("Helix-Coil Propensity Profile")
 ```
 
 ## Performance Features

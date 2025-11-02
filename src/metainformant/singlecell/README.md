@@ -19,12 +19,18 @@ Quality control, normalization, and filtering of single-cell data.
 
 **Usage:**
 ```python
-from metainformant.singlecell import preprocessing
+from metainformant.singlecell import (
+    load_count_matrix,
+    calculate_qc_metrics,
+    filter_cells,
+    normalize_counts
+)
 
 # Load and preprocess data
-counts = preprocessing.load_counts("counts.h5ad")
-filtered = preprocessing.filter_cells(counts, min_genes=200, max_mito=0.1)
-normalized = preprocessing.normalize_counts(filtered, method="cpm")
+data = load_count_matrix("counts.mtx", format="mtx")
+data = calculate_qc_metrics(data)
+data = filter_cells(data, min_genes=200, max_pct_mt=10.0)
+data = normalize_counts(data)
 ```
 
 ### Dimensionality Reduction (`dimensionality.py`)
@@ -38,11 +44,20 @@ PCA, t-SNE, UMAP, and other dimensionality reduction techniques.
 
 **Usage:**
 ```python
-from metainformant.singlecell import dimensionality
+from metainformant.singlecell import (
+    select_hvgs,
+    compute_pca,
+    compute_umap,
+    compute_neighbors
+)
+
+# Select highly variable genes
+data = select_hvgs(data, n_top_genes=2000)
 
 # Reduce dimensions
-pca_result = dimensionality.run_pca(normalized, n_components=50)
-umap_result = dimensionality.run_umap(pca_result, n_neighbors=15, min_dist=0.1)
+data = compute_pca(data, n_components=50)
+data = compute_neighbors(data, n_neighbors=15)
+data = compute_umap(data, min_dist=0.1)
 ```
 
 ### Clustering (`clustering.py`)
@@ -56,11 +71,19 @@ Cell type identification and cluster analysis.
 
 **Usage:**
 ```python
-from metainformant.singlecell import clustering
+from metainformant.singlecell import (
+    leiden_clustering,
+    louvain_clustering,
+    find_marker_genes
+)
 
 # Cluster cells
-clusters = clustering.louvain_clustering(umap_result, resolution=1.0)
-markers = clustering.find_markers(normalized, clusters)
+data = leiden_clustering(data, resolution=1.0)
+# Or use Louvain
+data = louvain_clustering(data, resolution=1.0)
+
+# Find marker genes
+markers = find_marker_genes(data, cluster_key="cluster")
 ```
 
 ### Trajectory Analysis (`trajectory.py`)
@@ -74,11 +97,20 @@ Pseudotime and developmental trajectory inference.
 
 **Usage:**
 ```python
-from metainformant.singlecell import trajectory
+from metainformant.singlecell import (
+    compute_pseudotime,
+    trajectory_analysis,
+    lineage_analysis
+)
 
-# Infer trajectory
-trajectory_result = trajectory.infer_pseudotime(umap_result, start_cell="root")
-branching = trajectory.detect_branching(trajectory_result)
+# Compute pseudotime
+data = compute_pseudotime(data, root_cells=0, method="diffusion")
+
+# Trajectory analysis
+traj_result = trajectory_analysis(data)
+
+# Lineage analysis
+lineages = lineage_analysis(data)
 ```
 
 ### Integration (`integration.py`)
@@ -92,11 +124,20 @@ Multi-sample batch correction and integration.
 
 **Usage:**
 ```python
-from metainformant.singlecell import integration
+from metainformant.singlecell import (
+    integrate_datasets,
+    harmony_integration,
+    batch_correction
+)
 
 # Integrate multiple samples
-integrated = integration.harmony_integration([sample1, sample2, sample3])
-corrected = integration.mnn_correction(integrated)
+integrated = integrate_datasets([sample1_data, sample2_data, sample3_data])
+
+# Harmony batch correction
+corrected = harmony_integration(integrated, batch_key="batch")
+
+# Alternative: Combat batch correction
+corrected = batch_correction(integrated, batch_key="batch", method="combat")
 ```
 
 ### Visualization (`visualization.py`)
@@ -110,11 +151,18 @@ Specialized single-cell data visualization.
 
 **Usage:**
 ```python
-from metainformant.singlecell import visualization
+from metainformant.singlecell import (
+    plot_qc_metrics,
+    plot_dimensionality_reduction,
+    plot_gene_expression,
+    plot_clusters
+)
 
 # Create visualizations
-umap_plot = visualization.plot_umap(umap_result, color_by=clusters)
-trajectory_plot = visualization.plot_trajectory(trajectory_result)
+fig = plot_qc_metrics(data)
+fig = plot_dimensionality_reduction(data, method="umap", color_by="cluster")
+fig = plot_gene_expression(data, gene="GENE1")
+fig = plot_clusters(data, cluster_key="cluster")
 ```
 
 ## Integration with Other Modules
@@ -124,21 +172,30 @@ trajectory_plot = visualization.plot_trajectory(trajectory_result)
 from metainformant.rna import workflow
 from metainformant.singlecell import preprocessing
 
-# Process bulk RNA data for single-cell comparison
-bulk_expression = workflow.extract_expression_patterns(rna_data)
-single_cell = preprocessing.normalize_counts(single_cell_counts)
-comparison = singlecell.compare_with_bulk(single_cell, bulk_expression)
+# Process single-cell data
+from metainformant.singlecell import normalize_counts, load_count_matrix
+
+single_cell_data = load_count_matrix("counts.mtx")
+single_cell_data = normalize_counts(single_cell_data)
+
+# Compare with bulk RNA data from RNA workflow
+# See RNA module for bulk expression data extraction
 ```
 
 ### With Machine Learning Module
 ```python
-from metainformant.singlecell import dimensionality, clustering
-from metainformant.ml import classification
+from metainformant.singlecell import leiden_clustering, compute_pca
+from metainformant.ml import BiologicalClassifier
 
 # Use clustering results for supervised learning
-features = dimensionality.run_pca(normalized, n_components=20)
-clusters = clustering.louvain_clustering(features)
-classifier = classification.train_classifier(features, clusters)
+data = leiden_clustering(data, resolution=1.0)
+data = compute_pca(data, n_components=20)
+
+# Extract cluster labels for classification
+clusters = data.metadata.get("cluster", [])
+# Train classifier with cluster labels
+classifier = BiologicalClassifier(algorithm="random_forest")
+# classifier.fit(data.counts, clusters)
 ```
 
 ## Performance Features

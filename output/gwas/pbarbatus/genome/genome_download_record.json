@@ -1,0 +1,9 @@
+{
+  "accession": "GCF_000187915.1",
+  "dest_dir": "output/gwas/pbarbatus/genome",
+  "error": "File is not a zip file",
+  "extracted_dir": "",
+  "method": "datasets-api",
+  "return_code": 1,
+  "status": "failed"
+}
