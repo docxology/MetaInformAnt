@@ -88,3 +88,4 @@ class TestAntWikiLoading:
         assert len(loaded[0]["traits"]) == 3
         assert loaded[0]["measurements"]["worker_length_mm"] == [6.0, 13.0]
 
+

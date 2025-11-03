@@ -17,9 +17,11 @@ scripts/rna/
 ├── cleanup_quantified_sra.sh      # Safe deletion of FASTQ files after quantification
 ├── monitor_comprehensive.py       # Comprehensive real-time monitoring
 ├── monitor_workflow.py            # Real-time monitoring dashboard
-├── monitor_amalgkit_progress.sh   # Simple progress monitor
+├── monitor_amalgkit_progress.sh    # Simple progress monitor
 ├── list_unquantified.sh           # Report unquantified samples
 ├── quant_downloaded_samples.py    # Quantify already-downloaded samples
+├── manual_quant_cleanup.py        # Manual quantification and cleanup utility
+├── quant_and_cleanup.py          # Batch quantification and cleanup
 ├── README.md                      # This file
 └── AGENTS.md                      # AI agent documentation
 ```
@@ -152,12 +154,56 @@ bash scripts/rna/monitor_amalgkit_progress.sh
 watch -n 60 bash scripts/rna/monitor_amalgkit_progress.sh
 ```
 
+#### `comprehensive_status.py` ⭐
+**Comprehensive status check with recommendations**
+
+Complete workflow status including quantified counts, log activity, and recommendations:
+
+**Usage:**
+```bash
+python3 scripts/rna/comprehensive_status.py
+```
+
+**Output:**
+- Per-species progress and quantified counts
+- Downloaded sample counts
+- Log file status and activity indicators
+- Overall summary and recommendations
+
+#### `restart_all_workflows.py` ⭐
+**Restart all workflows in parallel**
+
+Convenient script to restart all 4 species workflows simultaneously:
+
+**Usage:**
+```bash
+python3 scripts/rna/restart_all_workflows.py
+```
+
+This will start all workflows with:
+- 12 samples per batch
+- 12 parallel threads
+- Background execution (nohup)
+- Timestamped log files
+
+#### `check_and_restart_workflows.py`
+**Smart status check and conditional restart**
+
+Checks workflow status and only restarts inactive workflows:
+
+**Usage:**
+```bash
+python3 scripts/rna/check_and_restart_workflows.py
+```
+
 ### Utility Scripts
 
-### `list_unquantified.sh`
+#### `list_unquantified.sh`
 **Generate reports of samples needing quantification**
 
-Identifies samples with downloaded SRA files but no quantification output:
+Identifies samples with downloaded FASTQ or SRA files but no quantification output:
+- Works with standardized flat `fastq/` structure
+- Detects both `.fastq.gz` (ENA downloads) and `.sra` (SRA Toolkit) files
 - Scans all species directories
 - Reports size and sample count
 - Creates sample lists in output/amalgkit/
@@ -171,7 +217,7 @@ bash scripts/rna/list_unquantified.sh
 - `output/amalgkit/{species}_unquantified.txt` - Sample lists
 - Console report with sizes and counts
 
-### `cleanup_quantified_sra.sh`
+#### `cleanup_quantified_sra.sh`
 **Safe deletion of FASTQ files after quantification**
 
 Reclaims disk space by removing FASTQ files after successful quantification.
@@ -179,6 +225,7 @@ Works with both SRA Toolkit downloads (.sra files) and ENA downloads (.fastq.gz 
 - Verifies quantification completion before deletion
 - Detailed logging of operations
 - Safe: skips unquantified samples
+- Uses standardized flat `fastq/` structure
 
 **Usage:**
 ```bash
@@ -187,6 +234,41 @@ bash scripts/rna/cleanup_quantified_sra.sh
 
 # Execute cleanup
 bash scripts/rna/cleanup_quantified_sra.sh --execute
+```
+
+#### `quant_downloaded_samples.py`
+**Quantify already-downloaded samples**
+
+Useful for quantifying samples that were downloaded but not yet quantified:
+
+**Usage:**
+```bash
+python3 scripts/rna/quant_downloaded_samples.py \
+  --config config/amalgkit/amalgkit_cfloridanus.yaml \
+  --threads 12
+```
+
+#### `manual_quant_cleanup.py`
+**Manual quantification and cleanup utility**
+
+Sequential processing for manual control:
+
+**Usage:**
+```bash
+python3 scripts/rna/manual_quant_cleanup.py \
+  --config config/amalgkit/amalgkit_cfloridanus.yaml
+```
+
+#### `quant_and_cleanup.py`
+**Batch quantification and cleanup**
+
+Parallel quantification followed by cleanup:
+
+**Usage:**
+```bash
+python3 scripts/rna/quant_and_cleanup.py \
+  --config config/amalgkit/amalgkit_cfloridanus.yaml \
+  --threads 12
 ```
 
 ### Testing Scripts
@@ -215,9 +297,15 @@ The ENA-based workflow automatically manages disk space through batched processi
 All outputs go to `output/amalgkit/{species}/`:
 - `quant/` - Quantification results (abundance.tsv, ~2 MB per sample)
 - `work/metadata/` - Filtered metadata
-- `fastq/` - FASTQ files (automatically cleaned after quantification)
+- `fastq/` - FASTQ files (flat structure, sample directories directly in fastq/, automatically cleaned after quantification)
 - `work/index/` - Kallisto index files
 - `logs/` - Processing logs from workflow_ena_integrated.py
+
+**Structure Standardization (Nov 2025):**
+- ✅ All species use flat `fastq/` structure (no nested `getfastq/` subdirectories)
+- ✅ Sample directories: `fastq/{SAMPLE_ID}/` containing `.fastq.gz` or `.sra` files
+- ✅ All utility scripts updated to use standardized paths
+- ✅ Ensures consistent behavior and prevents false positives/negatives in workflow logic
 
 See `docs/rna/examples/` for complete documentation.
 
@@ -236,4 +324,3 @@ See `docs/rna/examples/` for complete documentation.
 ## Examples
 
 See `docs/rna/examples/pbarbatus_analysis.md` for a complete workflow example.
-

@@ -388,7 +388,9 @@ from metainformant.dna import sequences, alignment, phylogeny
 # Complete phylogenetic analysis
 seq_dict = sequences.read_fasta("input.fasta")
 # For pairwise alignment
-align_result = alignment.global_align(seq_dict["seq1"], seq_dict["seq2"])
+seq1 = seq_dict["seq1"]
+seq2 = seq_dict["seq2"]
+align_result = alignment.global_align(seq1, seq2)
 
 # Build phylogenetic tree from sequences
 tree = phylogeny.neighbor_joining_tree(seq_dict)

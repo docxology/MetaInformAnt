@@ -1,0 +1,13 @@
+{
+	"n_targets": 34196,
+	"n_bootstraps": 0,
+	"n_processed": 29499099,
+	"n_pseudoaligned": 25673076,
+	"n_unique": 11862032,
+	"p_pseudoaligned": 87.0,
+	"p_unique": 40.2,
+	"kallisto_version": "0.48.0",
+	"index_version": 10,
+	"start_time": "Sun Nov  2 12:46:26 2025",
+	"call": "kallisto quant -i /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/sinvicta/work/index/transcriptome.idx -o output/amalgkit/sinvicta/quant/SRR7766958 -t 12 output/amalgkit/sinvicta/fastq/SRR7766958/SRR7766958_1.fastq.gz output/amalgkit/sinvicta/fastq/SRR7766958/SRR7766958_2.fastq.gz"
+}

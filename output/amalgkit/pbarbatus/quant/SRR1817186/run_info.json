@@ -6,9 +6,8 @@
 	"n_unique": 4146449,
 	"p_pseudoaligned": 64.6,
 	"p_unique": 42.1,
-	"kallisto_version": "0.51.1",
-	"index_version": 13,
-	"k-mer length": 31,
-	"start_time": "Wed Oct 29 08:29:41 2025",
-	"call": "kallisto quant -i output/amalgkit/pbarbatus/work/index/Pogonomyrmex_barbatus.idx -o output/amalgkit/pbarbatus/work/quant/SRR1817186 -t 6 output/amalgkit/pbarbatus/work/fastq/SRR1817186/SRR1817186_1.fastq.gz output/amalgkit/pbarbatus/work/fastq/SRR1817186/SRR1817186_2.fastq.gz"
+	"kallisto_version": "0.48.0",
+	"index_version": 10,
+	"start_time": "Sun Nov  2 14:56:05 2025",
+	"call": "kallisto quant -i /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/pbarbatus/work/index/transcriptome.idx -o output/amalgkit/pbarbatus/quant/SRR1817186 -t 12 output/amalgkit/pbarbatus/fastq/SRR1817186/SRR1817186_1.fastq.gz output/amalgkit/pbarbatus/fastq/SRR1817186/SRR1817186_2.fastq.gz"
 }

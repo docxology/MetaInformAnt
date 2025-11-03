@@ -429,3 +429,4 @@ print(f"Found {len(significant)} significant variants")
 
 All methods integrate seamlessly with METAINFORMANT GWAS pipeline!
 
+

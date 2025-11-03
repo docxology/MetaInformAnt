@@ -261,3 +261,4 @@ pytest tests/test_gwas_config_amellifera.py -v
 2. The Honey Bee Genome Sequencing Consortium (2006). Insights into social insects from the genome of the honeybee Apis mellifera. *Nature*.
 3. Cridland et al. (2017). The population genetics of structural variants in honeybees. *G3: Genes, Genomes, Genetics*.
 
+

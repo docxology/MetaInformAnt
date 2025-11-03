@@ -261,7 +261,8 @@ output/amalgkit/
 │   │   │   ├── abundance.tsv
 │   │   │   └── run_info.json
 │   │   └── ...
-│   ├── fastq/              # Temporary FASTQs (auto-deleted)
+│   ├── fastq/              # Temporary FASTQs (auto-deleted, flat structure)
+│   │   └── {SRR_ID}/       # Sample directories directly in fastq/
 │   ├── work/
 │   │   ├── metadata/
 │   │   └── index/          # Kallisto index
@@ -293,7 +294,7 @@ output/amalgkit/
 **Completed sample:**
 - Quantification directory exists: `output/amalgkit/{species}/quant/{SRR_ID}/`
 - Contains: `abundance.tsv` and `run_info.json`
-- FASTQ files deleted from `fastq/{SRR_ID}/`
+- FASTQ files deleted from `fastq/{SRR_ID}/` (flat structure, no nested subdirectories)
 
 **Downloading sample:**
 - FASTQ directory exists: `output/amalgkit/{species}/fastq/{SRR_ID}/`

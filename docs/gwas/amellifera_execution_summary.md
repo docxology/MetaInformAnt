@@ -271,3 +271,4 @@ See `docs/gwas/amellifera_data_acquisition.md` for detailed instructions.
 
 To complete the analysis, provide variant data (VCF or BAM files) and phenotype measurements, then re-run the workflow. All infrastructure is in place and verified to work with real methods.
 
+

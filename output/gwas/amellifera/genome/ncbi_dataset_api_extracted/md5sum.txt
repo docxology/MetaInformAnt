@@ -1,4 +1,0 @@
-1d048fb34e1e5304a0943ca69e8d48be  ncbi_dataset/data/assembly_data_report.jsonl
-48e1bb3cde60a06d140621afc92b45d9  ncbi_dataset/data/GCF_003254395.2/GCF_003254395.2_Amel_HAv3.1_genomic.fna
-3d4826d3d6fe1946c428651e2621533e  ncbi_dataset/data/GCF_003254395.2/genomic.gff
-4d16770ea7a8b99774b0512599eb57c0  ncbi_dataset/data/dataset_catalog.json

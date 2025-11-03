@@ -45,13 +45,10 @@ is_quantified() {
 cleanup_species() {
     local species=$1
     
-    # Check both old (fastq/getfastq) and new (fastq/) directory structures
-    local fastq_dir=""
-    if [ -d "${AMALGKIT_DIR}/${species}/fastq/getfastq" ]; then
-        fastq_dir="${AMALGKIT_DIR}/${species}/fastq/getfastq"
-    elif [ -d "${AMALGKIT_DIR}/${species}/fastq" ]; then
-        fastq_dir="${AMALGKIT_DIR}/${species}/fastq"
-    else
+    # Use standardized fastq/ directory structure
+    local fastq_dir="${AMALGKIT_DIR}/${species}/fastq"
+    
+    if [ ! -d "${fastq_dir}" ]; then
         log_warn "No fastq directory found for ${species}"
         return
     fi

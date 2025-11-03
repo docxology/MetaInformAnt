@@ -26,7 +26,7 @@ log_sample() {
 # Function to list unquantified samples for a species
 list_unquantified() {
     local species=$1
-    local fastq_dir="${AMALGKIT_DIR}/${species}/fastq/getfastq"
+    local fastq_dir="${AMALGKIT_DIR}/${species}/fastq"
     
     if [ ! -d "${fastq_dir}" ]; then
         return
@@ -41,16 +41,24 @@ list_unquantified() {
         fi
         
         local sample=$(basename "${sample_dir}")
-        local sra_file="${sample_dir}/${sample}.sra"
         local quant_file="${AMALGKIT_DIR}/${species}/quant/${sample}/abundance.tsv"
         
-        if [ -f "${sra_file}" ] && [ ! -f "${quant_file}" ]; then
-            local size=$(du -sh "${sample_dir}" | cut -f1)
-            samples+=("${sample}")
-            log_sample "${sample} (${size})"
+        # Check if sample has FASTQ files but no quantification
+        if [ ! -f "${quant_file}" ]; then
+            # Check for any .fastq.gz or .sra files
+            local has_data=0
+            if [ -n "$(find "${sample_dir}" -name "*.fastq.gz" -o -name "*.sra" 2>/dev/null)" ]; then
+                has_data=1
+            fi
             
-            local size_kb=$(du -sk "${sample_dir}" | cut -f1)
-            total_size=$((total_size + size_kb))
+            if [ ${has_data} -eq 1 ]; then
+                local size=$(du -sh "${sample_dir}" | cut -f1)
+                samples+=("${sample}")
+                log_sample "${sample} (${size})"
+                
+                local size_kb=$(du -sk "${sample_dir}" | cut -f1)
+                total_size=$((total_size + size_kb))
+            fi
         fi
     done
     

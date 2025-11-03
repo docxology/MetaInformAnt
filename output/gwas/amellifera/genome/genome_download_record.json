@@ -1,9 +1,0 @@
-{
-  "accession": "GCF_003254395.2",
-  "dest_dir": "output/gwas/amellifera/genome",
-  "error": "HTTP Error 429: Too Many Requests",
-  "extracted_dir": "",
-  "method": "datasets-api",
-  "return_code": 1,
-  "status": "failed"
-}

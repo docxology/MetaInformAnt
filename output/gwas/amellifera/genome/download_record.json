@@ -1,8 +1,0 @@
-{
-  "error": "HTTP Error 429: Too Many Requests",
-  "ftp_md5checksums": "output/gwas/amellifera/genome/md5checksums.txt",
-  "ftp_method": "ftp",
-  "ftp_return_code": 0,
-  "method": "datasets-api",
-  "return_code": 1
-}

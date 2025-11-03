@@ -1,0 +1,136 @@
+# METAINFORMANT GWAS Configuration
+# Species: Pogonomyrmex barbatus (Red Harvester Ant)
+# SYNTHETIC DATA RUN - Complete end-to-end test
+
+work_dir: output/gwas/pbarbatus/analysis
+log_dir: output/gwas/pbarbatus/logs
+threads: 8
+
+# =============================================================================
+# REFERENCE GENOME
+# =============================================================================
+genome:
+  accession: GCF_000187915.1
+  dest_dir: output/gwas/pbarbatus/genome
+  fasta: output/gwas/pbarbatus/genome/ncbi_dataset_api_extracted/ncbi_dataset/data/GCF_000187915.1/GCF_000187915.1_Pbar_UMD_V03_genomic.fna
+
+# =============================================================================
+# VARIANT DATA
+# =============================================================================
+variants:
+  # Using synthetic VCF with 50,000 variants across 150 samples
+  vcf_files:
+    - output/gwas/pbarbatus/variants/pbarbatus_synthetic.vcf.gz
+  
+  dest_dir: output/gwas/pbarbatus/variants
+
+# =============================================================================
+# QUALITY CONTROL
+# =============================================================================
+qc:
+  # Minimum minor allele frequency
+  min_maf: 0.05
+  
+  # Maximum missing genotype rate per variant
+  max_missing: 0.10
+  
+  # Minimum call rate per variant
+  min_call_rate: 0.90
+  
+  # Hardy-Weinberg equilibrium p-value threshold
+  hwe_pval: 1e-6
+  
+  # Exclude indels
+  exclude_indels: true
+  
+  # Minimum variant quality score
+  min_qual: 30.0
+
+# =============================================================================
+# SAMPLE METADATA
+# =============================================================================
+samples:
+  # Phenotype file with 7 traits + covariates
+  phenotype_file: data/phenotypes/pbarbatus/phenotypes.tsv
+  
+  # Covariates to adjust for
+  covariates:
+    - age_days
+    - colony
+    - sex
+
+# =============================================================================
+# POPULATION STRUCTURE
+# =============================================================================
+structure:
+  # Compute PCA for population stratification
+  compute_pca: true
+  n_components: 10
+  
+  # Compute kinship/relatedness matrix
+  compute_relatedness: true
+  kinship_method: vanraden
+
+# =============================================================================
+# ASSOCIATION TESTING
+# =============================================================================
+association:
+  # Run associations for multiple traits
+  traits:
+    - body_size_mm          # Quantitative
+    - foraging_activity     # Quantitative
+    - colony_size           # Quantitative
+    - temp_tolerance_C      # Quantitative
+    - longevity_days        # Quantitative
+    - disease_resistance    # Binary
+    - caste                 # Binary
+  
+  # Statistical model (linear for quantitative, logistic for binary)
+  model: auto  # Auto-detect based on trait type
+  
+  # Covariates
+  covariates:
+    - age_days
+    - colony
+  
+  # Include PCs as covariates
+  include_pcs: true
+  n_pcs: 3
+  
+  # Minimum sample size
+  min_sample_size: 50
+
+# =============================================================================
+# MULTIPLE TESTING CORRECTION
+# =============================================================================
+correction:
+  # Methods: bonferroni, fdr, or both
+  method: both
+  alpha: 0.05
+  
+  # Genomic control
+  apply_genomic_control: true
+
+# =============================================================================
+# OUTPUT & VISUALIZATION
+# =============================================================================
+output:
+  results_dir: output/gwas/pbarbatus/results
+  plots_dir: output/gwas/pbarbatus/plots
+  format: tsv
+  
+  # Generate comprehensive visualization suite
+  comprehensive_plots: true
+  
+  # Plot types to generate
+  plots:
+    - manhattan             # Manhattan plots for each trait
+    - qq                    # Q-Q plots
+    - regional              # Regional association plots for top hits
+    - pca                   # PCA plots
+    - kinship              # Kinship heatmap
+    - maf_distribution      # MAF distribution
+    - hwe_deviation         # HWE deviation
+    - variant_density       # Variant density across genome
+    - miami                 # Miami plot (if multiple traits)
+

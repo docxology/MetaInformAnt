@@ -1,0 +1,23 @@
+{
+  "PRJNA13343": {
+    "api_data": null,
+    "bioproject": "PRJNA13343",
+    "description": "Apis mellifera reference genome project",
+    "esearch_available": false,
+    "name": "Reference Genome Sequencing"
+  },
+  "PRJNA292680": {
+    "api_data": null,
+    "bioproject": "PRJNA292680",
+    "description": "Genomic variants associated with scout and recruit behavioral castes",
+    "esearch_available": false,
+    "name": "Scout/Recruit Behavioral Caste Variants"
+  },
+  "PRJNA392242": {
+    "api_data": null,
+    "bioproject": "PRJNA392242",
+    "description": "Population genomics across multiple subspecies",
+    "esearch_available": false,
+    "name": "Population Genomics"
+  }
+}

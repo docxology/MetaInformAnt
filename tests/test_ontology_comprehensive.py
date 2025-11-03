@@ -237,3 +237,4 @@ class TestEdgeCases:
         ancestors_set = ancestors(onto, "GO:0008150")
         assert ancestors_set == set()
 
+

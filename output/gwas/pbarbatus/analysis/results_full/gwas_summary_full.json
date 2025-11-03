@@ -1,0 +1,76 @@
+{
+  "analysis_type": "comprehensive_full_scale",
+  "mean_kinship": 5.279727272661855e-18,
+  "n_samples": 150,
+  "n_variants_qc_pass": 33501,
+  "n_variants_raw": 50000,
+  "pca_variance_explained": 0.07356224479412055,
+  "qc_pass_rate": 0.67002,
+  "total_tests": 234507,
+  "trait_summary": [
+    {
+      "bonferroni_sig": 0,
+      "fdr_sig": 0,
+      "lambda_gc": 1.1055288951945577,
+      "n_tested": 33501,
+      "top_p_value": 6.582765900153831e-06,
+      "trait": "Body Size",
+      "type": "linear"
+    },
+    {
+      "bonferroni_sig": 8,
+      "fdr_sig": 19,
+      "lambda_gc": 1.1171408903016369,
+      "n_tested": 33501,
+      "top_p_value": 3.830712347330234e-08,
+      "trait": "Foraging Activity",
+      "type": "linear"
+    },
+    {
+      "bonferroni_sig": 17,
+      "fdr_sig": 45,
+      "lambda_gc": 1.1178109865989379,
+      "n_tested": 33501,
+      "top_p_value": 1.9198198586423132e-11,
+      "trait": "Colony Size",
+      "type": "linear"
+    },
+    {
+      "bonferroni_sig": 0,
+      "fdr_sig": 0,
+      "lambda_gc": 1.0988574772470332,
+      "n_tested": 33501,
+      "top_p_value": 5.162548706527659e-06,
+      "trait": "Temperature Tolerance",
+      "type": "linear"
+    },
+    {
+      "bonferroni_sig": 0,
+      "fdr_sig": 0,
+      "lambda_gc": 1.1004158037847778,
+      "n_tested": 33501,
+      "top_p_value": 2.702139193089259e-05,
+      "trait": "Longevity",
+      "type": "linear"
+    },
+    {
+      "bonferroni_sig": 0,
+      "fdr_sig": 0,
+      "lambda_gc": 2.0203034666600543,
+      "n_tested": 33501,
+      "top_p_value": 0.8883690189417612,
+      "trait": "Disease Resistance",
+      "type": "logistic"
+    },
+    {
+      "bonferroni_sig": 0,
+      "fdr_sig": 0,
+      "lambda_gc": 2.0205992369869885,
+      "n_tested": 33501,
+      "top_p_value": 0.8883028721320234,
+      "trait": "Caste",
+      "type": "logistic"
+    }
+  ],
+  "traits_tested": 7
+}

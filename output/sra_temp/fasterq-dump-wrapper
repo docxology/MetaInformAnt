@@ -1,5 +1,0 @@
-#!/bin/bash
-# Wrapper for fasterq-dump that disables the overly conservative size check
-# The check fails even with 317GB available, but actual downloads work fine
-exec /usr/bin/fasterq-dump --size-check off "$@"
-

@@ -1,0 +1,13 @@
+{
+	"n_targets": 33609,
+	"n_bootstraps": 0,
+	"n_processed": 42399940,
+	"n_pseudoaligned": 13842510,
+	"n_unique": 7811745,
+	"p_pseudoaligned": 32.6,
+	"p_unique": 18.4,
+	"kallisto_version": "0.48.0",
+	"index_version": 10,
+	"start_time": "Mon Nov  3 09:34:16 2025",
+	"call": "kallisto quant -i /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/mpharaonis/work/index/transcriptome.idx -o output/amalgkit/mpharaonis/quant/SRR7772560 -t 12 output/amalgkit/mpharaonis/fastq/SRR7772560/SRR7772560_1.fastq.gz output/amalgkit/mpharaonis/fastq/SRR7772560/SRR7772560_2.fastq.gz"
+}

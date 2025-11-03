@@ -3,9 +3,9 @@
 Environment management uses `uv` with Python 3.11+.
 
 ```bash
-git clone <repo>
-cd METAINFORMANT
-bash scripts/setup_uv.sh --with-amalgkit --ncbi-email "you@example.com"
+git clone https://github.com/q/MetaInformAnt.git
+cd MetaInformAnt
+bash scripts/package/setup_uv.sh --with-amalgkit --ncbi-email "you@example.com"
 # You can either use uv run directly, or activate the venv for the shell:
 # uv run python -V
 source .venv/bin/activate

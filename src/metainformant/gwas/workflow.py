@@ -348,7 +348,11 @@ def _apply_corrections(config: GWASWorkflowConfig, association_result: dict[str,
 
 
 def _generate_visualizations(config: GWASWorkflowConfig, association_result: dict[str, Any]) -> dict[str, Any]:
-    """Generate visualizations (Manhattan plots, Q-Q plots)."""
+    """Generate visualizations (Manhattan plots, Q-Q plots, and optionally comprehensive suite).
+    
+    If comprehensive=True in config.output, generates all available plot types.
+    Otherwise, generates standard Manhattan and QQ plots.
+    """
     output_config = config.output or {}
     plots_dir = output_config.get("plots_dir", config.work_dir / "plots")
     ensure_directory(plots_dir)
@@ -357,6 +361,44 @@ def _generate_visualizations(config: GWASWorkflowConfig, association_result: dic
     if not results:
         return {"status": "failed", "error": "No results to visualize"}
 
+    # Check if comprehensive visualization is requested
+    comprehensive = output_config.get("comprehensive_plots", False)
+    
+    if comprehensive:
+        logger.info("_generate_visualizations: Generating comprehensive visualization suite")
+        try:
+            from .visualization_comprehensive import generate_all_plots
+            
+            # Get paths to required files
+            results_file = association_result.get("output_file")
+            if not results_file or not Path(results_file).exists():
+                logger.warning("_generate_visualizations: Results file not found for comprehensive plots")
+                comprehensive = False  # Fall back to basic plots
+            else:
+                # Try to get PCA and kinship files
+                pca_file = config.work_dir / "structure" / "pca_components.tsv"
+                kinship_file = config.work_dir / "structure" / "kinship_matrix.tsv"
+                
+                comprehensive_result = generate_all_plots(
+                    association_results=Path(results_file),
+                    output_dir=Path(plots_dir),
+                    pca_file=pca_file if pca_file.exists() else None,
+                    kinship_file=kinship_file if kinship_file.exists() else None,
+                    significance_threshold=output_config.get("significance_threshold", 5e-8),
+                )
+                
+                return {
+                    "status": "success",
+                    "plots_dir": str(plots_dir),
+                    "mode": "comprehensive",
+                    "visualizations": comprehensive_result,
+                }
+        except Exception as e:
+            logger.error(f"_generate_visualizations: Comprehensive plots failed: {e}")
+            comprehensive = False  # Fall back to basic plots
+    
+    # Generate standard plots (basic or fallback)
+    logger.info("_generate_visualizations: Generating standard visualizations")
     viz_results: dict[str, Any] = {}
 
     # Manhattan plot
@@ -381,6 +423,7 @@ def _generate_visualizations(config: GWASWorkflowConfig, association_result: dic
     return {
         "status": "success",
         "plots_dir": str(plots_dir),
+        "mode": "standard",
         "visualizations": viz_results,
     }
 

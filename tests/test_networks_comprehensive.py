@@ -342,3 +342,4 @@ class TestGraphUtilities:
         assert network.num_edges() == 3
         assert network.get_edge_weight("A", "C") == 0.9
 
+
