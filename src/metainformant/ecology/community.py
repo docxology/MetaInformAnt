@@ -51,6 +51,18 @@ def simpson_diversity(abundances: Sequence[float]) -> float:
     return 1.0 - simpson_index
 
 
+def species_richness(abundances: Sequence[float]) -> int:
+    """Calculate species richness (number of species with non-zero abundance).
+
+    Args:
+        abundances: Species abundance values
+
+    Returns:
+        Number of species with abundance > 0
+    """
+    return sum(1 for x in abundances if x > 0)
+
+
 def pielou_evenness(abundances: Sequence[float]) -> float:
     """Calculate Pielou's evenness index J' = H'/ln(S).
 
@@ -63,7 +75,7 @@ def pielou_evenness(abundances: Sequence[float]) -> float:
     if len(abundances) == 0:
         return 0.0
 
-    S = sum(1 for x in abundances if x > 0)  # Species richness
+    S = species_richness(abundances)  # Species richness
     if S <= 1:
         return 1.0 if S == 1 else 0.0
 

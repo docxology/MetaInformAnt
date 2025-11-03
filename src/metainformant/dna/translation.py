@@ -7,11 +7,32 @@ from Bio.Seq import Seq
 
 
 def translate_dna(seq: str, *, to_stop: bool = False, table: int | str = 1) -> str:
+    """Translate DNA sequence to protein sequence.
+    
+    Args:
+        seq: DNA sequence string
+        to_stop: Stop translation at first stop codon (default: False)
+        table: Genetic code table number (default: 1, standard)
+        
+    Returns:
+        Protein sequence string
+    """
     return str(Seq(seq).translate(table=table, to_stop=to_stop))
 
 
 @dataclass
 class ORF:
+    """Open Reading Frame (ORF) information.
+    
+    Attributes:
+        start: Start position in sequence (0-based)
+        end: End position in sequence (exclusive)
+        frame: Reading frame (0, 1, or 2)
+        strand: Strand direction (+1 or -1)
+        protein: Translated protein sequence
+        start_codon: Start codon (typically "ATG")
+        stop_codon: Stop codon (TAA, TAG, or TGA)
+    """
     start: int
     end: int
     frame: int
@@ -22,6 +43,16 @@ class ORF:
 
 
 def find_orfs(seq: str, *, min_aa: int = 50, include_reverse: bool = True) -> List[ORF]:
+    """Find Open Reading Frames (ORFs) in DNA sequence.
+    
+    Args:
+        seq: DNA sequence string
+        min_aa: Minimum protein length in amino acids (default: 50)
+        include_reverse: Search reverse complement strand (default: True)
+        
+    Returns:
+        List of ORF objects found in sequence
+    """
     strands = [(seq, +1)]
     if include_reverse:
         from metainformant.dna.sequences import reverse_complement

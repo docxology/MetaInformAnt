@@ -262,3 +262,4 @@ pytest tests/test_gwas_config_amellifera.py -v
 3. Cridland et al. (2017). The population genetics of structural variants in honeybees. *G3: Genes, Genomes, Genetics*.
 
 
+

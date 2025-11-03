@@ -1,0 +1,37 @@
+# Test configuration for RNA workflow tests
+# This file is used for testing configuration loading and planning
+
+work_dir: output/amalgkit/test/work
+log_dir: output/amalgkit/test/logs
+threads: 6
+
+auto_install_amalgkit: false
+
+# Species configuration
+species_list:
+  - Test_species
+
+# Per-step parameters (merged on top of common params)
+steps:
+  metadata:
+    out_dir: output/amalgkit/test/work
+    search_string: '"Test species"[Organism] AND RNA-Seq[Strategy]'
+  integrate:
+    fastq_dir: output/amalgkit/test/fastq
+  config: {}
+  select: {}
+  getfastq:
+    out_dir: output/amalgkit/test/fastq
+  quant:
+    out_dir: output/amalgkit/test/quant
+  merge:
+    out: output/amalgkit/test/merged/merged_abundance.tsv
+    out_dir: output/amalgkit/test/merged
+  cstmm:
+    out_dir: output/amalgkit/test/cstmm
+  curate:
+    out_dir: output/amalgkit/test/curate
+  csca:
+    out_dir: output/amalgkit/test/csca
+  sanity: {}
+

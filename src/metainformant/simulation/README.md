@@ -23,15 +23,14 @@ Synthetic DNA, RNA, and protein sequence generation.
 
 **Usage:**
 ```python
-from metainformant.simulation import sequences
+from metainformant.simulation import generate_random_dna, generate_random_protein, mutate_sequence
 
 # Generate random sequences
-dna_seq = sequences.generate_random_dna(1000)
-rna_seq = sequences.generate_random_rna(500)
-protein_seq = sequences.generate_random_protein(200)
+dna_seq = generate_random_dna(1000)
+protein_seq = generate_random_protein(200)
 
-# Simulate mutations
-mutated = sequences.mutate_sequence(dna_seq, mutation_rate=0.01)
+# Simulate mutations (n_mut is number of mutations to introduce)
+mutated = mutate_sequence(dna_seq, n_mut=5)
 ```
 
 ### Expression Simulation (`rna.py`)
@@ -45,20 +44,14 @@ Synthetic gene expression data generation.
 
 **Usage:**
 ```python
-from metainformant.simulation import rna
+from metainformant.simulation import simulate_counts_negative_binomial
 
 # Simulate expression counts
-counts = rna.simulate_counts_negative_binomial(
-    n_genes=1000,
-    n_samples=20,
-    library_size=1000000
-)
-
-# Add differential expression
-diff_counts = rna.simulate_differential_expression(
-    counts,
-    n_de_genes=50,
-    fold_changes=[0.5, 2.0]
+counts = simulate_counts_negative_binomial(
+    num_genes=1000,
+    num_samples=20,
+    mean_expression=100.0,
+    dispersion=0.1
 )
 ```
 
@@ -73,87 +66,113 @@ Grid-world and multi-agent simulation framework.
 
 **Usage:**
 ```python
-from metainformant.simulation import agents
+from metainformant.simulation import GridWorld, Agent
+import random
 
 # Create simulation environment
-world = agents.GridWorld(width=50, height=50, num_agents=100)
-
-# Define agent behaviors
-for agent in world.agents:
-    agent.set_behavior(lambda: random.choice(["move", "interact"]))
+rng = random.Random(42)
+world = GridWorld(width=50, height=50, num_agents=100, rng=rng)
 
 # Run simulation
 for _ in range(100):
     world.step()
 
-# Analyze results
-interactions = world.get_interaction_history()
+# Analyze results - get agent positions
+positions = world.positions()
 ```
 
 ## Advanced Simulation Features
 
 ### Evolutionary Dynamics
 ```python
-from metainformant.simulation import sequences
+from metainformant.simulation import generate_random_dna, mutate_sequence
 from metainformant.math import price_equation
+import random
 
 # Evolve sequences under selection
-population = [sequences.generate_random_dna(100) for _ in range(100)]
+rng = random.Random(42)
+population = [generate_random_dna(100, rng=rng) for _ in range(100)]
 for generation in range(50):
     # Calculate fitness
     fitness = [len(seq) for seq in population]  # Simple fitness function
-
-    # Apply selection using Price equation
-    selected = price_equation.apply_selection(population, fitness)
-
-    # Generate next generation
-    population = [sequences.mutate_sequence(seq) for seq in selected]
+    trait_parent = [float(len(seq)) for seq in population]
+    
+    # Generate next generation with mutations
+    trait_offspring = []
+    new_population = []
+    for seq in population:
+        mutated = mutate_sequence(seq, n_mut=2, rng=rng)
+        new_population.append(mutated)
+        trait_offspring.append(float(len(mutated)))
+    
+    # Analyze evolution using Price equation
+    cov_term, trans_term, total_change = price_equation(fitness, trait_parent, trait_offspring)
+    population = new_population
 ```
 
 ### Complex System Modeling
 ```python
-from metainformant.simulation import agents, rna
+from metainformant.simulation import Agent, GridWorld
+import random
 
 # Multi-scale simulation
-class GeneExpressionAgent(agents.Agent):
-    def __init__(self, position):
-        super().__init__(position)
-        self.expression_level = 0
+class GeneExpressionAgent(Agent):
+    def __init__(self, x, y):
+        super().__init__(x, y)
+        self.expression_level = 0.0
 
-    def step(self):
+    def step(self, world, rng):
+        super().step(world, rng)
         # Gene expression dynamics
-        self.expression_level += rna.simulate_transcription_rate()
-        self.move_towards_higher_expression()
+        self.expression_level += rng.random() * 0.1
 
 # Run integrated simulation
-world = agents.GridWorld(agents=[GeneExpressionAgent((i, j)) for i in range(10) for j in range(10)])
+rng = random.Random(42)
+world = GridWorld(width=10, height=10, num_agents=100, rng=rng)
+# Replace agents with custom ones
+world.agents = [GeneExpressionAgent(rng.randrange(10), rng.randrange(10)) for _ in range(100)]
+
+for _ in range(50):
+    world.step()
 ```
 
 ## Integration with Other Modules
 
 ### With Machine Learning Module
 ```python
-from metainformant.simulation import sequences, rna
-from metainformant.ml import classification
+from metainformant.simulation import generate_random_dna
+from metainformant.ml import BiologicalClassifier
+import random
 
 # Generate synthetic training data
-sequences = [sequences.generate_random_dna(100) for _ in range(1000)]
-labels = [0 if len(seq) < 500 else 1 for seq in sequences]
+rng = random.Random(42)
+sequences = [generate_random_dna(100, rng=rng) for _ in range(1000)]
+# Extract features (e.g., k-mer frequencies) and create labels
+labels = [0 if len(seq) < 50 else 1 for seq in sequences]
 
-# Train classifier
-model = classification.train_classifier(sequences, labels)
-accuracy = classification.evaluate_model(model, sequences, labels)
+# Train classifier (requires feature extraction from sequences)
+# See ml module for proper feature extraction and training
 ```
 
 ### With Visualization Module
 ```python
-from metainformant.simulation import agents
-from metainformant.visualization import animations
+from metainformant.simulation import GridWorld
+from metainformant.visualization import animate_time_series
+import random
 
 # Visualize agent dynamics
-world = agents.GridWorld(width=20, height=20, num_agents=50)
-fig, anim = animations.animate_agent_movement(world, steps=100)
-animations.save_animation(anim, "agent_simulation.gif")
+rng = random.Random(42)
+world = GridWorld(width=20, height=20, num_agents=50, rng=rng)
+
+# Record positions over time
+position_history = []
+for _ in range(100):
+    world.step()
+    positions = world.positions()
+    position_history.append(positions)
+
+# Visualize using time series animation for position data
+# See visualization module for plotting agent positions
 ```
 
 ## Performance Considerations
@@ -168,18 +187,18 @@ animations.save_animation(anim, "agent_simulation.gif")
 All simulations support extensive parameter control:
 
 ```python
-from metainformant.simulation import sequences
+from metainformant.simulation import generate_random_dna, mutate_sequence
+import random
 
-# Highly configurable sequence generation
-params = {
-    'length_distribution': 'normal',
-    'length_mean': 1000,
-    'length_std': 100,
-    'gc_content': 0.5,
-    'mutation_model': 'Jukes-Cantor'
-}
-
-sequences = sequences.generate_population(1000, **params)
+# Configurable sequence generation
+rng = random.Random(42)
+sequences = []
+for _ in range(1000):
+    # Generate with specified GC content
+    seq = generate_random_dna(1000, gc_content=0.5, rng=rng)
+    # Optionally apply mutations
+    seq = mutate_sequence(seq, n_mut=5, rng=rng)
+    sequences.append(seq)
 ```
 
 ## Testing and Validation
@@ -199,39 +218,43 @@ sequences = sequences.generate_population(1000, **params)
 
 ### Synthetic Sequence Dataset
 ```python
-from metainformant.simulation import sequences
+from metainformant.simulation import generate_random_dna, mutate_sequence
+from metainformant.dna.sequences import write_fasta
+import random
 
 # Generate comprehensive sequence dataset
-dataset = sequences.generate_synthetic_dataset(
-    n_sequences=10000,
-    sequence_type='dna',
-    length_range=(500, 2000),
-    include_mutations=True,
-    mutation_rate=0.001
-)
+rng = random.Random(42)
+sequences_list = []
+for _ in range(10000):
+    # Generate random length between 500 and 2000
+    length = rng.randint(500, 2000)
+    seq = generate_random_dna(length, gc_content=0.5, rng=rng)
+    # Apply mutations
+    n_mutations = int(length * 0.001)
+    seq = mutate_sequence(seq, n_mut=n_mutations, rng=rng)
+    sequences_list.append(seq)
 
 # Save for downstream analysis
-sequences.save_fasta(dataset['sequences'], "synthetic_dna.fasta")
+write_fasta({"seq_{i}": seq for i, seq in enumerate(sequences_list)}, "output/synthetic_dna.fasta")
 ```
 
 ### Agent-Based Ecosystem Simulation
 ```python
-from metainformant.simulation import agents
+from metainformant.simulation import GridWorld, Agent
+import random
 
-# Ecosystem simulation
-ecosystem = agents.Ecosystem(
-    environment=agents.GridWorld(100, 100),
-    species=[
-        agents.PreySpecies(count=200, behavior="evasive"),
-        agents.PredatorSpecies(count=20, behavior="pursuit")
-    ]
-)
+# Ecosystem simulation with GridWorld
+rng = random.Random(42)
+# Create environment
+ecosystem = GridWorld(width=100, height=100, num_agents=220, rng=rng)
 
 # Run long-term simulation
 for year in range(10):
     for day in range(365):
         ecosystem.step()
-    ecosystem.analyze_annual_dynamics()
+    # Analyze positions at end of each year
+    positions = ecosystem.positions()
+    # Perform custom analysis on positions
 ```
 
 This module provides powerful tools for synthetic data generation and hypothesis testing, enabling researchers to explore biological systems in controlled computational environments.

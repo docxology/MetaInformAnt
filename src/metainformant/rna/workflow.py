@@ -20,6 +20,19 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class AmalgkitWorkflowConfig:
+    """Configuration for amalgkit RNA-seq workflow execution.
+    
+    Attributes:
+        work_dir: Base working directory for all workflow outputs
+        threads: Number of threads to use (default: 6)
+        species_list: List of species names to process
+        log_dir: Optional directory for log files
+        manifest_path: Optional path to workflow manifest file
+        per_step: Per-step parameter overrides
+        auto_install_amalgkit: Whether to attempt automatic installation
+        genome: Genome configuration dictionary
+        filters: Filter criteria for sample selection
+    """
     work_dir: Path
     threads: int = 6
     species_list: list[str] = field(default_factory=list)
@@ -34,6 +47,11 @@ class AmalgkitWorkflowConfig:
     filters: dict[str, Any] = field(default_factory=dict)  # e.g., { require_tissue: true }
 
     def to_common_params(self) -> AmalgkitParams:
+        """Convert configuration to common parameters for all steps.
+        
+        Returns:
+            Dictionary of common parameters (threads, species-list)
+        """
         params: dict[str, Any] = {"threads": self.threads}
         if self.species_list:
             params["species-list"] = list(self.species_list)
@@ -95,6 +113,14 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> list[tuple[str, AmalgkitPar
     common = config.to_common_params()
 
     def merge_params(extra: Mapping[str, Any] | None = None) -> AmalgkitParams:
+        """Merge common parameters with step-specific overrides.
+        
+        Args:
+            extra: Step-specific parameter overrides
+            
+        Returns:
+            Merged parameter dictionary
+        """
         if not extra:
             return dict(common)
         merged = dict(common)

@@ -44,6 +44,13 @@ def average_phred_by_position(path: Path | str) -> list[float]:
 
 @dataclass(frozen=True)
 class FastqRecord:
+    """FASTQ record container.
+    
+    Attributes:
+        read_id: Read identifier (header line without @)
+        sequence: DNA sequence string
+        quality: Quality score string (Phred+33 encoded)
+    """
     read_id: str
     sequence: str
     quality: str

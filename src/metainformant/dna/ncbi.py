@@ -18,6 +18,18 @@ if os.environ.get("PYTEST_CURRENT_TEST") and os.environ.get("METAINFORMANT_ALLOW
 
 
 def download_genome_data_package(accessions: Iterable[str], filename: str) -> Any:
+    """Download genome assembly package from NCBI Datasets API.
+    
+    Args:
+        accessions: Iterable of assembly accessions (e.g., GCF_000001405.40)
+        filename: Output filename for downloaded package
+        
+    Returns:
+        API response object
+        
+    Raises:
+        RuntimeError: If ncbi-datasets-pylib not installed or unavailable
+    """
     # During pytest, unless explicitly allowed, behave as if dependency is missing
     if os.environ.get("PYTEST_CURRENT_TEST") and os.environ.get("METAINFORMANT_ALLOW_NCBI_DATASETS") != "1":
         raise RuntimeError("ncbi-datasets-pylib not installed")
@@ -29,6 +41,17 @@ def download_genome_data_package(accessions: Iterable[str], filename: str) -> An
 
 
 def get_metadata_by_single_accession(genome_assembly_accessions: List[str]) -> dict:
+    """Get genome assembly metadata from NCBI Datasets API.
+    
+    Args:
+        genome_assembly_accessions: List of assembly accessions
+        
+    Returns:
+        Dictionary with assembly metadata (first assembly only)
+        
+    Raises:
+        RuntimeError: If ncbi-datasets-pylib not installed or unavailable
+    """
     if os.environ.get("PYTEST_CURRENT_TEST") and os.environ.get("METAINFORMANT_ALLOW_NCBI_DATASETS") != "1":
         raise RuntimeError("ncbi-datasets-pylib not installed")
     if DatasetsApiClient is None or DatasetsGenomeApi is None:
@@ -40,6 +63,17 @@ def get_metadata_by_single_accession(genome_assembly_accessions: List[str]) -> d
 
 
 def get_accession_by_tax_id(tax_id: str) -> list[str]:
+    """Get genome assembly accessions for a given NCBI taxonomy ID.
+    
+    Args:
+        tax_id: NCBI taxonomy ID (e.g., "9606" for Homo sapiens)
+        
+    Returns:
+        List of assembly accessions for the taxon
+        
+    Raises:
+        RuntimeError: If ncbi-datasets-pylib not installed or unavailable
+    """
     if os.environ.get("PYTEST_CURRENT_TEST") and os.environ.get("METAINFORMANT_ALLOW_NCBI_DATASETS") != "1":
         raise RuntimeError("ncbi-datasets-pylib not installed")
     if DatasetsApiClient is None or DatasetsGenomeApi is None:
@@ -70,6 +104,11 @@ from ..core.io import dump_json, ensure_directory
 
 
 def datasets_cli_available() -> bool:
+    """Check if NCBI datasets CLI tool is available on PATH.
+    
+    Returns:
+        True if 'datasets' command is found, False otherwise
+    """
     return shutil.which("datasets") is not None
 
 
@@ -174,6 +213,12 @@ def download_genome_via_api(
     heartbeat = out_dir / "download.heartbeat"
 
     def write_progress(done: int, total: int | None) -> None:
+        """Write download progress information.
+        
+        Args:
+            done: Bytes downloaded so far
+            total: Total bytes expected (None if unknown)
+        """
         pct = (done / total * 100.0) if (total and total > 0) else None
         data = {
             "bytes": done,

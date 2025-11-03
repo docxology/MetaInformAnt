@@ -10,21 +10,53 @@ scripts/rna/
 │   ├── run_amalgkit.sh            # Comprehensive pipeline orchestrator
 │   ├── verify_workflow.sh         # Workflow validation
 │   └── README.md                  # Detailed amalgkit documentation
+├── orchestrate_workflows.py       # **UNIFIED ORCHESTRATOR** ⭐⭐⭐ (START HERE)
 ├── workflow_ena_integrated.py     # Integrated ENA download + quantification (PRODUCTION) ⭐
 ├── download_ena_robust.py         # Robust ENA downloader with retry logic ⭐
 ├── run_multi_species.py           # Multi-species with cross-species analysis (legacy SRA-based)
+├── restart_all_workflows.py       # Restart all workflows in parallel
 ├── check_environment.py           # Environment validation
 ├── cleanup_quantified_sra.sh      # Safe deletion of FASTQ files after quantification
 ├── monitor_comprehensive.py       # Comprehensive real-time monitoring
-├── monitor_workflow.py            # Real-time monitoring dashboard
-├── monitor_amalgkit_progress.sh    # Simple progress monitor
-├── list_unquantified.sh           # Report unquantified samples
-├── quant_downloaded_samples.py    # Quantify already-downloaded samples
-├── manual_quant_cleanup.py        # Manual quantification and cleanup utility
-├── quant_and_cleanup.py          # Batch quantification and cleanup
+├── check_and_restart_workflows.py # Smart status check and conditional restart
+├── [Legacy monitoring scripts]    # Various status/progress scripts
 ├── README.md                      # This file
 └── AGENTS.md                      # AI agent documentation
 ```
+
+## Quick Start: Unified Orchestrator ⭐
+
+**The new `orchestrate_workflows.py` consolidates all workflow management into one intelligent script.**
+
+### Common Tasks
+
+```bash
+# 1. Check status of all workflows
+python3 scripts/rna/orchestrate_workflows.py --assess
+
+# 2. Cleanup: quantify downloaded samples and delete FASTQs
+python3 scripts/rna/orchestrate_workflows.py --cleanup-unquantified
+
+# 3. Run merge+curate+sanity for species ready
+python3 scripts/rna/orchestrate_workflows.py --steps merge curate sanity --auto-species
+
+# 4. Resume incomplete downloads
+python3 scripts/rna/orchestrate_workflows.py --resume-downloads
+
+# 5. Run specific steps for specific species
+python3 scripts/rna/orchestrate_workflows.py --species cfloridanus --steps merge curate sanity
+
+# 6. Full pipeline for one species
+python3 scripts/rna/orchestrate_workflows.py --species pbarbatus --steps metadata select getfastq quant merge curate sanity
+```
+
+### Key Features
+
+- **Smart Assessment**: Comprehensive status check showing progress, readiness, and recommendations
+- **Flexible Execution**: Run any combination of steps for any combination of species
+- **Auto-Selection**: Automatically choose species ready for specific steps (--auto-species)
+- **Cleanup**: Quantify downloaded samples and cleanup FASTQs in one command
+- **Resume Support**: Restart incomplete downloads intelligently
 
 ## Available Scripts
 

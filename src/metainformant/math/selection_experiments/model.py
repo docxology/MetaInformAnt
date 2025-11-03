@@ -15,6 +15,34 @@ colors: dict[str, str] = {
 
 @dataclass
 class GenerationResult:
+    """Results from a single generation of selection simulation.
+    
+    Attributes:
+        s: Trait values (selection trait)
+        q: Observable values (proxy trait)
+        w: Absolute fitness values
+        s_prime: Trait values in next generation
+        q_prime: Observable values in next generation
+        cov_ws: Covariance between fitness and trait
+        cov_wq: Covariance between fitness and proxy
+        cov_wq_est_max: Maximum estimated covariance
+        rho_sq: Correlation between trait and proxy
+        rho_sq_est: Estimated correlation
+        rho_wq: Correlation between fitness and proxy
+        rho_ws: Correlation between fitness and trait
+        s_hat: True selection strength parameter
+        s_hat_est: Estimated selection strength
+        E_ws: Expected change in trait due to selection
+        E_wq: Expected change in proxy due to selection
+        E_wq_est_lin: Linear estimate of expected change
+        E_wq_est_phi_bar: Phi-bar estimate of expected change
+        delta_s_bar: Mean change in trait
+        delta_q_bar: Mean change in proxy
+        ratio_s: Ratio of E_ws to cov_ws
+        ratio_q: Ratio of E_wq to cov_wq
+        QSC: Quantitative Selection Coefficient
+        QSC_ratio: QSC normalized by selection strength
+    """
     s: Any
     q: Any
     w: Any
@@ -46,10 +74,27 @@ b: float = 4
 
 
 def lin_phi_bar(z: np.ndarray) -> np.ndarray:
+    """Linear transformation function without noise.
+    
+    Args:
+        z: Input trait values
+        
+    Returns:
+        Transformed values (a*z^2 + b)
+    """
     return a * z**2 + b
 
 
 def lin_phi(z: np.ndarray, s_hat: float) -> np.ndarray:
+    """Linear transformation function with noise scaled by selection strength.
+    
+    Args:
+        z: Input trait values
+        s_hat: Selection strength parameter
+        
+    Returns:
+        Transformed values with noise
+    """
     s_hat_sq = s_hat**2
     sigma_noise = np.sqrt((s_hat_sq**-1 - 1) * np.var(lin_phi_bar(z)))
     noise = np.random.normal(loc=0, scale=sigma_noise, size=z.shape)
@@ -57,22 +102,68 @@ def lin_phi(z: np.ndarray, s_hat: float) -> np.ndarray:
 
 
 def lin_phi_inv(q: np.ndarray) -> np.ndarray:
+    """Inverse linear transformation function.
+    
+    Args:
+        q: Transformed values
+        
+    Returns:
+        Original trait values ((q - b) / a)
+    """
     return (q - b) / a
 
 
 def noise(k: float, mu: float, sigma: float) -> Callable[[np.ndarray], np.ndarray]:
+    """Create noise function with linear scaling.
+    
+    Args:
+        k: Linear scaling factor
+        mu: Mean offset
+        sigma: Standard deviation
+        
+    Returns:
+        Noise function that takes trait values and returns noisy values
+    """
     return lambda z: (k * z) + mu + np.random.normal(0, sigma, z.shape[0])
 
 
 def fitness(k: float, mu: float, sigma: float) -> Callable[[np.ndarray], np.ndarray]:
+    """Create fitness function with linear selection and noise.
+    
+    Args:
+        k: Selection strength
+        mu: Optimal trait value
+        sigma: Fitness variance
+        
+    Returns:
+        Fitness function that takes trait values and returns fitness
+    """
     return lambda z: (z - mu) * k + np.random.normal(0, sigma, z.shape[0])
 
 
 def logistic_fitness(k: float, s_opt: float) -> Callable[[np.ndarray], np.ndarray]:
+    """Create logistic fitness function.
+    
+    Args:
+        k: Steepness parameter
+        s_opt: Optimal trait value
+        
+    Returns:
+        Logistic fitness function
+    """
     return lambda s: 1 / (1 + np.exp(-k * (s - s_opt)))
 
 
 def delta(mu: float, sigma: float) -> Callable[[np.ndarray], np.ndarray]:
+    """Create mutation/drift function.
+    
+    Args:
+        mu: Mean mutation effect
+        sigma: Standard deviation of mutation effects
+        
+    Returns:
+        Mutation function that adds random changes
+    """
     return lambda z: np.random.normal(mu, sigma, z.shape[0])
 
 
@@ -85,6 +176,19 @@ def simulate_generation(
     delta_fn: Callable[[np.ndarray], np.ndarray] = noise(0, 0, 0.1),
     fitness_fn: Callable[[np.ndarray], np.ndarray] = fitness(0.5, 0, 0.2),
 ) -> GenerationResult:
+    """Simulate one generation of selection on a trait.
+    
+    Args:
+        s: Trait values for current generation
+        phi: Transformation function from trait to observable
+        phi_bar: Noiseless transformation function
+        s_hat: Selection strength parameter
+        delta_fn: Mutation/drift function
+        fitness_fn: Fitness function
+        
+    Returns:
+        GenerationResult with all statistics for the generation
+    """
     w_abs = w = fitness_fn(s)
     w_min = np.min(w)
     if w_min < 0:
@@ -148,6 +252,20 @@ def simulate_generation(
 
 @dataclass
 class GenerationsResult:
+    """Results from multiple generations of selection simulation.
+    
+    Attributes:
+        generations: Number of generations simulated
+        results: List of GenerationResult objects (sampled)
+        last_result: Final generation result
+        s_means: Mean trait values per generation
+        s_stds: Standard deviation of trait values per generation
+        q_means: Mean observable values per generation
+        q_stds: Standard deviation of observable values per generation
+        w_means: Mean fitness values per generation
+        w_stds: Standard deviation of fitness values per generation
+        rho_sq_means: Mean correlation between trait and observable
+    """
     generations: int
     results: Any
     last_result: Any
@@ -167,6 +285,17 @@ def simulate_generations(
     s_hat: float = 0.5,
     **kwargs: Any,
 ) -> GenerationsResult:
+    """Simulate multiple generations of selection evolution.
+    
+    Args:
+        generations: Number of generations to simulate
+        n: Population size
+        s_hat: Selection strength parameter
+        **kwargs: Additional parameters passed to simulate_generation
+        
+    Returns:
+        GenerationsResult with statistics across all generations
+    """
     s = np.random.normal(0, 1, n)
 
     results: list[GenerationResult] = []

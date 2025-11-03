@@ -64,13 +64,31 @@ class Ontology:
     children_of: Dict[str, Set[str]] = field(default_factory=dict)
 
     def add_term(self, term: Term) -> None:
+        """Add a term to the ontology and update parent/child relationships.
+        
+        Args:
+            term: Term object to add
+        """
         self.terms[term.term_id] = term
         self.parents_of.setdefault(term.term_id, set()).update(term.is_a_parents)
         for parent_id in term.is_a_parents:
             self.children_of.setdefault(parent_id, set()).add(term.term_id)
 
     def has_term(self, term_id: str) -> bool:
+        """Check if term exists in ontology.
+        
+        Args:
+            term_id: Term identifier to check
+            
+        Returns:
+            True if term exists, False otherwise
+        """
         return term_id in self.terms
 
     def num_terms(self) -> int:
+        """Get total number of terms in ontology.
+        
+        Returns:
+            Count of terms
+        """
         return len(self.terms)

@@ -2,6 +2,14 @@ import logging
 
 
 def get_logger(name: str) -> logging.Logger:
+    """Get or create a logger with default console handler.
+    
+    Args:
+        name: Logger name (typically __name__)
+        
+    Returns:
+        Configured logger with console handler if none exists
+    """
     logger = logging.getLogger(name)
     if not logger.handlers:
         handler = logging.StreamHandler()

@@ -203,6 +203,15 @@ def _calculate_sequence_similarity(seq1: str, seq2: str) -> float:
     k = min(6, len(seq1), len(seq2))  # Use 6-mers or shorter if sequences are small
 
     def get_kmers(seq: str, k: int) -> Set[str]:
+        """Extract all k-mers from sequence.
+        
+        Args:
+            seq: Sequence string
+            k: K-mer length
+            
+        Returns:
+            Set of unique k-mers
+        """
         kmers = set()
         for i in range(len(seq) - k + 1):
             kmers.add(seq[i:i+k])

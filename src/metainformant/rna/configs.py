@@ -9,6 +9,13 @@ from .amalgkit import AmalgkitParams
 
 @dataclass(slots=True)
 class SpeciesProfile:
+    """Species profile configuration for RNA-seq workflows.
+    
+    Attributes:
+        name: Species name (e.g., "Homo sapiens")
+        taxon_id: NCBI taxonomy ID (optional)
+        tissues: List of tissue types to filter (optional)
+    """
     name: str
     taxon_id: int | None = None
     tissues: list[str] | None = None
@@ -16,30 +23,41 @@ class SpeciesProfile:
 
 @dataclass(slots=True)
 class AmalgkitRunLayout:
+    """Directory layout for amalgkit workflow outputs.
+    
+    Attributes:
+        base_dir: Base directory for all workflow outputs
+    """
     base_dir: Path
 
     @property
     def fastq_dir(self) -> Path:
+        """Path to FASTQ files directory."""
         return self.base_dir / "fastq"
 
     @property
     def quant_dir(self) -> Path:
+        """Path to quantification results directory."""
         return self.base_dir / "quant"
 
     @property
     def merge_table(self) -> Path:
+        """Path to merged abundance table file."""
         return self.base_dir / "merged_abundance.tsv"
 
     @property
     def cstmm_dir(self) -> Path:
+        """Path to CSTMM statistical test results directory."""
         return self.base_dir / "cstmm"
 
     @property
     def curate_dir(self) -> Path:
+        """Path to curation results directory."""
         return self.base_dir / "curate"
 
     @property
     def csca_dir(self) -> Path:
+        """Path to CSCA statistical test results directory."""
         return self.base_dir / "csca"
 
 

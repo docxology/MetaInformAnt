@@ -21,6 +21,15 @@ except Exception:  # pragma: no cover - optional
 
 @dataclass(frozen=True)
 class PostgresConfig:
+    """PostgreSQL database configuration.
+    
+    Attributes:
+        host: Database hostname
+        port: Database port number
+        database: Database name
+        user: Database username
+        password: Database password
+    """
     host: str
     port: int
     database: str
@@ -29,6 +38,17 @@ class PostgresConfig:
 
 
 def load_postgres_config_from_env(prefix: str = "PG") -> PostgresConfig | None:
+    """Load PostgreSQL configuration from environment variables.
+    
+    Args:
+        prefix: Environment variable prefix (default: "PG")
+            Looks for: {prefix}_HOST, {prefix}_PORT, {prefix}_DATABASE,
+            {prefix}_USER, {prefix}_PASSWORD
+            Also checks: DB_NAME, DB_USER, DB_PASSWORD
+            
+    Returns:
+        PostgresConfig if all required variables are set, None otherwise
+    """
     host = os.getenv(f"{prefix}_HOST")
     database = os.getenv("DB_NAME", os.getenv(f"{prefix}_DATABASE"))
     user = os.getenv("DB_USER", os.getenv(f"{prefix}_USER"))
@@ -222,9 +242,25 @@ def _parse_simple_yaml_mapping(text: str) -> Dict[str, Any]:
     i = 0
 
     def indent_of(s: str) -> int:
+        """Calculate indentation level (number of leading spaces).
+        
+        Args:
+            s: String to check
+            
+        Returns:
+            Number of leading spaces
+        """
         return len(s) - len(s.lstrip(" "))
 
     def parse_scalar(s: str) -> Any:
+        """Parse a scalar value (int, string, empty dict/list).
+        
+        Args:
+            s: String to parse
+            
+        Returns:
+            Parsed value (int, dict, list, or string)
+        """
         s = s.strip()
         if s == "{}":
             return {}
@@ -236,6 +272,14 @@ def _parse_simple_yaml_mapping(text: str) -> Dict[str, Any]:
             return s
 
     def parse_inline_dict(s: str) -> Dict[str, Any]:
+        """Parse inline dictionary string like '{a: 1, b: 2}'.
+        
+        Args:
+            s: String containing inline dict (with braces)
+            
+        Returns:
+            Parsed dictionary
+        """
         inner = s.strip()[1:-1].strip()
         if not inner:
             return {}
@@ -249,6 +293,15 @@ def _parse_simple_yaml_mapping(text: str) -> Dict[str, Any]:
         return items
 
     def collect_block_list(start_index: int, parent_indent: int) -> tuple[list[Any], int]:
+        """Collect YAML block list items (lines starting with '- ').
+        
+        Args:
+            start_index: Starting line index
+            parent_indent: Indentation level of parent key
+            
+        Returns:
+            Tuple of (list of items, next line index after list)
+        """
         items: list[Any] = []
         j = start_index
         while j < len(lines):
@@ -264,6 +317,16 @@ def _parse_simple_yaml_mapping(text: str) -> Dict[str, Any]:
         return items, j
 
     def collect_child_mapping(start_index: int, parent_indent: int, depth: int = 1) -> tuple[Dict[str, Any], int]:
+        """Collect nested YAML mapping (key-value pairs) with proper indentation.
+        
+        Args:
+            start_index: Starting line index
+            parent_indent: Indentation level of parent key
+            depth: Maximum nesting depth (default: 1)
+            
+        Returns:
+            Tuple of (child mapping dict, next line index after mapping)
+        """
         children: Dict[str, Any] = {}
         j = start_index
         while j < len(lines):

@@ -1,0 +1,176 @@
+================================================================================
+P. BARBATUS GWAS - COMPREHENSIVE ANALYSIS SUMMARY
+================================================================================
+
+Analysis Date: 2025-11-03 11:51:11
+Duration: 87.3 seconds (1.5 minutes)
+Configuration: config/gwas/gwas_pbarbatus_synthetic.yaml
+
+--------------------------------------------------------------------------------
+TIMING BREAKDOWN
+--------------------------------------------------------------------------------
+VCF Parsing: 3.5s
+Quality Control: 9.0s
+PCA Computation: 0.4s
+Kinship Matrix: 0.1s
+Association Tests: 67.5s
+Visualizations: 6.8s
+Total: 87.3s
+
+--------------------------------------------------------------------------------
+DATA SUMMARY
+--------------------------------------------------------------------------------
+Species: Pogonomyrmex barbatus (Red Harvester Ant)
+Genome Assembly: GCF_000187915.1
+Total Samples: 150
+Total Variants (input): 50,000
+Variants Passing QC: 33,501 (67.0%)
+Variants Tested: 5,000
+Variants Used for Kinship: 5,000
+Traits Analyzed: 7
+
+--------------------------------------------------------------------------------
+QUALITY CONTROL
+--------------------------------------------------------------------------------
+Min MAF: 0.05
+Max Missing Rate: 0.1
+HWE P-value Threshold: 1e-6
+Min Quality Score: 30.0
+
+--------------------------------------------------------------------------------
+POPULATION STRUCTURE
+--------------------------------------------------------------------------------
+PCA Components: 10
+Variance Explained (PC1): 0.74%
+Variance Explained (PC2): 0.74%
+Total Variance Explained: 7.36%
+Kinship Method: vanraden
+Mean Relatedness: -0.0067
+
+--------------------------------------------------------------------------------
+ASSOCIATION RESULTS
+--------------------------------------------------------------------------------
+
+Body Size (mm):
+  Test Type: linear
+  Variants Tested: 5,000
+  Bonferroni Significant (α=0.05): 0
+  FDR Significant (α=0.05): 0
+  Top 5 Associations:
+    1. rs0004727 (NW_011933420.1:418655): P=1.91e-04, β=-0.4577
+    2. rs0001394 (NW_011933354.1:39563): P=3.43e-04, β=-0.4665
+    3. rs0038838 (NW_011933377.1:472788): P=1.03e-03, β=-0.3960
+    4. rs0045447 (NW_011933341.1:1265132): P=1.09e-03, β=-0.4029
+    5. rs0000778 (NW_011933303.1:1126257): P=1.10e-03, β=-2.0867
+
+Foraging Activity (trips/hr):
+  Test Type: linear
+  Variants Tested: 5,000
+  Bonferroni Significant (α=0.05): 4
+  FDR Significant (α=0.05): 5
+  Top 5 Associations:
+    1. rs0006482 (NW_011933406.1:473459): P=2.61e-06, β=9.3743
+    2. rs0022895 (NW_011933377.1:818104): P=3.32e-06, β=7.0947
+    3. rs0044488 (NW_011933404.1:120897): P=5.17e-06, β=12.8203
+    4. rs0038424 (NW_011933355.1:1009862): P=6.53e-06, β=9.0404
+    5. rs0006427 (NW_011933406.1:37830): P=3.49e-05, β=7.5200
+
+Colony Size (workers):
+  Test Type: linear
+  Variants Tested: 5,000
+  Bonferroni Significant (α=0.05): 5
+  FDR Significant (α=0.05): 6
+  Top 5 Associations:
+    1. rs0024000 (NW_011933354.1:358873): P=4.11e-10, β=1608.2567
+    2. rs0008729 (NW_011933377.1:429878): P=7.07e-07, β=722.4565
+    3. rs0045258 (NW_011933377.1:281176): P=1.61e-06, β=1291.0270
+    4. rs0015593 (NW_011933377.1:810708): P=1.66e-06, β=1289.5068
+    5. rs0042486 (NW_011933303.1:299545): P=6.26e-06, β=1003.7211
+
+Temperature Tolerance (°C):
+  Test Type: linear
+  Variants Tested: 5,000
+  Bonferroni Significant (α=0.05): 0
+  FDR Significant (α=0.05): 0
+  Top 5 Associations:
+    1. rs0029588 (NW_011933303.1:816791): P=3.41e-04, β=1.3570
+    2. rs0026208 (NW_011933303.1:559385): P=4.41e-04, β=-1.2623
+    3. rs0040194 (NW_011933377.1:849827): P=4.81e-04, β=4.3674
+    4. rs0011779 (NW_011933406.1:807069): P=5.43e-04, β=-1.6882
+    5. rs0001808 (NW_011933377.1:354838): P=5.67e-04, β=-1.5766
+
+Longevity (days):
+  Test Type: linear
+  Variants Tested: 5,000
+  Bonferroni Significant (α=0.05): 0
+  FDR Significant (α=0.05): 0
+  Top 5 Associations:
+    1. rs0045315 (NW_011933354.1:258110): P=5.58e-04, β=-83.3081
+    2. rs0045524 (NW_011933404.1:1173671): P=6.02e-04, β=35.7998
+    3. rs0045401 (NW_011933406.1:56307): P=6.45e-04, β=-94.5208
+    4. rs0011936 (NW_011933355.1:400823): P=9.11e-04, β=-36.7020
+    5. rs0025672 (NW_011933377.1:500293): P=1.59e-03, β=-23.7458
+
+Disease Resistance:
+  Test Type: logistic
+  Variants Tested: 5,000
+  Bonferroni Significant (α=0.05): 0
+  FDR Significant (α=0.05): 0
+  Top 5 Associations:
+    1. rs0011293 (NW_011933341.1:617139): P=8.88e-01, β=-992.7310
+    2. rs0003928 (NW_011933341.1:371423): P=8.88e-01, β=-992.6821
+    3. rs0032470 (NW_011933354.1:1077504): P=8.88e-01, β=-992.6821
+    4. rs0042200 (NW_011933303.1:533195): P=8.88e-01, β=-992.6146
+    5. rs0010006 (NW_011933341.1:1014282): P=8.88e-01, β=-992.6146
+
+Caste (major worker):
+  Test Type: logistic
+  Variants Tested: 5,000
+  Bonferroni Significant (α=0.05): 0
+  FDR Significant (α=0.05): 0
+  Top 5 Associations:
+    1. rs0029550 (NW_011933341.1:622091): P=8.88e-01, β=-993.1293
+    2. rs0038407 (NW_011933303.1:123237): P=8.88e-01, β=-993.1081
+    3. rs0000632 (NW_011933303.1:200988): P=8.88e-01, β=-993.1081
+    4. rs0013935 (NW_011933303.1:517161): P=8.88e-01, β=-993.1081
+    5. rs0023117 (NW_011933341.1:900406): P=8.88e-01, β=-993.1081
+
+--------------------------------------------------------------------------------
+OUTPUT FILES
+--------------------------------------------------------------------------------
+Results Directory: /home/q/Documents/GitHub/MetaInformAnt/output/gwas/pbarbatus/analysis/results
+Plots Directory: /home/q/Documents/GitHub/MetaInformAnt/output/gwas/pbarbatus/analysis/plots
+
+Association Results:
+  - body_size_mm_associations.tsv
+  - foraging_activity_associations.tsv
+  - colony_size_associations.tsv
+  - temp_tolerance_C_associations.tsv
+  - longevity_days_associations.tsv
+  - disease_resistance_associations.tsv
+  - caste_associations.tsv
+
+Visualization Files:
+  - manhattan_body_size_mm.png
+  - qq_body_size_mm.png
+  - manhattan_foraging_activity.png
+  - qq_foraging_activity.png
+  - manhattan_colony_size.png
+  - qq_colony_size.png
+  - manhattan_temp_tolerance_C.png
+  - qq_temp_tolerance_C.png
+  - manhattan_longevity_days.png
+  - qq_longevity_days.png
+  - manhattan_disease_resistance.png
+  - qq_disease_resistance.png
+  - manhattan_caste.png
+  - qq_caste.png
+
+Intermediate Files:
+  - qc_results.json
+  - pca_results.json
+  - kinship_results.json
+
+================================================================================
+END OF REPORT
+================================================================================

@@ -76,6 +76,14 @@ def multilevel_selection_decomposition(
         return 0.0, 0.0, 0.0
 
     def variance(xs: Sequence[float]) -> float:
+        """Calculate population variance.
+        
+        Args:
+            xs: Sequence of numeric values
+            
+        Returns:
+            Variance (mean squared deviation from mean)
+        """
         if not xs:
             return 0.0
         n = len(xs)

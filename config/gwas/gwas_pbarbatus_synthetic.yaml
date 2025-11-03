@@ -2,7 +2,7 @@
 # Species: Pogonomyrmex barbatus (Red Harvester Ant)
 # SYNTHETIC DATA RUN - Complete end-to-end test
 
-work_dir: output/gwas/pbarbatus/analysis
+work_dir: output/gwas/pbarbatus
 log_dir: output/gwas/pbarbatus/logs
 threads: 8
 

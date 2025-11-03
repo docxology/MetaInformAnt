@@ -7,6 +7,13 @@ from Bio.Align import PairwiseAligner
 
 @dataclass
 class AlignmentResult:
+    """Result of pairwise sequence alignment.
+    
+    Attributes:
+        aligned_seq1: First sequence with gaps inserted
+        aligned_seq2: Second sequence with gaps inserted
+        score: Alignment score (higher is better)
+    """
     aligned_seq1: str
     aligned_seq2: str
     score: float
@@ -69,6 +76,15 @@ def global_align(
 
 
 def local_align(seq1: str, seq2: str) -> AlignmentResult:
+    """Perform local (Smith-Waterman) sequence alignment.
+    
+    Args:
+        seq1: First sequence to align
+        seq2: Second sequence to align
+        
+    Returns:
+        AlignmentResult with best local alignment
+    """
     aligner = PairwiseAligner()
     aligner.mode = "local"
     a = aligner.align(seq1, seq2)[0]

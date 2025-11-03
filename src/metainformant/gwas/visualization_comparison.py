@@ -60,6 +60,14 @@ def miami_plot(
     
     # Load data for both traits
     def load_results(results):
+        """Load GWAS results from file or dict.
+        
+        Args:
+            results: Path to results file or dict of results
+            
+        Returns:
+            List of result records
+        """
         if isinstance(results, (Path, str)):
             if PANDAS_AVAILABLE:
                 df = pd.read_csv(results, sep="\t")
@@ -355,6 +363,14 @@ def concordance_plot(
     
     # Load data
     def load_results(results):
+        """Load GWAS results from file or dict (concordance plot version).
+        
+        Args:
+            results: Path to results file or dict of results
+            
+        Returns:
+            List of result records
+        """
         if isinstance(results, (Path, str)):
             if PANDAS_AVAILABLE:
                 df = pd.read_csv(results, sep="\t")
@@ -462,5 +478,6 @@ def concordance_plot(
         "slope": float(slope),
         "intercept": float(intercept),
     }
+
 
 

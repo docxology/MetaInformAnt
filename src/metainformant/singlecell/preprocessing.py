@@ -24,6 +24,11 @@ except ImportError:
     sparse = None
 
     def zscore(*args, **kwargs):
+        """Z-score normalization (requires scipy).
+        
+        Raises:
+            ImportError: If scipy is not available
+        """
         raise ImportError("scipy is required for zscore functionality")
 
 

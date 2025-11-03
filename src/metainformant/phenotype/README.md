@@ -13,7 +13,7 @@ Load phenotype data from AntWiki JSON files.
 
 **Usage:**
 ```python
-from metainformant.phenotype import load_antwiki_json
+from metainformant.phenotype.antwiki import load_antwiki_json
 from pathlib import Path
 
 # Load AntWiki phenotype data

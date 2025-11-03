@@ -6,6 +6,11 @@ from pathlib import Path
 
 @dataclass
 class RNAPipelineConfig:
+    """Configuration for RNA pipeline execution.
+    
+    Attributes:
+        work_dir: Working directory for pipeline outputs
+    """
     work_dir: Path
 
 

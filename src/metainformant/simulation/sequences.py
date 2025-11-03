@@ -51,6 +51,16 @@ def generate_random_dna(length: int, *, gc_content: float = 0.5, rng: random.Ran
 
 
 def mutate_sequence(seq: str, n_mut: int, *, rng: random.Random | None = None) -> str:
+    """Introduce random mutations into a sequence.
+    
+    Args:
+        seq: DNA or protein sequence string
+        n_mut: Number of mutations to introduce
+        rng: Random number generator (default: random module)
+        
+    Returns:
+        Mutated sequence with random substitutions
+    """
     r = rng or random
     if not seq or n_mut <= 0:
         return seq
@@ -79,6 +89,15 @@ def mutate_sequence(seq: str, n_mut: int, *, rng: random.Random | None = None) -
 
 
 def generate_random_protein(length: int, *, rng: random.Random | None = None) -> str:
+    """Generate random protein sequence of specified length.
+    
+    Args:
+        length: Desired sequence length
+        rng: Random number generator (default: random module)
+        
+    Returns:
+        Random protein sequence using standard 20 amino acids
+    """
     r = rng or random
     # Handle numpy random state vs standard random
     if hasattr(r, "choice") and hasattr(r, "seed"):  # numpy RandomState

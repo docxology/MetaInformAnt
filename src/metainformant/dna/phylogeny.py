@@ -11,6 +11,14 @@ from Bio.SeqRecord import SeqRecord
 
 
 def neighbor_joining_tree(id_to_seq: Dict[str, str]):
+    """Build neighbor-joining phylogenetic tree from sequences.
+    
+    Args:
+        id_to_seq: Dictionary mapping sequence IDs to DNA sequences
+        
+    Returns:
+        Bio.Phylo tree object
+    """
     records = [SeqRecord(Seq(seq), id=seq_id) for seq_id, seq in id_to_seq.items()]
     alignment = MultipleSeqAlignment(records)
     calculator = DistanceCalculator("identity")
@@ -21,6 +29,14 @@ def neighbor_joining_tree(id_to_seq: Dict[str, str]):
 
 
 def upgma_tree(id_to_seq: Dict[str, str]):
+    """Build UPGMA (Unweighted Pair Group Method with Arithmetic Mean) phylogenetic tree.
+    
+    Args:
+        id_to_seq: Dictionary mapping sequence IDs to DNA sequences
+        
+    Returns:
+        Bio.Phylo tree object
+    """
     records = [SeqRecord(Seq(seq), id=seq_id) for seq_id, seq in id_to_seq.items()]
     alignment = MultipleSeqAlignment(records)
     calculator = DistanceCalculator("identity")
@@ -31,6 +47,14 @@ def upgma_tree(id_to_seq: Dict[str, str]):
 
 
 def to_newick(tree) -> str:
+    """Convert phylogenetic tree to Newick format string.
+    
+    Args:
+        tree: Bio.Phylo tree object
+        
+    Returns:
+        Newick format string representation
+    """
     from io import StringIO
 
     handle = StringIO()
@@ -39,6 +63,14 @@ def to_newick(tree) -> str:
 
 
 def upgma_tree(id_to_seq: Dict[str, str]):
+    """Build UPGMA tree from sequences (alternative implementation).
+    
+    Args:
+        id_to_seq: Dictionary mapping sequence IDs to DNA sequences
+        
+    Returns:
+        Bio.Phylo tree object
+    """
     records = [SeqRecord(Seq(seq), id=seq_id) for seq_id, seq in id_to_seq.items()]
     alignment = MultipleSeqAlignment(records)
     calculator = DistanceCalculator("identity")
@@ -64,11 +96,27 @@ def bootstrap_support(
     rng = random.Random(random_state)
 
     def build_tree(resampled: Dict[str, str]):
+        """Build tree from resampled sequences.
+        
+        Args:
+            resampled: Dictionary of resampled sequences
+            
+        Returns:
+            Phylogenetic tree
+        """
         if method == "nj":
             return neighbor_joining_tree(resampled)
         return upgma_tree(resampled)
 
     def splits(tree):
+        """Extract clade splits from tree as sorted tuples of terminal names.
+        
+        Args:
+            tree: Phylogenetic tree
+            
+        Returns:
+            List of tuples representing clades
+        """
         # Represent clades by sorted tuple of terminal names
         return [tuple(sorted([t.name for t in clade.get_terminals()])) for clade in tree.get_nonterminals()]
 
@@ -118,9 +166,25 @@ def bootstrap_support(
         return {}
 
     def build_tree(data: Dict[str, str]):
+        """Build tree from sequence data using specified method.
+        
+        Args:
+            data: Dictionary of sequences
+            
+        Returns:
+            Phylogenetic tree
+        """
         return neighbor_joining_tree(data) if method == "nj" else upgma_tree(data)
 
     def clade_splits(tree) -> set[frozenset[str]]:
+        """Extract clade splits as frozensets of leaf names.
+        
+        Args:
+            tree: Phylogenetic tree
+            
+        Returns:
+            Set of frozensets, each representing a clade (non-trivial splits only)
+        """
         leaves = {t.name for t in tree.get_terminals()}
         splits: set[frozenset[str]] = set()
         for clade in tree.get_nonterminals():

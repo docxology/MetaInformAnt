@@ -19,6 +19,14 @@ from typing import Iterable
 
 @dataclass(frozen=True)
 class StepDependencyStatus:
+    """Status of step dependency checking.
+    
+    Attributes:
+        ok: True if all required dependencies are present
+        missing: List of missing dependency names
+        present: List of present dependency names
+        note: Optional note about status
+    """
     ok: bool
     missing: list[str]
     present: list[str]

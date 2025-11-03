@@ -19,12 +19,21 @@ Tools for analyzing ecological communities and species interactions.
 
 **Usage:**
 ```python
-from metainformant.ecology import community
+from metainformant.ecology.community import (
+    shannon_diversity,
+    simpson_diversity,
+    species_richness,
+    pielou_evenness,
+    chao1_estimator
+)
 
 # Community analysis
-abundance_data = load_species_abundance()
-diversity = community.shannon_diversity(abundance_data)
-composition = community.analyze_composition(abundance_data)
+abundance_data = [10, 8, 6, 4, 2, 1]
+diversity = shannon_diversity(abundance_data)
+simpson = simpson_diversity(abundance_data)
+richness = species_richness(abundance_data)
+evenness = pielou_evenness(abundance_data)
+richness_est = chao1_estimator([int(x) for x in abundance_data])
 ```
 
 ## Integration with Other Modules
@@ -32,21 +41,26 @@ composition = community.analyze_composition(abundance_data)
 ### With DNA Module
 ```python
 from metainformant.dna import population
-from metainformant.ecology import community
+from metainformant.ecology.community import shannon_diversity
 
 # Ecological context for genetic diversity
 genetic_diversity = population.nucleotide_diversity(sequences)
-ecological_diversity = community.calculate_diversity(species_data)
+# Ecological diversity from species abundances
+species_abundances = [10, 8, 6, 4, 2]
+ecological_diversity = shannon_diversity(species_abundances)
 ```
 
 ### With Visualization Module
 ```python
-from metainformant.ecology import community
-from metainformant.visualization import plots
+from metainformant.ecology.community import community_metrics
+from metainformant.visualization import heatmap
+import numpy as np
 
 # Visualize community structure
-community_data = community.load_community_data("survey_data.csv")
-plots.heatmap(community_data, title="Species Abundance")
+# Create abundance matrix (sites x species)
+abundance_matrix = np.array([[10, 8, 6], [5, 7, 9], [12, 4, 8]])
+ax = heatmap(abundance_matrix)
+ax.set_title("Species Abundance")
 ```
 
 ## Data Sources

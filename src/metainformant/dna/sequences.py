@@ -16,6 +16,14 @@ def read_fasta(path: str) -> Dict[str, str]:
 
 
 def reverse_complement(seq: str) -> str:
+    """Compute reverse complement of a DNA sequence.
+    
+    Args:
+        seq: DNA sequence string
+        
+    Returns:
+        Reverse complement sequence
+    """
     comp = str.maketrans("ACGTacgt", "TGCAtgca")
     return seq.translate(comp)[::-1]
 
@@ -38,12 +46,30 @@ def gc_content(seq: str) -> float:
 
 
 def kmer_counts(seq: str, k: int) -> Dict[str, int]:
+    """Count k-mers (substrings of length k) in a sequence.
+    
+    Args:
+        seq: DNA sequence string
+        k: K-mer length
+        
+    Returns:
+        Dictionary mapping k-mer to count
+    """
     if k <= 0 or len(seq) < k:
         return {}
     return dict(Counter(seq[i : i + k] for i in range(0, len(seq) - k + 1)))
 
 
 def kmer_frequencies(seq: str, k: int) -> Dict[str, float]:
+    """Calculate k-mer frequencies (normalized counts).
+    
+    Args:
+        seq: DNA sequence string
+        k: K-mer length
+        
+    Returns:
+        Dictionary mapping k-mer to frequency (0.0 to 1.0)
+    """
     counts = kmer_counts(seq, k)
     total = sum(counts.values())
     if total == 0:

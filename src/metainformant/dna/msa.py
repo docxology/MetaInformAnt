@@ -27,6 +27,15 @@ def align_msa(id_to_seq: Dict[str, str], method: str = "auto") -> Dict[str, str]
     aligner.mode = "global"
 
     def pad_to_length(s: str, n: int) -> str:
+        """Pad sequence to target length with gap characters.
+        
+        Args:
+            s: Sequence string
+            n: Target length
+            
+        Returns:
+            Padded sequence (or original if already longer)
+        """
         return s + ("-" * (n - len(s)))
 
     for seq_id, seq in items[1:]:

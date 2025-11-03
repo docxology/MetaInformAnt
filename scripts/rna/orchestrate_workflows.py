@@ -120,7 +120,10 @@ def assess_species_status(species: str) -> dict:
     
     status['percent'] = (status['quantified'] / status['total'] * 100) if status['total'] > 0 else 0
     status['remaining'] = status['total'] - status['quantified']
-    status['ready_for_merge'] = status['quantified'] >= status['total'] * 0.8 and not status['merge_complete']
+    
+    # Only ready for merge if quantification is complete (100% or downloads finished with failures)
+    # Use 95% as threshold assuming some samples may fail to download
+    status['ready_for_merge'] = status['quantified'] >= status['total'] * 0.95 and not status['merge_complete']
     status['ready_for_curate'] = status['merge_complete'] and not status['curate_complete']
     status['ready_for_sanity'] = status['curate_complete'] and not status['sanity_complete']
     

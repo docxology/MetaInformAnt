@@ -30,11 +30,26 @@ def open_text_auto(path: str | Path, mode: str = "rt", encoding: str = "utf-8") 
 
 # JSON utilities
 def load_json(path: str | Path) -> Any:
+    """Load JSON data from a file.
+    
+    Args:
+        path: Path to JSON file (supports gzip compression automatically)
+        
+    Returns:
+        Parsed JSON data (dict, list, or primitive types)
+    """
     with open_text_auto(path, mode="rt") as fh:
         return json.load(fh)
 
 
 def dump_json(obj: Any, path: str | Path, *, indent: int | None = None) -> None:
+    """Write object to JSON file.
+    
+    Args:
+        obj: Object to serialize (must be JSON-serializable)
+        path: Output file path
+        indent: Number of spaces for indentation (None for compact)
+    """
     ensure_directory(Path(path).parent)
     with open_text_auto(path, mode="wt") as fh:
         json.dump(obj, fh, indent=indent, sort_keys=True)  # Sort keys for consistent output
@@ -96,6 +111,14 @@ def write_parquet(df: Any, path: str | Path, **kwargs) -> None:
 
 # JSON Lines utilities
 def read_jsonl(path: str | Path) -> Iterator[Dict[str, Any]]:
+    """Read JSON Lines format (one JSON object per line).
+    
+    Args:
+        path: Path to JSONL file (supports gzip compression automatically)
+        
+    Yields:
+        Dictionary for each line in the file
+    """
     with open_text_auto(path, mode="rt") as fh:
         for line in fh:
             line = line.strip()
@@ -105,6 +128,12 @@ def read_jsonl(path: str | Path) -> Iterator[Dict[str, Any]]:
 
 
 def write_jsonl(rows: Iterable[Mapping[str, Any]], path: str | Path) -> None:
+    """Write rows as JSON Lines format (one JSON object per line).
+    
+    Args:
+        rows: Iterable of dictionaries to write
+        path: Output file path
+    """
     ensure_directory(Path(path).parent)
     with open_text_auto(path, mode="wt") as fh:
         for row in rows:
@@ -114,6 +143,15 @@ def write_jsonl(rows: Iterable[Mapping[str, Any]], path: str | Path) -> None:
 
 # Delimited text utilities (CSV/TSV)
 def read_delimited(path: str | Path, *, delimiter: str = ",") -> Iterator[Dict[str, str]]:
+    """Read delimited text file (CSV/TSV) as dictionaries.
+    
+    Args:
+        path: Path to delimited file (supports gzip compression automatically)
+        delimiter: Field delimiter (default: comma for CSV, use "\\t" for TSV)
+        
+    Yields:
+        Dictionary for each row with column names as keys
+    """
     with open_text_auto(path, mode="rt") as fh:
         reader = csv.DictReader(fh, delimiter=delimiter)
         for row in reader:
@@ -121,6 +159,13 @@ def read_delimited(path: str | Path, *, delimiter: str = ",") -> Iterator[Dict[s
 
 
 def write_delimited(rows: Iterable[Mapping[str, Any]], path: str | Path, *, delimiter: str = ",") -> None:
+    """Write rows to delimited text file (CSV/TSV).
+    
+    Args:
+        rows: Iterable of dictionaries to write
+        path: Output file path
+        delimiter: Field delimiter (default: comma for CSV, use "\\t" for TSV)
+    """
     ensure_directory(Path(path).parent)
     rows_iter = iter(rows)
     try:

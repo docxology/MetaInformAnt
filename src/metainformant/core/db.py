@@ -9,6 +9,16 @@ from .config import load_postgres_config_from_env
 
 
 def get_db_client() -> Tuple["psycopg2.extensions.connection", "psycopg2.extensions.cursor"]:
+    """Get PostgreSQL database client connection and cursor.
+    
+    Loads configuration from environment variables and establishes connection.
+    
+    Returns:
+        Tuple of (connection, cursor) objects
+        
+    Raises:
+        RuntimeError: If PostgreSQL configuration not found in environment
+    """
     config = load_postgres_config_from_env()
     if config is None:
         raise RuntimeError("Postgres configuration not found in environment variables")
