@@ -38,7 +38,16 @@ def batch_entropy_analysis(
         
     Returns:
         Dictionary with analysis results for each sequence
+        
+    Raises:
+        ValueError: If sequences list is empty or k is invalid
     """
+    if not sequences:
+        raise ValueError("Sequences list cannot be empty")
+    
+    if k < 1:
+        raise ValueError(f"K-mer size k must be >= 1, got {k}")
+    
     results: dict[str, Any] = {
         "sequences": [],
         "summary": {},
@@ -91,9 +100,21 @@ def information_workflow(
         
     Returns:
         Comprehensive workflow results
+        
+    Raises:
+        ValueError: If sequences list is empty or k_values are invalid
     """
+    if not sequences:
+        raise ValueError("Sequences list cannot be empty")
+    
     if k_values is None:
         k_values = [1, 2, 3]
+    
+    if not k_values:
+        raise ValueError("k_values list cannot be empty")
+    
+    if any(k < 1 for k in k_values):
+        raise ValueError(f"All k-mer sizes must be >= 1, got {k_values}")
     
     results: dict[str, Any] = {
         "profiles": {},
@@ -159,7 +180,16 @@ def compare_datasets(
         
     Returns:
         Comparison results
+        
+    Raises:
+        ValueError: If datasets are empty, k is invalid, or method is unknown
     """
+    if k < 1:
+        raise ValueError(f"K-mer size k must be >= 1, got {k}")
+    
+    valid_methods = ["entropy", "mutual_information", "kl_divergence"]
+    if method not in valid_methods:
+        raise ValueError(f"Method must be one of {valid_methods}, got {method}")
     # Convert to sequences if needed
     if isinstance(dataset1, dict):
         seqs1 = dataset1.get("sequences", [])

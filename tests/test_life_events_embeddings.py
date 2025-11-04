@@ -276,3 +276,150 @@ def test_domain_specific_embeddings_empty_domain():
     assert "health" in domain_embeddings
     assert "diagnosis" in domain_embeddings["health"]
 
+
+# Edge Cases and Validation Tests
+
+def test_learn_event_embeddings_validation():
+    """Test all validation checks in learn_event_embeddings."""
+    from metainformant.life_events import learn_event_embeddings
+    
+    # Test empty sequences
+    with pytest.raises(ValueError, match="cannot be empty"):
+        learn_event_embeddings([], embedding_dim=50)
+    
+    # Test invalid embedding_dim
+    with pytest.raises(ValueError, match="must be positive"):
+        learn_event_embeddings([["health:diagnosis"]], embedding_dim=0)
+    
+    with pytest.raises(ValueError, match="must be positive"):
+        learn_event_embeddings([["health:diagnosis"]], embedding_dim=-1)
+    
+    # Test invalid window_size
+    with pytest.raises(ValueError, match="must be positive"):
+        learn_event_embeddings([["health:diagnosis"]], window_size=0)
+    
+    with pytest.raises(ValueError, match="must be positive"):
+        learn_event_embeddings([["health:diagnosis"]], window_size=-1)
+    
+    # Test invalid method
+    with pytest.raises(ValueError, match="must be 'skipgram' or 'cbow'"):
+        learn_event_embeddings([["health:diagnosis"]], method="invalid")
+    
+    # Test all empty sequences (no events)
+    with pytest.raises(ValueError, match="No events found"):
+        learn_event_embeddings([[], []], embedding_dim=50)
+
+
+def test_learn_event_embeddings_verbose(capsys):
+    """Test verbose mode output."""
+    from metainformant.life_events import learn_event_embeddings
+    
+    sequences = [
+        ["health:diagnosis", "occupation:job_change"],
+        ["education:degree", "occupation:job_change"],
+    ]
+    
+    learn_event_embeddings(
+        sequences,
+        embedding_dim=50,
+        epochs=3,
+        verbose=True,
+        random_state=42
+    )
+    
+    # Check that verbose output was printed
+    captured = capsys.readouterr()
+    # Should have some output about building embeddings
+    assert "Building embeddings" in captured.out or "Epoch" in captured.out
+
+
+def test_predict_with_missing_events_in_vocab():
+    """Test prediction with out-of-vocabulary events."""
+    from metainformant.life_events import EventSequencePredictor
+    import numpy as np
+    
+    # Train on specific vocabulary
+    train_sequences = [
+        ["health:diagnosis", "occupation:job_change"],
+        ["education:degree", "occupation:job_change"],
+    ]
+    
+    y = np.array([0, 1])
+    
+    predictor = EventSequencePredictor(
+        model_type="embedding",
+        task_type="classification",
+        embedding_dim=50,
+        random_state=42
+    )
+    predictor.fit(train_sequences, y)
+    
+    # Predict with OOV event
+    test_sequences = [
+        ["health:diagnosis", "unknown:event"],
+    ]
+    
+    # Should handle gracefully (may use zero vector for unknown events)
+    predictions = predictor.predict(test_sequences)
+    assert len(predictions) == 1
+    assert predictions[0] in predictor.classes_
+
+
+def test_workflow_config_priority(tmp_path):
+    """Test that config_obj takes priority over config_path."""
+    from metainformant.life_events import (
+        Event,
+        EventSequence,
+        LifeEventsWorkflowConfig,
+        analyze_life_course,
+    )
+    
+    events1 = [Event("degree", datetime(2010, 6, 1), "education")]
+    sequences = [EventSequence(person_id="person_001", events=events1)]
+    
+    # Create config file
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text("""
+embedding:
+  embedding_dim: 100
+""")
+    
+    # Pass config_obj that should override
+    config_obj = LifeEventsWorkflowConfig(
+        work_dir=tmp_path / "work",
+        embedding={"embedding_dim": 50}
+    )
+    
+    results = analyze_life_course(
+        sequences,
+        config_path=config_file,
+        config_obj=config_obj,
+        output_dir=tmp_path / "output"
+    )
+    
+    # config_obj should take priority
+    assert results["embedding_dim"] == 50
+
+
+def test_config_env_override_edge_cases(tmp_path):
+    """Test invalid environment variable values."""
+    import os
+    from metainformant.life_events import load_life_events_config
+    
+    config_file = tmp_path / "test_config.yaml"
+    config_file.write_text("""
+work_dir: output/test
+threads: 4
+""")
+    
+    # Set invalid threads value
+    os.environ["LE_THREADS"] = "invalid"
+    
+    try:
+        # Should handle gracefully (may use default or log warning)
+        config = load_life_events_config(config_file)
+        # Should either use default or handle error
+        assert isinstance(config.threads, int)
+    finally:
+        os.environ.pop("LE_THREADS", None)
+

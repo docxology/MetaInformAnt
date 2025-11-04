@@ -490,3 +490,27 @@ class TestIntegrationFunctions:
         results = ml_integration(X, y, method="feature_mi")
         assert "feature_mis" in results
 
+
+class TestExportedFunctions:
+    """Tests for functions exported from main module."""
+
+    def test_shannon_entropy_from_counts_exported(self):
+        """Test that shannon_entropy_from_counts is accessible from main import."""
+        from metainformant.information import shannon_entropy_from_counts
+        
+        counts = {"A": 50, "T": 30, "G": 20}
+        entropy = shannon_entropy_from_counts(counts)
+        assert entropy > 0.0
+
+    def test_information_content_from_annotations_exported(self):
+        """Test that information_content_from_annotations is accessible from main import."""
+        from metainformant.information import information_content_from_annotations
+        
+        gene_annotations = {
+            "gene1": {"GO:0008150", "GO:0003674"},
+            "gene2": {"GO:0008150", "GO:0005524"},
+        }
+        term_ic = information_content_from_annotations(gene_annotations)
+        assert isinstance(term_ic, dict)
+        assert len(term_ic) > 0
+

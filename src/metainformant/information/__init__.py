@@ -45,6 +45,7 @@ from .integration import (
 )
 from .semantic import (
     information_content,
+    information_content_from_annotations,
     semantic_entropy,
     semantic_similarity,
     semantic_similarity_matrix,
@@ -61,6 +62,7 @@ from .syntactic import (
     normalized_mutual_information,
     renyi_entropy,
     shannon_entropy,
+    shannon_entropy_from_counts,
     total_correlation,
     transfer_entropy,
     tsallis_entropy,
@@ -75,6 +77,7 @@ from .workflows import (
 __all__ = [
     # Syntactic information theory
     "shannon_entropy",
+    "shannon_entropy_from_counts",
     "joint_entropy",
     "conditional_entropy",
     "mutual_information",
@@ -90,6 +93,7 @@ __all__ = [
     "information_coefficient",
     # Semantic information theory
     "information_content",
+    "information_content_from_annotations",
     "semantic_entropy",
     "semantic_similarity",
     "semantic_similarity_matrix",

@@ -45,7 +45,8 @@ def learn_event_embeddings(
     method: str = "skipgram",
     epochs: int = 10,
     learning_rate: float = 0.01,
-    random_state: Optional[int] = None
+    random_state: Optional[int] = None,
+    verbose: bool = False
 ) -> Dict[str, NDArray[np.float64]]:
     """Learn dense vector representations of events using Word2Vec-style methods.
     
@@ -61,6 +62,7 @@ def learn_event_embeddings(
         epochs: Number of training epochs
         learning_rate: Learning rate for gradient descent
         random_state: Random seed for reproducibility
+        verbose: If True, print progress information for large datasets
         
     Returns:
         Dictionary mapping event tokens to embedding vectors
@@ -76,15 +78,35 @@ def learn_event_embeddings(
         >>> embeddings["health:diagnosis"].shape
         (50,)
     """
+    if not sequences:
+        raise ValueError("sequences list cannot be empty")
+    
+    if embedding_dim <= 0:
+        raise ValueError(f"embedding_dim must be positive, got {embedding_dim}")
+    
+    if window_size <= 0:
+        raise ValueError(f"window_size must be positive, got {window_size}")
+    
+    if method not in ["skipgram", "cbow"]:
+        raise ValueError(f"method must be 'skipgram' or 'cbow', got {method}")
+    
     if random_state is not None:
         np.random.seed(random_state)
     
     # Build vocabulary
     vocab = set()
     for seq in sequences:
-        vocab.update(seq)
+        if seq:  # Skip empty sequences
+            vocab.update(seq)
+    
+    if not vocab:
+        raise ValueError("No events found in sequences (all sequences may be empty)")
+    
     vocab = sorted(list(vocab))
     vocab_size = len(vocab)
+    
+    if verbose:
+        print(f"Building embeddings for {vocab_size} unique events from {len(sequences)} sequences")
     
     # Create token to index mapping
     token_to_idx = {token: i for i, token in enumerate(vocab)}
@@ -105,6 +127,9 @@ def learn_event_embeddings(
     for epoch in range(epochs):
         total_loss = 0.0
         np.random.shuffle(contexts)
+        
+        if verbose and epochs > 1:
+            print(f"Epoch {epoch + 1}/{epochs} ({len(contexts)} context pairs)")
         
         for target, context in contexts:
             target_idx = token_to_idx[target]

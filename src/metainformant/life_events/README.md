@@ -295,6 +295,13 @@ predictor.fit(sequences, y, event_embeddings=embeddings)
 # Make predictions
 predictions = predictor.predict(sequences)
 probabilities = predictor.predict_proba(sequences)
+
+# Save model for later use
+predictor.save_model("output/model.json")
+
+# Load saved model
+loaded_predictor = EventSequencePredictor.load_model("output/model.json")
+new_predictions = loaded_predictor.predict(new_sequences)
 ```
 
 ### Visualization (`visualization.py`)
@@ -546,9 +553,15 @@ metainformant life-events embed \
 metainformant life-events predict \
     --events data/test_sequences.json \
     --model output/life_events/model.json \
-    --outcome mortality \
     --output output/life_events/predictions
 ```
+
+This command:
+- Loads a trained model from the specified path
+- Loads event sequences from the events file
+- Makes predictions for all sequences
+- Saves predictions to JSON with sequence IDs and probabilities (for classification tasks)
+- Prints summary statistics
 
 ### Interpret Predictions
 
@@ -561,29 +574,90 @@ metainformant life-events interpret \
 
 ## Configuration
 
-Workflow functions support configuration files for parameter control:
+Workflow functions support structured configuration files following the same pattern as other METAINFORMANT modules.
 
-### Example Configuration (YAML)
-
-```yaml
-embedding_dim: 100
-window_size: 5
-epochs: 10
-model_type: embedding
-task_type: classification
-random_state: 42
-```
-
-### Using Configuration
+### Configuration Class
 
 ```python
+from metainformant.life_events import LifeEventsWorkflowConfig, load_life_events_config
+
+# Load from file
+config = load_life_events_config("config/life_events.yaml")
+
+# Use in workflow
 from metainformant.life_events import analyze_life_course
 
 results = analyze_life_course(
     sequences,
     outcomes=outcomes,
-    config_path="config/life_events.yaml",
+    config_obj=config,
     output_dir="output/life_events"
+)
+```
+
+### Example Configuration File (YAML)
+
+```yaml
+work_dir: output/life_events/work
+threads: 4
+log_dir: output/life_events/logs
+
+embedding:
+  embedding_dim: 100
+  window_size: 5
+  epochs: 10
+  method: skipgram
+  learning_rate: 0.01
+
+model:
+  model_type: embedding
+  task_type: classification
+  random_state: 42
+
+workflow:
+  save_model: true
+  save_embeddings: true
+
+output:
+  format: json
+  include_probabilities: true
+```
+
+### Environment Variable Overrides
+
+Configuration values can be overridden using environment variables with the `LE_` prefix:
+
+```bash
+export LE_WORK_DIR=/path/to/work
+export LE_THREADS=8
+export LE_EMBEDDING_DIM=200
+export LE_WINDOW_SIZE=10
+
+# Then run workflow
+python -m metainformant.life_events ...
+```
+
+### Using Configuration in Code
+
+```python
+from metainformant.life_events import (
+    LifeEventsWorkflowConfig,
+    load_life_events_config,
+    analyze_life_course
+)
+
+# Option 1: Load from file
+config = load_life_events_config("config/life_events.yaml")
+results = analyze_life_course(sequences, outcomes, config_obj=config)
+
+# Option 2: Pass config path (auto-loads)
+results = analyze_life_course(sequences, outcomes, config_path="config/life_events.yaml")
+
+# Option 3: Pass dict directly (backward compatible)
+results = analyze_life_course(
+    sequences,
+    outcomes,
+    config_obj={"embedding_dim": 100, "window_size": 5}
 )
 ```
 
@@ -650,6 +724,52 @@ omics_data = MultiOmicsData(
 joint_embeddings, loadings, variance = joint_pca(omics_data, n_components=10)
 ```
 
+## Model Persistence
+
+Trained models can be saved and loaded for reuse:
+
+### Saving Models
+
+```python
+from metainformant.life_events import EventSequencePredictor
+
+# Train model
+predictor = EventSequencePredictor(random_state=42)
+predictor.fit(sequences, outcomes, event_embeddings=embeddings)
+
+# Save model
+predictor.save_model("output/model.json")
+```
+
+The saved model includes:
+- Model hyperparameters (type, task, dimensions)
+- Event embeddings
+- Vocabulary and mappings
+- Classifier/regressor state (weights, coefficients, training data)
+- Class labels (for classification)
+
+### Loading Models
+
+```python
+from metainformant.life_events import EventSequencePredictor
+
+# Load saved model
+predictor = EventSequencePredictor.load_model("output/model.json")
+
+# Use immediately for prediction
+predictions = predictor.predict(new_sequences)
+```
+
+### Model File Format
+
+Models are saved as JSON files containing:
+- Metadata: model type, task type, hyperparameters
+- Embeddings: event token → vector mapping
+- Vocabulary: token lists and index mappings
+- Model state: classifier/regressor parameters and training data
+
+This format is human-readable and can be inspected or modified if needed.
+
 ## Performance Considerations
 
 - Embedding learning scales with vocabulary size and number of sequences
@@ -657,6 +777,8 @@ joint_embeddings, loadings, variance = joint_pca(omics_data, n_components=10)
 - Filtering operations are O(n) where n is number of events
 - All operations use real implementations (no mocks)
 - For large datasets, consider using domain-specific embeddings to reduce vocabulary size
+- Use `verbose=True` in `learn_event_embeddings()` to monitor progress for large datasets
+- Model persistence uses efficient JSON serialization; large models may take time to save/load
 
 ## Troubleshooting
 
@@ -680,6 +802,22 @@ If you get "Model must be fitted" error:
 - Call `fit()` before `predict()` or `predict_proba()`
 - Ensure training data is not empty
 - Check that outcomes match sequence length
+
+### Model Loading Errors
+
+If model loading fails:
+- Verify the model file exists and is readable
+- Check that the model file format is valid JSON
+- Ensure the model was saved with the same version of the code
+- Check error message for specific missing fields
+
+### Configuration Errors
+
+If configuration loading fails:
+- Verify config file format (YAML, TOML, or JSON)
+- Check that required fields are present
+- Ensure environment variable names use correct prefix (LE_)
+- Check file paths in configuration are absolute or relative to working directory
 
 ### Missing Optional Dependencies
 

@@ -219,8 +219,7 @@ def main() -> None:
     life_events_embed.add_argument("--epochs", type=int, default=10, help="Training epochs")
     life_events_predict = life_events_sub.add_parser("predict", help="Predict life outcomes")
     life_events_predict.add_argument("--events", type=Path, required=True, help="Event sequences file")
-    life_events_predict.add_argument("--model", type=Path, help="Pre-trained model path")
-    life_events_predict.add_argument("--outcome", choices=["mortality", "personality", "health"], help="Outcome type to predict")
+    life_events_predict.add_argument("--model", type=Path, required=True, help="Pre-trained model path")
     life_events_predict.add_argument("--output", type=Path, default=Path("output/life_events/predictions"), help="Output directory")
     life_events_interpret = life_events_sub.add_parser("interpret", help="Interpret predictions")
     life_events_interpret.add_argument("--model", type=Path, required=True, help="Model path")
@@ -664,11 +663,17 @@ def main() -> None:
         if args.life_events_cmd == "predict":
             import numpy as np
             from .life_events import EventDatabase, EventSequencePredictor, load_sequences_from_json
-            from .core import io
+            from .core import io, paths
 
             # Validate input file exists
             if not args.events.exists():
                 print(f"Error: Events file not found: {args.events}", file=sys.stderr)
+                sys.exit(1)
+
+            # Validate model file exists
+            if args.model is None or not args.model.exists():
+                print(f"Error: Model file not found: {args.model}", file=sys.stderr)
+                print("Note: Use 'life-events embed' to train a model first, or provide --model path", file=sys.stderr)
                 sys.exit(1)
 
             try:
@@ -683,22 +688,193 @@ def main() -> None:
                 print("Error: No sequences found in events file", file=sys.stderr)
                 sys.exit(1)
 
+            try:
+                # Load trained model
+                predictor = EventSequencePredictor.load_model(args.model)
+            except Exception as e:
+                print(f"Error loading model: {e}", file=sys.stderr)
+                sys.exit(1)
+
             # Convert to token sequences
             sequences_tokens = []
             for seq in database.sequences:
                 tokens = [f"{e.domain}:{e.event_type}" for e in seq.events]
                 sequences_tokens.append(tokens)
 
-            # Note: Full model persistence would require saving/loading model weights
-            # For now, demonstrate interface
-            print("Note: Prediction requires a trained model.")
-            print("Use the analyze_life_course workflow function to train models.")
-            print("Full model persistence will be implemented in future updates.")
-            sys.exit(0)
+            try:
+                # Make predictions
+                predictions = predictor.predict(sequences_tokens)
+                
+                # Prepare output
+                output_dir = Path(args.output)
+                paths.ensure_directory(output_dir)
+                
+                # Create predictions dictionary with sequence IDs
+                predictions_dict = {
+                    "n_sequences": len(sequences),
+                    "model_path": str(args.model),
+                    "model_type": predictor.model_type,
+                    "task_type": predictor.task_type,
+                    "predictions": []
+                }
+                
+                # Add predictions with sequence IDs
+                for i, seq in enumerate(database.sequences):
+                    pred_entry = {
+                        "sequence_id": seq.person_id,
+                        "prediction": float(predictions[i])
+                    }
+                    
+                    # Add probabilities if classification task
+                    if predictor.task_type == "classification":
+                        try:
+                            proba = predictor.predict_proba([sequences_tokens[i]])
+                            pred_entry["probabilities"] = {
+                                str(cls): float(prob) 
+                                for cls, prob in zip(predictor.classes_, proba[0])
+                            }
+                        except Exception:
+                            pass  # Skip if predict_proba fails
+                    
+                    predictions_dict["predictions"].append(pred_entry)
+                
+                # Save predictions
+                predictions_file = output_dir / "predictions.json"
+                io.dump_json(predictions_dict, predictions_file, indent=2)
+                
+                print(f"Made predictions for {len(sequences)} sequences")
+                print(f"Predictions saved to {predictions_file}")
+                
+                # Print summary
+                if predictor.task_type == "classification":
+                    unique_preds, counts = np.unique(predictions, return_counts=True)
+                    print("\nPrediction summary:")
+                    for pred, count in zip(unique_preds, counts):
+                        print(f"  Class {pred}: {count} sequences")
+                else:
+                    print(f"\nPrediction statistics:")
+                    print(f"  Mean: {np.mean(predictions):.4f}")
+                    print(f"  Std: {np.std(predictions):.4f}")
+                    print(f"  Min: {np.min(predictions):.4f}")
+                    print(f"  Max: {np.max(predictions):.4f}")
+                
+                return
+            except Exception as e:
+                print(f"Error making predictions: {e}", file=sys.stderr)
+                import traceback
+                traceback.print_exc()
+                sys.exit(1)
 
         if args.life_events_cmd == "interpret":
-            print("Interpretation functionality will be implemented in Phase 3")
-            sys.exit(0)
+            from .life_events import (
+                EventDatabase,
+                EventSequencePredictor,
+                event_importance,
+                feature_attribution,
+                load_sequences_from_json,
+                temporal_patterns,
+            )
+            from .core import io, paths
+
+            # Validate model file exists
+            if not args.model.exists():
+                print(f"Error: Model file not found: {args.model}", file=sys.stderr)
+                sys.exit(1)
+
+            # Validate sequences file exists
+            if not args.sequences.exists():
+                print(f"Error: Sequences file not found: {args.sequences}", file=sys.stderr)
+                sys.exit(1)
+
+            try:
+                # Load model
+                predictor = EventSequencePredictor.load_model(args.model)
+            except Exception as e:
+                print(f"Error loading model: {e}", file=sys.stderr)
+                sys.exit(1)
+
+            try:
+                # Load sequences
+                sequences = load_sequences_from_json(args.sequences)
+                database = EventDatabase(sequences=sequences)
+            except Exception as e:
+                print(f"Error loading sequences: {e}", file=sys.stderr)
+                sys.exit(1)
+
+            if not database.sequences:
+                print("Error: No sequences found in sequences file", file=sys.stderr)
+                sys.exit(1)
+
+            # Convert to token sequences
+            sequences_tokens = []
+            for seq in database.sequences:
+                tokens = [f"{e.domain}:{e.event_type}" for e in seq.events]
+                sequences_tokens.append(tokens)
+
+            # Get event embeddings from model
+            if not hasattr(predictor, "event_embeddings") or not predictor.event_embeddings:
+                print("Error: Model does not contain event embeddings required for interpretation", file=sys.stderr)
+                sys.exit(1)
+
+            event_embeddings = predictor.event_embeddings
+
+            try:
+                # Prepare output directory
+                output_dir = Path(args.output)
+                paths.ensure_directory(output_dir)
+
+                # Compute interpretations
+                print("Computing event importance...")
+                importance = event_importance(predictor, sequences_tokens, event_embeddings, method="permutation")
+
+                print("Computing temporal patterns...")
+                temporal = temporal_patterns(predictor, sequences_tokens, event_embeddings)
+
+                print("Computing feature attribution...")
+                attribution = feature_attribution(predictor, sequences_tokens, event_embeddings, use_shap=False)
+
+                # Create interpretation report
+                interpretation_report = {
+                    "model_path": str(args.model),
+                    "model_type": predictor.model_type,
+                    "task_type": predictor.task_type,
+                    "n_sequences": len(sequences_tokens),
+                    "interpretations": {
+                        "event_importance": importance,
+                        "temporal_patterns": temporal,
+                        "feature_attribution": attribution,
+                    }
+                }
+
+                # Save report
+                report_file = output_dir / "interpretation_report.json"
+                io.dump_json(interpretation_report, report_file, indent=2)
+
+                print(f"\nInterpretation complete. Report saved to {report_file}")
+
+                # Print top important events
+                sorted_importance = sorted(importance.items(), key=lambda x: x[1], reverse=True)
+                print("\nTop 10 most important events:")
+                for i, (event, score) in enumerate(sorted_importance[:10], 1):
+                    print(f"  {i}. {event}: {score:.4f}")
+
+                # Try to create visualization if matplotlib available
+                try:
+                    from .life_events import plot_prediction_importance
+                    if plot_prediction_importance is not None:
+                        viz_file = output_dir / "importance_plot.png"
+                        plot_prediction_importance(importance, top_n=20, output_path=viz_file)
+                        print(f"\nVisualization saved to {viz_file}")
+                except Exception as e:
+                    # Visualization is optional
+                    pass
+
+                return
+            except Exception as e:
+                print(f"Error computing interpretations: {e}", file=sys.stderr)
+                import traceback
+                traceback.print_exc()
+                sys.exit(1)
 
     if args.command == "tests":
         exit_code = run_all_tests(args.pytest_args)

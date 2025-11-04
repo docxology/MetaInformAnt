@@ -6,10 +6,12 @@ Entry: `uv run python -m metainformant` or `uv run metainformant`.
 uv run metainformant setup --with-amalgkit --ncbi-email "you@example.com"
 uv run metainformant dna fetch --assembly GCF_000001405.40
 uv run metainformant rna plan --work-dir output/amalgkit/work --threads 8 --species Apis_mellifera
+uv run metainformant rna plan-species --work-dir output/amalgkit/work --threads 8 --taxon-id 7460 --tissue brain --tissue muscle
+uv run metainformant rna plan-config --config config/amalgkit_pbarbatus.yaml
 uv run metainformant rna run  --work-dir output/amalgkit/work --threads 8 --species Apis_mellifera --check
 uv run metainformant rna run-config --config config/amalgkit_pbarbatus.yaml --check
-uv run metainformant gwas run --config config/gwas_config.yaml
-uv run metainformant gwas run --config config/gwas_config.yaml --check
+uv run metainformant gwas run --config config/gwas/gwas_template.yaml
+uv run metainformant gwas run --config config/gwas/gwas_template.yaml --check
 uv run metainformant protein taxon-ids --file tests/data/protein/taxon_id_list.txt
 uv run metainformant protein comp --fasta data/protein/example.faa
 uv run metainformant protein rmsd-ca --pdb-a file1.pdb --pdb-b file2.pdb
@@ -25,6 +27,12 @@ uv run metainformant visualization run --input data/results.csv --plot-type heat
 uv run metainformant epigenome run --methylation data/methylation.tsv --output output/epigenome --compute-beta
 uv run metainformant ecology run --input data/abundance.tsv --output output/ecology --diversity
 uv run metainformant ml run --features data/features.csv --labels data/labels.csv --output output/ml --classify
+uv run metainformant information entropy --input data/sequences.fasta --k 1
+uv run metainformant information mutual-information --x data/variable1.csv --y data/variable2.csv --output output/information
+uv run metainformant information profile --sequences data/sequences.fasta --k 2 --visualize
+uv run metainformant life-events embed --input data/event_sequences.json --output output/life_events/embeddings --embedding-dim 100
+uv run metainformant life-events predict --events data/event_sequences.json --model output/life_events/model.pkl --output output/life_events/predictions
+uv run metainformant life-events interpret --model output/life_events/model.pkl --sequences data/event_sequences.json --output output/life_events/interpretation
 uv run metainformant tests -q
 ```
 
@@ -33,6 +41,8 @@ Subcommands
 - **setup**: runs repository setup (uv, dependencies); supports `--with-amalgkit` and `--ncbi-email` options
 - **dna fetch**: validates assembly accessions (see [DNA Accessions](./dna/accessions.md))
 - **rna plan**: prints an ordered plan of subcommands and parameters (see [RNA Workflow](./rna/workflow.md))
+- **rna plan-species**: plans workflow with species/tissue parameters; requires `--work-dir` and `--threads`; optional `--taxon-id` and repeatable `--tissue` filters
+- **rna plan-config**: plans workflow from a config file without executing; requires `--config` path to YAML/TOML/JSON file
 - **rna run**: executes the workflow; use `--check` to stop on first failure; logs written in `work-dir/logs` (default examples place this under `output/`)
 - **rna run-config**: executes the workflow from a config file under `config/`; logs and manifest written under paths specified by the config
 - **gwas run**: executes GWAS workflow from configuration file (see [GWAS Workflow](./gwas/workflow.md)); use `--check` to validate configuration without execution
@@ -51,6 +61,12 @@ Subcommands
 - **epigenome run**: epigenome analysis workflow (methylation, beta values)
 - **ecology run**: ecology analysis workflow (diversity indices, beta diversity)
 - **ml run**: machine learning pipeline workflow (classification, regression, feature selection)
+- **information entropy**: calculates Shannon entropy for sequences or data files (see [Information Theory](../src/metainformant/information/README.md))
+- **information mutual-information**: calculates mutual information between two variables/data files
+- **information profile**: calculates information profile for sequences with optional visualization
+- **life-events embed**: learns event embeddings from life course event sequences (see [Life Events](../src/metainformant/life_events/README.md))
+- **life-events predict**: predicts life outcomes from event sequences using pre-trained models
+- **life-events interpret**: interprets model predictions and provides feature importance analysis
 - **tests**: runs the repo tests (see [Testing](./testing.md))
 
 ```mermaid

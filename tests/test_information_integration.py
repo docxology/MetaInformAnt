@@ -149,8 +149,58 @@ class TestMultiOmicsIntegration:
             method="cross_platform_mi",
         )
 
-        # May or may not have MI depending on alignment
+        # Results always in matrix format
         assert "method" in results
+        assert "genomics_transcriptomics_mi_matrix" in results
+        assert "genomics_transcriptomics_mean_mi" in results
+        assert "genomics_transcriptomics_max_mi" in results
+        assert "genomics_transcriptomics_min_mi" in results
+        assert len(results["genomics_transcriptomics_mi_matrix"]) == 1
+        assert len(results["genomics_transcriptomics_mi_matrix"][0]) == 1
+
+    def test_multiomics_feature_selection(self):
+        """Test multi-omics integration with feature selection."""
+        genomics = np.random.randn(100, 50)
+        transcriptomics = np.random.randn(100, 50)
+
+        # Test with specific feature indices
+        results = multiomics_integration(
+            genomics_data=genomics,
+            transcriptomics_data=transcriptomics,
+            method="cross_platform_mi",
+            feature_indices={"genomics": [0, 1, 2], "transcriptomics": [0, 3, 5]},
+        )
+
+        assert "method" in results
+        # Should have matrix for multiple features
+        assert "genomics_transcriptomics_mi_matrix" in results
+        assert len(results["genomics_transcriptomics_mi_matrix"]) == 3
+        assert len(results["genomics_transcriptomics_mi_matrix"][0]) == 3
+        assert "genomics_transcriptomics_mean_mi" in results
+        assert "genomics_transcriptomics_max_mi" in results
+        assert "genomics_transcriptomics_min_mi" in results
+        assert "genomics_feature_indices" in results
+        assert "transcriptomics_feature_indices" in results
+
+    def test_multiomics_feature_selection_single(self):
+        """Test multi-omics integration with single feature indices."""
+        genomics = np.random.randn(100, 50)
+        transcriptomics = np.random.randn(100, 50)
+
+        # Test with single integer (should be converted to list)
+        results = multiomics_integration(
+            genomics_data=genomics,
+            transcriptomics_data=transcriptomics,
+            method="cross_platform_mi",
+            feature_indices={"genomics": 0, "transcriptomics": 0},
+        )
+
+        # Always returns matrix format
+        assert "method" in results
+        assert "genomics_transcriptomics_mi_matrix" in results
+        assert len(results["genomics_transcriptomics_mi_matrix"]) == 1
+        assert len(results["genomics_transcriptomics_mi_matrix"][0]) == 1
+        assert "genomics_transcriptomics_mean_mi" in results
 
 
 class TestMLIntegration:

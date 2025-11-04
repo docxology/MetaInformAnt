@@ -1,0 +1,27 @@
+# Example Life Events Workflow Configuration
+# This file demonstrates the configuration format for life events analysis
+
+work_dir: output/life_events/work
+threads: 4
+log_dir: output/life_events/logs
+
+embedding:
+  embedding_dim: 100
+  window_size: 5
+  epochs: 10
+  method: skipgram
+  learning_rate: 0.01
+
+model:
+  model_type: embedding
+  task_type: classification
+  random_state: 42
+
+workflow:
+  save_model: true
+  save_embeddings: true
+
+output:
+  format: json
+  include_probabilities: true
+

@@ -13,6 +13,7 @@ import numpy as np
 from numpy.typing import NDArray
 
 from ..core import config, io, logging, paths
+from .config import LifeEventsWorkflowConfig, load_life_events_config
 from .events import EventDatabase, EventSequence
 from .embeddings import learn_event_embeddings, sequence_embeddings
 from .models import EventSequencePredictor
@@ -22,6 +23,7 @@ def analyze_life_course(
     sequences: List[EventSequence],
     outcomes: Optional[NDArray] = None,
     config_path: Optional[str | Path] = None,
+    config_obj: Optional[LifeEventsWorkflowConfig | Dict[str, Any]] = None,
     output_dir: Optional[str | Path] = None
 ) -> Dict[str, Any]:
     """Complete workflow from raw event sequences to predictions.
@@ -70,9 +72,46 @@ def analyze_life_course(
     paths.ensure_directory(output_dir)
     
     # Load config if provided
-    cfg = {}
-    if config_path:
-        cfg = config.load_config(config_path)
+    cfg: Dict[str, Any] = {}
+    if config_obj is not None:
+        if isinstance(config_obj, LifeEventsWorkflowConfig):
+            # Convert config object to dict for compatibility
+            cfg = {
+                "embedding_dim": config_obj.embedding.get("embedding_dim", 100),
+                "window_size": config_obj.embedding.get("window_size", 5),
+                "epochs": config_obj.embedding.get("epochs", 10),
+                "model_type": config_obj.model.get("model_type", "embedding"),
+                "task_type": config_obj.model.get("task_type", "classification"),
+                "random_state": config_obj.model.get("random_state", 42),
+            }
+            # Merge in other config sections
+            cfg.update(config_obj.embedding)
+            cfg.update(config_obj.model)
+            cfg.update(config_obj.workflow)
+            if output_dir is None and config_obj.work_dir:
+                output_dir = config_obj.work_dir
+        elif isinstance(config_obj, dict):
+            cfg = config_obj
+    elif config_path:
+        try:
+            # Try loading as LifeEventsWorkflowConfig
+            config_obj = load_life_events_config(config_path)
+            cfg = {
+                "embedding_dim": config_obj.embedding.get("embedding_dim", 100),
+                "window_size": config_obj.embedding.get("window_size", 5),
+                "epochs": config_obj.embedding.get("epochs", 10),
+                "model_type": config_obj.model.get("model_type", "embedding"),
+                "task_type": config_obj.model.get("task_type", "classification"),
+                "random_state": config_obj.model.get("random_state", 42),
+            }
+            cfg.update(config_obj.embedding)
+            cfg.update(config_obj.model)
+            cfg.update(config_obj.workflow)
+            if output_dir is None and config_obj.work_dir:
+                output_dir = config_obj.work_dir
+        except Exception:
+            # Fallback to old config loading
+            cfg = config.load_config(config_path)
     
     # Convert sequences to token format
     sequences_tokens = []
@@ -124,6 +163,12 @@ def analyze_life_course(
         )
         
         predictor.fit(sequences_tokens, outcomes, event_embeddings=embeddings)
+        
+        # Save model
+        model_file = output_dir / "model.json"
+        predictor.save_model(model_file)
+        logger.info(f"Saved model to {model_file}")
+        results["model"] = str(model_file)
         
         # Make predictions
         predictions = predictor.predict(sequences_tokens)

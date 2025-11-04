@@ -102,7 +102,7 @@ print(f"Selected {len(top_features)} features based on mutual information")
 ## Example 4: Multi-Omics Information Integration
 
 ### Problem
-Compare information content across different omics platforms.
+Compare information content across different omics platforms and analyze cross-platform relationships.
 
 ### Solution
 
@@ -129,15 +129,38 @@ print(f"Genomics: {results['genomics_entropy']:.3f} bits")
 print(f"Transcriptomics: {results['transcriptomics_entropy']:.3f} bits")
 print(f"Proteomics: {results['proteomics_entropy']:.3f} bits")
 
-# Cross-platform mutual information
+# Cross-platform mutual information with feature selection
+# Use first feature (default)
 mi_results = multiomics_integration(
     genomics_data=genomics,
     transcriptomics_data=transcriptomics,
     method="cross_platform_mi"
 )
 
-if "genomics_transcriptomics_mi" in mi_results:
-    print(f"Genomics-Transcriptomics MI: {mi_results['genomics_transcriptomics_mi']:.3f}")
+# Results always in matrix format
+mi_matrix = mi_results["genomics_transcriptomics_mi_matrix"]
+print(f"Genomics-Transcriptomics MI Matrix shape: {len(mi_matrix)} x {len(mi_matrix[0])}")
+print(f"Mean MI: {mi_results['genomics_transcriptomics_mean_mi']:.3f}")
+print(f"Max MI: {mi_results['genomics_transcriptomics_max_mi']:.3f}")
+print(f"Min MI: {mi_results['genomics_transcriptomics_min_mi']:.3f}")
+
+# Use specific features for comprehensive analysis
+mi_results_multi = multiomics_integration(
+    genomics_data=genomics,
+    transcriptomics_data=transcriptomics,
+    method="cross_platform_mi",
+    feature_indices={
+        "genomics": [0, 1, 2, 3],  # Compare first 4 variants
+        "transcriptomics": [0, 5, 10, 15]  # Compare specific genes
+    }
+)
+
+# Results include MI matrix and summary statistics
+mi_matrix_multi = mi_results_multi["genomics_transcriptomics_mi_matrix"]
+print(f"MI Matrix shape: {len(mi_matrix_multi)} x {len(mi_matrix_multi[0])}")
+print(f"Mean MI: {mi_results_multi['genomics_transcriptomics_mean_mi']:.3f}")
+print(f"Max MI: {mi_results_multi['genomics_transcriptomics_max_mi']:.3f}")
+print(f"Min MI: {mi_results_multi['genomics_transcriptomics_min_mi']:.3f}")
 ```
 
 ## Example 5: Network Information Analysis

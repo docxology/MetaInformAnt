@@ -6,6 +6,7 @@ including LSTM-based and simpler sequence models.
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import numpy as np
@@ -331,6 +332,236 @@ class EventSequencePredictor:
             return self.classifier.predict_proba(X)
         else:
             raise ValueError("predict_proba not implemented for this model type")
+    
+    def save_model(self, path: str | Path) -> None:
+        """Save trained model to disk.
+        
+        Saves model hyperparameters, embeddings, vocabulary, and classifier/regressor
+        state to a JSON file. The model can be reconstructed using load_model().
+        
+        Args:
+            path: Path to save model file (JSON format)
+            
+        Raises:
+            ValueError: If model is not fitted
+            IOError: If file cannot be written
+            
+        Examples:
+            >>> predictor = EventSequencePredictor(random_state=42)
+            >>> predictor.fit(sequences, outcomes)
+            >>> predictor.save_model("output/model.json")
+        """
+        if not self.is_fitted:
+            raise ValueError("Model must be fitted before saving")
+        
+        from ..core import io
+        
+        # Prepare model data for serialization
+        model_data: Dict[str, Any] = {
+            "model_type": self.model_type,
+            "task_type": self.task_type,
+            "embedding_dim": self.embedding_dim,
+            "hidden_dim": self.hidden_dim,
+            "random_state": self.random_state,
+            "params": self.params,
+            "is_fitted": self.is_fitted,
+        }
+        
+        # Save event embeddings if present
+        if hasattr(self, "event_embeddings") and self.event_embeddings:
+            model_data["event_embeddings"] = {
+                k: v.tolist() for k, v in self.event_embeddings.items()
+            }
+        
+        # Save vocabulary if present (for simple model)
+        if hasattr(self, "vocab") and self.vocab:
+            model_data["vocab"] = self.vocab
+        
+        # Save vocabulary mappings if present (for LSTM model)
+        if hasattr(self, "vocab_to_idx") and self.vocab_to_idx:
+            model_data["vocab_to_idx"] = self.vocab_to_idx
+        if hasattr(self, "idx_to_vocab") and self.idx_to_vocab:
+            model_data["idx_to_vocab"] = self.idx_to_vocab
+        
+        # Save classes for classification
+        if self.classes_ is not None:
+            model_data["classes_"] = self.classes_.tolist()
+        
+        # Save classifier state if present
+        if hasattr(self, "classifier") and self.classifier:
+            classifier = self.classifier
+            model_data["classifier"] = {
+                "algorithm": classifier.algorithm,
+                "random_state": classifier.random_state,
+                "params": classifier.params,
+                "is_fitted": classifier.is_fitted,
+            }
+            
+            # Save training data (for KNN, centroid-based methods)
+            if hasattr(classifier, "X_train_") and classifier.X_train_ is not None:
+                model_data["classifier"]["X_train_"] = classifier.X_train_.tolist()
+            if hasattr(classifier, "y_train_") and classifier.y_train_ is not None:
+                model_data["classifier"]["y_train_"] = classifier.y_train_.tolist()
+            
+            # Save feature importance if present
+            if hasattr(classifier, "feature_importance_") and classifier.feature_importance_ is not None:
+                model_data["classifier"]["feature_importance_"] = classifier.feature_importance_.tolist()
+        
+        # Save regressor state if present
+        if hasattr(self, "regressor") and self.regressor:
+            regressor = self.regressor
+            model_data["regressor"] = {
+                "algorithm": regressor.algorithm,
+                "random_state": regressor.random_state,
+                "params": regressor.params,
+                "is_fitted": regressor.is_fitted,
+            }
+            
+            # Save training data
+            if hasattr(regressor, "X_train_") and regressor.X_train_ is not None:
+                model_data["regressor"]["X_train_"] = regressor.X_train_.tolist()
+            if hasattr(regressor, "y_train_") and regressor.y_train_ is not None:
+                model_data["regressor"]["y_train_"] = regressor.y_train_.tolist()
+            
+            # Save coefficients and intercept for linear/ridge models
+            if hasattr(regressor, "coefficients_") and regressor.coefficients_ is not None:
+                model_data["regressor"]["coefficients_"] = regressor.coefficients_.tolist()
+            if hasattr(regressor, "intercept_"):
+                model_data["regressor"]["intercept_"] = float(regressor.intercept_)
+            
+            # Save feature importance if present
+            if hasattr(regressor, "feature_importance_") and regressor.feature_importance_ is not None:
+                model_data["regressor"]["feature_importance_"] = regressor.feature_importance_.tolist()
+        
+        # Save to file
+        io.dump_json(model_data, path, indent=2)
+    
+    @classmethod
+    def load_model(cls, path: str | Path) -> "EventSequencePredictor":
+        """Load a trained model from disk.
+        
+        Reconstructs an EventSequencePredictor from a saved model file.
+        The model will be in fitted state and ready for prediction.
+        
+        Args:
+            path: Path to saved model file (JSON format)
+            
+        Returns:
+            Reconstructed EventSequencePredictor instance
+            
+        Raises:
+            FileNotFoundError: If model file does not exist
+            ValueError: If model file format is invalid
+            
+        Examples:
+            >>> predictor = EventSequencePredictor.load_model("output/model.json")
+            >>> predictions = predictor.predict(new_sequences)
+        """
+        from ..core import io
+        
+        path = Path(path)
+        if not path.exists():
+            raise FileNotFoundError(f"Model file not found: {path}")
+        
+        # Load model data
+        try:
+            model_data = io.load_json(path)
+        except Exception as e:
+            raise ValueError(f"Failed to parse model file: {e}") from e
+        
+        # Validate required fields
+        required_fields = ["model_type", "task_type", "is_fitted"]
+        missing_fields = [f for f in required_fields if f not in model_data]
+        if missing_fields:
+            raise ValueError(f"Invalid model file: missing fields {missing_fields}")
+        
+        if not model_data["is_fitted"]:
+            raise ValueError("Cannot load unfitted model")
+        
+        # Reconstruct predictor
+        predictor = cls(
+            model_type=model_data["model_type"],
+            task_type=model_data["task_type"],
+            embedding_dim=model_data.get("embedding_dim", 100),
+            hidden_dim=model_data.get("hidden_dim", 64),
+            random_state=model_data.get("random_state"),
+            **model_data.get("params", {})
+        )
+        
+        predictor.is_fitted = True
+        
+        # Restore event embeddings
+        if "event_embeddings" in model_data:
+            predictor.event_embeddings = {
+                k: np.array(v, dtype=np.float64) 
+                for k, v in model_data["event_embeddings"].items()
+            }
+        
+        # Restore vocabulary
+        if "vocab" in model_data:
+            predictor.vocab = model_data["vocab"]
+        
+        # Restore vocabulary mappings
+        if "vocab_to_idx" in model_data:
+            predictor.vocab_to_idx = model_data["vocab_to_idx"]
+        if "idx_to_vocab" in model_data:
+            predictor.idx_to_vocab = model_data["idx_to_vocab"]
+        
+        # Restore classes
+        if "classes_" in model_data:
+            predictor.classes_ = np.array(model_data["classes_"])
+        
+        # Restore classifier
+        if "classifier" in model_data:
+            from ..ml.classification import BiologicalClassifier
+            
+            classifier_data = model_data["classifier"]
+            predictor.classifier = BiologicalClassifier(
+                algorithm=classifier_data["algorithm"],
+                random_state=classifier_data.get("random_state"),
+                **classifier_data.get("params", {})
+            )
+            predictor.classifier.is_fitted = classifier_data.get("is_fitted", True)
+            
+            if "X_train_" in classifier_data:
+                predictor.classifier.X_train_ = np.array(classifier_data["X_train_"], dtype=np.float64)
+            if "y_train_" in classifier_data:
+                predictor.classifier.y_train_ = np.array(classifier_data["y_train_"])
+            if "feature_importance_" in classifier_data:
+                predictor.classifier.feature_importance_ = np.array(
+                    classifier_data["feature_importance_"], dtype=np.float64
+                )
+            if "classes_" in model_data:
+                predictor.classifier.classes_ = predictor.classes_
+        
+        # Restore regressor
+        if "regressor" in model_data:
+            from ..ml.regression import BiologicalRegressor
+            
+            regressor_data = model_data["regressor"]
+            predictor.regressor = BiologicalRegressor(
+                algorithm=regressor_data["algorithm"],
+                random_state=regressor_data.get("random_state"),
+                **regressor_data.get("params", {})
+            )
+            predictor.regressor.is_fitted = regressor_data.get("is_fitted", True)
+            
+            if "X_train_" in regressor_data:
+                predictor.regressor.X_train_ = np.array(regressor_data["X_train_"], dtype=np.float64)
+            if "y_train_" in regressor_data:
+                predictor.regressor.y_train_ = np.array(regressor_data["y_train_"], dtype=np.float64)
+            if "coefficients_" in regressor_data:
+                predictor.regressor.coefficients_ = np.array(
+                    regressor_data["coefficients_"], dtype=np.float64
+                )
+            if "intercept_" in regressor_data:
+                predictor.regressor.intercept_ = float(regressor_data["intercept_"])
+            if "feature_importance_" in regressor_data:
+                predictor.regressor.feature_importance_ = np.array(
+                    regressor_data["feature_importance_"], dtype=np.float64
+                )
+        
+        return predictor
 
 
 class LSTMSequenceModel:

@@ -10,9 +10,11 @@ import pytest
 from metainformant.life_events import (
     Event,
     EventSequence,
+    LifeEventsWorkflowConfig,
     analyze_life_course,
     compare_populations,
     intervention_analysis,
+    load_life_events_config,
 )
 
 
@@ -157,4 +159,226 @@ def test_intervention_analysis_with_outcomes(tmp_path):
     
     assert "outcome_change" in results
     assert "mean" in results["outcome_change"]
+
+
+# Configuration Integration Tests
+
+def test_analyze_life_course_with_config_obj(tmp_path):
+    """Test analyze_life_course with LifeEventsWorkflowConfig object."""
+    events1 = [
+        Event("degree", datetime(2010, 6, 1), "education"),
+        Event("job_change", datetime(2015, 3, 1), "occupation"),
+    ]
+    
+    sequences = [
+        EventSequence(person_id="person_001", events=events1),
+    ]
+    
+    outcomes = np.array([0])
+    
+    config = LifeEventsWorkflowConfig(
+        work_dir=tmp_path / "work",
+        threads=4,
+        embedding={"embedding_dim": 50, "window_size": 3, "epochs": 5},
+        model={"model_type": "embedding", "random_state": 42}
+    )
+    
+    results = analyze_life_course(
+        sequences,
+        outcomes=outcomes,
+        config_obj=config,
+        output_dir=tmp_path / "output"
+    )
+    
+    assert results["n_sequences"] == 1
+    assert "model" in results
+    assert results["embedding_dim"] == 50
+
+
+def test_analyze_life_course_with_config_path(tmp_path):
+    """Test analyze_life_course with config file path."""
+    events1 = [
+        Event("degree", datetime(2010, 6, 1), "education"),
+    ]
+    
+    sequences = [
+        EventSequence(person_id="person_001", events=events1),
+    ]
+    
+    outcomes = np.array([0])
+    
+    # Create config file
+    config_file = tmp_path / "config.yaml"
+    config_content = """
+work_dir: {work_dir}
+threads: 4
+embedding:
+  embedding_dim: 50
+  window_size: 3
+  epochs: 5
+model:
+  model_type: embedding
+  random_state: 42
+""".format(work_dir=str(tmp_path / "work"))
+    config_file.write_text(config_content)
+    
+    results = analyze_life_course(
+        sequences,
+        outcomes=outcomes,
+        config_path=config_file,
+        output_dir=tmp_path / "output"
+    )
+    
+    assert results["n_sequences"] == 1
+    assert "model" in results
+    assert results["embedding_dim"] == 50
+
+
+def test_analyze_life_course_with_dict_config(tmp_path):
+    """Test analyze_life_course with dict config (backward compatibility)."""
+    events1 = [
+        Event("degree", datetime(2010, 6, 1), "education"),
+    ]
+    
+    sequences = [
+        EventSequence(person_id="person_001", events=events1),
+    ]
+    
+    outcomes = np.array([0])
+    
+    config_dict = {
+        "embedding_dim": 50,
+        "window_size": 3,
+        "epochs": 5,
+        "model_type": "embedding",
+        "random_state": 42
+    }
+    
+    results = analyze_life_course(
+        sequences,
+        outcomes=outcomes,
+        config_obj=config_dict,
+        output_dir=tmp_path / "output"
+    )
+    
+    assert results["n_sequences"] == 1
+    assert "model" in results
+    assert results["embedding_dim"] == 50
+
+
+def test_analyze_life_course_config_work_dir(tmp_path):
+    """Test that work_dir from config is used."""
+    events1 = [
+        Event("degree", datetime(2010, 6, 1), "education"),
+    ]
+    
+    sequences = [
+        EventSequence(person_id="person_001", events=events1),
+    ]
+    
+    config = LifeEventsWorkflowConfig(
+        work_dir=tmp_path / "config_work_dir",
+        threads=4
+    )
+    
+    results = analyze_life_course(
+        sequences,
+        config_obj=config,
+        output_dir=None  # Should use config work_dir
+    )
+    
+    assert results["n_sequences"] == 1
+    # Verify files were created in config work_dir
+    from pathlib import Path
+    work_dir = Path(results["embeddings"]).parent
+    assert "config_work_dir" in str(work_dir) or work_dir.exists()
+
+
+def test_analyze_life_course_config_embedding_params(tmp_path):
+    """Test that embedding params from config are used."""
+    events1 = [
+        Event("degree", datetime(2010, 6, 1), "education"),
+    ]
+    
+    sequences = [
+        EventSequence(person_id="person_001", events=events1),
+    ]
+    
+    config = LifeEventsWorkflowConfig(
+        work_dir=tmp_path / "work",
+        embedding={
+            "embedding_dim": 75,
+            "window_size": 7,
+            "epochs": 15
+        }
+    )
+    
+    results = analyze_life_course(
+        sequences,
+        config_obj=config,
+        output_dir=tmp_path / "output"
+    )
+    
+    assert results["embedding_dim"] == 75
+
+
+def test_analyze_life_course_config_model_params(tmp_path):
+    """Test that model params from config are used."""
+    events1 = [
+        Event("degree", datetime(2010, 6, 1), "education"),
+    ]
+    
+    sequences = [
+        EventSequence(person_id="person_001", events=events1),
+    ]
+    
+    outcomes = np.array([0])
+    
+    config = LifeEventsWorkflowConfig(
+        work_dir=tmp_path / "work",
+        model={
+            "model_type": "simple",
+            "task_type": "classification",
+            "random_state": 123
+        }
+    )
+    
+    results = analyze_life_course(
+        sequences,
+        outcomes=outcomes,
+        config_obj=config,
+        output_dir=tmp_path / "output"
+    )
+    
+    assert results["model_type"] == "simple"
+    assert results["task_type"] == "classification"
+
+
+def test_analyze_life_course_saves_model(tmp_path):
+    """Test that model is saved when outcomes provided."""
+    events1 = [
+        Event("degree", datetime(2010, 6, 1), "education"),
+    ]
+    
+    sequences = [
+        EventSequence(person_id="person_001", events=events1),
+    ]
+    
+    outcomes = np.array([0])
+    
+    output_dir = tmp_path / "output"
+    results = analyze_life_course(
+        sequences,
+        outcomes=outcomes,
+        output_dir=output_dir
+    )
+    
+    assert "model" in results
+    model_file = Path(results["model"])
+    assert model_file.exists()
+    
+    # Verify model can be loaded
+    from metainformant.life_events import EventSequencePredictor
+    loaded = EventSequencePredictor.load_model(model_file)
+    assert loaded.is_fitted
 

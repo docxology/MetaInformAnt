@@ -26,7 +26,7 @@ probs = [0.5, 0.3, 0.2]
 entropy = shannon_entropy(probs)  # bits
 
 # From counts
-from metainformant.information.syntactic import shannon_entropy_from_counts
+from metainformant.information import shannon_entropy_from_counts
 counts = {"A": 50, "T": 30, "G": 20}
 entropy = shannon_entropy_from_counts(counts)
 ```
@@ -478,11 +478,27 @@ from metainformant.information import multiomics_integration
 
 genomics = np.random.randn(100, 50)
 transcriptomics = np.random.randn(100, 50)
+# Use first feature (default)
 results = multiomics_integration(
     genomics_data=genomics,
     transcriptomics_data=transcriptomics,
     method="cross_platform_mi"
 )
+# Results always in matrix format
+mi_matrix = results["genomics_transcriptomics_mi_matrix"]
+mean_mi = results["genomics_transcriptomics_mean_mi"]
+
+# Use specific features
+results = multiomics_integration(
+    genomics_data=genomics,
+    transcriptomics_data=transcriptomics,
+    method="cross_platform_mi",
+    feature_indices={"genomics": [0, 1, 2], "transcriptomics": [0, 3, 5]}
+)
+# Access matrix and statistics
+mi_matrix = results["genomics_transcriptomics_mi_matrix"]
+mean_mi = results["genomics_transcriptomics_mean_mi"]
+max_mi = results["genomics_transcriptomics_max_mi"]
 ```
 
 #### ML Integration
@@ -717,6 +733,19 @@ results = multiomics_integration(
 print(f"Genomics entropy: {results['genomics_entropy']:.3f}")
 print(f"Transcriptomics entropy: {results['transcriptomics_entropy']:.3f}")
 print(f"Proteomics entropy: {results['proteomics_entropy']:.3f}")
+
+# Cross-platform MI analysis with feature selection
+mi_results = multiomics_integration(
+    genomics_data=genomics,
+    transcriptomics_data=transcriptomics,
+    method="cross_platform_mi",
+    feature_indices={"genomics": [0, 1, 2], "transcriptomics": [0, 3, 5]}
+)
+
+# Access matrix format results
+mi_matrix = mi_results["genomics_transcriptomics_mi_matrix"]
+print(f"MI Matrix: {len(mi_matrix)} x {len(mi_matrix[0])}")
+print(f"Mean MI: {mi_results['genomics_transcriptomics_mean_mi']:.3f}")
 ```
 
 ### Tutorial 5: Network Information Analysis

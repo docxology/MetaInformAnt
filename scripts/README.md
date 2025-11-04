@@ -337,7 +337,7 @@ output/demo/
 - ✅ Complete workflow tracking
 - ✅ Summary report generation
 
-See `output/demo/VERIFICATION_REPORT.md` for detailed verification.
+See `scripts/run_complete_demo.py` for the complete workflow demonstration. Outputs are saved to `output/demo/` with workflow configuration, processed data, visualizations, and summary reports.
 
 ### Development Workflow
 ```bash

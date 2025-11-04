@@ -64,6 +64,26 @@ flowchart LR
     V2[plots]
     V3[animations]
   end
+  subgraph Information[Information Theory]
+    I1[entropy]
+    I2[mutual-information]
+    I3[profile]
+  end
+  subgraph LifeEvents[Life Events]
+    L1[embed]
+    L2[predict]
+    L3[interpret]
+  end
+  subgraph Other
+    O1[protein]
+    O2[ontology]
+    O3[phenotype]
+    O4[epigenome]
+    O5[ecology]
+    O6[ml]
+    O7[multiomics]
+    O8[networks]
+  end
   A --> D1 & D2 & D3 & D4 & D5
   A --> R1 & R2
   A --> G1 & G2 & G3 & G4
@@ -72,6 +92,9 @@ flowchart LR
   A --> S1 & S2 & S3
   A --> M1 & M2 & M3
   A --> V1 & V2 & V3
+  A --> I1 & I2 & I3
+  A --> L1 & L2 & L3
+  A --> O1 & O2 & O3 & O4 & O5 & O6 & O7 & O8
   C1 -.-> A
   C2 -.-> A
   C1 -.-> D1
@@ -84,6 +107,12 @@ flowchart LR
   C2 -.-> Q1
   C5 -.-> R2
   C8 -.-> R2
+  C1 -.-> O6
+  C2 -.-> O6
+  C1 -.-> O7
+  C2 -.-> O7
+  C1 -.-> O8
+  C2 -.-> O8
 ```
 
 ## Project directories and conventions

@@ -71,7 +71,7 @@ python3 scripts/run_complete_demo.py
 # - Complete output organization
 ```
 
-See [`output/demo/VERIFICATION_REPORT.md`](output/demo/VERIFICATION_REPORT.md) for detailed workflow documentation.
+See `scripts/run_complete_demo.py` for the complete workflow demonstration. Outputs are saved to `output/demo/` with workflow configuration, processed data, visualizations, and summary reports.
 
 ## Module Overview
 
@@ -148,7 +148,7 @@ uv run metainformant setup --with-amalgkit
 # Domain workflows
 uv run metainformant dna fetch --assembly GCF_000001405.40
 uv run metainformant rna run --work-dir output/rna --threads 8
-uv run metainformant gwas run --config config/gwas_config.yaml
+uv run metainformant gwas run --config config/gwas/gwas_template.yaml
 
 # New module workflows
 uv run metainformant networks run --input data/interactions.tsv --output output/networks

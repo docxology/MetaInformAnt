@@ -8,6 +8,7 @@ for estimating entropy from continuous data samples.
 from __future__ import annotations
 
 import math
+from collections import Counter
 from typing import Any
 
 import numpy as np
@@ -38,12 +39,19 @@ def differential_entropy(
         >>> h > 0  # Should be positive
         True
         
+    Raises:
+        ValueError: If samples array is empty or method is invalid
+        
     References:
         Cover, T. M., & Thomas, J. A. (2006). Elements of Information Theory.
         John Wiley & Sons.
     """
     if len(samples) == 0:
-        return 0.0
+        raise ValueError("Samples array cannot be empty")
+    
+    valid_methods = ["histogram", "kde"]
+    if method not in valid_methods:
+        raise ValueError(f"Method must be one of {valid_methods}, got {method}")
     
     samples = np.asarray(samples).flatten()
     
@@ -109,15 +117,28 @@ def mutual_information_continuous(
         >>> mi = mutual_information_continuous(x, y)
         >>> mi > 0  # Should be positive
         True
+        
+    Raises:
+        ValueError: If x or y are empty, have different lengths, or method is invalid
     """
     x = np.asarray(x).flatten()
     y = np.asarray(y).flatten()
     
+    if len(x) == 0:
+        raise ValueError("X array cannot be empty")
+    
+    if len(y) == 0:
+        raise ValueError("Y array cannot be empty")
+    
     if len(x) != len(y):
-        raise ValueError("X and Y must have the same length")
+        raise ValueError(f"X and Y must have the same length, got {len(x)} and {len(y)}")
     
     if len(x) < 2:
-        return 0.0
+        raise ValueError("At least 2 samples required for MI calculation")
+    
+    valid_methods = ["histogram", "kde"]
+    if method not in valid_methods:
+        raise ValueError(f"Method must be one of {valid_methods}, got {method}")
     
     if method == "histogram":
         if bins is None:
@@ -259,7 +280,6 @@ def entropy_estimation(
         hist, _ = np.histogram(samples, bins=bins)
         probs = hist / len(samples)
         
-        from collections import Counter
         from metainformant.information.syntactic import shannon_entropy_from_counts
         
         return shannon_entropy_from_counts(hist)

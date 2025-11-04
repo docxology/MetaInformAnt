@@ -692,7 +692,6 @@ def normalized_mutual_information(
     # Calculate MI and individual entropies
     mi = mutual_information(x, y, base=base)
     
-    from collections import Counter
     x_counts = Counter(x)
     y_counts = Counter(y)
     h_x = shannon_entropy_from_counts(x_counts)

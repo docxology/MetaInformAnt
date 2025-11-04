@@ -18,6 +18,7 @@ are handled defensively.
 
 from __future__ import annotations
 
+from .config import LifeEventsWorkflowConfig, load_life_events_config
 from .events import Event, EventDatabase, EventSequence
 from .embeddings import (
     domain_specific_embeddings,
@@ -61,6 +62,9 @@ from .utils import (
 )
 
 __all__ = [
+    # Configuration
+    "LifeEventsWorkflowConfig",
+    "load_life_events_config",
     # Event data structures
     "Event",
     "EventSequence",
