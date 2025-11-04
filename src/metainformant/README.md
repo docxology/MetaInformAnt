@@ -10,13 +10,18 @@ METAINFORMANT provides a modular, extensible framework for biological data analy
 
 ### 🧬 Core (`core/`)
 Shared utilities and infrastructure used across all domains:
-- **Configuration Management**: Environment-based config loading and validation
-- **I/O Operations**: Robust file I/O with support for JSON, JSONL, CSV/TSV, and compressed formats
-- **Logging**: Consistent, structured logging across all modules
-- **Parallel Processing**: Thread-based parallel execution with order preservation
-- **Caching**: JSON-based caching with TTL support
-- **Path Management**: Path expansion, resolution, and containment validation
-- **Database Integration**: Optional database client helpers
+- **Configuration Management** (`config`): Environment-based config loading and validation
+- **I/O Operations** (`io`): Robust file I/O with support for JSON, JSONL, CSV/TSV, and compressed formats
+- **Logging** (`logging`): Consistent, structured logging across all modules
+- **Parallel Processing** (`parallel`): Thread-based parallel execution with order preservation
+- **Caching** (`cache`): JSON-based caching with TTL support
+- **Path Management** (`paths`): Path expansion, resolution, and containment validation
+- **Database Integration** (`db`): Optional database client helpers (PostgreSQL)
+- **Text Processing** (`text`): Text normalization and manipulation utilities
+- **Hashing** (`hash`): Content and file hashing functions
+- **Workflow Utilities**: Config-based data processing and workflow orchestration functions
+
+See [`core/README.md`](core/README.md) for detailed documentation.
 
 ### 🧬 DNA (`dna/`)
 Comprehensive DNA sequence analysis and manipulation:
@@ -28,6 +33,8 @@ Comprehensive DNA sequence analysis and manipulation:
 - **Motif Analysis**: Pattern discovery and restriction enzyme analysis
 - **Variant Calling**: SNP and indel detection and analysis
 
+See [`dna/README.md`](dna/README.md) for detailed documentation.
+
 ### 🔬 RNA (`rna/`)
 Transcriptomic analysis and pipeline orchestration:
 - **Amalgkit Integration**: Modular wrapper around amalgkit CLI tools
@@ -35,11 +42,17 @@ Transcriptomic analysis and pipeline orchestration:
 - **Metadata Handling**: Transcriptomic metadata retrieval and curation
 - **Quantification**: Gene expression quantification and normalization
 
+See [`rna/README.md`](rna/README.md) for detailed documentation.
+
 ### 🧫 Protein (`protein/`)
 Proteomic analysis and sequence manipulation:
 - **Proteome Retrieval**: Database integration for protein sequence data
 - **Sequence Analysis**: Protein sequence manipulation and analysis
 - **Structure Integration**: Support for structural data and annotations
+- **Structure Prediction**: AlphaFold integration and model retrieval
+- **Functional Annotation**: InterPro domain annotation and UniProt integration
+
+See [`protein/README.md`](protein/README.md) for detailed documentation.
 
 ### 🧬 Epigenome (`epigenome/`)
 Epigenetic modification analysis:
@@ -47,11 +60,15 @@ Epigenetic modification analysis:
 - **Chromatin Analysis**: Chromatin state and modification studies
 - **Track Processing**: Genomic track file processing and visualization
 
+See [`epigenome/README.md`](epigenome/README.md) for detailed documentation.
+
 ### 📊 Ontology (`ontology/`)
 Functional annotation and semantic analysis:
 - **Gene Ontology**: GO term enrichment and annotation
 - **Semantic Similarity**: Ontology-based similarity measures
 - **Annotation Integration**: Multi-source annotation harmonization
+
+See [`ontology/README.md`](ontology/README.md) for detailed documentation.
 
 ### 🐜 Phenotype (`phenotype/`)
 Phenotypic trait analysis and curation:
@@ -59,11 +76,15 @@ Phenotypic trait analysis and curation:
 - **Behavioral Traits**: Behavioral phenotype quantification
 - **Web Scraping**: Automated phenotype data collection (e.g., AntWiki)
 
+See [`phenotype/README.md`](phenotype/README.md) for detailed documentation.
+
 ### 🌿 Ecology (`ecology/`)
 Ecological metadata and community analysis:
 - **Community Composition**: Species diversity and abundance analysis
 - **Environmental Metadata**: Ecological parameter integration
 - **Population Dynamics**: Community structure and interaction analysis
+
+See [`ecology/README.md`](ecology/README.md) for detailed documentation.
 
 ### 📈 Math (`math/`)
 Theoretical and quantitative biology:
@@ -73,6 +94,8 @@ Theoretical and quantitative biology:
 - **Kin Selection**: Hamilton's rule and inclusive fitness
 - **Decision Theory**: Drift-diffusion models for behavioral analysis
 
+See [`math/README.md`](math/README.md) for detailed documentation.
+
 ### 📊 Visualization (`visualization/`)
 Unified plotting and animation framework:
 - **Statistical Plots**: Line plots, heatmaps, scatter plots, pair plots
@@ -80,12 +103,16 @@ Unified plotting and animation framework:
 - **Animations**: Time-series and dynamic data animation
 - **Publication Graphics**: High-quality figure generation
 
+See [`visualization/README.md`](visualization/README.md) for detailed documentation.
+
 ### 🔄 Simulation (`simulation/`)
 Synthetic data generation and agent-based modeling:
 - **Sequence Simulation**: DNA, RNA, and protein sequence generation
 - **Expression Simulation**: Gene expression count simulation
 - **Agent-Based Models**: Grid-world and multi-agent simulations
 - **Evolutionary Dynamics**: Population genetic simulations
+
+See [`simulation/README.md`](simulation/README.md) for detailed documentation.
 
 ### 🔬 Single Cell (`singlecell/`)
 Single-cell transcriptomic analysis:
@@ -95,11 +122,15 @@ Single-cell transcriptomic analysis:
 - **Trajectory Analysis**: Pseudotime and developmental trajectory inference
 - **Integration**: Multi-sample batch correction
 
+See [`singlecell/README.md`](singlecell/README.md) for detailed documentation.
+
 ### 🧬 Quality (`quality/`)
 Data quality assessment and control:
 - **Sequence Quality**: FASTQ quality metrics and filtering
 - **Assembly Quality**: Genome assembly validation
 - **Expression Quality**: Transcriptome quality assessment
+
+See [`quality/README.md`](quality/README.md) for detailed documentation.
 
 ### 🕸️ Networks (`networks/`)
 Biological network analysis:
@@ -107,6 +138,8 @@ Biological network analysis:
 - **Regulatory Networks**: Gene regulatory network inference
 - **Pathway Analysis**: Biological pathway enrichment and visualization
 - **Community Detection**: Network module identification
+
+See [`networks/README.md`](networks/README.md) for detailed documentation.
 
 ### 🤖 Machine Learning (`ml/`)
 Statistical and machine learning methods:
@@ -116,11 +149,15 @@ Statistical and machine learning methods:
 - **Validation**: Cross-validation and model assessment
 - **Dimensionality Reduction**: PCA, t-SNE, UMAP for biological data
 
+See [`ml/README.md`](ml/README.md) for detailed documentation.
+
 ### 🔗 Multi-omics (`multiomics/`)
 Integrated multi-omic data analysis:
 - **Data Integration**: Cross-platform data harmonization
 - **Joint Analysis**: Multi-omic correlation and interaction analysis
 - **Systems Biology**: Network-based integration approaches
+
+See [`multiomics/README.md`](multiomics/README.md) for detailed documentation.
 
 ### 📅 Life Events (`life_events/`)
 Life course and event sequence analysis:
@@ -129,6 +166,31 @@ Life course and event sequence analysis:
 - **Sequence Prediction**: Models for predicting outcomes from event sequences
 - **Workflow Integration**: End-to-end pipelines for life course analysis
 - **Population Comparison**: Compare event patterns across groups
+
+See [`life_events/README.md`](life_events/README.md) for detailed documentation.
+
+### 📊 Information Theory (`information/`)
+Information-theoretic analysis for biological data:
+- **Syntactic Information**: Shannon entropy, mutual information, KL divergence
+- **Semantic Information**: Information content, semantic similarity measures
+- **Continuous Data**: Differential entropy and continuous information measures
+- **Estimation Methods**: Bias-corrected entropy and MI estimation
+- **Integration**: Cross-module integration with DNA, RNA, single-cell, and multi-omics
+- **Workflows**: Batch processing and information analysis pipelines
+
+See [`information/README.md`](information/README.md) and [`information/EXAMPLES.md`](information/EXAMPLES.md) for detailed documentation.
+
+### 🧬 GWAS (`gwas/`)
+Genome-Wide Association Studies workflow:
+- **Variant Calling**: Integration with bcftools and GATK
+- **Quality Control**: MAF filtering, missingness, HWE testing
+- **Population Structure**: PCA and kinship matrix computation
+- **Association Testing**: Linear and logistic regression models
+- **Multiple Testing**: Bonferroni, FDR, and genomic control correction
+- **Visualization**: Manhattan plots, Q-Q plots, regional plots, and comprehensive visualizations
+- **Data Acquisition**: SRA download and reference genome retrieval
+
+See [`gwas/README.md`](gwas/README.md) for detailed documentation.
 
 ## Architecture Principles
 

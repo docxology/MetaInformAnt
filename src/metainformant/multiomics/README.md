@@ -108,19 +108,92 @@ print(f"First canonical variate correlation: {correlations[0]}")
 ### With DNA, RNA, and Protein Modules
 ```python
 from metainformant.multiomics import integrate_omics_data, MultiOmicsData
+from metainformant.dna import variants
+from metainformant.rna import workflow
+from metainformant.protein import parse_fasta
 import pandas as pd
 
-# Prepare omics data as DataFrames
-genomics_df = pd.DataFrame(...)  # DNA/genomic data
-transcriptomics_df = pd.DataFrame(...)  # RNA expression data
-proteomics_df = pd.DataFrame(...)  # Protein data
+# Prepare omics data from domain modules
+# Genomics: variant data from DNA module
+genomic_variants = variants.parse_vcf("variants.vcf")
+genomics_df = pd.DataFrame(genomic_variants)
 
-# Integrate using MultiOmicsData or integrate_omics_data
+# Transcriptomics: expression data from RNA module
+expression_data = workflow.extract_expression("expression.tsv")
+transcriptomics_df = pd.DataFrame(expression_data)
+
+# Proteomics: protein abundance from protein module
+proteins = parse_fasta(Path("proteome.fasta"))
+proteomics_df = pd.DataFrame(proteins)
+
+# Integrate all omics layers
 omics_data = MultiOmicsData(
     genomics=genomics_df,
     transcriptomics=transcriptomics_df,
     proteomics=proteomics_df
 )
+```
+
+### With Single-Cell Module
+```python
+from metainformant.multiomics import joint_pca, canonical_correlation
+from metainformant.singlecell import compute_pca, load_count_matrix
+
+# Integrate single-cell data with bulk omics
+sc_counts = load_count_matrix("singlecell_counts.h5ad")
+bulk_expression = pd.read_csv("bulk_expression.csv", index_col=0)
+
+# Joint analysis across omics layers
+omics_data = MultiOmicsData(
+    singlecell=sc_counts,
+    transcriptomics=bulk_expression
+)
+
+# Joint dimensionality reduction
+embeddings, _, _ = joint_pca(omics_data, n_components=50)
+
+# Canonical correlation between single-cell and bulk
+X_c, Y_c, _, _, correlations = canonical_correlation(
+    omics_data,
+    layer_pair=("singlecell", "transcriptomics"),
+    n_components=10
+)
+```
+
+### With Epigenome Module
+```python
+from metainformant.multiomics import integrate_omics_data
+from metainformant.epigenome import load_cpg_table, compute_beta_values
+
+# Integrate epigenomics with transcriptomics
+methylation_df = load_cpg_table("methylation.tsv")
+beta_values = compute_beta_values(methylation_df)
+
+# Create multi-omics dataset
+omics_data = MultiOmicsData(
+    epigenomics=beta_values,
+    transcriptomics=expression_df
+)
+
+# Joint analysis of methylation and expression
+# Find correlations between methylation and gene expression
+```
+
+### With Visualization Module
+```python
+from metainformant.multiomics import joint_pca
+from metainformant.visualization import scatter_plot, heatmap
+
+# Visualize joint PCA results
+embeddings, loadings, variance = joint_pca(omics_data, n_components=2)
+
+# Scatter plot of first two components
+ax = scatter_plot(embeddings[:, 0], embeddings[:, 1],
+                  xlabel="PC1", ylabel="PC2",
+                  title="Joint PCA: Multi-Omics Integration")
+
+# Heatmap of loadings across omics layers
+ax = heatmap(loadings, title="Joint PCA Loadings")
 ```
 
 ## Performance Features

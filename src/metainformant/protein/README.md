@@ -130,16 +130,218 @@ is_valid = is_valid_protein_sequence(protein_sequence)
 composition = calculate_aa_composition(protein_sequence)
 ```
 
+### With RNA Module
+```python
+from metainformant.rna import workflow
+from metainformant.protein import parse_fasta, calculate_aa_composition
+from metainformant.dna import translation
+
+# Translation and expression correlation analysis
+# Extract expression data from RNA workflow
+expression_data = workflow.extract_expression("expression.tsv")
+
+# Translate RNA sequences to protein
+rna_sequences = sequences.read_fasta("rna_sequences.fasta")
+protein_sequences = {}
+for seq_id, rna_seq in rna_sequences.items():
+    protein_seq = translation.translate_dna(rna_seq)
+    protein_sequences[seq_id] = protein_seq
+
+# Analyze protein sequences
+protein_compositions = {}
+for seq_id, protein_seq in protein_sequences.items():
+    composition = calculate_aa_composition(protein_seq)
+    protein_compositions[seq_id] = composition
+
+# Correlate expression with protein properties
+# Match expression data with protein compositions
+for gene_id, expr in expression_data.items():
+    if gene_id in protein_compositions:
+        aa_comp = protein_compositions[gene_id]
+        # Analyze correlation between expression and amino acid composition
+```
+
+### With Networks Module
+```python
+from metainformant.protein import parse_fasta, kmer_frequencies
+from metainformant.networks import predict_interactions, create_network, load_string_interactions
+import numpy as np
+
+# PPI network construction from protein data
+proteins = parse_fasta(Path("proteome.fasta"))
+
+# Extract protein features (e.g., k-mer frequencies, composition)
+protein_features = {}
+protein_ids = []
+for prot_id, seq in proteins.items():
+    # Extract k-mer features
+    kmers = kmer_frequencies(seq, k=3)
+    # Convert to feature vector
+    feature_vec = np.array([kmers.get(kmer, 0) for kmer in sorted_kmers])
+    protein_features[prot_id] = feature_vec
+    protein_ids.append(prot_id)
+
+# Create feature matrix
+features_matrix = np.array([protein_features[pid] for pid in protein_ids])
+
+# Predict protein-protein interactions
+ppi = predict_interactions(
+    features_matrix,
+    protein_ids,
+    method="coexpression",
+    threshold=0.7
+)
+
+# Create network from predicted interactions
+network = create_network(protein_ids, directed=False)
+for prot1, prot2, score in ppi:
+    network.add_edge(prot1, prot2, weight=score)
+
+# Or load from STRING database
+ppi_network = load_string_interactions("string_interactions.tsv", score_threshold=400)
+network = ppi_network.create_network(min_confidence=0.7)
+```
+
+### With Ontology Module
+```python
+from metainformant.protein import map_ids_uniprot, fetch_interpro_domains
+from metainformant.ontology import load_go_obo, ancestors, descendants
+
+# GO annotation integration
+protein_ids = ["P12345", "Q67890"]
+uniprot_mapping = map_ids_uniprot(protein_ids)
+
+# Load Gene Ontology
+go_onto = load_go_obo("go-basic.obo")
+
+# Fetch InterPro domains and map to GO terms
+for uniprot_acc in uniprot_mapping.values():
+    domains = fetch_interpro_domains(uniprot_acc)
+    # Map domains to GO terms (domain-specific logic)
+    go_terms = map_domains_to_go(domains)
+    
+    # Find broader GO categories
+    for go_term in go_terms:
+        broader = ancestors(go_onto, go_term)
+        specific = descendants(go_onto, go_term)
+        # Use GO hierarchy for functional annotation
+```
+
+### With Multiomics Module
+```python
+from metainformant.protein import parse_fasta
+from metainformant.multiomics import MultiOmicsData, joint_pca, canonical_correlation
+import pandas as pd
+
+# Proteomics integration
+proteins = parse_fasta(Path("proteome.fasta"))
+
+# Create proteomics feature matrix (e.g., abundance, composition)
+proteomics_data = pd.DataFrame({
+    prot_id: {
+        "abundance": calculate_abundance(seq),
+        "length": len(seq),
+        "molecular_weight": calculate_mw(seq)
+    }
+    for prot_id, seq in proteins.items()
+}).T
+
+# Integrate with other omics
+rna_expression = pd.read_csv("expression.tsv", index_col=0)
+genomics_variants = pd.read_csv("variants.csv", index_col=0)
+
+# Create multi-omics dataset
+omics_data = MultiOmicsData(
+    genomics=genomics_variants,
+    transcriptomics=rna_expression,
+    proteomics=proteomics_data
+)
+
+# Joint analysis
+embeddings, loadings, variance = joint_pca(omics_data, n_components=50)
+
+# Canonical correlation between RNA and protein
+X_c, Y_c, X_w, Y_w, correlations = canonical_correlation(
+    omics_data,
+    layer_pair=("transcriptomics", "proteomics"),
+    n_components=10
+)
+```
+
+### With ML Module
+```python
+from metainformant.protein import parse_fasta, kmer_frequencies, calculate_aa_composition
+from metainformant.ml import BiologicalClassifier, select_features_univariate
+import numpy as np
+
+# Protein function prediction
+proteins = parse_fasta(Path("proteome.fasta"))
+
+# Extract protein features
+def extract_protein_features(proteins_dict):
+    features = []
+    labels = []  # Functional labels (e.g., enzyme, structural, etc.)
+    
+    for prot_id, seq in proteins_dict.items():
+        # K-mer features
+        kmers = kmer_frequencies(seq, k=3)
+        kmer_vec = np.array([kmers.get(kmer, 0) for kmer in sorted_kmers])
+        
+        # Composition features
+        composition = calculate_aa_composition(seq)
+        comp_vec = np.array(list(composition.values()))
+        
+        # Combine features
+        feature_vec = np.concatenate([kmer_vec, comp_vec])
+        features.append(feature_vec)
+        
+        # Functional labels (from annotation)
+        label = get_functional_label(prot_id)  # Placeholder
+        labels.append(label)
+    
+    return np.array(features), np.array(labels)
+
+X, y = extract_protein_features(proteins)
+
+# Feature selection
+X_selected, selected_indices = select_features_univariate(X, y, k=100, method="f_score")
+
+# Train protein function classifier
+classifier = BiologicalClassifier(algorithm="random_forest", random_state=42)
+classifier.fit(X_selected, y)
+predictions = classifier.predict(X_selected)
+
+# Feature importance for protein function
+importance = classifier.feature_importance_
+```
+
 ### With Visualization Module
 ```python
-from metainformant.protein import simple_helix_coil_propensity
-from metainformant.visualization import lineplot
+from metainformant.protein import simple_helix_coil_propensity, calculate_aa_composition
+from metainformant.visualization import lineplot, heatmap, scatter_plot
 
 # Visualize protein properties
 seq = "MKVLWAALLVTFLAGCQAKVE"
 propensity = simple_helix_coil_propensity(seq)
 ax = lineplot(None, propensity)
 ax.set_title("Helix-Coil Propensity Profile")
+
+# Amino acid composition visualization
+composition = calculate_aa_composition(seq)
+aa_names = list(composition.keys())
+aa_values = list(composition.values())
+ax = scatter_plot(range(len(aa_names)), aa_values,
+                  xlabel="Amino Acid", ylabel="Frequency",
+                  title="Amino Acid Composition")
+
+# Multiple protein composition heatmap
+proteins = parse_fasta(Path("proteome.fasta"))
+composition_matrix = np.array([
+    list(calculate_aa_composition(seq).values())
+    for seq in proteins.values()
+])
+ax = heatmap(composition_matrix, title="Protein Composition Matrix",
+             xlabel="Amino Acids", ylabel="Proteins")
 ```
 
 ## Performance Features

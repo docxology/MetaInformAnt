@@ -86,110 +86,154 @@ def main() -> None:
     gwas_run.add_argument("--check", action="store_true", help="Validate configuration only, do not execute")
 
     # ontology subcommand
-    ontology_parser = subparsers.add_parser("ontology", help="Ontology analysis operations")
+    ontology_parser = subparsers.add_parser("ontology", help="Ontology analysis operations (Gene Ontology, functional annotation)")
     ontology_sub = ontology_parser.add_subparsers(dest="ontology_cmd")
-    ontology_run = ontology_sub.add_parser("run", help="Run ontology analysis workflow")
-    ontology_run.add_argument("--go", type=Path, help="Gene Ontology OBO file")
-    ontology_run.add_argument("--output", type=Path, default=Path("output/ontology"), help="Output directory")
-    ontology_run.add_argument("--query-term", type=str, help="Query specific GO term")
-    ontology_run.add_argument("--ancestors", action="store_true", help="Get ancestors")
-    ontology_run.add_argument("--descendants", action="store_true", help="Get descendants")
+    ontology_run = ontology_sub.add_parser(
+        "run",
+        help="Run ontology analysis workflow",
+        description="Execute ontology analysis including GO term queries, enrichment analysis, and ontology summaries",
+    )
+    ontology_run.add_argument("--go", type=Path, help="Gene Ontology OBO file (required for most operations)")
+    ontology_run.add_argument("--output", type=Path, default=Path("output/ontology"), help="Output directory (default: output/ontology)")
+    ontology_run.add_argument("--query-term", type=str, help="Query specific GO term ID (e.g., GO:0008150)")
+    ontology_run.add_argument("--ancestors", action="store_true", help="Get all ancestor terms (broader terms) for query term")
+    ontology_run.add_argument("--descendants", action="store_true", help="Get all descendant terms (more specific terms) for query term")
 
     # phenotype subcommand
-    phenotype_parser = subparsers.add_parser("phenotype", help="Phenotype analysis operations")
+    phenotype_parser = subparsers.add_parser("phenotype", help="Phenotype analysis operations (trait analysis, curation)")
     phenotype_sub = phenotype_parser.add_subparsers(dest="phenotype_cmd")
-    phenotype_run = phenotype_sub.add_parser("run", help="Run phenotype analysis workflow")
-    phenotype_run.add_argument("--input", type=Path, required=True, help="Input phenotype data file")
-    phenotype_run.add_argument("--output", type=Path, default=Path("output/phenotype"), help="Output directory")
-    phenotype_run.add_argument("--analyze-statistics", action="store_true", help="Calculate statistics")
-    phenotype_run.add_argument("--analyze-correlations", action="store_true", help="Calculate correlations")
+    phenotype_run = phenotype_sub.add_parser(
+        "run",
+        help="Run phenotype analysis workflow",
+        description="Analyze phenotypic traits including statistics, correlations, and AntWiki data integration",
+    )
+    phenotype_run.add_argument("--input", type=Path, required=True, help="Input phenotype data file (JSON, CSV, or TSV format)")
+    phenotype_run.add_argument("--output", type=Path, default=Path("output/phenotype"), help="Output directory (default: output/phenotype)")
+    phenotype_run.add_argument("--analyze-statistics", action="store_true", help="Calculate basic statistics for numeric traits")
+    phenotype_run.add_argument("--analyze-correlations", action="store_true", help="Calculate correlations between traits")
 
     # networks subcommand
-    networks_parser = subparsers.add_parser("networks", help="Network analysis operations")
+    networks_parser = subparsers.add_parser("networks", help="Network analysis operations (PPI, regulatory networks, pathways)")
     networks_sub = networks_parser.add_subparsers(dest="networks_cmd")
-    networks_run = networks_sub.add_parser("run", help="Run network analysis workflow")
-    networks_run.add_argument("--input", type=Path, required=True, help="Input interaction file")
-    networks_run.add_argument("--output", type=Path, default=Path("output/networks"), help="Output directory")
-    networks_run.add_argument("--analyze-metrics", action="store_true", help="Calculate network metrics")
-    networks_run.add_argument("--detect-communities", action="store_true", help="Detect communities")
-    networks_run.add_argument("--analyze-centrality", action="store_true", help="Calculate centrality")
+    networks_run = networks_sub.add_parser(
+        "run",
+        help="Run network analysis workflow",
+        description="Analyze biological networks including metrics, community detection, and centrality measures",
+    )
+    networks_run.add_argument("--input", type=Path, required=True, help="Input interaction file (edge list or network format)")
+    networks_run.add_argument("--output", type=Path, default=Path("output/networks"), help="Output directory (default: output/networks)")
+    networks_run.add_argument("--analyze-metrics", action="store_true", help="Calculate network metrics (density, clustering, etc.)")
+    networks_run.add_argument("--detect-communities", action="store_true", help="Detect network communities (Louvain, Leiden algorithms)")
+    networks_run.add_argument("--analyze-centrality", action="store_true", help="Calculate centrality measures (degree, betweenness, etc.)")
 
     # multiomics subcommand
-    multiomics_parser = subparsers.add_parser("multiomics", help="Multi-omics integration operations")
+    multiomics_parser = subparsers.add_parser("multiomics", help="Multi-omics integration operations (cross-platform data harmonization)")
     multiomics_sub = multiomics_parser.add_subparsers(dest="multiomics_cmd")
-    multiomics_run = multiomics_sub.add_parser("run", help="Run multi-omics integration workflow")
-    multiomics_run.add_argument("--genomics", type=Path, help="Genomics data file")
-    multiomics_run.add_argument("--transcriptomics", type=Path, help="Transcriptomics data file")
-    multiomics_run.add_argument("--proteomics", type=Path, help="Proteomics data file")
-    multiomics_run.add_argument("--output", type=Path, default=Path("output/multiomics"), help="Output directory")
-    multiomics_run.add_argument("--joint-pca", action="store_true", help="Perform joint PCA")
-    multiomics_run.add_argument("--joint-nmf", action="store_true", help="Perform joint NMF")
-    multiomics_run.add_argument("--canonical-correlation", action="store_true", help="Perform CCA")
+    multiomics_run = multiomics_sub.add_parser(
+        "run",
+        help="Run multi-omics integration workflow",
+        description="Integrate and analyze multiple omics datasets (genomics, transcriptomics, proteomics) using joint dimensionality reduction",
+    )
+    multiomics_run.add_argument("--genomics", type=Path, help="Genomics data file (variant or genotype data)")
+    multiomics_run.add_argument("--transcriptomics", type=Path, help="Transcriptomics data file (expression matrix)")
+    multiomics_run.add_argument("--proteomics", type=Path, help="Proteomics data file (protein abundance matrix)")
+    multiomics_run.add_argument("--output", type=Path, default=Path("output/multiomics"), help="Output directory (default: output/multiomics)")
+    multiomics_run.add_argument("--joint-pca", action="store_true", help="Perform joint Principal Component Analysis across omics")
+    multiomics_run.add_argument("--joint-nmf", action="store_true", help="Perform joint Non-negative Matrix Factorization")
+    multiomics_run.add_argument("--canonical-correlation", action="store_true", help="Perform Canonical Correlation Analysis (CCA)")
 
     # singlecell subcommand
-    singlecell_parser = subparsers.add_parser("singlecell", help="Single-cell analysis operations")
+    singlecell_parser = subparsers.add_parser("singlecell", help="Single-cell analysis operations (scRNA-seq pipeline)")
     singlecell_sub = singlecell_parser.add_subparsers(dest="singlecell_cmd")
-    singlecell_run = singlecell_sub.add_parser("run", help="Run single-cell analysis workflow")
-    singlecell_run.add_argument("--input", type=Path, required=True, help="Input count matrix file")
-    singlecell_run.add_argument("--output", type=Path, default=Path("output/singlecell"), help="Output directory")
-    singlecell_run.add_argument("--qc", action="store_true", help="Perform quality control")
-    singlecell_run.add_argument("--normalize", action="store_true", help="Normalize counts")
-    singlecell_run.add_argument("--cluster", action="store_true", help="Perform clustering")
+    singlecell_run = singlecell_sub.add_parser(
+        "run",
+        help="Run single-cell analysis workflow",
+        description="Complete scRNA-seq analysis pipeline including QC, normalization, dimensionality reduction, and clustering",
+    )
+    singlecell_run.add_argument("--input", type=Path, required=True, help="Input count matrix file (genes x cells)")
+    singlecell_run.add_argument("--output", type=Path, default=Path("output/singlecell"), help="Output directory (default: output/singlecell)")
+    singlecell_run.add_argument("--qc", action="store_true", help="Perform quality control (filter cells/genes, calculate QC metrics)")
+    singlecell_run.add_argument("--normalize", action="store_true", help="Normalize counts (log normalization, scaling)")
+    singlecell_run.add_argument("--cluster", action="store_true", help="Perform clustering (Leiden, Louvain algorithms) and cell type identification")
 
     # quality subcommand
-    quality_parser = subparsers.add_parser("quality", help="Quality control operations")
+    quality_parser = subparsers.add_parser("quality", help="Quality control operations (FASTQ analysis, contamination detection)")
     quality_sub = quality_parser.add_subparsers(dest="quality_cmd")
-    quality_run = quality_sub.add_parser("run", help="Run quality control workflow")
-    quality_run.add_argument("--fastq", type=Path, help="Input FASTQ file")
-    quality_run.add_argument("--output", type=Path, default=Path("output/quality"), help="Output directory")
-    quality_run.add_argument("--analyze-fastq", action="store_true", help="Analyze FASTQ quality")
-    quality_run.add_argument("--detect-contamination", action="store_true", help="Detect contamination")
+    quality_run = quality_sub.add_parser(
+        "run",
+        help="Run quality control workflow",
+        description="Comprehensive quality assessment for sequencing data including FASTQ metrics and contamination detection",
+    )
+    quality_run.add_argument("--fastq", type=Path, help="Input FASTQ file for quality analysis")
+    quality_run.add_argument("--output", type=Path, default=Path("output/quality"), help="Output directory (default: output/quality)")
+    quality_run.add_argument("--analyze-fastq", action="store_true", help="Analyze FASTQ quality metrics (per-base quality, GC content, duplication)")
+    quality_run.add_argument("--detect-contamination", action="store_true", help="Detect contamination (adapter, vector, cross-species, rRNA)")
 
     # simulation subcommand
-    simulation_parser = subparsers.add_parser("simulation", help="Simulation operations")
+    simulation_parser = subparsers.add_parser("simulation", help="Simulation operations (synthetic data generation, agent-based models)")
     simulation_sub = simulation_parser.add_subparsers(dest="simulation_cmd")
-    simulation_run = simulation_sub.add_parser("run", help="Run simulation workflow")
-    simulation_run.add_argument("--model", type=str, required=True, choices=["sequences", "agents", "expression"], help="Simulation model")
-    simulation_run.add_argument("--output", type=Path, default=Path("output/simulation"), help="Output directory")
-    simulation_run.add_argument("--n", type=int, default=100, help="Number of sequences (sequences model)")
-    simulation_run.add_argument("--steps", type=int, default=100, help="Number of steps (agents model)")
+    simulation_run = simulation_sub.add_parser(
+        "run",
+        help="Run simulation workflow",
+        description="Generate synthetic biological data and run agent-based simulations for method validation and benchmarking",
+    )
+    simulation_run.add_argument("--model", type=str, required=True, choices=["sequences", "agents", "expression"], help="Simulation model type")
+    simulation_run.add_argument("--output", type=Path, default=Path("output/simulation"), help="Output directory (default: output/simulation)")
+    simulation_run.add_argument("--n", type=int, default=100, help="Number of sequences to generate (for sequences model)")
+    simulation_run.add_argument("--steps", type=int, default=100, help="Number of simulation steps (for agents model)")
 
     # visualization subcommand
-    visualization_parser = subparsers.add_parser("visualization", help="Visualization operations")
+    visualization_parser = subparsers.add_parser("visualization", help="Visualization operations (plots, heatmaps, animations, trees)")
     visualization_sub = visualization_parser.add_subparsers(dest="visualization_cmd")
-    visualization_run = visualization_sub.add_parser("run", help="Run visualization workflow")
-    visualization_run.add_argument("--input", type=Path, required=True, help="Input data file")
-    visualization_run.add_argument("--plot-type", type=str, required=True, choices=["lineplot", "heatmap", "animation", "histogram"], help="Plot type")
-    visualization_run.add_argument("--output", type=Path, default=Path("output/visualization"), help="Output directory")
+    visualization_run = visualization_sub.add_parser(
+        "run",
+        help="Run visualization workflow",
+        description="Generate publication-quality plots and visualizations from biological data",
+    )
+    visualization_run.add_argument("--input", type=Path, required=True, help="Input data file (CSV, TSV, JSON, or data format)")
+    visualization_run.add_argument("--plot-type", type=str, required=True, choices=["lineplot", "heatmap", "animation", "histogram"], help="Type of plot to generate")
+    visualization_run.add_argument("--output", type=Path, default=Path("output/visualization"), help="Output directory (default: output/visualization)")
 
     # epigenome subcommand
-    epigenome_parser = subparsers.add_parser("epigenome", help="Epigenome analysis operations")
+    epigenome_parser = subparsers.add_parser("epigenome", help="Epigenome analysis operations (DNA methylation, chromatin tracks)")
     epigenome_sub = epigenome_parser.add_subparsers(dest="epigenome_cmd")
-    epigenome_run = epigenome_sub.add_parser("run", help="Run epigenome analysis workflow")
-    epigenome_run.add_argument("--methylation", type=Path, help="Methylation data file")
-    epigenome_run.add_argument("--bedgraph", type=Path, help="BedGraph track file")
-    epigenome_run.add_argument("--output", type=Path, default=Path("output/epigenome"), help="Output directory")
-    epigenome_run.add_argument("--compute-beta", action="store_true", help="Compute beta values")
+    epigenome_run = epigenome_sub.add_parser(
+        "run",
+        help="Run epigenome analysis workflow",
+        description="Analyze epigenetic modifications including DNA methylation patterns and chromatin accessibility tracks",
+    )
+    epigenome_run.add_argument("--methylation", type=Path, help="Methylation data file (CpG table format)")
+    epigenome_run.add_argument("--bedgraph", type=Path, help="BedGraph track file (chromatin accessibility or ChIP-seq data)")
+    epigenome_run.add_argument("--output", type=Path, default=Path("output/epigenome"), help="Output directory (default: output/epigenome)")
+    epigenome_run.add_argument("--compute-beta", action="store_true", help="Compute beta values (methylation levels) from CpG counts")
 
     # ecology subcommand
-    ecology_parser = subparsers.add_parser("ecology", help="Ecology analysis operations")
+    ecology_parser = subparsers.add_parser("ecology", help="Ecology analysis operations (community diversity, species abundance)")
     ecology_sub = ecology_parser.add_subparsers(dest="ecology_cmd")
-    ecology_run = ecology_sub.add_parser("run", help="Run ecology analysis workflow")
-    ecology_run.add_argument("--input", type=Path, required=True, help="Input abundance table")
-    ecology_run.add_argument("--output", type=Path, default=Path("output/ecology"), help="Output directory")
-    ecology_run.add_argument("--diversity", action="store_true", help="Calculate diversity indices")
-    ecology_run.add_argument("--beta-diversity", action="store_true", help="Calculate beta diversity")
+    ecology_run = ecology_sub.add_parser(
+        "run",
+        help="Run ecology analysis workflow",
+        description="Analyze ecological communities including diversity metrics, species richness, and beta diversity",
+    )
+    ecology_run.add_argument("--input", type=Path, required=True, help="Input abundance table (species x samples matrix)")
+    ecology_run.add_argument("--output", type=Path, default=Path("output/ecology"), help="Output directory (default: output/ecology)")
+    ecology_run.add_argument("--diversity", action="store_true", help="Calculate diversity indices (Shannon, Simpson, Chao1)")
+    ecology_run.add_argument("--beta-diversity", action="store_true", help="Calculate beta diversity (Bray-Curtis, Jaccard dissimilarity)")
 
     # ml subcommand
-    ml_parser = subparsers.add_parser("ml", help="Machine learning operations")
+    ml_parser = subparsers.add_parser("ml", help="Machine learning operations (classification, regression, feature selection)")
     ml_sub = ml_parser.add_subparsers(dest="ml_cmd")
-    ml_run = ml_sub.add_parser("run", help="Run ML pipeline workflow")
-    ml_run.add_argument("--features", type=Path, required=True, help="Feature matrix file")
-    ml_run.add_argument("--labels", type=Path, help="Labels file")
-    ml_run.add_argument("--output", type=Path, default=Path("output/ml"), help="Output directory")
-    ml_run.add_argument("--classify", action="store_true", help="Perform classification")
-    ml_run.add_argument("--regress", action="store_true", help="Perform regression")
-    ml_run.add_argument("--feature-selection", action="store_true", help="Perform feature selection")
+    ml_run = ml_sub.add_parser(
+        "run",
+        help="Run ML pipeline workflow",
+        description="Complete machine learning pipeline for biological data including feature selection, model training, and validation",
+    )
+    ml_run.add_argument("--features", type=Path, required=True, help="Feature matrix file (samples x features)")
+    ml_run.add_argument("--labels", type=Path, help="Labels file (class labels or continuous outcomes)")
+    ml_run.add_argument("--output", type=Path, default=Path("output/ml"), help="Output directory (default: output/ml)")
+    ml_run.add_argument("--classify", action="store_true", help="Perform classification (supervised learning for discrete outcomes)")
+    ml_run.add_argument("--regress", action="store_true", help="Perform regression (supervised learning for continuous outcomes)")
+    ml_run.add_argument("--feature-selection", action="store_true", help="Perform feature selection (identify important features)")
 
     # information subcommand
     information_parser = subparsers.add_parser("information", help="Information theory operations")

@@ -222,6 +222,233 @@ ax = lineplot(None, trait_offspring)
 ax.set_title("Trait Evolution")
 ```
 
+### With GWAS Module
+```python
+from metainformant.gwas import association_test_linear, parse_vcf_full
+from metainformant.visualization import manhattan_plot, qq_plot, regional_plot
+
+# Manhattan plot for GWAS results
+association_results = association_test_linear(genotype_matrix, phenotypes)
+ax = manhattan_plot(
+    association_results["chromosome"],
+    association_results["position"],
+    association_results["p_value"],
+    title="GWAS Manhattan Plot"
+)
+
+# Q-Q plot for p-value distribution
+ax = qq_plot(
+    association_results["p_value"],
+    title="GWAS Q-Q Plot",
+    xlabel="Expected -log10(p)",
+    ylabel="Observed -log10(p)"
+)
+
+# Regional plot for specific locus
+ax = regional_plot(
+    chromosome="chr1",
+    start=1000000,
+    end=2000000,
+    association_results=association_results,
+    title="Regional Association Plot"
+)
+```
+
+### With Single-Cell Module
+```python
+from metainformant.singlecell import compute_umap, compute_pseudotime, leiden_clustering
+from metainformant.visualization import scatter_plot, lineplot
+
+# UMAP visualization
+data = compute_umap(data, min_dist=0.1, n_components=2)
+umap_coords = data.obsm["X_umap"]
+
+# Color by cluster
+data = leiden_clustering(data, resolution=1.0)
+ax = scatter_plot(
+    umap_coords[:, 0], umap_coords[:, 1],
+    c=data.obs["cluster"].values,
+    xlabel="UMAP 1", ylabel="UMAP 2",
+    title="Single-Cell UMAP Embedding"
+)
+
+# Trajectory visualization
+data = compute_pseudotime(data, root_cells=0, method="diffusion")
+pseudotime = data.obs["pseudotime"].values
+ax = lineplot(
+    range(len(pseudotime)), pseudotime,
+    xlabel="Cell Index", ylabel="Pseudotime",
+    title="Developmental Trajectory"
+)
+
+# Expression overlay
+gene_expression = data[:, "GENE1"].X.toarray().flatten()
+ax = scatter_plot(
+    umap_coords[:, 0], umap_coords[:, 1],
+    c=gene_expression, cmap="viridis",
+    xlabel="UMAP 1", ylabel="UMAP 2",
+    title="GENE1 Expression"
+)
+```
+
+### With Networks Module
+```python
+from metainformant.networks import create_network, detect_communities, centrality_measures
+from metainformant.visualization import network_plot, heatmap
+
+# Network graph visualization
+network = create_network(node_list, directed=False)
+network.add_edges_from(edge_list)
+
+# Visualize network with layout
+ax = network_plot(
+    network,
+    layout="spring",
+    node_size=100,
+    node_color="blue",
+    edge_color="gray",
+    title="Protein Interaction Network"
+)
+
+# Community structure visualization
+communities = detect_communities(network, method="louvain")
+# Create community membership matrix
+community_matrix = create_community_matrix(network, communities)
+ax = heatmap(
+    community_matrix,
+    title="Network Community Structure",
+    xlabel="Communities", ylabel="Nodes"
+)
+
+# Centrality visualization
+centralities = centrality_measures(network)
+degree_values = list(centralities["degree"].values())
+ax = histogram(degree_values, bins=20, title="Degree Distribution")
+```
+
+### With Multiomics Module
+```python
+from metainformant.multiomics import MultiOmicsData, joint_pca, canonical_correlation
+from metainformant.visualization import scatter_plot, heatmap, pca_plot
+
+# Joint PCA visualization
+omics_data = MultiOmicsData(
+    genomics=genomics_df,
+    transcriptomics=transcriptomics_df,
+    proteomics=proteomics_df
+)
+embeddings, loadings, variance = joint_pca(omics_data, n_components=2)
+
+# PCA scatter plot
+ax = pca_plot(
+    embeddings[:, 0], embeddings[:, 1],
+    xlabel="PC1", ylabel="PC2",
+    title="Joint PCA: Multi-Omics Integration"
+)
+
+# Loadings heatmap
+ax = heatmap(
+    loadings,
+    title="Joint PCA Loadings",
+    xlabel="Principal Components", ylabel="Features"
+)
+
+# Canonical correlation visualization
+X_c, Y_c, X_w, Y_w, correlations = canonical_correlation(
+    omics_data,
+    layer_pair=("genomics", "transcriptomics"),
+    n_components=2
+)
+
+# Scatter plot of canonical variates
+ax = scatter_plot(
+    X_c[:, 0], Y_c[:, 0],
+    xlabel="Genomics Canonical Variate 1",
+    ylabel="Transcriptomics Canonical Variate 1",
+    title=f"Canonical Correlation (r={correlations[0]:.3f})"
+)
+```
+
+### With Information Theory Module
+```python
+from metainformant.information import shannon_entropy, mutual_information
+from metainformant.visualization import lineplot, heatmap, scatter_plot
+import numpy as np
+
+# Entropy visualization across sequences
+entropy_values = [shannon_entropy(seq_probs) for seq_probs in sequence_probs]
+ax = lineplot(
+    range(len(entropy_values)), entropy_values,
+    xlabel="Sequence Index", ylabel="Entropy",
+    title="Sequence Entropy Distribution"
+)
+
+# Mutual information matrix visualization
+# Calculate MI between all pairs of genes
+gene_names = ["GENE1", "GENE2", "GENE3", "GENE4"]
+mi_matrix = np.zeros((len(gene_names), len(gene_names)))
+
+for i, gene1 in enumerate(gene_names):
+    for j, gene2 in enumerate(gene_names):
+        if i != j:
+            # Calculate MI between gene1 and gene2
+            p_x = gene1_probs[i]
+            p_y = gene2_probs[j]
+            p_xy = joint_probs[i, j]
+            mi_matrix[i, j] = mutual_information(p_xy, p_x, p_y)
+
+# Visualize MI matrix
+ax = heatmap(
+    mi_matrix,
+    title="Mutual Information Matrix",
+    xlabel="Genes", ylabel="Genes",
+    xticklabels=gene_names, yticklabels=gene_names
+)
+
+# Information content visualization
+info_content = calculate_information_content(alignment)
+ax = lineplot(
+    range(len(info_content)), info_content,
+    xlabel="Position", ylabel="Information Content",
+    title="Sequence Conservation Profile"
+)
+```
+
+### With Quality Module
+```python
+from metainformant.quality import analyze_fastq_quality, calculate_quality_metrics
+from metainformant.visualization import lineplot, box_plot, histogram
+
+# Quality score visualization
+quality_stats = analyze_fastq_quality(reads)
+per_base_quality = quality_stats["per_base_quality"]
+
+# Per-base quality line plot
+positions = range(len(per_base_quality))
+ax = lineplot(
+    positions, per_base_quality,
+    xlabel="Position in Read", ylabel="Quality Score",
+    title="Per-Base Quality Scores"
+)
+
+# Quality distribution histogram
+quality_scores = [read.quality for read in reads]
+ax = histogram(
+    quality_scores,
+    bins=50,
+    title="Quality Score Distribution",
+    xlabel="Quality Score", ylabel="Frequency"
+)
+
+# Quality metrics box plot
+qc_metrics = calculate_quality_metrics(quality_scores_list)
+ax = box_plot(
+    [qc_metrics["mean"], qc_metrics["median"], qc_metrics["std"]],
+    labels=["Mean", "Median", "Std Dev"],
+    title="Quality Metrics Summary"
+)
+```
+
 ## Testing
 
 Comprehensive tests ensure:

@@ -50,17 +50,28 @@ Subcommands
 - **protein comp**: calculates amino acid composition for sequences in FASTA
 - **protein rmsd-ca**: computes Kabsch RMSD using CA atoms from two PDB files
 - **math selection**: selection model experiments and visualizations (see [Math Selection](./math/selection.md))
-- **ontology run**: ontology analysis workflow (GO term queries, enrichment analysis)
-- **phenotype run**: phenotype analysis workflow (statistics, correlations)
-- **networks run**: network analysis workflow (metrics, communities, centrality)
-- **multiomics run**: multi-omics integration workflow (joint PCA, NMF, CCA)
-- **singlecell run**: single-cell analysis workflow (QC, normalization, clustering)
-- **quality run**: quality control workflow (FASTQ analysis, contamination detection)
-- **simulation run**: simulation workflow (sequences, agents, expression models)
-- **visualization run**: visualization workflow (lineplots, heatmaps, animations)
-- **epigenome run**: epigenome analysis workflow (methylation, beta values)
-- **ecology run**: ecology analysis workflow (diversity indices, beta diversity)
-- **ml run**: machine learning pipeline workflow (classification, regression, feature selection)
+- **ontology run**: ontology analysis workflow (GO term queries, enrichment analysis, ontology summaries)
+  - Options: `--go` (OBO file), `--output` (default: output/ontology), `--query-term`, `--ancestors`, `--descendants`
+- **phenotype run**: phenotype analysis workflow (trait statistics, correlations, AntWiki data integration)
+  - Options: `--input` (required, JSON/CSV/TSV), `--output` (default: output/phenotype), `--analyze-statistics`, `--analyze-correlations`
+- **networks run**: network analysis workflow (metrics, community detection, centrality measures)
+  - Options: `--input` (required, edge list), `--output` (default: output/networks), `--analyze-metrics`, `--detect-communities`, `--analyze-centrality`
+- **multiomics run**: multi-omics integration workflow (joint PCA, NMF, CCA across genomics/transcriptomics/proteomics)
+  - Options: `--genomics`, `--transcriptomics`, `--proteomics`, `--output` (default: output/multiomics), `--joint-pca`, `--joint-nmf`, `--canonical-correlation`
+- **singlecell run**: single-cell analysis workflow (QC, normalization, dimensionality reduction, clustering)
+  - Options: `--input` (required, count matrix), `--output` (default: output/singlecell), `--qc`, `--normalize`, `--cluster`
+- **quality run**: quality control workflow (FASTQ metrics, contamination detection)
+  - Options: `--fastq`, `--output` (default: output/quality), `--analyze-fastq`, `--detect-contamination`
+- **simulation run**: simulation workflow (synthetic sequences, agent-based models, expression simulation)
+  - Options: `--model` (required: sequences/agents/expression), `--output` (default: output/simulation), `--n` (sequences count), `--steps` (simulation steps)
+- **visualization run**: visualization workflow (publication-quality plots, heatmaps, animations, histograms)
+  - Options: `--input` (required, data file), `--plot-type` (required: lineplot/heatmap/animation/histogram), `--output` (default: output/visualization)
+- **epigenome run**: epigenome analysis workflow (DNA methylation patterns, chromatin accessibility tracks)
+  - Options: `--methylation` (CpG table), `--bedgraph` (track file), `--output` (default: output/epigenome), `--compute-beta`
+- **ecology run**: ecology analysis workflow (community diversity metrics, species richness, beta diversity)
+  - Options: `--input` (required, abundance table), `--output` (default: output/ecology), `--diversity`, `--beta-diversity`
+- **ml run**: machine learning pipeline workflow (feature selection, classification, regression, validation)
+  - Options: `--features` (required, feature matrix), `--labels` (optional), `--output` (default: output/ml), `--classify`, `--regress`, `--feature-selection`
 - **information entropy**: calculates Shannon entropy for sequences or data files (see [Information Theory](../src/metainformant/information/README.md))
 - **information mutual-information**: calculates mutual information between two variables/data files
 - **information profile**: calculates information profile for sequences with optional visualization

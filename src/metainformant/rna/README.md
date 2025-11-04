@@ -179,26 +179,184 @@ from metainformant.rna import workflow
 # Use DNA sequences for RNA annotation
 gene_sequences = sequences.read_fasta("genes.fasta")
 config = AmalgkitWorkflowConfig(annotation_fasta=gene_sequences)
+results = workflow.execute_workflow(config)
+```
+
+### With Protein Module
+```python
+from metainformant.rna import workflow
+from metainformant.protein import parse_fasta, calculate_aa_composition
+from metainformant.dna import translation
+
+# Translation and expression correlation analysis
+# Extract expression data from RNA workflow
+expression_data = workflow.extract_expression("expression.tsv")
+
+# Translate RNA sequences to protein
+rna_sequences = sequences.read_fasta("rna_sequences.fasta")
+protein_sequences = {}
+for seq_id, rna_seq in rna_sequences.items():
+    protein_seq = translation.translate_dna(rna_seq)
+    protein_sequences[seq_id] = protein_seq
+
+# Analyze protein sequences
+protein_compositions = {}
+for seq_id, protein_seq in protein_sequences.items():
+    composition = calculate_aa_composition(protein_seq)
+    protein_compositions[seq_id] = composition
+
+# Correlate expression with protein properties
+# Match expression data with protein compositions
+```
+
+### With Multiomics Module
+```python
+from metainformant.rna import workflow
+from metainformant.multiomics import MultiOmicsData, joint_pca, canonical_correlation
+import pandas as pd
+
+# RNA + protein integration
+rna_expression = workflow.extract_expression("expression.tsv")
+proteomics_data = pd.read_csv("proteomics.csv", index_col=0)
+
+# Create multi-omics dataset
+omics_data = MultiOmicsData(
+    transcriptomics=rna_expression,
+    proteomics=proteomics_data
+)
+
+# Joint analysis of RNA and protein
+embeddings, loadings, variance = joint_pca(omics_data, n_components=50)
+
+# Canonical correlation between RNA and protein
+X_c, Y_c, X_w, Y_w, correlations = canonical_correlation(
+    omics_data,
+    layer_pair=("transcriptomics", "proteomics"),
+    n_components=10
+)
+print(f"Canonical correlations: {correlations[:5]}")
+```
+
+### With Quality Module
+```python
+from metainformant.rna import workflow
+from metainformant.quality import analyze_fastq_quality, detect_adapter_contamination
+from metainformant.dna.fastq import iter_fastq
+
+# Comprehensive QC workflow for RNA-seq
+# Quality assessment before RNA workflow
+rna_reads = list(iter_fastq("rna_reads.fastq"))
+quality_stats = analyze_fastq_quality(rna_reads)
+
+# Contamination detection
+adapter_results = detect_adapter_contamination(rna_reads)
+
+# Filter reads based on quality before RNA workflow
+# Pass quality-filtered reads to RNA quantification pipeline
+# Then run RNA workflow
+config = AmalgkitWorkflowConfig(work_dir="output/rna")
+results = workflow.execute_workflow(config)
+
+# Quality check on final expression matrix
+expression_matrix = results["expression_matrix"]
+# Apply quality filters to expression data
+```
+
+### With ML Module
+```python
+from metainformant.rna import workflow
+from metainformant.ml import BiologicalRegressor, select_features_univariate, cross_validate_biological
+
+# Expression-based phenotype prediction
+expression_data = workflow.extract_expression("expression.tsv")
+phenotypes = np.array([...])  # Continuous trait values
+
+# Feature selection for expression-based prediction
+X_selected, selected_indices = select_features_univariate(
+    expression_data.values,
+    phenotypes,
+    k=100,
+    method="f_score"
+)
+
+# Train regression model
+regressor = BiologicalRegressor(algorithm="ridge", random_state=42)
+regressor.fit(X_selected, phenotypes)
+
+# Cross-validate model
+cv_results = cross_validate_biological(regressor, X_selected, phenotypes, cv=5)
+print(f"Mean CV R²: {np.mean(cv_results['test_score']):.3f}")
+
+# Expression-based classification
+from metainformant.ml import BiologicalClassifier
+classifier = BiologicalClassifier(algorithm="random_forest", random_state=42)
+class_labels = np.array([0, 1, 0, 1, 0])  # Binary classification labels
+classifier.fit(X_selected, class_labels)
+```
+
+### With Information Theory Module
+```python
+from metainformant.rna import workflow
+from metainformant.information import shannon_entropy, mutual_information
+import numpy as np
+
+# Expression entropy analysis
+expression_data = workflow.extract_expression("expression.tsv")
+
+# Calculate entropy of expression distribution for each gene
+gene_entropies = {}
+for gene in expression_data.columns:
+    gene_expression = expression_data[gene].values
+    # Normalize to probabilities
+    expression_probs = gene_expression / gene_expression.sum()
+    entropy = shannon_entropy(expression_probs)
+    gene_entropies[gene] = entropy
+
+# Find genes with high expression entropy (highly variable)
+high_entropy_genes = [g for g, e in gene_entropies.items() if e > np.median(list(gene_entropies.values()))]
+
+# Calculate mutual information between genes
+gene1_expr = expression_data[high_entropy_genes[0]].values
+gene2_expr = expression_data[high_entropy_genes[1]].values
+
+# Binarize expression for MI calculation
+gene1_binary = (gene1_expr > np.median(gene1_expr)).astype(int)
+gene2_binary = (gene2_expr > np.median(gene2_expr)).astype(int)
+
+# Calculate MI
+p_x = np.bincount(gene1_binary) / len(gene1_binary)
+p_y = np.bincount(gene2_binary) / len(gene2_binary)
+p_xy = np.histogram2d(gene1_binary, gene2_binary, bins=2)[0]
+p_xy = p_xy / p_xy.sum()
+
+mi = mutual_information(p_xy, p_x, p_y)
+print(f"MI({high_entropy_genes[0]}, {high_entropy_genes[1]}): {mi:.3f}")
 ```
 
 ### With Visualization Module
 ```python
 from metainformant.rna import workflow
-from metainformant.visualization import heatmap, lineplot
+from metainformant.visualization import heatmap, lineplot, expression_heatmap
 
 # Visualize expression data
 results = workflow.execute_workflow(config)
-heatmap(results["expression_matrix"])
-```
+expression_matrix = results["expression_matrix"]
 
-### With Statistical Analysis
-```python
-from metainformant.rna import cstmm
+# Expression heatmap
+ax = expression_heatmap(expression_matrix, 
+                         title="RNA Expression Heatmap",
+                         xlabel="Samples", ylabel="Genes")
 
-# Statistical analysis of expression data
-# cstmm returns results with p-values directly
-test_results = cstmm({"counts": counts_matrix, "design": design_matrix})
-# Extract p-values from test_results as needed
+# Time-series expression plot
+time_points = [0, 6, 12, 24, 48]  # Hours
+gene_expression = expression_matrix.loc["GENE1", :].values
+ax = lineplot(time_points, gene_expression,
+              xlabel="Time (hours)", ylabel="Expression",
+              title="GENE1 Expression Over Time")
+
+# Correlation heatmap
+expression_correlation = expression_matrix.corr()
+ax = heatmap(expression_correlation, title="Sample Correlation Matrix")
 ```
 
 ## Configuration Management

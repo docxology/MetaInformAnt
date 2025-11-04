@@ -191,75 +191,83 @@ print(f"Average community size: {metrics['avg_community_size']:.1f}")
 
 ### With Multi-Omics Module
 ```python
-from metainformant.multiomics import MultiOmicsData
-from metainformant.networks import predict_interactions
+from metainformant.multiomics import MultiOmicsData, joint_pca
+from metainformant.networks import predict_interactions, create_network
 
-# Use expression data to predict protein interactions
-omics_data = MultiOmicsData(proteomics=protein_expression)
+# Use multi-omics data for network construction
+omics_data = MultiOmicsData(
+    genomics=genomics_df,
+    transcriptomics=transcriptomics_df,
+    proteomics=proteomics_df
+)
+
+# Predict protein interactions from proteomics data
 features = omics_data.get_layer("proteomics").values.T
 protein_ids = omics_data.get_layer("proteomics").columns.tolist()
-
 ppi = predict_interactions(features, protein_ids, method="coexpression")
+
+# Create network from predicted interactions
+network = create_network(protein_ids, directed=False)
+for prot1, prot2, score in ppi:
+    network.add_edge(prot1, prot2, weight=score)
 ```
 
 ### With Ontology Module
 ```python
-from metainformant.networks import pathway_enrichment
-from metainformant.ontology import go
+from metainformant.networks import detect_communities, pathway_enrichment
+from metainformant.ontology import load_go_obo, ancestors
 
-# Enrich network modules with GO terms
-network_modules = detect_communities(protein_network)
+# Functional enrichment of network modules
+network_modules = detect_communities(protein_network, method="louvain")
+
+# Load GO for enrichment analysis
+go_onto = load_go_obo("go-basic.obo")
+
+# Enrich each module with GO terms
 for module_id, module_genes in network_modules.items():
-    pathways = pathway_enrichment(list(module_genes), pathway_network)
-    # Further GO enrichment...
+    # Pathway enrichment for module
+    enriched = pathway_enrichment(list(module_genes), pathway_db)
+    # Use GO for functional annotation
+    for gene in module_genes:
+        broader_terms = ancestors(go_onto, f"GO:0008150")
 ```
-enriched = pathway_enrichment(gene_list, pathway_db, background_size=20000)
-```
 
-### Community Detection (`community.py`)
-Network community detection and analysis.
-
-**Key Features:**
-- Louvain and Leiden clustering
-- Hierarchical clustering
-- Community functional analysis
-- Community comparison across conditions
-
-**Usage:**
+### With Pathway Module
 ```python
-from metainformant.networks import detect_communities, modularity, community_metrics
-
-# Detect communities
-communities = detect_communities(network, method="louvain", resolution=1.0)
-
-# Calculate modularity
-mod = modularity(network, communities)
-
-# Community metrics
-metrics = community_metrics(network, communities)
-```
-
-## Integration with Other Modules
-
-### With Ontology Module
-```python
+from metainformant.networks import PathwayNetwork, pathway_enrichment
 from metainformant.networks import detect_communities
-from metainformant.ontology import go
 
-# Functional analysis of network modules
-communities = detect_communities(protein_network.network, method="louvain")
-# Use communities for enrichment analysis
+# Pathway-based network analysis
+pathway_db = PathwayNetwork.load_from_database("kegg_pathways.json")
+
+# Enrich network communities with pathways
+communities = detect_communities(protein_network, method="leiden")
+for module_id, module_genes in network_modules.items():
+    enriched_pathways = pathway_enrichment(
+        list(module_genes), 
+        pathway_db,
+        background_size=20000
+    )
+    # Analyze pathway overlap and regulation
 ```
 
 ### With Visualization Module
 ```python
 from metainformant.networks import ProteinNetwork, load_string_interactions
-from metainformant.visualization import plots
+from metainformant.visualization import network_plot, heatmap
 
-# Visualize interaction networks
+# Visualize protein interaction networks
 ppi_network = load_string_interactions("string_file.tsv", score_threshold=400)
 network = ppi_network.create_network()
-# Use visualization.plots for plotting network graphs
+
+# Create network visualization
+ax = network_plot(network, layout="spring", node_size=100)
+
+# Visualize community structure
+communities = detect_communities(network, method="louvain")
+# Create heatmap of community membership
+community_matrix = create_community_matrix(network, communities)
+ax = heatmap(community_matrix, title="Network Community Structure")
 ```
 
 ## Performance Features

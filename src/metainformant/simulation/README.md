@@ -157,7 +157,7 @@ labels = [0 if len(seq) < 50 else 1 for seq in sequences]
 ### With Visualization Module
 ```python
 from metainformant.simulation import GridWorld
-from metainformant.visualization import animate_time_series
+from metainformant.visualization import animate_time_series, scatter_plot
 import random
 
 # Visualize agent dynamics
@@ -171,8 +171,31 @@ for _ in range(100):
     positions = world.positions()
     position_history.append(positions)
 
-# Visualize using time series animation for position data
-# See visualization module for plotting agent positions
+# Visualize final positions
+if position_history:
+    final_positions = position_history[-1]
+    x_coords = [pos[0] for pos in final_positions]
+    y_coords = [pos[1] for pos in final_positions]
+    ax = scatter_plot(x_coords, y_coords, title="Agent Positions")
+```
+
+### With DNA Module for Validation
+```python
+from metainformant.simulation import generate_random_dna, mutate_sequence
+from metainformant.dna import sequences, alignment
+import random
+
+# Generate synthetic sequences for validation
+rng = random.Random(42)
+seq1 = generate_random_dna(1000, rng=rng)
+seq2 = mutate_sequence(seq1, n_mut=10, rng=rng)
+
+# Validate simulation by comparing with real alignment tools
+# Align simulated sequences
+aln = alignment.global_pairwise([seq1, seq2])
+
+# Verify mutation rate matches expected
+# Use DNA module analysis to validate simulation parameters
 ```
 
 ## Performance Considerations

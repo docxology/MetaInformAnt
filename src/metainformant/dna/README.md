@@ -346,6 +346,172 @@ vcf_info = variants.parse_vcf("variants.vcf")
 # For full variant analysis, use gwas module
 ```
 
+### With GWAS Module
+```python
+from metainformant.dna import variants, sequences
+from metainformant.gwas import parse_vcf_full, apply_qc_filters, association_test_linear
+
+# Variant calling and analysis workflow
+# Parse VCF from variant calling
+vcf_data = parse_vcf_full("variants.vcf")
+
+# Apply quality control filters
+qc_variants = apply_qc_filters(
+    vcf_data,
+    maf_threshold=0.05,
+    missing_threshold=0.1,
+    hwe_threshold=1e-6
+)
+
+# Use DNA sequences for variant annotation
+reference_sequences = sequences.read_fasta("reference.fasta")
+
+# Extract variant information for association testing
+# Prepare genotype matrix from VCF data
+genotype_matrix = extract_genotypes(qc_variants)
+phenotypes = np.array([...])  # Trait values
+
+# Association testing
+association_results = association_test_linear(
+    genotype_matrix,
+    phenotypes,
+    covariates=None
+)
+
+# Analyze significant variants
+significant_variants = association_results[association_results["p_value"] < 1e-5]
+```
+
+### With Information Theory Module
+```python
+from metainformant.dna import sequences, composition
+from metainformant.information import shannon_entropy, mutual_information, information_content
+import numpy as np
+
+# Sequence entropy and information content analysis
+dna_seqs = sequences.read_fasta("sequences.fasta")
+
+# Calculate sequence entropy for each sequence
+for seq_id, seq in dna_seqs.items():
+    # Calculate k-mer frequencies
+    kmers = composition.kmer_frequencies(seq, k=3)
+    # Convert to probabilities
+    kmer_probs = np.array([kmers.get(kmer, 0) for kmer in sorted(kmers.keys())])
+    kmer_probs = kmer_probs / kmer_probs.sum()
+    
+    # Calculate Shannon entropy
+    entropy = shannon_entropy(kmer_probs)
+    print(f"{seq_id}: Entropy = {entropy:.3f}")
+
+# Calculate information content (conservation score)
+# Compare sequences to find conserved regions
+aligned_seqs = msa.progressive_align(dna_seqs)
+conservation_scores = []
+
+for pos in range(len(aligned_seqs[0])):
+    # Extract column at position
+    column = [seq[pos] for seq in aligned_seqs.values()]
+    # Calculate nucleotide frequencies
+    nucleotide_counts = {nt: column.count(nt) for nt in "ATCG"}
+    total = sum(nucleotide_counts.values())
+    nucleotide_probs = np.array([nucleotide_counts[nt] / total for nt in "ATCG"])
+    
+    # Information content (max entropy - actual entropy)
+    max_entropy = shannon_entropy(np.array([0.25] * 4))  # Uniform distribution
+    actual_entropy = shannon_entropy(nucleotide_probs)
+    info_content = max_entropy - actual_entropy
+    conservation_scores.append(info_content)
+
+# Calculate mutual information between sequence positions
+# For two positions in alignment
+pos1_col = [seq[0] for seq in aligned_seqs.values()]
+pos2_col = [seq[1] for seq in aligned_seqs.values()]
+
+# Binarize (conserved vs variable)
+pos1_binary = (np.array([pos1_col.count(nt) for nt in "ATCG"]) > len(pos1_col) * 0.5).astype(int)
+pos2_binary = (np.array([pos2_col.count(nt) for nt in "ATCG"]) > len(pos2_col) * 0.5).astype(int)
+
+# Calculate MI
+p_x = np.bincount(pos1_binary) / len(pos1_binary)
+p_y = np.bincount(pos2_binary) / len(pos2_binary)
+p_xy = np.histogram2d(pos1_binary, pos2_binary, bins=2)[0]
+p_xy = p_xy / p_xy.sum()
+
+mi = mutual_information(p_xy, p_x, p_y)
+print(f"MI(position_1, position_2): {mi:.3f}")
+```
+
+### With Simulation Module
+```python
+from metainformant.dna import sequences, alignment, population
+from metainformant.simulation import generate_random_dna, mutate_sequence
+import random
+
+# Validation of simulated sequences
+rng = random.Random(42)
+
+# Generate reference sequence
+reference_seq = generate_random_dna(1000, gc_content=0.5, rng=rng)
+
+# Simulate evolution with mutations
+evolved_sequences = []
+for i in range(10):
+    seq = mutate_sequence(reference_seq, n_mut=10, rng=rng)
+    evolved_sequences.append(seq)
+
+# Validate simulation by comparing with real alignment tools
+# Align simulated sequences
+sequences_dict = {f"seq_{i}": seq for i, seq in enumerate([reference_seq] + evolved_sequences)}
+aligned = msa.progressive_align(sequences_dict)
+
+# Calculate nucleotide diversity of simulated population
+diversity = population.nucleotide_diversity(evolved_sequences)
+print(f"Simulated population diversity: {diversity:.6f}")
+
+# Verify mutation rate matches expected
+# Count mutations in aligned sequences
+mutation_count = sum(1 for pos in range(len(aligned[list(aligned.keys())[0]]))
+                     if len(set(seq[pos] for seq in aligned.values())) > 1)
+expected_mutations = 10 * len(evolved_sequences)
+print(f"Observed mutations: {mutation_count}, Expected: {expected_mutations}")
+```
+
+### With Multiomics Module
+```python
+from metainformant.dna import variants, sequences
+from metainformant.multiomics import MultiOmicsData, joint_pca
+import pandas as pd
+
+# Genomic data integration
+# Extract variant data
+vcf_data = parse_vcf_full("variants.vcf")
+genomic_variants = variants.parse_vcf("variants.vcf")
+
+# Create genomic feature matrix
+genomic_features = pd.DataFrame({
+    variant_id: variant_info
+    for variant_id, variant_info in genomic_variants.items()
+})
+
+# Prepare other omics data
+rna_expression = pd.read_csv("expression.tsv", index_col=0)
+proteomics_data = pd.read_csv("proteomics.csv", index_col=0)
+
+# Create multi-omics dataset
+omics_data = MultiOmicsData(
+    genomics=genomic_features,
+    transcriptomics=rna_expression,
+    proteomics=proteomics_data
+)
+
+# Joint analysis across omics layers
+embeddings, loadings, variance = joint_pca(omics_data, n_components=50)
+
+# Use DNA sequences for annotation
+dna_sequences = sequences.read_fasta("genome.fasta")
+# Annotate variants with sequence context
+```
+
 ## Performance Considerations
 
 - **Memory Efficiency**: Large sequence files are processed in streaming fashion

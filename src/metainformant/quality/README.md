@@ -131,14 +131,49 @@ seqs = sequences.read_fasta("sequences.fasta")
 ### With DNA Module
 ```python
 from metainformant.dna import sequences
-from metainformant.quality import fastq
+from metainformant.quality import analyze_fastq_quality
 
 # Quality control for DNA sequences
 seqs = sequences.read_fasta("raw_sequences.fasta")
 
 # Use quality module functions for FASTQ quality assessment
+from metainformant.dna.fastq import iter_fastq
+reads = list(iter_fastq("reads.fastq"))
+quality_stats = analyze_fastq_quality(reads)
+```
+
+### With RNA Module Workflows
+```python
+from metainformant.quality import analyze_fastq_quality, detect_contamination
+from metainformant.dna.fastq import iter_fastq
+
+# Quality control for RNA-seq FASTQ files
+# Quality assessment before downstream RNA analysis
+rna_reads = list(iter_fastq("rna_reads.fastq"))
+quality_stats = analyze_fastq_quality(rna_reads)
+
+# Contamination detection for RNA-seq
+contamination = detect_adapter_contamination(rna_reads)
+
+# Filter reads based on quality before RNA workflow
+# Pass quality-filtered reads to RNA quantification pipeline
+```
+
+### With GWAS Workflows
+```python
 from metainformant.quality import analyze_fastq_quality
-# For FASTA sequences, use DNA module validation functions
+from metainformant.gwas.quality import apply_qc_filters, parse_vcf_full
+
+# Quality control for variant calling input
+# FASTQ quality assessment before variant calling
+genomic_reads = list(iter_fastq("genomic_reads.fastq"))
+quality_stats = analyze_fastq_quality(genomic_reads)
+
+# After variant calling, apply GWAS-specific QC filters
+vcf_data = parse_vcf_full("variants.vcf")
+qc_variants = apply_qc_filters(vcf_data, maf_threshold=0.05, missing_threshold=0.1)
+
+# Integrated quality control pipeline for GWAS
 ```
 
 ## Performance Features

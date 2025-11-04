@@ -28,6 +28,39 @@ for species_data in data:
     print(f"{species_name}: {len(traits)} traits")
 ```
 
+### Life Course Integration (`life_course.py`)
+Extract and analyze temporal phenotypes from life event sequences.
+
+**Usage:**
+```python
+from metainformant.phenotype import (
+    extract_phenotypes_from_events,
+    aggregate_temporal_phenotypes,
+    map_events_to_traits
+)
+
+# Extract phenotypes from life event sequences
+phenotypes = extract_phenotypes_from_events(event_sequences)
+
+# Aggregate temporal phenotypes
+aggregated = aggregate_temporal_phenotypes(phenotypes)
+
+# Map events to trait categories
+trait_mapping = map_events_to_traits(event_sequences)
+```
+
+**Integration with Life Events Module:**
+```python
+from metainformant.life_events import EventSequence, load_sequences_from_json
+from metainformant.phenotype import extract_phenotypes_from_events
+
+# Load life event sequences
+sequences = load_sequences_from_json("life_events.json")
+
+# Extract phenotypic traits from events
+phenotypes = extract_phenotypes_from_events(sequences)
+```
+
 **Data Structure:**
 AntWiki JSON files contain species entries with:
 - `species`: Species name
@@ -66,6 +99,17 @@ diversity = population.nucleotide_diversity(sequences)
 phenotype_data = load_antwiki_json(Path("antwiki_species.json"))
 # Extract traits for analysis
 # See genotype-phenotype association analysis tools in other modules
+```
+
+### With Life Events Module
+```python
+from metainformant.life_events import load_sequences_from_json
+from metainformant.phenotype import extract_phenotypes_from_events
+
+# Extract phenotypes from temporal event sequences
+sequences = load_sequences_from_json("life_events.json")
+phenotypes = extract_phenotypes_from_events(sequences)
+# Analyze temporal phenotype patterns
 ```
 
 ### With Ontology Module

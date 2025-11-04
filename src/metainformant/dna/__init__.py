@@ -1,28 +1,45 @@
-"""DNA domain functionality."""
+"""DNA domain functionality.
 
-# Avoid importing all submodules eagerly to prevent optional dependency failures
-# during unrelated commands (e.g., when Biopython or ncbi datasets libs are missing).
+This module provides comprehensive DNA sequence analysis tools including:
+- Sequence I/O (FASTA/FASTQ)
+- Alignment and phylogenetics
+- Population genetics statistics
+- Genomic data retrieval (NCBI/Entrez)
+- Variant calling and analysis
+- Motif discovery and restriction enzyme analysis
 
-# Re-export frequently used modules lazily via simple import wrappers
-# Callers should import the specific submodules directly when needed.
+Import Pattern:
+This module uses lazy imports to avoid optional dependency failures during unrelated commands.
+Import specific submodules directly:
 
-# Export commonly used functions for convenience while maintaining lazy import pattern
-def _lazy_import(module_name: str, attr_name: str):
-    """Lazy import wrapper for DNA module functions."""
-    def _get():
-        module = __import__(f"metainformant.dna.{module_name}", fromlist=[attr_name])
-        return getattr(module, attr_name)
-    return property(lambda self: _get())
+    from metainformant.dna import sequences
+    sequences.read_fasta(...)
 
-# Commonly used functions can be accessed via module import pattern:
-# from metainformant.dna import sequences
-# sequences.read_fasta(...)
-# 
-# Or via direct import:
-# from metainformant.dna.sequences import read_fasta
+    # Or direct import:
+    from metainformant.dna.sequences import read_fasta
+
+Available submodules:
+- sequences: FASTA/FASTQ reading and basic sequence operations
+- alignment: Pairwise and multiple sequence alignment
+- phylogeny: Phylogenetic tree construction (Neighbor-Joining)
+- population: Population genetics statistics (π, Tajima's D, Fst)
+- population_analysis: Advanced population genetics analysis
+- population_viz: Population genetics visualization
+- genomes, ncbi, entrez: Genomic data retrieval from NCBI
+- fastq: FASTQ-specific processing
+- variants: Variant calling and VCF support
+- motifs: Pattern discovery and PWM analysis
+- restriction: Restriction enzyme analysis
+- transcription, translation: Sequence conversion
+- mutations: Mutation analysis
+- codon: Codon usage analysis
+- composition: Sequence composition analysis
+- consensus: Consensus sequence generation
+- distances: Evolutionary distance calculations
+"""
 
 __all__ = [
-    # Keep list for discoverability; do not import to avoid side effects
+    # Submodules available for import (lazy loading pattern)
     "genomes",
     "ncbi",
     "entrez",

@@ -101,12 +101,42 @@ This document outlines the AI agents and language models that have contributed t
 - Systems-level correlation and enrichment analyses
 - Configurable reporting across DNA, RNA, and protein outputs
 
+### Information Theory (`information/`)
+**Code Assistant Agent** developed:
+- Comprehensive syntactic information theory (Shannon entropy, mutual information, KL divergence)
+- Semantic information measures (information content, semantic similarity)
+- Continuous information theory methods
+- Bias-corrected entropy and MI estimation
+- Integration with DNA, RNA, single-cell, and multi-omics modules
+- Workflow functions for batch processing
+
+### GWAS (`gwas/`)
+**Code Assistant Agent** implemented:
+- Complete end-to-end GWAS workflow pipeline
+- Variant calling integration (bcftools, GATK)
+- Quality control filters (MAF, missingness, HWE)
+- Population structure analysis (PCA, kinship matrices)
+- Association testing (linear and logistic regression)
+- Multiple testing correction methods
+- Comprehensive visualization suite (Manhattan plots, Q-Q plots, regional plots)
+- SRA data download and reference genome retrieval
+
+### Life Events (`life_events/`)
+**Code Assistant Agent** created:
+- Event sequence data structures and database
+- Word2Vec-style event embeddings
+- Sequence prediction models (LSTM-based)
+- Life course analysis workflows
+- Population comparison tools
+- Model interpretability and feature attribution
+- Visualization for event sequences and embeddings
+
 ### Additional Modules
 **Code Assistant Agent** contributed to:
 - Protein analysis and proteome utilities
 - Epigenomic data processing
 - Ontology and gene annotation tools
-- Phenotype data curation and web scraping
+- Phenotype data curation and web scraping (with life course integration)
 - Ecology metadata management
 - Quality assessment pipelines
 

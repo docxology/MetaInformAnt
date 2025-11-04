@@ -127,6 +127,23 @@ go_onto = load_go_obo("go-basic.obo")
 # Use GO for protein functional annotation
 ```
 
+### With Phenotype Module
+```python
+from metainformant.phenotype import load_antwiki_json
+from metainformant.ontology import load_go_obo, ancestors
+
+# Functional annotation of phenotypic traits
+phenotype_data = load_antwiki_json(Path("antwiki_species.json"))
+
+# Load GO for trait functional annotation
+go_onto = load_go_obo("go-basic.obo")
+
+# Map traits to GO terms and find broader categories
+trait_term = "GO:0008150"  # biological_process
+broader_terms = ancestors(go_onto, trait_term)
+# Use GO hierarchy for trait categorization
+```
+
 ## Performance Features
 
 - Efficient ontology traversal algorithms

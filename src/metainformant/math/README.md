@@ -210,6 +210,34 @@ DDMs model decision-making as a stochastic process where evidence accumulates ov
 
 ## Integration with Other Modules
 
+### With DNA Population Genetics Module
+```python
+from metainformant.dna import population
+from metainformant.math import price_equation, tajimas_D
+
+# Combine empirical population genetics with theoretical models
+sequences = population.read_sequences("populations.fasta")
+
+# Calculate empirical statistics
+nuc_diversity = population.nucleotide_diversity(sequences)
+tajima_d = population.tajimas_D(sequences)
+
+# Use theoretical models to interpret results
+# Price equation for selection analysis
+fitness = calculate_fitness_from_diversity(nuc_diversity)
+# Apply Price equation to understand evolutionary forces
+```
+
+### With GWAS Module
+```python
+from metainformant.math import price_equation
+from metainformant.gwas import association_test_linear
+
+# Statistical models for GWAS
+# Use mathematical models to interpret association results
+# Price equation for selection on genetic variants
+```
+
 ### With DNA Module
 ```python
 from metainformant.dna import population

@@ -52,15 +52,46 @@ ecological_diversity = shannon_diversity(species_abundances)
 
 ### With Visualization Module
 ```python
-from metainformant.ecology.community import community_metrics
-from metainformant.visualization import heatmap
+from metainformant.ecology.community import shannon_diversity, simpson_diversity
+from metainformant.visualization import lineplot, scatter_plot
 import numpy as np
 
-# Visualize community structure
-# Create abundance matrix (sites x species)
-abundance_matrix = np.array([[10, 8, 6], [5, 7, 9], [12, 4, 8]])
-ax = heatmap(abundance_matrix)
-ax.set_title("Species Abundance")
+# Visualize diversity metrics across sites
+sites = ["Site1", "Site2", "Site3", "Site4"]
+abundance_matrices = [
+    [10, 8, 6, 4, 2],
+    [5, 7, 9, 3, 1],
+    [12, 4, 8, 6, 3],
+    [8, 6, 5, 4, 2]
+]
+
+# Calculate diversity for each site
+shannon_values = [shannon_diversity(abund) for abund in abundance_matrices]
+simpson_values = [simpson_diversity(abund) for abund in abundance_matrices]
+
+# Visualize diversity patterns
+ax = scatter_plot(shannon_values, simpson_values, 
+                  xlabel="Shannon Diversity", ylabel="Simpson Diversity",
+                  title="Diversity Metrics Across Sites")
+```
+
+### With Information Theory Module
+```python
+from metainformant.ecology.community import shannon_diversity
+from metainformant.information import shannon_entropy
+
+# Compare ecological diversity with information-theoretic entropy
+species_abundances = [10, 8, 6, 4, 2, 1]
+
+# Ecological diversity (normalized by total abundance)
+eco_diversity = shannon_diversity(species_abundances)
+
+# Information-theoretic entropy (from relative abundances)
+total = sum(species_abundances)
+proportions = [a / total for a in species_abundances]
+info_entropy = shannon_entropy(proportions)
+
+# Both metrics measure diversity/information content
 ```
 
 ## Data Sources
