@@ -14,6 +14,11 @@ from .coalescent import (
     expected_segregating_sites,
     expected_time_to_mrca,
     expected_total_branch_length,
+    ewens_watterson_test,
+    fay_wu_h,
+    fu_and_li_d_star,
+    fu_and_li_f_star,
+    hardy_weinberg_test,
     tajima_constants,
     tajimas_D,
 )
@@ -87,6 +92,15 @@ from .quantgen import (
     lande_equation_response,
     narrow_sense_heritability,
     realized_heritability,
+)
+from .popgen_stats import (
+    bootstrap_confidence_interval,
+    calculate_confidence_intervals,
+    compare_statistics,
+    detect_outliers,
+    permutation_test,
+    tajimas_d_outliers,
+    test_population_difference,
 )
 from .selection import kin_selection_response, multilevel_selection_decomposition
 
@@ -167,6 +181,20 @@ __all__ = [
     "exponential_growth_effective_size",
     "bottleneck_effective_size",
     "two_epoch_effective_size",
+    # additional neutrality tests
+    "fu_and_li_d_star",
+    "fu_and_li_f_star",
+    "fay_wu_h",
+    "hardy_weinberg_test",
+    "ewens_watterson_test",
+    # statistical testing
+    "bootstrap_confidence_interval",
+    "permutation_test",
+    "detect_outliers",
+    "tajimas_d_outliers",
+    "compare_statistics",
+    "test_population_difference",
+    "calculate_confidence_intervals",
 ]
 
 

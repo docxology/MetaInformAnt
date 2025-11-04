@@ -4,7 +4,6 @@ import json
 import os
 import tempfile
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
@@ -256,11 +255,18 @@ class TestErrorHandling:
         assert cfg.species_list == []  # Should be empty
 
     def test_cli_unavailable_handling(self):
-        """Test handling when amalgkit is not available."""
-        with patch('metainformant.rna.amalgkit.check_cli_available', return_value=(False, "amalgkit not found")):
-            ok, help_text = amalgkit.check_cli_available()
-            assert not ok
-            assert "not found" in help_text
+        """Test handling when amalgkit is not available.
+        
+        Uses real check_cli_available() implementation following NO_MOCKING_POLICY.
+        If amalgkit is available, this test verifies the available case instead.
+        """
+        ok, help_text = amalgkit.check_cli_available()
+        # Real implementation returns tuple - verify structure
+        assert isinstance(ok, bool)
+        assert isinstance(help_text, str)
+        # If unavailable, verify error message format
+        if not ok:
+            assert len(help_text) > 0  # Should have error message
 
 
 class TestIntegrationWorkflow:
@@ -454,11 +460,22 @@ class TestAmalgkitWrapperRobustness:
         self.test_dir.mkdir(parents=True, exist_ok=True)
 
     def test_wrapper_with_missing_amalgkit(self):
-        """Test wrapper behavior when amalgkit is not available."""
-        with patch('metainformant.rna.amalgkit.check_cli_available', return_value=(False, "amalgkit not found")):
-            ok, help_text = amalgkit.check_cli_available()
-            assert not ok
-            assert "not found" in help_text
+        """Test wrapper behavior when amalgkit is not available.
+        
+        Uses real check_cli_available() implementation following NO_MOCKING_POLICY.
+        Tests actual behavior regardless of whether amalgkit is installed.
+        """
+        ok, help_text = amalgkit.check_cli_available()
+        # Real implementation - verify it returns proper structure
+        assert isinstance(ok, bool)
+        assert isinstance(help_text, str)
+        # Test that the function handles both available and unavailable cases
+        if not ok:
+            # When unavailable, should have informative error message
+            assert len(help_text) > 0
+        else:
+            # When available, should have help text
+            assert len(help_text) > 0
 
     def test_wrapper_with_invalid_params(self):
         """Test wrapper with invalid parameters."""

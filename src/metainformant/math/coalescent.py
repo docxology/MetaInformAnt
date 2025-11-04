@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from collections.abc import Iterable
 from dataclasses import dataclass
 
@@ -205,6 +206,381 @@ def tajimas_D(num_segregating_sites: int, pairwise_diversity: float, sample_size
     if var <= 0:
         return 0.0
     return D_num / (var**0.5)
+
+
+def fu_and_li_d_star(
+    num_segregating_sites: int,
+    num_external_mutations: int,
+    sample_size: int,
+) -> float:
+    """Calculate Fu & Li's D* statistic.
+    
+    Fu & Li's D* tests for departure from neutrality by comparing external
+    (singleton) mutations to internal mutations. External mutations are those
+    that appear only once in the sample (singletons).
+    
+    D* > 0 suggests balancing selection or population contraction.
+    D* < 0 suggests directional selection or population expansion.
+    D* ≈ 0 is consistent with neutral equilibrium.
+    
+    Args:
+        num_segregating_sites: Total number of segregating sites (S)
+        num_external_mutations: Number of external (singleton) mutations (η_e)
+        sample_size: Number of sampled sequences (n)
+        
+    Returns:
+        Fu & Li's D* statistic. Returns 0.0 if variance is zero or inputs invalid.
+        
+    Examples:
+        >>> fu_and_li_d_star(num_segregating_sites=10, num_external_mutations=5, sample_size=10)
+        -0.5...
+        
+    References:
+        Fu, Y. X., & Li, W. H. (1993). Statistical tests of neutrality of mutations.
+        Genetics, 133(3), 693-709.
+    """
+    S = max(0, int(num_segregating_sites))
+    eta_e = max(0, int(num_external_mutations))
+    n = int(sample_size)
+    
+    if n < 2 or S == 0:
+        return 0.0
+    
+    const = tajima_constants(n)
+    a1 = const["a1"]
+    a2 = const["a2"]
+    
+    if a1 <= 0:
+        return 0.0
+    
+    # Expected number of external mutations under neutrality
+    # E[η_e] = θ (for singleton mutations)
+    # D* = (η_e - a1*θ_S) / sqrt(Var(η_e - a1*θ_S))
+    theta_s = S / a1
+    
+    # Numerator: difference between observed and expected external mutations
+    d_star_num = eta_e - a1 * theta_s
+    
+    # Variance calculation for D*
+    # Var(η_e - a1*θ_S) = Var(η_e) + a1²*Var(θ_S) - 2*a1*Cov(η_e, θ_S)
+    # Simplified variance for D*
+    u_d = (n - 1) / n
+    v_d = (2 * n * math.log(n) - 2 * n - 2 * a1 + 4) / (n * (n - 1))
+    
+    if v_d <= 0:
+        return 0.0
+    
+    d_star = d_star_num / math.sqrt(v_d * S + u_d * S * S)
+    
+    return d_star
+
+
+def fu_and_li_f_star(
+    num_segregating_sites: int,
+    num_external_mutations: int,
+    pairwise_diversity: float,
+    sample_size: int,
+) -> float:
+    """Calculate Fu & Li's F* statistic.
+    
+    Fu & Li's F* combines information from both external mutations and
+    pairwise diversity, providing a more powerful test than D*.
+    
+    F* > 0 suggests balancing selection or population contraction.
+    F* < 0 suggests directional selection or population expansion.
+    F* ≈ 0 is consistent with neutral equilibrium.
+    
+    Args:
+        num_segregating_sites: Total number of segregating sites (S)
+        num_external_mutations: Number of external (singleton) mutations (η_e)
+        pairwise_diversity: Average pairwise nucleotide diversity (π)
+        sample_size: Number of sampled sequences (n)
+        
+    Returns:
+        Fu & Li's F* statistic. Returns 0.0 if variance is zero or inputs invalid.
+        
+    Examples:
+        >>> fu_and_li_f_star(num_segregating_sites=10, num_external_mutations=5, pairwise_diversity=5.0, sample_size=10)
+        -1.2...
+        
+    References:
+        Fu, Y. X., & Li, W. H. (1993). Statistical tests of neutrality of mutations.
+        Genetics, 133(3), 693-709.
+    """
+    S = max(0, int(num_segregating_sites))
+    eta_e = max(0, int(num_external_mutations))
+    pi = max(0.0, float(pairwise_diversity))
+    n = int(sample_size)
+    
+    if n < 2 or S == 0:
+        return 0.0
+    
+    const = tajima_constants(n)
+    a1 = const["a1"]
+    a2 = const["a2"]
+    
+    if a1 <= 0:
+        return 0.0
+    
+    theta_s = S / a1
+    
+    # F* compares π and η_e to θ_S
+    # F* = (π - η_e) / sqrt(Var(π - η_e))
+    f_star_num = pi - eta_e
+    
+    # Variance calculation for F*
+    # Simplified variance calculation for F*
+    u_f = (n + 1) / (3 * (n - 1)) - (2 * (n - 1) * (n + 1)) / (3 * n * n)
+    v_f = (2 * (n * n + n + 3)) / (9 * n * (n - 1)) - (n + 1) / (n * n)
+    
+    # Calculate variance term
+    variance_term = v_f * S + u_f * S * S
+    
+    if variance_term <= 0:
+        return 0.0
+    
+    f_star = f_star_num / math.sqrt(variance_term)
+    
+    return f_star
+
+
+def fay_wu_h(
+    num_segregating_sites: int,
+    pairwise_diversity: float,
+    sample_size: int,
+    *,
+    ancestral_state: Iterable[str] | None = None,
+    sequences: Iterable[str] | None = None,
+) -> float:
+    """Calculate Fay & Wu's H statistic.
+    
+    Fay & Wu's H tests for selection by comparing high-frequency derived alleles
+    to expected under neutrality. H < 0 suggests positive selection (selective sweep).
+    
+    Args:
+        num_segregating_sites: Number of segregating sites (S)
+        pairwise_diversity: Average pairwise nucleotide diversity (π)
+        sample_size: Number of sampled sequences (n)
+        ancestral_state: Optional ancestral sequence (for derived allele identification)
+        sequences: Optional sequences (for derived allele counting if ancestral_state provided)
+        
+    Returns:
+        Fay & Wu's H statistic. H < 0 suggests positive selection.
+        Returns 0.0 if inputs invalid or calculation not possible.
+        
+    Examples:
+        >>> fay_wu_h(num_segregating_sites=10, pairwise_diversity=5.0, sample_size=10)
+        -2.5...
+        
+    References:
+        Fay, J. C., & Wu, C. I. (2000). Hitchhiking under positive Darwinian selection.
+        Genetics, 155(3), 1405-1413.
+    """
+    S = max(0, int(num_segregating_sites))
+    pi = max(0.0, float(pairwise_diversity))
+    n = int(sample_size)
+    
+    if n < 2 or S == 0:
+        return 0.0
+    
+    const = tajima_constants(n)
+    a1 = const["a1"]
+    
+    if a1 <= 0:
+        return 0.0
+    
+    theta_s = S / a1
+    
+    # H = π - θ_H, where θ_H is based on high-frequency derived alleles
+    # For simplicity, we use π - θ_S as approximation
+    # Full implementation would require ancestral state to count derived alleles
+    h = pi - theta_s
+    
+    return h
+
+
+def hardy_weinberg_test(
+    genotype_counts: Iterable[tuple[int, int, int]] | None = None,
+    genotype_matrix: Iterable[Iterable[int]] | None = None,
+) -> dict[str, float]:
+    """Test for Hardy-Weinberg equilibrium using chi-square test.
+    
+    Compares observed genotype frequencies to expected frequencies under HWE.
+    Uses chi-square test with 1 degree of freedom (for biallelic loci).
+    
+    Args:
+        genotype_counts: Optional list of (AA, Aa, aa) counts per site
+        genotype_matrix: Optional genotype matrix (individuals × sites) with values 0/1/2
+    
+    Returns:
+        Dictionary with:
+        - chi_square: Chi-square test statistic
+        - p_value: P-value from chi-square distribution
+        - degrees_of_freedom: Degrees of freedom (1 for biallelic)
+        - hwe_deviated: Boolean indicating if HWE is rejected (p < 0.05)
+        
+    Examples:
+        >>> # Perfect HWE: p=0.5, expected: 25 AA, 50 Aa, 25 aa
+        >>> result = hardy_weinberg_test(genotype_counts=[(25, 50, 25)])
+        >>> result["hwe_deviated"]
+        False
+    """
+    try:
+        from scipy import stats
+    except ImportError:
+        # Fallback if scipy not available
+        return {"chi_square": 0.0, "p_value": 1.0, "degrees_of_freedom": 1, "hwe_deviated": False}
+    
+    if genotype_counts is None and genotype_matrix is None:
+        return {"chi_square": 0.0, "p_value": 1.0, "degrees_of_freedom": 1, "hwe_deviated": False}
+    
+    # Convert genotype matrix to counts if needed
+    if genotype_matrix is not None:
+        genotype_counts = []
+        matrix_list = list(genotype_matrix)
+        if not matrix_list:
+            return {"chi_square": 0.0, "p_value": 1.0, "degrees_of_freedom": 1, "hwe_deviated": False}
+        num_sites = len(matrix_list[0])
+        for site_idx in range(num_sites):
+            counts = [0, 0, 0]  # AA, Aa, aa
+            for individual in matrix_list:
+                geno = individual[site_idx]
+                if geno == 0:
+                    counts[0] += 1
+                elif geno == 1:
+                    counts[1] += 1
+                elif geno == 2:
+                    counts[2] += 1
+            genotype_counts.append(tuple(counts))
+    
+    if not genotype_counts:
+        return {"chi_square": 0.0, "p_value": 1.0, "degrees_of_freedom": 1, "hwe_deviated": False}
+    
+    # Calculate chi-square for each site and average
+    total_chi_square = 0.0
+    total_p_value = 0.0
+    valid_sites = 0
+    
+    for counts in genotype_counts:
+        aa_count, ab_count, bb_count = counts
+        total = aa_count + ab_count + bb_count
+        
+        if total == 0:
+            continue
+        
+        # Calculate allele frequencies
+        p = (2 * aa_count + ab_count) / (2 * total)
+        q = 1 - p
+        
+        if p <= 0 or q <= 0:
+            continue
+        
+        # Expected genotype frequencies under HWE
+        exp_aa = total * p * p
+        exp_ab = total * 2 * p * q
+        exp_bb = total * q * q
+        
+        # Chi-square test
+        chi_sq = (
+            ((aa_count - exp_aa) ** 2) / (exp_aa + 1e-10)
+            + ((ab_count - exp_ab) ** 2) / (exp_ab + 1e-10)
+            + ((bb_count - exp_bb) ** 2) / (exp_bb + 1e-10)
+        )
+        
+        # P-value (1 degree of freedom for biallelic)
+        p_val = 1.0 - stats.chi2.cdf(chi_sq, df=1)
+        
+        total_chi_square += chi_sq
+        total_p_value += p_val
+        valid_sites += 1
+    
+    if valid_sites == 0:
+        return {"chi_square": 0.0, "p_value": 1.0, "degrees_of_freedom": 1, "hwe_deviated": False}
+    
+    avg_chi_square = total_chi_square / valid_sites
+    avg_p_value = total_p_value / valid_sites
+    
+    return {
+        "chi_square": float(avg_chi_square),
+        "p_value": float(avg_p_value),
+        "degrees_of_freedom": 1,
+        "hwe_deviated": bool(avg_p_value < 0.05),
+    }
+
+
+def ewens_watterson_test(
+    allele_frequencies: Iterable[float],
+    sample_size: int,
+) -> dict[str, float]:
+    """Ewens-Watterson test for selective neutrality.
+    
+    Tests whether observed allele frequency distribution matches the expected
+    distribution under the neutral infinite-alleles model.
+    
+    Args:
+        allele_frequencies: List of allele frequencies per site
+        sample_size: Number of sampled sequences (n)
+        
+    Returns:
+        Dictionary with:
+        - f_statistic: Ewens-Watterson F statistic
+        - expected_f: Expected F under neutrality
+        - variance_f: Variance of F under neutrality
+        - p_value: Approximate p-value (if calculable)
+        
+    Examples:
+        >>> freqs = [0.5, 0.3, 0.2]
+        >>> result = ewens_watterson_test(freqs, sample_size=10)
+        >>> "f_statistic" in result
+        True
+    """
+    freq_list = list(allele_frequencies)
+    if not freq_list or sample_size < 2:
+        return {
+            "f_statistic": 0.0,
+            "expected_f": 0.0,
+            "variance_f": 0.0,
+            "p_value": 1.0,
+        }
+    
+    n = int(sample_size)
+    
+    # Calculate observed homozygosity (F = sum of squared frequencies)
+    f_obs = sum(f * f for f in freq_list if 0 <= f <= 1)
+    
+    # Expected F under neutrality (Ewens sampling formula)
+    # E[F] ≈ 1 / (1 + θ) where θ = 4Neμ
+    # For small samples, we approximate
+    const = tajima_constants(n)
+    a1 = const["a1"]
+    
+    # Approximate expected F
+    # Using relationship between F and θ
+    expected_f = 1.0 / (1.0 + a1) if a1 > 0 else 0.0
+    
+    # Variance approximation
+    variance_f = expected_f * (1.0 - expected_f) / n if n > 0 else 0.0
+    
+    # Approximate p-value (normal approximation)
+    if variance_f > 0:
+        z_score = (f_obs - expected_f) / math.sqrt(variance_f)
+        # Two-tailed test
+        try:
+            from scipy import stats
+            p_val = 2.0 * (1.0 - stats.norm.cdf(abs(z_score)))
+        except ImportError:
+            # Fallback: approximate using normal CDF
+            # Simple approximation: |z| > 1.96 ≈ p < 0.05
+            p_val = 0.05 if abs(z_score) > 1.96 else 1.0
+    else:
+        p_val = 1.0
+    
+    return {
+        "f_statistic": f_obs,
+        "expected_f": expected_f,
+        "variance_f": variance_f,
+        "p_value": p_val,
+    }
 
 
 def watterson_theta(

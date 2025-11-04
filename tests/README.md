@@ -4,10 +4,11 @@
 Comprehensive test suite for the METAINFORMANT bioinformatics toolkit. This document provides a complete mapping of test files to their corresponding source modules, coverage analysis, and testing guidelines for a growing fractal codebase.
 
 ## Test Environment Status
-**Current Status**: 150 tests collected, 140 passed, 6 failed, 4 skipped
-**Last Updated**: Automated test run analysis
+**Current Status**: ~580+ test functions across 160+ test files
+**Last Updated**: 2024-12-28 (Comprehensive test suite review)
 **Python Version**: 3.12.11
 **Key Dependencies**: pytest, biopython, numpy, pandas, matplotlib
+**NO_MOCKING_POLICY**: ✅ Fully compliant - all tests use real implementations
 
 ## Test Organization & Coverage Matrix
 
@@ -63,7 +64,7 @@ Comprehensive test suite for the METAINFORMANT bioinformatics toolkit. This docu
 |-----------|----------------|----------|---------|---------|
 | [`test_math_coalescent.py`](test_math_coalescent.py) | [`math/coalescent.py`](../src/metainformant/math/coalescent.py) | Coalescent theory | MRCA times, branch lengths, SFS | ✅ PASS |
 | [`test_math_coalescent_expectations.py`](test_math_coalescent_expectations.py) | [`math/coalescent.py`](../src/metainformant/math/coalescent.py) | Expected values | Segregating sites expectations | ✅ PASS |
-| [`test_math_coalescent_extras.py`](test_dna_coalescent_extras.py) | [`math/coalescent.py`](../src/metainformant/math/coalescent.py) | Advanced coalescent | Tajima's constants and statistics | ✅ PASS |
+| [`test_math_coalescent_extras.py`](test_math_coalescent_extras.py) | [`math/coalescent.py`](../src/metainformant/math/coalescent.py) | Advanced coalescent | Tajima's constants and statistics | ✅ PASS |
 | [`test_math_drift_migration.py`](test_math_drift_migration.py) | [`math/ddm.py`](../src/metainformant/math/ddm.py) | Population processes | Genetic drift, migration models | ✅ PASS |
 | [`test_math_dynamics.py`](test_math_dynamics.py) | [`math/dynamics.py`](../src/metainformant/math/dynamics.py) | Dynamical systems | Logistic maps, Lotka-Volterra | ✅ PASS |
 | [`test_math_effective_size_extras.py`](test_math_effective_size_extras.py) | [`math/effective_size.py`](../src/metainformant/math/effective_size.py) | Effective population | Family size variance effects | ✅ PASS |
@@ -76,6 +77,7 @@ Comprehensive test suite for the METAINFORMANT bioinformatics toolkit. This docu
 | [`test_math_popgen.py`](test_math_popgen.py) | [`math/popgen.py`](../src/metainformant/math/popgen.py) | Population genetics | Hardy-Weinberg, selection, mutation | ✅ PASS |
 | [`test_math_price.py`](test_math_price.py) | [`math/price.py`](../src/metainformant/math/price.py) | Price equation | Selection analysis, covariance decomposition | ✅ PASS |
 | [`test_math_quantgen.py`](test_math_quantgen.py) | [`math/quantgen.py`](../src/metainformant/math/quantgen.py) | Quantitative genetics | Heritability, breeder's equation | ✅ PASS |
+| [`test_math_selection.py`](test_math_selection.py) | [`math/selection.py`](../src/metainformant/math/selection.py) | Selection theory | Hamilton's rule, multilevel selection | ✅ PASS |
 | [`test_math_selection_cli.py`](test_math_selection_cli.py) | [`math/selection_experiments/`](../src/metainformant/math/selection_experiments/) | Selection experiments | CLI for selection model replays | ✅ PASS |
 
 ### RNA Analysis Tests
@@ -96,6 +98,7 @@ Comprehensive test suite for the METAINFORMANT bioinformatics toolkit. This docu
 | [`test_rna_workflow_config.py`](test_rna_workflow_config.py) | [`rna/workflow.py`](../src/metainformant/rna/workflow.py) | Workflow configuration | YAML config loading and validation | ✅ PASS |
 | [`test_rna_workflow_deps.py`](test_rna_workflow_deps.py) | [`rna/deps.py`](../src/metainformant/rna/deps.py) | Dependency management | Step dependency checking | ✅ PASS |
 | [`test_rna_workflow_manifest.py`](test_rna_workflow_manifest.py) | [`rna/workflow.py`](../src/metainformant/rna/workflow.py) | Manifest generation | Execution record creation | ✅ PASS |
+| [`test_rna_pipeline.py`](test_rna_pipeline.py) | [`rna/pipeline.py`](../src/metainformant/rna/pipeline.py) | Pipeline configuration | RNA pipeline config and table summarization | ✅ PASS |
 
 ### Protein Analysis Tests
 
@@ -120,8 +123,11 @@ Comprehensive test suite for the METAINFORMANT bioinformatics toolkit. This docu
 |-----------|----------------|----------|---------|---------|
 | [`test_domain_modules.py`](test_domain_modules.py) | Multi-domain | Cross-module integration | Domain module API integration | ✅ PASS |
 | [`test_epigenome.py`](test_epigenome.py) | [`epigenome/`](../src/metainformant/epigenome/) | Epigenetic analysis | BedGraph parsing, methylation analysis | ✅ PASS |
+| [`test_life_events.py`](test_life_events.py) | [`life_events/events.py`](../src/metainformant/life_events/events.py) | Life events | Event sequence data structures | ✅ PASS |
 | [`test_ontology_go_basic.py`](test_ontology_go_basic.py) | [`ontology/go.py`](../src/metainformant/ontology/go.py) | Gene Ontology | GO term loading, traversal, summaries | ✅ PASS |
 | [`test_ontology_obo_parser.py`](test_ontology_obo_parser.py) | [`ontology/obo.py`](../src/metainformant/ontology/obo.py) | OBO format parsing | Ontology file format handling | ✅ PASS |
+| [`test_ontology_query.py`](test_ontology_query.py) | [`ontology/query.py`](../src/metainformant/ontology/query.py) | Ontology queries | Ancestor/descendant queries, subgraph extraction | ✅ PASS |
+| [`test_ontology_types.py`](test_ontology_types.py) | [`ontology/types.py`](../src/metainformant/ontology/types.py) | Ontology types | Term and Ontology dataclasses | ✅ PASS |
 | [`test_repo_structure.py`](test_repo_structure.py) | Repository structure | Package organization | Directory structure validation | ✅ PASS |
 | [`test_visualization.py`](test_visualization.py) | [`visualization/`](../src/metainformant/visualization/) | Data visualization | Line plots, heatmaps, animations | ✅ PASS |
 | [`test_visualization_phylo.py`](test_visualization_phylo.py) | [`visualization/trees.py`](../src/metainformant/visualization/trees.py) | Phylogenetic visualization | Phylogenetic tree plotting | ✅ PASS |
@@ -144,17 +150,21 @@ Comprehensive test suite for the METAINFORMANT bioinformatics toolkit. This docu
 
 ### ⚠️ Coverage Gaps Identified
 
-#### Missing Test Files
-- `test_ecology.py` - No tests for [`ecology/`](../src/metainformant/ecology/) module
-- `test_simulation.py` - No tests for [`simulation/`](../src/metainformant/simulation/) module
-- `test_phenotype.py` - Limited coverage for [`phenotype/`](../src/metainformant/phenotype/) module
-- `test_core_db.py` - No tests for [`core/db.py`](../src/metainformant/core/db.py) optional database module
+#### Recently Added (2024-12-28)
+- ✅ `test_life_events.py` - Added for [`life_events/events.py`](../src/metainformant/life_events/events.py) module
+- ✅ `test_rna_pipeline.py` - Added for [`rna/pipeline.py`](../src/metainformant/rna/pipeline.py) module
+- ✅ `test_gwas_sra_download.py` - Added for [`gwas/sra_download.py`](../src/metainformant/gwas/sra_download.py) module
+- ✅ `test_ontology_query.py` - Added for [`ontology/query.py`](../src/metainformant/ontology/query.py) module
+- ✅ `test_ontology_types.py` - Added for [`ontology/types.py`](../src/metainformant/ontology/types.py) module
+- ✅ `test_math_selection.py` - Added for [`math/selection.py`](../src/metainformant/math/selection.py) module
 
-#### Incomplete Coverage
-- **RNA steps**: Individual step modules in [`rna/steps/`](../src/metainformant/rna/steps/) need dedicated tests
-- **Math selection**: [`math/selection.py`](../src/metainformant/math/selection.py) only tested via CLI
+#### Remaining Coverage Gaps
+- **GWAS Visualization Modules**: Multiple `gwas/visualization_*.py` modules exist (genome, statistical, regional, population, variants, effects, comparison, comprehensive, enhanced) but only basic `visualization.py` is tested in `test_gwas_visualization.py`. Additional visualization modules should be tested or documented as covered by comprehensive tests.
+- **RNA steps**: Individual step modules in [`rna/steps/`](../src/metainformant/rna/steps/) partially covered by `test_rna_steps_comprehensive.py` but could benefit from dedicated tests
 - **Protein proteomes**: [`protein/proteomes.py`](../src/metainformant/protein/proteomes.py) has minimal coverage
-- **Simulation domains**: All simulation modules lack comprehensive testing
+- **Simulation domains**: Basic tests exist in `test_simulation.py` but comprehensive coverage could be expanded
+- **Ecology**: Basic tests exist in `test_ecology_basic.py` but could be expanded
+- **Single-cell modules**: Some modules (trajectory, integration, visualization) have limited coverage
 
 ## Testing Environment Requirements
 
@@ -321,6 +331,27 @@ def test_{function}_optional_dependency() -> None:
 3. Use fixtures and `tmp_path` for file system operations
 4. Add appropriate skip conditions for optional dependencies
 5. Update this README with new test mappings
+6. **NO_MOCKING_POLICY**: All tests must use real implementations - no mocks, fakes, or stubs
+
+### Test File Naming Consistency
+The test suite follows a consistent naming pattern that maps directly to source modules:
+
+- **Primary pattern**: `test_{domain}_{module}.py` maps to `src/metainformant/{domain}/{module}.py`
+  - Example: `test_dna_sequences.py` → `src/metainformant/dna/sequences.py`
+  
+- **Aspect-specific tests**: `test_{domain}_{module}_{aspect}.py` for focused functionality
+  - Example: `test_dna_population_stats.py` → `src/metainformant/dna/population.py` (stats aspect)
+  
+- **Comprehensive tests**: `test_{domain}_comprehensive.py` for broad module coverage
+  - Example: `test_core_comprehensive.py` covers multiple core modules
+  
+- **Enhanced tests**: `test_{domain}_{module}_enhanced.py` for extended functionality
+  - Example: `test_dna_alignment_enhanced.py` extends basic alignment tests
+  
+- **Integration tests**: `test_integration_*.py` for cross-module functionality
+  - Example: `test_integration_comprehensive.py` tests multiple domains together
+
+**All new test files should follow this pattern to maintain consistency and discoverability.**
 
 ### Issue Reporting
 When tests fail:

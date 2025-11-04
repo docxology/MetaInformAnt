@@ -122,6 +122,14 @@ Integrated multi-omic data analysis:
 - **Joint Analysis**: Multi-omic correlation and interaction analysis
 - **Systems Biology**: Network-based integration approaches
 
+### 📅 Life Events (`life_events/`)
+Life course and event sequence analysis:
+- **Event Sequences**: Temporal event representation with domain categorization
+- **Event Embeddings**: Word2Vec-style embeddings for life events
+- **Sequence Prediction**: Models for predicting outcomes from event sequences
+- **Workflow Integration**: End-to-end pipelines for life course analysis
+- **Population Comparison**: Compare event patterns across groups
+
 ## Architecture Principles
 
 ### Modularity
@@ -169,6 +177,22 @@ from metainformant.multiomics import integration
 cfg = config.load_config("analysis_config.yaml")
 logger = logging.setup_logger("multiomic_analysis")
 results = integration.run_integrated_pipeline(cfg)
+```
+
+### Life Course Analysis
+```python
+from metainformant.life_events import EventSequence, Event, analyze_life_course
+from datetime import datetime
+
+# Create event sequences
+events = [
+    Event("degree", datetime(2010, 6, 1), "education"),
+    Event("job_change", datetime(2015, 3, 1), "occupation"),
+]
+sequence = EventSequence(person_id="person_001", events=events)
+
+# Analyze life course
+results = analyze_life_course([sequence], outcomes=None)
 ```
 
 ## Testing

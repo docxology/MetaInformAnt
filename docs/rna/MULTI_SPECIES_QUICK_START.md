@@ -48,9 +48,38 @@ which wget kallisto
 
 ## Starting Multi-Species Workflows
 
-### Method 1: Production ENA Workflow (RECOMMENDED ⭐)
+### Method 1: Configurable Batch Download (NEW ⭐⭐)
 
-**Best for:** Maximum reliability, large-scale processing, parallel species
+**Best for:** Multi-species parallel downloads with configurable throughput
+
+```bash
+# Default: 3 species × 10 threads = 30 total downloads
+python3 scripts/rna/batch_download_species.py
+
+# Custom: 4 species × 12 threads = 48 total downloads
+python3 scripts/rna/batch_download_species.py --species-count 4 --threads-per-species 12
+
+# Run in background with logging
+python3 scripts/rna/batch_download_species.py > output/batch_download.log 2>&1 &
+```
+
+**Features:**
+- ✅ **Configurable parallelism**: Adjust species count and threads per species
+- ✅ **Automatic discovery**: Finds all species configs automatically
+- ✅ **Virtual environment**: Auto-activates if available
+- ✅ **Cloud acceleration**: AWS, GCP, NCBI enabled by default
+- ✅ **Progress tracking**: Logs all download activity
+
+**Configuration Options:**
+- `--species-count`: Number of species to download in parallel (default: 3)
+- `--threads-per-species`: Threads per species (default: 10)
+- `--max-species`: Limit total species processed (optional)
+
+See `docs/rna/BATCH_DOWNLOAD_CONFIGURATION.md` for complete guide.
+
+### Method 2: Production ENA Workflow (RECOMMENDED ⭐)
+
+**Best for:** Maximum reliability, large-scale processing, single species focus
 
 ```bash
 # Navigate to repository root

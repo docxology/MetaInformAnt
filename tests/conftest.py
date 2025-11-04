@@ -101,8 +101,12 @@ def mock_environment(monkeypatch) -> Iterator[None]:
             monkeypatch.setenv(var, value)
 
 
-class MockFileSystem:
-    """Mock filesystem for testing file operations without actual I/O."""
+class TestFileSystem:
+    """Helper filesystem for testing file operations using real I/O operations.
+    
+    This class uses real file operations via tmp_path, following the NO_MOCKING_POLICY.
+    It provides convenience methods for creating test files in isolated temporary directories.
+    """
 
     def __init__(self, tmp_path: Path):
         self.tmp_path = tmp_path
@@ -125,9 +129,12 @@ class MockFileSystem:
 
 
 @pytest.fixture(scope="function")
-def mock_filesystem(isolated_tmp_dir) -> MockFileSystem:
-    """Provide a mock filesystem for testing."""
-    return MockFileSystem(isolated_tmp_dir)
+def test_filesystem(isolated_tmp_dir) -> TestFileSystem:
+    """Provide a test filesystem helper for testing.
+    
+    Uses real file operations via tmp_path, following NO_MOCKING_POLICY.
+    """
+    return TestFileSystem(isolated_tmp_dir)
 
 
 # Pytest hooks for enhanced test reporting

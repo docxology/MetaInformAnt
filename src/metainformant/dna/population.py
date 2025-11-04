@@ -306,6 +306,151 @@ def hudson_fst(pop1: Sequence[str], pop2: Sequence[str]) -> float:
     return max(0.0, min(1.0, fst))
 
 
+def fu_and_li_d_star_from_sequences(seqs: Sequence[str]) -> float:
+    """Calculate Fu & Li's D* from sequences.
+    
+    Wrapper function that computes D* from DNA sequences by identifying
+    external (singleton) mutations.
+    
+    Args:
+        seqs: Sequence of DNA sequences (strings)
+    
+    Returns:
+        Fu & Li's D* statistic. Returns 0.0 if insufficient data.
+    
+    Examples:
+        >>> seqs = ["AAAA", "AAAT", "AATT"]
+        >>> d_star = fu_and_li_d_star_from_sequences(seqs)
+        >>> isinstance(d_star, float)
+        True
+    """
+    from metainformant.math.coalescent import fu_and_li_d_star
+    
+    if len(seqs) < 2:
+        return 0.0
+    
+    L = min(len(s) for s in seqs)
+    if L == 0:
+        return 0.0
+    
+    # Count segregating sites and external mutations (singletons)
+    segregating = 0
+    external_mutations = 0
+    
+    for pos in range(L):
+        column = [s[pos] for s in seqs]
+        unique_bases = set(column)
+        
+        if len(unique_bases) > 1:
+            segregating += 1
+            # Count singletons (external mutations)
+            for base in unique_bases:
+                if column.count(base) == 1:
+                    external_mutations += 1
+    
+    if segregating == 0:
+        return 0.0
+    
+    return fu_and_li_d_star(
+        num_segregating_sites=segregating,
+        num_external_mutations=external_mutations,
+        sample_size=len(seqs),
+    )
+
+
+def fu_and_li_f_star_from_sequences(seqs: Sequence[str]) -> float:
+    """Calculate Fu & Li's F* from sequences.
+    
+    Wrapper function that computes F* from DNA sequences.
+    
+    Args:
+        seqs: Sequence of DNA sequences (strings)
+    
+    Returns:
+        Fu & Li's F* statistic. Returns 0.0 if insufficient data.
+    
+    Examples:
+        >>> seqs = ["AAAA", "AAAT", "AATT"]
+        >>> f_star = fu_and_li_f_star_from_sequences(seqs)
+        >>> isinstance(f_star, float)
+        True
+    """
+    from metainformant.math.coalescent import fu_and_li_f_star
+    
+    if len(seqs) < 2:
+        return 0.0
+    
+    L = min(len(s) for s in seqs)
+    if L == 0:
+        return 0.0
+    
+    # Count segregating sites and external mutations
+    segregating = 0
+    external_mutations = 0
+    
+    for pos in range(L):
+        column = [s[pos] for s in seqs]
+        unique_bases = set(column)
+        
+        if len(unique_bases) > 1:
+            segregating += 1
+            for base in unique_bases:
+                if column.count(base) == 1:
+                    external_mutations += 1
+    
+    if segregating == 0:
+        return 0.0
+    
+    pi = nucleotide_diversity(seqs)
+    
+    return fu_and_li_f_star(
+        num_segregating_sites=segregating,
+        num_external_mutations=external_mutations,
+        pairwise_diversity=pi,
+        sample_size=len(seqs),
+    )
+
+
+def fay_wu_h_from_sequences(seqs: Sequence[str]) -> float:
+    """Calculate Fay & Wu's H from sequences.
+    
+    Wrapper function that computes H from DNA sequences.
+    Note: Full H requires ancestral state; this is an approximation.
+    
+    Args:
+        seqs: Sequence of DNA sequences (strings)
+    
+    Returns:
+        Fay & Wu's H statistic. Returns 0.0 if insufficient data.
+    
+    Examples:
+        >>> seqs = ["AAAA", "AAAT", "AATT"]
+        >>> h = fay_wu_h_from_sequences(seqs)
+        >>> isinstance(h, float)
+        True
+    """
+    from metainformant.math.coalescent import fay_wu_h
+    
+    if len(seqs) < 2:
+        return 0.0
+    
+    L = min(len(s) for s in seqs)
+    if L == 0:
+        return 0.0
+    
+    segregating = segregating_sites(seqs)
+    pi = nucleotide_diversity(seqs)
+    
+    if segregating == 0:
+        return 0.0
+    
+    return fay_wu_h(
+        num_segregating_sites=segregating,
+        pairwise_diversity=pi,
+        sample_size=len(seqs),
+    )
+
+
 def _allele_freq(alleles: Sequence[str]) -> float:
     """Calculate allele frequency of non-reference allele.
     

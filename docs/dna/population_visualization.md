@@ -2,7 +2,7 @@
 
 Comprehensive visualization functions for population genetics analysis.
 
-**Functions**: `plot_diversity_comparison`, `plot_tajimas_d_comparison`, `plot_fst_comparison`, `plot_pca_results`, `plot_kinship_matrix`, `plot_site_frequency_spectrum`, `plot_neutrality_test_summary`, `plot_demographic_comparison`, `plot_summary_statistics_grid`, `plot_linkage_disequilibrium_decay`.
+**Functions**: `plot_diversity_comparison`, `plot_tajimas_d_comparison`, `plot_fst_comparison`, `plot_pca_results`, `plot_kinship_matrix`, `plot_site_frequency_spectrum`, `plot_neutrality_test_summary`, `plot_demographic_comparison`, `plot_summary_statistics_grid`, `plot_linkage_disequilibrium_decay`, `plot_allele_frequency_spectrum`, `plot_pairwise_distance_distribution`, `plot_heterozygosity_distribution`, `plot_statistic_distribution`, `plot_pi_vs_theta`, `plot_statistic_correlation_matrix`, `plot_regression_analysis`, `plot_statistic_relationships`, `plot_fst_matrix`, `plot_admixture_plot`, `plot_population_structure_tree`, `plot_isolation_by_distance`, `plot_three_population_f3`, `plot_neutrality_test_suite`, `plot_hardy_weinberg_test`, `plot_bootstrap_distribution`, `plot_permutation_test`, `plot_outlier_detection`.
 
 ## Overview
 
@@ -429,3 +429,173 @@ fig.savefig("output/combined.png", dpi=300)
 - [`dna.population_analysis`](population_workflows.md) - Analysis workflows
 - [`visualization.plots`](../visualization/plots.md) - General plotting utilities
 
+
+## Additional Visualization Functions
+
+### Distribution Plots
+
+#### `plot_allele_frequency_spectrum(sfs, ...)`
+
+Plot allele frequency spectrum (SFS) showing the distribution of allele frequencies.
+
+**Parameters**:
+- `sfs`: Site frequency spectrum (counts of sites at each frequency)
+- `unfolded`: Whether SFS is unfolded (requires ancestral state)
+- `output_path`: Optional path to save figure
+
+#### `plot_pairwise_distance_distribution(pairwise_distances, ...)`
+
+Plot distribution of pairwise nucleotide differences.
+
+**Parameters**:
+- `pairwise_distances`: Pairwise distance values
+- `bins`: Number of histogram bins (default: 30)
+
+#### `plot_heterozygosity_distribution(heterozygosity_values, ...)`
+
+Plot distribution of observed heterozygosity across sites.
+
+**Parameters**:
+- `heterozygosity_values`: Per-site heterozygosity values
+- `bins`: Number of histogram bins (default: 30)
+
+#### `plot_statistic_distribution(statistic_values, ...)`
+
+Plot distribution of statistics across scenarios with multiple plot types.
+
+**Parameters**:
+- `statistic_values`: Dictionary mapping scenario names to statistic values
+- `plot_type`: Type of plot ("histogram", "violin", "box")
+
+### Correlation and Relationship Plots
+
+#### `plot_pi_vs_theta(pi_values, theta_values, ...)`
+
+Plot scatter of π vs θ_W with expected 1:1 line and regression analysis.
+
+**Parameters**:
+- `pi_values`: Nucleotide diversity (π) values
+- `theta_values`: Watterson's theta (θ_W) values
+
+#### `plot_statistic_correlation_matrix(statistics, ...)`
+
+Plot correlation heatmap between statistics with hierarchical clustering.
+
+**Parameters**:
+- `statistics`: Dictionary mapping statistic names to values
+
+#### `plot_regression_analysis(x_values, y_values, ...)`
+
+Plot regression analysis with confidence bands and residual analysis.
+
+**Parameters**:
+- `x_values`: Independent variable values
+- `y_values`: Dependent variable values
+- `x_label`: Label for x-axis
+- `y_label`: Label for y-axis
+
+#### `plot_statistic_relationships(statistics, ...)`
+
+Plot multi-panel relationship plots between statistics.
+
+**Parameters**:
+- `statistics`: Dictionary mapping statistic names to values
+
+### Multi-Population Visualizations
+
+#### `plot_fst_matrix(fst_matrix, population_names, ...)`
+
+Plot heatmap of pairwise Fst values with hierarchical clustering dendrogram.
+
+**Parameters**:
+- `fst_matrix`: 2D array or nested dict of Fst values
+- `population_names`: Names of populations
+
+#### `plot_admixture_plot(ancestry_proportions, ...)`
+
+Plot ancestry proportions as stacked bar plot or heatmap.
+
+**Parameters**:
+- `ancestry_proportions`: List of ancestry proportion lists per individual
+- `population_names`: Names of populations/components
+
+#### `plot_population_structure_tree(fst_matrix, ...)`
+
+Plot neighbor-joining or UPGMA tree based on Fst or genetic distances.
+
+**Parameters**:
+- `fst_matrix`: Fst matrix or distance matrix
+- `population_names`: Names of populations
+
+#### `plot_isolation_by_distance(fst_values, geographic_distances, ...)`
+
+Plot Fst vs geographic distance with Mantel test visualization.
+
+**Parameters**:
+- `fst_values`: Pairwise Fst values
+- `geographic_distances`: Corresponding geographic distances
+
+#### `plot_three_population_f3(f3_values, ...)`
+
+Plot F3-statistic for admixture testing.
+
+**Parameters**:
+- `f3_values`: Dictionary of F3 values (key format: "Pop1,Pop2,Pop3")
+
+### Statistical Test Visualizations
+
+#### `plot_neutrality_test_suite(test_results, ...)`
+
+Plot comprehensive panel of all neutrality tests with significance indicators.
+
+**Parameters**:
+- `test_results`: Dictionary mapping test names to result dictionaries
+
+#### `plot_hardy_weinberg_test(hwe_results, ...)`
+
+Plot Hardy-Weinberg test results with chi-square and p-value distributions.
+
+**Parameters**:
+- `hwe_results`: HWE test results (single dict or list of dicts)
+
+#### `plot_bootstrap_distribution(bootstrap_values, observed_value, ...)`
+
+Plot bootstrap distribution with confidence interval visualization.
+
+**Parameters**:
+- `bootstrap_values`: Bootstrap replicate values
+- `observed_value`: Observed statistic value
+- `confidence_level`: Confidence level for CI
+
+#### `plot_permutation_test(permuted_values, observed_value, ...)`
+
+Plot permuted vs observed distribution with p-value calculation.
+
+**Parameters**:
+- `permuted_values`: Permuted statistic values
+- `observed_value`: Observed statistic value
+- `p_value`: Optional p-value to display
+
+#### `plot_outlier_detection(statistic_values, outlier_indices, ...)`
+
+Plot Manhattan plot of statistics with outliers highlighted.
+
+**Parameters**:
+- `statistic_values`: Statistic values per locus
+- `outlier_indices`: Indices of outlier loci
+- `positions`: Genomic positions (if None, uses indices)
+- `fdr_threshold`: FDR threshold line
+
+## Complete Function List
+
+The module now includes **28 visualization functions** covering:
+
+1. **Basic Comparisons**: Diversity, Tajima's D, Fst, summary statistics
+2. **Population Structure**: PCA, kinship matrices, population trees
+3. **Distribution Plots**: Allele frequencies, pairwise distances, heterozygosity
+4. **Correlation Analysis**: π vs θ, correlation matrices, regression plots
+5. **Multi-Population**: Fst matrices, admixture plots, isolation by distance
+6. **Statistical Tests**: Neutrality test suites, HWE tests, bootstrap/permutation plots
+7. **Specialized**: Site frequency spectra, linkage disequilibrium decay, demographic models
+
+All functions follow a consistent API with optional `output_path` for saving figures and customizable titles and figure sizes.

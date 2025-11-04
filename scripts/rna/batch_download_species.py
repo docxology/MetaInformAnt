@@ -74,8 +74,13 @@ from metainformant.core.logging import get_logger
 logger = get_logger("batch_download")
 
 
-def download_species_samples(config_path: Path, species_name: str) -> tuple[bool, str, dict]:
+def download_species_samples(config_path: Path, species_name: str, threads_override: int | None = None) -> tuple[bool, str, dict]:
     """Download samples for a single species using amalgkit getfastq.
+    
+    Args:
+        config_path: Path to species config file
+        species_name: Display name for species
+        threads_override: Optional override for thread count (defaults to config value)
     
     Returns:
         Tuple of (success: bool, message: str, stats: dict)
@@ -101,7 +106,7 @@ def download_species_samples(config_path: Path, species_name: str) -> tuple[bool
         getfastq_params = dict(cfg.per_step.get("getfastq", {}))
         getfastq_params["out_dir"] = str(Path(getfastq_params.get("out_dir", cfg.work_dir / "fastq")).absolute())
         getfastq_params["metadata"] = str(metadata_file.absolute())
-        getfastq_params["threads"] = cfg.threads
+        getfastq_params["threads"] = threads_override if threads_override is not None else cfg.threads
         
         # Enable cloud acceleration if configured
         if cfg.per_step.get("getfastq", {}).get("accelerate", True):
@@ -114,7 +119,7 @@ def download_species_samples(config_path: Path, species_name: str) -> tuple[bool
         
         species_logger.info(f"Running amalgkit getfastq for {species_name}...")
         species_logger.info(f"  Output directory: {getfastq_params['out_dir']}")
-        species_logger.info(f"  Threads: {getfastq_params['threads']}")
+        species_logger.info(f"  Threads: {getfastq_params['threads']} {'(overridden)' if threads_override else ''}")
         
         # Run getfastq
         result = run_amalgkit(
@@ -145,7 +150,51 @@ def download_species_samples(config_path: Path, species_name: str) -> tuple[bool
 
 
 def main():
-    """Download samples for multiple species in parallel batches."""
+    """Download samples for multiple species in parallel batches.
+    
+    Configuration:
+        --species-count: Number of species to download in parallel (default: 3)
+        --threads-per-species: Threads per species download (default: 10)
+        --max-species: Maximum number of species to process (default: all)
+    """
+    import argparse
+    
+    parser = argparse.ArgumentParser(
+        description="Batch download samples for multiple species in parallel",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Default: 3 species, 10 threads each (30 total downloads)
+  python3 scripts/rna/batch_download_species.py
+  
+  # 4 species, 12 threads each (48 total downloads)
+  python3 scripts/rna/batch_download_species.py --species-count 4 --threads-per-species 12
+  
+  # 2 species, 8 threads each (16 total downloads)
+  python3 scripts/rna/batch_download_species.py --species-count 2 --threads-per-species 8
+        """
+    )
+    parser.add_argument(
+        "--species-count",
+        type=int,
+        default=3,
+        help="Number of species to download in parallel (default: 3)"
+    )
+    parser.add_argument(
+        "--threads-per-species",
+        type=int,
+        default=10,
+        help="Number of threads per species download (default: 10)"
+    )
+    parser.add_argument(
+        "--max-species",
+        type=int,
+        default=None,
+        help="Maximum number of species to process (default: all)"
+    )
+    
+    args = parser.parse_args()
+    
     repo_root = Path(__file__).parent.parent.parent.resolve()
     config_dir = repo_root / "config" / "amalgkit"
     
@@ -170,12 +219,18 @@ def main():
         logger.error("⚠️  No species configs found")
         return 1
     
+    # Limit species if requested
+    if args.max_species:
+        species_configs = species_configs[:args.max_species]
+    
     print("\n" + "=" * 80)
     print("BATCH DOWNLOAD: MULTI-SPECIES PARALLEL DOWNLOADS")
     print("=" * 80)
     print(f"Date: {datetime.now()}")
     print(f"Species discovered: {len(species_configs)}")
-    print(f"Parallel downloads: 4 species at once")
+    print(f"Parallel downloads: {args.species_count} species at once")
+    print(f"Threads per species: {args.threads_per_species}")
+    print(f"Total concurrent downloads: {args.species_count * args.threads_per_species}")
     print("=" * 80 + "\n")
     
     # Check if amalgkit is available
@@ -190,8 +245,9 @@ def main():
     logger.info(f"✅ amalgkit available: {amalgkit_msg[:100] if len(amalgkit_msg) > 100 else amalgkit_msg}")
     print()
     
-    # Process species in batches of 4
-    batch_size = 4
+    # Process species in batches
+    batch_size = args.species_count
+    threads_per_species = args.threads_per_species
     total_success = 0
     total_failed = 0
     results = {}
@@ -212,7 +268,7 @@ def main():
         # Run downloads in parallel
         with ThreadPoolExecutor(max_workers=len(batch)) as executor:
             futures = {
-                executor.submit(download_species_samples, config_path, species_name): (species_name, config_path)
+                executor.submit(download_species_samples, config_path, species_name, threads_per_species): (species_name, config_path)
                 for species_name, config_path in batch
             }
             

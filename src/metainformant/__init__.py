@@ -27,4 +27,6 @@ __all__ = [
     "ml",
     "multiomics",
     "gwas",
+    "life_events",
+    "information",
 ]

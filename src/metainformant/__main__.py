@@ -191,6 +191,42 @@ def main() -> None:
     ml_run.add_argument("--regress", action="store_true", help="Perform regression")
     ml_run.add_argument("--feature-selection", action="store_true", help="Perform feature selection")
 
+    # information subcommand
+    information_parser = subparsers.add_parser("information", help="Information theory operations")
+    information_sub = information_parser.add_subparsers(dest="information_cmd")
+    information_entropy = information_sub.add_parser("entropy", help="Calculate Shannon entropy")
+    information_entropy.add_argument("--input", type=Path, required=True, help="Input sequence file or data file")
+    information_entropy.add_argument("--output", type=Path, default=Path("output/information"), help="Output directory")
+    information_entropy.add_argument("--k", type=int, default=1, help="K-mer size for sequence entropy")
+    information_mi = information_sub.add_parser("mutual-information", help="Calculate mutual information")
+    information_mi.add_argument("--x", type=Path, required=True, help="First variable/data file")
+    information_mi.add_argument("--y", type=Path, required=True, help="Second variable/data file")
+    information_mi.add_argument("--output", type=Path, default=Path("output/information"), help="Output directory")
+    information_profile = information_sub.add_parser("profile", help="Calculate information profile")
+    information_profile.add_argument("--sequences", type=Path, required=True, help="Input sequences file")
+    information_profile.add_argument("--output", type=Path, default=Path("output/information"), help="Output directory")
+    information_profile.add_argument("--k", type=int, default=1, help="K-mer size")
+    information_profile.add_argument("--visualize", action="store_true", help="Generate visualization plots")
+
+    # life-events subcommand
+    life_events_parser = subparsers.add_parser("life-events", help="Life course analysis operations")
+    life_events_sub = life_events_parser.add_subparsers(dest="life_events_cmd")
+    life_events_embed = life_events_sub.add_parser("embed", help="Learn event embeddings")
+    life_events_embed.add_argument("--input", type=Path, required=True, help="Event sequence file (JSON)")
+    life_events_embed.add_argument("--output", type=Path, default=Path("output/life_events/embeddings"), help="Output directory")
+    life_events_embed.add_argument("--embedding-dim", type=int, default=100, help="Embedding dimension")
+    life_events_embed.add_argument("--window-size", type=int, default=5, help="Context window size")
+    life_events_embed.add_argument("--epochs", type=int, default=10, help="Training epochs")
+    life_events_predict = life_events_sub.add_parser("predict", help="Predict life outcomes")
+    life_events_predict.add_argument("--events", type=Path, required=True, help="Event sequences file")
+    life_events_predict.add_argument("--model", type=Path, help="Pre-trained model path")
+    life_events_predict.add_argument("--outcome", choices=["mortality", "personality", "health"], help="Outcome type to predict")
+    life_events_predict.add_argument("--output", type=Path, default=Path("output/life_events/predictions"), help="Output directory")
+    life_events_interpret = life_events_sub.add_parser("interpret", help="Interpret predictions")
+    life_events_interpret.add_argument("--model", type=Path, required=True, help="Model path")
+    life_events_interpret.add_argument("--sequences", type=Path, required=True, help="Event sequences file")
+    life_events_interpret.add_argument("--output", type=Path, default=Path("output/life_events/interpretation"), help="Output directory")
+
     args = parser.parse_args()
 
     if args.command == "setup":
@@ -469,6 +505,177 @@ def main() -> None:
             if args.feature_selection:
                 cmd.append("--feature-selection")
             sys.exit(subprocess.run(cmd).returncode)
+
+    if args.command == "information":
+        from metainformant.core import io, paths
+        from metainformant.information import (
+            analyze_sequence_information,
+            information_profile,
+            mutual_information,
+            shannon_entropy,
+        )
+        from metainformant.information.visualization import plot_information_profile
+
+        if args.information_cmd == "entropy":
+            # Read input data
+            input_path = Path(args.input)
+            output_dir = Path(args.output)
+            paths.ensure_directory(output_dir)
+
+            if input_path.suffix == ".fasta" or input_path.suffix == ".fa":
+                # Read FASTA file
+                from metainformant.dna import sequences
+
+                seqs = sequences.read_fasta(input_path)
+                sequences_list = list(seqs.values())
+            else:
+                # Assume text file with one sequence per line
+                with open(input_path) as f:
+                    sequences_list = [line.strip() for line in f if line.strip()]
+
+            # Calculate entropy for each sequence
+            results = []
+            for seq in sequences_list:
+                analysis = analyze_sequence_information(seq, k_values=[args.k])
+                entropy = analysis["kmer_analyses"][args.k]["entropy"]
+                results.append({"sequence": seq[:50] + "..." if len(seq) > 50 else seq, "entropy": entropy})
+
+            # Save results
+            output_file = output_dir / "entropy_results.json"
+            io.dump_json(results, output_file)
+            print(f"Entropy analysis complete. Results saved to {output_file}")
+            return
+
+        if args.information_cmd == "mutual-information":
+            # Read input data
+            x_path = Path(args.x)
+            y_path = Path(args.y)
+            output_dir = Path(args.output)
+            paths.ensure_directory(output_dir)
+
+            # Read sequences or data
+            with open(x_path) as f:
+                x_data = [line.strip() for line in f if line.strip()]
+            with open(y_path) as f:
+                y_data = [line.strip() for line in f if line.strip()]
+
+            if len(x_data) != len(y_data):
+                print(f"Error: X and Y must have the same length ({len(x_data)} vs {len(y_data)})")
+                sys.exit(1)
+
+            # Calculate mutual information
+            mi = mutual_information(x_data, y_data)
+
+            # Save results
+            results = {"mutual_information": mi, "n_samples": len(x_data)}
+            output_file = output_dir / "mutual_information_results.json"
+            io.dump_json(results, output_file)
+            print(f"Mutual information: {mi:.6f} bits")
+            print(f"Results saved to {output_file}")
+            return
+
+        if args.information_cmd == "profile":
+            # Read sequences
+            sequences_path = Path(args.sequences)
+            output_dir = Path(args.output)
+            paths.ensure_directory(output_dir)
+
+            if sequences_path.suffix == ".fasta" or sequences_path.suffix == ".fa":
+                from metainformant.dna import sequences
+
+                seqs = sequences.read_fasta(sequences_path)
+                sequences_list = list(seqs.values())
+            else:
+                with open(sequences_path) as f:
+                    sequences_list = [line.strip() for line in f if line.strip()]
+
+            # Calculate information profile
+            profile = information_profile(sequences_list, k=args.k)
+
+            # Save results
+            output_file = output_dir / "information_profile.json"
+            io.dump_json(profile, output_file)
+            print(f"Information profile complete. Entropy: {profile['entropy']:.6f} bits")
+            print(f"Results saved to {output_file}")
+
+            # Generate visualization if requested
+            if args.visualize:
+                try:
+                    plot_info = plot_information_profile(profile, output_path=output_dir / "profile.png")
+                    print(f"Visualization saved to {plot_info['output_path']}")
+                except Exception as e:
+                    print(f"Warning: Could not generate visualization: {e}")
+
+            return
+
+    if args.command == "life-events":
+        if args.life_events_cmd == "embed":
+            from .life_events import EventDatabase, learn_event_embeddings
+            from .core import io, paths
+
+            # Load event sequences
+            data = io.load_json(args.input)
+            if isinstance(data, dict) and "sequences" in data:
+                database = EventDatabase.from_dict(data)
+            else:
+                # Assume it's a list of sequences
+                from .life_events.events import EventSequence
+                sequences = [EventSequence.from_dict(s) if isinstance(s, dict) else s for s in data]
+                database = EventDatabase(sequences=sequences)
+
+            # Convert to token sequences
+            sequences_tokens = []
+            for seq in database.sequences:
+                tokens = [f"{e.domain}:{e.event_type}" for e in seq.events]
+                sequences_tokens.append(tokens)
+
+            # Learn embeddings
+            embeddings = learn_event_embeddings(
+                sequences_tokens,
+                embedding_dim=args.embedding_dim,
+                window_size=args.window_size,
+                epochs=args.epochs
+            )
+
+            # Save embeddings
+            from .core.paths import prepare_file_path
+            output_file = args.output / "embeddings.json"
+            prepare_file_path(output_file)
+            embeddings_dict = {k: v.tolist() for k, v in embeddings.items()}
+            io.dump_json(embeddings_dict, output_file, indent=2)
+            print(f"Learned {len(embeddings)} event embeddings. Saved to {args.output}")
+            return
+
+        if args.life_events_cmd == "predict":
+            import numpy as np
+            from .life_events import EventDatabase, EventSequencePredictor
+            from .core import io
+
+            # Load event sequences
+            data = io.load_json(args.events)
+            if isinstance(data, dict) and "sequences" in data:
+                database = EventDatabase.from_dict(data)
+            else:
+                from .life_events.events import EventSequence
+                sequences = [EventSequence.from_dict(s) if isinstance(s, dict) else s for s in data]
+                database = EventDatabase(sequences=sequences)
+
+            # Convert to token sequences
+            sequences_tokens = []
+            for seq in database.sequences:
+                tokens = [f"{e.domain}:{e.event_type}" for e in seq.events]
+                sequences_tokens.append(tokens)
+
+            # Note: Full model persistence would require saving/loading model weights
+            # For now, demonstrate interface
+            print("Note: Prediction requires a trained model.")
+            print("Use the analyze_life_course workflow function to train models.")
+            print("Full model persistence will be implemented in future updates.")
+            sys.exit(0)
+
+        if args.life_events_cmd == "interpret":
+            print("Interpretation functionality will be implemented in Phase 3")
+            sys.exit(0)
 
     if args.command == "tests":
         exit_code = run_all_tests(args.pytest_args)

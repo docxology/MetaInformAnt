@@ -44,6 +44,7 @@ The RNA domain provides tools for transcriptomic analysis, workflow orchestratio
 
 ### Getting Started
 - **`MULTI_SPECIES_QUICK_START.md`**: Complete guide for production workflows ⭐
+- **`BATCH_DOWNLOAD_CONFIGURATION.md`**: Configurable batch download guide ⭐⭐
 - **`ANT_SPECIES_DISCOVERY.md`**: Comprehensive discovery system documentation 🐜
 - **`ANT_DISCOVERY_QUICK_REF.md`**: Quick reference for discovery system
 - **`SETUP.md`**: Installation and environment setup
@@ -91,7 +92,18 @@ cfg = AmalgkitWorkflowConfig(
 results = workflow.execute_workflow(cfg)
 ```
 
-**Command-line usage** (production ENA-based workflow with auto-activation):
+**Command-line usage** (configurable batch download for multiple species):
+```bash
+# Default: 3 species × 10 threads = 30 total downloads
+python3 scripts/rna/batch_download_species.py
+
+# Custom configuration
+python3 scripts/rna/batch_download_species.py --species-count 4 --threads-per-species 12
+```
+
+See `docs/rna/BATCH_DOWNLOAD_CONFIGURATION.md` for complete configuration guide.
+
+**Production ENA-based workflow** (single species focus):
 ```bash
 # Production workflow - no manual venv activation needed
 python3 scripts/rna/workflow_ena_integrated.py \

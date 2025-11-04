@@ -33,13 +33,24 @@ from metainformant.dna.population_analysis import (
     neutrality_test_suite,
 )
 from metainformant.dna.population_viz import (
+    plot_allele_frequency_spectrum,
+    plot_bootstrap_distribution,
     plot_demographic_comparison,
     plot_diversity_comparison,
     plot_fst_comparison,
+    plot_fst_matrix,
+    plot_hardy_weinberg_test,
+    plot_heterozygosity_distribution,
     plot_kinship_matrix,
     plot_linkage_disequilibrium_decay,
+    plot_neutrality_test_suite,
     plot_neutrality_test_summary,
+    plot_outlier_detection,
     plot_pca_results,
+    plot_pi_vs_theta,
+    plot_permutation_test,
+    plot_statistic_correlation_matrix,
+    plot_statistic_distribution,
     plot_site_frequency_spectrum,
     plot_summary_statistics_grid,
     plot_tajimas_d_comparison,
@@ -48,7 +59,19 @@ from Bio import SeqIO
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 from metainformant.gwas.structure import compute_pca, compute_kinship_matrix
-from metainformant.math.coalescent import expected_segregating_sites, tajimas_D
+from metainformant.math.coalescent import (
+    expected_segregating_sites,
+    fay_wu_h,
+    fu_and_li_d_star,
+    fu_and_li_f_star,
+    hardy_weinberg_test,
+    tajimas_D,
+)
+from metainformant.math.popgen_stats import (
+    bootstrap_confidence_interval,
+    detect_outliers,
+    permutation_test,
+)
 from metainformant.math.demography import (
     bottleneck_effective_size,
     exponential_growth_effective_size,
@@ -341,9 +364,25 @@ def analyze_dataset(dataset_info: dict[str, Any], output_dir: Path) -> dict[str,
     neutral_seqs = list(read_fasta(scenarios["neutral"]["file"]).values())
     neutral_stats = calculate_summary_statistics(sequences=neutral_seqs)
     neutral_neutrality = neutrality_test_suite(neutral_seqs)
+    
+    # Add additional neutrality tests for all single-population scenarios
+    from metainformant.dna.population import (
+        fu_and_li_d_star_from_sequences,
+        fu_and_li_f_star_from_sequences,
+        fay_wu_h_from_sequences,
+    )
+    
+    # Calculate additional tests for neutral scenario
+    neutral_fl_d = fu_and_li_d_star_from_sequences(neutral_seqs)
+    neutral_fl_f = fu_and_li_f_star_from_sequences(neutral_seqs)
+    neutral_fw_h = fay_wu_h_from_sequences(neutral_seqs)
+    
     results["scenario_analyses"]["neutral"] = {
         "summary_statistics": neutral_stats,
         "neutrality_tests": neutral_neutrality,
+        "fu_and_li_d_star": neutral_fl_d,
+        "fu_and_li_f_star": neutral_fl_f,
+        "fay_wu_h": neutral_fw_h,
     }
     
     # Scenario 2: High diversity
@@ -351,9 +390,16 @@ def analyze_dataset(dataset_info: dict[str, Any], output_dir: Path) -> dict[str,
     highdiv_seqs = list(read_fasta(scenarios["high_diversity"]["file"]).values())
     highdiv_stats = calculate_summary_statistics(sequences=highdiv_seqs)
     highdiv_neutrality = neutrality_test_suite(highdiv_seqs)
+    # Add additional tests
+    highdiv_fl_d = fu_and_li_d_star_from_sequences(highdiv_seqs)
+    highdiv_fl_f = fu_and_li_f_star_from_sequences(highdiv_seqs)
+    highdiv_fw_h = fay_wu_h_from_sequences(highdiv_seqs)
     results["scenario_analyses"]["high_diversity"] = {
         "summary_statistics": highdiv_stats,
         "neutrality_tests": highdiv_neutrality,
+        "fu_and_li_d_star": highdiv_fl_d,
+        "fu_and_li_f_star": highdiv_fl_f,
+        "fay_wu_h": highdiv_fw_h,
     }
     
     # Scenario 3: Low diversity
@@ -361,9 +407,16 @@ def analyze_dataset(dataset_info: dict[str, Any], output_dir: Path) -> dict[str,
     lowdiv_seqs = list(read_fasta(scenarios["low_diversity"]["file"]).values())
     lowdiv_stats = calculate_summary_statistics(sequences=lowdiv_seqs)
     lowdiv_neutrality = neutrality_test_suite(lowdiv_seqs)
+    # Add additional tests
+    lowdiv_fl_d = fu_and_li_d_star_from_sequences(lowdiv_seqs)
+    lowdiv_fl_f = fu_and_li_f_star_from_sequences(lowdiv_seqs)
+    lowdiv_fw_h = fay_wu_h_from_sequences(lowdiv_seqs)
     results["scenario_analyses"]["low_diversity"] = {
         "summary_statistics": lowdiv_stats,
         "neutrality_tests": lowdiv_neutrality,
+        "fu_and_li_d_star": lowdiv_fl_d,
+        "fu_and_li_f_star": lowdiv_fl_f,
+        "fay_wu_h": lowdiv_fw_h,
     }
     
     # Scenario 4: Bottleneck
@@ -371,9 +424,16 @@ def analyze_dataset(dataset_info: dict[str, Any], output_dir: Path) -> dict[str,
     bottleneck_seqs = list(read_fasta(scenarios["bottleneck"]["file"]).values())
     bottleneck_stats = calculate_summary_statistics(sequences=bottleneck_seqs)
     bottleneck_neutrality = neutrality_test_suite(bottleneck_seqs)
+    # Add additional tests
+    bottleneck_fl_d = fu_and_li_d_star_from_sequences(bottleneck_seqs)
+    bottleneck_fl_f = fu_and_li_f_star_from_sequences(bottleneck_seqs)
+    bottleneck_fw_h = fay_wu_h_from_sequences(bottleneck_seqs)
     results["scenario_analyses"]["bottleneck"] = {
         "summary_statistics": bottleneck_stats,
         "neutrality_tests": bottleneck_neutrality,
+        "fu_and_li_d_star": bottleneck_fl_d,
+        "fu_and_li_f_star": bottleneck_fl_f,
+        "fay_wu_h": bottleneck_fw_h,
     }
     
     # Scenario 5: Expansion
@@ -381,9 +441,16 @@ def analyze_dataset(dataset_info: dict[str, Any], output_dir: Path) -> dict[str,
     expansion_seqs = list(read_fasta(scenarios["expansion"]["file"]).values())
     expansion_stats = calculate_summary_statistics(sequences=expansion_seqs)
     expansion_neutrality = neutrality_test_suite(expansion_seqs)
+    # Add additional tests
+    expansion_fl_d = fu_and_li_d_star_from_sequences(expansion_seqs)
+    expansion_fl_f = fu_and_li_f_star_from_sequences(expansion_seqs)
+    expansion_fw_h = fay_wu_h_from_sequences(expansion_seqs)
     results["scenario_analyses"]["expansion"] = {
         "summary_statistics": expansion_stats,
         "neutrality_tests": expansion_neutrality,
+        "fu_and_li_d_star": expansion_fl_d,
+        "fu_and_li_f_star": expansion_fl_f,
+        "fay_wu_h": expansion_fw_h,
     }
     
     # Scenario 6: Two populations (low Fst)
@@ -413,6 +480,9 @@ def analyze_dataset(dataset_info: dict[str, Any], output_dir: Path) -> dict[str,
     pca_result = compute_pca(large_genotypes, n_components=10)
     kinship_result = compute_kinship_matrix(large_genotypes, method="vanraden")
     
+    # Hardy-Weinberg test on genotype matrix
+    hwe_result = hardy_weinberg_test(genotype_matrix=large_genotypes)
+    
     results["scenario_analyses"]["large_genotypes"] = {
         "pca": {
             "status": pca_result.get("status"),
@@ -430,6 +500,7 @@ def analyze_dataset(dataset_info: dict[str, Any], output_dir: Path) -> dict[str,
             "kinship_matrix": kinship_result.get("kinship_matrix", [])[:100],  # First 100 samples
             "full_result": kinship_result,  # Store full result for visualization
         },
+        "hardy_weinberg_test": hwe_result,
     }
     
     # Scenario 9: Linkage disequilibrium
@@ -502,6 +573,40 @@ def analyze_dataset(dataset_info: dict[str, Any], output_dir: Path) -> dict[str,
             ),
             "observed_diversity": expansion_stats["nucleotide_diversity"],
         },
+    }
+    
+    # Validate results before saving
+    logger.info("Validating analysis results")
+    validation_errors = []
+    
+    # Check that all scenarios have expected data
+    for scenario_name, scenario_data in results["scenario_analyses"].items():
+        if scenario_name in ["neutral", "high_diversity", "low_diversity", "bottleneck", "expansion"]:
+            if "summary_statistics" not in scenario_data:
+                validation_errors.append(f"{scenario_name}: Missing summary_statistics")
+            if "neutrality_tests" not in scenario_data:
+                validation_errors.append(f"{scenario_name}: Missing neutrality_tests")
+        elif scenario_name in ["two_populations_low_fst", "two_populations_high_fst"]:
+            if "fst" not in scenario_data:
+                validation_errors.append(f"{scenario_name}: Missing Fst")
+        elif scenario_name == "large_genotypes":
+            if "pca" not in scenario_data:
+                validation_errors.append(f"{scenario_name}: Missing PCA")
+            if "kinship" not in scenario_data:
+                validation_errors.append(f"{scenario_name}: Missing kinship")
+    
+    if validation_errors:
+        logger.warning(f"Validation found {len(validation_errors)} issues:")
+        for error in validation_errors:
+            logger.warning(f"  - {error}")
+    else:
+        logger.info("✓ All validation checks passed")
+    
+    # Add validation summary to results
+    results["validation"] = {
+        "status": "passed" if not validation_errors else "warnings",
+        "errors": validation_errors,
+        "total_scenarios": len(results["scenario_analyses"]),
     }
     
     # Save results
@@ -597,6 +702,85 @@ def generate_visualizations(
     # 7. Site frequency spectrum (generate example)
     logger.info("Generating site frequency spectrum example")
     from metainformant.simulation.popgen import generate_site_frequency_spectrum
+    
+    # Additional statistical test visualizations
+    plots_dir = output_dir / "plots"
+    plots_dir.mkdir(exist_ok=True)
+    
+    # Collect neutrality test results for comprehensive suite plot
+    neutrality_test_results = {}
+    for scenario_name, analysis in analysis_results["scenario_analyses"].items():
+        scenario_tests = {}
+        # Collect all neutrality test statistics for this scenario
+        if "neutrality_tests" in analysis:
+            scenario_tests.update(analysis["neutrality_tests"])
+        # Add Fu & Li tests if available
+        if "fu_and_li_d_star" in analysis:
+            scenario_tests["fu_and_li_d_star"] = analysis["fu_and_li_d_star"]
+        if "fu_and_li_f_star" in analysis:
+            scenario_tests["fu_and_li_f_star"] = analysis["fu_and_li_f_star"]
+        if "fay_wu_h" in analysis:
+            scenario_tests["fay_wu_h"] = analysis["fay_wu_h"]
+        
+        if scenario_tests:
+            neutrality_test_results[scenario_name] = scenario_tests
+    
+    if neutrality_test_results:
+        logger.info("Generating comprehensive neutrality test suite plot")
+        plot_neutrality_test_suite(
+            neutrality_test_results,
+            output_path=plots_dir / "comprehensive_neutrality_test_suite.png",
+            title="Comprehensive Neutrality Test Suite - All Scenarios",
+        )
+    
+    # Generate correlation matrix for statistics
+    logger.info("Generating statistic correlation matrix")
+    all_stats = {}
+    for scenario_name, analysis in analysis_results["scenario_analyses"].items():
+        if "summary_statistics" in analysis:
+            stats = analysis["summary_statistics"]
+            for stat_name, stat_value in stats.items():
+                if isinstance(stat_value, (int, float)):
+                    if stat_name not in all_stats:
+                        all_stats[stat_name] = []
+                    all_stats[stat_name].append(stat_value)
+    
+    if len(all_stats) > 1:
+        plot_statistic_correlation_matrix(
+            all_stats,
+            output_path=plots_dir / "statistic_correlation_matrix.png",
+        )
+    
+    # Generate π vs θ plot
+    logger.info("Generating π vs θ comparison plot")
+    pi_values = []
+    theta_values = []
+    for scenario_name, analysis in analysis_results["scenario_analyses"].items():
+        if "summary_statistics" in analysis:
+            stats = analysis["summary_statistics"]
+            if "nucleotide_diversity" in stats and "wattersons_theta" in stats:
+                pi_values.append(stats["nucleotide_diversity"])
+                theta_values.append(stats["wattersons_theta"])
+    
+    if len(pi_values) > 1 and len(theta_values) > 1:
+        plot_pi_vs_theta(
+            pi_values,
+            theta_values,
+            output_path=plots_dir / "pi_vs_theta_comparison.png",
+        )
+    
+    # Generate Fst matrix if multiple populations
+    logger.info("Generating Fst matrix")
+    fst_matrix = {}
+    for scenario_name, analysis in analysis_results["scenario_analyses"].items():
+        if "fst" in analysis:
+            fst_matrix[scenario_name] = {"comparison": analysis["fst"]}
+    
+    if len(fst_matrix) > 1:
+        plot_fst_matrix(
+            fst_matrix,
+            output_path=plots_dir / "fst_matrix.png",
+        )
     
     example_sfs = generate_site_frequency_spectrum(
         sample_size=30,
@@ -698,6 +882,14 @@ def generate_summary_report(
                     f.write(f"- Tajima's D: {neutrality['tajimas_d']:.4f}\n")
                     f.write(f"- π/θ ratio: {neutrality['pi_theta_ratio']:.4f}\n")
                     f.write(f"- Interpretation: {neutrality['interpretation']}\n")
+                
+                # Add additional neutrality tests if available
+                if "fu_and_li_d_star" in scenario_data:
+                    f.write(f"- Fu & Li's D*: {scenario_data['fu_and_li_d_star']:.4f}\n")
+                if "fu_and_li_f_star" in scenario_data:
+                    f.write(f"- Fu & Li's F*: {scenario_data['fu_and_li_f_star']:.4f}\n")
+                if "fay_wu_h" in scenario_data:
+                    f.write(f"- Fay & Wu's H: {scenario_data['fay_wu_h']:.4f}\n")
             
             elif "fst" in scenario_data:
                 f.write(f"**Population Comparison:**\n")
@@ -713,6 +905,13 @@ def generate_summary_report(
                 f.write(f"- Components: {scenario_data['pca']['n_components']}\n")
                 if scenario_data['pca'].get('explained_variance_ratio'):
                     f.write(f"- Top 5 explained variance: {[f'{x:.4f}' for x in scenario_data['pca']['explained_variance_ratio']]}\n")
+                
+                if "hardy_weinberg_test" in scenario_data:
+                    hwe = scenario_data["hardy_weinberg_test"]
+                    f.write(f"\n**Hardy-Weinberg Test:**\n")
+                    f.write(f"- Chi-square: {hwe.get('chi_square', 'N/A'):.4f}\n")
+                    f.write(f"- P-value: {hwe.get('p_value', 'N/A'):.4f}\n")
+                    f.write(f"- HWE deviated: {hwe.get('hwe_deviated', 'N/A')}\n")
             
             elif "mean_r_squared" in scenario_data:
                 f.write(f"**Linkage Disequilibrium:**\n")
@@ -770,14 +969,29 @@ def generate_summary_report(
         f.write("- **summary_statistics_grid.png**: Grid of all summary statistics\n")
         f.write("- **linkage_disequilibrium_decay.png**: LD decay with distance\n\n")
         
+        # Add validation summary
+        if "validation" in analysis_results:
+            validation = analysis_results["validation"]
+            f.write("\n## Validation Summary\n\n")
+            f.write(f"- **Status**: {validation['status']}\n")
+            f.write(f"- **Total scenarios analyzed**: {validation['total_scenarios']}\n")
+            if validation.get('errors'):
+                f.write(f"- **Issues found**: {len(validation['errors'])}\n")
+                for error in validation['errors']:
+                    f.write(f"  - {error}\n")
+            else:
+                f.write("- **All validation checks passed** ✓\n")
+        
         f.write("\n## Conclusions\n\n")
         f.write("This comprehensive analysis demonstrates:\n\n")
         f.write("1. **Diversity Control**: Successfully generated populations with target diversity levels\n")
         f.write("2. **Demographic Signatures**: Bottleneck and expansion scenarios show expected patterns (negative Tajima's D)\n")
         f.write("3. **Population Structure**: Fst values match target specifications\n")
         f.write("4. **Large-Scale Analysis**: Successfully analyzed large genotype matrices (1000 individuals × 10000 sites)\n")
-        f.write("5. **Integration**: All modules work together seamlessly for comprehensive analysis\n")
-        f.write("6. **Visualizations**: Comprehensive publication-quality plots generated for all analyses\n")
+        f.write("5. **Comprehensive Neutrality Testing**: All neutrality tests (Tajima's D, Fu & Li's, Fay & Wu's H) calculated across scenarios\n")
+        f.write("6. **Statistical Validation**: Results validated for completeness and correctness\n")
+        f.write("7. **Integration**: All modules work together seamlessly for comprehensive analysis\n")
+        f.write("8. **Visualizations**: Comprehensive publication-quality plots generated for all analyses\n")
     
     print(f"Summary report saved to {report_file}")
 

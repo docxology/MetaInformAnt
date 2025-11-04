@@ -268,16 +268,75 @@ bash scripts/rna/cleanup_quantified_sra.sh
 bash scripts/rna/cleanup_quantified_sra.sh --execute
 ```
 
-#### `quant_downloaded_samples.py`
-**Quantify already-downloaded samples**
+#### `batch_download_species.py` ⭐ **NEW**
+**Configurable batch download for multiple species in parallel**
 
-Useful for quantifying samples that were downloaded but not yet quantified:
+Downloads samples for multiple species simultaneously with configurable parallelism:
+- Configurable species count and threads per species
+- Automatic virtual environment activation
+- Cloud acceleration (AWS, GCP, NCBI)
+- Processes all species in batches
 
 **Usage:**
 ```bash
-python3 scripts/rna/quant_downloaded_samples.py \
-  --config config/amalgkit/amalgkit_cfloridanus.yaml \
-  --threads 12
+# Default: 3 species × 10 threads = 30 total downloads
+python3 scripts/rna/batch_download_species.py
+
+# Custom: 4 species × 12 threads = 48 total downloads
+python3 scripts/rna/batch_download_species.py --species-count 4 --threads-per-species 12
+
+# Limited: 2 species × 8 threads = 16 total downloads
+python3 scripts/rna/batch_download_species.py --species-count 2 --threads-per-species 8
+```
+
+See `docs/rna/BATCH_DOWNLOAD_CONFIGURATION.md` for complete configuration guide.
+
+#### `quant_downloaded_samples.py`
+**Quantify already-downloaded samples**
+
+Automatically discovers all species and quantifies downloaded but unquantified samples:
+- Auto-activates virtual environment
+- Discovers all species configs automatically
+- Handles both FASTQ and SRA files
+- Deletes FASTQs after successful quantification
+
+**Usage:**
+```bash
+# Quantify all downloaded samples across all species
+python3 scripts/rna/quant_downloaded_samples.py
+```
+
+#### `analyze_sample_status.py` ⭐ **NEW**
+**Comprehensive sample status analysis**
+
+Categorizes samples into:
+- Quantified and deleted
+- Quantified but not deleted
+- Currently downloading
+- Failed download
+- Undownloaded
+
+**Usage:**
+```bash
+# Analyze all samples across all species
+python3 scripts/rna/analyze_sample_status.py
+```
+
+#### `cleanup_partial_downloads.py` ⭐ **NEW**
+**Clean up partial and failed downloads**
+
+Removes samples with partial FASTQ/SRA files that aren't quantified:
+- Safe deletion with dry-run option
+- Frees disk space for retrying downloads
+- Processes all species automatically
+
+**Usage:**
+```bash
+# Dry run (see what would be deleted)
+python3 scripts/rna/cleanup_partial_downloads.py --dry-run
+
+# Actually delete partial downloads
+python3 scripts/rna/cleanup_partial_downloads.py --execute
 ```
 
 #### `manual_quant_cleanup.py`
