@@ -59,41 +59,49 @@ cleanup_species() {
     local deleted_size=0
     local skipped_count=0
     
-    for sample_dir in "${fastq_dir}"/*; do
-        if [ ! -d "${sample_dir}" ]; then
-            continue
-        fi
-        
-        local sample=$(basename "${sample_dir}")
-        
-        # Check for both SRA files and FASTQ files
-        local has_files=0
-        local sra_file="${sample_dir}/${sample}.sra"
-        local fastq_files=$(find "${sample_dir}" -name "*.fastq.gz" 2>/dev/null)
-        
-        if [ -f "${sra_file}" ]; then
-            has_files=1
-        elif [ -n "${fastq_files}" ]; then
-            has_files=1
-        fi
-        
-        if [ ${has_files} -eq 0 ]; then
-            continue
-        fi
-        
-        if is_quantified "${species}" "${sample}"; then
-            local size=$(du -sk "${sample_dir}" | cut -f1)
-            local size_mb=$(echo "scale=2; ${size}/1024" | bc)
-            log_info "  Deleting ${sample} (${size_mb}M)"
+    # Handle both structures: fastq/{sample}/ and fastq/getfastq/{sample}/
+    local search_dirs=("${fastq_dir}")
+    if [ -d "${fastq_dir}/getfastq" ]; then
+        search_dirs+=("${fastq_dir}/getfastq")
+    fi
+    
+    for search_dir in "${search_dirs[@]}"; do
+        for sample_dir in "${search_dir}"/*; do
+            if [ ! -d "${sample_dir}" ]; then
+                continue
+            fi
             
-            # Delete the entire sample directory (includes .sra and/or .fastq.gz files)
-            rm -rf "${sample_dir}"
-            deleted_count=$((deleted_count + 1))
-            deleted_size=$((deleted_size + size))
-        else
-            log_warn "  Skipping ${sample} (not quantified)"
-            skipped_count=$((skipped_count + 1))
-        fi
+            local sample=$(basename "${sample_dir}")
+            
+            # Check for both SRA files and FASTQ files
+            local has_files=0
+            local sra_file="${sample_dir}/${sample}.sra"
+            local fastq_files=$(find "${sample_dir}" -name "*.fastq.gz" -o -name "*.fastq" 2>/dev/null)
+            
+            if [ -f "${sra_file}" ]; then
+                has_files=1
+            elif [ -n "${fastq_files}" ]; then
+                has_files=1
+            fi
+            
+            if [ ${has_files} -eq 0 ]; then
+                continue
+            fi
+            
+            if is_quantified "${species}" "${sample}"; then
+                local size=$(du -sk "${sample_dir}" | cut -f1)
+                local size_mb=$(echo "scale=2; ${size}/1024" | bc)
+                log_info "  Deleting ${sample} (${size_mb}M)"
+                
+                # Delete the entire sample directory (includes .sra and/or .fastq.gz files)
+                rm -rf "${sample_dir}"
+                deleted_count=$((deleted_count + 1))
+                deleted_size=$((deleted_size + size))
+            else
+                log_warn "  Skipping ${sample} (not quantified)"
+                skipped_count=$((skipped_count + 1))
+            fi
+        done
     done
     
     if [ ${deleted_count} -gt 0 ]; then
@@ -112,12 +120,29 @@ main() {
     log_info "Working directory: ${AMALGKIT_DIR}"
     echo
     
+    # Discover all species directories automatically
+    local species_list=()
+    if [ -d "${AMALGKIT_DIR}" ]; then
+        for species_dir in "${AMALGKIT_DIR}"/*; do
+            if [ -d "${species_dir}" ]; then
+                local species=$(basename "${species_dir}")
+                species_list+=("${species}")
+            fi
+        done
+    fi
+    
+    if [ ${#species_list[@]} -eq 0 ]; then
+        log_warn "No species directories found in ${AMALGKIT_DIR}"
+        return
+    fi
+    
+    log_info "Found ${#species_list[@]} species directories"
+    echo
+    
     # Process each species
-    for species in pbarbatus cfloridanus mpharaonis sinvicta; do
-        if [ -d "${AMALGKIT_DIR}/${species}" ]; then
-            cleanup_species "${species}"
-            echo
-        fi
+    for species in "${species_list[@]}"; do
+        cleanup_species "${species}"
+        echo
     done
     
     log_info "Cleanup complete!"

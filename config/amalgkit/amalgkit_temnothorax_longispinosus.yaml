@@ -1,0 +1,108 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Temnothorax longispinosus
+# NCBI Taxonomy ID: 300112
+# Assembly: GCA_028515285.1 (ilTemLong1.1)
+# Assembly Level: Chromosome
+# Sequencing: PacBio HiFi
+# Notes: Recent chromosome-level assembly
+# RNA-seq Samples Available: 557
+# Generated: 2025-11-03
+
+
+work_dir: /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/temnothorax_longispinosus/work
+log_dir: /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/temnothorax_longispinosus/logs
+threads: 12
+
+
+auto_install_amalgkit: true
+
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: false  # Set to true to filter by tissue metadata
+
+
+# Species configuration
+species_list:
+  - Temnothorax_longispinosus
+
+
+# Alternative taxonomy specification
+taxon_id: 300112
+
+
+# Reference genome configuration
+# Based on NCBI assembly: GCA_028515285.1
+genome:
+  accession: GCA_028515285.1
+  assembly_name: ilTemLong1.1
+  dest_dir: output/amalgkit/temnothorax_longispinosus/genome
+
+
+  # Files to download (based on available NCBI FTP resources)
+  include:
+    - genome           # Genomic sequences (FASTA)
+    - gff3            # Gene annotations (GFF3)
+    - rna             # RNA sequences (FASTA)
+    - cds             # CDS sequences (FASTA)
+    - protein         # Protein sequences (FASTA)
+    - seq-report      # Sequence report
+    - feature-table   # Feature table
+    - gene-ontology   # Gene Ontology annotations (if available)
+
+
+  # Direct FTP URL for all genome files
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/028/515/285/GCA_028515285.1_ilTemLong1.1/
+
+
+  # Specific important files for transcriptome analysis
+  files:
+    genomic_fasta: GCA_028515285.1_ilTemLong1.1_genomic.fna.gz
+    transcriptome_fasta: GCA_028515285.1_ilTemLong1.1_rna_from_genomic.fna.gz
+    cds_fasta: GCA_028515285.1_ilTemLong1.1_cds_from_genomic.fna.gz
+    protein_fasta: GCA_028515285.1_ilTemLong1.1_protein.faa.gz
+    annotation_gff: GCA_028515285.1_ilTemLong1.1_genomic.gff.gz
+    annotation_gtf: GCA_028515285.1_ilTemLong1.1_genomic.gtf.gz
+
+
+# Per-step parameters (merged on top of common params)
+steps:
+  metadata:
+    # Required by amalgkit metadata
+    out_dir: output/amalgkit/temnothorax_longispinosus/work
+    # Uses NCBI_EMAIL from environment; override here if needed
+    # entrez_email: you@example.com
+    search_string: '"Temnothorax longispinosus"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
+    redo: yes
+  integrate:
+    fastq_dir: output/amalgkit/temnothorax_longispinosus/fastq
+  config: {}
+  select: {}
+  getfastq:
+    out_dir: output/amalgkit/temnothorax_longispinosus/fastq
+    threads: 12
+    # Cloud acceleration via individual mirrors
+    aws: yes
+    gcp: yes
+    ncbi: yes
+    pfd: no           # DISABLED: parallel-fastq-dump usually not needed
+    fastp: yes        # ENABLED: fastp QC tool
+  quant:
+    # If a Salmon/Kallisto index is available, set it; otherwise genome_dir is injected from genome step
+    out_dir: output/amalgkit/temnothorax_longispinosus/quant
+    threads: 12
+    redo: no
+    # Delete SRA/FASTQ files after quantification to save space
+    keep_fastq: no
+    # Build kallisto index if not present
+    build_index: yes
+  merge:
+    out: output/amalgkit/temnothorax_longispinosus/merged/merged_abundance.tsv
+    out_dir: output/amalgkit/temnothorax_longispinosus/merged
+  cstmm:
+    out_dir: output/amalgkit/temnothorax_longispinosus/cstmm
+  curate:
+    out_dir: output/amalgkit/temnothorax_longispinosus/curate
+  csca:
+    out_dir: output/amalgkit/temnothorax_longispinosus/csca
+  sanity: {}

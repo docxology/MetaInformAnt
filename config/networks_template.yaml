@@ -1,0 +1,35 @@
+# Network Analysis Configuration Template
+# 
+# This template provides configuration options for network analysis workflows.
+# Environment variables can override these values (see core.config documentation).
+
+# Input data
+input:
+  file: "data/networks/interactions.tsv"  # Input interaction file
+  format: "tsv"  # tsv or csv
+  has_weights: true  # Whether interactions have weight values
+  directed: false  # Whether network is directed
+
+# Analysis options
+analysis:
+  metrics: true  # Calculate network metrics
+  communities: true  # Detect communities
+  centrality: true  # Calculate centrality measures
+  pathways: false  # Pathway enrichment (requires pathway database)
+  regulatory: false  # Regulatory network analysis
+
+# Network construction
+network:
+  min_weight: 0.0  # Minimum edge weight threshold
+  normalize_weights: false  # Normalize edge weights to [0,1]
+
+# Output
+output:
+  directory: "output/networks"  # Output directory
+  format: "json"  # json or csv
+  include_visualizations: true  # Generate network visualizations
+
+# Performance
+performance:
+  threads: 4  # Number of threads for parallel processing
+

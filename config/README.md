@@ -34,6 +34,30 @@ config/
 - **`gwas_pbarbatus.yaml`**: GWAS configuration for *Pogonomyrmex barbatus* - includes variant calling, QC, association testing
 - **`gwas_template.yaml`**: Template configuration file for creating new GWAS workflows
 
+## Additional Module Configuration Templates
+
+### Network Analysis (`networks_template.yaml`)
+Template for network analysis workflows including:
+- Network construction and metrics
+- Community detection
+- Centrality analysis
+- Pathway enrichment
+
+### Multi-Omics Integration (`multiomics_template.yaml`)
+Template for multi-omics data integration workflows including:
+- Joint PCA, NMF, and canonical correlation analysis
+- Sample mapping across omics layers
+- Integration visualizations
+
+### Single-Cell Analysis (`singlecell_template.yaml`)
+Template for single-cell RNA-seq analysis workflows including:
+- Quality control parameters
+- Normalization settings
+- Dimensionality reduction and clustering
+- Marker gene identification
+
+See orchestrator scripts in `scripts/` for usage examples.
+
 ## Usage
 
 ### Amalgkit RNA-seq Workflows

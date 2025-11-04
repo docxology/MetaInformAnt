@@ -1,0 +1,108 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Myrmica rubra
+# NCBI Taxonomy ID: 106198
+# Assembly: GCA_021155985.1 (ASM2115598v1)
+# Assembly Level: Scaffold
+# Sequencing: Illumina
+# Notes: European fire ant
+# RNA-seq Samples Available: 7
+# Generated: 2025-11-03
+
+
+work_dir: /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/myrmica_rubra/work
+log_dir: /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/myrmica_rubra/logs
+threads: 12
+
+
+auto_install_amalgkit: true
+
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: false  # Set to true to filter by tissue metadata
+
+
+# Species configuration
+species_list:
+  - Myrmica_rubra
+
+
+# Alternative taxonomy specification
+taxon_id: 106198
+
+
+# Reference genome configuration
+# Based on NCBI assembly: GCA_021155985.1
+genome:
+  accession: GCA_021155985.1
+  assembly_name: ASM2115598v1
+  dest_dir: output/amalgkit/myrmica_rubra/genome
+
+
+  # Files to download (based on available NCBI FTP resources)
+  include:
+    - genome           # Genomic sequences (FASTA)
+    - gff3            # Gene annotations (GFF3)
+    - rna             # RNA sequences (FASTA)
+    - cds             # CDS sequences (FASTA)
+    - protein         # Protein sequences (FASTA)
+    - seq-report      # Sequence report
+    - feature-table   # Feature table
+    - gene-ontology   # Gene Ontology annotations (if available)
+
+
+  # Direct FTP URL for all genome files
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/021/155/985/GCA_021155985.1_ASM2115598v1/
+
+
+  # Specific important files for transcriptome analysis
+  files:
+    genomic_fasta: GCA_021155985.1_ASM2115598v1_genomic.fna.gz
+    transcriptome_fasta: GCA_021155985.1_ASM2115598v1_rna_from_genomic.fna.gz
+    cds_fasta: GCA_021155985.1_ASM2115598v1_cds_from_genomic.fna.gz
+    protein_fasta: GCA_021155985.1_ASM2115598v1_protein.faa.gz
+    annotation_gff: GCA_021155985.1_ASM2115598v1_genomic.gff.gz
+    annotation_gtf: GCA_021155985.1_ASM2115598v1_genomic.gtf.gz
+
+
+# Per-step parameters (merged on top of common params)
+steps:
+  metadata:
+    # Required by amalgkit metadata
+    out_dir: output/amalgkit/myrmica_rubra/work
+    # Uses NCBI_EMAIL from environment; override here if needed
+    # entrez_email: you@example.com
+    search_string: '"Myrmica rubra"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
+    redo: yes
+  integrate:
+    fastq_dir: output/amalgkit/myrmica_rubra/fastq
+  config: {}
+  select: {}
+  getfastq:
+    out_dir: output/amalgkit/myrmica_rubra/fastq
+    threads: 12
+    # Cloud acceleration via individual mirrors
+    aws: yes
+    gcp: yes
+    ncbi: yes
+    pfd: no           # DISABLED: parallel-fastq-dump usually not needed
+    fastp: yes        # ENABLED: fastp QC tool
+  quant:
+    # If a Salmon/Kallisto index is available, set it; otherwise genome_dir is injected from genome step
+    out_dir: output/amalgkit/myrmica_rubra/quant
+    threads: 12
+    redo: no
+    # Delete SRA/FASTQ files after quantification to save space
+    keep_fastq: no
+    # Build kallisto index if not present
+    build_index: yes
+  merge:
+    out: output/amalgkit/myrmica_rubra/merged/merged_abundance.tsv
+    out_dir: output/amalgkit/myrmica_rubra/merged
+  cstmm:
+    out_dir: output/amalgkit/myrmica_rubra/cstmm
+  curate:
+    out_dir: output/amalgkit/myrmica_rubra/curate
+  csca:
+    out_dir: output/amalgkit/myrmica_rubra/csca
+  sanity: {}

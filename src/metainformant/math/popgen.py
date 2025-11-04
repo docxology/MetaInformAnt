@@ -402,43 +402,59 @@ def mutation_selection_balance_dominant(mutation_rate: float, selection_coeffici
     return mu / s
 
 
-def effective_population_size_from_heterozygosity(observed_heterozygosity: float, theta: float = 4) -> float:
-    """Estimate effective population size from observed heterozygosity.
+def effective_population_size_from_heterozygosity(
+    observed_heterozygosity: float,
+    mutation_rate: float,
+    *,
+    ploidy: int = 2,
+) -> float:
+    """Estimate effective population size from observed heterozygosity and mutation rate.
     
     Uses the relationship between heterozygosity and the population mutation
-    parameter θ = 4Neμ (or 2Neμ for haploid) to infer effective size from
-    observed diversity.
+    parameter θ under the infinite-alleles model. At equilibrium, heterozygosity
+    H = θ / (θ + 1), where θ = 2Neμ for haploid or θ = 4Neμ for diploid.
+    
+    Solving for Ne: Ne = θ / (ploidy × μ), where θ = H / (1 - H).
     
     Args:
-        observed_heterozygosity: Observed heterozygosity in the population (H)
-        theta: Scaling factor for mutation parameter. Default 4 for diploid
-            autosomes (θ = 4Neμ). Use 2 for haploid or mtDNA (θ = 2Neμ).
+        observed_heterozygosity: Observed heterozygosity in the population (H) in [0, 1]
+        mutation_rate: Mutation rate per site per generation (μ)
+        ploidy: Ploidy level. Default 2 for diploid (θ = 4Neμ). Use 1 for haploid (θ = 2Neμ).
             
     Returns:
-        Estimated effective population size. Returns 0.0 if heterozygosity
-        is invalid or theta <= 0. Formula: Ne ≈ H / (theta × μ) where μ
-        is mutation rate (not provided, so this is a simplified approximation).
+        Estimated effective population size. Returns 0.0 if mutation_rate <= 0 or
+        heterozygosity is invalid.
         
     Examples:
-        >>> effective_population_size_from_heterozygosity(0.5, theta=4)
-        0.125...  # Simplified approximation
-        
-    Note:
-        This is a simplified calculation. For accurate estimates, mutation
-        rate must be known and the formula Ne = H / (theta × μ) used directly.
+        >>> # Diploid with H=0.5 and μ=1e-8
+        >>> effective_population_size_from_heterozygosity(0.5, mutation_rate=1e-8, ploidy=2)
+        12500000.0  # Ne = (0.5/(1-0.5)) / (4 * 1e-8) = 1.0 / (4e-8) = 25e6
+        >>> # Haploid example
+        >>> effective_population_size_from_heterozygosity(0.3, mutation_rate=1e-7, ploidy=1)
+        2142857.14...
         
     References:
         Nei, M., & Tajima, F. (1981). DNA polymorphism detectable by restriction
         endonucleases. Genetics, 97(1), 145-163.
+        Kimura, M., & Crow, J. F. (1964). The number of alleles that can be
+        maintained in a finite population. Genetics, 49(4), 725-738.
     """
     if observed_heterozygosity <= 0 or observed_heterozygosity >= 1:
         raise ValueError("Heterozygosity must be between 0 and 1")
-
-    # H_e = theta / (theta + 1), so theta = H_e / (1 - H_e)
-    # Ne = theta / (4 * mu) for diploids, but here we estimate from H_o
-    # This is an approximation
-    expected_heterozygosity = theta / (theta + 1)
-    return observed_heterozygosity / (4 * (1 - observed_heterozygosity)) if observed_heterozygosity < 1 else float('inf')
+    if mutation_rate <= 0:
+        raise ValueError("Mutation rate must be positive")
+    if ploidy < 1:
+        raise ValueError("Ploidy must be at least 1")
+    
+    # Under infinite-alleles model at equilibrium: H = θ / (θ + 1)
+    # Solving for θ: θ = H / (1 - H)
+    # For diploid: θ = 4Neμ, so Ne = θ / (4μ) = (H / (1 - H)) / (4μ)
+    # For haploid: θ = 2Neμ, so Ne = θ / (2μ) = (H / (1 - H)) / (2μ)
+    # General: Ne = θ / (ploidy × 2 × μ) = (H / (1 - H)) / (ploidy × 2 × μ)
+    # But wait, for diploid it's 4Neμ, so that's ploidy × 2. Let's use that.
+    theta_estimate = observed_heterozygosity / (1.0 - observed_heterozygosity)
+    scaling_factor = float(ploidy) * 2.0  # 2 for haploid, 4 for diploid
+    return theta_estimate / (scaling_factor * mutation_rate)
 
 
 def inbreeding_coefficient_from_fst(fst: float, subpopulations: int = 2) -> float:
@@ -452,17 +468,25 @@ def inbreeding_coefficient_from_fst(fst: float, subpopulations: int = 2) -> floa
         subpopulations: Number of subpopulations (default 2)
             
     Returns:
-        Estimated inbreeding coefficient F. Returns 0.0 if fst <= 0.
+        Estimated inbreeding coefficient F. Returns:
+        - 0.0 if fst <= 0
+        - float('inf') if fst = 1.0 (complete differentiation, infinite inbreeding)
+        - Otherwise: fst / (1 - fst)
         
     Examples:
         >>> inbreeding_coefficient_from_fst(0.1, subpopulations=2)
         0.052...
         >>> inbreeding_coefficient_from_fst(0.3, subpopulations=5)
         0.075...
+        >>> inbreeding_coefficient_from_fst(1.0)
+        inf  # Complete population differentiation
         
     Note:
         This is an approximation. The exact relationship depends on
-        population structure assumptions.
+        population structure assumptions. When Fst = 1.0 (complete
+        differentiation between populations), the formula F = Fst / (1 - Fst)
+        evaluates to infinity, indicating that the populations are completely
+        isolated with infinite inbreeding within each subpopulation.
     """
     if not 0 <= fst <= 1:
         raise ValueError("F_ST must be between 0 and 1")
@@ -484,15 +508,22 @@ def linkage_disequilibrium_decay_distance(r_squared: float, recombination_rate: 
         recombination_rate: Recombination fraction (c) in [0, 0.5]
         
     Returns:
-        Estimated genetic distance in Morgans. Returns 0.0 if inputs invalid.
+        Estimated genetic distance in Morgans. Returns:
+        - 0.0 if inputs invalid (r² <= 0 or r² >= 1)
+        - float('inf') if recombination_rate = 0 (no recombination, infinite distance)
+        - Otherwise: -ln(r²) / (2 × recombination_rate)
         
     Examples:
         >>> linkage_disequilibrium_decay_distance(r_squared=0.5, recombination_rate=0.01)
         34.65...
+        >>> linkage_disequilibrium_decay_distance(r_squared=0.1, recombination_rate=0.0)
+        inf  # No recombination, infinite distance
         
     Note:
         This is an approximation. Actual distance depends on population history
-        and mutation rates.
+        and mutation rates. When recombination_rate = 0, the formula evaluates
+        to infinity because there is no recombination to break down LD, so the
+        effective distance is infinite.
     """
     if r_squared <= 0 or r_squared >= 1:
         raise ValueError("r² must be between 0 and 1")

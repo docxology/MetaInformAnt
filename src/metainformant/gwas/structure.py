@@ -26,18 +26,29 @@ except ImportError:
 def compute_pca(
     genotype_matrix: list[list[int]],
     n_components: int = 10,
+    *,
+    missing_imputation: str = "mean",
+    max_missing_per_variant: float = 0.5,
 ) -> dict[str, Any]:
     """Compute Principal Component Analysis on genotype matrix.
 
     Args:
         genotype_matrix: Genotype matrix (samples x variants), encoded as 0/1/2/-1
         n_components: Number of principal components to compute
+        missing_imputation: Method for handling missing data. Options:
+            - "mean": Mean imputation per variant (default)
+            - "median": Median imputation per variant
+            - "mode": Mode imputation per variant (most common genotype)
+            - "skip": Skip variants with missing data (set to 0)
+        max_missing_per_variant: Maximum fraction of missing data per variant.
+            Variants with higher missingness will be excluded. Default 0.5 (50%).
 
     Returns:
         Dictionary with:
         - pcs: Principal components (samples x n_components)
         - explained_variance: Explained variance per component
         - explained_variance_ratio: Explained variance ratio per component
+        - missing_data_stats: Statistics about missing data handling
     """
     logger.info(f"compute_pca: Computing {n_components} principal components")
 
@@ -59,13 +70,68 @@ def compute_pca(
     num_samples, num_variants = X.shape
     logger.info(f"compute_pca: Matrix shape: {num_samples} samples x {num_variants} variants")
 
-    # Handle missing data: mean imputation per variant
+    # Track missing data statistics
+    total_missing = np.sum(X == -1)
+    total_cells = num_samples * num_variants
+    overall_missing_rate = total_missing / total_cells if total_cells > 0 else 0.0
+    
+    # Count missing per variant and filter high-missingness variants
+    missing_per_variant = np.sum(X == -1, axis=0)
+    missing_rate_per_variant = missing_per_variant / num_samples
+    high_missing_variants = np.sum(missing_rate_per_variant > max_missing_per_variant)
+    
+    if high_missing_variants > 0:
+        logger.warning(
+            f"compute_pca: Excluding {high_missing_variants} variants with >{max_missing_per_variant:.1%} missing data"
+        )
+        # Set high-missing variants to 0 (will be excluded in analysis)
+        exclude_mask = missing_rate_per_variant > max_missing_per_variant
+        X[:, exclude_mask] = 0.0
+    
+    # Handle missing data: imputation per variant
+    imputed_count = 0
     for var_idx in range(num_variants):
         var_data = X[:, var_idx]
         missing_mask = var_data == -1
-        if missing_mask.any():
-            mean_val = np.mean(var_data[~missing_mask]) if np.any(~missing_mask) else 0.0
-            X[missing_mask, var_idx] = mean_val
+        
+        if missing_mask.any() and not exclude_mask[var_idx]:
+            imputed_count += np.sum(missing_mask)
+            
+            if missing_imputation == "mean":
+                impute_val = np.mean(var_data[~missing_mask]) if np.any(~missing_mask) else 0.0
+            elif missing_imputation == "median":
+                impute_val = np.median(var_data[~missing_mask]) if np.any(~missing_mask) else 0.0
+            elif missing_imputation == "mode":
+                # Mode: most common non-missing genotype
+                non_missing = var_data[~missing_mask]
+                if len(non_missing) > 0:
+                    values, counts = np.unique(non_missing, return_counts=True)
+                    impute_val = values[np.argmax(counts)]
+                else:
+                    impute_val = 0.0
+            elif missing_imputation == "skip":
+                impute_val = 0.0  # Set to 0 for skipped variants
+            else:
+                logger.warning(f"compute_pca: Unknown imputation method '{missing_imputation}', using mean")
+                impute_val = np.mean(var_data[~missing_mask]) if np.any(~missing_mask) else 0.0
+            
+            X[missing_mask, var_idx] = impute_val
+    
+    # Log missing data statistics
+    if total_missing > 0:
+        logger.info(
+            f"compute_pca: Missing data: {total_missing}/{total_cells} ({overall_missing_rate:.2%}) "
+            f"cells, imputed {imputed_count} values using {missing_imputation} method"
+        )
+    
+    missing_stats = {
+        "total_missing": int(total_missing),
+        "total_cells": int(total_cells),
+        "overall_missing_rate": float(overall_missing_rate),
+        "variants_excluded": int(high_missing_variants),
+        "values_imputed": int(imputed_count),
+        "imputation_method": missing_imputation,
+    }
 
     # Center the data (subtract mean per variant)
     X_centered = X - np.mean(X, axis=0, keepdims=True)
@@ -86,6 +152,10 @@ def compute_pca(
             eigenvalues, eigenvectors = eigh(cov_matrix)
         else:
             # Fallback to numpy
+            logger.warning(
+                "compute_pca: scipy not available, using numpy.linalg.eigh. "
+                "Install scipy for better performance and numerical stability."
+            )
             eigenvalues, eigenvectors = np.linalg.eigh(cov_matrix)
 
         # Sort by eigenvalue (descending)
@@ -110,6 +180,7 @@ def compute_pca(
             "explained_variance": explained_variance.tolist(),
             "explained_variance_ratio": explained_variance_ratio.tolist(),
             "n_components": n_components_actual,
+            "missing_data_stats": missing_stats,
         }
 
     except Exception as exc:
@@ -123,6 +194,9 @@ def compute_pca(
 def compute_kinship_matrix(
     genotype_matrix: list[list[int]],
     method: str = "vanraden",
+    *,
+    missing_imputation: str = "mean",
+    max_missing_per_variant: float = 0.5,
 ) -> dict[str, Any]:
     """Compute kinship matrix from genotype data.
 
@@ -135,11 +209,19 @@ def compute_kinship_matrix(
     Args:
         genotype_matrix: Genotype matrix (samples x variants), encoded as 0/1/2/-1
         method: Kinship computation method
+        missing_imputation: Method for handling missing data. Options:
+            - "mean": Mean imputation per variant (default)
+            - "median": Median imputation per variant
+            - "mode": Mode imputation per variant (most common genotype)
+            - "skip": Skip variants with missing data (set to 0)
+        max_missing_per_variant: Maximum fraction of missing data per variant.
+            Variants with higher missingness will be excluded. Default 0.5 (50%).
 
     Returns:
         Dictionary with:
         - kinship_matrix: Kinship matrix (samples x samples)
         - method: Method used
+        - missing_data_stats: Statistics about missing data handling
     """
     logger.info(f"compute_kinship_matrix: Computing kinship using {method} method")
 
@@ -153,13 +235,69 @@ def compute_kinship_matrix(
         X = np.array(genotype_matrix, dtype=float)
         num_samples, num_variants = X.shape
 
-        # Handle missing data: mean imputation
+        # Track missing data statistics
+        total_missing = np.sum(X == -1)
+        total_cells = num_samples * num_variants
+        overall_missing_rate = total_missing / total_cells if total_cells > 0 else 0.0
+        
+        # Count missing per variant and filter high-missingness variants
+        missing_per_variant = np.sum(X == -1, axis=0)
+        missing_rate_per_variant = missing_per_variant / num_samples
+        high_missing_variants = np.sum(missing_rate_per_variant > max_missing_per_variant)
+        
+        if high_missing_variants > 0:
+            logger.warning(
+                f"compute_kinship_matrix: Excluding {high_missing_variants} variants with >{max_missing_per_variant:.1%} missing data"
+            )
+            exclude_mask = missing_rate_per_variant > max_missing_per_variant
+            X[:, exclude_mask] = 0.0
+        else:
+            exclude_mask = np.zeros(num_variants, dtype=bool)
+
+        # Handle missing data: imputation per variant
+        imputed_count = 0
         for var_idx in range(num_variants):
             var_data = X[:, var_idx]
             missing_mask = var_data == -1
-            if missing_mask.any():
-                mean_val = np.mean(var_data[~missing_mask]) if np.any(~missing_mask) else 0.0
-                X[missing_mask, var_idx] = mean_val
+            
+            if missing_mask.any() and not exclude_mask[var_idx]:
+                imputed_count += np.sum(missing_mask)
+                
+                if missing_imputation == "mean":
+                    impute_val = np.mean(var_data[~missing_mask]) if np.any(~missing_mask) else 0.0
+                elif missing_imputation == "median":
+                    impute_val = np.median(var_data[~missing_mask]) if np.any(~missing_mask) else 0.0
+                elif missing_imputation == "mode":
+                    # Mode: most common non-missing genotype
+                    non_missing = var_data[~missing_mask]
+                    if len(non_missing) > 0:
+                        values, counts = np.unique(non_missing, return_counts=True)
+                        impute_val = values[np.argmax(counts)]
+                    else:
+                        impute_val = 0.0
+                elif missing_imputation == "skip":
+                    impute_val = 0.0
+                else:
+                    logger.warning(f"compute_kinship_matrix: Unknown imputation method '{missing_imputation}', using mean")
+                    impute_val = np.mean(var_data[~missing_mask]) if np.any(~missing_mask) else 0.0
+                
+                X[missing_mask, var_idx] = impute_val
+        
+        # Log missing data statistics
+        if total_missing > 0:
+            logger.info(
+                f"compute_kinship_matrix: Missing data: {total_missing}/{total_cells} ({overall_missing_rate:.2%}) "
+                f"cells, imputed {imputed_count} values using {missing_imputation} method"
+            )
+        
+        missing_stats = {
+            "total_missing": int(total_missing),
+            "total_cells": int(total_cells),
+            "overall_missing_rate": float(overall_missing_rate),
+            "variants_excluded": int(high_missing_variants),
+            "values_imputed": int(imputed_count),
+            "imputation_method": missing_imputation,
+        }
 
         if method == "vanraden":
             # VanRaden method: K = (M * M.T) / (2 * sum(p * (1-p)))
@@ -208,6 +346,7 @@ def compute_kinship_matrix(
             "kinship_matrix": kinship.tolist(),
             "method": method,
             "num_samples": num_samples,
+            "missing_data_stats": missing_stats,
         }
 
     except Exception as exc:

@@ -24,6 +24,11 @@ from .effective_size import (
     effective_size_sex_ratio,
     harmonic_mean_effective_size,
 )
+from .demography import (
+    bottleneck_effective_size,
+    exponential_growth_effective_size,
+    two_epoch_effective_size,
+)
 from .egt import replicator_derivative, replicator_step
 from .epidemiology import (
     basic_reproduction_number,
@@ -158,6 +163,10 @@ __all__ = [
     "harmonic_mean_effective_size",
     "effective_size_sex_ratio",
     "effective_size_from_family_size_variance",
+    # demography
+    "exponential_growth_effective_size",
+    "bottleneck_effective_size",
+    "two_epoch_effective_size",
 ]
 
 

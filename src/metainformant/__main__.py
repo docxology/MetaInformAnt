@@ -85,6 +85,112 @@ def main() -> None:
     gwas_run.add_argument("--config", required=True, help="Path to GWAS YAML/TOML/JSON config file")
     gwas_run.add_argument("--check", action="store_true", help="Validate configuration only, do not execute")
 
+    # ontology subcommand
+    ontology_parser = subparsers.add_parser("ontology", help="Ontology analysis operations")
+    ontology_sub = ontology_parser.add_subparsers(dest="ontology_cmd")
+    ontology_run = ontology_sub.add_parser("run", help="Run ontology analysis workflow")
+    ontology_run.add_argument("--go", type=Path, help="Gene Ontology OBO file")
+    ontology_run.add_argument("--output", type=Path, default=Path("output/ontology"), help="Output directory")
+    ontology_run.add_argument("--query-term", type=str, help="Query specific GO term")
+    ontology_run.add_argument("--ancestors", action="store_true", help="Get ancestors")
+    ontology_run.add_argument("--descendants", action="store_true", help="Get descendants")
+
+    # phenotype subcommand
+    phenotype_parser = subparsers.add_parser("phenotype", help="Phenotype analysis operations")
+    phenotype_sub = phenotype_parser.add_subparsers(dest="phenotype_cmd")
+    phenotype_run = phenotype_sub.add_parser("run", help="Run phenotype analysis workflow")
+    phenotype_run.add_argument("--input", type=Path, required=True, help="Input phenotype data file")
+    phenotype_run.add_argument("--output", type=Path, default=Path("output/phenotype"), help="Output directory")
+    phenotype_run.add_argument("--analyze-statistics", action="store_true", help="Calculate statistics")
+    phenotype_run.add_argument("--analyze-correlations", action="store_true", help="Calculate correlations")
+
+    # networks subcommand
+    networks_parser = subparsers.add_parser("networks", help="Network analysis operations")
+    networks_sub = networks_parser.add_subparsers(dest="networks_cmd")
+    networks_run = networks_sub.add_parser("run", help="Run network analysis workflow")
+    networks_run.add_argument("--input", type=Path, required=True, help="Input interaction file")
+    networks_run.add_argument("--output", type=Path, default=Path("output/networks"), help="Output directory")
+    networks_run.add_argument("--analyze-metrics", action="store_true", help="Calculate network metrics")
+    networks_run.add_argument("--detect-communities", action="store_true", help="Detect communities")
+    networks_run.add_argument("--analyze-centrality", action="store_true", help="Calculate centrality")
+
+    # multiomics subcommand
+    multiomics_parser = subparsers.add_parser("multiomics", help="Multi-omics integration operations")
+    multiomics_sub = multiomics_parser.add_subparsers(dest="multiomics_cmd")
+    multiomics_run = multiomics_sub.add_parser("run", help="Run multi-omics integration workflow")
+    multiomics_run.add_argument("--genomics", type=Path, help="Genomics data file")
+    multiomics_run.add_argument("--transcriptomics", type=Path, help="Transcriptomics data file")
+    multiomics_run.add_argument("--proteomics", type=Path, help="Proteomics data file")
+    multiomics_run.add_argument("--output", type=Path, default=Path("output/multiomics"), help="Output directory")
+    multiomics_run.add_argument("--joint-pca", action="store_true", help="Perform joint PCA")
+    multiomics_run.add_argument("--joint-nmf", action="store_true", help="Perform joint NMF")
+    multiomics_run.add_argument("--canonical-correlation", action="store_true", help="Perform CCA")
+
+    # singlecell subcommand
+    singlecell_parser = subparsers.add_parser("singlecell", help="Single-cell analysis operations")
+    singlecell_sub = singlecell_parser.add_subparsers(dest="singlecell_cmd")
+    singlecell_run = singlecell_sub.add_parser("run", help="Run single-cell analysis workflow")
+    singlecell_run.add_argument("--input", type=Path, required=True, help="Input count matrix file")
+    singlecell_run.add_argument("--output", type=Path, default=Path("output/singlecell"), help="Output directory")
+    singlecell_run.add_argument("--qc", action="store_true", help="Perform quality control")
+    singlecell_run.add_argument("--normalize", action="store_true", help="Normalize counts")
+    singlecell_run.add_argument("--cluster", action="store_true", help="Perform clustering")
+
+    # quality subcommand
+    quality_parser = subparsers.add_parser("quality", help="Quality control operations")
+    quality_sub = quality_parser.add_subparsers(dest="quality_cmd")
+    quality_run = quality_sub.add_parser("run", help="Run quality control workflow")
+    quality_run.add_argument("--fastq", type=Path, help="Input FASTQ file")
+    quality_run.add_argument("--output", type=Path, default=Path("output/quality"), help="Output directory")
+    quality_run.add_argument("--analyze-fastq", action="store_true", help="Analyze FASTQ quality")
+    quality_run.add_argument("--detect-contamination", action="store_true", help="Detect contamination")
+
+    # simulation subcommand
+    simulation_parser = subparsers.add_parser("simulation", help="Simulation operations")
+    simulation_sub = simulation_parser.add_subparsers(dest="simulation_cmd")
+    simulation_run = simulation_sub.add_parser("run", help="Run simulation workflow")
+    simulation_run.add_argument("--model", type=str, required=True, choices=["sequences", "agents", "expression"], help="Simulation model")
+    simulation_run.add_argument("--output", type=Path, default=Path("output/simulation"), help="Output directory")
+    simulation_run.add_argument("--n", type=int, default=100, help="Number of sequences (sequences model)")
+    simulation_run.add_argument("--steps", type=int, default=100, help="Number of steps (agents model)")
+
+    # visualization subcommand
+    visualization_parser = subparsers.add_parser("visualization", help="Visualization operations")
+    visualization_sub = visualization_parser.add_subparsers(dest="visualization_cmd")
+    visualization_run = visualization_sub.add_parser("run", help="Run visualization workflow")
+    visualization_run.add_argument("--input", type=Path, required=True, help="Input data file")
+    visualization_run.add_argument("--plot-type", type=str, required=True, choices=["lineplot", "heatmap", "animation", "histogram"], help="Plot type")
+    visualization_run.add_argument("--output", type=Path, default=Path("output/visualization"), help="Output directory")
+
+    # epigenome subcommand
+    epigenome_parser = subparsers.add_parser("epigenome", help="Epigenome analysis operations")
+    epigenome_sub = epigenome_parser.add_subparsers(dest="epigenome_cmd")
+    epigenome_run = epigenome_sub.add_parser("run", help="Run epigenome analysis workflow")
+    epigenome_run.add_argument("--methylation", type=Path, help="Methylation data file")
+    epigenome_run.add_argument("--bedgraph", type=Path, help="BedGraph track file")
+    epigenome_run.add_argument("--output", type=Path, default=Path("output/epigenome"), help="Output directory")
+    epigenome_run.add_argument("--compute-beta", action="store_true", help="Compute beta values")
+
+    # ecology subcommand
+    ecology_parser = subparsers.add_parser("ecology", help="Ecology analysis operations")
+    ecology_sub = ecology_parser.add_subparsers(dest="ecology_cmd")
+    ecology_run = ecology_sub.add_parser("run", help="Run ecology analysis workflow")
+    ecology_run.add_argument("--input", type=Path, required=True, help="Input abundance table")
+    ecology_run.add_argument("--output", type=Path, default=Path("output/ecology"), help="Output directory")
+    ecology_run.add_argument("--diversity", action="store_true", help="Calculate diversity indices")
+    ecology_run.add_argument("--beta-diversity", action="store_true", help="Calculate beta diversity")
+
+    # ml subcommand
+    ml_parser = subparsers.add_parser("ml", help="Machine learning operations")
+    ml_sub = ml_parser.add_subparsers(dest="ml_cmd")
+    ml_run = ml_sub.add_parser("run", help="Run ML pipeline workflow")
+    ml_run.add_argument("--features", type=Path, required=True, help="Feature matrix file")
+    ml_run.add_argument("--labels", type=Path, help="Labels file")
+    ml_run.add_argument("--output", type=Path, default=Path("output/ml"), help="Output directory")
+    ml_run.add_argument("--classify", action="store_true", help="Perform classification")
+    ml_run.add_argument("--regress", action="store_true", help="Perform regression")
+    ml_run.add_argument("--feature-selection", action="store_true", help="Perform feature selection")
+
     args = parser.parse_args()
 
     if args.command == "setup":
@@ -211,6 +317,158 @@ def main() -> None:
             else:
                 print(f"GWAS workflow status: {results.get('status', 'unknown')}")
                 sys.exit(0)
+
+    if args.command == "ontology":
+        if args.ontology_cmd == "run":
+            import subprocess
+            root = Path(__file__).resolve().parents[2]
+            script = root / "scripts" / "ontology" / "run_ontology_analysis.py"
+            cmd = ["python3", str(script), f"--output={args.output}"]
+            if args.go:
+                cmd.append(f"--go={args.go}")
+            if args.query_term:
+                cmd.extend(["--query-term", args.query_term])
+            if args.ancestors:
+                cmd.append("--ancestors")
+            if args.descendants:
+                cmd.append("--descendants")
+            sys.exit(subprocess.run(cmd).returncode)
+
+    if args.command == "phenotype":
+        if args.phenotype_cmd == "run":
+            import subprocess
+            root = Path(__file__).resolve().parents[2]
+            script = root / "scripts" / "phenotype" / "run_phenotype_analysis.py"
+            cmd = ["python3", str(script), f"--input={args.input}", f"--output={args.output}"]
+            if args.analyze_statistics:
+                cmd.append("--analyze-statistics")
+            if args.analyze_correlations:
+                cmd.append("--analyze-correlations")
+            sys.exit(subprocess.run(cmd).returncode)
+
+    if args.command == "networks":
+        if args.networks_cmd == "run":
+            import subprocess
+            root = Path(__file__).resolve().parents[2]
+            script = root / "scripts" / "networks" / "run_network_analysis.py"
+            cmd = ["python3", str(script), f"--input={args.input}", f"--output={args.output}"]
+            if args.analyze_metrics:
+                cmd.append("--analyze-metrics")
+            if args.detect_communities:
+                cmd.append("--detect-communities")
+            if args.analyze_centrality:
+                cmd.append("--analyze-centrality")
+            sys.exit(subprocess.run(cmd).returncode)
+
+    if args.command == "multiomics":
+        if args.multiomics_cmd == "run":
+            import subprocess
+            root = Path(__file__).resolve().parents[2]
+            script = root / "scripts" / "multiomics" / "run_multiomics_integration.py"
+            cmd = ["python3", str(script), f"--output={args.output}"]
+            if args.genomics:
+                cmd.append(f"--genomics={args.genomics}")
+            if args.transcriptomics:
+                cmd.append(f"--transcriptomics={args.transcriptomics}")
+            if args.proteomics:
+                cmd.append(f"--proteomics={args.proteomics}")
+            if args.joint_pca:
+                cmd.append("--joint-pca")
+            if args.joint_nmf:
+                cmd.append("--joint-nmf")
+            if args.canonical_correlation:
+                cmd.append("--canonical-correlation")
+            sys.exit(subprocess.run(cmd).returncode)
+
+    if args.command == "singlecell":
+        if args.singlecell_cmd == "run":
+            import subprocess
+            root = Path(__file__).resolve().parents[2]
+            script = root / "scripts" / "singlecell" / "run_singlecell_analysis.py"
+            cmd = ["python3", str(script), f"--input={args.input}", f"--output={args.output}"]
+            if args.qc:
+                cmd.append("--qc")
+            if args.normalize:
+                cmd.append("--normalize")
+            if args.cluster:
+                cmd.append("--cluster")
+            sys.exit(subprocess.run(cmd).returncode)
+
+    if args.command == "quality":
+        if args.quality_cmd == "run":
+            import subprocess
+            root = Path(__file__).resolve().parents[2]
+            script = root / "scripts" / "quality" / "run_quality_control.py"
+            cmd = ["python3", str(script), f"--output={args.output}"]
+            if args.fastq:
+                cmd.append(f"--fastq={args.fastq}")
+            if args.analyze_fastq:
+                cmd.append("--analyze-fastq")
+            if args.detect_contamination:
+                cmd.append("--detect-contamination")
+            sys.exit(subprocess.run(cmd).returncode)
+
+    if args.command == "simulation":
+        if args.simulation_cmd == "run":
+            import subprocess
+            root = Path(__file__).resolve().parents[2]
+            script = root / "scripts" / "simulation" / "run_simulation.py"
+            cmd = ["python3", str(script), f"--model={args.model}", f"--output={args.output}"]
+            if args.n:
+                cmd.append(f"--n={args.n}")
+            if args.steps:
+                cmd.append(f"--steps={args.steps}")
+            sys.exit(subprocess.run(cmd).returncode)
+
+    if args.command == "visualization":
+        if args.visualization_cmd == "run":
+            import subprocess
+            root = Path(__file__).resolve().parents[2]
+            script = root / "scripts" / "visualization" / "run_visualization.py"
+            cmd = ["python3", str(script), f"--input={args.input}", f"--plot-type={args.plot_type}", f"--output={args.output}"]
+            sys.exit(subprocess.run(cmd).returncode)
+
+    if args.command == "epigenome":
+        if args.epigenome_cmd == "run":
+            import subprocess
+            root = Path(__file__).resolve().parents[2]
+            script = root / "scripts" / "epigenome" / "run_epigenome_analysis.py"
+            cmd = ["python3", str(script), f"--output={args.output}"]
+            if args.methylation:
+                cmd.append(f"--methylation={args.methylation}")
+            if args.bedgraph:
+                cmd.append(f"--bedgraph={args.bedgraph}")
+            if args.compute_beta:
+                cmd.append("--compute-beta")
+            sys.exit(subprocess.run(cmd).returncode)
+
+    if args.command == "ecology":
+        if args.ecology_cmd == "run":
+            import subprocess
+            root = Path(__file__).resolve().parents[2]
+            script = root / "scripts" / "ecology" / "run_ecology_analysis.py"
+            cmd = ["python3", str(script), f"--input={args.input}", f"--output={args.output}"]
+            if args.diversity:
+                cmd.append("--diversity")
+            if args.beta_diversity:
+                cmd.append("--beta-diversity")
+            sys.exit(subprocess.run(cmd).returncode)
+
+    if args.command == "ml":
+        if args.ml_cmd == "run":
+            import subprocess
+            root = Path(__file__).resolve().parents[2]
+            script = root / "scripts" / "ml" / "run_ml_pipeline.py"
+            cmd = ["python3", str(script), f"--features={args.features}", f"--output={args.output}"]
+            if args.labels:
+                cmd.append(f"--labels={args.labels}")
+            if args.classify:
+                cmd.append("--classify")
+            if args.regress:
+                cmd.append("--regress")
+            if args.feature_selection:
+                cmd.append("--feature-selection")
+            sys.exit(subprocess.run(cmd).returncode)
 
     if args.command == "tests":
         exit_code = run_all_tests(args.pytest_args)

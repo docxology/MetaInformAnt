@@ -420,8 +420,13 @@ freqs = population.allele_frequencies(genotypes)
 # Calculate observed heterozygosity
 het = population.observed_heterozygosity([(0, 1), (1, 1), (0, 0)])
 
-# Calculate Tajima's D
+# Calculate Tajima's D (simplified version)
 tajimas_d = population.tajimas_d(sequences)
+
+# Calculate Fst between populations
+pop1 = ["AAAA", "AAAT"]
+pop2 = ["TTTT", "TTTA"]
+fst = population.hudson_fst(pop1, pop2)
 ```
 
 This module provides a complete toolkit for DNA sequence analysis, from basic manipulation to advanced evolutionary and population genetic analysis.

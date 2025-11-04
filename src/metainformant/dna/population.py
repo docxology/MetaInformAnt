@@ -1,21 +1,51 @@
 from __future__ import annotations
 
+import warnings
 from collections.abc import Iterable, Sequence
 
 
 def allele_frequencies(genotype_matrix: Sequence[Sequence[int]]) -> list[float]:
     """Compute frequency of allele '1' per site.
 
-    genotype_matrix: rows are individuals, columns are sites; values 0/1.
-    Returns list of frequencies per site.
+    Calculates the frequency of the alternate allele (encoded as 1) at each
+    site across all individuals in the genotype matrix.
+
+    Args:
+        genotype_matrix: List of lists where rows are individuals, columns
+            are sites. Values should be 0 (reference allele) or 1 (alternate allele).
+            All rows must have the same length.
+
+    Returns:
+        List of frequencies per site (float values in [0, 1]). Returns empty
+        list if input is empty.
+
+    Raises:
+        ValueError: If genotype matrix has inconsistent row lengths or invalid values.
+
+    Examples:
+        >>> genotypes = [[0, 1, 0], [0, 1, 1], [1, 0, 1]]
+        >>> freqs = allele_frequencies(genotypes)
+        >>> freqs[0]  # Frequency at first site
+        0.333...
+        >>> freqs[1]  # Frequency at second site
+        0.666...
     """
     if not genotype_matrix:
         return []
+    
+    # Validate consistent row lengths
     num_sites = len(genotype_matrix[0])
+    for i, row in enumerate(genotype_matrix):
+        if len(row) != num_sites:
+            raise ValueError(f"Row {i} has length {len(row)}, expected {num_sites}")
+    
     site_totals = [0] * num_sites
-    for row in genotype_matrix:
+    for i, row in enumerate(genotype_matrix):
         for j, val in enumerate(row):
+            if val not in (0, 1):
+                raise ValueError(f"Invalid genotype value {val} at row {i}, site {j}. Must be 0 or 1.")
             site_totals[j] += int(val == 1)
+    
     n_individuals = len(genotype_matrix)
     return [total / n_individuals for total in site_totals]
 
@@ -23,25 +53,93 @@ def allele_frequencies(genotype_matrix: Sequence[Sequence[int]]) -> list[float]:
 def observed_heterozygosity(genotypes: Iterable[tuple[int, int]]) -> float:
     """Proportion of heterozygous individuals among diploid genotypes.
 
-    genotypes: iterable of tuples (a1, a2) with alleles 0/1
+    Calculates the observed heterozygosity as the fraction of individuals
+    that are heterozygous (have different alleles at the two homologous chromosomes).
+
+    Args:
+        genotypes: Iterable of tuples (a1, a2) representing diploid genotypes.
+            Each tuple contains two alleles encoded as 0 (reference) or 1 (alternate).
+
+    Returns:
+        Float in [0, 1] representing the proportion of heterozygous individuals.
+        Returns 0.0 if input is empty.
+
+    Raises:
+        ValueError: If genotype tuples contain invalid allele values.
+
+    Examples:
+        >>> genotypes = [(0, 0), (0, 1), (1, 1), (1, 0)]
+        >>> observed_heterozygosity(genotypes)
+        0.5  # 2 of 4 are heterozygous
+        >>> observed_heterozygosity([(0, 0), (1, 1)])
+        0.0  # All homozygous
     """
     genotypes_list = list(genotypes)
     if not genotypes_list:
         return 0.0
-    hetero = sum(1 for a1, a2 in genotypes_list if a1 != a2)
+    
+    hetero = 0
+    for i, (a1, a2) in enumerate(genotypes_list):
+        if a1 not in (0, 1) or a2 not in (0, 1):
+            raise ValueError(f"Invalid allele values in genotype {i}: ({a1}, {a2}). Must be 0 or 1.")
+        if a1 != a2:
+            hetero += 1
+    
     return hetero / len(genotypes_list)
 
 
 def nucleotide_diversity(seqs: Sequence[str]) -> float:
-    """Average pairwise nucleotide difference per site (pi).
+    """Average pairwise nucleotide difference per site (π).
 
-    Assumes all sequences same length. If not, truncates to shortest length.
+    Calculates nucleotide diversity (π) as the average number of pairwise
+    nucleotide differences per site across all pairs of sequences.
+
+    Args:
+        seqs: Sequence of DNA sequences (strings). If sequences have different
+            lengths, they will be truncated to the shortest length.
+
+    Returns:
+        Average pairwise diversity per site (float). Returns 0.0 if:
+        - Less than 2 sequences provided
+        - All sequences are identical
+        - Sequences have zero length
+
+    Examples:
+        >>> seqs = ["AAAA", "AAAT"]
+        >>> nucleotide_diversity(seqs)
+        0.25  # 1 difference in 4 sites = 0.25 per site
+        >>> seqs = ["AAAA", "AAAA", "AAAA"]
+        >>> nucleotide_diversity(seqs)
+        0.0  # All sequences identical
+
+    References:
+        Nei, M., & Li, W. H. (1979). Mathematical model for studying genetic
+        variation in terms of restriction endonucleases. *Proceedings of the
+        National Academy of Sciences*, 76(10), 5269-5273.
     """
     if len(seqs) < 2:
         return 0.0
-    L = min(len(s) for s in seqs)
+    
+    # Validate sequences are strings
+    for i, seq in enumerate(seqs):
+        if not isinstance(seq, str):
+            raise TypeError(f"Sequence {i} is not a string: {type(seq)}")
+    
+    # Check for length mismatches
+    lengths = [len(s) for s in seqs]
+    L = min(lengths)
+    max_len = max(lengths)
+    if L != max_len:
+        warnings.warn(
+            f"nucleotide_diversity: Sequences have different lengths (min={L}, max={max_len}). "
+            f"Truncating to shortest length ({L}).",
+            UserWarning,
+            stacklevel=2,
+        )
+    
     if L == 0:
         return 0.0
+    
     n = len(seqs)
     total_diff = 0
     num_pairs = 0
@@ -54,9 +152,47 @@ def nucleotide_diversity(seqs: Sequence[str]) -> float:
 
 
 def tajimas_d(seqs: Sequence[str]) -> float:
-    """Very small-sample Tajima's D approximation for tests.
+    """Simplified Tajima's D approximation for small samples.
 
-    Returns 0 when no segregating sites or insufficient sequences.
+    This is a simplified version of Tajima's D that provides a basic measure
+    of departure from neutral equilibrium. For accurate statistical testing,
+    use `metainformant.math.coalescent.tajimas_D()` which implements the
+    full formula with proper variance calculation.
+
+    Tajima's D compares two estimators of the population mutation parameter θ:
+    - θ_π (average pairwise diversity)
+    - θ_S (Watterson's estimator based on segregating sites)
+
+    D > 0 suggests balancing selection or population contraction.
+    D < 0 suggests directional selection or population expansion.
+    D ≈ 0 is consistent with neutral equilibrium.
+
+    Args:
+        seqs: Sequence of DNA sequences (must be same length)
+
+    Returns:
+        Simplified Tajima's D statistic. Returns 0.0 when:
+        - Less than 2 sequences
+        - No segregating sites
+        - Zero-length sequences
+
+    Note:
+        This simplified version uses a basic normalization and may not
+        match the standard Tajima's D statistic exactly. For publication-
+        quality analysis, use the full implementation in `math.coalescent`.
+
+    Examples:
+        >>> seqs = ["AAAA", "AAAT", "AATT"]
+        >>> d = tajimas_d(seqs)
+        >>> isinstance(d, float)
+        True
+
+    References:
+        Tajima, F. (1989). Statistical method for testing the neutral mutation
+        hypothesis by DNA polymorphism. Genetics, 123(3), 585-595.
+
+    See Also:
+        `metainformant.math.coalescent.tajimas_D()` : Full Tajima's D implementation
     """
     if len(seqs) < 2:
         return 0.0
@@ -80,14 +216,61 @@ def tajimas_d(seqs: Sequence[str]) -> float:
 
 
 def hudson_fst(pop1: Sequence[str], pop2: Sequence[str]) -> float:
-    """Hudson's Fst estimator for two populations (simplified for tests).
+    """Hudson's Fst estimator for two populations.
 
-    Returns 0 <= Fst <= 1, assumes equal-length sequences per pop; truncates to
-    the shortest across pops.
+    Calculates Hudson's Fst (1992) which measures population differentiation
+    as the proportion of genetic diversity that is between populations rather
+    than within them.
+
+    Args:
+        pop1: Sequence of DNA sequences from population 1
+        pop2: Sequence of DNA sequences from population 2
+
+    Returns:
+        Fst value in [0, 1] where:
+        - 0 = no differentiation (populations identical)
+        - 1 = complete differentiation (fixed differences between populations)
+
+    Note:
+        If sequences have different lengths, truncates to shortest length.
+        Returns 0.0 if either population is empty.
+
+    Examples:
+        >>> pop1 = ["AAAA", "AAAA"]
+        >>> pop2 = ["TTTT", "TTTT"]
+        >>> hudson_fst(pop1, pop2)
+        1.0  # Complete differentiation
+        >>> pop1 = ["AAAA", "AAAT"]
+        >>> pop2 = ["AAAA", "AAAT"]
+        >>> hudson_fst(pop1, pop2)
+        0.0  # No differentiation
+
+    References:
+        Hudson, R. R., Slatkin, M., & Maddison, W. P. (1992). Estimation of
+        levels of gene flow from DNA sequence data. *Genetics*, 132(2), 583-589.
     """
     if not pop1 or not pop2:
         return 0.0
-    L = min(min(len(s) for s in pop1), min(len(s) for s in pop2))
+    
+    # Check for length mismatches
+    pop1_lengths = [len(s) for s in pop1]
+    pop2_lengths = [len(s) for s in pop2]
+    L1 = min(pop1_lengths)
+    L2 = min(pop2_lengths)
+    L = min(L1, L2)
+    
+    max_len1 = max(pop1_lengths)
+    max_len2 = max(pop2_lengths)
+    
+    if L1 != max_len1 or L2 != max_len2:
+        warnings.warn(
+            f"hudson_fst: Sequences have different lengths "
+            f"(pop1: min={L1}, max={max_len1}; pop2: min={L2}, max={max_len2}). "
+            f"Truncating to shortest length ({L}).",
+            UserWarning,
+            stacklevel=2,
+        )
+    
     if L == 0:
         return 0.0
 
@@ -124,17 +307,71 @@ def hudson_fst(pop1: Sequence[str], pop2: Sequence[str]) -> float:
 
 
 def _allele_freq(alleles: Sequence[str]) -> float:
-    # kept for backwards compatibility; not used in current Hudson Fst
+    """Calculate allele frequency of non-reference allele.
+    
+    This function is kept for backwards compatibility but is not currently
+    used in the Hudson Fst implementation. The current implementation
+    computes allele frequencies directly within hudson_fst().
+    
+    Args:
+        alleles: Sequence of allele characters at a site
+        
+    Returns:
+        Frequency of non-reference allele (1 - frequency of first allele)
+        
+    Note:
+        This function may be removed in a future version if no external
+        code depends on it. If you need this functionality, consider using
+        the allele frequency calculation directly in your code.
+    """
     ref = alleles[0]
     count_ref = sum(1 for a in alleles if a == ref)
     return 1.0 - count_ref / len(alleles)
 
 
 def segregating_sites(seqs: Sequence[str]) -> int:
-    """Count the number of sites with more than one allele among sequences."""
+    """Count the number of sites with more than one allele among sequences.
+
+    A segregating (polymorphic) site is a position where at least two
+    different nucleotides are observed across the sequences.
+
+    Args:
+        seqs: Sequence of DNA sequences (strings)
+
+    Returns:
+        Integer count of segregating sites. Returns 0 if:
+        - Less than 2 sequences provided
+        - Sequences have zero length
+        - All sequences are identical
+
+    Examples:
+        >>> seqs = ["AAAA", "AAAT", "AATT"]
+        >>> segregating_sites(seqs)
+        2  # Sites at positions 2 and 3 are polymorphic
+        >>> seqs = ["AAAA", "AAAA"]
+        >>> segregating_sites(seqs)
+        0  # No variation
+    """
     if len(seqs) < 2:
         return 0
-    L = min(len(s) for s in seqs)
+    
+    # Validate sequences are strings
+    for i, seq in enumerate(seqs):
+        if not isinstance(seq, str):
+            raise TypeError(f"Sequence {i} is not a string: {type(seq)}")
+    
+    # Check for length mismatches
+    lengths = [len(s) for s in seqs]
+    L = min(lengths)
+    max_len = max(lengths)
+    if L != max_len:
+        warnings.warn(
+            f"segregating_sites: Sequences have different lengths (min={L}, max={max_len}). "
+            f"Truncating to shortest length ({L}).",
+            UserWarning,
+            stacklevel=2,
+        )
+    
     if L == 0:
         return 0
     count = 0
@@ -145,14 +382,56 @@ def segregating_sites(seqs: Sequence[str]) -> int:
 
 
 def wattersons_theta(seqs: Sequence[str]) -> float:
-    """Watterson's theta per site: theta_w = S / (a1 * L).
+    """Watterson's theta per site: θ_W = S / (a₁ × L).
 
-    a1 = sum_{i=1..n-1} 1/i, S = segregating sites, L = alignment length.
+    Calculates Watterson's estimator of the population mutation parameter θ
+    based on the number of segregating sites rather than pairwise diversity.
+
+    Args:
+        seqs: Sequence of DNA sequences (strings)
+
+    Returns:
+        Watterson's theta estimate per site (float). Returns 0.0 if:
+        - Less than 2 sequences provided
+        - Sequences have zero length
+        - No segregating sites
+
+    Formula:
+        θ_W = S / (a₁ × L) where:
+        - S = number of segregating sites
+        - a₁ = Σᵢ₌₁ⁿ⁻¹ 1/i (harmonic sum)
+        - L = sequence length
+
+    Examples:
+        >>> seqs = ["AAAA", "AAAT", "AATT"]
+        >>> wattersons_theta(seqs)
+        0.5...  # Depends on number of segregating sites
+
+    References:
+        Watterson, G. A. (1975). On the number of segregating sites in genetical
+        models without recombination. *Theoretical Population Biology*, 7(2), 256-276.
     """
     n = len(seqs)
     if n < 2:
         return 0.0
-    L = min(len(s) for s in seqs)
+    
+    # Validate sequences are strings
+    for i, seq in enumerate(seqs):
+        if not isinstance(seq, str):
+            raise TypeError(f"Sequence {i} is not a string: {type(seq)}")
+    
+    # Check for length mismatches
+    lengths = [len(s) for s in seqs]
+    L = min(lengths)
+    max_len = max(lengths)
+    if L != max_len:
+        warnings.warn(
+            f"wattersons_theta: Sequences have different lengths (min={L}, max={max_len}). "
+            f"Truncating to shortest length ({L}).",
+            UserWarning,
+            stacklevel=2,
+        )
+    
     if L == 0:
         return 0.0
     S = segregating_sites(seqs)

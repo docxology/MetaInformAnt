@@ -283,10 +283,17 @@ def expected_segregating_sites(
         >>> expected_segregating_sites(sample_size=10, theta=0.001, sequence_length=1000)
         2.82...
         
+    Note:
+        The parameter order is (sample_size, theta). Support for reversed order
+        (theta, sample_size) is deprecated and will be removed in a future version.
+        Use keyword arguments for clarity: expected_segregating_sites(sample_size=10, theta=0.01)
+        
     References:
         Watterson, G. A. (1975). On the number of segregating sites in genetical
         models without recombination. Theoretical Population Biology, 7(2), 256-276.
     """
+    import warnings
+    
     # Support both call orders: (n, theta) and (theta, n) for backward compatibility.
     # Detect if inputs are reversed (first arg looks like theta < 2, second like integer n >= 2).
     n_raw = sample_size
@@ -299,12 +306,20 @@ def expected_segregating_sites(
         th_as_float = float("nan")
 
     if (n_as_float < 2.0) and (th_as_float >= 2.0) and (abs(th_as_float - round(th_as_float)) < 1e-9):
-        # Likely called as (theta, n)
+        # Likely called as (theta, n) - DEPRECATED
+        warnings.warn(
+            "expected_segregating_sites(theta, n) parameter order is deprecated. "
+            "Use expected_segregating_sites(sample_size=n, theta=theta) instead. "
+            "This will be removed in a future version.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         n = int(round(th_as_float))
         th = max(0.0, float(n_as_float))
     else:
         n = int(round(n_as_float))
         th = max(0.0, float(th_as_float))
+    
     if n < 2 or th <= 0:
         return 0.0
     a1 = tajima_constants(n)["a1"]
@@ -500,18 +515,26 @@ def site_frequency_spectrum_counts(derived_counts: Iterable[int], sample_size: i
             for polymorphic sites.
             
     Returns:
-        List of length (n-1) where the i-th element (0-indexed) is the count of sites
-        with exactly (i+1) derived alleles. Indices 0 to n-2 correspond to frequencies
-        1 to n-1.
+        List of length (n//2) where the i-th element (0-indexed) is the count of sites
+        with minor allele frequency (i+1). Only counts minor allele frequencies (frequencies
+        up to n/2), as frequencies > n/2 are symmetric to frequencies < n/2.
+        
+        For example, with n=5:
+        - Sites with 1 or 4 derived alleles both map to minor frequency 1
+        - Sites with 2 or 3 derived alleles both map to minor frequency 2
+        
+    Note:
+        This function only counts minor allele frequencies (frequencies ≤ n/2).
+        Major allele frequencies (frequencies > n/2) are folded into the minor
+        frequency counts. This is standard practice in SFS analysis to avoid
+        ambiguity about which allele is ancestral.
         
     Examples:
         >>> counts = site_frequency_spectrum_counts([1, 1, 2, 2, 3], sample_size=5)
-        >>> counts[0]  # Sites with 1 derived allele
+        >>> counts[0]  # Sites with minor allele frequency 1 (1 or 4 derived alleles)
         2
-        >>> counts[1]  # Sites with 2 derived alleles
-        2
-        >>> counts[2]  # Sites with 3 derived alleles
-        1
+        >>> counts[1]  # Sites with minor allele frequency 2 (2 or 3 derived alleles)
+        3
     """
     n = int(sample_size)
     if n < 2:

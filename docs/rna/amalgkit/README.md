@@ -17,17 +17,19 @@ The amalgkit integration provides a complete transcriptomic analysis pipeline fr
 ### Core Amalgkit Integration
 - **`amalgkit.md`**: Complete transcriptomic analysis pipeline documentation
 - **`comprehensive_guide.md`**: Comprehensive amalgkit workflow guide
-- **`END_TO_END_WORKFLOW.md`**: Complete end-to-end workflow documentation
+- **`README.md`**: This file - overview and quick start
 
 ### Workflow Guides
 - **`quick_start.md`**: Quick start guide for sanity and curate steps (all species)
+- **`R_INSTALLATION.md`**: R installation and setup guide
 - **`r_packages.md`**: R package setup and troubleshooting
-- **`verify_template.sh`**: Template verification script for any species
 
-### Success Documentation
-- **`FINAL_SUCCESS_REPORT.md`**: Production deployment success documentation
-- **`OFFICIAL_COMPLIANCE.md`**: Official amalgkit compliance verification
-- **`testing_coverage.md`**: Testing coverage and validation
+### Step Documentation
+- **`steps/`**: Complete documentation for all 11 amalgkit steps
+  - metadata, integrate, config, select, getfastq, quant, merge, cstmm, curate, csca, sanity
+
+### Validation
+- **`testing_coverage.md`**: Testing coverage, validation, and production results
 
 ## Related Source Code
 
@@ -89,8 +91,9 @@ Comprehensive tests ensure workflow reliability:
 
 **Disk Space Management:**
 - Direct ENA downloads with automatic retry and resume
-- Batched processing: ~18 GB peak disk usage per batch (12 samples)
-- Automatic FASTQ cleanup after quantification
+- Batched processing: ~50-100 GB peak disk usage (temporary, auto-cleaned)
+- Automatic FASTQ cleanup after quantification (saves ~2-10 GB per sample)
+- Final results: ~40-55 GB for 20 species (4,548 samples total)
 - No /tmp partition limitations
 
 **Performance:**
@@ -98,7 +101,8 @@ Comprehensive tests ensure workflow reliability:
 - Direct ENA downloads: 100% reliability vs 0% SRA Toolkit
 - Multi-species coordination and cross-species analysis
 - Automatic virtual environment activation
-- Currently processing 844 samples across 4 ant species (November 2025)
+- Currently processing 3,820 samples in Batch 1 (10 ant species, November 2025)
+- Batch 2 queued: 728 samples (10 additional species)
 
 ## Contributing
 
@@ -121,17 +125,18 @@ See `output/amalgkit/pbarbatus/QUICK_REFERENCE.md` for immediate usage.
 ## Quick Start for New Species
 
 1. **Review workflow guide**: `quick_start.md`
-2. **Setup R environment**: `r_packages.md`
-3. **Run ENA workflow**: See scripts/rna/workflow_ena_integrated.py
-4. **Copy verification script**: `verify_template.sh`
+2. **Setup R environment**: `R_INSTALLATION.md` and `r_packages.md`
+3. **Run ENA workflow**: See `scripts/rna/workflow_ena_integrated.py`
+4. **For batch processing**: Use `scripts/rna/run_top10_ant_species.sh` or `run_batch2_ant_species.sh`
 5. **Validate outputs**: Run sanity and curate steps
 
 **No manual venv activation needed** - scripts handle environment setup automatically.
 
 **Disk space requirements:**
-- ~18 GB peak usage for batched FASTQ processing (12 samples at a time)
+- ~50-100 GB peak usage (temporary, during download/quant)
 - Direct ENA downloads with automatic resume
-- Automatic cleanup after quantification
+- Automatic cleanup after quantification (FASTQs deleted immediately)
+- Final results: ~2-3 GB per species (expression matrices + QC)
 
 ## Related Documentation
 

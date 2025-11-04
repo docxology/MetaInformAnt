@@ -75,7 +75,39 @@ python -c "from metainformant.rna import check_cli_available; print(check_cli_av
 
 # Run multi-species RNA-seq workflow
 python scripts/rna/run_multi_species.py
+
+# Or use CLI
+uv run metainformant rna run --work-dir output/rna --threads 8 --species Apis_mellifera
 ```
+
+### CLI Workflows
+
+All modules are accessible via the unified CLI:
+
+```bash
+# DNA analysis
+uv run metainformant dna fetch --assembly GCF_000001405.40
+
+# Network analysis
+uv run metainformant networks run --input data/interactions.tsv --output output/networks
+
+# Multi-omics integration
+uv run metainformant multiomics run --genomics data/genomics.tsv --transcriptomics data/rna.tsv --output output/multiomics
+
+# Single-cell analysis
+uv run metainformant singlecell run --input data/counts.h5ad --output output/singlecell --qc --normalize
+
+# Quality control
+uv run metainformant quality run --fastq data/reads.fq --output output/quality --analyze-fastq
+
+# Machine learning
+uv run metainformant ml run --features data/features.csv --labels data/labels.csv --output output/ml --classify
+
+# See all commands
+uv run metainformant --help
+```
+
+See [`docs/cli.md`](docs/cli.md) for complete CLI reference.
 
 ### Complete Demonstration
 

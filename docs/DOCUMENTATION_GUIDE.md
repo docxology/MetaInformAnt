@@ -174,9 +174,12 @@ Top-level README → docs/index.md → Domain index → Specific documentation
 ### Cross-References
 All documentation includes cross-references to:
 - Related modules and functionality
-- Core utilities used
+- Core utilities used (see [Core Utilities](./core.md))
 - Integration examples
-- Testing documentation
+- Testing documentation (see [Testing Guide](./testing.md))
+- Orchestrator scripts (see [Scripts README](../../scripts/README.md))
+- Configuration templates (see [Config README](../../config/README.md))
+- CLI commands (see [CLI Reference](./cli.md))
 
 ## AI Assistance Documentation
 
@@ -209,13 +212,16 @@ AI contributions are documented at multiple levels:
 
 ### By Domain
 Start with domain index files:
-- DNA → [dna/index.md](dna/index.md)
-- RNA → [rna/index.md](rna/index.md)
-- GWAS → [gwas/index.md](gwas/index.md)
-- Single-cell → [singlecell/index.md](singlecell/index.md)
-- Math → [math/index.md](math/index.md)
-- ML → [ml/index.md](ml/index.md)
-- Networks → [networks/index.md](networks/index.md)
+- DNA → [dna/index.md](dna/index.md) - See also: [DNA Analysis Scripts](../../scripts/README.md#dna-analysis-scripts-scriptsdna)
+- RNA → [rna/index.md](rna/index.md) - See also: [RNA Workflows](../../scripts/rna/README.md) and [CLI Commands](./cli.md#rna-workflows)
+- GWAS → [gwas/index.md](gwas/index.md) - See also: [GWAS Scripts](../../scripts/README.md#gwas-analysis-scripts-scriptsgwas) and [Config Templates](../../config/README.md#gwas-analysis-configurations)
+- Single-cell → [singlecell/index.md](singlecell/index.md) - See also: [Single-Cell Scripts](../../scripts/README.md#single-cell-genomics-scripts-scriptssinglecell) and [Config Template](../../config/README.md#single-cell-analysis-singlecell_templateyaml)
+- Math → [math/index.md](math/index.md) - See also: [Math Scripts](../../scripts/README.md#mathematical-biology-scripts-scriptsmath)
+- ML → [ml/index.md](ml/index.md) - See also: [ML Scripts](../../scripts/README.md#machine-learning-scripts-scriptsml)
+- Networks → [networks/index.md](networks/index.md) - See also: [Network Scripts](../../scripts/README.md#network-analysis-scripts-scriptsnetworks) and [Config Template](../../config/README.md#network-analysis-networkstemplateyaml)
+- Multi-omics → [multiomics/index.md](multiomics/index.md) - See also: [Multi-Omics Scripts](../../scripts/README.md#multi-omics-scripts-scriptsmultiomics) and [Config Template](../../config/README.md#multi-omics-integration-multiomicstemplateyaml)
+- Quality → [quality/index.md](quality/index.md) - See also: [Quality Scripts](../../scripts/README.md#quality-control-scripts-scriptsquality)
+- Visualization → [visualization/index.md](visualization/index.md) - See also: [Visualization Scripts](../../scripts/README.md#visualization-scripts-scriptvisualization)
 
 ### By Component
 - **Core utilities**: Start at [core/README.md](core/README.md)

@@ -1,7 +1,7 @@
 # Multi-Species RNA-seq Quick Start Guide
 
-**Last Updated**: November 1, 2025  
-**Status**: ✅ Production-validated with 844 samples across 4 ant species
+**Last Updated**: November 3, 2025  
+**Status**: ✅ Production-validated - Currently processing 3,820 samples in Batch 1 (10 ant species)
 
 This guide provides step-by-step instructions for starting and monitoring multi-species RNA-seq workflows using METAINFORMANT.
 
@@ -56,7 +56,11 @@ which wget kallisto
 # Navigate to repository root
 cd /home/q/Documents/GitHub/MetaInformAnt
 
-# Start all 4 species in parallel (background mode)
+# Batch Processing Strategy (Current - November 2025)
+# Processing 20 species in 2 batches of 10 for disk space management
+# See docs/rna/discovery/batched_processing.md for details
+
+# For single species or smaller batches:
 # C. floridanus
 nohup python3 scripts/rna/workflow_ena_integrated.py \
   --config config/amalgkit/amalgkit_cfloridanus.yaml \
@@ -95,12 +99,14 @@ ps aux | grep workflow_ena
 - ✅ **Automatic resume** with `wget --continue`
 - ✅ **Batched processing** (12 samples at a time)
 - ✅ **Auto-cleanup** (FASTQs deleted after quantification)
-- ✅ **Parallel execution** (4 species simultaneously)
+- ✅ **Batch orchestration** (10 species per batch for disk management)
+- ✅ **Parallel execution** (multiple species simultaneously)
 
 **Expected behavior:**
 - Each workflow downloads 12 samples → quantifies → deletes FASTQs → repeats
-- Peak disk usage: ~18 GB per species (~72 GB total for 4 species)
+- Peak disk usage: ~50-100 GB (temporary, auto-cleaned per sample)
 - Processing rate: ~7.5 minutes per sample
+- Final results: ~2-3 GB per species (expression matrices + QC)
 - Network interruptions: automatically resume
 
 ### Method 2: Legacy SRA Workflow (Alternative)
@@ -171,7 +177,7 @@ python3 scripts/rna/monitor_comprehensive.py
    Downloading: 96 samples (540M)
 
 ================================================================================
-🎯 OVERALL: 13/844 samples (1%)
+🎯 OVERALL: Progress shown for example species (current Batch 1: 3,820 samples across 10 species)
 ================================================================================
 
 ⏳ Estimated remaining: 103.9 hours (831 samples)
@@ -327,12 +333,13 @@ output/amalgkit/
 - P. barbatus (83 samples): ~10 hours (7 batches)
 - M. pharaonis (100 samples): ~12 hours (9 batches)
 - S. invicta (354 samples): ~44 hours (30 batches)
-- **Total (parallel)**: ~44 hours (~2 days) for all 844 samples
+- **Total (Batch 1)**: ~24-48 hours for 3,820 samples (10 species)
+- **Total (Batch 2)**: ~12-24 hours for 728 samples (10 species)
 
 ### Resource Usage
 
 **CPU:**
-- 12 threads per species × 4 species = 48 threads total
+- 12 threads per species × 10 species (Batch 1) = up to 120 threads total
 - Recommend: 64+ cores for smooth parallel processing
 
 **RAM:**
@@ -341,7 +348,7 @@ output/amalgkit/
 
 **Disk:**
 - Peak: ~18 GB per species (12 samples × 1.5 GB avg)
-- Total peak: ~72 GB for 4 species parallel
+- Total peak: ~50-100 GB (temporary, auto-cleaned per sample)
 - Final: ~1.7 GB (quantification files only)
 
 **Network:**
@@ -480,7 +487,8 @@ python3 scripts/rna/monitor_comprehensive.py
 
 ```bash
 # START WORKFLOWS
-# All 4 species in parallel (production)
+# Batch 1: Top 10 species (production)
+# bash scripts/rna/run_top10_ant_species.sh
 for species in cfloridanus pbarbatus mpharaonis sinvicta; do
   nohup python3 scripts/rna/workflow_ena_integrated.py \
     --config config/amalgkit/amalgkit_${species}.yaml \
@@ -525,7 +533,7 @@ pkill -f workflow_ena                                 # Stop all
 ✅ **Expected final state:**
 - `output/amalgkit/{species}/quant/` contains N sample directories
 - Each sample has ~2 MB of quantification data
-- Total size: ~1.7 GB for all 844 samples
+- Total size: ~40-55 GB for all 4,548 samples (20 species)
 - Logs show successful completion
 
 ---
@@ -557,7 +565,12 @@ pkill -f workflow_ena                                 # Stop all
 
 ---
 
-**Status**: This workflow is currently processing 844 samples across 4 ant species with 100% reliability and is expected to complete in ~4 days.
+**Status**: Batch processing strategy active (November 2025):
+- **Batch 1**: 3,820 samples across 10 ant species - currently running
+- **Batch 2**: 728 samples across 10 ant species - queued
+- **Total**: 4,548 samples across 20 ant species
+- **Reliability**: 100% with ENA direct downloads
+- **Expected completion**: 24-48 hours for Batch 1, 12-24 hours for Batch 2
 
 **Documentation Version**: 1.0 (November 2025)  
 **Tested Configuration**: 12 threads, 12-sample batches, ENA direct downloads

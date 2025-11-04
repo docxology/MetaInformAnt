@@ -118,13 +118,12 @@ bash scripts/rna/amalgkit/run_amalgkit.sh \
 - **Curate**: Fails with error about missing Rscript
 - **Sanity**: Still validates core outputs
 
-## Current Workflow Status
+## Current Workflow Status (November 2025)
 
-As of the merge fix implementation:
-- **Core quantification**: ✅ Complete (776/844 samples, 91.9%)
-- **Expression matrices**: ✅ Created for S. invicta and M. pharaonis
-- **Sanity checks**: ✅ Passed for both species
-- **R-dependent steps**: ⚠️ Skipped (R not installed)
+- **Batch 1**: Processing 3,820 samples across 10 ant species
+- **Batch 2**: Queued - 728 samples across 10 ant species
+- **R-dependent steps**: Required for `curate` and `merge` plotting
+- **R installation**: See installation methods above
 
 ## Workaround: Skip R-Dependent Steps
 

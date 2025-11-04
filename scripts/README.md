@@ -24,9 +24,14 @@ scripts/
 ├── visualization/ # Visualization scripts
 ├── epigenome/     # Epigenome analysis scripts
 ├── ecology/       # Ecology analysis scripts
+├── archive/       # Archived/obsolete scripts (see archive/README.md)
 ├── README.md      # This file
 └── AGENTS.md      # AI agent contribution documentation
 ```
+
+## Template Files
+
+- **`_template_working.py`**: Reference template demonstrating proper script structure, imports, configuration, and output handling. Useful for creating new orchestrator scripts.
 
 ## Package Scripts (`scripts/package/`)
 
@@ -167,114 +172,130 @@ See `scripts/rna/README.md` for detailed RNA script documentation.
 ## DNA Analysis Scripts (`scripts/dna/`)
 
 ### Analysis Workflow
-- **`run_dna_analysis.py`**: DNA analysis workflow orchestrator
+- **`run_dna_analysis.py`**: ✅ DNA analysis workflow orchestrator (IMPLEMENTED)
   - Sequence processing and quality control
   - Variant analysis
   - Integration with metainformant.dna module
+  - Usage: `python3 scripts/dna/run_dna_analysis.py --help`
 
 ## Protein Analysis Scripts (`scripts/protein/`)
 
 ### Analysis Workflow
-- **`run_protein_analysis.py`**: Protein analysis workflow orchestrator
+- **`run_protein_analysis.py`**: ✅ Protein analysis workflow orchestrator (IMPLEMENTED)
   - Structure prediction and functional annotation
   - Domain and motif analysis
   - Integration with metainformant.protein module
+  - Usage: `python3 scripts/protein/run_protein_analysis.py --help`
 
 ## Ontology Scripts (`scripts/ontology/`)
 
 ### Analysis Workflow
-- **`run_ontology_analysis.py`**: Ontology analysis workflow orchestrator
+- **`run_ontology_analysis.py`**: ✅ Ontology analysis workflow orchestrator (IMPLEMENTED)
   - GO enrichment analysis
   - Semantic similarity calculations
   - Pathway analysis
+  - Usage: `python3 scripts/ontology/run_ontology_analysis.py --help` or `uv run metainformant ontology run --help`
 
 ## Phenotype Scripts (`scripts/phenotype/`)
 
 ### Analysis Workflow
-- **`run_phenotype_analysis.py`**: Phenotype analysis workflow orchestrator
+- **`run_phenotype_analysis.py`**: ✅ Phenotype analysis workflow orchestrator (IMPLEMENTED)
   - Trait associations and correlations
-  - Heritability estimation
-  - Phenotype prediction
+  - Statistics and correlation analysis
+  - Integration with metainformant.phenotype module
+  - Usage: `python3 scripts/phenotype/run_phenotype_analysis.py --help` or `uv run metainformant phenotype run --help`
 
 ## Network Analysis Scripts (`scripts/networks/`)
 
 ### Analysis Workflow
-- **`run_network_analysis.py`**: Network analysis workflow orchestrator
+- **`run_network_analysis.py`**: ✅ Network analysis workflow orchestrator (IMPLEMENTED)
   - Network construction and visualization
   - Community detection
   - Pathway and interaction analysis
+  - Network metrics and centrality calculations
+  - Usage: `python3 scripts/networks/run_network_analysis.py --help` or `uv run metainformant networks run --help`
 
 ## Multi-Omics Scripts (`scripts/multiomics/`)
 
 ### Integration Workflow
-- **`run_multiomics_integration.py`**: Multi-omics integration orchestrator
+- **`run_multiomics_integration.py`**: ✅ Multi-omics integration orchestrator (IMPLEMENTED)
   - Cross-omics correlation analysis
   - Data integration across genomics, transcriptomics, proteomics
-  - Systems biology approaches
+  - Joint PCA, NMF, and canonical correlation analysis
+  - Usage: `python3 scripts/multiomics/run_multiomics_integration.py --help` or `uv run metainformant multiomics run --help`
 
 ## Mathematical Biology Scripts (`scripts/math/`)
 
 ### Modeling Workflow
-- **`run_math_modeling.py`**: Mathematical biology orchestrator
+- **`run_math_modeling.py`**: ✅ Mathematical biology orchestrator (IMPLEMENTED)
   - Differential equations and dynamical systems
   - Theoretical modeling
   - Stability and bifurcation analysis
+  - Usage: `python3 scripts/math/run_math_modeling.py --help`
 
 ## Machine Learning Scripts (`scripts/ml/`)
 
 ### ML Pipeline
-- **`run_ml_pipeline.py`**: Machine learning workflow orchestrator
+- **`run_ml_pipeline.py`**: ✅ Machine learning workflow orchestrator (IMPLEMENTED)
   - Model training and hyperparameter tuning
   - Cross-validation and evaluation
-  - Prediction generation
+  - Classification, regression, and feature selection
+  - Usage: `python3 scripts/ml/run_ml_pipeline.py --help` or `uv run metainformant ml run --help`
 
 ## Single-Cell Genomics Scripts (`scripts/singlecell/`)
 
 ### Analysis Workflow
-- **`run_singlecell_analysis.py`**: Single-cell analysis orchestrator
+- **`run_singlecell_analysis.py`**: ✅ Single-cell analysis orchestrator (IMPLEMENTED)
   - Quality control and normalization
   - Clustering and cell type annotation
   - Trajectory and differential expression analysis
+  - Usage: `python3 scripts/singlecell/run_singlecell_analysis.py --help` or `uv run metainformant singlecell run --help`
 
 ## Quality Control Scripts (`scripts/quality/`)
 
 ### QC Workflow
-- **`run_quality_control.py`**: Quality control orchestrator
+- **`run_quality_control.py`**: ✅ Quality control orchestrator (IMPLEMENTED)
   - Data validation and QC metrics
+  - FASTQ quality analysis
+  - Contamination detection
   - Quality reporting
-  - Issue identification
+  - Usage: `python3 scripts/quality/run_quality_control.py --help` or `uv run metainformant quality run --help`
 
 ## Simulation Scripts (`scripts/simulation/`)
 
 ### Simulation Workflow
-- **`run_simulation.py`**: Biological simulation orchestrator
+- **`run_simulation.py`**: ✅ Biological simulation orchestrator (IMPLEMENTED)
   - Agent-based models
-  - Population dynamics
-  - Evolutionary simulations
+  - Sequence generation
+  - Expression simulation
+  - Usage: `python3 scripts/simulation/run_simulation.py --help` or `uv run metainformant simulation run --help`
 
 ## Visualization Scripts (`scripts/visualization/`)
 
 ### Visualization Workflow
-- **`run_visualization.py`**: Visualization workflow orchestrator
+- **`run_visualization.py`**: ✅ Visualization workflow orchestrator (IMPLEMENTED)
   - Plot generation and interactive visualizations
+  - Lineplots, heatmaps, animations, histograms
   - Dashboard creation
-  - Report generation
+  - Usage: `python3 scripts/visualization/run_visualization.py --help` or `uv run metainformant visualization run --help`
 
 ## Epigenome Analysis Scripts (`scripts/epigenome/`)
 
 ### Analysis Workflow
-- **`run_epigenome_analysis.py`**: Epigenome analysis orchestrator
+- **`run_epigenome_analysis.py`**: ✅ Epigenome analysis orchestrator (IMPLEMENTED)
   - Methylation analysis
-  - Histone modifications
-  - Chromatin accessibility
+  - Beta value computation
+  - BedGraph track loading
+  - Usage: `python3 scripts/epigenome/run_epigenome_analysis.py --help` or `uv run metainformant epigenome run --help`
 
 ## Ecology Analysis Scripts (`scripts/ecology/`)
 
 ### Analysis Workflow
-- **`run_ecology_analysis.py`**: Ecology analysis orchestrator
+- **`run_ecology_analysis.py`**: ✅ Ecology analysis orchestrator (IMPLEMENTED)
   - Species diversity and community composition
-  - Ordination and clustering
-  - Ecological modeling
+  - Diversity indices (Shannon, Simpson, etc.)
+  - Beta diversity calculations
+  - Usage: `python3 scripts/ecology/run_ecology_analysis.py --help` or `uv run metainformant ecology run --help`
 
 ## Usage Guidelines
 
@@ -401,7 +422,18 @@ Scripts integrate with:
 - **uv** for Python package management
 - **pytest** for testing framework
 - **amalgkit** for RNA analysis
-- **Core utilities** for file operations
+- **Core utilities** for file operations (see [Core Documentation](../docs/core/README.md))
+- **Configuration management** via `core.config` (see [Config Documentation](../docs/core/config.md))
+- **CLI interface** via `metainformant` command (see [CLI Documentation](../docs/cli.md))
+
+## Testing
+
+Orchestrator scripts are tested via `tests/test_orchestrators.py`:
+- Help text verification
+- CLI integration tests
+- Basic functionality validation
+
+See [Testing Documentation](../docs/testing.md) for complete testing policy.
 
 ## Troubleshooting
 

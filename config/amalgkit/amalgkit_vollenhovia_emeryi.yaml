@@ -1,0 +1,110 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Vollenhovia emeryi
+# NCBI Taxonomy ID: 411798
+# Assembly: GCF_001594055.1 (V.emery_V1.0)
+# Assembly Level: Scaffold
+# Sequencing: Illumina
+# Annotation Release: 100
+# Notes: Asian ant species
+# RNA-seq Samples Available: 15
+# Generated: 2025-11-03
+
+
+work_dir: /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/vollenhovia_emeryi/work
+log_dir: /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/vollenhovia_emeryi/logs
+threads: 12
+
+
+auto_install_amalgkit: true
+
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: false  # Set to true to filter by tissue metadata
+
+
+# Species configuration
+species_list:
+  - Vollenhovia_emeryi
+
+
+# Alternative taxonomy specification
+taxon_id: 411798
+
+
+# Reference genome configuration
+# Based on NCBI assembly: GCF_001594055.1
+genome:
+  accession: GCF_001594055.1
+  assembly_name: V.emery_V1.0
+  annotation_release: 100
+  dest_dir: output/amalgkit/vollenhovia_emeryi/genome
+
+
+  # Files to download (based on available NCBI FTP resources)
+  include:
+    - genome           # Genomic sequences (FASTA)
+    - gff3            # Gene annotations (GFF3)
+    - rna             # RNA sequences (FASTA)
+    - cds             # CDS sequences (FASTA)
+    - protein         # Protein sequences (FASTA)
+    - seq-report      # Sequence report
+    - feature-table   # Feature table
+    - gene-ontology   # Gene Ontology annotations (if available)
+
+
+  # Direct FTP URL for all genome files
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/001/594/055/GCF_001594055.1_V.emery_V1.0/
+
+
+  # Specific important files for transcriptome analysis
+  files:
+    genomic_fasta: GCF_001594055.1_V.emery_V1.0_genomic.fna.gz
+    transcriptome_fasta: GCF_001594055.1_V.emery_V1.0_rna_from_genomic.fna.gz
+    cds_fasta: GCF_001594055.1_V.emery_V1.0_cds_from_genomic.fna.gz
+    protein_fasta: GCF_001594055.1_V.emery_V1.0_protein.faa.gz
+    annotation_gff: GCF_001594055.1_V.emery_V1.0_genomic.gff.gz
+    annotation_gtf: GCF_001594055.1_V.emery_V1.0_genomic.gtf.gz
+
+
+# Per-step parameters (merged on top of common params)
+steps:
+  metadata:
+    # Required by amalgkit metadata
+    out_dir: output/amalgkit/vollenhovia_emeryi/work
+    # Uses NCBI_EMAIL from environment; override here if needed
+    # entrez_email: you@example.com
+    search_string: '"Vollenhovia emeryi"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
+    redo: yes
+  integrate:
+    fastq_dir: output/amalgkit/vollenhovia_emeryi/fastq
+  config: {}
+  select: {}
+  getfastq:
+    out_dir: output/amalgkit/vollenhovia_emeryi/fastq
+    threads: 12
+    # Cloud acceleration via individual mirrors
+    aws: yes
+    gcp: yes
+    ncbi: yes
+    pfd: no           # DISABLED: parallel-fastq-dump usually not needed
+    fastp: yes        # ENABLED: fastp QC tool
+  quant:
+    # If a Salmon/Kallisto index is available, set it; otherwise genome_dir is injected from genome step
+    out_dir: output/amalgkit/vollenhovia_emeryi/quant
+    threads: 12
+    redo: no
+    # Delete SRA/FASTQ files after quantification to save space
+    keep_fastq: no
+    # Build kallisto index if not present
+    build_index: yes
+  merge:
+    out: output/amalgkit/vollenhovia_emeryi/merged/merged_abundance.tsv
+    out_dir: output/amalgkit/vollenhovia_emeryi/merged
+  cstmm:
+    out_dir: output/amalgkit/vollenhovia_emeryi/cstmm
+  curate:
+    out_dir: output/amalgkit/vollenhovia_emeryi/curate
+  csca:
+    out_dir: output/amalgkit/vollenhovia_emeryi/csca
+  sanity: {}

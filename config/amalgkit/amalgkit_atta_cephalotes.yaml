@@ -1,0 +1,110 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Atta cephalotes
+# NCBI Taxonomy ID: 12957
+# Assembly: GCF_000143395.1 (Attacep1.0)
+# Assembly Level: Scaffold
+# Sequencing: Illumina
+# Annotation Release: 101
+# Notes: Leafcutter ant, fungus-growing symbiosis model
+# RNA-seq Samples Available: 239
+# Generated: 2025-11-03
+
+
+work_dir: /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/atta_cephalotes/work
+log_dir: /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/atta_cephalotes/logs
+threads: 12
+
+
+auto_install_amalgkit: true
+
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: false  # Set to true to filter by tissue metadata
+
+
+# Species configuration
+species_list:
+  - Atta_cephalotes
+
+
+# Alternative taxonomy specification
+taxon_id: 12957
+
+
+# Reference genome configuration
+# Based on NCBI assembly: GCF_000143395.1
+genome:
+  accession: GCF_000143395.1
+  assembly_name: Attacep1.0
+  annotation_release: 101
+  dest_dir: output/amalgkit/atta_cephalotes/genome
+
+
+  # Files to download (based on available NCBI FTP resources)
+  include:
+    - genome           # Genomic sequences (FASTA)
+    - gff3            # Gene annotations (GFF3)
+    - rna             # RNA sequences (FASTA)
+    - cds             # CDS sequences (FASTA)
+    - protein         # Protein sequences (FASTA)
+    - seq-report      # Sequence report
+    - feature-table   # Feature table
+    - gene-ontology   # Gene Ontology annotations (if available)
+
+
+  # Direct FTP URL for all genome files
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/143/395/GCF_000143395.1_Attacep1.0/
+
+
+  # Specific important files for transcriptome analysis
+  files:
+    genomic_fasta: GCF_000143395.1_Attacep1.0_genomic.fna.gz
+    transcriptome_fasta: GCF_000143395.1_Attacep1.0_rna_from_genomic.fna.gz
+    cds_fasta: GCF_000143395.1_Attacep1.0_cds_from_genomic.fna.gz
+    protein_fasta: GCF_000143395.1_Attacep1.0_protein.faa.gz
+    annotation_gff: GCF_000143395.1_Attacep1.0_genomic.gff.gz
+    annotation_gtf: GCF_000143395.1_Attacep1.0_genomic.gtf.gz
+
+
+# Per-step parameters (merged on top of common params)
+steps:
+  metadata:
+    # Required by amalgkit metadata
+    out_dir: output/amalgkit/atta_cephalotes/work
+    # Uses NCBI_EMAIL from environment; override here if needed
+    # entrez_email: you@example.com
+    search_string: '"Atta cephalotes"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
+    redo: yes
+  integrate:
+    fastq_dir: output/amalgkit/atta_cephalotes/fastq
+  config: {}
+  select: {}
+  getfastq:
+    out_dir: output/amalgkit/atta_cephalotes/fastq
+    threads: 12
+    # Cloud acceleration via individual mirrors
+    aws: yes
+    gcp: yes
+    ncbi: yes
+    pfd: no           # DISABLED: parallel-fastq-dump usually not needed
+    fastp: yes        # ENABLED: fastp QC tool
+  quant:
+    # If a Salmon/Kallisto index is available, set it; otherwise genome_dir is injected from genome step
+    out_dir: output/amalgkit/atta_cephalotes/quant
+    threads: 12
+    redo: no
+    # Delete SRA/FASTQ files after quantification to save space
+    keep_fastq: no
+    # Build kallisto index if not present
+    build_index: yes
+  merge:
+    out: output/amalgkit/atta_cephalotes/merged/merged_abundance.tsv
+    out_dir: output/amalgkit/atta_cephalotes/merged
+  cstmm:
+    out_dir: output/amalgkit/atta_cephalotes/cstmm
+  curate:
+    out_dir: output/amalgkit/atta_cephalotes/curate
+  csca:
+    out_dir: output/amalgkit/atta_cephalotes/csca
+  sanity: {}

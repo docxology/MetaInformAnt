@@ -1,0 +1,44 @@
+# Single-Cell Analysis Configuration Template
+#
+# This template provides configuration options for single-cell RNA-seq analysis workflows.
+# Environment variables can override these values (see core.config documentation).
+
+# Input data
+input:
+  file: "data/singlecell/counts.h5ad"  # Input count matrix (H5AD/CSV/TSV)
+  format: "h5ad"  # h5ad, csv, or tsv
+
+# Quality control
+qc:
+  min_genes: 200  # Minimum genes per cell
+  min_cells: 3  # Minimum cells per gene
+  max_mito_percent: 5.0  # Maximum mitochondrial gene percentage
+  max_ribo_percent: 50.0  # Maximum ribosomal gene percentage
+
+# Normalization
+normalization:
+  method: "log"  # log, scale, or none
+  target_sum: 10000  # Target sum for normalization
+
+# Dimensionality reduction
+dimension_reduction:
+  n_components: 50  # Number of PCA components
+  n_neighbors: 15  # Number of neighbors for UMAP
+  min_dist: 0.5  # Minimum distance for UMAP
+
+# Clustering
+clustering:
+  method: "leiden"  # leiden or louvain
+  resolution: 0.5  # Clustering resolution
+  find_markers: true  # Find marker genes per cluster
+
+# Output
+output:
+  directory: "output/singlecell"  # Output directory
+  save_plots: true  # Generate visualization plots
+  save_annotated_data: true  # Save annotated AnnData object
+
+# Performance
+performance:
+  threads: 4  # Number of threads for parallel processing
+

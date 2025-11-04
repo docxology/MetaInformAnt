@@ -1,0 +1,42 @@
+# Multi-Omics Integration Configuration Template
+#
+# This template provides configuration options for multi-omics data integration workflows.
+# Environment variables can override these values (see core.config documentation).
+
+# Input data sources
+inputs:
+  genomics:
+    file: "data/genomics/variants.tsv"
+    required: false
+  transcriptomics:
+    file: "data/transcriptomics/expression.tsv"
+    required: false
+  proteomics:
+    file: "data/proteomics/abundance.tsv"
+    required: false
+  metabolomics:
+    file: "data/metabolomics/metabolites.tsv"
+    required: false
+
+# Integration methods
+integration:
+  joint_pca: true  # Joint Principal Component Analysis
+  joint_nmf: false  # Joint Non-negative Matrix Factorization
+  canonical_correlation: false  # Canonical Correlation Analysis
+  n_components: 10  # Number of components for dimensionality reduction
+
+# Sample mapping
+samples:
+  id_column: "sample_id"  # Column name for sample identifiers
+  require_all_omics: false  # Require samples present in all omics layers
+
+# Output
+output:
+  directory: "output/multiomics"  # Output directory
+  save_integrated_data: true  # Save integrated matrices
+  save_plots: true  # Generate visualization plots
+
+# Performance
+performance:
+  threads: 4  # Number of threads for parallel processing
+

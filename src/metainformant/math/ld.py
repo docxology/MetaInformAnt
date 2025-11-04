@@ -158,8 +158,9 @@ def haldane_c_to_d(recombination_fraction: float) -> float:
         recombination_fraction: Recombination fraction (c) in [0, 0.5]
         
     Returns:
-        Genetic map distance in Morgans. Returns inf if c >= 0.5 (unlinked).
-        Formula: d = -0.5 × ln(1 - 2c)
+        Genetic map distance in Morgans. Returns:
+        - float('inf') if c >= 0.5 (unlinked loci, maximum recombination)
+        - Otherwise: d = -0.5 × ln(1 - 2c)
         
     Examples:
         >>> haldane_c_to_d(0.1)
@@ -167,7 +168,12 @@ def haldane_c_to_d(recombination_fraction: float) -> float:
         >>> haldane_c_to_d(0.25)
         0.346...
         >>> haldane_c_to_d(0.5)
-        inf  # Unlinked loci
+        inf  # Unlinked loci (c = 0.5 is maximum recombination)
+        
+    Note:
+        When c = 0.5, loci are unlinked (independent assortment) and the
+        genetic map distance is infinite. This reflects that unlinked loci
+        behave as if they are infinitely far apart on the genetic map.
     """
     c = max(0.0, min(0.5, float(recombination_fraction)))
     from math import log
@@ -217,14 +223,23 @@ def kosambi_c_to_d(recombination_fraction: float) -> float:
         recombination_fraction: Recombination fraction (c) in [0, 0.5]
         
     Returns:
-        Genetic map distance in Morgans. Returns inf if c >= 0.5 (unlinked).
-        Formula: d = 0.25 × ln((1 + 2c) / (1 - 2c))
+        Genetic map distance in Morgans. Returns:
+        - float('inf') if c >= 0.5 (unlinked loci, maximum recombination)
+        - Otherwise: d = 0.25 × ln((1 + 2c) / (1 - 2c))
         
     Examples:
         >>> kosambi_c_to_d(0.1)
         0.100...
         >>> kosambi_c_to_d(0.25)
         0.549...
+        >>> kosambi_c_to_d(0.5)
+        inf  # Unlinked loci (c = 0.5 is maximum recombination)
+        
+    Note:
+        When c = 0.5, loci are unlinked (independent assortment) and the
+        genetic map distance is infinite. This reflects that unlinked loci
+        behave as if they are infinitely far apart on the genetic map, even
+        when accounting for crossover interference (Kosambi's function).
     """
     c = max(0.0, min(0.5, float(recombination_fraction)))
     from math import log

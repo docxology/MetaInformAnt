@@ -131,9 +131,36 @@ The [`scripts/`](scripts/) directory contains production-ready workflow orchestr
 - **Package Management**: Setup, testing, quality control
 - **RNA-seq**: Multi-species workflows, amalgkit integration
 - **GWAS**: Genome-scale association studies
-- **Module Orchestrators**: Thin workflow scripts for all domains
+- **Module Orchestrators**: ✅ Complete workflow scripts for all domains (DNA, protein, networks, multiomics, single-cell, quality, simulation, visualization, epigenome, ecology, ontology, phenotype, ML, math)
 
 See [`scripts/README.md`](scripts/README.md) for complete documentation.
+
+### CLI Interface
+
+All modules are accessible via the unified CLI:
+
+```bash
+# Setup and environment
+uv run metainformant setup --with-amalgkit
+
+# Domain workflows
+uv run metainformant dna fetch --assembly GCF_000001405.40
+uv run metainformant rna run --work-dir output/rna --threads 8
+uv run metainformant gwas run --config config/gwas_config.yaml
+
+# New module workflows
+uv run metainformant networks run --input data/interactions.tsv --output output/networks
+uv run metainformant multiomics run --genomics data/genomics.tsv --output output/multiomics
+uv run metainformant singlecell run --input data/counts.h5ad --output output/singlecell --qc
+uv run metainformant quality run --fastq data/reads.fq --output output/quality
+uv run metainformant ontology run --go data/go.obo --output output/ontology
+uv run metainformant ml run --features data/features.csv --output output/ml --classify
+
+# See all available commands
+uv run metainformant --help
+```
+
+See [`docs/cli.md`](docs/cli.md) for complete CLI documentation.
 
 ## Usage Examples
 
@@ -185,6 +212,37 @@ heatmap(correlation_matrix, cmap="viridis", annot=True)
 # Animation
 fig, anim = animate_time_series(time_series_data)
 anim.save("output/animation.gif")
+```
+
+### Network Analysis
+
+```python
+from metainformant.networks import create_network, detect_communities, centrality_measures
+
+# Create network from interactions
+network = create_network(edges, directed=False)
+
+# Detect communities
+communities = detect_communities(network)
+
+# Calculate centrality
+centrality = centrality_measures(network)
+```
+
+### Multi-Omics Integration
+
+```python
+from metainformant.multiomics import integrate_omics_data, joint_pca
+
+# Integrate multiple omics datasets
+multiomics = integrate_omics_data(
+    genomics=genomics_data,
+    transcriptomics=rna_data,
+    proteomics=protein_data
+)
+
+# Joint dimensionality reduction
+pca_result = joint_pca(multiomics)
 ```
 
 ## Development
@@ -248,6 +306,32 @@ This project was developed with AI assistance (grok-code-fast-1 via Cursor) to e
 - Architecture design
 
 All AI-generated content undergoes human review. See [`AGENTS.md`](AGENTS.md) for details.
+
+## Known Limitations
+
+### Module Completeness
+
+Some modules have partial implementations or optional dependencies:
+
+- **Machine Learning**: Framework exists; some methods may need completion (see [ML Documentation](docs/ml/README.md))
+- **Multi-omics**: Core integration methods implemented; advanced features may require additional dependencies
+- **Single-cell**: Requires `scipy`, `scanpy`, `anndata` for full functionality (see [Single-Cell Documentation](docs/singlecell/README.md))
+- **Network Analysis**: Basic algorithms implemented; advanced regulatory network features may need enhancement
+
+### GWAS Module
+
+- **Variant Download**: Database download (dbSNP, 1000 Genomes) is a placeholder; use SRA-based workflow or provide VCF files
+- **Functional Annotation**: Requires external tools (ANNOVAR, VEP, SnpEff) for variant annotation
+- **Advanced Mixed Models**: Basic relatedness adjustment implemented; advanced MLM methods may require GCTA/EMMAX integration
+
+### Test Coverage
+
+Some modules have lower test success rates due to optional dependencies:
+- **Single-cell**: Requires scientific dependencies (`scanpy`, `anndata`)
+- **Multi-omics**: Framework exists, tests may skip without dependencies
+- **Network Analysis**: Core tests pass; advanced features may need additional setup
+
+See [Comprehensive Test Analysis](docs/comprehensive_test_analysis.md) for detailed coverage information.
 
 ## Best Practices
 
@@ -316,6 +400,6 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) for deta
 
 ---
 
-**Status**: Active Development | **Version**: 0.2.0 | **Python**: 3.11+ | **License**: MIT
+**Status**: Active Development | **Version**: 0.2.0 | **Python**: 3.11+ | **License**: Apache 2.0
 
 

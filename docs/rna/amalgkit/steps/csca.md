@@ -458,7 +458,7 @@ amalgkit csca \
 
 **Result**: 
 - Correlation heatmap showing brain expression similarity
-- PCA plot with 4 ant species clusters
+- PCA plot with species clusters (showing phylogenetic relationships)
 - Dendrogram showing evolutionary relationships
 - 5 PDF visualizations + 3 data tables
 

@@ -2,6 +2,15 @@
 
 This directory contains comprehensive documentation for METAINFORMANT's RNA analysis capabilities.
 
+## Current Status (November 2025)
+
+🎯 **Ant Species Discovery Complete**: 55 species discovered, 20 validated genomes  
+🔄 **Batch 1 Running**: 10 species (3,820 samples) processing  
+⏳ **Batch 2 Queued**: 10 species (728 samples) ready to launch  
+📊 **Total Pipeline**: 4,548 samples across 20 ant species  
+
+See `discovery/` for complete details.
+
 ## Quick Start
 
 **→ [Multi-Species Quick Start Guide](MULTI_SPECIES_QUICK_START.md)** ⭐
@@ -12,23 +21,38 @@ Complete guide for starting and monitoring multi-species RNA-seq workflows:
 - Troubleshooting and optimization
 - Expected timelines and resource usage
 
+**→ [Ant Species Discovery](ANT_SPECIES_DISCOVERY.md)** 🐜  
+Automated discovery system for finding ant species with RNA-seq data
+
+**→ [Batched Processing Strategy](discovery/batched_processing.md)** 📦  
+Efficient batch processing approach for large-scale workflows
+
 ## Overview
 
 The RNA domain provides tools for transcriptomic analysis, workflow orchestration, and integration with external bioinformatics tools like amalgkit. Key features include:
 
+- **Species Discovery**: Automated identification of species with RNA-seq data
+- **Genome Integration**: Validated genome assemblies from NCBI
 - **Direct ENA Downloads**: Robust FASTQ retrieval using ENA API, bypassing problematic SRA Toolkit
 - **Retry Logic**: wget-based downloads with --continue for automatic resumption
 - **Batched Processing**: Disk-friendly processing of large RNA-seq cohorts (download→quantify→delete)
 - **Auto-activation**: Scripts automatically detect and activate virtual environments
 - **Multi-species Support**: Coordinated analysis across multiple species
-- **Production-Ready**: Currently processing 844 samples across 4 ant species with 100% reliability
+- **Production-Ready**: Currently processing 3,820 samples in Batch 1 (10 ant species)
 
 ## Documentation Files
 
 ### Getting Started
 - **`MULTI_SPECIES_QUICK_START.md`**: Complete guide for production workflows ⭐
+- **`ANT_SPECIES_DISCOVERY.md`**: Comprehensive discovery system documentation 🐜
+- **`ANT_DISCOVERY_QUICK_REF.md`**: Quick reference for discovery system
 - **`SETUP.md`**: Installation and environment setup
 - **`workflow.md`**: Complete workflow planning and execution
+
+### Discovery & Batch Processing
+- **`discovery/README.md`**: Discovery results and current status
+- **`discovery/batched_processing.md`**: Batch processing strategy and timeline
+- Raw discovery data: `output/ant_discovery/*.json`
 
 ### Core RNA Analysis
 - **`index.md`**: RNA domain overview and module index
@@ -37,9 +61,11 @@ The RNA domain provides tools for transcriptomic analysis, workflow orchestratio
 
 ### Amalgkit Integration
 - **`amalgkit/`**: Amalgkit CLI wrapper documentation
+  - **`README.md`**: Overview and quick start
   - **`amalgkit.md`**: Complete transcriptomic analysis pipeline
   - **`comprehensive_guide.md`**: Detailed workflow documentation
   - **`testing_coverage.md`**: Testing, validation, and production results
+  - **`R_INSTALLATION.md`**: R dependency installation guide
   - **`steps/`**: Individual step documentation (11 steps)
 - **`workflow.md`**: Workflow orchestration with troubleshooting and optimizations
 
@@ -95,16 +121,43 @@ Comprehensive tests ensure workflow reliability:
 - Configuration parsing and validation
 - External tool integration testing
 - Error handling and recovery
-- Production validation with 844 samples across 4 ant species (November 2025)
+- Production validation with 4,548 samples across 20 ant species (November 2025)
 
 Performance characteristics:
 - 12 parallel threads for download and quantification
-- Batched processing: ~18 GB peak disk usage per batch
+- Batched processing: ~50-100 GB peak disk usage (temporary)
 - Direct ENA downloads with 100% reliability (vs 0% SRA Toolkit)
 - Virtual environment auto-activation
 - wget-based downloads with automatic resume
+- Auto-cleanup: FASTQs deleted after quantification
 
 See `amalgkit/testing_coverage.md` for production validation results.
+
+## Current Project Timeline (November 2025)
+
+### Phase 1: Discovery ✅ COMPLETE
+- **Duration**: ~80 minutes
+- **Outcome**: 55 species discovered, 20 genomes validated, 20 configs generated
+- **Date**: November 3, 2025
+
+### Phase 2: Batch 1 Execution 🔄 IN PROGRESS
+- **Species**: 10 (top by sample count)
+- **Samples**: 3,820 
+- **Started**: November 3, 2025 16:18 PST
+- **Current Stage**: Downloading FASTQs
+- **ETA**: November 4-5, 2025 (24-48 hours)
+
+### Phase 3: Batch 2 Execution ⏳ QUEUED
+- **Species**: 10 (remaining validated)
+- **Samples**: 728
+- **Launch**: After Batch 1 completes
+- **ETA**: 12-24 hours after launch
+
+### Phase 4: Analysis & Validation ⏳ FUTURE
+- **Tasks**: Expression matrix review, QC analysis, comparative genomics
+- **ETA**: After both batches complete
+
+**Total Project Duration**: ~36-72 hours from discovery to complete analysis
 
 ## Contributing
 

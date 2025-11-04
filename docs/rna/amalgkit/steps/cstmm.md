@@ -459,7 +459,7 @@ amalgkit cstmm \
   --dir_count output/amalgkit/comparative/merge
 ```
 
-**Result**: TMM-normalized matrix with samples from all 4 ant species
+**Result**: TMM-normalized matrix with samples from all species in the merge directory
 
 ### Example 2: Insect Brain Multi-Species
 

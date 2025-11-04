@@ -34,13 +34,22 @@ output/amalgkit/
 
 ## Quick Verification
 
-Copy and adapt the verification script template for your species:
+Check workflow outputs manually:
 
 ```bash
 cd output/amalgkit/<species_name>
-cp ~/Documents/GitHub/metainformant/docs/rna/amalgkit/verify_template.sh ./verify_workflow.sh
-chmod +x ./verify_workflow.sh
-./verify_workflow.sh
+
+# Verify quantification results
+ls -lh quant/*/abundance.tsv
+
+# Verify merged expression matrix
+ls -lh merged/*.tsv
+
+# Check sanity check results
+cat sanity/*.txt
+
+# View curate QC reports
+ls -lh curate/*.tsv
 ```
 
 This will:
@@ -300,9 +309,10 @@ After successful sanity and curate:
 ## References
 
 - **R Package Setup**: `docs/rna/amalgkit/r_packages.md`
-- **Verification Template**: `docs/rna/amalgkit/verify_template.sh`
-- **Full Workflow Guide**: `docs/rna/amalgkit/END_TO_END_WORKFLOW.md`
+- **R Installation**: `docs/rna/amalgkit/R_INSTALLATION.md`
 - **Comprehensive Guide**: `docs/rna/amalgkit/comprehensive_guide.md`
+- **Step Documentation**: `docs/rna/amalgkit/steps/`
+- **Workflow Orchestration**: `docs/rna/workflow.md`
 
 ---
 
