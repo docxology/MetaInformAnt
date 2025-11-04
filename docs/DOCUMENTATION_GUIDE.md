@@ -133,6 +133,8 @@ Comprehensive guide to integrating genomics, transcriptomics, proteomics, and ot
 - **[Phenotype](phenotype/index.md)** - Phenotypic data curation
 - **[Epigenome](epigenome/index.md)** - DNA methylation and chromatin
 - **[Ecology](ecology/index.md)** - Community ecology and metadata
+- **[Information Theory](../src/metainformant/information/README.md)** - Shannon entropy, mutual information, semantic similarity
+- **[Life Events](../src/metainformant/life_events/README.md)** - Life course and event sequence analysis
 
 ## Documentation by Use Case
 

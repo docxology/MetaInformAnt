@@ -58,17 +58,6 @@ build/
 *.wig
 *.sam
 
-# Image and plot files (outputs)
-*.png
-*.jpg
-*.jpeg
-*.gif
-*.svg
-*.pdf
-*.eps
-*.tiff
-*.bmp
-
 # Other large output files
 *.h5
 *.hdf5

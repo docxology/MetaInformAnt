@@ -147,6 +147,8 @@ For detailed documentation about AI contributions to specific modules:
 - **Phenotype**: [`src/metainformant/phenotype/AGENTS.md`](src/metainformant/phenotype/AGENTS.md)
 - **Epigenome**: [`src/metainformant/epigenome/AGENTS.md`](src/metainformant/epigenome/AGENTS.md)
 - **Ecology**: [`src/metainformant/ecology/AGENTS.md`](src/metainformant/ecology/AGENTS.md)
+- **Information Theory**: [`src/metainformant/information/AGENTS.md`](src/metainformant/information/AGENTS.md)
+- **Life Events**: [`src/metainformant/life_events/AGENTS.md`](src/metainformant/life_events/AGENTS.md)
 
 ## Contact and Support
 

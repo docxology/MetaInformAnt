@@ -82,6 +82,8 @@ Welcome to the METAINFORMANT docs. This site is organized by domain and core uti
   - [Machine Learning](./ml/index.md)
   - [Multi-omics](./multiomics/index.md)
   - [Networks](./networks/index.md)
+  - [Information Theory](../src/metainformant/information/README.md)
+  - [Life Events](../src/metainformant/life_events/README.md)
 
 See also: the top-level project README for quickstarts.
 
