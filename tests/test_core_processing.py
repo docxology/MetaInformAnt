@@ -5,6 +5,12 @@ import tempfile
 from pathlib import Path
 
 from metainformant.core import io
+from metainformant.core import (
+    create_sample_config,
+    download_and_process_data,
+    run_config_based_workflow,
+    validate_config_file,
+)
 
 
 class TestConfigBasedProcessing:
@@ -17,7 +23,7 @@ class TestConfigBasedProcessing:
             
             # Test non-existent file
             non_existent = tmp_path / "does_not_exist.json"
-            is_valid, errors = io.validate_config_file(non_existent)
+            is_valid, errors = validate_config_file(non_existent)
             assert not is_valid
             assert len(errors) == 1
             assert "not found" in errors[0]
@@ -34,7 +40,7 @@ class TestConfigBasedProcessing:
             config_file = tmp_path / "valid_config.json"
             io.dump_json(valid_config, config_file)
             
-            is_valid, errors = io.validate_config_file(config_file)
+            is_valid, errors = validate_config_file(config_file)
             assert is_valid
             assert len(errors) == 0
             
@@ -48,7 +54,7 @@ class TestConfigBasedProcessing:
             invalid_config_file = tmp_path / "invalid_config.json"
             io.dump_json(invalid_config, invalid_config_file)
             
-            is_valid, errors = io.validate_config_file(invalid_config_file)
+            is_valid, errors = validate_config_file(invalid_config_file)
             assert not is_valid
             assert len(errors) == 1
 
@@ -59,7 +65,7 @@ class TestConfigBasedProcessing:
             
             # Test basic config
             basic_config = tmp_path / "basic.json"
-            io.create_sample_config(basic_config, "basic")
+            create_sample_config(basic_config, "basic")
             
             assert basic_config.exists()
             config_data = io.load_json(basic_config)
@@ -69,7 +75,7 @@ class TestConfigBasedProcessing:
             
             # Test scientific config
             scientific_config = tmp_path / "scientific.json"
-            io.create_sample_config(scientific_config, "scientific")
+            create_sample_config(scientific_config, "scientific")
             
             config_data = io.load_json(scientific_config)
             assert "scientific data processing" in config_data["description"]
@@ -77,7 +83,7 @@ class TestConfigBasedProcessing:
             
             # Test advanced config
             advanced_config = tmp_path / "advanced.json"
-            io.create_sample_config(advanced_config, "advanced")
+            create_sample_config(advanced_config, "advanced")
             
             config_data = io.load_json(advanced_config)
             assert "advanced processing" in config_data["description"]
@@ -103,7 +109,7 @@ class TestConfigBasedProcessing:
             tmp_path = Path(tmp_dir)
             
             try:
-                results = io.download_and_process_data(
+                results = download_and_process_data(
                     config,
                     output_dir=tmp_path,
                     verbose=False
@@ -144,7 +150,7 @@ class TestConfigBasedProcessing:
             
             try:
                 # This will fail without internet, but should return proper structure
-                results = io.run_config_based_workflow(config_file, verbose=False)
+                results = run_config_based_workflow(config_file, verbose=False)
                 
                 # Should have success flag and error information
                 assert "success" in results
@@ -170,7 +176,7 @@ class TestConfigBasedProcessing:
             tmp_path = Path(tmp_dir)
             
             try:
-                results = io.download_and_process_data(
+                results = download_and_process_data(
                     invalid_config,
                     output_dir=tmp_path,
                     verbose=False
@@ -197,7 +203,7 @@ class TestConfigBasedProcessing:
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_path = Path(tmp_dir)
             
-            results = io.download_and_process_data(
+            results = download_and_process_data(
                 config,
                 output_dir=tmp_path,
                 verbose=False

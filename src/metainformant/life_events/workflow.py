@@ -262,16 +262,43 @@ def intervention_analysis(
     Compares pre- and post-intervention event patterns and outcomes.
     
     Args:
-        sequences: Event sequences
-        intervention_time: Time point of intervention
-        pre_intervention_outcomes: Outcomes before intervention
-        post_intervention_outcomes: Outcomes after intervention
+        sequences: Event sequences (must not be empty)
+        intervention_time: Time point of intervention (timestamp or numeric)
+        pre_intervention_outcomes: Outcomes before intervention (must match sequence length if provided)
+        post_intervention_outcomes: Outcomes after intervention (must match sequence length if provided)
         output_dir: Output directory
         
     Returns:
-        Dictionary with intervention analysis results
+        Dictionary with intervention analysis results including pre/post statistics and outcome changes
+        
+    Raises:
+        ValueError: If sequences is empty or outcome arrays don't match sequence length
+        
+    Examples:
+        >>> from metainformant.life_events import EventSequence, Event, intervention_analysis
+        >>> from datetime import datetime
+        >>> seq = EventSequence("p1", [Event("degree", datetime(2010, 1, 1), "education")])
+        >>> results = intervention_analysis([seq], intervention_time=datetime(2015, 1, 1).timestamp())
+        >>> "pre_intervention" in results
+        True
     """
     logger = logging.setup_logger("intervention_analysis")
+    
+    # Validate inputs
+    if not sequences:
+        raise ValueError("sequences list cannot be empty")
+    
+    if pre_intervention_outcomes is not None and len(pre_intervention_outcomes) != len(sequences):
+        raise ValueError(
+            f"pre_intervention_outcomes length ({len(pre_intervention_outcomes)}) must match "
+            f"sequences length ({len(sequences)})"
+        )
+    
+    if post_intervention_outcomes is not None and len(post_intervention_outcomes) != len(sequences):
+        raise ValueError(
+            f"post_intervention_outcomes length ({len(post_intervention_outcomes)}) must match "
+            f"sequences length ({len(sequences)})"
+        )
     
     if output_dir is None:
         output_dir = Path("output/life_events/intervention")

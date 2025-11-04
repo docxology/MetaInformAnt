@@ -292,3 +292,201 @@ class TestIntegration:
         # I(X; Y) >= 0
         assert mi >= 0.0
 
+
+class TestAdditionalMethods:
+    """Tests for additional information theory methods."""
+
+    def test_jensen_shannon_divergence(self):
+        """Test Jensen-Shannon divergence."""
+        from metainformant.information.syntactic import jensen_shannon_divergence
+
+        p = [0.5, 0.5]
+        q = [0.5, 0.5]
+        js = jensen_shannon_divergence(p, q)
+        assert abs(js) < 1e-10  # Identical distributions
+
+    def test_renyi_entropy(self):
+        """Test Rényi entropy calculation."""
+        from metainformant.information.syntactic import renyi_entropy, shannon_entropy
+
+        probs = [0.25, 0.25, 0.25, 0.25]
+        # α=1 should equal Shannon entropy
+        h_renyi_1 = renyi_entropy(probs, alpha=1.0)
+        h_shannon = shannon_entropy(probs)
+        assert abs(h_renyi_1 - h_shannon) < 1e-10
+
+        # α=2 (collision entropy)
+        h_renyi_2 = renyi_entropy(probs, alpha=2.0)
+        assert h_renyi_2 > 0.0
+
+    def test_tsallis_entropy(self):
+        """Test Tsallis entropy calculation."""
+        from metainformant.information.syntactic import shannon_entropy, tsallis_entropy
+
+        probs = [0.5, 0.5]
+        # q=1 should equal Shannon entropy
+        h_tsallis_1 = tsallis_entropy(probs, q=1.0)
+        h_shannon = shannon_entropy(probs)
+        assert abs(h_tsallis_1 - h_shannon) < 1e-10
+
+        # q=2
+        h_tsallis_2 = tsallis_entropy(probs, q=2.0)
+        assert h_tsallis_2 > 0.0
+
+    def test_normalized_mutual_information(self):
+        """Test normalized mutual information."""
+        from metainformant.information.syntactic import normalized_mutual_information
+
+        x = [0, 1, 0, 1]
+        y = [0, 1, 0, 1]  # Perfect correlation
+        nmi = normalized_mutual_information(x, y)
+        assert abs(nmi - 1.0) < 1e-10  # Should be 1.0
+
+    def test_information_coefficient(self):
+        """Test information coefficient."""
+        from metainformant.information.syntactic import information_coefficient
+
+        x = [0.0, 1.0, 0.0, 1.0, 0.0, 1.0]
+        y = [0.0, 1.0, 0.0, 1.0, 0.0, 1.0]  # Perfect correlation
+        ic = information_coefficient(x, y)
+        assert 0.0 <= ic <= 1.0
+
+
+class TestContinuousMethods:
+    """Tests for continuous information theory methods."""
+
+    def test_differential_entropy(self):
+        """Test differential entropy calculation."""
+        from metainformant.information.continuous import differential_entropy
+
+        import numpy as np
+
+        samples = np.random.normal(0, 1, 1000)
+        h = differential_entropy(samples, method="histogram")
+        assert h > 0.0
+
+    def test_mutual_information_continuous(self):
+        """Test continuous mutual information."""
+        from metainformant.information.continuous import mutual_information_continuous
+
+        import numpy as np
+
+        x = np.random.randn(1000)
+        y = x + np.random.randn(1000) * 0.1  # Strong correlation
+        mi = mutual_information_continuous(x, y)
+        assert mi >= 0.0
+
+    def test_entropy_estimation(self):
+        """Test entropy estimation methods."""
+        from metainformant.information.continuous import entropy_estimation
+
+        import numpy as np
+
+        samples = np.random.normal(0, 1, 1000)
+        h_plugin = entropy_estimation(samples, method="plugin")
+        assert h_plugin > 0.0
+
+        h_mm = entropy_estimation(samples, method="miller_madow")
+        assert h_mm > 0.0
+
+
+class TestEstimationMethods:
+    """Tests for estimation and bias correction methods."""
+
+    def test_entropy_estimator(self):
+        """Test entropy estimation with various methods."""
+        from metainformant.information.estimation import entropy_estimator
+
+        counts = {"A": 50, "T": 30, "G": 20}
+        h_plugin = entropy_estimator(counts, method="plugin")
+        h_mm = entropy_estimator(counts, method="miller_madow")
+        assert h_plugin > 0.0
+        assert h_mm > 0.0
+
+    def test_mutual_information_estimator(self):
+        """Test MI estimation with bias correction."""
+        from metainformant.information.estimation import mutual_information_estimator
+
+        x = [0, 1, 0, 1, 0, 1]
+        y = [0, 1, 0, 1, 0, 1]
+        mi = mutual_information_estimator(x, y, method="plugin", bias_correction=True)
+        assert mi >= 0.0
+
+    def test_bias_correction(self):
+        """Test bias correction function."""
+        from metainformant.information.estimation import bias_correction
+
+        corrected = bias_correction(1.5, n_samples=100, n_bins=10, measure="entropy")
+        assert corrected > 1.5  # Should increase for entropy
+
+        corrected_mi = bias_correction(
+            0.5, n_samples=100, n_bins=10, measure="mutual_information"
+        )
+        assert corrected_mi <= 0.5  # Should decrease for MI
+
+
+class TestWorkflowFunctions:
+    """Tests for workflow functions."""
+
+    def test_batch_entropy_analysis(self):
+        """Test batch entropy analysis."""
+        from metainformant.information.workflows import batch_entropy_analysis
+
+        sequences = ["ATCG", "ATCG", "AAAA"]
+        results = batch_entropy_analysis(sequences, k=1)
+        assert "sequences" in results
+        assert "summary" in results
+        assert len(results["sequences"]) == 3
+
+    def test_information_workflow(self):
+        """Test complete information workflow."""
+        from metainformant.information.workflows import information_workflow
+
+        sequences = ["ATCGATCG", "AAAA"]
+        results = information_workflow(sequences, k_values=[1, 2])
+        assert "profiles" in results
+        assert 1 in results["profiles"]
+
+    def test_compare_datasets(self):
+        """Test dataset comparison."""
+        from metainformant.information.workflows import compare_datasets
+
+        dataset1 = ["ATCG", "ATCG"]
+        dataset2 = ["AAAA", "AAAA"]
+        comparison = compare_datasets(dataset1, dataset2, k=1, method="entropy")
+        assert "method" in comparison
+        assert comparison["method"] == "entropy"
+
+
+class TestIntegrationFunctions:
+    """Tests for integration functions."""
+
+    def test_dna_integration(self):
+        """Test DNA integration."""
+        from metainformant.information.integration import dna_integration
+
+        sequences = {"seq1": "ATCG", "seq2": "AAAA"}
+        results = dna_integration(sequences, k=1, analysis_type="entropy")
+        assert "entropy_analysis" in results
+
+    def test_rna_integration(self):
+        """Test RNA integration."""
+        from metainformant.information.integration import rna_integration
+
+        import numpy as np
+
+        expression = np.random.randn(100, 50)
+        results = rna_integration(expression, method="entropy")
+        assert "gene_entropies" in results
+
+    def test_ml_integration(self):
+        """Test ML integration."""
+        from metainformant.information.integration import ml_integration
+
+        import numpy as np
+
+        X = np.random.randn(100, 50)
+        y = np.random.randint(0, 2, 100)
+        results = ml_integration(X, y, method="feature_mi")
+        assert "feature_mis" in results
+

@@ -4,12 +4,13 @@ import pytest
 import tempfile
 from pathlib import Path
 
-from metainformant.core import io
+from metainformant.core import io, paths
 
 
 class TestIOEnhanced:
     """Test enhanced I/O functionality."""
 
+    @pytest.mark.network
     def test_download_file(self):
         """Test file download functionality."""
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -30,6 +31,7 @@ class TestIOEnhanced:
                 # Expected to fail without internet, but method should not crash
                 pass
 
+    @pytest.mark.network
     def test_download_json(self):
         """Test JSON download functionality."""
         # Test with a real API endpoint
@@ -44,6 +46,7 @@ class TestIOEnhanced:
             # Expected to fail without internet
             pass
 
+    @pytest.mark.network
     def test_download_text(self):
         """Test text download functionality."""
         url = "https://httpbin.org/html"
@@ -57,6 +60,7 @@ class TestIOEnhanced:
             # Expected to fail without internet
             pass
 
+    @pytest.mark.network
     def test_batch_download(self):
         """Test batch download functionality."""
         with tempfile.TemporaryDirectory() as tmp_dir:
@@ -76,6 +80,7 @@ class TestIOEnhanced:
                 # Expected to fail without internet
                 pass
 
+    @pytest.mark.network
     def test_csv_download(self):
         """Test CSV download functionality."""
         url = "https://httpbin.org/csv"
@@ -166,6 +171,7 @@ class TestIOEnhanced:
         except ImportError:
             pytest.skip("pandas not available")
 
+    @pytest.mark.network
     def test_io_error_handling(self):
         """Test error handling in I/O operations."""
         # Test with invalid URLs
@@ -187,14 +193,14 @@ class TestIOEnhanced:
         test_content = "This is test content for size calculation"
         test_file.write_text(test_content)
         
-        size = io.get_file_size(test_file)
+        size = paths.get_file_size(test_file)
         assert size == len(test_content.encode('utf-8'))
 
         # Test directory size
-        dir_size = io.get_directory_size(tmp_path)
+        dir_size = paths.get_directory_size(tmp_path)
         assert dir_size >= size
 
         # Test non-existent file
         non_existent = tmp_path / "does_not_exist.txt"
-        size_non = io.get_file_size(non_existent)
+        size_non = paths.get_file_size(non_existent)
         assert size_non == 0

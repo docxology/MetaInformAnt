@@ -1,13 +1,14 @@
 """Visualization functions for event sequences.
 
 This module provides plotting functions for visualizing event sequences,
-embeddings, and analysis results.
+embeddings, and analysis results. All functions use matplotlib and integrate
+with the main visualization module for consistent styling.
 """
 
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -16,12 +17,15 @@ from numpy.typing import NDArray
 from ..visualization import plots
 from .events import EventSequence
 
+if TYPE_CHECKING:
+    from matplotlib.figure import Figure
+
 
 def plot_event_timeline(
     sequence: EventSequence,
     output_path: Optional[str | Path] = None,
     figsize: tuple[int, int] = (12, 6)
-) -> plt.Figure:
+) -> "Figure":
     """Plot timeline visualization of individual life course.
     
     Args:
@@ -82,7 +86,7 @@ def plot_event_embeddings(
     n_components: int = 2,
     output_path: Optional[str | Path] = None,
     figsize: tuple[int, int] = (10, 8)
-) -> plt.Figure:
+) -> "Figure":
     """Plot 2D/3D visualization of event embeddings.
     
     Args:
@@ -154,7 +158,7 @@ def plot_attention_heatmap(
     event_tokens: List[str],
     output_path: Optional[str | Path] = None,
     figsize: tuple[int, int] = (12, 10)
-) -> plt.Figure:
+) -> "Figure":
     """Plot attention weight heatmap for sequence models.
     
     Args:
@@ -200,7 +204,7 @@ def plot_prediction_importance(
     top_n: int = 20,
     output_path: Optional[str | Path] = None,
     figsize: tuple[int, int] = (10, 8)
-) -> plt.Figure:
+) -> "Figure":
     """Plot event importance for predictions.
     
     Args:

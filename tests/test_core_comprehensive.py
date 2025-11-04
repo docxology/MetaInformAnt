@@ -13,7 +13,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.core import cache, config, hash, io, logging, paths, text
+from metainformant.core import cache, config, hash, io, logging, parallel, paths, text
 
 try:
     from metainformant.core import db

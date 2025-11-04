@@ -3,7 +3,7 @@
 A comprehensive bioinformatics and systems biology toolkit for integrated multi-omic analysis, developed with AI assistance for enhanced code quality and documentation.
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 ## Overview
@@ -91,6 +91,7 @@ See [`output/demo/VERIFICATION_REPORT.md`](output/demo/VERIFICATION_REPORT.md) f
 - **[gwas/](src/metainformant/gwas/)** - Genome-wide association studies, variant calling, visualization
 - **[math/](src/metainformant/math/)** - Mathematical biology, population genetics theory, dynamics
 - **[ml/](src/metainformant/ml/)** - Machine learning pipelines, classification, regression
+- **[information/](src/metainformant/information/)** - Information theory methods (Shannon entropy, mutual information, semantic similarity)
 
 ### Systems Biology
 
@@ -104,6 +105,7 @@ See [`output/demo/VERIFICATION_REPORT.md`](output/demo/VERIFICATION_REPORT.md) f
 - **[ontology/](src/metainformant/ontology/)** - Gene Ontology, functional annotation
 - **[phenotype/](src/metainformant/phenotype/)** - Phenotypic data curation
 - **[ecology/](src/metainformant/ecology/)** - Ecological metadata, community analysis
+- **[life_events/](src/metainformant/life_events/)** - Life course and event sequence analysis, temporal pattern prediction
 
 ### Utilities
 
@@ -245,6 +247,39 @@ multiomics = integrate_omics_data(
 pca_result = joint_pca(multiomics)
 ```
 
+### Information Theory
+
+```python
+from metainformant.information import shannon_entropy, mutual_information, information_content
+
+# Calculate Shannon entropy
+probs = [0.5, 0.3, 0.2]
+entropy = shannon_entropy(probs)
+
+# Mutual information between sequences
+mi = mutual_information(sequence_x, sequence_y)
+
+# Information content for hierarchical terms
+ic = information_content(term_frequencies, "GO:0008150")
+```
+
+### Life Events Analysis
+
+```python
+from metainformant.life_events import EventSequence, Event, analyze_life_course
+from datetime import datetime
+
+# Create event sequences
+events = [
+    Event("degree", datetime(2010, 6, 1), "education"),
+    Event("job_change", datetime(2015, 3, 1), "occupation"),
+]
+sequence = EventSequence(person_id="person_001", events=events)
+
+# Analyze life course
+results = analyze_life_course([sequence], outcomes=None)
+```
+
 ## Development
 
 ### Running Tests
@@ -384,7 +419,7 @@ If you use METAINFORMANT in your research, please cite this repository:
 
 ## License
 
-This project is licensed under the MIT License - see [LICENSE](LICENSE) for details.
+This project is licensed under the Apache License, Version 2.0 - see [LICENSE](LICENSE) for details.
 
 ## Contact
 

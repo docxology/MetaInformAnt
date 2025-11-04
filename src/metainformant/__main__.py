@@ -610,18 +610,25 @@ def main() -> None:
 
     if args.command == "life-events":
         if args.life_events_cmd == "embed":
-            from .life_events import EventDatabase, learn_event_embeddings
-            from .core import io, paths
+            from .life_events import EventDatabase, learn_event_embeddings, load_sequences_from_json
+            from .core import io
 
-            # Load event sequences
-            data = io.load_json(args.input)
-            if isinstance(data, dict) and "sequences" in data:
-                database = EventDatabase.from_dict(data)
-            else:
-                # Assume it's a list of sequences
-                from .life_events.events import EventSequence
-                sequences = [EventSequence.from_dict(s) if isinstance(s, dict) else s for s in data]
+            # Validate input file exists
+            if not args.input.exists():
+                print(f"Error: Input file not found: {args.input}", file=sys.stderr)
+                sys.exit(1)
+
+            try:
+                # Load event sequences using utility function
+                sequences = load_sequences_from_json(args.input)
                 database = EventDatabase(sequences=sequences)
+            except Exception as e:
+                print(f"Error loading event sequences: {e}", file=sys.stderr)
+                sys.exit(1)
+
+            if not database.sequences:
+                print("Error: No sequences found in input file", file=sys.stderr)
+                sys.exit(1)
 
             # Convert to token sequences
             sequences_tokens = []
@@ -629,36 +636,52 @@ def main() -> None:
                 tokens = [f"{e.domain}:{e.event_type}" for e in seq.events]
                 sequences_tokens.append(tokens)
 
-            # Learn embeddings
-            embeddings = learn_event_embeddings(
-                sequences_tokens,
-                embedding_dim=args.embedding_dim,
-                window_size=args.window_size,
-                epochs=args.epochs
-            )
+            if not sequences_tokens or all(not tokens for tokens in sequences_tokens):
+                print("Error: No valid event sequences found", file=sys.stderr)
+                sys.exit(1)
 
-            # Save embeddings
-            from .core.paths import prepare_file_path
-            output_file = args.output / "embeddings.json"
-            prepare_file_path(output_file)
-            embeddings_dict = {k: v.tolist() for k, v in embeddings.items()}
-            io.dump_json(embeddings_dict, output_file, indent=2)
-            print(f"Learned {len(embeddings)} event embeddings. Saved to {args.output}")
-            return
+            try:
+                # Learn embeddings
+                embeddings = learn_event_embeddings(
+                    sequences_tokens,
+                    embedding_dim=args.embedding_dim,
+                    window_size=args.window_size,
+                    epochs=args.epochs
+                )
+
+                # Save embeddings
+                from .core.paths import prepare_file_path
+                output_file = args.output / "embeddings.json"
+                prepare_file_path(output_file)
+                embeddings_dict = {k: v.tolist() for k, v in embeddings.items()}
+                io.dump_json(embeddings_dict, output_file, indent=2)
+                print(f"Learned {len(embeddings)} event embeddings. Saved to {output_file}")
+                return
+            except Exception as e:
+                print(f"Error learning embeddings: {e}", file=sys.stderr)
+                sys.exit(1)
 
         if args.life_events_cmd == "predict":
             import numpy as np
-            from .life_events import EventDatabase, EventSequencePredictor
+            from .life_events import EventDatabase, EventSequencePredictor, load_sequences_from_json
             from .core import io
 
-            # Load event sequences
-            data = io.load_json(args.events)
-            if isinstance(data, dict) and "sequences" in data:
-                database = EventDatabase.from_dict(data)
-            else:
-                from .life_events.events import EventSequence
-                sequences = [EventSequence.from_dict(s) if isinstance(s, dict) else s for s in data]
+            # Validate input file exists
+            if not args.events.exists():
+                print(f"Error: Events file not found: {args.events}", file=sys.stderr)
+                sys.exit(1)
+
+            try:
+                # Load event sequences
+                sequences = load_sequences_from_json(args.events)
                 database = EventDatabase(sequences=sequences)
+            except Exception as e:
+                print(f"Error loading event sequences: {e}", file=sys.stderr)
+                sys.exit(1)
+
+            if not database.sequences:
+                print("Error: No sequences found in events file", file=sys.stderr)
+                sys.exit(1)
 
             # Convert to token sequences
             sequences_tokens = []

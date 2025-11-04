@@ -52,6 +52,14 @@ from .interpretability import (
     temporal_patterns,
 )
 
+# Import utility functions
+from .utils import (
+    convert_sequences_to_tokens,
+    get_event_statistics,
+    load_sequences_from_json,
+    validate_sequence,
+)
+
 __all__ = [
     # Event data structures
     "Event",
@@ -78,5 +86,10 @@ __all__ = [
     "event_importance",
     "temporal_patterns",
     "feature_attribution",
+    # Utilities
+    "load_sequences_from_json",
+    "validate_sequence",
+    "convert_sequences_to_tokens",
+    "get_event_statistics",
 ]
 

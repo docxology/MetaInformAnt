@@ -169,7 +169,7 @@ def compare_datasets(
     if isinstance(dataset2, dict):
         seqs2 = dataset2.get("sequences", [])
     else:
-        seq2 = dataset2
+        seqs2 = dataset2
     
     results: dict[str, Any] = {
         "method": method,

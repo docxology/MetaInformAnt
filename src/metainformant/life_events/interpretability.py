@@ -57,16 +57,37 @@ def event_importance(
     """Rank events by their contribution to predictions.
     
     Args:
-        predictor: Trained EventSequencePredictor
-        sequences: List of event sequences
+        predictor: Trained EventSequencePredictor (must be fitted)
+        sequences: List of event sequences (must not be empty)
         event_embeddings: Event embeddings dictionary
         method: Importance method ("permutation", "gradient")
         
     Returns:
-        Dictionary mapping event tokens to importance scores
+        Dictionary mapping event tokens to importance scores (normalized to [0, 1])
+        
+    Raises:
+        ValueError: If predictor not fitted, sequences empty, or invalid method
+        
+    Examples:
+        >>> from metainformant.life_events import EventSequencePredictor, learn_event_embeddings
+        >>> import numpy as np
+        >>> sequences = [["health:diagnosis", "occupation:job_change"]]
+        >>> y = np.array([0])
+        >>> predictor = EventSequencePredictor(random_state=42)
+        >>> predictor.fit(sequences, y)
+        >>> embeddings = learn_event_embeddings(sequences, random_state=42)
+        >>> importance = event_importance(predictor, sequences, embeddings)
+        >>> len(importance) > 0
+        True
     """
     if not predictor.is_fitted:
         raise ValueError("Predictor must be fitted before computing importance")
+    
+    if not sequences:
+        raise ValueError("sequences list cannot be empty")
+    
+    if method not in ["permutation", "gradient"]:
+        raise ValueError(f"Invalid method '{method}'. Must be 'permutation' or 'gradient'")
     
     # Get baseline predictions
     baseline_preds = predictor.predict(sequences)
@@ -75,6 +96,9 @@ def event_importance(
     all_events = set()
     for seq in sequences:
         all_events.update(seq)
+    
+    if not all_events:
+        return {}
     
     importance_scores = {}
     
@@ -122,13 +146,32 @@ def temporal_patterns(
     """Identify critical time periods for predictions.
     
     Args:
-        sequences: List of event sequences
-        predictions: Model predictions
-        time_windows: Optional time windows for analysis
+        sequences: List of event sequences (must not be empty)
+        predictions: Model predictions (must match sequence length)
+        time_windows: Optional time windows for analysis (not yet implemented)
         
     Returns:
-        Dictionary with temporal pattern analysis
+        Dictionary with temporal pattern analysis including position importance
+        
+    Raises:
+        ValueError: If sequences empty or predictions length doesn't match sequences length
+        
+    Examples:
+        >>> import numpy as np
+        >>> sequences = [["health:diagnosis", "occupation:job_change"]]
+        >>> predictions = np.array([0.8])
+        >>> patterns = temporal_patterns(sequences, predictions)
+        >>> "position_importance" in patterns
+        True
     """
+    if not sequences:
+        raise ValueError("sequences list cannot be empty")
+    
+    if len(predictions) != len(sequences):
+        raise ValueError(
+            f"predictions length ({len(predictions)}) must match sequences length ({len(sequences)})"
+        )
+    
     # Analyze prediction patterns across sequence positions
     position_importance = {}
     
@@ -171,14 +214,35 @@ def feature_attribution(
     """Compute SHAP-style feature attribution for events.
     
     Args:
-        predictor: Trained predictor
-        sequences: Event sequences
-        event_embeddings: Event embeddings
-        use_shap: Whether to use SHAP library (if available)
+        predictor: Trained EventSequencePredictor (must be fitted)
+        sequences: Event sequences (must not be empty)
+        event_embeddings: Event embeddings dictionary
+        use_shap: Whether to use SHAP library (if available, falls back to permutation otherwise)
         
     Returns:
         Dictionary mapping events to attribution scores
+        
+    Raises:
+        ValueError: If predictor not fitted or sequences empty
+        
+    Examples:
+        >>> from metainformant.life_events import EventSequencePredictor, learn_event_embeddings
+        >>> import numpy as np
+        >>> sequences = [["health:diagnosis", "occupation:job_change"]]
+        >>> y = np.array([0])
+        >>> predictor = EventSequencePredictor(random_state=42)
+        >>> predictor.fit(sequences, y)
+        >>> embeddings = learn_event_embeddings(sequences, random_state=42)
+        >>> attribution = feature_attribution(predictor, sequences, embeddings)
+        >>> len(attribution) > 0
+        True
     """
+    if not predictor.is_fitted:
+        raise ValueError("Predictor must be fitted before computing attribution")
+    
+    if not sequences:
+        raise ValueError("sequences list cannot be empty")
+    
     if use_shap and SHAP_AVAILABLE:
         # Use SHAP for attribution
         from .embeddings import sequence_embeddings
