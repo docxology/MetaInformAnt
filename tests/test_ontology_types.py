@@ -113,4 +113,107 @@ class TestOntology:
         onto = Ontology(terms={"GO:0008150": term})
         assert onto.has_term("GO:0008150") is True
         assert onto.has_term("NONEXISTENT") is False
+    
+    def test_ontology_get_term(self):
+        """Test getting term by ID."""
+        term = Term("GO:0008150", "biological_process")
+        onto = Ontology(terms={"GO:0008150": term})
+        retrieved = onto.get_term("GO:0008150")
+        assert retrieved == term
+        assert onto.get_term("NONEXISTENT") is None
+    
+    def test_ontology_get_namespace(self):
+        """Test getting namespace for term."""
+        term = Term("GO:0008150", "biological_process", namespace="biological_process")
+        onto = Ontology(terms={"GO:0008150": term})
+        assert onto.get_namespace("GO:0008150") == "biological_process"
+        assert onto.get_namespace("NONEXISTENT") is None
+    
+    def test_ontology_add_term_validation(self):
+        """Test add_term validation."""
+        onto = Ontology()
+        from metainformant.core.errors import ValidationError
+        
+        # Empty term_id
+        with pytest.raises(ValidationError, match="Term ID cannot be empty"):
+            onto.add_term(Term("", "name"))
+        
+        # Empty name
+        with pytest.raises(ValidationError, match="Term name cannot be empty"):
+            onto.add_term(Term("GO:001", ""))
+        
+        # Duplicate term_id
+        term = Term("GO:001", "name")
+        onto.add_term(term)
+        with pytest.raises(ValidationError, match="already exists"):
+            onto.add_term(term)
+    
+    def test_ontology_validate(self):
+        """Test ontology validation."""
+        onto = Ontology()
+        
+        # Valid ontology
+        term = Term("GO:001", "name")
+        onto.add_term(term)
+        is_valid, errors = onto.validate()
+        assert is_valid
+        assert len(errors) == 0
+        
+        # Orphaned parent reference
+        term2 = Term("GO:002", "name2", is_a_parents=["GO:999"])
+        onto.add_term(term2)
+        is_valid, errors = onto.validate()
+        assert not is_valid
+        assert any("GO:999" in error for error in errors)
+    
+    def test_term_repr(self):
+        """Test Term __repr__."""
+        term = Term("GO:001", "name", namespace="test")
+        repr_str = repr(term)
+        assert "GO:001" in repr_str
+        assert "name" in repr_str
+        assert "test" in repr_str
+    
+    def test_term_with_relationships(self):
+        """Test Term with relationships."""
+        term = Term(
+            term_id="GO:001",
+            name="name",
+            relationships={"part_of": ["GO:002"], "regulates": ["GO:003"]},
+            synonyms=["syn1"],
+            xrefs=["xref:001"],
+            subsets=["subset1"],
+        )
+        assert "part_of" in term.relationships
+        assert term.synonyms == ["syn1"]
+        assert term.xrefs == ["xref:001"]
+        assert term.subsets == ["subset1"]
+    
+    def test_ontology_get_relationships(self):
+        """Test get_relationships method."""
+        term = Term(
+            term_id="GO:001",
+            name="name",
+            is_a_parents=["GO:002"],
+            relationships={"part_of": ["GO:003"]},
+        )
+        onto = Ontology()
+        onto.add_term(term)
+        
+        all_rels = onto.get_relationships("GO:001")
+        assert "is_a" in all_rels
+        assert "part_of" in all_rels
+        assert "GO:002" in all_rels["is_a"]
+        assert "GO:003" in all_rels["part_of"]
+        
+        part_of_rels = onto.get_relationships("GO:001", rel_type="part_of")
+        assert isinstance(part_of_rels, set)
+        assert "GO:003" in part_of_rels
+    
+    def test_ontology_get_relationships_missing_term(self):
+        """Test get_relationships with missing term."""
+        onto = Ontology()
+        with pytest.raises(KeyError, match="not found"):
+            onto.get_relationships("NONEXISTENT")
+
 

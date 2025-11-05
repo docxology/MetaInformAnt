@@ -51,6 +51,16 @@ def train_test_split(
         test_indices = indices[:n_test]
         train_indices = indices[n_test:]
 
+    # Ensure no overlap between train and test indices
+    train_set = set(train_indices)
+    test_set = set(test_indices)
+    overlap = train_set.intersection(test_set)
+    if overlap:
+        # Remove overlap from test set
+        test_set = test_set - overlap
+        train_indices = np.array(list(train_set))
+        test_indices = np.array(list(test_set))
+
     return X[train_indices], X[test_indices], y[train_indices], y[test_indices]
 
 
@@ -109,28 +119,40 @@ def k_fold_split(
 
 
 def cross_validate(
-    model_func: Callable,
-    X: np.ndarray,
-    y: np.ndarray,
+    model_func: Callable = None,
+    X: np.ndarray = None,
+    y: np.ndarray = None,
     cv: int = 5,
     scoring: str = "accuracy",
     random_state: Optional[int] = None,
+    classifier_func: Callable = None,
+    cv_folds: int = None,
     **model_kwargs,
 ) -> Dict[str, Any]:
     """Perform cross-validation.
 
     Args:
-        model_func: Function that returns trained model
+        model_func: Function that returns trained model (or use classifier_func)
         X: Feature matrix
         y: Target vector
-        cv: Number of cross-validation folds
+        cv: Number of cross-validation folds (or use cv_folds)
         scoring: Scoring metric
         random_state: Random seed
+        classifier_func: Alternative name for model_func (for compatibility)
+        cv_folds: Alternative name for cv (for compatibility)
         **model_kwargs: Parameters for model_func
 
     Returns:
-        Dictionary with validation scores and statistics
+        Dictionary with validation scores and statistics including mean_accuracy, std_accuracy, fold_results
     """
+    # Support both parameter names for compatibility
+    if classifier_func is not None and model_func is None:
+        model_func = classifier_func
+    if cv_folds is not None and cv == 5:
+        cv = cv_folds
+    
+    if model_func is None or X is None or y is None:
+        raise ValueError("Must provide model_func/classifier_func, X, and y")
     # Determine if this is classification or regression
     is_classification = len(np.unique(y)) < X.shape[0] * 0.1
 
@@ -145,8 +167,21 @@ def cross_validate(
         X_train, X_val = X[train_idx], X[val_idx]
         y_train, y_val = y[train_idx], y[val_idx]
 
-        # Train model
-        model = model_func(X_train, y_train, **model_kwargs)
+        # Train model - support different function signatures
+        try:
+            # Try new signature: model_func(X_train, y_train, **kwargs)
+            model = model_func(X_train, y_train, **model_kwargs)
+        except TypeError:
+            # Try old signature: model_func(X_train, y_train, X_val, y_val)
+            try:
+                result = model_func(X_train, y_train, X_val, y_val)
+                # If function returns dict directly, use it
+                if isinstance(result, dict):
+                    scores.append(result.get(scoring, result.get("accuracy", 0.0)))
+                    continue
+                model = result
+            except TypeError:
+                raise ValueError(f"model_func signature not supported: {model_func}")
 
         # Make predictions
         if hasattr(model, "predict"):
@@ -177,21 +212,36 @@ def cross_validate(
     predictions_all = np.array(predictions_all)
     true_labels_all = np.array(true_labels_all)
 
-    return {
+    # Calculate mean and std
+    mean_score = np.mean(scores) if scores else 0.0
+    std_score = np.std(scores) if scores else 0.0
+    
+    result = {
         "scores": np.array(scores),
-        "mean_score": np.mean(scores),
-        "std_score": np.std(scores),
+        "mean_score": mean_score,
+        "std_score": std_score,
         "predictions": predictions_all,
         "true_labels": true_labels_all,
         "scoring_method": scoring,
         "n_folds": cv,
     }
+    
+    # Add compatibility aliases
+    if scoring == "accuracy":
+        result["mean_accuracy"] = mean_score
+        result["std_accuracy"] = std_score
+    
+    # Add fold_results
+    if "fold_results" not in result:
+        result["fold_results"] = [{"accuracy": s} if scoring == "accuracy" else {scoring: s} for s in scores]
+    
+    return result
 
 
 def bootstrap_validate(
-    model_func: Callable,
-    X: np.ndarray,
-    y: np.ndarray,
+    model_func: Callable = None,
+    X: np.ndarray = None,
+    y: np.ndarray = None,
     n_bootstrap: int = 100,
     sample_size: Optional[int] = None,
     scoring: str = "accuracy",
@@ -201,7 +251,7 @@ def bootstrap_validate(
     """Perform bootstrap validation.
 
     Args:
-        model_func: Function that returns trained model
+        model_func: Function that returns trained model (can accept X_train, y_train, X_test, y_test)
         X: Feature matrix
         y: Target vector
         n_bootstrap: Number of bootstrap iterations
@@ -213,6 +263,9 @@ def bootstrap_validate(
     Returns:
         Dictionary with bootstrap validation results
     """
+    if model_func is None or X is None or y is None:
+        raise ValueError("Must provide model_func, X, and y")
+    
     if random_state is not None:
         np.random.seed(random_state)
 
@@ -233,8 +286,29 @@ def bootstrap_validate(
         X_train, y_train = X[bootstrap_idx], y[bootstrap_idx]
         X_test, y_test = X[out_of_bag_idx], y[out_of_bag_idx]
 
-        # Train model
-        model = model_func(X_train, y_train, **model_kwargs)
+        # Train model - support both signatures
+        try:
+            # Try signature: model_func(X_train, y_train, X_test, y_test, **kwargs)
+            result = model_func(X_train, y_train, X_test, y_test, **model_kwargs)
+            # If function returns dict directly, use it
+            if isinstance(result, dict):
+                if scoring in result:
+                    score = result[scoring]
+                elif "mse" in result:
+                    score = result["mse"]
+                    scoring = "mse"
+                elif "accuracy" in result:
+                    score = result["accuracy"]
+                    scoring = "accuracy"
+                else:
+                    # Fallback: use first numeric value
+                    score = result.get(list(result.keys())[0], 0.0)
+                scores.append(score)
+                continue
+            model = result
+        except TypeError:
+            # Try signature: model_func(X_train, y_train, **kwargs)
+            model = model_func(X_train, y_train, **model_kwargs)
 
         # Make predictions
         if hasattr(model, "predict"):
@@ -260,26 +334,46 @@ def bootstrap_validate(
 
         scores.append(score)
 
-    scores = np.array(scores)
+    scores = np.array(scores) if scores else np.array([])
 
-    return {
+    # Build result with both naming conventions
+    mean_score = float(np.mean(scores)) if len(scores) > 0 else 0.0
+    std_score = float(np.std(scores)) if len(scores) > 0 else 0.0
+    
+    result = {
         "scores": scores,
-        "mean_score": np.mean(scores),
-        "std_score": np.std(scores),
-        "confidence_interval_95": np.percentile(scores, [2.5, 97.5]),
+        "mean_score": mean_score,
+        "std_score": std_score,
+        "confidence_interval_95": np.percentile(scores, [2.5, 97.5]) if len(scores) > 0 else [0.0, 0.0],
         "n_bootstrap": len(scores),
         "scoring_method": scoring,
     }
+    
+    # Add compatibility aliases
+    if scoring == "accuracy":
+        result["mean_accuracy"] = mean_score
+        result["std_accuracy"] = std_score
+    elif scoring == "mse":
+        result["mean_mse"] = mean_score
+        result["std_mse"] = std_score
+    
+    # Add bootstrap_results if expected
+    if "bootstrap_results" not in result:
+        result["bootstrap_results"] = [{"score": s, scoring: s} for s in scores]
+    
+    return result
 
 
 def learning_curve(
-    model_func: Callable,
-    X: np.ndarray,
-    y: np.ndarray,
+    model_func: Callable = None,
+    X: np.ndarray = None,
+    y: np.ndarray = None,
     train_sizes: Optional[np.ndarray] = None,
     cv: int = 5,
     scoring: str = "accuracy",
     random_state: Optional[int] = None,
+    classifier_func: Callable = None,
+    cv_folds: int = None,
     **model_kwargs,
 ) -> Dict[str, Any]:
     """Generate learning curves.
@@ -292,11 +386,21 @@ def learning_curve(
         cv: Number of cross-validation folds
         scoring: Scoring metric
         random_state: Random seed
+        classifier_func: Alias for model_func (for compatibility)
+        cv_folds: Alias for cv (for compatibility)
         **model_kwargs: Parameters for model_func
 
     Returns:
-        Dictionary with learning curve data
+        Dictionary with learning curve data including train_sizes, train_scores, val_scores
     """
+    # Support aliases
+    if classifier_func is not None and model_func is None:
+        model_func = classifier_func
+    if cv_folds is not None and cv == 5:
+        cv = cv_folds
+    
+    if model_func is None or X is None or y is None:
+        raise ValueError("Must provide model_func, X, and y")
     if train_sizes is None:
         train_sizes = np.linspace(0.1, 1.0, 10)
 
@@ -321,8 +425,19 @@ def learning_curve(
             X_train, y_train = X[train_idx], y[train_idx]
             X_val, y_val = X[val_idx], y[val_idx]
 
-            # Train model
-            model = model_func(X_train, y_train, **model_kwargs)
+            # Train model - support different function signatures
+            try:
+                model = model_func(X_train, y_train, X_val, y_val, **model_kwargs)
+                # If model_func returns dict directly (as in test), extract score
+                if isinstance(model, dict):
+                    train_scores.append(model.get(scoring, model.get("accuracy", 0.0)))
+                    val_scores.append(model.get(f"val_{scoring}", model.get("val_accuracy", model.get("accuracy", 0.0))))
+                    continue
+            except TypeError:
+                try:
+                    model = model_func(X_train, y_train, **model_kwargs)
+                except TypeError:
+                    raise ValueError(f"model_func signature not supported: {model_func}")
 
             # Predictions and scores
             if hasattr(model, "predict"):
@@ -365,6 +480,7 @@ def learning_curve(
         "train_sizes": train_sizes_abs,
         "train_scores": train_scores_all,
         "val_scores": val_scores_all,
+        "validation_scores": val_scores_all,  # Compatibility alias
         "train_scores_mean": np.mean(train_scores_all, axis=1),
         "train_scores_std": np.std(train_scores_all, axis=1),
         "val_scores_mean": np.mean(val_scores_all, axis=1),

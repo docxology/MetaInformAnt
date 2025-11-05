@@ -1,0 +1,255 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.2, pytest-7.2.1, pluggy-1.0.0+repack -- /usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /media/q/ext6/github/MetaInformAnt, configfile: pyproject.toml
+plugins: anyio-3.6.2
+collecting ... collected 57 items
+
+tests/test_singlecell_basic.py::TestSingleCellPreprocessing::test_filter_cells_basic PASSED [  1%]
+tests/test_singlecell_basic.py::TestSingleCellPreprocessing::test_filter_genes_basic PASSED [  3%]
+tests/test_singlecell_basic.py::TestSingleCellPreprocessing::test_normalize_counts_basic PASSED [  5%]
+tests/test_singlecell_basic.py::TestSingleCellPreprocessing::test_log_transform_basic PASSED [  7%]
+tests/test_singlecell_basic.py::TestSingleCellPreprocessing::test_preprocessing_pipeline PASSED [  8%]
+tests/test_singlecell_basic.py::TestSingleCellDimensionality::test_run_pca_basic SKIPPED [ 10%]
+tests/test_singlecell_basic.py::TestSingleCellDimensionality::test_run_tsne_basic SKIPPED [ 12%]
+tests/test_singlecell_basic.py::TestSingleCellDimensionality::test_run_umap_basic SKIPPED [ 14%]
+tests/test_singlecell_basic.py::TestSingleCellClustering::test_leiden_clustering_basic SKIPPED [ 15%]
+tests/test_singlecell_basic.py::TestSingleCellClustering::test_find_markers_basic SKIPPED [ 17%]
+tests/test_singlecell_basic.py::TestSingleCellIntegration::test_basic_singlecell_workflow SKIPPED [ 19%]
+tests/test_singlecell_basic.py::TestSingleCellEdgeCases::test_empty_matrix PASSED [ 21%]
+tests/test_singlecell_basic.py::TestSingleCellEdgeCases::test_all_zero_matrix PASSED [ 22%]
+tests/test_singlecell_basic.py::TestSingleCellEdgeCases::test_single_cell_single_gene PASSED [ 24%]
+tests/test_singlecell_preprocessing.py::TestSingleCellData::test_singlecelldata_initialization PASSED [ 26%]
+tests/test_singlecell_preprocessing.py::TestSingleCellData::test_singlecelldata_with_metadata PASSED [ 28%]
+tests/test_singlecell_preprocessing.py::TestSingleCellData::test_singlecelldata_sparse_matrix PASSED [ 29%]
+tests/test_singlecell_preprocessing.py::TestSingleCellData::test_singlecelldata_copy PASSED [ 31%]
+tests/test_singlecell_preprocessing.py::TestDataLoading::test_load_count_matrix_csv PASSED [ 33%]
+tests/test_singlecell_preprocessing.py::TestDataLoading::test_load_count_matrix_tsv PASSED [ 35%]
+tests/test_singlecell_preprocessing.py::TestDataLoading::test_load_count_matrix_transpose PASSED [ 36%]
+tests/test_singlecell_preprocessing.py::TestQualityControl::test_calculate_qc_metrics PASSED [ 38%]
+tests/test_singlecell_preprocessing.py::TestQualityControl::test_filter_cells PASSED [ 40%]
+tests/test_singlecell_preprocessing.py::TestQualityControl::test_filter_genes PASSED [ 42%]
+tests/test_singlecell_preprocessing.py::TestNormalization::test_normalize_counts_total_count PASSED [ 43%]
+tests/test_singlecell_preprocessing.py::TestNormalization::test_normalize_counts_median PASSED [ 45%]
+tests/test_singlecell_preprocessing.py::TestNormalization::test_log_transform PASSED [ 47%]
+tests/test_singlecell_preprocessing.py::TestNormalization::test_scale_data PASSED [ 49%]
+tests/test_singlecell_preprocessing.py::TestIntegrationWorkflow::test_full_preprocessing_pipeline PASSED [ 50%]
+tests/test_singlecell_preprocessing.py::TestEdgeCases::test_empty_data_handling PASSED [ 52%]
+tests/test_singlecell_preprocessing.py::TestEdgeCases::test_all_zero_data PASSED [ 54%]
+tests/test_singlecell_preprocessing.py::TestEdgeCases::test_single_nonzero_gene PASSED [ 56%]
+tests/test_singlecell_preprocessing.py::TestEdgeCases::test_dimension_mismatch_error PASSED [ 57%]
+tests/test_singlecell_preprocessing.py::TestEdgeCases::test_invalid_normalization_method PASSED [ 59%]
+tests/test_singlecell_dimensionality.py::TestHVGSelection::test_select_hvgs_seurat_method PASSED [ 61%]
+tests/test_singlecell_dimensionality.py::TestHVGSelection::test_select_hvgs_variance_method PASSED [ 63%]
+tests/test_singlecell_dimensionality.py::TestHVGSelection::test_select_hvgs_cell_ranger_method PASSED [ 64%]
+tests/test_singlecell_dimensionality.py::TestHVGSelection::test_select_hvgs_invalid_method PASSED [ 66%]
+tests/test_singlecell_dimensionality.py::TestPCA::test_compute_pca_basic FAILED [ 68%]
+tests/test_singlecell_dimensionality.py::TestPCA::test_compute_pca_with_hvgs FAILED [ 70%]
+tests/test_singlecell_dimensionality.py::TestPCA::test_compute_pca_without_hvgs FAILED [ 71%]
+tests/test_singlecell_dimensionality.py::TestPCA::test_compute_pca_too_many_components FAILED [ 73%]
+tests/test_singlecell_dimensionality.py::TestNeighborGraph::test_compute_neighbors_basic FAILED [ 75%]
+tests/test_singlecell_dimensionality.py::TestNeighborGraph::test_compute_neighbors_different_metrics SKIPPED [ 77%]
+tests/test_singlecell_dimensionality.py::TestNeighborGraph::test_compute_neighbors_without_pca FAILED [ 78%]
+tests/test_singlecell_dimensionality.py::TestUMAP::test_compute_umap_basic ERROR [ 80%]
+tests/test_singlecell_dimensionality.py::TestUMAP::test_compute_umap_different_dimensions ERROR [ 82%]
+tests/test_singlecell_dimensionality.py::TestUMAP::test_compute_umap_without_neighbors ERROR [ 84%]
+tests/test_singlecell_dimensionality.py::TestTSNE::test_compute_tsne_basic FAILED [ 85%]
+tests/test_singlecell_dimensionality.py::TestTSNE::test_compute_tsne_different_perplexity FAILED [ 87%]
+tests/test_singlecell_dimensionality.py::TestTSNE::test_compute_tsne_perplexity_adjustment FAILED [ 89%]
+tests/test_singlecell_dimensionality.py::TestDiffusionMap::test_compute_diffusion_map_basic ERROR [ 91%]
+tests/test_singlecell_dimensionality.py::TestDiffusionMap::test_compute_diffusion_map_without_neighbors ERROR [ 92%]
+tests/test_singlecell_dimensionality.py::TestIntegrationWorkflow::test_full_dimensionality_pipeline FAILED [ 94%]
+tests/test_singlecell_dimensionality.py::TestEdgeCases::test_small_dataset_handling FAILED [ 96%]
+tests/test_singlecell_dimensionality.py::TestEdgeCases::test_single_cell_handling FAILED [ 98%]
+tests/test_singlecell_dimensionality.py::TestEdgeCases::test_zero_variance_genes FAILED [100%]
+
+==================================== ERRORS ====================================
+______________ ERROR at setup of TestUMAP.test_compute_umap_basic ______________
+src/metainformant/singlecell/dimensionality.py:273: in compute_neighbors
+    from sklearn.neighbors import NearestNeighbors
+E   ModuleNotFoundError: No module named 'sklearn'
+
+During handling of the above exception, another exception occurred:
+tests/test_singlecell_dimensionality.py:312: in setup_method
+    self.test_data = compute_neighbors(self.test_data, n_neighbors=15)
+src/metainformant/singlecell/dimensionality.py:292: in compute_neighbors
+    dist_matrix = pairwise_distances(X_use, metric=metric)
+E   TypeError: 'NoneType' object is not callable
+______ ERROR at setup of TestUMAP.test_compute_umap_different_dimensions _______
+src/metainformant/singlecell/dimensionality.py:273: in compute_neighbors
+    from sklearn.neighbors import NearestNeighbors
+E   ModuleNotFoundError: No module named 'sklearn'
+
+During handling of the above exception, another exception occurred:
+tests/test_singlecell_dimensionality.py:312: in setup_method
+    self.test_data = compute_neighbors(self.test_data, n_neighbors=15)
+src/metainformant/singlecell/dimensionality.py:292: in compute_neighbors
+    dist_matrix = pairwise_distances(X_use, metric=metric)
+E   TypeError: 'NoneType' object is not callable
+________ ERROR at setup of TestUMAP.test_compute_umap_without_neighbors ________
+src/metainformant/singlecell/dimensionality.py:273: in compute_neighbors
+    from sklearn.neighbors import NearestNeighbors
+E   ModuleNotFoundError: No module named 'sklearn'
+
+During handling of the above exception, another exception occurred:
+tests/test_singlecell_dimensionality.py:312: in setup_method
+    self.test_data = compute_neighbors(self.test_data, n_neighbors=15)
+src/metainformant/singlecell/dimensionality.py:292: in compute_neighbors
+    dist_matrix = pairwise_distances(X_use, metric=metric)
+E   TypeError: 'NoneType' object is not callable
+_____ ERROR at setup of TestDiffusionMap.test_compute_diffusion_map_basic ______
+src/metainformant/singlecell/dimensionality.py:273: in compute_neighbors
+    from sklearn.neighbors import NearestNeighbors
+E   ModuleNotFoundError: No module named 'sklearn'
+
+During handling of the above exception, another exception occurred:
+tests/test_singlecell_dimensionality.py:442: in setup_method
+    self.test_data = compute_neighbors(self.test_data, n_neighbors=10)
+src/metainformant/singlecell/dimensionality.py:292: in compute_neighbors
+    dist_matrix = pairwise_distances(X_use, metric=metric)
+E   TypeError: 'NoneType' object is not callable
+_ ERROR at setup of TestDiffusionMap.test_compute_diffusion_map_without_neighbors _
+src/metainformant/singlecell/dimensionality.py:273: in compute_neighbors
+    from sklearn.neighbors import NearestNeighbors
+E   ModuleNotFoundError: No module named 'sklearn'
+
+During handling of the above exception, another exception occurred:
+tests/test_singlecell_dimensionality.py:442: in setup_method
+    self.test_data = compute_neighbors(self.test_data, n_neighbors=10)
+src/metainformant/singlecell/dimensionality.py:292: in compute_neighbors
+    dist_matrix = pairwise_distances(X_use, metric=metric)
+E   TypeError: 'NoneType' object is not callable
+=================================== FAILURES ===================================
+________________________ TestPCA.test_compute_pca_basic ________________________
+tests/test_singlecell_dimensionality.py:157: in test_compute_pca_basic
+    data = compute_pca(self.test_data, n_components=20)
+src/metainformant/singlecell/dimensionality.py:199: in compute_pca
+    pca = PCA(n_components=n_components, svd_solver=svd_solver)
+E   TypeError: 'NoneType' object is not callable
+---------------------------- Captured stdout setup -----------------------------
+Selected 0 highly variable genes
+______________________ TestPCA.test_compute_pca_with_hvgs ______________________
+tests/test_singlecell_dimensionality.py:182: in test_compute_pca_with_hvgs
+    data = compute_pca(self.test_data, n_components=15, use_hvgs=True)
+src/metainformant/singlecell/dimensionality.py:199: in compute_pca
+    pca = PCA(n_components=n_components, svd_solver=svd_solver)
+E   TypeError: 'NoneType' object is not callable
+---------------------------- Captured stdout setup -----------------------------
+Selected 0 highly variable genes
+____________________ TestPCA.test_compute_pca_without_hvgs _____________________
+tests/test_singlecell_dimensionality.py:190: in test_compute_pca_without_hvgs
+    data = compute_pca(self.test_data, n_components=10, use_hvgs=False)
+src/metainformant/singlecell/dimensionality.py:199: in compute_pca
+    pca = PCA(n_components=n_components, svd_solver=svd_solver)
+E   TypeError: 'NoneType' object is not callable
+---------------------------- Captured stdout setup -----------------------------
+Selected 0 highly variable genes
+_________________ TestPCA.test_compute_pca_too_many_components _________________
+tests/test_singlecell_dimensionality.py:199: in test_compute_pca_too_many_components
+    data = compute_pca(self.test_data, n_components=200)
+src/metainformant/singlecell/dimensionality.py:199: in compute_pca
+    pca = PCA(n_components=n_components, svd_solver=svd_solver)
+E   TypeError: 'NoneType' object is not callable
+---------------------------- Captured stdout setup -----------------------------
+Selected 0 highly variable genes
+________________ TestNeighborGraph.test_compute_neighbors_basic ________________
+src/metainformant/singlecell/dimensionality.py:273: in compute_neighbors
+    from sklearn.neighbors import NearestNeighbors
+E   ModuleNotFoundError: No module named 'sklearn'
+
+During handling of the above exception, another exception occurred:
+tests/test_singlecell_dimensionality.py:235: in test_compute_neighbors_basic
+    data = compute_neighbors(self.test_data, n_neighbors=15, n_pcs=2)
+src/metainformant/singlecell/dimensionality.py:292: in compute_neighbors
+    dist_matrix = pairwise_distances(X_use, metric=metric)
+E   TypeError: 'NoneType' object is not callable
+_____________ TestNeighborGraph.test_compute_neighbors_without_pca _____________
+src/metainformant/singlecell/dimensionality.py:273: in compute_neighbors
+    from sklearn.neighbors import NearestNeighbors
+E   ModuleNotFoundError: No module named 'sklearn'
+
+During handling of the above exception, another exception occurred:
+tests/test_singlecell_dimensionality.py:282: in test_compute_neighbors_without_pca
+    data = compute_neighbors(data, n_neighbors=10)
+src/metainformant/singlecell/dimensionality.py:292: in compute_neighbors
+    dist_matrix = pairwise_distances(X_use, metric=metric)
+E   TypeError: 'NoneType' object is not callable
+_______________________ TestTSNE.test_compute_tsne_basic _______________________
+src/metainformant/singlecell/dimensionality.py:456: in compute_tsne
+    from sklearn.manifold import TSNE
+E   ModuleNotFoundError: No module named 'sklearn'
+
+During handling of the above exception, another exception occurred:
+tests/test_singlecell_dimensionality.py:386: in test_compute_tsne_basic
+    data = compute_tsne(self.test_data, n_components=2, n_iter=250)
+src/metainformant/singlecell/dimensionality.py:496: in compute_tsne
+    raise ImportError("scikit-learn required for t-SNE computation")
+E   ImportError: scikit-learn required for t-SNE computation
+_______________ TestTSNE.test_compute_tsne_different_perplexity ________________
+src/metainformant/singlecell/dimensionality.py:456: in compute_tsne
+    from sklearn.manifold import TSNE
+E   ModuleNotFoundError: No module named 'sklearn'
+
+During handling of the above exception, another exception occurred:
+tests/test_singlecell_dimensionality.py:401: in test_compute_tsne_different_perplexity
+    data = compute_tsne(self.test_data, perplexity=15.0, n_iter=250)
+src/metainformant/singlecell/dimensionality.py:496: in compute_tsne
+    raise ImportError("scikit-learn required for t-SNE computation")
+E   ImportError: scikit-learn required for t-SNE computation
+_______________ TestTSNE.test_compute_tsne_perplexity_adjustment _______________
+src/metainformant/singlecell/dimensionality.py:456: in compute_tsne
+    from sklearn.manifold import TSNE
+E   ModuleNotFoundError: No module named 'sklearn'
+
+During handling of the above exception, another exception occurred:
+tests/test_singlecell_dimensionality.py:411: in test_compute_tsne_perplexity_adjustment
+    data = compute_tsne(small_data, perplexity=50.0, n_iter=100)
+src/metainformant/singlecell/dimensionality.py:496: in compute_tsne
+    raise ImportError("scikit-learn required for t-SNE computation")
+E   ImportError: scikit-learn required for t-SNE computation
+__________ TestIntegrationWorkflow.test_full_dimensionality_pipeline ___________
+tests/test_singlecell_dimensionality.py:510: in test_full_dimensionality_pipeline
+    data = compute_pca(data, n_components=30, use_hvgs=True)
+src/metainformant/singlecell/dimensionality.py:199: in compute_pca
+    pca = PCA(n_components=n_components, svd_solver=svd_solver)
+E   TypeError: 'NoneType' object is not callable
+----------------------------- Captured stdout call -----------------------------
+Selected 0 highly variable genes
+__________________ TestEdgeCases.test_small_dataset_handling ___________________
+tests/test_singlecell_dimensionality.py:549: in test_small_dataset_handling
+    data = compute_pca(data, n_components=3)
+src/metainformant/singlecell/dimensionality.py:199: in compute_pca
+    pca = PCA(n_components=n_components, svd_solver=svd_solver)
+E   TypeError: 'NoneType' object is not callable
+___________________ TestEdgeCases.test_single_cell_handling ____________________
+tests/test_singlecell_dimensionality.py:565: in test_single_cell_handling
+    compute_pca(data, n_components=5)
+src/metainformant/singlecell/dimensionality.py:199: in compute_pca
+    pca = PCA(n_components=n_components, svd_solver=svd_solver)
+E   TypeError: 'NoneType' object is not callable
+____________________ TestEdgeCases.test_zero_variance_genes ____________________
+tests/test_singlecell_dimensionality.py:581: in test_zero_variance_genes
+    data = compute_pca(data, n_components=10)
+src/metainformant/singlecell/dimensionality.py:199: in compute_pca
+    pca = PCA(n_components=n_components, svd_solver=svd_solver)
+E   TypeError: 'NoneType' object is not callable
+=========================== short test summary info ============================
+FAILED tests/test_singlecell_dimensionality.py::TestPCA::test_compute_pca_basic
+FAILED tests/test_singlecell_dimensionality.py::TestPCA::test_compute_pca_with_hvgs
+FAILED tests/test_singlecell_dimensionality.py::TestPCA::test_compute_pca_without_hvgs
+FAILED tests/test_singlecell_dimensionality.py::TestPCA::test_compute_pca_too_many_components
+FAILED tests/test_singlecell_dimensionality.py::TestNeighborGraph::test_compute_neighbors_basic
+FAILED tests/test_singlecell_dimensionality.py::TestNeighborGraph::test_compute_neighbors_without_pca
+FAILED tests/test_singlecell_dimensionality.py::TestTSNE::test_compute_tsne_basic
+FAILED tests/test_singlecell_dimensionality.py::TestTSNE::test_compute_tsne_different_perplexity
+FAILED tests/test_singlecell_dimensionality.py::TestTSNE::test_compute_tsne_perplexity_adjustment
+FAILED tests/test_singlecell_dimensionality.py::TestIntegrationWorkflow::test_full_dimensionality_pipeline
+FAILED tests/test_singlecell_dimensionality.py::TestEdgeCases::test_small_dataset_handling
+FAILED tests/test_singlecell_dimensionality.py::TestEdgeCases::test_single_cell_handling
+FAILED tests/test_singlecell_dimensionality.py::TestEdgeCases::test_zero_variance_genes
+ERROR tests/test_singlecell_dimensionality.py::TestUMAP::test_compute_umap_basic
+ERROR tests/test_singlecell_dimensionality.py::TestUMAP::test_compute_umap_different_dimensions
+ERROR tests/test_singlecell_dimensionality.py::TestUMAP::test_compute_umap_without_neighbors
+ERROR tests/test_singlecell_dimensionality.py::TestDiffusionMap::test_compute_diffusion_map_basic
+ERROR tests/test_singlecell_dimensionality.py::TestDiffusionMap::test_compute_diffusion_map_without_neighbors
+============== 13 failed, 32 passed, 7 skipped, 5 errors in 1.46s ==============

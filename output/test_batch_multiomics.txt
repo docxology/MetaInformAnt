@@ -1,0 +1,121 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.2, pytest-7.2.1, pluggy-1.0.0+repack -- /usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /media/q/ext6/github/MetaInformAnt, configfile: pyproject.toml
+plugins: anyio-3.6.2
+collecting ... collected 42 items
+
+tests/test_multiomics_comprehensive.py::TestMultiOmicsData::test_basic_creation PASSED [  2%]
+tests/test_multiomics_comprehensive.py::TestMultiOmicsData::test_sample_alignment PASSED [  4%]
+tests/test_multiomics_comprehensive.py::TestMultiOmicsData::test_get_layer PASSED [  7%]
+tests/test_multiomics_comprehensive.py::TestMultiOmicsData::test_get_layer_error PASSED [  9%]
+tests/test_multiomics_comprehensive.py::TestMultiOmicsData::test_subset_samples PASSED [ 11%]
+tests/test_multiomics_comprehensive.py::TestMultiOmicsData::test_subset_features PASSED [ 14%]
+tests/test_multiomics_comprehensive.py::TestMultiOmicsData::test_metadata_integration PASSED [ 16%]
+tests/test_multiomics_comprehensive.py::TestIntegrationFunction::test_integrate_from_dataframes PASSED [ 19%]
+tests/test_multiomics_comprehensive.py::TestIntegrationFunction::test_integrate_from_files PASSED [ 21%]
+tests/test_multiomics_comprehensive.py::TestJointPCA::test_joint_pca_basic PASSED [ 23%]
+tests/test_multiomics_comprehensive.py::TestJointPCA::test_joint_pca_with_weights PASSED [ 26%]
+tests/test_multiomics_comprehensive.py::TestJointPCA::test_joint_pca_standardization PASSED [ 28%]
+tests/test_multiomics_comprehensive.py::TestJointNMF::test_joint_nmf_basic PASSED [ 30%]
+tests/test_multiomics_comprehensive.py::TestJointNMF::test_joint_nmf_with_regularization PASSED [ 33%]
+tests/test_multiomics_comprehensive.py::TestCanonicalCorrelation::test_canonical_correlation_basic FAILED [ 35%]
+tests/test_multiomics_comprehensive.py::TestCanonicalCorrelation::test_canonical_correlation_invalid_layer PASSED [ 38%]
+tests/test_multiomics_comprehensive.py::TestCanonicalCorrelation::test_canonical_correlation_high_correlation PASSED [ 40%]
+tests/test_multiomics_integration.py::TestMultiOmicsData::test_multiomics_data_initialization PASSED [ 42%]
+tests/test_multiomics_integration.py::TestMultiOmicsData::test_sample_alignment PASSED [ 45%]
+tests/test_multiomics_integration.py::TestMultiOmicsData::test_no_common_samples_error PASSED [ 47%]
+tests/test_multiomics_integration.py::TestMultiOmicsData::test_empty_omics_error PASSED [ 50%]
+tests/test_multiomics_integration.py::TestMultiOmicsData::test_invalid_data_type_error PASSED [ 52%]
+tests/test_multiomics_integration.py::TestMultiOmicsData::test_get_layer PASSED [ 54%]
+tests/test_multiomics_integration.py::TestMultiOmicsData::test_subset_samples PASSED [ 57%]
+tests/test_multiomics_integration.py::TestMultiOmicsData::test_subset_features PASSED [ 59%]
+tests/test_multiomics_integration.py::TestIntegrateOmicsData::test_integrate_from_dataframes PASSED [ 61%]
+tests/test_multiomics_integration.py::TestIntegrateOmicsData::test_integrate_with_metadata FAILED [ 64%]
+tests/test_multiomics_integration.py::TestIntegrateOmicsData::test_integrate_from_files PASSED [ 66%]
+tests/test_multiomics_integration.py::TestJointPCA::test_joint_pca_basic PASSED [ 69%]
+tests/test_multiomics_integration.py::TestJointPCA::test_joint_pca_with_weights PASSED [ 71%]
+tests/test_multiomics_integration.py::TestJointPCA::test_joint_pca_no_standardization PASSED [ 73%]
+tests/test_multiomics_integration.py::TestJointPCA::test_joint_pca_single_layer PASSED [ 76%]
+tests/test_multiomics_integration.py::TestJointNMF::test_joint_nmf_basic PASSED [ 78%]
+tests/test_multiomics_integration.py::TestJointNMF::test_joint_nmf_reproducibility PASSED [ 80%]
+tests/test_multiomics_integration.py::TestJointNMF::test_joint_nmf_reconstruction PASSED [ 83%]
+tests/test_multiomics_integration.py::TestCanonicalCorrelation::test_canonical_correlation_basic FAILED [ 85%]
+tests/test_multiomics_integration.py::TestCanonicalCorrelation::test_canonical_correlation_actual_correlation FAILED [ 88%]
+tests/test_multiomics_integration.py::TestCanonicalCorrelation::test_canonical_correlation_invalid_layers PASSED [ 90%]
+tests/test_multiomics_integration.py::TestCanonicalCorrelation::test_canonical_correlation_regularization PASSED [ 92%]
+tests/test_multiomics_integration.py::TestIntegrationEdgeCases::test_empty_layers FAILED [ 95%]
+tests/test_multiomics_integration.py::TestIntegrationEdgeCases::test_single_sample PASSED [ 97%]
+tests/test_multiomics_integration.py::TestIntegrationEdgeCases::test_mismatched_samples_warning FAILED [100%]
+
+=================================== FAILURES ===================================
+__________ TestCanonicalCorrelation.test_canonical_correlation_basic ___________
+tests/test_multiomics_comprehensive.py:245: in test_canonical_correlation_basic
+    assert all(0 <= c <= 1 for c in correlations)  # Correlations should be in [0, 1]
+E   assert False
+E    +  where False = all(<generator object TestCanonicalCorrelation.test_canonical_correlation_basic.<locals>.<genexpr> at 0x7f84a8121b60>)
+----------------------------- Captured stderr call -----------------------------
+2025-11-05 13:19:09 | INFO | metainformant.multiomics.integration | Performing CCA between genomics and transcriptomics, n_components=5, regularization=0.01
+------------------------------ Captured log call -------------------------------
+INFO     metainformant.multiomics.integration:integration.py:858 Performing CCA between genomics and transcriptomics, n_components=5, regularization=0.01
+_____________ TestIntegrateOmicsData.test_integrate_with_metadata ______________
+tests/test_multiomics_integration.py:216: in test_integrate_with_metadata
+    assert list(omics_data.metadata.index) == samples
+E   AssertionError: assert ['S2', 'S3', 'S1'] == ['S1', 'S2', 'S3']
+E     At index 0 diff: 'S2' != 'S1'
+E     Full diff:
+E     - ['S1', 'S2', 'S3']
+E     + ['S2', 'S3', 'S1']
+----------------------------- Captured stderr call -----------------------------
+2025-11-05 13:19:10 | INFO | metainformant.multiomics.integration | Using provided metadata DataFrame: (3, 2)
+2025-11-05 13:19:10 | INFO | metainformant.multiomics.integration | Integrating 2 omics layers
+------------------------------ Captured log call -------------------------------
+INFO     metainformant.multiomics.integration:integration.py:427 Using provided metadata DataFrame: (3, 2)
+INFO     metainformant.multiomics.integration:integration.py:511 Integrating 2 omics layers
+__________ TestCanonicalCorrelation.test_canonical_correlation_basic ___________
+tests/test_multiomics_integration.py:429: in test_canonical_correlation_basic
+    assert np.all(correlations <= 1)
+E   assert False
+E    +  where False = <function all at 0x7f84e97dda80>(array([1.17915006, 1.14273401, 1.09821689, 1.07727966, 1.04773898]) <= 1)
+E    +    where <function all at 0x7f84e97dda80> = np.all
+----------------------------- Captured stderr call -----------------------------
+2025-11-05 13:19:10 | INFO | metainformant.multiomics.integration | Performing CCA between genomics and transcriptomics, n_components=5, regularization=0.01
+------------------------------ Captured log call -------------------------------
+INFO     metainformant.multiomics.integration:integration.py:858 Performing CCA between genomics and transcriptomics, n_components=5, regularization=0.01
+____ TestCanonicalCorrelation.test_canonical_correlation_actual_correlation ____
+tests/test_multiomics_integration.py:446: in test_canonical_correlation_actual_correlation
+    assert abs(actual_corr - expected_corr) < 0.1
+E   assert 0.1915147450280016 < 0.1
+E    +  where 0.1915147450280016 = abs((0.9876353169772908 - 1.1791500620052924))
+----------------------------- Captured stderr call -----------------------------
+2025-11-05 13:19:10 | INFO | metainformant.multiomics.integration | Performing CCA between genomics and transcriptomics, n_components=3, regularization=0.01
+------------------------------ Captured log call -------------------------------
+INFO     metainformant.multiomics.integration:integration.py:858 Performing CCA between genomics and transcriptomics, n_components=3, regularization=0.01
+__________________ TestIntegrationEdgeCases.test_empty_layers __________________
+tests/test_multiomics_integration.py:479: in test_empty_layers
+    MultiOmicsData(transcriptomics=empty_df)
+<string>:9: in __init__
+    ???
+src/metainformant/multiomics/integration.py:72: in __post_init__
+    raise ValueError(f"{name} DataFrame is empty")
+E   ValueError: transcriptomics DataFrame is empty
+
+During handling of the above exception, another exception occurred:
+tests/test_multiomics_integration.py:478: in test_empty_layers
+    with pytest.raises(ValueError, match="has no features"):  # Should raise ValueError about empty columns
+E   AssertionError: Regex pattern did not match.
+E    Regex: 'has no features'
+E    Input: 'transcriptomics DataFrame is empty'
+___________ TestIntegrationEdgeCases.test_mismatched_samples_warning ___________
+tests/test_multiomics_integration.py:500: in test_mismatched_samples_warning
+    with pytest.warns(UserWarning, match="Only 3 samples are common"):
+E   Failed: DID NOT WARN. No warnings of type (<class 'UserWarning'>,) were emitted.
+E   The list of emitted warnings is: [].
+=========================== short test summary info ============================
+FAILED tests/test_multiomics_comprehensive.py::TestCanonicalCorrelation::test_canonical_correlation_basic
+FAILED tests/test_multiomics_integration.py::TestIntegrateOmicsData::test_integrate_with_metadata
+FAILED tests/test_multiomics_integration.py::TestCanonicalCorrelation::test_canonical_correlation_basic
+FAILED tests/test_multiomics_integration.py::TestCanonicalCorrelation::test_canonical_correlation_actual_correlation
+FAILED tests/test_multiomics_integration.py::TestIntegrationEdgeCases::test_empty_layers
+FAILED tests/test_multiomics_integration.py::TestIntegrationEdgeCases::test_mismatched_samples_warning
+========================= 6 failed, 36 passed in 1.51s =========================

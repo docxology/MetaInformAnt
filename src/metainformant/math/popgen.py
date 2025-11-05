@@ -168,42 +168,6 @@ def fixation_probability(
     return max(0.0, min(1.0, u))
 
 
-def watterson_theta(num_segregating_sites: int, sample_size: int) -> float:
-    """Calculate Watterson's estimator of the population mutation parameter θ.
-    
-    Watterson's θ is based on the number of segregating sites and provides
-    an estimate of the population-scaled mutation rate. Useful for neutral
-    mutation rate estimation.
-    
-    Args:
-        num_segregating_sites: Number of segregating (polymorphic) sites (S)
-        sample_size: Number of sampled sequences (n)
-        
-    Returns:
-        Watterson's θ estimate. Returns 0.0 if sample_size < 2 or S <= 0.
-        Formula: θ_W = S / a₁ where a₁ = Σᵢ₌₁ⁿ⁻¹ 1/i
-        
-    Examples:
-        >>> watterson_theta(num_segregating_sites=10, sample_size=10)
-        4.08...
-        >>> watterson_theta(num_segregating_sites=20, sample_size=20)
-        6.82...
-        
-    References:
-        Watterson, G. A. (1975). On the number of segregating sites in
-        genetical models without recombination. Theoretical Population Biology,
-        7(2), 256-276.
-    """
-    S = max(0, int(num_segregating_sites))
-    n = int(sample_size)
-    if n < 2:
-        return 0.0
-    a1 = sum(1.0 / i for i in range(1, n))
-    if a1 <= 0:
-        return 0.0
-    return S / a1
-
-
 def heterozygosity_decay(initial_heterozygosity: float, effective_population_size: float, generations: int) -> float:
     """Calculate expected heterozygosity decay under genetic drift.
     

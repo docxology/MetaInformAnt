@@ -834,14 +834,20 @@ Examples:
     parser.add_argument(
         "--min-free-gb",
         type=float,
-        default=10.0,
-        help="Minimum free disk space in GB before starting downloads (default: 10.0)"
+        default=None,
+        help="Minimum free disk space in GB before starting downloads (default: auto-detect based on drive size)"
     )
     parser.add_argument(
         "--auto-cleanup-threshold",
         type=float,
-        default=5.0,
-        help="Auto-cleanup partial downloads when free space drops below this GB (default: 5.0)"
+        default=None,
+        help="Auto-cleanup partial downloads when free space drops below this GB (default: auto-detect based on drive size)"
+    )
+    parser.add_argument(
+        "--max-batch-disk-gb",
+        type=float,
+        default=None,
+        help="Maximum disk space per batch in GB (default: auto-calculate from batch size)"
     )
     
     args = parser.parse_args()
@@ -883,8 +889,40 @@ Examples:
     output_dir = repo_root / "output"
     output_dir.mkdir(parents=True, exist_ok=True)
     
+    # Auto-detect disk space thresholds if not specified
+    from metainformant.core.disk import detect_drive_size_category
+    
+    drive_category = detect_drive_size_category(output_dir)
+    logger.info(f"Drive category: {drive_category}")
+    
+    if args.min_free_gb is None:
+        # Auto-detect based on drive size
+        if drive_category == "large":
+            min_free_gb = 50.0
+        elif drive_category == "medium":
+            min_free_gb = 20.0
+        else:
+            min_free_gb = 10.0
+        logger.info(f"Auto-detected min_free_gb: {min_free_gb} (based on {drive_category} drive)")
+    else:
+        min_free_gb = args.min_free_gb
+        logger.info(f"Using specified min_free_gb: {min_free_gb}")
+    
+    if args.auto_cleanup_threshold is None:
+        # Auto-detect based on drive size
+        if drive_category == "large":
+            auto_cleanup_threshold = 20.0
+        elif drive_category == "medium":
+            auto_cleanup_threshold = 10.0
+        else:
+            auto_cleanup_threshold = 5.0
+        logger.info(f"Auto-detected auto_cleanup_threshold: {auto_cleanup_threshold} (based on {drive_category} drive)")
+    else:
+        auto_cleanup_threshold = args.auto_cleanup_threshold
+        logger.info(f"Using specified auto_cleanup_threshold: {auto_cleanup_threshold}")
+    
     disk_info = get_disk_space_info(output_dir)
-    is_sufficient, disk_msg = check_disk_space(output_dir, min_free_gb=args.min_free_gb)
+    is_sufficient, disk_msg = check_disk_space(output_dir, min_free_gb=min_free_gb)
     
     print(f"\nDisk Space Check:")
     print(f"  Total: {disk_info['total_gb']:.1f}GB")
@@ -910,7 +948,7 @@ Examples:
             if total_freed > 0:
                 logger.info(f"✅ Freed {total_freed/1024:.2f}GB from partial downloads")
                 # Re-check disk space
-                is_sufficient, disk_msg = check_disk_space(output_dir, min_free_gb=args.min_free_gb)
+                is_sufficient, disk_msg = check_disk_space(output_dir, min_free_gb=min_free_gb)
                 if not is_sufficient:
                     logger.error(f"❌ Still insufficient disk space after cleanup: {disk_msg}")
                     logger.error("Please free up disk space manually before continuing")
@@ -931,8 +969,8 @@ Examples:
     print(f"Process timeout: {args.process_timeout} seconds")
     print(f"Max retries: {args.max_retries}")
     print(f"Quant threads: {args.quant_threads}")
-    print(f"Min free space: {args.min_free_gb}GB")
-    print(f"Auto-cleanup threshold: {args.auto_cleanup_threshold}GB")
+    print(f"Min free space: {min_free_gb}GB")
+    print(f"Auto-cleanup threshold: {auto_cleanup_threshold}GB")
     print("=" * 80)
     print("\nThread Allocation Strategy:")
     print("  • Initial: Even distribution across all species")
@@ -1026,7 +1064,7 @@ Examples:
     for species_name, config_path in active_species:
         threads = thread_allocation[species_name]
         try:
-            process, log_file = start_download_process(config_path, species_name, threads, log_dir, retry_num=0, auto_cleanup_threshold=args.auto_cleanup_threshold)
+            process, log_file = start_download_process(config_path, species_name, threads, log_dir, retry_num=0, auto_cleanup_threshold=auto_cleanup_threshold)
             running_processes[species_name] = process
             process_configs[species_name] = config_path
             process_start_times[species_name] = time.time()
@@ -1091,7 +1129,7 @@ Examples:
             # Check disk space
             disk_info = get_disk_space_info(output_dir)
             if disk_info["free_gb"] < args.auto_cleanup_threshold:
-                logger.warning(f"⚠️  Low disk space: {disk_info['free_gb']:.1f}GB free (threshold: {args.auto_cleanup_threshold}GB)")
+                logger.warning(f"⚠️  Low disk space: {disk_info['free_gb']:.1f}GB free (threshold: {auto_cleanup_threshold}GB)")
                 logger.info("Attempting automatic cleanup of partial downloads...")
                 try:
                     from scripts.rna.cleanup_partial_downloads import cleanup_species
@@ -1153,7 +1191,7 @@ Examples:
                     config_path = process_configs[species_name]
                     threads = thread_allocation.get(species_name, 1)
                     new_process, new_log_file = start_download_process(
-                        config_path, species_name, threads, log_dir, retry_num=retry_count + 1, auto_cleanup_threshold=args.auto_cleanup_threshold
+                        config_path, species_name, threads, log_dir, retry_num=retry_count + 1, auto_cleanup_threshold=auto_cleanup_threshold
                     )
                     running_processes[species_name] = new_process
                     process_start_times[species_name] = time.time()
@@ -1249,7 +1287,7 @@ Examples:
                                 config_path = process_configs[species_name]
                                 threads = thread_allocation.get(species_name, 1)
                                 new_process, new_log_file = start_download_process(
-                                    config_path, species_name, threads, log_dir, retry_num=retry_count + 1, auto_cleanup_threshold=args.auto_cleanup_threshold
+                                    config_path, species_name, threads, log_dir, retry_num=retry_count + 1, auto_cleanup_threshold=auto_cleanup_threshold
                                 )
                                 running_processes[species_name] = new_process
                                 process_start_times[species_name] = time.time()

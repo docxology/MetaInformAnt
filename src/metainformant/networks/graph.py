@@ -127,6 +127,19 @@ class BiologicalNetwork:
                     neighbors.append(edge[0])
         return neighbors
 
+    def has_edge(self, node1: str, node2: str) -> bool:
+        """Check if edge exists between two nodes.
+        
+        Args:
+            node1: First node identifier
+            node2: Second node identifier
+            
+        Returns:
+            True if edge exists, False otherwise
+        """
+        edge = (node1, node2) if self.directed else tuple(sorted([node1, node2]))
+        return edge in self.edges
+
     def get_edge_weight(self, node1: str, node2: str) -> Optional[float]:
         """Get weight of edge between two nodes.
         

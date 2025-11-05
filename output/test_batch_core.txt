@@ -1,0 +1,216 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.2, pytest-7.2.1, pluggy-1.0.0+repack -- /usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /media/q/ext6/github/MetaInformAnt, configfile: pyproject.toml
+plugins: anyio-3.6.2
+collecting ... collected 102 items
+
+tests/test_core_cache.py::test_json_cache_roundtrip PASSED               [  0%]
+tests/test_core_cache.py::test_json_cache_ttl_expired PASSED             [  1%]
+tests/test_core_comprehensive.py::TestCoreCache::test_simple_json_cache PASSED [  2%]
+tests/test_core_comprehensive.py::TestCoreCache::test_cache_with_ttl PASSED [  3%]
+tests/test_core_comprehensive.py::TestCoreConfig::test_config_loading PASSED [  4%]
+tests/test_core_comprehensive.py::TestCoreConfig::test_env_override PASSED [  5%]
+tests/test_core_comprehensive.py::TestCoreDatabase::test_connection_string_building PASSED [  6%]
+tests/test_core_comprehensive.py::TestCoreDatabase::test_safe_connection_params PASSED [  7%]
+tests/test_core_comprehensive.py::TestCoreHashing::test_sha256_consistency PASSED [  8%]
+tests/test_core_comprehensive.py::TestCoreHashing::test_file_hashing PASSED [  9%]
+tests/test_core_comprehensive.py::TestCoreHashing::test_deterministic_seeding PASSED [ 10%]
+tests/test_core_comprehensive.py::TestCoreIO::test_json_with_compression FAILED [ 11%]
+tests/test_core_comprehensive.py::TestCoreIO::test_csv_operations FAILED [ 12%]
+tests/test_core_comprehensive.py::TestCoreIO::test_tsv_operations PASSED [ 13%]
+tests/test_core_comprehensive.py::TestCorePaths::test_path_expansion PASSED [ 14%]
+tests/test_core_comprehensive.py::TestCorePaths::test_safe_path_creation PASSED [ 15%]
+tests/test_core_comprehensive.py::TestCorePaths::test_path_validation PASSED [ 16%]
+tests/test_core_comprehensive.py::TestCorePaths::test_file_extension_handling PASSED [ 17%]
+tests/test_core_comprehensive.py::TestCoreText::test_advanced_slugify PASSED [ 18%]
+tests/test_core_comprehensive.py::TestCoreText::test_text_cleaning PASSED [ 19%]
+tests/test_core_comprehensive.py::TestCoreText::test_biological_text_processing PASSED [ 20%]
+tests/test_core_comprehensive.py::TestCoreLogging::test_logger_setup PASSED [ 21%]
+tests/test_core_comprehensive.py::TestCoreLogging::test_structured_logging PASSED [ 22%]
+tests/test_core_comprehensive.py::TestEnhancedCoreMethods::test_enhanced_hash_utilities PASSED [ 23%]
+tests/test_core_comprehensive.py::TestEnhancedCoreMethods::test_enhanced_path_utilities FAILED [ 24%]
+tests/test_core_comprehensive.py::TestEnhancedCoreMethods::test_enhanced_text_utilities PASSED [ 25%]
+tests/test_core_comprehensive.py::TestEnhancedCoreMethods::test_enhanced_cache_utilities PASSED [ 26%]
+tests/test_core_comprehensive.py::TestEnhancedCoreMethods::test_enhanced_io_utilities PASSED [ 27%]
+tests/test_core_comprehensive.py::TestEnhancedCoreMethods::test_enhanced_parallel_utilities PASSED [ 28%]
+tests/test_core_config.py::test_load_postgres_config_from_env_roundtrip PASSED [ 29%]
+tests/test_core_config.py::test_load_typed_env PASSED                    [ 30%]
+tests/test_core_db.py::TestDatabaseUtilities::test_build_postgres_url PASSED [ 31%]
+tests/test_core_db.py::TestDatabaseUtilities::test_build_postgres_url_different_port PASSED [ 32%]
+tests/test_core_db.py::TestDatabaseUtilities::test_sanitize_connection_params PASSED [ 33%]
+tests/test_core_db.py::TestDatabaseUtilities::test_sanitize_connection_params_non_string PASSED [ 34%]
+tests/test_core_db.py::TestDatabaseUtilities::test_sanitize_connection_params_sql_keywords PASSED [ 35%]
+tests/test_core_db.py::TestDatabaseConnection::test_get_db_client_with_config SKIPPED [ 36%]
+tests/test_core_db.py::TestDatabaseConnection::test_get_db_client_without_config PASSED [ 37%]
+tests/test_core_functionality.py::TestCoreIO::test_json_operations PASSED [ 38%]
+tests/test_core_functionality.py::TestCoreIO::test_text_processing PASSED [ 39%]
+tests/test_core_functionality.py::TestCoreIO::test_hash_operations PASSED [ 40%]
+tests/test_core_functionality.py::TestCoreIO::test_path_operations PASSED [ 41%]
+tests/test_core_functionality.py::TestDNAAnalysis::test_gc_content_calculation PASSED [ 42%]
+tests/test_core_functionality.py::TestDNAAnalysis::test_gc_skew_calculation PASSED [ 43%]
+tests/test_core_functionality.py::TestDNAAnalysis::test_melting_temperature PASSED [ 44%]
+tests/test_core_functionality.py::TestDNAAnalysis::test_sequence_distances PASSED [ 45%]
+tests/test_core_functionality.py::TestEcologyAnalysis::test_diversity_metrics PASSED [ 46%]
+tests/test_core_functionality.py::TestMathPopGen::test_hardy_weinberg_genotype_freqs PASSED [ 47%]
+tests/test_core_functionality.py::TestSimulation::test_sequence_generation PASSED [ 48%]
+tests/test_core_functionality.py::TestIntegration::test_file_io_with_analysis PASSED [ 49%]
+tests/test_core_functionality.py::TestErrorHandling::test_empty_input_handling PASSED [ 50%]
+tests/test_core_functionality.py::TestErrorHandling::test_invalid_input_handling FAILED [ 50%]
+tests/test_core_functionality.py::TestReproducibility::test_deterministic_functions PASSED [ 51%]
+tests/test_core_functionality.py::TestReproducibility::test_random_functions_with_seed PASSED [ 52%]
+tests/test_core_hash.py::test_content_hash_and_file_hash PASSED          [ 53%]
+tests/test_core_io_enhanced.py::TestIOEnhanced::test_download_file PASSED [ 54%]
+tests/test_core_io_enhanced.py::TestIOEnhanced::test_download_json PASSED [ 55%]
+tests/test_core_io_enhanced.py::TestIOEnhanced::test_download_text PASSED [ 56%]
+tests/test_core_io_enhanced.py::TestIOEnhanced::test_batch_download PASSED [ 57%]
+tests/test_core_io_enhanced.py::TestIOEnhanced::test_csv_download PASSED [ 58%]
+tests/test_core_io_enhanced.py::TestIOEnhanced::test_gzipped_json_io PASSED [ 59%]
+tests/test_core_io_enhanced.py::TestIOEnhanced::test_pandas_csv_operations FAILED [ 60%]
+tests/test_core_io_enhanced.py::TestIOEnhanced::test_pandas_parquet_operations SKIPPED [ 61%]
+tests/test_core_io_enhanced.py::TestIOEnhanced::test_io_error_handling PASSED [ 62%]
+tests/test_core_io_enhanced.py::TestIOEnhanced::test_file_size_operations PASSED [ 63%]
+tests/test_core_io.py::test_ensure_directory_creates PASSED              [ 64%]
+tests/test_core_io.py::test_json_roundtrip PASSED                        [ 65%]
+tests/test_core_io.py::test_json_gz_roundtrip FAILED                     [ 66%]
+tests/test_core_io.py::test_jsonl_roundtrip PASSED                       [ 67%]
+tests/test_core_io.py::test_tsv_roundtrip PASSED                         [ 68%]
+tests/test_core_io.py::test_open_text_auto_handles_gz PASSED             [ 69%]
+tests/test_core_logging.py::test_get_logger_returns_configured_logger PASSED [ 70%]
+tests/test_core_parallel.py::test_thread_map_preserves_order PASSED      [ 71%]
+tests/test_core_parallel.py::test_thread_map_chunked PASSED              [ 72%]
+tests/test_core_paths.py::test_expand_and_resolve_user PASSED            [ 73%]
+tests/test_core_paths.py::test_is_within PASSED                          [ 74%]
+tests/test_core_processing.py::TestConfigBasedProcessing::test_validate_config_file FAILED [ 75%]
+tests/test_core_processing.py::TestConfigBasedProcessing::test_create_sample_config FAILED [ 76%]
+tests/test_core_processing.py::TestConfigBasedProcessing::test_download_and_process_data PASSED [ 77%]
+tests/test_core_processing.py::TestConfigBasedProcessing::test_run_config_based_workflow PASSED [ 78%]
+tests/test_core_processing.py::TestConfigBasedProcessing::test_config_processing_error_handling PASSED [ 79%]
+tests/test_core_processing.py::TestConfigBasedProcessing::test_processing_with_no_downloads PASSED [ 80%]
+tests/test_core_text.py::TestSlugify::test_slugify_basic PASSED          [ 81%]
+tests/test_core_text.py::TestSlugify::test_slugify_edge_cases PASSED     [ 82%]
+tests/test_core_text.py::TestSlugify::test_slugify_very_long_input PASSED [ 83%]
+tests/test_core_text.py::TestSlugify::test_slugify_special_characters PASSED [ 84%]
+tests/test_core_text.py::TestSlugify::test_slugify_non_string_input PASSED [ 85%]
+tests/test_core_text.py::TestNormalizeWhitespace::test_normalize_whitespace_basic PASSED [ 86%]
+tests/test_core_text.py::TestNormalizeWhitespace::test_normalize_whitespace_edge_cases PASSED [ 87%]
+tests/test_core_text.py::TestNormalizeWhitespace::test_normalize_whitespace_unicode PASSED [ 88%]
+tests/test_core_text.py::TestNormalizeWhitespace::test_normalize_whitespace_very_long PASSED [ 89%]
+tests/test_core_text.py::TestNormalizeWhitespace::test_normalize_whitespace_preserve_structure PASSED [ 90%]
+tests/test_core_text.py::TestSafeFilename::test_safe_filename_basic PASSED [ 91%]
+tests/test_core_text.py::TestSafeFilename::test_safe_filename_dangerous_characters PASSED [ 92%]
+tests/test_core_text.py::TestSafeFilename::test_safe_filename_edge_cases PASSED [ 93%]
+tests/test_core_text.py::TestSafeFilename::test_safe_filename_preserve_extension PASSED [ 94%]
+tests/test_core_text.py::TestSafeFilename::test_safe_filename_reserved_names PASSED [ 95%]
+tests/test_core_text.py::TestSafeFilename::test_safe_filename_unicode PASSED [ 96%]
+tests/test_core_text.py::TestSafeFilename::test_safe_filename_whitespace PASSED [ 97%]
+tests/test_core_text.py::TestTextUtilsIntegration::test_text_processing_pipeline PASSED [ 98%]
+tests/test_core_text.py::TestTextUtilsIntegration::test_empty_input_consistency PASSED [ 99%]
+tests/test_core_text.py::TestTextUtilsIntegration::test_round_trip_compatibility PASSED [100%]
+
+=================================== FAILURES ===================================
+____________________ TestCoreIO.test_json_with_compression _____________________
+src/metainformant/core/io.py:53: in load_json
+    return json.load(fh)
+/usr/lib/python3.11/json/__init__.py:293: in load
+    return loads(fp.read(),
+/usr/lib/python3.11/gzip.py:301: in read
+    return self._buffer.read(size)
+/usr/lib/python3.11/_compression.py:118: in readall
+    while data := self.read(sys.maxsize):
+/usr/lib/python3.11/gzip.py:499: in read
+    if not self._read_gzip_header():
+/usr/lib/python3.11/gzip.py:468: in _read_gzip_header
+    last_mtime = _read_gzip_header(self._fp)
+/usr/lib/python3.11/gzip.py:428: in _read_gzip_header
+    raise BadGzipFile('Not a gzipped file (%r)' % magic)
+E   gzip.BadGzipFile: Not a gzipped file (b'{"')
+
+The above exception was the direct cause of the following exception:
+tests/test_core_comprehensive.py:204: in test_json_with_compression
+    loaded_data = io.load_json(json_file)
+src/metainformant/core/io.py:57: in load_json
+    raise CoreIOError(f"Failed to read JSON file {path}: {e}") from e
+E   metainformant.core.errors.IOError: Failed to read JSON file /var/tmp/pytest-of-q/pytest-3/test_json_with_compression0/compressed.json.gz: Not a gzipped file (b'{"')
+________________________ TestCoreIO.test_csv_operations ________________________
+tests/test_core_comprehensive.py:228: in test_csv_operations
+    assert loaded_df.shape == test_df.shape
+E   assert (3, 4) == (3, 3)
+E     At index 1 diff: 4 != 3
+E     Full diff:
+E     - (3, 3)
+E     ?     ^
+E     + (3, 4)
+E     ?     ^
+_____________ TestEnhancedCoreMethods.test_enhanced_path_utilities _____________
+tests/test_core_comprehensive.py:458: in test_enhanced_path_utilities
+    assert temp_file.exists()
+E   AssertionError: assert False
+E    +  where False = <bound method Path.exists of PosixPath('/var/tmp/pytest-of-q/pytest-3/test_enhanced_path_utilities0/tmp_-1792348786923049512_.txt')>()
+E    +    where <bound method Path.exists of PosixPath('/var/tmp/pytest-of-q/pytest-3/test_enhanced_path_utilities0/tmp_-1792348786923049512_.txt')> = PosixPath('/var/tmp/pytest-of-q/pytest-3/test_enhanced_path_utilities0/tmp_-1792348786923049512_.txt').exists
+________________ TestErrorHandling.test_invalid_input_handling _________________
+tests/test_core_functionality.py:302: in test_invalid_input_handling
+    generate_random_dna(length=100, gc_content=1.5)  # > 1.0
+src/metainformant/simulation/sequences.py:30: in generate_random_dna
+    validation.validate_range(gc_content, min_val=0.0, max_val=1.0, name="gc_content")
+src/metainformant/core/validation.py:62: in validate_range
+    raise ValidationError(f"{name} must be <= {max_val}, got {value}")
+E   metainformant.core.errors.ValidationError: gc_content must be <= 1.0, got 1.5
+__________________ TestIOEnhanced.test_pandas_csv_operations ___________________
+tests/test_core_io_enhanced.py:136: in test_pandas_csv_operations
+    assert loaded_df.shape == test_df.shape
+E   assert (3, 4) == (3, 3)
+E     At index 1 diff: 4 != 3
+E     Full diff:
+E     - (3, 3)
+E     ?     ^
+E     + (3, 4)
+E     ?     ^
+____________________________ test_json_gz_roundtrip ____________________________
+src/metainformant/core/io.py:53: in load_json
+    return json.load(fh)
+/usr/lib/python3.11/json/__init__.py:293: in load
+    return loads(fp.read(),
+/usr/lib/python3.11/gzip.py:301: in read
+    return self._buffer.read(size)
+/usr/lib/python3.11/_compression.py:118: in readall
+    while data := self.read(sys.maxsize):
+/usr/lib/python3.11/gzip.py:499: in read
+    if not self._read_gzip_header():
+/usr/lib/python3.11/gzip.py:468: in _read_gzip_header
+    last_mtime = _read_gzip_header(self._fp)
+/usr/lib/python3.11/gzip.py:428: in _read_gzip_header
+    raise BadGzipFile('Not a gzipped file (%r)' % magic)
+E   gzip.BadGzipFile: Not a gzipped file (b'{"')
+
+The above exception was the direct cause of the following exception:
+tests/test_core_io.py:28: in test_json_gz_roundtrip
+    loaded = core_io.load_json(path)
+src/metainformant/core/io.py:57: in load_json
+    raise CoreIOError(f"Failed to read JSON file {path}: {e}") from e
+E   metainformant.core.errors.IOError: Failed to read JSON file /var/tmp/pytest-of-q/pytest-3/test_json_gz_roundtrip0/data.json.gz: Not a gzipped file (b'{"')
+_____________ TestConfigBasedProcessing.test_validate_config_file ______________
+tests/test_core_processing.py:58: in test_validate_config_file
+    assert not is_valid
+E   assert not True
+_____________ TestConfigBasedProcessing.test_create_sample_config ______________
+tests/test_core_processing.py:81: in test_create_sample_config
+    assert "scientific data processing" in config_data["description"]
+E   AssertionError: assert 'scientific data processing' in 'Scientific data processing example'
+
+Slow tests (>1.0s):
+  30.41s: tests/test_core_io_enhanced.py::TestIOEnhanced::test_download_json
+  4.83s: tests/test_core_processing.py::TestConfigBasedProcessing::test_download_and_process_data
+  2.06s: tests/test_core_io_enhanced.py::TestIOEnhanced::test_download_file
+  1.16s: tests/test_core_io_enhanced.py::TestIOEnhanced::test_io_error_handling
+  1.08s: tests/test_core_processing.py::TestConfigBasedProcessing::test_run_config_based_workflow
+=========================== short test summary info ============================
+FAILED tests/test_core_comprehensive.py::TestCoreIO::test_json_with_compression
+FAILED tests/test_core_comprehensive.py::TestCoreIO::test_csv_operations - as...
+FAILED tests/test_core_comprehensive.py::TestEnhancedCoreMethods::test_enhanced_path_utilities
+FAILED tests/test_core_functionality.py::TestErrorHandling::test_invalid_input_handling
+FAILED tests/test_core_io_enhanced.py::TestIOEnhanced::test_pandas_csv_operations
+FAILED tests/test_core_io.py::test_json_gz_roundtrip - metainformant.core.err...
+FAILED tests/test_core_processing.py::TestConfigBasedProcessing::test_validate_config_file
+FAILED tests/test_core_processing.py::TestConfigBasedProcessing::test_create_sample_config
+=================== 8 failed, 92 passed, 2 skipped in 42.96s ===================

@@ -17,6 +17,7 @@ repo_root = Path(__file__).parent.parent.parent.resolve()
 sys.path.insert(0, str(repo_root / "src"))
 
 from metainformant.core.logging import get_logger
+from metainformant.core.disk import get_recommended_temp_dir
 
 logger = get_logger("rna_setup")
 
@@ -148,11 +149,18 @@ def setup_venv_and_dependencies(auto_setup: bool = True) -> bool:
     logger.info("Installing dependencies with uv pip...")
     
     try:
+        # Get temp directory (prefers external drive if available)
+        temp_dir = get_recommended_temp_dir(repo_root)
+        logger.info(f"Using temporary directory: {temp_dir}")
+        
         # Install metainformant
-        # Use /tmp for uv cache to avoid symlink issues on ext6
+        # Use output directory for uv cache to avoid /tmp space issues
+        uv_cache_dir = repo_root / "output" / ".uv-cache"
+        uv_cache_dir.mkdir(parents=True, exist_ok=True)
         logger.info("Installing metainformant...")
         env = os.environ.copy()
-        env["UV_CACHE_DIR"] = str(Path("/tmp/uv-cache"))
+        env["UV_CACHE_DIR"] = str(uv_cache_dir)
+        env["TMPDIR"] = str(temp_dir)
         result = subprocess.run(
             ["uv", "pip", "install", "-e", str(repo_root), "--python", str(venv_python)],
             capture_output=True, text=True, timeout=300,
@@ -164,10 +172,14 @@ def setup_venv_and_dependencies(auto_setup: bool = True) -> bool:
         logger.info("✓ metainformant installed")
         
         # Install amalgkit
-        # Use /tmp for uv cache to avoid symlink issues on ext6
+        # Use output directory for uv cache to avoid /tmp space issues
+        temp_dir = get_recommended_temp_dir(repo_root)
+        uv_cache_dir = repo_root / "output" / ".uv-cache"
+        uv_cache_dir.mkdir(parents=True, exist_ok=True)
         logger.info("Installing amalgkit...")
         env = os.environ.copy()
-        env["UV_CACHE_DIR"] = str(Path("/tmp/uv-cache"))
+        env["UV_CACHE_DIR"] = str(uv_cache_dir)
+        env["TMPDIR"] = str(temp_dir)
         result = subprocess.run(
             ["uv", "pip", "install", "git+https://github.com/kfuku52/amalgkit", "--python", str(venv_python)],
             capture_output=True, text=True, timeout=300,

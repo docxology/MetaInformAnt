@@ -19,6 +19,11 @@ class BiologicalRegressor:
             random_state: Random seed for reproducibility
             **kwargs: Algorithm-specific parameters
         """
+        # Validate algorithm
+        supported_algorithms = ["linear", "ridge", "lasso", "random_forest"]
+        if algorithm not in supported_algorithms:
+            raise ValueError(f"Unknown algorithm: {algorithm}. Supported: {supported_algorithms}")
+        
         self.algorithm = algorithm
         self.random_state = random_state
         self.params = kwargs
@@ -119,8 +124,26 @@ def train_ensemble_regressor(
     return ensemble
 
 
-def evaluate_regressor(regressor: BiologicalRegressor, X_test: np.ndarray, y_test: np.ndarray) -> Dict[str, float]:
-    """Evaluate regressor performance."""
+def evaluate_regressor(regressor: BiologicalRegressor, X_test: np.ndarray = None, y_test: np.ndarray = None, X: np.ndarray = None, y: np.ndarray = None) -> Dict[str, float]:
+    """Evaluate regressor performance.
+
+    Args:
+        regressor: Fitted regressor
+        X_test: Test features (can also use X as keyword)
+        y_test: True test labels (can also use y as keyword)
+
+    Returns:
+        Dictionary of evaluation metrics
+    """
+    # Support both X_test/y_test and X/y parameter names for compatibility
+    if X_test is None and X is not None:
+        X_test = X
+    if y_test is None and y is not None:
+        y_test = y
+    
+    if X_test is None or y_test is None:
+        raise ValueError("Must provide X_test/X and y_test/y parameters")
+    
     predictions = regressor.predict(X_test)
 
     # Calculate metrics

@@ -107,24 +107,22 @@ print(f"First canonical variate correlation: {correlations[0]}")
 
 ### With DNA, RNA, and Protein Modules
 ```python
-from metainformant.multiomics import integrate_omics_data, MultiOmicsData
-from metainformant.dna import variants
-from metainformant.rna import workflow
-from metainformant.protein import parse_fasta
-import pandas as pd
+from metainformant.multiomics import (
+    MultiOmicsData,
+    from_dna_variants,
+    from_rna_expression,
+    from_protein_abundance,
+)
 
-# Prepare omics data from domain modules
-# Genomics: variant data from DNA module
-genomic_variants = variants.parse_vcf("variants.vcf")
-genomics_df = pd.DataFrame(genomic_variants)
+# Use helper functions to load data from domain modules
+# Genomics: variant data from VCF file
+genomics_df = from_dna_variants("variants.vcf")
 
 # Transcriptomics: expression data from RNA module
-expression_data = workflow.extract_expression("expression.tsv")
-transcriptomics_df = pd.DataFrame(expression_data)
+transcriptomics_df = from_rna_expression("expression.tsv")
 
-# Proteomics: protein abundance from protein module
-proteins = parse_fasta(Path("proteome.fasta"))
-proteomics_df = pd.DataFrame(proteins)
+# Proteomics: protein abundance from CSV file
+proteomics_df = from_protein_abundance("proteins.csv")
 
 # Integrate all omics layers
 omics_data = MultiOmicsData(
@@ -132,51 +130,45 @@ omics_data = MultiOmicsData(
     transcriptomics=transcriptomics_df,
     proteomics=proteomics_df
 )
+
+# Save integrated data
+omics_data.save("output/multiomics_integrated")
 ```
 
-### With Single-Cell Module
+### Saving and Loading Data
 ```python
-from metainformant.multiomics import joint_pca, canonical_correlation
-from metainformant.singlecell import compute_pca, load_count_matrix
+from metainformant.multiomics import MultiOmicsData
 
-# Integrate single-cell data with bulk omics
-sc_counts = load_count_matrix("singlecell_counts.h5ad")
-bulk_expression = pd.read_csv("bulk_expression.csv", index_col=0)
+# Save multi-omics data to directory
+omics_data.save("output/multiomics_data")
 
-# Joint analysis across omics layers
-omics_data = MultiOmicsData(
-    singlecell=sc_counts,
-    transcriptomics=bulk_expression
-)
-
-# Joint dimensionality reduction
-embeddings, _, _ = joint_pca(omics_data, n_components=50)
-
-# Canonical correlation between single-cell and bulk
-X_c, Y_c, _, _, correlations = canonical_correlation(
-    omics_data,
-    layer_pair=("singlecell", "transcriptomics"),
-    n_components=10
-)
+# Load saved data
+loaded_data = MultiOmicsData.load("output/multiomics_data")
 ```
 
-### With Epigenome Module
+### With Epigenome Data
 ```python
-from metainformant.multiomics import integrate_omics_data
-from metainformant.epigenome import load_cpg_table, compute_beta_values
+from metainformant.multiomics import MultiOmicsData, canonical_correlation
+from metainformant.core import io
+import pandas as pd
 
-# Integrate epigenomics with transcriptomics
-methylation_df = load_cpg_table("methylation.tsv")
-beta_values = compute_beta_values(methylation_df)
+# Load epigenomics data (assuming it's in CSV/TSV format)
+methylation_df = io.read_csv("methylation.tsv", index_col=0, sep="\t")
+expression_df = io.read_csv("expression.tsv", index_col=0, sep="\t")
 
 # Create multi-omics dataset
 omics_data = MultiOmicsData(
-    epigenomics=beta_values,
+    epigenomics=methylation_df,
     transcriptomics=expression_df
 )
 
-# Joint analysis of methylation and expression
-# Find correlations between methylation and gene expression
+# Canonical correlation between methylation and expression
+X_c, Y_c, X_w, Y_w, correlations = canonical_correlation(
+    omics_data,
+    layer_pair=("epigenomics", "transcriptomics"),
+    n_components=10
+)
+print(f"Max canonical correlation: {correlations[0]:.3f}")
 ```
 
 ### With Visualization Module
@@ -196,22 +188,74 @@ ax = scatter_plot(embeddings[:, 0], embeddings[:, 1],
 ax = heatmap(loadings, title="Joint PCA Loadings")
 ```
 
-## Performance Features
+## Limitations and Considerations
 
-- Scalable integration algorithms
-- Memory-efficient data structures
-- Parallel processing for large datasets
+### Memory Requirements
+- Large datasets may require significant memory. Consider subsetting data before analysis.
+- Joint PCA/NMF with large feature matrices can be memory-intensive.
+- Use `subset_samples()` or `subset_features()` to reduce data size if needed.
+
+### Sample Size Requirements
+- Joint PCA requires at least 2 samples
+- Joint NMF requires at least 2 samples
+- CCA requires at least 3 samples
+- n_components is automatically capped to min(n_samples, n_features) - 1
+
+### Data Requirements
+- All data must be numeric (non-numeric columns trigger warnings)
+- Missing values should be handled before integration (no built-in imputation)
+- Samples must be aligned across all omics layers (automatic alignment performed)
+- File formats: CSV, TSV, Excel (.xlsx, .xls). Gzip compression automatically handled.
+
+### Performance Considerations
+- Joint PCA: O(n_features²) memory complexity for covariance matrix
+- Joint NMF: Iterative optimization, may be slow for large datasets
+- CCA: Requires matrix inversions, may fail for singular matrices (fallback to SVD)
+
+## Troubleshooting
+
+### Common Issues
+
+**"No common samples found across omics layers"**
+- Check that sample IDs match across all layers
+- Use `sample_mapping` parameter in `integrate_omics_data()` to harmonize IDs
+
+**"n_components exceeds max"**
+- Automatically capped, but check if you need fewer components
+- Reduce n_components if you want to control dimensionality
+
+**"Covariance matrix contains NaN or Inf"**
+- Check for missing values in input data
+- Ensure all values are numeric
+- Consider data normalization before integration
+
+**Memory errors with large datasets**
+- Use `subset_samples()` or `subset_features()` to reduce data size
+- Process in batches if possible
+- Consider using sparse matrices for very large datasets (future enhancement)
 
 ## Testing
 
 Comprehensive tests cover:
 - Integration algorithm correctness
 - Multi-omic data compatibility
-- Performance with large datasets
+- Edge cases (single sample, empty data, etc.)
+- Error handling and validation
+- Integration with core.io and logging
+
+Run tests:
+```bash
+uv run pytest tests/test_multiomics_*.py -v
+```
 
 ## Dependencies
 
-- Statistical packages for integrative analysis
-- Optional: specialized multi-omic tools
+- **Core**: numpy, pandas, metainformant.core (io, logging, paths)
+- **Optional**: For integration helpers - DNA, RNA, protein, GWAS modules
+- **File I/O**: Automatic gzip support via core.io
+
+## Output Location
+
+All outputs should be written to `output/multiomics/` directory by default. Use the `save()` method which automatically handles path creation and uses core.io for file operations.
 
 This module enables comprehensive systems biology analysis through multi-omic data integration.

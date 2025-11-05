@@ -20,6 +20,11 @@ class BiologicalClassifier:
             random_state: Random seed for reproducibility
             **kwargs: Algorithm-specific parameters
         """
+        # Validate algorithm
+        supported_algorithms = ["random_forest", "knn", "naive_bayes", "linear", "svm"]
+        if algorithm not in supported_algorithms:
+            raise ValueError(f"Unknown algorithm: {algorithm}. Supported: {supported_algorithms}")
+        
         self.algorithm = algorithm
         self.random_state = random_state
         self.params = kwargs
@@ -39,6 +44,10 @@ class BiologicalClassifier:
         """
         if self.random_state is not None:
             np.random.seed(self.random_state)
+
+        # Validate input dimensions
+        if len(X) != len(y):
+            raise ValueError(f"X and y must have same length: X has {len(X)}, y has {len(y)}")
 
         self.classes_ = np.unique(y)
         n_classes = len(self.classes_)
@@ -94,7 +103,7 @@ class BiologicalClassifier:
             Predicted class labels
         """
         if not self.is_fitted:
-            raise ValueError("Classifier must be fitted before prediction")
+            raise ValueError("Classifier not fitted")
 
         if self.algorithm == "knn":
             return self._knn_predict(X)
@@ -118,7 +127,7 @@ class BiologicalClassifier:
             Class probability matrix (samples x classes)
         """
         if not self.is_fitted:
-            raise ValueError("Classifier must be fitted before prediction")
+            raise ValueError("Classifier not fitted")
 
         n_samples = X.shape[0]
         n_classes = len(self.classes_)
@@ -402,17 +411,26 @@ def train_ensemble_classifier(
     return ensemble
 
 
-def evaluate_classifier(classifier: BiologicalClassifier, X_test: np.ndarray, y_test: np.ndarray) -> Dict[str, float]:
+def evaluate_classifier(classifier: BiologicalClassifier, X_test: np.ndarray = None, y_test: np.ndarray = None, X: np.ndarray = None, y: np.ndarray = None) -> Dict[str, Any]:
     """Evaluate classifier performance.
 
     Args:
         classifier: Fitted classifier
-        X_test: Test features
-        y_test: True test labels
+        X_test: Test features (can also use X as keyword)
+        y_test: True test labels (can also use y as keyword)
 
     Returns:
-        Dictionary of evaluation metrics
+        Dictionary of evaluation metrics including 'accuracy' and 'predictions'
     """
+    # Support both X_test/y_test and X/y parameter names for compatibility
+    if X_test is None and X is not None:
+        X_test = X
+    if y_test is None and y is not None:
+        y_test = y
+    
+    if X_test is None or y_test is None:
+        raise ValueError("Must provide X_test/X and y_test/y parameters")
+    
     predictions = classifier.predict(X_test)
     probabilities = classifier.predict_proba(X_test)
 
@@ -450,6 +468,8 @@ def evaluate_classifier(classifier: BiologicalClassifier, X_test: np.ndarray, y_
         "macro_precision": np.mean(precisions),
         "macro_recall": np.mean(recalls),
         "macro_f1": np.mean(f1_scores),
+        "predictions": predictions,
+        "probabilities": probabilities,
         **class_metrics,
     }
 
@@ -511,4 +531,18 @@ def cross_validate_biological(
         for metric_name, metric_value in metrics.items():
             cv_results[metric_name].append(metric_value)
 
-    return dict(cv_results)
+    # Convert to expected format - always return mean values for metrics
+    result_dict = dict(cv_results)
+    
+    # Convert all list metrics to mean values
+    for metric_name, metric_values in result_dict.items():
+        if isinstance(metric_values, list) and len(metric_values) > 0:
+            # Check if values are numeric
+            if all(isinstance(v, (int, float, np.number)) for v in metric_values):
+                result_dict[metric_name] = np.mean(metric_values)
+    
+    # Add mean_accuracy alias if accuracy exists
+    if "accuracy" in result_dict:
+        result_dict["mean_accuracy"] = result_dict["accuracy"]
+    
+    return result_dict

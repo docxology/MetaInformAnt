@@ -254,6 +254,141 @@ python3 scripts/rna/analyze_sample_status.py
 - **[ORCHESTRATION/README.md](ORCHESTRATION/README.md)**: Orchestrator configuration
 - **[GETTING_STARTED.md](GETTING_STARTED.md)**: Setup and installation
 
+## Disk Space Configuration
+
+### Drive Size Detection
+
+The system automatically detects drive size categories and adjusts defaults accordingly:
+
+- **Large drives** (> 1TB free): Optimized for high-throughput processing
+- **Medium drives** (500GB-1TB free): Balanced settings
+- **Small drives** (< 500GB free): Conservative settings to prevent disk exhaustion
+
+### Batch Size Configuration
+
+Batch sizes are automatically calculated based on available disk space, but can be overridden:
+
+**Auto-detection (recommended):**
+```bash
+# Batch size automatically calculated from available space
+python3 scripts/rna/workflow_ena_integrated.py --config config/amalgkit/amalgkit_cfloridanus.yaml
+```
+
+**Manual override:**
+```bash
+# Specify batch size explicitly
+python3 scripts/rna/workflow_ena_integrated.py \
+  --config config/amalgkit/amalgkit_cfloridanus.yaml \
+  --batch-size 50 \
+  --max-batch-size 100
+```
+
+**Environment variable:**
+```bash
+export AK_BATCH_SIZE=50
+python3 scripts/rna/workflow_ena_integrated.py --config config/amalgkit/amalgkit_cfloridanus.yaml
+```
+
+### Batch Size Recommendations by Drive Size
+
+| Drive Size | Default Batch Size | Max Recommended | Notes |
+|------------|-------------------|-----------------|-------|
+| Large (> 1TB free) | 50 | 100 | Aggressive processing, high throughput |
+| Medium (500GB-1TB) | 20-30 | 50 | Balanced processing |
+| Small (< 500GB) | 8-12 | 20 | Conservative, prevents disk exhaustion |
+
+### Temporary Directory Configuration
+
+The system automatically selects the best temporary directory location:
+
+**Preference order:**
+1. `TMPDIR` environment variable (if set)
+2. External drive `output/.tmp/` (if drive is large/medium)
+3. System temp directory (`/tmp` or system default)
+
+**Manual override:**
+```bash
+export TMPDIR=/path/to/temp/directory
+python3 scripts/rna/workflow_ena_integrated.py --config ...
+```
+
+**Check current temp directory:**
+```python
+from metainformant.core.disk import get_recommended_temp_dir
+from pathlib import Path
+
+repo_root = Path(".")
+temp_dir = get_recommended_temp_dir(repo_root)
+print(f"Temporary directory: {temp_dir}")
+```
+
+### Disk Space Thresholds
+
+Minimum free space and auto-cleanup thresholds adapt to drive size:
+
+**Auto-detection (recommended):**
+```bash
+# Thresholds automatically set based on drive size
+python3 scripts/rna/batch_download_species.py
+```
+
+**Manual override:**
+```bash
+python3 scripts/rna/batch_download_species.py \
+  --min-free-gb 50.0 \
+  --auto-cleanup-threshold 20.0
+```
+
+**Default thresholds by drive size:**
+
+| Drive Size | Min Free GB | Auto-Cleanup Threshold GB |
+|------------|-------------|---------------------------|
+| Large (> 1TB free) | 50 | 20 |
+| Medium (500GB-1TB) | 20 | 10 |
+| Small (< 500GB) | 10 | 5 |
+
+### Maximum Batch Disk Usage
+
+Limit disk space usage per batch:
+
+```bash
+python3 scripts/rna/workflow_ena_integrated.py \
+  --config config/amalgkit/amalgkit_cfloridanus.yaml \
+  --max-batch-disk-gb 150.0
+```
+
+If batch size would exceed this limit, it's automatically adjusted downward.
+
+### Examples
+
+**Large drive (6TB):**
+```bash
+# Auto-detected settings (recommended)
+export AK_THREADS=24
+python3 scripts/rna/run_all_species_parallel.py --threads-per-species 24
+# Batch size: 50 (auto-detected)
+# Min free: 50GB (auto-detected)
+# Temp dir: output/.tmp/ (auto-detected)
+```
+
+**Medium drive (1TB):**
+```bash
+# Auto-detected settings
+python3 scripts/rna/workflow_ena_integrated.py \
+  --config config/amalgkit/amalgkit_cfloridanus.yaml
+# Batch size: 25 (auto-detected)
+# Min free: 20GB (auto-detected)
+```
+
+**Small drive (500GB):**
+```bash
+# Conservative settings
+python3 scripts/rna/workflow_ena_integrated.py \
+  --config config/amalgkit/amalgkit_cfloridanus.yaml \
+  --batch-size 10 \
+  --min-free-gb 10
+```
+
 ## See Also
 
 - **Scripts**: `scripts/rna/batch_download_species.py` - Main batch download script

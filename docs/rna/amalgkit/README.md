@@ -24,6 +24,19 @@ The amalgkit integration provides a complete transcriptomic analysis pipeline fr
 - **`R_INSTALLATION.md`**: R installation and setup guide
 - **`r_packages.md`**: R package setup and troubleshooting
 
+### Genome Setup
+- **`genome_preparation.md`**: Technical documentation for genome download and kallisto index building
+- **`genome_setup_guide.md`**: Complete step-by-step guide for setting up genomes and indexes
+- **`commands.md`**: Command reference for all genome setup scripts
+
+**Genome Setup Scripts** (located in `scripts/rna/`):
+- **`verify_genomes_and_indexes.py`**: Check status of genome downloads and kallisto indexes
+- **`download_missing_genomes.py`**: Download missing genome packages from NCBI
+- **`prepare_transcriptomes.py`**: Extract and prepare RNA FASTA files from genomes
+- **`build_kallisto_indexes.py`**: Build kallisto indexes from transcriptome FASTA files
+- **`orchestrate_genome_setup.py`**: Master orchestrator for complete genome setup pipeline
+- **`run_genome_setup.sh`**: Shell script to run all steps sequentially
+
 ### Step Documentation
 - **`steps/`**: Complete documentation for all 11 amalgkit steps
   - metadata, integrate, config, select, getfastq, quant, merge, cstmm, curate, csca, sanity
@@ -45,6 +58,9 @@ The amalgkit integration provides a complete transcriptomic analysis pipeline fr
 - **[../CONFIGURATION.md](../CONFIGURATION.md)**: Configuration management
 - **[../ORCHESTRATION/README.md](../ORCHESTRATION/README.md)**: Orchestrator overview
 - **[../GETTING_STARTED.md](../GETTING_STARTED.md)**: Setup and installation
+- **[genome_preparation.md](genome_preparation.md)**: Genome preparation and index building
+- **[genome_setup_guide.md](genome_setup_guide.md)**: Complete genome setup guide
+- **[commands.md](commands.md)**: Genome setup command reference
 
 ## Usage Examples
 
@@ -143,11 +159,16 @@ See `output/amalgkit/pbarbatus/QUICK_REFERENCE.md` for immediate usage.
 
 ## Quick Start for New Species
 
-1. **Review workflow guide**: `quick_start.md`
-2. **Setup R environment**: `R_INSTALLATION.md` and `r_packages.md`
-3. **Run ENA workflow**: See `scripts/rna/workflow_ena_integrated.py`
-4. **For batch processing**: Use `scripts/rna/run_all_species_parallel.py` for parallel execution of all species
-5. **Validate outputs**: Run sanity and curate steps
+1. **Setup genomes and indexes**: See [genome_setup_guide.md](genome_setup_guide.md) for complete genome setup
+   - Verify genomes: `python3 scripts/rna/verify_genomes_and_indexes.py`
+   - Download missing genomes: `python3 scripts/rna/download_missing_genomes.py`
+   - Prepare transcriptomes: `python3 scripts/rna/prepare_transcriptomes.py`
+   - Build kallisto indexes: `python3 scripts/rna/build_kallisto_indexes.py`
+2. **Review workflow guide**: `quick_start.md`
+3. **Setup R environment**: `R_INSTALLATION.md` and `r_packages.md`
+4. **Run ENA workflow**: See `scripts/rna/workflow_ena_integrated.py`
+5. **For batch processing**: Use `scripts/rna/run_all_species_parallel.py` for parallel execution of all species
+6. **Validate outputs**: Run sanity and curate steps
 
 **No manual venv activation needed** - scripts automatically discover and activate virtual environments (`.venv` or `/tmp/metainformant_venv`). Setup uses `uv` for reliable package management, with automatic fallback to `/tmp/metainformant_venv` on ext6 filesystems that don't support symlinks.
 

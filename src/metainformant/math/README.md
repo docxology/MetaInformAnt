@@ -12,7 +12,7 @@ This module contains implementations of key mathematical frameworks in theoretic
 
 ## Submodules
 
-### Population Genetics (`price.py`, `kin_selection.py`, `multilevel_selection.py`)
+### Population Genetics (`price.py`, `selection.py`, `popgen.py`)
 Mathematical models of evolutionary processes.
 
 **Key Features:**
@@ -284,9 +284,28 @@ Comprehensive tests ensure mathematical correctness:
 
 ## Dependencies
 
-- **Core**: NumPy for numerical computations
-- **Optional**: SciPy for advanced statistical functions
-- **Visualization**: Matplotlib for plotting mathematical functions
+### Required
+- **numpy**: Required for `popgen_stats` module and various numerical computations
+
+### Optional
+- **scipy**: Optional but recommended for advanced statistical functions:
+  - `hardy_weinberg_test()` - Chi-square test for Hardy-Weinberg equilibrium
+  - `fisher_exact_test()` - Fisher's exact test for 2x2 contingency tables
+  - `ewens_watterson_test()` - Ewens-Watterson test for neutrality
+  - `detect_outliers()` - FDR correction for multiple testing
+  - `compare_statistics()` - Statistical tests (t-test, Mann-Whitney, etc.)
+
+Install optional dependencies:
+```bash
+# Install with scientific dependencies
+pip install metainformant[scientific]
+
+# Or install scipy directly
+pip install scipy
+```
+
+### Visualization (Optional)
+- **matplotlib**: Used in `selection_experiments` submodule for plotting
 
 ## Usage Examples
 

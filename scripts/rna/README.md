@@ -208,6 +208,108 @@ python3 scripts/rna/orchestrate_workflows.py --monitor
 python3 scripts/rna/orchestrate_workflows.py --monitor --watch 60
 ```
 
+### Genome Setup Scripts
+
+Scripts for downloading genomes, preparing transcriptomes, and building kallisto indexes required for RNA-seq quantification:
+
+#### `verify_genomes_and_indexes.py`
+**Check status of genome downloads and kallisto indexes**
+
+Scans all species configurations and reports:
+- Which genomes are downloaded
+- Which transcriptomes are prepared
+- Which kallisto indexes are built
+- Recommended next steps
+
+**Usage:**
+```bash
+# Check all species
+python3 scripts/rna/verify_genomes_and_indexes.py
+
+# Check specific species
+python3 scripts/rna/verify_genomes_and_indexes.py --species camponotus_floridanus
+```
+
+#### `download_missing_genomes.py`
+**Download missing genome packages from NCBI**
+
+Downloads genomes for species that are missing them using best-effort methods (CLI → API → FTP).
+
+**Usage:**
+```bash
+# Download all missing genomes
+python3 scripts/rna/download_missing_genomes.py
+
+# Download for specific species
+python3 scripts/rna/download_missing_genomes.py --species camponotus_floridanus
+
+# Dry run
+python3 scripts/rna/download_missing_genomes.py --dry-run
+```
+
+#### `prepare_transcriptomes.py`
+**Extract and prepare RNA FASTA files from genomes**
+
+Finds RNA FASTA files in downloaded genome packages and prepares them for kallisto.
+
+**Usage:**
+```bash
+# Prepare all transcriptomes
+python3 scripts/rna/prepare_transcriptomes.py
+
+# Prepare for specific species
+python3 scripts/rna/prepare_transcriptomes.py --species camponotus_floridanus
+```
+
+#### `build_kallisto_indexes.py`
+**Build kallisto indexes from transcriptome FASTA files**
+
+Builds kallisto indexes for species with prepared transcriptomes.
+
+**Usage:**
+```bash
+# Build all indexes
+python3 scripts/rna/build_kallisto_indexes.py
+
+# Build for specific species
+python3 scripts/rna/build_kallisto_indexes.py --species camponotus_floridanus
+
+# Custom k-mer size (for short reads)
+python3 scripts/rna/build_kallisto_indexes.py --kmer-size 23
+```
+
+#### `orchestrate_genome_setup.py`
+**Master orchestrator for complete genome setup pipeline**
+
+Runs the complete pipeline sequentially: verification → download → prepare → build → verify.
+
+**Usage:**
+```bash
+# Complete setup for all species
+python3 scripts/rna/orchestrate_genome_setup.py
+
+# Setup for specific species
+python3 scripts/rna/orchestrate_genome_setup.py --species camponotus_floridanus
+
+# Skip specific steps
+python3 scripts/rna/orchestrate_genome_setup.py --skip-download --skip-prepare
+```
+
+#### `run_genome_setup.sh`
+**Shell script to run all steps sequentially**
+
+Convenience script that runs all genome setup steps in order.
+
+**Usage:**
+```bash
+bash scripts/rna/run_genome_setup.sh
+```
+
+**Complete Documentation:**
+- See [docs/rna/amalgkit/genome_setup_guide.md](../../docs/rna/amalgkit/genome_setup_guide.md) for detailed setup instructions
+- See [docs/rna/amalgkit/commands.md](../../docs/rna/amalgkit/commands.md) for complete command reference
+- See [docs/rna/amalgkit/genome_preparation.md](../../docs/rna/amalgkit/genome_preparation.md) for technical documentation
+
 ### Utility Scripts
 
 #### `cleanup_partial_downloads.py`

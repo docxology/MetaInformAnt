@@ -221,7 +221,9 @@ def biological_embedding(
 
     # Apply dimensionality reduction
     if method == "pca":
-        embedding, components, explained_var = reduce_dimensions_pca(X_weighted, n_components=n_components, **kwargs)
+        # Filter out labels from kwargs if present (not supported by reduce_dimensions_pca)
+        pca_kwargs = {k: v for k, v in kwargs.items() if k != "labels"}
+        embedding, components, explained_var = reduce_dimensions_pca(X_weighted, n_components=n_components, **pca_kwargs)
         metadata = {
             "components": components,
             "explained_variance": explained_var,

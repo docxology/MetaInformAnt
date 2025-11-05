@@ -475,7 +475,7 @@ class TestIntegrationEdgeCases:
         """Test behavior with empty omics layers."""
         empty_df = pd.DataFrame(index=["S1", "S2"], columns=[])
 
-        with pytest.raises(Exception):  # Should raise some error
+        with pytest.raises(ValueError, match="has no features"):  # Should raise ValueError about empty columns
             MultiOmicsData(transcriptomics=empty_df)
 
     def test_single_sample(self):
@@ -498,5 +498,5 @@ class TestIntegrationEdgeCases:
         data2 = pd.DataFrame(np.random.randn(3, 15), index=["A", "B", "C"])  # Missing D, E
 
         with pytest.warns(UserWarning, match="Only 3 samples are common"):
-            omics_data = MultiOmicsData(layer1=data1, layer2=data2)
+            omics_data = MultiOmicsData(genomics=data1, transcriptomics=data2)
             assert omics_data.n_samples == 3

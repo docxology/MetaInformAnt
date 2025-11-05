@@ -6,96 +6,318 @@ The `visualization` module provides unified plotting and animation utilities for
 
 This module offers a cohesive API for creating various types of plots, from statistical charts to phylogenetic trees and animations. It integrates multiple plotting backends while providing a consistent interface.
 
-## Submodules
+## Module Organization
 
-### Statistical Plots (`plots.py`)
-Core plotting functionality for statistical data visualization.
+The visualization package is organized into category-specific modules for clear organization and maintainability:
 
-**Key Features:**
-- Line plots and scatter plots
-- Heatmaps and correlation matrices
-- Histograms and density plots
-- Box plots and violin plots
-- Publication-quality formatting
+### Core Plotting Modules
+
+#### Basic Plots (`basic.py`)
+Fundamental plotting functions for simple visualizations.
+
+**Functions:**
+- `lineplot`: Simple line plots
+- `scatter_plot`: Scatter plots
+- `bar_plot`: Bar charts
+- `pie_chart`: Pie charts
+- `area_plot`: Area plots (filled line plots)
+- `step_plot`: Step plots
+- `heatmap`: Basic heatmaps
 
 **Usage:**
 ```python
-from metainformant.visualization import lineplot, heatmap
-from metainformant.visualization.plots import scatter_plot, histogram
+from metainformant.visualization import lineplot, scatter_plot, bar_plot, heatmap
 
-# Line plot
-data = [1, 4, 2, 8, 5, 7]
-ax = lineplot(None, data)
-ax.set_xlabel("Time")
-ax.set_ylabel("Value")
-ax.set_title("Time Series")
-
-# Heatmap
-import numpy as np
-matrix = np.random.random((10, 10))
-ax = heatmap(matrix)
-
-# Histogram
-from metainformant.visualization.plots import histogram
-ax = histogram(data, bins=20)
+ax = lineplot(None, [1, 4, 2, 8, 5], label="Data")
+ax = scatter_plot([1, 2, 3], [4, 5, 6], xlabel="X", ylabel="Y")
+ax = bar_plot(["A", "B", "C"], [10, 20, 15])
 ```
 
-### Phylogenetic Trees (`trees.py`)
-Specialized visualization for phylogenetic trees and evolutionary relationships.
+#### Statistical Plots (`statistical.py`)
+Statistical visualization functions for data analysis.
 
-**Key Features:**
-- Newick tree parsing and rendering
-- Tree annotation and labeling
-- Branch length visualization
-- Multiple tree comparison
-- Interactive tree exploration
+**Functions:**
+- `histogram`: Histograms
+- `box_plot`: Box plots
+- `violin_plot`: Violin plots
+- `qq_plot`: Q-Q plots for p-value analysis
+- `correlation_heatmap`: Correlation matrices
+- `density_plot`: Kernel density estimation
+- `ridge_plot`: Overlapping density plots
+- `roc_curve`: ROC curves
+- `precision_recall_curve`: Precision-recall curves
+- `residual_plot`: Regression residuals
+- `leverage_plot`: Regression leverage
 
 **Usage:**
 ```python
-from metainformant.visualization import plot_phylo_tree
+from metainformant.visualization import histogram, box_plot, qq_plot
+import numpy as np
+
+data = np.random.normal(0, 1, 1000)
+ax = histogram(data, bins=30)
+ax = box_plot([np.random.normal(0, 1, 100) for _ in range(3)], labels=["A", "B", "C"])
+```
+
+#### Genomics Plots (`genomics.py`)
+Genomic visualization functions for GWAS and sequence analysis.
+
+**Functions:**
+- `manhattan_plot`: Manhattan plots for GWAS
+- `volcano_plot`: Volcano plots for differential expression
+- `regional_plot`: Regional plots for specific genomic regions
+- `circular_manhattan_plot`: Circular genome-wide views
+- `chromosome_ideogram`: Chromosome maps with markers
+- `coverage_plot`: Sequencing coverage visualization
+- `variant_plot`: Variant visualization
+
+**Usage:**
+```python
+from metainformant.visualization import manhattan_plot, volcano_plot
+import pandas as pd
+import numpy as np
+
+data = pd.DataFrame({
+    'position': range(1000, 10000, 100),
+    'pvalue': np.random.uniform(1e-9, 1, 90),
+    'chromosome': ['chr1'] * 45 + ['chr2'] * 45
+})
+data['neg_log10_p'] = -np.log10(data['pvalue'])
+ax = manhattan_plot(data, 'position', 'neg_log10_p', 'chromosome')
+```
+
+#### Expression Plots (`expression.py`)
+Expression analysis visualization functions.
+
+**Functions:**
+- `expression_heatmap`: Expression heatmaps with clustering
+- `enrichment_plot`: Pathway/gene set enrichment
+- `gene_expression_plot`: Single gene expression visualization
+- `differential_expression_plot`: Top differentially expressed genes
+- `log_fold_change_plot`: Log fold change distributions
+
+#### Dimensionality Reduction (`dimred.py`)
+Visualization functions for dimensionality reduction techniques.
+
+**Functions:**
+- `pca_plot`: PCA scatter plots
+- `umap_plot`: UMAP visualizations
+- `tsne_plot`: t-SNE visualizations
+- `pca_scree_plot`: Variance explained plots
+- `pca_loadings_plot`: PCA loadings visualization
+- `biplot`: PCA biplots (samples and loadings)
+
+**Usage:**
+```python
+from metainformant.visualization import pca_plot, umap_plot
+import pandas as pd
+import numpy as np
+
+data = pd.DataFrame({
+    'PC1': np.random.normal(0, 1, 100),
+    'PC2': np.random.normal(0, 1, 100),
+    'group': ['A'] * 50 + ['B'] * 50
+})
+ax = pca_plot(data, hue='group')
+```
+
+#### Network Plots (`networks.py`)
+Network visualization functions.
+
+**Functions:**
+- `network_plot`: Basic network graphs
+- `circular_network_plot`: Circular layouts
+- `hierarchical_network_plot`: Hierarchical layouts
+- `force_directed_plot`: Force-directed layouts
+- `community_network_plot`: Community-based coloring
+
+#### Time Series (`timeseries.py`)
+Time series visualization functions.
+
+**Functions:**
+- `time_series_plot`: Basic time series plots
+- `autocorrelation_plot`: Autocorrelation analysis
+- `seasonal_decomposition_plot`: Trend, seasonal, residual decomposition
+- `forecast_plot`: Forecasts with confidence intervals
+- `trend_plot`: Trend analysis with fitted lines
+
+#### Multi-dimensional (`multidim.py`)
+Multi-dimensional visualization functions.
+
+**Functions:**
+- `pairplot_dataframe`: Pair plots for DataFrames
+- `parallel_coordinates_plot`: Parallel coordinates
+- `radar_chart`: Radar charts (spider charts)
+- `splom_plot`: Scatter plot matrices
+- `scatter_3d`: 3D scatter plots
+
+#### Quality Control (`quality.py`)
+Quality control visualization functions.
+
+**Functions:**
+- `qc_metrics_plot`: Multiple QC metrics
+- `quality_score_plot`: Quality score distributions
+- `per_base_quality_plot`: Position-specific quality
+- `adapter_content_plot`: Adapter content visualization
+- `sequence_length_distribution`: Sequence length distributions
+
+#### Information Theory (`information.py`)
+Information theory visualization functions.
+
+**Functions:**
+- `entropy_plot`: Entropy across positions
+- `mutual_information_plot`: MI matrix heatmaps
+- `information_profile_plot`: Comprehensive information profiles
+- `renyi_spectrum_plot`: Rényi entropy spectra
+- `information_network_plot`: MI-based networks
+
+### Specialized Modules
+
+#### Phylogenetic Trees (`trees.py`)
+Phylogenetic tree visualization with multiple layouts.
+
+**Functions:**
+- `plot_phylo_tree`: Standard tree plots
+- `circular_tree_plot`: Circular layouts
+- `unrooted_tree_plot`: Unrooted trees
+- `tree_comparison_plot`: Side-by-side tree comparison
+- `tree_annotation_plot`: Trees with annotations
+
+**Usage:**
+```python
+from metainformant.visualization import plot_phylo_tree, circular_tree_plot
 from Bio import Phylo
 
-# Load tree from Newick file (using BioPython)
 tree = Phylo.read("tree.nwk", "newick")
-
-# Visualize tree
 ax = plot_phylo_tree(tree)
-
-# Save figure using matplotlib
-ax.figure.savefig("tree.png", dpi=300)
+ax = circular_tree_plot(tree)
 ```
 
-### Animations (`animations.py`)
-Time-series and dynamic data animation.
+#### Animations (`animations.py`)
+Dynamic visualization animations.
 
-**Key Features:**
-- Time-series animation
-- Dynamic plot updates
-- GIF and video export
-- Real-time data visualization
-- Animation controls and playback
+**Functions:**
+- `animate_time_series`: Time series animations
+- `animate_evolution`: Evolutionary process animations
+- `animate_clustering`: Clustering iteration animations
+- `animate_network`: Network evolution animations
+- `animate_trajectory`: Trajectory inference animations
 
 **Usage:**
 ```python
 from metainformant.visualization import animate_time_series
 
-# Animate time series data
 data = [1, 2, 3, 2, 4, 5, 3, 6]
 fig, anim = animate_time_series(data, interval_ms=500)
+```
 
-# Save animation using matplotlib's animation writer
-from matplotlib.animation import PillowWriter
-writer = PillowWriter(fps=2)
-anim.save("timeseries.gif", writer=writer)
+### Utility Modules
+
+#### Styling (`style.py`)
+Publication-quality style presets and color palettes.
+
+**Functions:**
+- `apply_publication_style`: Apply publication-quality settings
+- `get_color_palette`: Get color palettes (primary, accessible, colorblind, viridis_like)
+- `get_figure_size`: Get predefined figure sizes
+- `set_font_family`: Set font family
+- `set_font_size`: Set font size
+- `reset_style`: Reset to defaults
+
+#### Layout (`layout.py`)
+Multi-panel figure creation and layout management.
+
+**Functions:**
+- `create_subplot_grid`: Create subplot grids
+- `create_multi_panel`: Create multi-panel layouts
+- `add_shared_axis_labels`: Add shared labels
+- `hide_unused_subplots`: Hide unused subplots
+- `adjust_spacing`: Adjust subplot spacing
+
+#### Export (`export.py`)
+High-resolution figure export utilities.
+
+**Functions:**
+- `save_figure`: Save figure with high-resolution settings
+- `save_figure_multiformat`: Save in multiple formats
+- `batch_export_figures`: Batch export multiple figures
+- `get_supported_formats`: Get list of supported formats
+
+#### Interactive (`interactive.py`)
+Plotly integration for interactive plots (optional dependency).
+
+**Functions:**
+- `create_interactive_scatter`: Interactive scatter plots
+- `create_interactive_heatmap`: Interactive heatmaps
+- `convert_matplotlib_to_plotly`: Convert matplotlib to Plotly
+- `is_plotly_available`: Check Plotly availability
+
+### Domain Integration Modules
+
+#### GWAS Integration (`gwas_integration.py`)
+Unified access to GWAS visualization functions.
+
+Re-exports functions from `gwas.visualization_*` modules including:
+- Manhattan plots, circular Manhattan plots
+- Q-Q plots, lambda GC plots
+- Regional plots, gene annotation plots
+- PCA plots, kinship heatmaps
+- Variant property plots
+- Effect size plots
+
+#### Single-Cell Integration (`singlecell_integration.py`)
+Unified access to single-cell visualization functions.
+
+Re-exports functions from `singlecell.visualization` including:
+- QC metrics plots
+- Embedding plots (UMAP, t-SNE, PCA)
+- Gene expression plots
+
+#### Information Theory Integration (`information_integration.py`)
+Unified access to information theory visualization functions.
+
+Re-exports functions from `information.visualization` including:
+- Entropy plots
+- Mutual information matrices
+- Information profiles
+- Rényi spectra
+
+#### Life Events Integration (`life_events_integration.py`)
+Unified access to life events visualization functions.
+
+Re-exports functions from `life_events.visualization` including:
+- Event timeline plots
+- Event embeddings visualization
+- Attention heatmaps
+- Prediction importance plots
+
+## Backward Compatibility
+
+The module maintains backward compatibility through:
+
+1. **`plots.py` wrapper**: Re-exports functions from new modules for existing code
+2. **Unchanged function names**: All existing function names remain the same
+3. **Import paths**: Both old and new import paths work
+
+**Old imports (still work):**
+```python
+from metainformant.visualization.plots import lineplot, scatter_plot
+```
+
+**New imports (recommended):**
+```python
+from metainformant.visualization import lineplot, scatter_plot
+# or
+from metainformant.visualization.basic import lineplot, scatter_plot
 ```
 
 ## Integration Features
 
 ### Backend Support
 - **Matplotlib**: Primary backend for static plots
-- **Seaborn**: Enhanced statistical visualizations
+- **Seaborn**: Enhanced statistical visualizations (optional)
 - **Plotly**: Interactive web-based visualizations (optional)
-- **PyQtGraph**: Real-time plotting (optional)
+- **NetworkX**: Network graph visualization (optional)
 
 ### Consistent API
 All plotting functions follow a consistent pattern:
@@ -104,86 +326,6 @@ ax = plot_function(data, **kwargs)
 ax.set_xlabel("X Label")
 ax.set_ylabel("Y Label")
 ax.set_title("Plot Title")
-```
-
-## Advanced Features
-
-### Publication Quality
-- High-resolution export (300+ DPI)
-- Consistent color schemes and styling
-- LaTeX text rendering support
-- Vector format export (SVG, PDF, EPS)
-
-### Customization
-- Extensive styling options
-- Custom color palettes
-- Font and layout control
-- Legend and annotation management
-
-## Usage Examples
-
-### Basic Statistical Visualization
-```python
-import numpy as np
-from metainformant.visualization import lineplot
-from metainformant.visualization.plots import scatter_plot
-
-# Generate sample data
-x = np.linspace(0, 10, 100)
-y = np.sin(x) + np.random.normal(0, 0.1, 100)
-
-# Create publication-quality plot
-ax = scatter_plot(x, y, alpha=0.6, s=20)
-ax = lineplot(x, np.sin(x), ax=ax, color='red', style='-')
-ax.set_xlabel("X Values")
-ax.set_ylabel("Y Values")
-ax.set_title("Sample Data with Trend Line")
-ax.grid(True, alpha=0.3)
-ax.figure.savefig("sample_plot.png", dpi=300)
-```
-
-### Phylogenetic Tree Visualization
-```python
-from metainformant.visualization import plot_phylo_tree
-from Bio import Phylo
-import matplotlib.pyplot as plt
-
-# Load tree from file
-tree = Phylo.read("phylogenetic_tree.nwk", "newick")
-
-# Create visualization
-fig, ax = plt.subplots(figsize=(12, 8))
-ax = plot_phylo_tree(tree, ax=ax)
-ax.set_title("Phylogenetic Tree")
-
-# Save high-resolution figure
-fig.savefig("tree_visualization.png", dpi=300)
-plt.close(fig)
-```
-
-### Animation Creation
-```python
-from metainformant.visualization import animate_time_series
-import numpy as np
-from matplotlib.animation import PillowWriter
-
-# Generate time series data
-time_points = np.linspace(0, 4*np.pi, 50)
-data = np.sin(time_points)
-
-# Create animation
-fig, anim = animate_time_series(data, interval_ms=200)
-
-# Customize animation
-ax = fig.gca()
-ax.set_xlabel("Time")
-ax.set_ylabel("Value")
-ax.set_title("Dynamic Time Series")
-ax.grid(True, alpha=0.3)
-
-# Export animation
-writer = PillowWriter(fps=5)
-anim.save("dynamic_series.gif", writer=writer)
 ```
 
 ## Performance Considerations
@@ -200,253 +342,26 @@ anim.save("dynamic_series.gif", writer=writer)
 from metainformant.dna import phylogeny
 from metainformant.visualization import plot_phylo_tree
 
-# Visualize DNA-based phylogenetic analysis
 tree = phylogeny.neighbor_joining_tree(dna_sequences)
 ax = plot_phylo_tree(tree)
-ax.set_title("DNA-based Phylogeny")
-```
-
-### With Math Module
-```python
-from metainformant.math import price_equation
-from metainformant.visualization import lineplot
-
-# Visualize mathematical models
-fitness = [0.2, 0.4, 0.1]
-trait_parent = [1.0, 1.2, 0.9]
-trait_offspring = [1.25, 1.35, 0.95]
-cov, trans, total = price_equation(fitness, trait_parent, trait_offspring)
-
-# Plot trait evolution
-ax = lineplot(None, trait_offspring)
-ax.set_title("Trait Evolution")
 ```
 
 ### With GWAS Module
 ```python
-from metainformant.gwas import association_test_linear, parse_vcf_full
-from metainformant.visualization import manhattan_plot, qq_plot, regional_plot
+from metainformant.gwas import association_test_linear
+from metainformant.visualization import manhattan_plot, qq_plot
 
-# Manhattan plot for GWAS results
-association_results = association_test_linear(genotype_matrix, phenotypes)
-ax = manhattan_plot(
-    association_results["chromosome"],
-    association_results["position"],
-    association_results["p_value"],
-    title="GWAS Manhattan Plot"
-)
-
-# Q-Q plot for p-value distribution
-ax = qq_plot(
-    association_results["p_value"],
-    title="GWAS Q-Q Plot",
-    xlabel="Expected -log10(p)",
-    ylabel="Observed -log10(p)"
-)
-
-# Regional plot for specific locus
-ax = regional_plot(
-    chromosome="chr1",
-    start=1000000,
-    end=2000000,
-    association_results=association_results,
-    title="Regional Association Plot"
-)
+results = association_test_linear(genotype_matrix, phenotypes)
+ax = manhattan_plot(results, 'position', 'neg_log10_p', 'chromosome')
 ```
 
 ### With Single-Cell Module
 ```python
-from metainformant.singlecell import compute_umap, compute_pseudotime, leiden_clustering
-from metainformant.visualization import scatter_plot, lineplot
+from metainformant.singlecell import compute_umap
+from metainformant.visualization import umap_plot
 
-# UMAP visualization
-data = compute_umap(data, min_dist=0.1, n_components=2)
-umap_coords = data.obsm["X_umap"]
-
-# Color by cluster
-data = leiden_clustering(data, resolution=1.0)
-ax = scatter_plot(
-    umap_coords[:, 0], umap_coords[:, 1],
-    c=data.obs["cluster"].values,
-    xlabel="UMAP 1", ylabel="UMAP 2",
-    title="Single-Cell UMAP Embedding"
-)
-
-# Trajectory visualization
-data = compute_pseudotime(data, root_cells=0, method="diffusion")
-pseudotime = data.obs["pseudotime"].values
-ax = lineplot(
-    range(len(pseudotime)), pseudotime,
-    xlabel="Cell Index", ylabel="Pseudotime",
-    title="Developmental Trajectory"
-)
-
-# Expression overlay
-gene_expression = data[:, "GENE1"].X.toarray().flatten()
-ax = scatter_plot(
-    umap_coords[:, 0], umap_coords[:, 1],
-    c=gene_expression, cmap="viridis",
-    xlabel="UMAP 1", ylabel="UMAP 2",
-    title="GENE1 Expression"
-)
-```
-
-### With Networks Module
-```python
-from metainformant.networks import create_network, detect_communities, centrality_measures
-from metainformant.visualization import network_plot, heatmap
-
-# Network graph visualization
-network = create_network(node_list, directed=False)
-network.add_edges_from(edge_list)
-
-# Visualize network with layout
-ax = network_plot(
-    network,
-    layout="spring",
-    node_size=100,
-    node_color="blue",
-    edge_color="gray",
-    title="Protein Interaction Network"
-)
-
-# Community structure visualization
-communities = detect_communities(network, method="louvain")
-# Create community membership matrix
-community_matrix = create_community_matrix(network, communities)
-ax = heatmap(
-    community_matrix,
-    title="Network Community Structure",
-    xlabel="Communities", ylabel="Nodes"
-)
-
-# Centrality visualization
-centralities = centrality_measures(network)
-degree_values = list(centralities["degree"].values())
-ax = histogram(degree_values, bins=20, title="Degree Distribution")
-```
-
-### With Multiomics Module
-```python
-from metainformant.multiomics import MultiOmicsData, joint_pca, canonical_correlation
-from metainformant.visualization import scatter_plot, heatmap, pca_plot
-
-# Joint PCA visualization
-omics_data = MultiOmicsData(
-    genomics=genomics_df,
-    transcriptomics=transcriptomics_df,
-    proteomics=proteomics_df
-)
-embeddings, loadings, variance = joint_pca(omics_data, n_components=2)
-
-# PCA scatter plot
-ax = pca_plot(
-    embeddings[:, 0], embeddings[:, 1],
-    xlabel="PC1", ylabel="PC2",
-    title="Joint PCA: Multi-Omics Integration"
-)
-
-# Loadings heatmap
-ax = heatmap(
-    loadings,
-    title="Joint PCA Loadings",
-    xlabel="Principal Components", ylabel="Features"
-)
-
-# Canonical correlation visualization
-X_c, Y_c, X_w, Y_w, correlations = canonical_correlation(
-    omics_data,
-    layer_pair=("genomics", "transcriptomics"),
-    n_components=2
-)
-
-# Scatter plot of canonical variates
-ax = scatter_plot(
-    X_c[:, 0], Y_c[:, 0],
-    xlabel="Genomics Canonical Variate 1",
-    ylabel="Transcriptomics Canonical Variate 1",
-    title=f"Canonical Correlation (r={correlations[0]:.3f})"
-)
-```
-
-### With Information Theory Module
-```python
-from metainformant.information import shannon_entropy, mutual_information
-from metainformant.visualization import lineplot, heatmap, scatter_plot
-import numpy as np
-
-# Entropy visualization across sequences
-entropy_values = [shannon_entropy(seq_probs) for seq_probs in sequence_probs]
-ax = lineplot(
-    range(len(entropy_values)), entropy_values,
-    xlabel="Sequence Index", ylabel="Entropy",
-    title="Sequence Entropy Distribution"
-)
-
-# Mutual information matrix visualization
-# Calculate MI between all pairs of genes
-gene_names = ["GENE1", "GENE2", "GENE3", "GENE4"]
-mi_matrix = np.zeros((len(gene_names), len(gene_names)))
-
-for i, gene1 in enumerate(gene_names):
-    for j, gene2 in enumerate(gene_names):
-        if i != j:
-            # Calculate MI between gene1 and gene2
-            p_x = gene1_probs[i]
-            p_y = gene2_probs[j]
-            p_xy = joint_probs[i, j]
-            mi_matrix[i, j] = mutual_information(p_xy, p_x, p_y)
-
-# Visualize MI matrix
-ax = heatmap(
-    mi_matrix,
-    title="Mutual Information Matrix",
-    xlabel="Genes", ylabel="Genes",
-    xticklabels=gene_names, yticklabels=gene_names
-)
-
-# Information content visualization
-info_content = calculate_information_content(alignment)
-ax = lineplot(
-    range(len(info_content)), info_content,
-    xlabel="Position", ylabel="Information Content",
-    title="Sequence Conservation Profile"
-)
-```
-
-### With Quality Module
-```python
-from metainformant.quality import analyze_fastq_quality, calculate_quality_metrics
-from metainformant.visualization import lineplot, box_plot, histogram
-
-# Quality score visualization
-quality_stats = analyze_fastq_quality(reads)
-per_base_quality = quality_stats["per_base_quality"]
-
-# Per-base quality line plot
-positions = range(len(per_base_quality))
-ax = lineplot(
-    positions, per_base_quality,
-    xlabel="Position in Read", ylabel="Quality Score",
-    title="Per-Base Quality Scores"
-)
-
-# Quality distribution histogram
-quality_scores = [read.quality for read in reads]
-ax = histogram(
-    quality_scores,
-    bins=50,
-    title="Quality Score Distribution",
-    xlabel="Quality Score", ylabel="Frequency"
-)
-
-# Quality metrics box plot
-qc_metrics = calculate_quality_metrics(quality_scores_list)
-ax = box_plot(
-    [qc_metrics["mean"], qc_metrics["median"], qc_metrics["std"]],
-    labels=["Mean", "Median", "Std Dev"],
-    title="Quality Metrics Summary"
-)
+data = compute_umap(data, min_dist=0.1)
+ax = umap_plot(data, x_col='UMAP1', y_col='UMAP2', hue='cluster')
 ```
 
 ## Testing
@@ -461,7 +376,11 @@ Comprehensive tests ensure:
 ## Dependencies
 
 - **Required**: matplotlib, numpy
-- **Optional**: seaborn (enhanced styling), plotly (interactive plots)
-- **Animation**: pillow (GIF support), ffmpeg (video export)
+- **Optional**: 
+  - seaborn (enhanced styling)
+  - plotly (interactive plots)
+  - networkx (network visualization)
+  - scipy (statistical functions)
+  - scikit-learn (machine learning plots)
 
 This module provides a complete visualization toolkit for biological data analysis and publication-quality figure generation.

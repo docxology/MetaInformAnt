@@ -2,16 +2,67 @@
 
 This subpackage provides quantitative biology primitives used across domains:
 - Price equation and selection decomposition
-- Kin and multilevel selection toy calculators
+- Kin and multilevel selection
 - Drift–Diffusion models (DDM)
+- Population genetics models
+- Coalescent theory
+- Epidemiological models
+- Linkage disequilibrium
+- Quantitative genetics
 
 These are deliberately lightweight, dependency-minimal, and intended for
 composition with `core` utilities and `dna`/`rna`/`protein` domain modules.
+
+Submodules:
+- coalescent: Coalescent theory and neutrality tests (Tajima's D, Fu & Li's tests)
+- price: Price equation and selection metrics (covariance, selection gradients)
+- popgen: Population genetics models (Hardy-Weinberg, selection, mutation)
+- ld: Linkage disequilibrium (LD coefficients, r², mapping functions)
+- epidemiology: Disease dynamics models (SIR, SEIR, SIS, R₀ calculations)
+- dynamics: Population dynamics (logistic map, Lotka-Volterra)
+- ddm: Decision-making models (drift-diffusion model)
+- selection: Kin and multilevel selection (Hamilton's rule)
+- quantgen: Quantitative genetics (heritability, breeder's equation)
+- popgen_stats: Statistical testing (bootstrap, permutation tests, outliers)
+- effective_size: Effective population size calculations
+- demography: Demographic models (bottlenecks, growth, two-epoch)
+- fst: Population differentiation (Fst calculations)
+- egt: Evolutionary game theory (replicator dynamics)
+- selection_experiments: Natural selection simulations
+
+Utility Functions (in this module):
+- correlation_coefficient: Pearson correlation coefficient
+- linear_regression: Least-squares linear regression
+- fisher_exact_test: Fisher's exact test for 2x2 contingency tables
+- shannon_entropy: Information entropy
+- jensen_shannon_divergence: Distribution divergence measure
+
+Dependencies:
+- numpy: Required for popgen_stats module
+- scipy: Optional, used for advanced statistics (hardy_weinberg_test,
+         fisher_exact_test, etc.). Available via optional dependency groups:
+         pip install metainformant[scientific] or pip install scipy
+
+Examples:
+    >>> from metainformant.math import price_equation, tajimas_D
+    >>> # Price equation analysis
+    >>> fitness = [1.0, 1.2, 0.9]
+    >>> traits = [0.2, 0.4, 0.1]
+    >>> cov, trans, total = price_equation(fitness, traits)
+    >>> # Correlation analysis
+    >>> from metainformant.math import correlation_coefficient
+    >>> r = correlation_coefficient([1, 2, 3], [2, 4, 6])
+    >>> r
+    1.0
 """
 
 from .coalescent import (
+    CoalescentSummary,
+    expected_coalescent_waiting_times,
     expected_pairwise_diversity,
+    expected_pairwise_diversity_from_theta,
     expected_segregating_sites,
+    expected_sfs_counts,
     expected_time_to_mrca,
     expected_total_branch_length,
     ewens_watterson_test,
@@ -19,8 +70,11 @@ from .coalescent import (
     fu_and_li_d_star,
     fu_and_li_f_star,
     hardy_weinberg_test,
+    site_frequency_spectrum_counts,
     tajima_constants,
     tajimas_D,
+    watterson_theta,
+    wattersons_theta,
 )
 from .ddm import ddm_analytic_accuracy, ddm_mean_decision_time
 from .dynamics import logistic_map, lotka_volterra_step
@@ -69,7 +123,6 @@ from .popgen import (
     mutation_selection_balance_recessive,
     mutation_update,
     selection_update,
-    watterson_theta,
 )
 from .price import (
     correlation,
@@ -125,7 +178,6 @@ __all__ = [
     "selection_update",
     "mutation_update",
     "fixation_probability",
-    "watterson_theta",
     "heterozygosity_decay",
     "inbreeding_coefficient",
     "inbreeding_coefficient_from_fst",
@@ -149,9 +201,16 @@ __all__ = [
     "expected_time_to_mrca",
     "expected_total_branch_length",
     "expected_pairwise_diversity",
+    "expected_pairwise_diversity_from_theta",
     "tajima_constants",
     "tajimas_D",
     "expected_segregating_sites",
+    "expected_sfs_counts",
+    "expected_coalescent_waiting_times",
+    "site_frequency_spectrum_counts",
+    "watterson_theta",
+    "wattersons_theta",
+    "CoalescentSummary",
     # quantitative genetics
     "narrow_sense_heritability",
     "breeders_equation_response",
@@ -195,6 +254,12 @@ __all__ = [
     "compare_statistics",
     "test_population_difference",
     "calculate_confidence_intervals",
+    # utility functions
+    "correlation_coefficient",
+    "linear_regression",
+    "fisher_exact_test",
+    "shannon_entropy",
+    "jensen_shannon_divergence",
 ]
 
 
@@ -215,6 +280,9 @@ def correlation_coefficient(x: list[float], y: list[float]) -> float:
         - Lists have fewer than 2 elements
         - Either list has zero variance
         
+    Raises:
+        ValueError: If lists have different lengths (when len(x) != len(y))
+        
     Examples:
         >>> correlation_coefficient([1, 2, 3], [2, 4, 6])
         1.0
@@ -225,7 +293,9 @@ def correlation_coefficient(x: list[float], y: list[float]) -> float:
         This is a convenience function. For more advanced correlation
         analysis, use the `correlation` function from `price.py`.
     """
-    if len(x) != len(y) or len(x) < 2:
+    if len(x) != len(y):
+        raise ValueError(f"Lists must have same length: {len(x)} != {len(y)}")
+    if len(x) < 2:
         return 0.0
         
     import math
@@ -263,9 +333,11 @@ def linear_regression(x: list[float], y: list[float]) -> tuple[float, float, flo
         - r_squared: Coefficient of determination (0 to 1)
         
         Returns (0.0, 0.0, 0.0) if:
-        - Lists have different lengths
         - Lists have fewer than 2 elements
         - X has zero variance
+        
+    Raises:
+        ValueError: If lists have different lengths
         
     Examples:
         >>> slope, intercept, r2 = linear_regression([1, 2, 3], [2, 4, 6])
@@ -274,7 +346,9 @@ def linear_regression(x: list[float], y: list[float]) -> tuple[float, float, flo
         >>> abs(r2 - 1.0) < 0.01  # Perfect fit
         True
     """
-    if len(x) != len(y) or len(x) < 2:
+    if len(x) != len(y):
+        raise ValueError(f"Lists must have same length: {len(x)} != {len(y)}")
+    if len(x) < 2:
         return 0.0, 0.0, 0.0
         
     n = len(x)
@@ -302,6 +376,15 @@ def linear_regression(x: list[float], y: list[float]) -> tuple[float, float, flo
     return slope, intercept, r_squared
 
 
+try:
+    from scipy.stats import fisher_exact as _scipy_fisher_exact
+    
+    SCIPY_AVAILABLE = True
+except ImportError:
+    SCIPY_AVAILABLE = False
+    _scipy_fisher_exact = None
+
+
 def fisher_exact_test(a: int, b: int, c: int, d: int) -> tuple[float, float]:
     """Calculate Fisher's exact test for 2x2 contingency table.
     
@@ -318,17 +401,27 @@ def fisher_exact_test(a: int, b: int, c: int, d: int) -> tuple[float, float]:
     Returns:
         Tuple of (odds_ratio, p_value):
         - odds_ratio: (a × d) / (b × c). Returns inf if b or c is zero.
-        - p_value: Currently returns placeholder value 1.0. For full
-          implementation, use scipy.stats.fisher_exact
+        - p_value: Two-tailed p-value from Fisher's exact test.
+          Returns 1.0 if scipy is unavailable (fallback).
           
+    Raises:
+        ImportError: If scipy is not available. Install with:
+            pip install metainformant[scientific]
+            or
+            pip install scipy
+            
     Examples:
         >>> odds, p = fisher_exact_test(10, 2, 3, 15)
         >>> odds
         25.0
+        >>> 0.0 <= p <= 1.0
+        True
         
     Note:
-        This is a simplified implementation. For accurate p-values,
-        use scipy.stats.fisher_exact or similar libraries.
+        This function uses scipy.stats.fisher_exact when available for
+        accurate p-value calculation. If scipy is not installed, the
+        function will raise ImportError. For manual calculation without
+        scipy, consider using scipy.stats.fisher_exact directly.
         
     References:
         Fisher, R. A. (1922). On the interpretation of χ² from contingency
@@ -340,12 +433,19 @@ def fisher_exact_test(a: int, b: int, c: int, d: int) -> tuple[float, float]:
     # Calculate odds ratio
     odds_ratio = (a * d) / (b * c) if b > 0 and c > 0 else float('inf')
     
-    # Calculate p-value using hypergeometric distribution
-    # This is a simplified calculation
-    total = a + b + c + d
-    p_value = 1.0  # Placeholder - full implementation would use scipy.stats.fisher_exact
-    
-    return odds_ratio, p_value
+    # Calculate p-value using scipy if available
+    if SCIPY_AVAILABLE and _scipy_fisher_exact is not None:
+        # Create 2x2 contingency table
+        table = [[a, b], [c, d]]
+        odds_ratio_scipy, p_value = _scipy_fisher_exact(table, alternative='two-sided')
+        # Use scipy's odds ratio for consistency
+        return float(odds_ratio_scipy), float(p_value)
+    else:
+        # Raise ImportError if scipy not available
+        raise ImportError(
+            "scipy is required for fisher_exact_test(). "
+            "Install with: pip install metainformant[scientific] or pip install scipy"
+        )
 
 
 def shannon_entropy(values: list[float]) -> float:

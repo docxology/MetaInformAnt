@@ -27,10 +27,17 @@ New to RNA-seq analysis with METAINFORMANT? Start here:
 ```bash
 # All species, end-to-end workflow (configurable threads)
 # Prerequisites: venv must exist with amalgkit installed (see RUN_ALL_SPECIES.md)
-# See docs/rna/RUN_ALL_SPECIES.md for complete setup instructions
-export AK_THREADS=12  # Optional: set threads globally
-python3 scripts/rna/run_all_species_parallel.py  # Recommended: parallel execution
-# Or: python3 scripts/rna/run_multi_species.py  # Sequential execution
+# Ensure /tmp has space: bash scripts/rna/fix_tmp_space.sh
+
+# Run all species in parallel with configurable threads
+export AK_THREADS=24  # Threads per species
+python3 scripts/rna/run_all_species_parallel.py --threads-per-species 24
+
+# Or sequential execution (one species at a time):
+export AK_THREADS=24
+python3 scripts/rna/run_multi_species.py
+
+# See RESTART_WORKFLOW.md for complete restart instructions
 
 # Single species workflow (ENA-based, recommended)
 python3 scripts/rna/workflow_ena_integrated.py \
@@ -40,6 +47,14 @@ python3 scripts/rna/workflow_ena_integrated.py \
 # Multi-species batch download (getfastq + quant only)
 python3 scripts/rna/batch_download_species.py \
   --species-count 3 --threads-per-species 10
+
+# Genome setup (download genomes, prepare transcriptomes, build indexes)
+python3 scripts/rna/verify_genomes_and_indexes.py        # Check status
+python3 scripts/rna/download_missing_genomes.py          # Download genomes
+python3 scripts/rna/prepare_transcriptomes.py            # Prepare FASTA
+python3 scripts/rna/build_kallisto_indexes.py           # Build indexes
+# Or use master orchestrator:
+python3 scripts/rna/orchestrate_genome_setup.py          # Complete setup
 
 # Discover ant species with RNA-seq data
 python3 scripts/rna/discover_ant_rnaseq_by_genus.py
@@ -60,6 +75,19 @@ python3 scripts/rna/discover_ant_rnaseq_by_genus.py
 - **[amalgkit/README.md](amalgkit/README.md)** - Overview of amalgkit wrapper
 - **[amalgkit/steps/](amalgkit/steps/)** - Detailed step documentation (11 steps)
 - **[amalgkit/testing_coverage.md](amalgkit/testing_coverage.md)** - Test coverage and validation
+
+### Genome Setup
+- **[amalgkit/genome_preparation.md](amalgkit/genome_preparation.md)** - Technical documentation for genome download and kallisto index building
+- **[amalgkit/genome_setup_guide.md](amalgkit/genome_setup_guide.md)** - Complete step-by-step guide for setting up genomes and indexes
+- **[amalgkit/commands.md](amalgkit/commands.md)** - Command reference for all genome setup scripts
+
+**Genome Setup Scripts** (located in `scripts/rna/`):
+- `verify_genomes_and_indexes.py` - Check status of genome downloads and kallisto indexes
+- `download_missing_genomes.py` - Download missing genome packages from NCBI
+- `prepare_transcriptomes.py` - Extract and prepare RNA FASTA files from genomes
+- `build_kallisto_indexes.py` - Build kallisto indexes from transcriptome FASTA files
+- `orchestrate_genome_setup.py` - Master orchestrator for complete genome setup pipeline
+- `run_genome_setup.sh` - Shell script to run all steps sequentially
 
 ### Module Reference
 - **[index.md](index.md)** - RNA domain overview and module index

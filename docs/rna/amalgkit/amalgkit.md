@@ -36,6 +36,25 @@ flowchart TD
 
 ## 🚀 Quick Start
 
+### Prerequisites
+
+Before running the quantification step (`quant`), ensure kallisto indexes are available. METAINFORMANT provides automated genome setup scripts:
+
+```bash
+# Complete genome setup (download genomes, prepare transcriptomes, build indexes)
+python3 scripts/rna/orchestrate_genome_setup.py
+
+# Or verify current status first:
+python3 scripts/rna/verify_genomes_and_indexes.py
+```
+
+**See Also:**
+- **[genome_setup_guide.md](genome_setup_guide.md)**: Complete step-by-step guide for genome setup
+- **[genome_preparation.md](genome_preparation.md)**: Technical documentation for genome preparation
+- **[commands.md](commands.md)**: Command reference for all genome setup scripts
+
+The workflow automatically integrates genome preparation when `build_index: yes` is set in the quant configuration. For manual setup or verification, use the genome setup scripts above.
+
 ### Complete End-to-End Analysis
 
 ```bash

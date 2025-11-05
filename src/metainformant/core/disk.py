@@ -132,3 +132,99 @@ def get_disk_space_info(path: Path) -> dict[str, float | str]:
         "percent_free": f"{100 - float(percent_str.rstrip('%')):.1f}%",
     }
 
+
+def detect_drive_size_category(path: Path) -> str:
+    """Detect drive size category based on available free space.
+    
+    Args:
+        path: Path to check (directory or file on the drive)
+        
+    Returns:
+        "large" (> 1TB free), "medium" (500GB-1TB free), or "small" (< 500GB free)
+    """
+    total_gb, used_gb, free_gb, _ = get_disk_usage(path)
+    
+    if total_gb == 0:
+        # Can't determine, assume small to be safe
+        return "small"
+    
+    if free_gb > 1024:  # > 1TB free
+        return "large"
+    elif free_gb > 500:  # 500GB-1TB free
+        return "medium"
+    else:  # < 500GB free
+        return "small"
+
+
+def get_recommended_batch_size(path: Path, sample_size_gb: float = 1.5, safety_buffer: float = 0.3) -> int:
+    """Calculate recommended batch size based on available disk space.
+    
+    Args:
+        path: Path to check (directory or file on the drive)
+        sample_size_gb: Estimated size per sample in GB (default: 1.5GB)
+        safety_buffer: Safety buffer as fraction (default: 0.3 = 30% buffer)
+        
+    Returns:
+        Recommended batch size (number of samples)
+    """
+    total_gb, used_gb, free_gb, _ = get_disk_usage(path)
+    
+    if total_gb == 0 or free_gb < 10:
+        # Can't determine or very low space, return conservative default
+        return 8
+    
+    # Calculate available space after buffer
+    available_gb = free_gb * (1 - safety_buffer)
+    
+    # Calculate batch size (round down to be safe)
+    batch_size = int(available_gb / sample_size_gb)
+    
+    # Apply limits based on drive category
+    category = detect_drive_size_category(path)
+    if category == "large":
+        # Large drives: 50-100 samples
+        return min(max(batch_size, 50), 100)
+    elif category == "medium":
+        # Medium drives: 20-30 samples
+        return min(max(batch_size, 20), 30)
+    else:
+        # Small drives: 8-12 samples
+        return min(max(batch_size, 8), 12)
+
+
+def get_recommended_temp_dir(repo_root: Path) -> Path:
+    """Get recommended temporary directory location based on drive size.
+    
+    Prefers external drive if it's large enough, otherwise falls back to system temp.
+    
+    Args:
+        repo_root: Root directory of the repository
+        
+    Returns:
+        Path to recommended temporary directory (directory is created if needed)
+    """
+    import os
+    import tempfile
+    
+    # Check if TMPDIR is explicitly set
+    tmpdir_env = os.environ.get("TMPDIR")
+    if tmpdir_env:
+        tmp_path = Path(tmpdir_env)
+        tmp_path.mkdir(parents=True, exist_ok=True)
+        return tmp_path
+    
+    # Check output directory location (usually on external drive)
+    output_dir = repo_root / "output"
+    if output_dir.exists():
+        category = detect_drive_size_category(output_dir)
+        if category in ("large", "medium"):
+            # Use external drive for temp files
+            temp_dir = output_dir / ".tmp"
+            temp_dir.mkdir(parents=True, exist_ok=True)
+            return temp_dir
+    
+    # Fall back to system temp
+    temp_dir = Path(tempfile.gettempdir())
+    temp_dir.mkdir(parents=True, exist_ok=True)
+    return temp_dir
+

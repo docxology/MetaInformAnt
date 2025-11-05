@@ -11,6 +11,9 @@ This module provides tools for integrating and analyzing multiple omics datasets
 from .integration import (
     MultiOmicsData,
     canonical_correlation,
+    from_dna_variants,
+    from_protein_abundance,
+    from_rna_expression,
     integrate_omics_data,
     joint_nmf,
     joint_pca,
@@ -23,4 +26,8 @@ __all__ = [
     "joint_pca",
     "joint_nmf",
     "canonical_correlation",
+    # Integration helpers
+    "from_dna_variants",
+    "from_rna_expression",
+    "from_protein_abundance",
 ]

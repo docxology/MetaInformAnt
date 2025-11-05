@@ -2,6 +2,9 @@
 
 This module provides functions to extract phenotypes from event sequences,
 enabling temporal phenotype aggregation and integration with life_events module.
+
+Requires the life_events module to be available. Functions will raise ImportError
+if life_events module is not installed.
 """
 
 from __future__ import annotations
@@ -9,7 +12,8 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-import numpy as np
+from ..core.errors import ValidationError
+from ..core.logging import get_logger
 
 try:
     from ..life_events import Event, EventSequence
@@ -18,6 +22,8 @@ except ImportError:
     LIFE_EVENTS_AVAILABLE = False
     Event = None  # type: ignore
     EventSequence = None  # type: ignore
+
+logger = get_logger(__name__)
 
 
 def extract_phenotypes_from_events(
@@ -29,15 +35,29 @@ def extract_phenotypes_from_events(
     Maps events to phenotypic categories and aggregates temporal information.
     
     Args:
-        sequence: EventSequence to extract phenotypes from
+        sequence: EventSequence to extract phenotypes from (single sequence, not list)
         phenotype_categories: Optional mapping of phenotype categories to event types
         
     Returns:
-        Dictionary with extracted phenotypes
+        Dictionary with extracted phenotypes including:
+        - person_id: Person identifier
+        - total_events: Total number of events
+        - domains: List of domains present
+        - event_types: List of event types
+        - domain_counts: Count of events per domain
+        - health_events, education_events, occupation_events: Domain-specific counts
+        - health_conditions, education_achievements, occupation_changes: Domain-specific event lists
+        - first_event_time, last_event_time: Temporal boundaries
+        - event_span_years: Time span in years
+        
+    Raises:
+        ImportError: If life_events module is not available
+        ValidationError: If sequence is invalid or empty
         
     Examples:
         >>> from metainformant.life_events import EventSequence, Event
         >>> from datetime import datetime
+        >>> from metainformant.phenotype import extract_phenotypes_from_events
         >>> events = [
         ...     Event("diabetes", datetime(2020, 1, 1), "health"),
         ...     Event("bachelors", datetime(2010, 6, 1), "education"),
@@ -46,9 +66,28 @@ def extract_phenotypes_from_events(
         >>> phenotypes = extract_phenotypes_from_events(seq)
         >>> "health_events" in phenotypes
         True
+        >>> phenotypes["total_events"]
+        2
     """
     if not LIFE_EVENTS_AVAILABLE:
-        raise ImportError("life_events module not available")
+        raise ImportError(
+            "life_events module not available. Install metainformant with life_events support."
+        )
+    
+    if sequence is None:
+        raise ValidationError("sequence cannot be None")
+    
+    logger.debug(f"Extracting phenotypes from sequence for person {sequence.person_id}")
+    
+    if not sequence.events:
+        logger.warning(f"Empty event sequence for person {sequence.person_id}")
+        return {
+            "person_id": sequence.person_id,
+            "total_events": 0,
+            "domains": [],
+            "event_types": [],
+            "domain_counts": {},
+        }
     
     phenotypes = {
         "person_id": sequence.person_id,
@@ -62,6 +101,8 @@ def extract_phenotypes_from_events(
     for event in sequence.events:
         domain_counts[event.domain] = domain_counts.get(event.domain, 0) + 1
     phenotypes["domain_counts"] = domain_counts
+    
+    logger.debug(f"Found {len(phenotypes['domains'])} domains in sequence")
     
     # Extract health-related phenotypes
     health_events = [e for e in sequence.events if e.domain == "health"]
@@ -96,12 +137,15 @@ def extract_phenotypes_from_events(
     # Custom phenotype categories
     if phenotype_categories:
         for category, event_types in phenotype_categories.items():
+            if not isinstance(event_types, list):
+                raise ValidationError(f"phenotype_categories[{category}] must be a list, got {type(event_types).__name__}")
             matching_events = [
                 e for e in sequence.events
                 if e.event_type in event_types
             ]
             phenotypes[f"{category}_count"] = len(matching_events)
     
+    logger.info(f"Extracted {len(phenotypes)} phenotype fields from {len(sequence.events)} events")
     return phenotypes
 
 
@@ -111,17 +155,46 @@ def aggregate_temporal_phenotypes(
 ) -> Dict[str, Any]:
     """Aggregate phenotypes across time windows.
     
-    Groups events into temporal windows and computes aggregate statistics.
+    Groups events from multiple sequences into temporal windows and computes
+    aggregate statistics per window.
     
     Args:
-        sequences: List of event sequences
-        time_window_years: Size of time windows in years
+        sequences: List of EventSequence objects (not phenotypes dicts)
+        time_window_years: Size of time windows in years (must be positive)
         
     Returns:
-        Dictionary with temporal phenotype aggregations
+        Dictionary with temporal phenotype aggregations:
+        - time_windows: List of window statistics
+        - aggregates: Overall statistics (total_events, total_people, time_span_years)
+        
+    Raises:
+        ImportError: If life_events module is not available
+        ValidationError: If sequences is invalid or time_window_years is invalid
+        
+    Examples:
+        >>> from metainformant.life_events import EventSequence, Event
+        >>> from datetime import datetime
+        >>> from metainformant.phenotype import aggregate_temporal_phenotypes
+        >>> seq1 = EventSequence("p1", [Event("degree", datetime(2010, 1, 1), "education")])
+        >>> seq2 = EventSequence("p2", [Event("job", datetime(2015, 1, 1), "occupation")])
+        >>> result = aggregate_temporal_phenotypes([seq1, seq2], time_window_years=5.0)
+        >>> "time_windows" in result
+        True
+        >>> result["aggregates"]["total_people"]
+        2
     """
     if not LIFE_EVENTS_AVAILABLE:
-        raise ImportError("life_events module not available")
+        raise ImportError(
+            "life_events module not available. Install metainformant with life_events support."
+        )
+    
+    if not isinstance(sequences, list):
+        raise ValidationError(f"sequences must be a list, got {type(sequences).__name__}")
+    
+    if time_window_years <= 0:
+        raise ValidationError(f"time_window_years must be positive, got {time_window_years}")
+    
+    logger.debug(f"Aggregating phenotypes from {len(sequences)} sequences with {time_window_years} year windows")
     
     # Collect all events with timestamps
     all_events = []
@@ -139,7 +212,8 @@ def aggregate_temporal_phenotypes(
             })
     
     if not all_events:
-        return {"time_windows": [], "aggregates": {}}
+        logger.warning("No events found in any sequences")
+        return {"time_windows": [], "aggregates": {"total_events": 0, "total_people": 0, "time_span_years": 0.0}}
     
     # Define time windows
     min_time = min(e["timestamp"] for e in all_events)
@@ -184,12 +258,20 @@ def aggregate_temporal_phenotypes(
         
         window_stats.append(stats)
     
+    total_people = len(set(e["person_id"] for e in all_events))
+    time_span_years = (max_time - min_time) / (365.25 * 24 * 3600)
+    
+    logger.info(
+        f"Aggregated {len(all_events)} events from {total_people} people "
+        f"into {len(window_stats)} time windows over {time_span_years:.2f} years"
+    )
+    
     return {
         "time_windows": window_stats,
         "aggregates": {
             "total_events": len(all_events),
-            "total_people": len(set(e["person_id"] for e in all_events)),
-            "time_span_years": (max_time - min_time) / (365.25 * 24 * 3600),
+            "total_people": total_people,
+            "time_span_years": time_span_years,
         }
     }
 
@@ -200,15 +282,47 @@ def map_events_to_traits(
 ) -> Dict[str, Any]:
     """Map events to phenotypic trait categories.
     
+    Maps events in a sequence to predefined trait categories based on
+    event types. Uses default mapping if none provided.
+    
     Args:
-        sequence: EventSequence to map
-        trait_mapping: Optional mapping of trait names to event types
+        sequence: EventSequence to map (single sequence, not list)
+        trait_mapping: Optional mapping of trait names to event types.
+                      If None, uses default mapping for health, education, occupation, and mobility.
         
     Returns:
-        Dictionary mapping traits to event information
+        Dictionary mapping trait names to dictionaries containing:
+        - count: Number of events matching this trait
+        - events: List of event types matching this trait
+        - timestamps: List of event timestamps (ISO format for datetime)
+        
+    Raises:
+        ImportError: If life_events module is not available
+        ValidationError: If sequence is invalid
+        
+    Examples:
+        >>> from metainformant.life_events import EventSequence, Event
+        >>> from datetime import datetime
+        >>> from metainformant.phenotype import map_events_to_traits
+        >>> seq = EventSequence("p1", [
+        ...     Event("diagnosis", datetime(2020, 1, 1), "health"),
+        ...     Event("degree", datetime(2010, 1, 1), "education"),
+        ... ])
+        >>> traits = map_events_to_traits(seq)
+        >>> "health_issues" in traits
+        True
+        >>> traits["health_issues"]["count"]
+        1
     """
     if not LIFE_EVENTS_AVAILABLE:
-        raise ImportError("life_events module not available")
+        raise ImportError(
+            "life_events module not available. Install metainformant with life_events support."
+        )
+    
+    if sequence is None:
+        raise ValidationError("sequence cannot be None")
+    
+    logger.debug(f"Mapping events to traits for person {sequence.person_id}")
     
     if trait_mapping is None:
         # Default mapping
@@ -221,6 +335,8 @@ def map_events_to_traits(
     
     trait_events = {}
     for trait, event_types in trait_mapping.items():
+        if not isinstance(event_types, list):
+            raise ValidationError(f"trait_mapping[{trait}] must be a list, got {type(event_types).__name__}")
         matching = [
             e for e in sequence.events
             if e.event_type in event_types
@@ -229,10 +345,11 @@ def map_events_to_traits(
             "count": len(matching),
             "events": [e.event_type for e in matching],
             "timestamps": [
-                e.timestamp.isoformat() if isinstance(e.timestamp, datetime) else e.timestamp
+                e.timestamp.isoformat() if isinstance(e.timestamp, datetime) else str(e.timestamp)
                 for e in matching
             ]
         }
     
+    logger.info(f"Mapped events to {len(trait_events)} trait categories")
     return trait_events
 

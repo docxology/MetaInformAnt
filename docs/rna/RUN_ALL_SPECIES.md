@@ -49,13 +49,35 @@ Before running workflows, ensure you have:
 
 ## Quick Start
 
-### Method 1: All Species with Configurable Threads (Recommended)
+### Method 1: Parallel Execution (Recommended - Fastest)
 
-**For end-to-end workflows (metadata → sanity) on all species:**
+**For end-to-end workflows (metadata → sanity) on all species simultaneously:**
 
 ```bash
 # Ensure virtual environment is set up (see Prerequisites above)
 
+# Run all species in parallel with configurable threads
+export AK_THREADS=24  # Threads per species
+python3 scripts/rna/run_all_species_parallel.py --threads-per-species 24
+
+# Or use environment variable only:
+export AK_THREADS=24
+python3 scripts/rna/run_all_species_parallel.py
+```
+
+**What it does:**
+- ✅ Auto-discovers all `config/amalgkit/amalgkit_*.yaml` files
+- ✅ Runs full end-to-end workflow for all species **simultaneously** (one process per species)
+- ✅ Each species uses configurable threads (default: 1, or from `AK_THREADS`)
+- ✅ Total threads: species_count × threads_per_species (e.g., 24 × 24 = 576)
+- ✅ Auto-activates virtual environment
+- ✅ Progress tracking and dashboard updates automatically
+
+### Method 2: Sequential Execution (Conservative)
+
+**For end-to-end workflows (metadata → sanity) on all species one at a time:**
+
+```bash
 # Run all species with threads from config files (default: 10 per species)
 python3 scripts/rna/run_multi_species.py
 
@@ -72,7 +94,7 @@ python3 scripts/rna/run_multi_species.py
 - ✅ Auto-activates virtual environment
 - ✅ Cross-species analysis (CSTMM, CSCA) after all species complete
 
-### Method 2: Loop Over All Configs (ENA Workflow)
+### Method 3: Loop Over All Configs (ENA Workflow)
 
 **For maximum reliability with ENA downloads:**
 
@@ -205,19 +227,21 @@ done
 
 ## Comparison
 
-| Method | Script | Threads Config | End-to-End | All Species | Reliability |
-|--------|--------|----------------|------------|-------------|-------------|
-| **Method 1** | `run_multi_species.py` | Config file or `AK_THREADS` | ✅ Yes | ✅ Auto | ~0% (SRA) |
-| **Method 2** | `workflow_ena_integrated.py` (loop) | `--threads` argument | ✅ Yes | ⚠️ Manual loop | 100% (ENA) |
+| Method | Script | Threads Config | End-to-End | All Species | Execution | Reliability |
+|--------|--------|----------------|------------|-------------|-----------|-------------|
+| **Method 1** | `run_all_species_parallel.py` | `--threads-per-species` or `AK_THREADS` | ✅ Yes | ✅ Auto | Parallel (all simultaneously) | 100% (ENA) |
+| **Method 2** | `run_multi_species.py` | Config file or `AK_THREADS` | ✅ Yes | ✅ Auto | Sequential (one at a time) | ~0% (SRA) |
+| **Method 3** | `workflow_ena_integrated.py` (loop) | `--threads` argument | ✅ Yes | ⚠️ Manual loop | Parallel or Sequential | 100% (ENA) |
 
 ## Recommended Approach
 
 **For production (all species, configurable threads):**
 
-1. **If you need reliability**: Use Method 2 (ENA workflow) with a loop
-2. **If you need simplicity**: Use Method 1 (`run_multi_species.py`) with `AK_THREADS=12`
+1. **For maximum speed**: Use Method 1 (`run_all_species_parallel.py`) - runs all species simultaneously
+2. **For reliability**: Use Method 3 (ENA workflow loop) - uses direct ENA downloads
+3. **For simplicity**: Use Method 2 (`run_multi_species.py`) - sequential, easier to monitor
 
-**Example:**
+**Example (Recommended):**
 ```bash
 # 1. Setup (one-time, if not already done)
 uv venv .venv  # or /tmp/metainformant_venv on ext6 filesystems
@@ -225,12 +249,17 @@ source .venv/bin/activate  # or /tmp/metainformant_venv/bin/activate
 uv pip install -e .
 uv pip install git+https://github.com/kfuku52/amalgkit
 
-# 2. Run all species with configurable threads
+# 2. Ensure /tmp has space (if needed)
+bash scripts/rna/fix_tmp_space.sh
+
+# 3. Run all species with configurable threads
 # Note: Scripts automatically discover venv location (.venv or /tmp/metainformant_venv)
-export AK_THREADS=12
-python3 scripts/rna/run_all_species_parallel.py  # Recommended: parallel execution
+export AK_THREADS=24
+python3 scripts/rna/run_all_species_parallel.py --threads-per-species 24  # Recommended: parallel execution
 # Or: python3 scripts/rna/run_multi_species.py  # Sequential execution
 ```
+
+**See [RESTART_WORKFLOW.md](RESTART_WORKFLOW.md) for complete restart instructions.**
 
 ## Monitoring
 

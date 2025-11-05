@@ -272,12 +272,70 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
         }
         manifest_records.append(genome_rec)
         return_codes.append(genome_rec["return_code"])  # record genome step code
-        # Inject quant param if index/genome-dir not present
-        quant_params = dict(config.per_step.get("quant", {}))
-        if "index" not in quant_params and "genome-dir" not in quant_params and "genome_dir" not in quant_params:
-            genome_dir = dl_rec.get("extracted_dir") or str(dest_dir)
-            quant_params["genome_dir"] = genome_dir
+        
+        # Prepare transcriptome for kallisto if download was successful
+        if genome_rec["return_code"] == 0:
+            from .genome_prep import prepare_genome_for_quantification
+            
+            species_name = config.species_list[0] if config.species_list else "unknown"
+            genome_dir_path = Path(dl_rec.get("extracted_dir") or str(dest_dir))
+            
+            # Check if build_index is enabled in quant config
+            quant_params = dict(config.per_step.get("quant", {}))
+            build_index = quant_params.get("build_index", False)
+            if isinstance(build_index, str):
+                build_index = build_index.lower() in {"yes", "true", "1"}
+            
+            prep_start_ts = datetime.utcnow()
+            prep_result = prepare_genome_for_quantification(
+                genome_dir_path,
+                species_name,
+                config.work_dir,
+                accession=acc,
+                build_index=build_index,
+                kmer_size=31,
+            )
+            prep_end_ts = datetime.utcnow()
+            
+            prep_rec = {
+                "step": "transcriptome-prepare",
+                "return_code": 0 if prep_result["success"] else 1,
+                "stdout_bytes": 0,
+                "stderr_bytes": 0,
+                "started_utc": prep_start_ts.isoformat() + "Z",
+                "finished_utc": prep_end_ts.isoformat() + "Z",
+                "duration_seconds": max(0.0, (prep_end_ts - prep_start_ts).total_seconds()),
+                "work_dir": str(config.work_dir),
+                "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                "params": {
+                    "species_name": species_name,
+                    "genome_dir": str(genome_dir_path),
+                    "build_index": build_index,
+                },
+                "fasta_path": prep_result.get("fasta_path"),
+                "index_path": prep_result.get("index_path"),
+                "error": prep_result.get("error"),
+            }
+            manifest_records.append(prep_rec)
+            return_codes.append(prep_rec["return_code"])
+            
+            # Update quant params with fasta_dir and index_dir if available
+            if prep_result.get("fasta_path"):
+                quant_params["fasta_dir"] = str(Path(prep_result["fasta_path"]).parent)
+                logger.info(f"Set fasta_dir for quant: {quant_params['fasta_dir']}")
+            
+            if prep_result.get("index_path"):
+                quant_params["index_dir"] = str(Path(prep_result["index_path"]).parent)
+                logger.info(f"Set index_dir for quant: {quant_params['index_dir']}")
+            
             config.per_step["quant"] = quant_params
+        else:
+            # Still inject quant param if index/genome-dir not present (fallback)
+            quant_params = dict(config.per_step.get("quant", {}))
+            if "index" not in quant_params and "genome-dir" not in quant_params and "genome_dir" not in quant_params:
+                genome_dir = dl_rec.get("extracted_dir") or str(dest_dir)
+                quant_params["genome_dir"] = genome_dir
+                config.per_step["quant"] = quant_params
 
     # 2) Ensure amalgkit is available; optionally auto-install
     install_record: dict[str, Any] | None = None

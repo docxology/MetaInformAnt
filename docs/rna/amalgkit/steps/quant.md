@@ -104,6 +104,34 @@ mkdir -p output/amalgkit/work/fasta
 --build_index yes --fasta_dir output/amalgkit/work/fasta
 ```
 
+**Option 3: Automated Genome Setup (Recommended)**
+
+METAINFORMANT provides automated scripts to download genomes, prepare transcriptomes, and build kallisto indexes:
+
+```bash
+# Complete setup for all species
+python3 scripts/rna/orchestrate_genome_setup.py
+
+# Or step-by-step:
+python3 scripts/rna/verify_genomes_and_indexes.py        # Check status
+python3 scripts/rna/download_missing_genomes.py          # Download genomes
+python3 scripts/rna/prepare_transcriptomes.py            # Prepare FASTA
+python3 scripts/rna/build_kallisto_indexes.py           # Build indexes
+```
+
+These scripts automatically:
+- Download genome packages from NCBI (best-effort: CLI → API → FTP)
+- Extract RNA FASTA files from downloaded genomes
+- Prepare transcriptome FASTA files in the correct location
+- Build kallisto indexes with proper naming
+
+**See Also:**
+- **[genome_preparation.md](../genome_preparation.md)**: Technical documentation for automatic index building
+- **[genome_setup_guide.md](../genome_setup_guide.md)**: Complete step-by-step guide for genome setup
+- **[commands.md](../commands.md)**: Command reference for all genome setup scripts
+
+The workflow execution in `metainformant.rna.workflow` automatically integrates genome preparation when `build_index: yes` is set in the quant configuration. See [genome_preparation.md](../genome_preparation.md) for details on automatic workflow integration.
+
 ### System Dependencies
 
 | Tool | Purpose | Installation |

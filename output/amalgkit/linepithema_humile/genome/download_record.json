@@ -1,5 +1,5 @@
 {
-  "error": "HTTP Error 429: Too Many Requests",
+  "error": "File is not a zip file",
   "ftp_error": "HTTP Error 404: Not Found",
   "ftp_method": "ftp",
   "ftp_return_code": 1,

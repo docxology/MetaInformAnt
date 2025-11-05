@@ -20,18 +20,30 @@ The ontology domain provides tools for functional annotation using biological on
 
 ## Usage Examples
 
-The ontology domain supports functional annotation:
+The ontology domain supports ontology parsing, traversal, and analysis:
 
 ```python
-from metainformant.ontology import go
+from metainformant.ontology import (
+    load_go_obo, ancestors, descendants,
+    common_ancestors, distance, filter_by_namespace
+)
 
-# Gene Ontology enrichment analysis
-gene_list = ["GENE1", "GENE2", "GENE3"]
-enriched = go.enrich_genes(gene_list, background_genes)
+# Load Gene Ontology
+onto = load_go_obo("go-basic.obo")
 
-# Semantic similarity calculation
-similarity = go.semantic_similarity("GO:0008150", "GO:0009987")
+# Traverse hierarchy
+ancestors_set = ancestors(onto, "GO:0008150")
+descendants_set = descendants(onto, "GO:0008150")
+
+# Find relationships
+common = common_ancestors(onto, "GO:0009987", "GO:0008150")
+dist = distance(onto, "GO:0009987", "GO:0008150")
+
+# Filter by namespace
+bp_onto = filter_by_namespace(onto, "biological_process")
 ```
+
+**Note**: Enrichment analysis and semantic similarity functions are planned but not yet implemented.
 
 ## Integration
 
@@ -43,11 +55,11 @@ Ontology tools integrate with:
 
 ## Testing
 
-Comprehensive tests ensure annotation reliability:
+Comprehensive tests ensure reliability:
 - Ontology parsing and validation
-- Enrichment analysis correctness
-- Semantic similarity validation
-- Integration with external databases
+- Hierarchy traversal correctness
+- Error handling and edge cases
+- Serialization integrity
 
 ## Contributing
 

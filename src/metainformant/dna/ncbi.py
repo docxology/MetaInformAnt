@@ -98,7 +98,7 @@ import time
 from pathlib import Path
 from urllib.parse import urlencode
 from urllib.request import urlopen
-from zipfile import ZipFile
+from zipfile import ZipFile, BadZipFile
 
 from ..core.io import dump_json, ensure_directory
 
@@ -113,10 +113,26 @@ def datasets_cli_available() -> bool:
 
 
 def _extract_zip(zip_path: Path, out_dir: Path) -> Path:
+    """Extract a zip file to a directory.
+    
+    Args:
+        zip_path: Path to zip file
+        out_dir: Directory to extract to
+        
+    Returns:
+        Path to extracted directory
+        
+    Raises:
+        BadZipFile: If file is not a valid zip
+        Exception: For other extraction errors
+    """
     extract_to = out_dir / (zip_path.stem + "_extracted")
     ensure_directory(extract_to)
-    with ZipFile(zip_path, "r") as zf:
-        zf.extractall(extract_to)
+    try:
+        with ZipFile(zip_path, "r") as zf:
+            zf.extractall(extract_to)
+    except BadZipFile as e:
+        raise BadZipFile(f"File is not a valid zip archive: {e}") from e
     return extract_to
 
 
@@ -165,11 +181,28 @@ def download_genome_via_datasets_cli(
             heartbeat.write_text(str(time.time()))
     zip_path = out_dir / "ncbi_dataset.zip"
     extracted_dir: Path | None = None
+    error_msg = None
+    
     if zip_path.exists():
-        extracted_dir = _extract_zip(zip_path, out_dir)
+        # Verify it's a valid zip before extracting
+        try:
+            with open(zip_path, "rb") as f:
+                magic = f.read(4)
+                if magic[:2] != b"PK":
+                    error_msg = "Downloaded file is not a valid zip archive"
+                else:
+                    try:
+                        extracted_dir = _extract_zip(zip_path, out_dir)
+                    except BadZipFile as e:
+                        error_msg = f"Zip file is corrupted: {e}"
+                    except Exception as e:
+                        error_msg = f"Failed to extract zip: {e}"
+        except Exception as e:
+            error_msg = f"Failed to verify zip file: {e}"
+    
     return {
         "method": "datasets-cli",
-        "return_code": rc,
+        "return_code": rc if not error_msg else 1,
         "stdout": "",
         "stderr": "",
         "zip_path": str(zip_path) if zip_path.exists() else "",
@@ -178,6 +211,7 @@ def download_genome_via_datasets_cli(
         "stdout_log": str(stdout_log),
         "stderr_log": str(stderr_log),
         "heartbeat": str(heartbeat),
+        "error": error_msg,
     }
 
 
@@ -230,32 +264,121 @@ def download_genome_via_api(
         progress_txt.write_text(f"{data['bytes']}/{data['total']} bytes ({data['percent']}%)\n", encoding="utf-8")
         heartbeat.write_text(str(time.time()))
 
-    with urlopen(url, timeout=60) as resp:
-        total = resp.length if hasattr(resp, "length") else None
-        done = 0
-        with open(zip_path, "wb") as fh:
-            while True:
-                chunk = resp.read(chunk_size)
-                if not chunk:
-                    break
-                fh.write(chunk)
-                done += len(chunk)
-                write_progress(done, total)
-    # One final write to mark completion
-    write_progress(done, total)
-    extracted_dir = _extract_zip(zip_path, out_dir)
-    return {
-        "method": "datasets-api",
-        "return_code": 0,
-        "stdout": "",
-        "stderr": "",
-        "zip_path": str(zip_path),
-        "extracted_dir": str(extracted_dir),
-        "url": url,
-        "progress_json": str(progress_json),
-        "progress_txt": str(progress_txt),
-        "heartbeat": str(heartbeat),
-    }
+    try:
+        with urlopen(url, timeout=60) as resp:
+            # Check content type
+            content_type = resp.headers.get("Content-Type", "")
+            if "json" in content_type.lower():
+                # API returned JSON (likely an error)
+                error_text = resp.read().decode("utf-8")
+                try:
+                    error_data = json.loads(error_text)
+                    error_msg = error_data.get("message", error_data.get("error", "API error"))
+                except Exception:
+                    error_msg = error_text[:200]
+                return {
+                    "method": "datasets-api",
+                    "return_code": 1,
+                    "error": error_msg,
+                    "url": url,
+                    "zip_path": "",
+                    "extracted_dir": "",
+                }
+            
+            total = resp.length if hasattr(resp, "length") else None
+            done = 0
+            with open(zip_path, "wb") as fh:
+                while True:
+                    chunk = resp.read(chunk_size)
+                    if not chunk:
+                        break
+                    fh.write(chunk)
+                    done += len(chunk)
+                    write_progress(done, total)
+        
+        # One final write to mark completion
+        write_progress(done, total)
+        
+        # Verify file is actually a zip file before extracting
+        if not zip_path.exists() or zip_path.stat().st_size == 0:
+            return {
+                "method": "datasets-api",
+                "return_code": 1,
+                "error": "Downloaded file is empty or missing",
+                "url": url,
+                "zip_path": str(zip_path),
+                "extracted_dir": "",
+            }
+        
+        # Check if file is a valid zip by trying to read magic bytes
+        try:
+            with open(zip_path, "rb") as f:
+                magic = f.read(4)
+                if magic[:2] != b"PK":  # ZIP files start with PK
+                    # Check if it's an error page (HTML/JSON)
+                    f.seek(0)
+                    first_bytes = f.read(200).decode("utf-8", errors="ignore")
+                    if "<html" in first_bytes.lower() or first_bytes.strip().startswith("{"):
+                        return {
+                            "method": "datasets-api",
+                            "return_code": 1,
+                            "error": f"Downloaded file is not a zip archive (appears to be HTML/JSON): {first_bytes[:100]}",
+                            "url": url,
+                            "zip_path": str(zip_path),
+                            "extracted_dir": "",
+                        }
+                    return {
+                        "method": "datasets-api",
+                        "return_code": 1,
+                        "error": "Downloaded file is not a valid zip archive",
+                        "url": url,
+                        "zip_path": str(zip_path),
+                        "extracted_dir": "",
+                    }
+        except Exception as e:
+            return {
+                "method": "datasets-api",
+                "return_code": 1,
+                "error": f"Failed to verify zip file: {e}",
+                "url": url,
+                "zip_path": str(zip_path),
+                "extracted_dir": "",
+            }
+        
+        # Extract zip file
+        try:
+            extracted_dir = _extract_zip(zip_path, out_dir)
+        except Exception as e:
+            return {
+                "method": "datasets-api",
+                "return_code": 1,
+                "error": f"Failed to extract zip file: {e}",
+                "url": url,
+                "zip_path": str(zip_path),
+                "extracted_dir": "",
+            }
+        
+        return {
+            "method": "datasets-api",
+            "return_code": 0,
+            "stdout": "",
+            "stderr": "",
+            "zip_path": str(zip_path),
+            "extracted_dir": str(extracted_dir),
+            "url": url,
+            "progress_json": str(progress_json),
+            "progress_txt": str(progress_txt),
+            "heartbeat": str(heartbeat),
+        }
+    except Exception as exc:
+        return {
+            "method": "datasets-api",
+            "return_code": 1,
+            "error": str(exc),
+            "url": url,
+            "zip_path": str(zip_path) if zip_path.exists() else "",
+            "extracted_dir": "",
+        }
 
 
 def download_genome_via_ftp(

@@ -372,6 +372,15 @@ def fay_wu_h(
         >>> fay_wu_h(num_segregating_sites=10, pairwise_diversity=5.0, sample_size=10)
         -2.5...
         
+    Note:
+        This implementation uses a simplified calculation: H = π - θ_S.
+        The full Fay & Wu's H statistic requires counting high-frequency
+        derived alleles, which needs ancestral state information. When
+        ancestral_state and sequences are provided, they are currently
+        not used. For accurate H calculations with derived allele frequencies,
+        use specialized population genetics software that implements the
+        full algorithm with ancestral state reconstruction.
+        
     References:
         Fay, J. C., & Wu, C. I. (2000). Hitchhiking under positive Darwinian selection.
         Genetics, 155(3), 1405-1413.
@@ -394,6 +403,7 @@ def fay_wu_h(
     # H = π - θ_H, where θ_H is based on high-frequency derived alleles
     # For simplicity, we use π - θ_S as approximation
     # Full implementation would require ancestral state to count derived alleles
+    # Note: ancestral_state and sequences parameters are currently unused
     h = pi - theta_s
     
     return h
@@ -659,42 +669,12 @@ def expected_segregating_sites(
         >>> expected_segregating_sites(sample_size=10, theta=0.001, sequence_length=1000)
         2.82...
         
-    Note:
-        The parameter order is (sample_size, theta). Support for reversed order
-        (theta, sample_size) is deprecated and will be removed in a future version.
-        Use keyword arguments for clarity: expected_segregating_sites(sample_size=10, theta=0.01)
-        
     References:
         Watterson, G. A. (1975). On the number of segregating sites in genetical
         models without recombination. Theoretical Population Biology, 7(2), 256-276.
     """
-    import warnings
-    
-    # Support both call orders: (n, theta) and (theta, n) for backward compatibility.
-    # Detect if inputs are reversed (first arg looks like theta < 2, second like integer n >= 2).
-    n_raw = sample_size
-    th_raw = theta
-    try:
-        n_as_float = float(n_raw)
-        th_as_float = float(th_raw)
-    except Exception:
-        n_as_float = float("nan")
-        th_as_float = float("nan")
-
-    if (n_as_float < 2.0) and (th_as_float >= 2.0) and (abs(th_as_float - round(th_as_float)) < 1e-9):
-        # Likely called as (theta, n) - DEPRECATED
-        warnings.warn(
-            "expected_segregating_sites(theta, n) parameter order is deprecated. "
-            "Use expected_segregating_sites(sample_size=n, theta=theta) instead. "
-            "This will be removed in a future version.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        n = int(round(th_as_float))
-        th = max(0.0, float(n_as_float))
-    else:
-        n = int(round(n_as_float))
-        th = max(0.0, float(th_as_float))
+    n = int(sample_size)
+    th = max(0.0, float(theta))
     
     if n < 2 or th <= 0:
         return 0.0

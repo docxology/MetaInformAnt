@@ -31,6 +31,7 @@ Usage:
 # ============================================================================
 
 import argparse
+import os
 import subprocess
 import sys
 import time
@@ -43,6 +44,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from metainformant.core.io import read_delimited, write_delimited
 from metainformant.core.logging import get_logger
+from metainformant.rna.progress_tracker import get_tracker
 
 logger = get_logger(__name__)
 
@@ -104,7 +106,8 @@ def sample_already_quantified(run_id: str, quant_dir: Path) -> bool:
 
 
 def download_batch_ena(run_ids: list[str], metadata_path: Path, fastq_dir: Path, 
-                       threads: int, batch_num: int) -> tuple[list[str], list[str]]:
+                       threads: int, batch_num: int, species: str | None = None,
+                       tracker=None) -> tuple[list[str], list[str]]:
     """Download a batch of samples using the robust ENA downloader.
     
     Args:
@@ -123,51 +126,86 @@ def download_batch_ena(run_ids: list[str], metadata_path: Path, fastq_dir: Path,
         - Removes temporary batch metadata file
         
     Dependencies:
-        - download_ena_robust.py script in same directory
-        - wget command available
+        - amalgkit getfastq (via metainformant.rna.steps.getfastq)
+        - wget command available (for ENA downloads)
     """
     logger.info(f"  📥 Downloading batch {batch_num} ({len(run_ids)} samples)...")
     
-    # Create batch metadata
+    # Report download starts to tracker
+    if tracker and species:
+        for run_id in run_ids:
+            tracker.on_download_start(species, run_id)
+    
+    # Get temp directory for batch metadata
+    from metainformant.core.disk import get_recommended_temp_dir
+    repo_root = Path(__file__).parent.parent.parent.resolve()
+    temp_dir = get_recommended_temp_dir(repo_root)
+    
+    # Create batch metadata in temp directory
     rows = list(read_delimited(metadata_path, delimiter='\t'))
     batch_rows = [row for row in rows if row.get('run') in run_ids]
-    batch_metadata = metadata_path.parent / f"metadata_batch{batch_num}.tsv"
+    batch_metadata = temp_dir / f"metadata_batch_{species}_{batch_num}.tsv"
     write_delimited(batch_rows, batch_metadata, delimiter='\t')
+    logger.debug(f"    Created batch metadata: {batch_metadata}")
     
-    # Use the robust ENA downloader
-    script_dir = Path(__file__).parent
-    downloader = script_dir / "download_ena_robust.py"
+    # Use amalgkit getfastq with ENA acceleration
+    from metainformant.rna.steps.getfastq import run as run_getfastq
     
-    cmd = [
-        sys.executable,
-        str(downloader),
-        '--metadata', str(batch_metadata),
-        '--out-dir', str(fastq_dir),
-        '--threads', str(threads),
-        '--max-retries', '3',
-    ]
+    getfastq_params = {
+        "metadata": str(batch_metadata),
+        "out_dir": str(fastq_dir),
+        "threads": threads,
+        "accelerate": True,  # Enable ENA/AWS/GCP acceleration
+        "aws": "yes",
+        "gcp": "yes",
+        "ncbi": "yes",
+    }
     
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=7200)  # 2 hour timeout per batch
+        result = run_getfastq(
+            getfastq_params,
+            work_dir=None,
+            log_dir=fastq_dir.parent / "logs",
+            check=False,
+        )
         
-        # Parse which samples succeeded
+        # Parse which samples succeeded - check both possible locations
         successful = []
         failed = []
         
         for run_id in run_ids:
+            # Check both possible locations: fastq_dir/{run_id} and fastq_dir/getfastq/{run_id}
             sample_dir = fastq_dir / run_id
-            fastq_files = list(sample_dir.glob("*.fastq.gz")) if sample_dir.exists() else []
-            if fastq_files and all(f.stat().st_size > 1000000 for f in fastq_files):
-                successful.append(run_id)
+            if not sample_dir.exists():
+                sample_dir = fastq_dir / "getfastq" / run_id
+            
+            if sample_dir.exists():
+                fastq_files = list(sample_dir.glob("*.fastq.gz")) + list(sample_dir.glob("*.fastq"))
+                if fastq_files and all(f.stat().st_size > 1000000 for f in fastq_files):
+                    successful.append(run_id)
+                else:
+                    failed.append(run_id)
             else:
                 failed.append(run_id)
         
         logger.info(f"  ✅ Downloaded: {len(successful)}/{len(run_ids)} samples")
         if failed:
-            logger.warning(f"  ⚠️  Failed: {', '.join(failed[:5])}{' ...' if len(failed) > 5 else ''}")
+            logger.warning(f"  ⚠️  Failed downloads: {len(failed)}/{len(run_ids)}")
+            logger.debug(f"    Failed IDs: {', '.join(failed[:10])}{'...' if len(failed) > 10 else ''}")
+        
+        # Report to progress tracker
+        if tracker and species:
+            for run_id in successful:
+                tracker.on_download_complete(species, run_id)
+            for run_id in failed:
+                tracker.on_download_failed(species, run_id)
         
         # Clean up batch metadata
-        batch_metadata.unlink(missing_ok=True)
+        try:
+            batch_metadata.unlink(missing_ok=True)
+            logger.debug(f"    Cleaned up batch metadata: {batch_metadata}")
+        except Exception as e:
+            logger.debug(f"    Note: Could not remove batch metadata: {e}")
         
         return successful, failed
         
@@ -182,7 +220,8 @@ def download_batch_ena(run_ids: list[str], metadata_path: Path, fastq_dir: Path,
 
 
 def quantify_batch_kallisto(run_ids: list[str], fastq_dir: Path, quant_dir: Path,
-                            index_path: Path, threads: int, batch_num: int) -> tuple[list[str], list[str]]:
+                            index_path: Path, threads: int, batch_num: int,
+                            species: str | None = None, tracker=None) -> tuple[list[str], list[str]]:
     """Quantify samples using kallisto.
     
     Args:
@@ -263,10 +302,20 @@ def quantify_batch_kallisto(run_ids: list[str], fastq_dir: Path, quant_dir: Path
             failed.append(run_id)
     
     logger.info(f"  ✅ Quantified: {len(successful)}/{len(run_ids)} samples")
+    if failed:
+        logger.warning(f"  ⚠️  Failed quantifications: {len(failed)}/{len(run_ids)}")
+        logger.debug(f"    Failed IDs: {', '.join(failed[:10])}{'...' if len(failed) > 10 else ''}")
+    
+    # Report to progress tracker
+    if tracker and species:
+        for run_id in successful:
+            tracker.on_quant_complete(species, run_id)
+    
     return successful, failed
 
 
-def cleanup_fastqs(run_ids: list[str], fastq_dir: Path) -> int:
+def cleanup_fastqs(run_ids: list[str], fastq_dir: Path, species: str | None = None,
+                   tracker=None) -> int:
     """Delete FASTQ files for samples.
     
     Args:
@@ -292,6 +341,10 @@ def cleanup_fastqs(run_ids: list[str], fastq_dir: Path) -> int:
             try:
                 shutil.rmtree(sample_dir)
                 deleted += 1
+                
+                # Report to progress tracker
+                if tracker and species:
+                    tracker.on_delete_complete(species, run_id)
             except Exception as e:
                 logger.warning(f"    Failed to delete {sample_dir}: {e}")
     
@@ -317,12 +370,46 @@ def main():
         0: Success (all samples processed)
         1: Failure (some samples failed)
     """
-    parser = argparse.ArgumentParser(description="Integrated ENA download + quantification workflow")
+    parser = argparse.ArgumentParser(
+        description="Integrated ENA download + quantification workflow",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Batch Size Recommendations:
+  Small drives (< 500GB): 8-12 samples
+  Medium drives (500GB-1TB): 20-30 samples
+  Large drives (1TB+): 50-100 samples
+
+Batch size is auto-detected based on available disk space if not specified.
+        """
+    )
     parser.add_argument('--config', required=True, help="Amalgkit config YAML")
-    parser.add_argument('--batch-size', type=int, default=12, help="Samples per batch (default: 12)")
+    parser.add_argument(
+        '--batch-size', 
+        type=int, 
+        default=None,
+        help="Samples per batch (default: auto-detect based on drive size, 50 for large drives)"
+    )
+    parser.add_argument(
+        '--max-batch-size',
+        type=int,
+        default=100,
+        help="Maximum batch size limit (default: 100)"
+    )
     parser.add_argument('--threads', type=int, default=12, help="Threads for download/quant (default: 12)")
     parser.add_argument('--max-samples', type=int, help="Limit total samples (for testing)")
     parser.add_argument('--skip-download', action='store_true', help="Skip download, only quantify existing")
+    parser.add_argument(
+        '--min-free-gb',
+        type=float,
+        default=None,
+        help="Minimum free disk space in GB (default: auto-detect based on drive size)"
+    )
+    parser.add_argument(
+        '--max-batch-disk-gb',
+        type=float,
+        default=None,
+        help="Maximum disk space per batch in GB (default: auto-calculate from batch size)"
+    )
     
     args = parser.parse_args()
     
@@ -338,6 +425,71 @@ def main():
     fastq_dir = Path(config['steps']['getfastq']['out_dir'])
     quant_dir = Path(config['steps']['quant']['out_dir'])
     
+    # Determine batch size (auto-detect if not specified)
+    repo_root = Path(__file__).parent.parent.parent.resolve()
+    output_dir = repo_root / "output" / "amalgkit"
+    
+    # Get temp directory for batch metadata and logging
+    from metainformant.core.disk import get_recommended_temp_dir
+    temp_dir = get_recommended_temp_dir(repo_root)
+    
+    if args.batch_size is None:
+        # Check environment variable first
+        env_batch = os.environ.get("AK_BATCH_SIZE")
+        if env_batch:
+            batch_size = int(env_batch)
+            logger.info(f"Using batch size from AK_BATCH_SIZE: {batch_size}")
+        else:
+            from metainformant.core.disk import get_recommended_batch_size
+            recommended_batch = get_recommended_batch_size(output_dir)
+            batch_size = min(recommended_batch, args.max_batch_size)
+            logger.info(f"Auto-detected batch size: {batch_size} (recommended: {recommended_batch}, max: {args.max_batch_size})")
+    else:
+        batch_size = min(args.batch_size, args.max_batch_size)
+        logger.info(f"Using specified batch size: {batch_size} (max limit: {args.max_batch_size})")
+    
+    # Determine disk space thresholds
+    from metainformant.core.disk import detect_drive_size_category, check_disk_space
+    
+    drive_category = detect_drive_size_category(output_dir)
+    logger.info(f"Drive category: {drive_category}")
+    
+    if args.min_free_gb is None:
+        # Auto-detect based on drive size
+        if drive_category == "large":
+            min_free_gb = 50.0
+        elif drive_category == "medium":
+            min_free_gb = 20.0
+        else:
+            min_free_gb = 10.0
+        logger.info(f"Auto-detected min_free_gb: {min_free_gb} (based on {drive_category} drive)")
+    else:
+        min_free_gb = args.min_free_gb
+        logger.info(f"Using specified min_free_gb: {min_free_gb}")
+    
+    # Check disk space before starting
+    is_sufficient, disk_msg = check_disk_space(output_dir, min_free_gb=min_free_gb)
+    logger.info(f"Disk space check: {disk_msg}")
+    if not is_sufficient:
+        logger.warning(f"⚠️  {disk_msg}")
+        logger.warning("Continuing anyway, but workflow may fail if disk space runs out")
+    
+    # Calculate expected disk usage per batch
+    sample_size_gb = 1.5  # Average estimate
+    expected_batch_gb = batch_size * sample_size_gb
+    if args.max_batch_disk_gb:
+        if expected_batch_gb > args.max_batch_disk_gb:
+            logger.warning(
+                f"⚠️  Batch size {batch_size} would use ~{expected_batch_gb:.1f}GB, "
+                f"exceeding limit of {args.max_batch_disk_gb}GB"
+            )
+            # Auto-adjust batch size
+            adjusted_batch = int(args.max_batch_disk_gb / sample_size_gb)
+            logger.info(f"Auto-adjusting batch size to {adjusted_batch} to stay within limit")
+            batch_size = adjusted_batch
+    
+    logger.info(f"Batch configuration: {batch_size} samples (~{expected_batch_gb:.1f}GB per batch)")
+    
     # Ensure directories exist
     work_dir.mkdir(parents=True, exist_ok=True)
     fastq_dir.mkdir(parents=True, exist_ok=True)
@@ -348,6 +500,12 @@ def main():
     if not metadata_path.exists():
         logger.error(f"Metadata not found: {metadata_path}")
         sys.exit(1)
+    
+    # Extract species name from config path
+    species_name = config_path.stem.replace("amalgkit_", "")
+    
+    # Initialize progress tracker
+    tracker = get_tracker()
     
     # Get sample list
     all_run_ids = get_sample_list(metadata_path)
@@ -363,6 +521,20 @@ def main():
             already_done.append(run_id)
         else:
             to_process.append(run_id)
+    
+    # Initialize species in tracker
+    tracker.initialize_species(species_name, len(all_run_ids), all_run_ids)
+    
+    # Mark already-completed samples in tracker
+    for run_id in already_done:
+        # Check if FASTQs are still present (needs_delete) or already deleted (completed)
+        sample_dir = fastq_dir / run_id
+        if sample_dir.exists() and any(sample_dir.glob("*.fastq.gz")):
+            tracker.on_quant_complete(species_name, run_id)  # Mark as needs_delete
+        else:
+            # Already quantified and deleted - mark as completed
+            tracker.on_quant_complete(species_name, run_id)
+            tracker.on_delete_complete(species_name, run_id)
     
     # Find kallisto index
     genome_dir = Path(config['genome']['dest_dir']) / "ncbi_dataset_api_extracted"
@@ -391,7 +563,7 @@ def main():
         sys.exit(0)
     
     # Process in batches
-    batches = [to_process[i:i + args.batch_size] for i in range(0, len(to_process), args.batch_size)]
+    batches = [to_process[i:i + batch_size] for i in range(0, len(to_process), batch_size)]
     
     stats = {
         'downloaded': 0,
@@ -406,40 +578,83 @@ def main():
         logger.info("")
         logger.info("=" * 80)
         logger.info(f"📦 BATCH {batch_num}/{len(batches)}: {len(batch_run_ids)} samples")
+        logger.info(f"   Progress: {len(already_done) + (batch_num - 1) * batch_size}/{len(all_run_ids)} "
+                   f"({(len(already_done) + (batch_num - 1) * batch_size) / len(all_run_ids) * 100:.1f}%)")
         logger.info("=" * 80)
         
         # Step 1: Download
         if not args.skip_download:
+            logger.info(f"  📥 Downloading batch {batch_num} ({len(batch_run_ids)} samples)...")
+            download_start = time.time()
+            
+            # Report download starts to tracker
+            if tracker:
+                for run_id in batch_run_ids:
+                    tracker.on_download_start(species_name, run_id)
+            
             downloaded, dl_failed = download_batch_ena(
-                batch_run_ids, metadata_path, fastq_dir, args.threads, batch_num
+                batch_run_ids, metadata_path, fastq_dir, args.threads, batch_num,
+                species=species_name, tracker=tracker
             )
+            download_time = time.time() - download_start
             stats['downloaded'] += len(downloaded)
             stats['failed'] += len(dl_failed)
+            
+            logger.info(f"  ✅ Download complete: {len(downloaded)}/{len(batch_run_ids)} samples in {download_time:.1f}s")
+            if dl_failed:
+                logger.warning(f"  ⚠️  Failed downloads: {len(dl_failed)}")
         else:
             downloaded = batch_run_ids
+            logger.info(f"  ⏭️  Skipping download (--skip-download)")
         
         # Step 2: Quantify
         if downloaded:
+            logger.info(f"  🔬 Quantifying batch {batch_num} ({len(downloaded)} samples)...")
+            quant_start = time.time()
+            
             quantified, q_failed = quantify_batch_kallisto(
-                downloaded, fastq_dir, quant_dir, index_path, args.threads, batch_num
+                downloaded, fastq_dir, quant_dir, index_path, args.threads, batch_num,
+                species=species_name, tracker=tracker
             )
+            quant_time = time.time() - quant_start
             stats['quantified'] += len(quantified)
             if q_failed:
                 stats['failed'] += len(q_failed)
             
+            logger.info(f"  ✅ Quantification complete: {len(quantified)}/{len(downloaded)} samples in {quant_time:.1f}s")
+            if q_failed:
+                logger.warning(f"  ⚠️  Failed quantifications: {len(q_failed)}")
+            
             # Step 3: Cleanup
             logger.info(f"  🗑️  Cleaning up FASTQs...")
-            cleaned = cleanup_fastqs(quantified, fastq_dir)
+            cleanup_start = time.time()
+            cleaned = cleanup_fastqs(quantified, fastq_dir, species=species_name, tracker=tracker)
+            cleanup_time = time.time() - cleanup_start
             stats['cleaned_fastqs'] += cleaned
-            logger.info(f"  ✅ Deleted {cleaned} FASTQ directories")
+            logger.info(f"  ✅ Deleted {cleaned} FASTQ directories in {cleanup_time:.1f}s")
+            
+            # Batch summary
+            batch_time = download_time + quant_time + cleanup_time if not args.skip_download else quant_time + cleanup_time
+            logger.info(f"  📊 Batch {batch_num} summary: {len(downloaded)} downloaded, "
+                      f"{len(quantified)} quantified, {cleaned} cleaned in {batch_time:.1f}s")
         
         # Progress
         total_done = len(already_done) + stats['quantified']
-        percent = (total_done * 100) // len(all_run_ids)
-        logger.info(f"  📊 Progress: {total_done}/{len(all_run_ids)} ({percent}%)")
+        percent = (total_done / len(all_run_ids) * 100) if len(all_run_ids) > 0 else 0.0
+        remaining = len(all_run_ids) - total_done
+        remaining_batches = len(batches) - batch_num
+        
+        logger.info(f"  📊 Overall progress: {total_done}/{len(all_run_ids)} ({percent:.1f}%)")
+        if remaining_batches > 0:
+            logger.info(f"     Remaining: {remaining} samples in {remaining_batches} batches")
     
     # Final summary
     elapsed = time.time() - start_time
+    
+    # Update dashboard one final time
+    if tracker:
+        tracker.update_dashboard()
+    
     logger.info("")
     logger.info("=" * 80)
     logger.info("🎉 WORKFLOW COMPLETE")
