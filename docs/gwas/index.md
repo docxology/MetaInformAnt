@@ -19,7 +19,7 @@ The GWAS module provides end-to-end functionality for genome-wide association st
 from metainformant.gwas import load_gwas_config, execute_gwas_workflow
 
 # Load configuration
-config = load_gwas_config("config/gwas_config.yaml")
+config = load_gwas_config("config/gwas/gwas_template.yaml")
 
 # Execute workflow
 results = execute_gwas_workflow(config)
@@ -29,10 +29,10 @@ results = execute_gwas_workflow(config)
 
 ```bash
 # Run GWAS from configuration file
-python -m metainformant gwas run --config config/gwas_config.yaml
+python -m metainformant gwas run --config config/gwas/gwas_template.yaml
 
 # Validate configuration
-python -m metainformant gwas run --config config/gwas_config.yaml --check
+python -m metainformant gwas run --config config/gwas/gwas_template.yaml --check
 ```
 
 ## Workflow Steps

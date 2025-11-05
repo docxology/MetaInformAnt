@@ -17,7 +17,12 @@ from metainformant.networks import (
     create_network,
     network_metrics,
     centrality_measures,
-    shortest_paths
+    shortest_paths,
+    export_network,
+    import_network,
+    network_similarity,
+    filter_network,
+    extract_subgraph
 )
 
 # Create network
@@ -33,6 +38,20 @@ print(f"Density: {metrics['density']:.3f}")
 # Centrality analysis
 centralities = centrality_measures(network)
 print(f"Hub nodes: {sorted(centralities['degree'].items(), key=lambda x: x[1], reverse=True)[:3]}")
+
+# Export and import networks
+export_network(network, "network.json", format="json")
+loaded_network = import_network("network.json", format="json")
+
+# Network comparison
+network2 = create_network(["A", "B", "C"])
+network2.add_edge("A", "B", weight=0.9)
+similarity = network_similarity(network, network2)
+print(f"Edge Jaccard similarity: {similarity['edge_jaccard']:.3f}")
+
+# Filter and extract subgraphs
+filtered = filter_network(network, min_edge_weight=0.7, min_degree=1)
+subgraph = extract_subgraph(network, ["A", "B", "C"])
 ```
 
 ### Protein-Protein Interaction Networks (`ppi.py`)
@@ -43,6 +62,9 @@ Analysis of protein-protein interaction networks.
 - Network topology analysis and hub identification
 - Interaction prediction from feature data
 - Functional enrichment analysis
+- Protein complex detection
+- Protein similarity calculation
+- Network-based partner identification
 
 **Usage:**
 ```python
@@ -67,6 +89,18 @@ network = ppi_network.create_network(min_confidence=0.7)
 stats = ppi_network.network_statistics()
 print(f"Hub proteins: {stats['hub_proteins']}")
 
+# Get protein partners
+partners = ppi_network.get_protein_partners("P12345", min_confidence=0.7)
+print(f"Partners of P12345: {partners}")
+
+# Calculate protein similarity
+similarity = protein_similarity(ppi_network, "P12345", "P67890")
+print(f"Jaccard similarity: {similarity['jaccard_similarity']:.3f}")
+
+# Detect protein complexes
+complexes = detect_complexes(ppi_network, min_confidence=0.7, min_size=3)
+print(f"Found {len(complexes)} complexes")
+
 # Predict interactions from features
 features = np.random.randn(100, 50)  # 100 proteins, 50 features
 protein_ids = [f"P{i:05d}" for i in range(100)]
@@ -75,6 +109,9 @@ predicted_ppi = predict_interactions(
     method="correlation",
     threshold=0.8
 )
+
+# Export to STRING format
+export_to_string_format(ppi_network, "output.tsv", score_threshold=400)
 ```
 
 ### Regulatory Networks (`regulatory.py`)
@@ -85,6 +122,8 @@ Gene regulatory network inference and analysis.
 - Regulatory motif detection (feed-forward loops, feedback loops, bifans)
 - Master regulator identification
 - Pathway regulation analysis
+- Regulatory cascade detection
+- Regulation validation and evidence
 
 **Usage:**
 ```python
@@ -114,6 +153,16 @@ print(f"Master regulators: {stats['master_regulators']}")
 # Detect regulatory motifs
 motifs = regulatory_motifs(grn, motif_types=["feed_forward_loop", "feedback_loop"])
 print(f"Feed-forward loops: {len(motifs['feed_forward_loop'])}")
+
+# Detect regulatory cascades
+cascades = detect_regulatory_cascades(grn, max_length=5, min_confidence=0.6)
+print(f"Found {len(cascades)} regulatory cascades")
+
+# Validate specific regulation
+validation = validate_regulation(grn, "TF1", "GENE1", min_confidence=0.5)
+if validation["exists"]:
+    print(f"Confidence: {validation['confidence']:.3f}")
+    print(f"Network support: {validation['network_support']}")
 ```
 
 ### Pathway Analysis (`pathway.py`)
@@ -122,8 +171,10 @@ Biological pathway enrichment and analysis.
 **Key Features:**
 - Pathway database loading (GMT, CSV, TSV formats)
 - Pathway overlap analysis
-- Gene set enrichment analysis
+- Gene set enrichment analysis (with hypergeometric test)
 - Network-based pathway enrichment
+- Pathway similarity calculation
+- Pathway activity scoring
 
 **Usage:**
 ```python
@@ -147,7 +198,18 @@ query_genes = ["GENE1", "GENE2", "GENE3"]
 enrichment = pathway_enrichment(query_genes, pn)
 
 for result in enrichment[:5]:  # Top 5 enriched pathways
-    print(f"{result['pathway_id']}: fold_enrichment={result['fold_enrichment']:.2f}")
+    print(f"{result['pathway_id']}: fold_enrichment={result['fold_enrichment']:.2f}, p={result['p_value']:.4f}")
+
+# Calculate pathway similarity
+path1_genes = pn.get_pathway_genes("path:00010")
+path2_genes = pn.get_pathway_genes("path:00020")
+similarity = pathway_similarity(path1_genes, path2_genes, method="jaccard")
+print(f"Pathway similarity: {similarity:.3f}")
+
+# Calculate pathway activity from expression
+expression_data = {"GENE1": 10.5, "GENE2": 8.2, "GENE3": 12.1, "GENE4": 9.8}
+activity = pathway_activity_score(pn, "path:00010", expression_data, method="mean")
+print(f"Pathway activity: {activity:.2f}")
 
 # Load from file
 pathway_db = load_pathway_database("kegg_pathways.gmt", format="gmt")
@@ -157,9 +219,13 @@ pathway_db = load_pathway_database("kegg_pathways.gmt", format="gmt")
 Network community/module detection algorithms.
 
 **Key Features:**
-- Multiple algorithms (Louvain, Leiden, Greedy)
-- Modularity calculation
+- Multiple algorithms (Louvain, Leiden, Greedy) with improved implementations
+- Modularity calculation with optimized delta-Q formula
 - Community metrics and analysis
+- Hierarchical community detection
+- Community stability assessment
+- Resolution parameter optimization
+- Community comparison utilities
 
 **Usage:**
 ```python
@@ -185,6 +251,25 @@ print(f"Modularity: {mod:.3f}")
 metrics = community_metrics(network, communities)
 print(f"Number of communities: {metrics['num_communities']}")
 print(f"Average community size: {metrics['avg_community_size']:.1f}")
+
+# Hierarchical community detection
+hierarchies = hierarchical_communities(network, levels=3, resolution=1.0)
+print(f"Level 0 (finest): {len(set(hierarchies[0].values()))} communities")
+print(f"Level 2 (coarsest): {len(set(hierarchies[2].values()))} communities")
+
+# Community stability assessment
+stability = community_stability(network, method="louvain", n_runs=10)
+print(f"Stability score: {stability['stability_score']:.3f}")
+print(f"Average modularity: {stability['avg_modularity']:.3f}")
+
+# Optimize resolution parameter
+optimization = optimize_resolution(network, resolution_range=(0.5, 2.0), n_points=20)
+print(f"Optimal resolution: {optimization['optimal_resolution']:.2f}")
+
+# Compare community partitions
+communities2 = detect_communities(network, method="leiden", resolution=1.5)
+comparison = compare_communities(communities, communities2)
+print(f"Normalized mutual information: {comparison['normalized_mutual_information']:.3f}")
 ```
 
 ## Integration with Other Modules
@@ -285,9 +370,63 @@ Comprehensive tests cover:
 - Performance with large networks
 - Integration with external databases
 
+## Advanced Features
+
+### Network Export/Import
+- Export networks to JSON, CSV, and GraphML formats
+- Import networks from various file formats
+- Preserve node attributes and edge weights
+
+### Network Comparison
+- Calculate Jaccard similarity between networks
+- Compare edge structures and weights
+- Network union and intersection operations
+
+### Filtering and Subgraph Extraction
+- Filter by node degree, edge weight, or component size
+- Extract subgraphs containing specific nodes
+- Remove nodes/edges with validation
+
+### Performance Optimizations
+- Optimized modularity gain calculation (delta-Q formula)
+- Improved Leiden algorithm with proper refinement
+- Efficient shortest path algorithms
+- Community detection with incremental updates
+
+## Troubleshooting
+
+### Common Issues
+
+**Import errors for mutual information:**
+- Ensure either `information` or `ml.features` module is available
+- The module will try both automatically and provide clear error messages
+
+**Community detection gives different results:**
+- Community detection algorithms are stochastic (use `seed` parameter for reproducibility)
+- Use `community_stability()` to assess robustness
+- Try different resolution parameters with `optimize_resolution()`
+
+**Large network performance:**
+- Use `filter_network()` to reduce network size before analysis
+- Consider using `extract_subgraph()` for focused analysis
+- Export/import can help with memory management
+
+**Enrichment p-values are approximate:**
+- Install scipy for proper hypergeometric test
+- Module falls back to approximation if scipy unavailable
+
 ## Dependencies
 
-- NetworkX for graph algorithms
-- Optional: igraph for high-performance graph operations
+- numpy: Core numerical operations
+- pandas: Data manipulation (for STRING/CSV loading)
+- scipy: Hypergeometric test for enrichment (optional but recommended)
+- NetworkX: Optional, for advanced graph operations (not required)
+
+## Performance Considerations
+
+- **Large networks**: Use filtering and subgraph extraction to focus analysis
+- **Community detection**: Louvain is fastest, Leiden is most accurate
+- **Resolution optimization**: Use fewer points (n_points=10) for faster optimization
+- **Stability assessment**: Reduce n_runs for faster assessment on large networks
 
 This module provides comprehensive tools for biological network analysis and interpretation.

@@ -126,3 +126,4 @@ def test_plot_outlier_detection():
     
     assert fig is not None
 
+

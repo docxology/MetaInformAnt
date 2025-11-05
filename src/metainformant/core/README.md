@@ -250,7 +250,7 @@ rna_cfg = config.load_config("config/rna_config.yaml")
 rna_results = workflow.execute_workflow(rna_cfg)
 
 # Load configuration for GWAS workflow
-gwas_cfg = config.load_config("config/gwas_config.yaml")
+gwas_cfg = config.load_config("config/gwas/gwas_template.yaml")
 gwas_results = gwas_workflow.run_gwas_workflow(gwas_cfg)
 
 # Environment variable overrides
@@ -443,7 +443,83 @@ io.write_json(omics_data.to_dict(), results_path)
 logger.info("Workflow completed", extra={"output": results_path})
 ```
 
-### Config-Based Processing (`__init__.py`)
+### Error Handling (`errors.py`)
+Custom exception hierarchy and error recovery utilities.
+
+**Key Features:**
+- Custom exception classes (ConfigError, IOError, ValidationError, etc.)
+- Retry decorator with exponential backoff
+- Error context managers for automatic cleanup
+- Safe execution utilities
+
+**Usage:**
+```python
+from metainformant.core import errors
+
+# Retry with exponential backoff
+@errors.retry_with_backoff(max_attempts=5, initial_delay=2.0)
+def download_file(url):
+    return requests.get(url)
+
+# Error context
+with errors.error_context("Failed to process file"):
+    process_file(path)
+
+# Safe execution
+result = errors.safe_execute(risky_function, default="fallback")
+```
+
+### Progress Tracking (`progress.py`)
+Progress bars and task tracking for long-running operations.
+
+**Key Features:**
+- tqdm integration (optional dependency)
+- Multi-step task tracking
+- Logging integration
+
+**Usage:**
+```python
+from metainformant.core import progress
+
+# Progress bar
+for item in progress.progress_bar(items, desc="Processing"):
+    process(item)
+
+# Task tracking
+with progress.task_context("Processing data", total_steps=10) as task:
+    for i in range(10):
+        process_step(i)
+        task.update(1)
+```
+
+### Validation Utilities (`validation.py`)
+Runtime validation for configuration and data.
+
+**Key Features:**
+- Type validators
+- Range validators
+- Path validators
+- Schema validation
+
+**Usage:**
+```python
+from metainformant.core import validation
+
+# Type validation
+validation.validate_type(value, int, "age")
+
+# Range validation
+validation.validate_range(0.5, min_val=0.0, max_val=1.0, name="probability")
+
+# Path validation
+file_path = validation.validate_path_is_file("data/file.txt", "input_file")
+
+# Schema validation
+schema = {"name": str, "age": int}
+validation.validate_schema(data, schema)
+```
+
+### Config-Based Processing (`workflow.py`)
 High-level utilities for configuration-driven data processing workflows.
 
 **Key Features:**
@@ -454,7 +530,7 @@ High-level utilities for configuration-driven data processing workflows.
 
 **Usage:**
 ```python
-from metainformant.core import download_and_process_data, validate_config_file, create_sample_config
+from metainformant.core.workflow import download_and_process_data, validate_config_file, create_sample_config
 
 # Process data based on configuration
 results = download_and_process_data(config_dict)

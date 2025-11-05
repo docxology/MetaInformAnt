@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Dict, Mapping
+from typing import Any, Callable, Mapping
 
 # Lightweight, optional YAML/TOML support without hard deps
 try:  # pragma: no cover - optional dependency
@@ -66,7 +66,7 @@ def load_postgres_config_from_env(prefix: str = "PG") -> PostgresConfig | None:
     return PostgresConfig(host=host, port=port, database=database, user=user, password=password)
 
 
-def load_config_file(config_path: Path) -> Dict[str, Any]:
+def load_config_file(config_path: Path) -> dict[str, Any]:
     """Load configuration from YAML, TOML, or JSON file.
 
     Args:
@@ -117,13 +117,13 @@ def _coerce_bool(s: str) -> bool:
     return s.strip().lower() in {"1", "true", "yes", "y", "on"}
 
 
-def load_typed_env(*, prefix: str, keys: Mapping[str, type]) -> Dict[str, Any]:
+def load_typed_env(*, prefix: str, keys: Mapping[str, type]) -> dict[str, Any]:
     """Load a mapping of env vars with types.
 
     Example:
         load_typed_env(prefix="APP", keys={"PORT": int, "DEBUG": bool})
     """
-    out: Dict[str, Any] = {}
+    out: dict[str, Any] = {}
     for key, typ in keys.items():
         env_key = f"{prefix}_{key}"
         val = os.getenv(env_key)
@@ -156,7 +156,7 @@ def _read_text(path: Path) -> str:
         return fh.read()
 
 
-def load_mapping_from_file(config_path: str | Path) -> Dict[str, Any]:
+def load_mapping_from_file(config_path: str | Path) -> dict[str, Any]:
     """Load a structured mapping from YAML, TOML or JSON file.
 
     - Supports .yaml/.yml (if PyYAML available), .toml (if tomllib available), and .json via stdlib
@@ -193,7 +193,64 @@ def load_mapping_from_file(config_path: str | Path) -> Dict[str, Any]:
     raise ValueError(f"Unsupported config format: {suffix}")
 
 
-def apply_env_overrides(config: Mapping[str, Any], *, prefix: str = "AK") -> Dict[str, Any]:
+def merge_configs(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
+    """Deep merge two configuration dictionaries.
+    
+    Args:
+        base: Base configuration
+        override: Configuration to override with
+        
+    Returns:
+        Merged configuration (override takes precedence)
+    
+    Example:
+        base = {"a": 1, "b": {"c": 2}}
+        override = {"b": {"d": 3}}
+        merged = merge_configs(base, override)
+        # Result: {"a": 1, "b": {"c": 2, "d": 3}}
+    """
+    result = dict(base)
+    for key, value in override.items():
+        if key in result and isinstance(result[key], dict) and isinstance(value, dict):
+            result[key] = merge_configs(result[key], value)
+        else:
+            result[key] = value
+    return result
+
+
+def coerce_config_types(config: dict[str, Any], type_map: dict[str, type]) -> dict[str, Any]:
+    """Coerce configuration values to specified types.
+    
+    Args:
+        config: Configuration dictionary
+        type_map: Mapping of keys to expected types
+        
+    Returns:
+        Configuration with coerced types
+        
+    Raises:
+        ValueError: If type coercion fails
+    """
+    result = dict(config)
+    for key, expected_type in type_map.items():
+        if key in result:
+            value = result[key]
+            if value is not None and not isinstance(value, expected_type):
+                try:
+                    if expected_type == bool:
+                        result[key] = str(value).lower() in {"1", "true", "yes", "y", "on"}
+                    elif expected_type == int:
+                        result[key] = int(value)
+                    elif expected_type == float:
+                        result[key] = float(value)
+                    elif expected_type == str:
+                        result[key] = str(value)
+                except (ValueError, TypeError) as e:
+                    raise ValueError(f"Cannot coerce {key}={value!r} to {expected_type.__name__}: {e}") from e
+    return result
+
+
+def apply_env_overrides(config: Mapping[str, Any], *, prefix: str = "AK") -> dict[str, Any]:
     """Apply simple environment overrides to a shallow config mapping.
 
     Supported keys via env:
@@ -201,7 +258,7 @@ def apply_env_overrides(config: Mapping[str, Any], *, prefix: str = "AK") -> Dic
     - {prefix}_WORK_DIR -> str
     - {prefix}_LOG_DIR -> str
     """
-    out: Dict[str, Any] = dict(config)
+    out: dict[str, Any] = dict(config)
 
     threads = os.getenv(f"{prefix}_THREADS")
     if threads is not None:
@@ -223,7 +280,7 @@ def apply_env_overrides(config: Mapping[str, Any], *, prefix: str = "AK") -> Dic
     return out
 
 
-def _parse_simple_yaml_mapping(text: str) -> Dict[str, Any]:
+def _parse_simple_yaml_mapping(text: str) -> dict[str, Any]:
     """Parse a minimal subset of YAML used in tests/configs when PyYAML is unavailable.
 
     Supported constructs:
@@ -237,7 +294,7 @@ def _parse_simple_yaml_mapping(text: str) -> Dict[str, Any]:
               - item2
     This is not a general YAML parser.
     """
-    result: Dict[str, Any] = {}
+    result: dict[str, Any] = {}
     lines = [ln.rstrip("\n") for ln in text.splitlines()]
     i = 0
 
@@ -271,7 +328,7 @@ def _parse_simple_yaml_mapping(text: str) -> Dict[str, Any]:
         except ValueError:
             return s
 
-    def parse_inline_dict(s: str) -> Dict[str, Any]:
+    def parse_inline_dict(s: str) -> dict[str, Any]:
         """Parse inline dictionary string like '{a: 1, b: 2}'.
         
         Args:
@@ -283,7 +340,7 @@ def _parse_simple_yaml_mapping(text: str) -> Dict[str, Any]:
         inner = s.strip()[1:-1].strip()
         if not inner:
             return {}
-        items: Dict[str, Any] = {}
+        items: dict[str, Any] = {}
         parts = [p.strip() for p in inner.split(",") if p.strip()]
         for part in parts:
             if ":" not in part:
@@ -316,7 +373,7 @@ def _parse_simple_yaml_mapping(text: str) -> Dict[str, Any]:
             break
         return items, j
 
-    def collect_child_mapping(start_index: int, parent_indent: int, depth: int = 1) -> tuple[Dict[str, Any], int]:
+    def collect_child_mapping(start_index: int, parent_indent: int, depth: int = 1) -> tuple[dict[str, Any], int]:
         """Collect nested YAML mapping (key-value pairs) with proper indentation.
         
         Args:
@@ -327,7 +384,7 @@ def _parse_simple_yaml_mapping(text: str) -> Dict[str, Any]:
         Returns:
             Tuple of (child mapping dict, next line index after mapping)
         """
-        children: Dict[str, Any] = {}
+        children: dict[str, Any] = {}
         j = start_index
         while j < len(lines):
             nxt = lines[j]

@@ -12,7 +12,10 @@ import random
 from collections.abc import Sequence
 from typing import Any
 
+from ..core import logging, validation
 from ..simulation.sequences import _DNA, generate_random_dna, mutate_sequence
+
+logger = logging.get_logger(__name__)
 
 
 def generate_population_sequences(
@@ -58,6 +61,20 @@ def generate_population_sequences(
         >>> len(seqs[0])
         1000
     """
+    # Validate parameters
+    validation.validate_type(n_sequences, int, "n_sequences")
+    validation.validate_type(sequence_length, int, "sequence_length")
+    validation.validate_range(n_sequences, min_val=1, name="n_sequences")
+    validation.validate_range(sequence_length, min_val=1, name="sequence_length")
+    if nucleotide_diversity is not None:
+        validation.validate_range(nucleotide_diversity, min_val=0.0, name="nucleotide_diversity")
+    if wattersons_theta is not None:
+        validation.validate_range(wattersons_theta, min_val=0.0, name="wattersons_theta")
+    validation.validate_range(mutation_rate, min_val=0.0, name="mutation_rate")
+    validation.validate_range(gc_content, min_val=0.0, max_val=1.0, name="gc_content")
+    
+    logger.info(f"Generating population: {n_sequences} sequences of length {sequence_length}")
+    
     r = rng or random
     
     # Generate or use reference sequence
@@ -67,7 +84,7 @@ def generate_population_sequences(
         )
     else:
         if len(reference_sequence) != sequence_length:
-            raise ValueError(
+            raise validation.ValidationError(
                 f"Reference sequence length {len(reference_sequence)} != "
                 f"sequence_length {sequence_length}"
             )
@@ -153,6 +170,9 @@ def generate_two_populations(
     
     Returns:
         Tuple of (pop1_sequences, pop2_sequences)
+        
+    Raises:
+        ValidationError: If parameters are invalid
     
     Examples:
         >>> pop1, pop2 = generate_two_populations(
@@ -164,6 +184,19 @@ def generate_two_populations(
         >>> len(pop1), len(pop2)
         (10, 10)
     """
+    # Validate parameters
+    validation.validate_type(n_pop1, int, "n_pop1")
+    validation.validate_type(n_pop2, int, "n_pop2")
+    validation.validate_type(sequence_length, int, "sequence_length")
+    validation.validate_range(n_pop1, min_val=1, name="n_pop1")
+    validation.validate_range(n_pop2, min_val=1, name="n_pop2")
+    validation.validate_range(sequence_length, min_val=1, name="sequence_length")
+    validation.validate_range(fst, min_val=0.0, max_val=1.0, name="fst")
+    validation.validate_range(within_pop_diversity, min_val=0.0, name="within_pop_diversity")
+    validation.validate_range(gc_content, min_val=0.0, max_val=1.0, name="gc_content")
+    
+    logger.info(f"Generating two populations: pop1={n_pop1}, pop2={n_pop2}, fst={fst}")
+    
     r = rng or random
     
     # Generate ancestral sequence

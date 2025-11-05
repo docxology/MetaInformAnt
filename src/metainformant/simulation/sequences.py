@@ -3,6 +3,10 @@ from __future__ import annotations
 import random
 from typing import Iterable
 
+from ..core import logging, validation
+
+logger = logging.get_logger(__name__)
+
 _DNA = "ACGT"
 _AA = "ACDEFGHIKLMNPQRSTVWY"
 
@@ -19,13 +23,13 @@ def generate_random_dna(length: int, *, gc_content: float = 0.5, rng: random.Ran
         Random DNA sequence string
 
     Raises:
-        ValueError: If gc_content is not in [0, 1] or length is negative
+        ValidationError: If gc_content is not in [0, 1] or length is negative
     """
-    if not (0.0 <= gc_content <= 1.0):
-        raise ValueError(f"GC content must be between 0.0 and 1.0, got {gc_content}")
-
-    if length < 0:
-        raise ValueError(f"Length must be non-negative, got {length}")
+    validation.validate_type(length, int, "length")
+    validation.validate_range(length, min_val=0, name="length")
+    validation.validate_range(gc_content, min_val=0.0, max_val=1.0, name="gc_content")
+    
+    logger.debug(f"Generating DNA sequence: length={length}, gc_content={gc_content}")
 
     if length == 0:
         return ""
@@ -60,10 +64,19 @@ def mutate_sequence(seq: str, n_mut: int, *, rng: random.Random | None = None) -
         
     Returns:
         Mutated sequence with random substitutions
+        
+    Raises:
+        ValidationError: If parameters are invalid
     """
+    validation.validate_type(seq, str, "seq")
+    validation.validate_type(n_mut, int, "n_mut")
+    validation.validate_range(n_mut, min_val=0, name="n_mut")
+    
     r = rng or random
     if not seq or n_mut <= 0:
         return seq
+    
+    logger.debug(f"Mutating sequence: length={len(seq)}, n_mutations={n_mut}")
     seq_list = list(seq)
 
     # Handle numpy random state vs standard random for sampling positions
@@ -97,7 +110,14 @@ def generate_random_protein(length: int, *, rng: random.Random | None = None) ->
         
     Returns:
         Random protein sequence using standard 20 amino acids
+        
+    Raises:
+        ValidationError: If length is negative
     """
+    validation.validate_type(length, int, "length")
+    validation.validate_range(length, min_val=0, name="length")
+    
+    logger.debug(f"Generating protein sequence: length={length}")
     r = rng or random
     # Handle numpy random state vs standard random
     if hasattr(r, "choice") and hasattr(r, "seed"):  # numpy RandomState

@@ -16,6 +16,9 @@ from .select import run as run_select
 from .sequential_process import run_sequential_download_quant
 from .parallel_download import run_parallel_download_sequential_quant
 from .batched_process import run_batched_download_quant
+from .getfastq import convert_sra_to_fastq, delete_sample_fastqs
+from .quant import quantify_sample
+from .sample_pipeline import process_sample_pipeline
 
 # Expose a uniform runner function per amalgkit step. Each module keeps
 # any future step-specific logic isolated from the main orchestrator.
@@ -51,4 +54,9 @@ __all__ = [
     "run_sequential_download_quant",
     "run_parallel_download_sequential_quant",
     "run_batched_download_quant",
+    # Sample processing functions
+    "convert_sra_to_fastq",
+    "delete_sample_fastqs",
+    "quantify_sample",
+    "process_sample_pipeline",
 ]

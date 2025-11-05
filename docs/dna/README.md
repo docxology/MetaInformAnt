@@ -51,8 +51,12 @@ from metainformant.dna import sequences, alignment, phylogeny
 
 # Load and analyze DNA sequences
 seqs = sequences.read_fasta("genomes.fasta")
-aln = alignment.global_pairwise(seqs.values())
-tree = phylogeny.neighbor_joining_tree(aln)
+# Pairwise alignment example
+seq_list = list(seqs.values())
+if len(seq_list) >= 2:
+    aln = alignment.global_align(seq_list[0], seq_list[1])
+# Build phylogenetic tree from sequences
+tree = phylogeny.neighbor_joining_tree(seqs)
 
 # Population genetic analysis
 from metainformant.dna import population

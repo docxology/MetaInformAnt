@@ -280,4 +280,64 @@ for year in range(10):
     # Perform custom analysis on positions
 ```
 
+## Workflow Integration
+
+### End-to-End Simulation Pipelines
+
+The module now includes workflow functions for complete simulation pipelines:
+
+```python
+from metainformant.simulation.workflow import (
+    run_sequence_simulation_workflow,
+    run_agent_simulation_workflow,
+    run_popgen_simulation_workflow,
+)
+
+# Sequence simulation workflow
+results = run_sequence_simulation_workflow(
+    "output/sequences",
+    n_sequences=1000,
+    sequence_length=1000,
+    gc_content=0.5,
+    seed=42
+)
+
+# Agent-based simulation workflow
+results = run_agent_simulation_workflow(
+    "output/agents",
+    width=100,
+    height=100,
+    num_agents=500,
+    num_steps=1000,
+    seed=42
+)
+
+# Population genetics workflow
+results = run_popgen_simulation_workflow(
+    "output/popgen",
+    n_sequences=50,
+    sequence_length=1000,
+    nucleotide_diversity=0.01,
+    seed=42
+)
+```
+
+## Validation and Reproducibility
+
+All simulation functions now include comprehensive parameter validation:
+
+- **Type validation**: Ensures parameters are of correct types
+- **Range validation**: Validates parameter ranges (e.g., Fst in [0,1])
+- **Error handling**: Clear error messages for invalid parameters
+- **Reproducibility**: Seed management for deterministic outputs
+
+## Core Integration
+
+The simulation module now uses core utilities consistently:
+
+- **Logging**: All functions log their operations
+- **Validation**: Parameter validation using core.validation
+- **Error handling**: Custom exceptions from core.errors
+- **Path handling**: Uses core.paths for output directory management
+
 This module provides powerful tools for synthetic data generation and hypothesis testing, enabling researchers to explore biological systems in controlled computational environments.

@@ -58,6 +58,30 @@ python3 scripts/rna/orchestrate_workflows.py --species pbarbatus --steps metadat
 - **Cleanup**: Quantify downloaded samples and cleanup FASTQs in one command
 - **Resume Support**: Restart incomplete downloads intelligently
 
+## Script Consolidation
+
+All scripts in `scripts/rna/` have been consolidated to use thin orchestration patterns that call tested, documented methods in `metainformant.rna`. Core functionality (quantification, deletion, status checking, etc.) is now in the metainformant module, making scripts maintainable and consistent.
+
+**Key Functions in `metainformant.rna`:**
+- `metainformant.rna.steps.quantify_sample()` - Quantify a single sample
+- `metainformant.rna.steps.delete_sample_fastqs()` - Delete FASTQ files for a sample
+- `metainformant.rna.steps.process_sample_pipeline()` - Complete pipeline: SRA→FASTQ→Quant→Delete
+- `metainformant.rna.steps.convert_sra_to_fastq()` - Convert SRA files to FASTQ
+- `metainformant.rna.count_quantified_samples()` - Count quantified samples
+- `metainformant.rna.find_unquantified_samples()` - Find unquantified samples
+- `metainformant.rna.check_workflow_progress()` - Get workflow progress
+- `metainformant.rna.analyze_species_status()` - Comprehensive status analysis
+
+**Obsolete Scripts (Replaced by `unified_status.py`):**
+- `check_status.py` → Use `unified_status.py`
+- `comprehensive_status.py` → Use `unified_status.py --detailed`
+- `detailed_progress.py` → Use `unified_status.py`
+- `full_assessment.py` → Use `unified_status.py --detailed`
+- `get_current_status.py` → Use `unified_status.py`
+- `quick_status.py` → Use `unified_status.py`
+
+These scripts are kept for reference but should not be used. All functionality is available in `unified_status.py` which uses metainformant functions.
+
 ## Available Scripts
 
 ### `workflow_ena_integrated.py` ⭐ **PRODUCTION**
@@ -186,21 +210,27 @@ bash scripts/rna/monitor_amalgkit_progress.sh
 watch -n 60 bash scripts/rna/monitor_amalgkit_progress.sh
 ```
 
-#### `comprehensive_status.py` ⭐
-**Comprehensive status check with recommendations**
+#### `unified_status.py` ⭐ **NEW**
+**Unified status checking script (replaces multiple status scripts)**
 
-Complete workflow status including quantified counts, log activity, and recommendations:
+Replaces: `check_status.py`, `comprehensive_status.py`, `detailed_progress.py`, `full_assessment.py`, `get_current_status.py`, `quick_status.py`
 
 **Usage:**
 ```bash
-python3 scripts/rna/comprehensive_status.py
+# Brief status
+python3 scripts/rna/unified_status.py
+
+# Detailed status with sample categories
+python3 scripts/rna/unified_status.py --detailed
+
+# Filter by species
+python3 scripts/rna/unified_status.py --species cfloridanus --detailed
 ```
 
 **Output:**
 - Per-species progress and quantified counts
-- Downloaded sample counts
-- Log file status and activity indicators
-- Overall summary and recommendations
+- Sample categories (quantified and deleted, downloading, failed, etc.)
+- Overall summary statistics
 
 #### `restart_all_workflows.py` ⭐
 **Restart all workflows in parallel**
@@ -369,19 +399,29 @@ See that file for comprehensive integration tests of the ENA workflow.
 
 ## Disk Space Management
 
-The ENA-based workflow automatically manages disk space through batched processing:
+**Automatic Disk Space Management:**
+
+All workflows and scripts now automatically delete FASTQ/SRA files after quantification to manage disk space. This is handled by `metainformant.rna.steps.delete_sample_fastqs()` which is called automatically by:
+
+- `batch_download_species.py` - Deletes immediately after per-sample quant
+- `process_sample_pipeline()` - Automatically deletes after quant
+- `quant_downloaded_samples.py` - Deletes after quant
+- `quant_and_cleanup.py` - Deletes after quant
+- `orchestrate_workflows.py` - Deletes after quant during cleanup
+- `manual_quant_cleanup.py` - Deletes after quant
 
 **Batched Processing:**
 - Downloads N samples from ENA (parallel, robust)
 - Quantifies all downloaded samples with kallisto
-- Deletes FASTQ files immediately after quantification
+- Deletes FASTQ files immediately after quantification (via metainformant functions)
 - Repeats with next batch
 - Peak usage: ~1.5 GB per sample × batch size
 
 **FASTQ Cleanup:**
-- Automatic cleanup in `workflow_ena_integrated.py`
+- Automatic cleanup via `metainformant.rna.steps.delete_sample_fastqs()`
 - Manual cleanup available via `cleanup_quantified_sra.sh`
 - Quantification files retained permanently (~2 MB per sample)
+- Low disk space warnings indicate the delete pipeline is working correctly
 
 ## Output Structure
 

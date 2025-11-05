@@ -162,6 +162,33 @@ class ProteinNetwork:
 
         return interactions
 
+    def get_protein_partners(self, protein: str, min_confidence: float = 0.0) -> List[str]:
+        """Get all interaction partner proteins for a specific protein.
+        
+        Convenience method that returns just the partner protein IDs
+        (without interaction metadata) for easier iteration.
+        
+        Args:
+            protein: Protein identifier
+            min_confidence: Minimum confidence score (0-1) for including partners.
+                Default 0.0 includes all partners regardless of confidence.
+                
+        Returns:
+            List of partner protein identifiers
+            
+        Examples:
+            >>> ppi = ProteinNetwork()
+            >>> ppi.add_interaction("P1", "P2", confidence=0.9)
+            >>> ppi.add_interaction("P1", "P3", confidence=0.5)
+            >>> partners = ppi.get_protein_partners("P1", min_confidence=0.7)
+            >>> partners
+            ['P2']
+        """
+        partners = []
+        for partner, _ in self.get_interactions(protein, min_confidence=min_confidence):
+            partners.append(partner)
+        return partners
+
     def create_network(
         self, min_confidence: float = 0.4, evidence_filter: Optional[List[str]] = None
     ) -> BiologicalNetwork:
@@ -538,3 +565,168 @@ def functional_enrichment_ppi(
         "enriched_communities": len(enrichment_results),
         "enrichment_results": enrichment_results,
     }
+
+
+def protein_similarity(
+    ppi_network: ProteinNetwork, protein1: str, protein2: str, min_confidence: float = 0.0
+) -> Dict[str, float]:
+    """Calculate similarity between two proteins based on network structure.
+    
+    Computes various similarity measures including Jaccard similarity of
+    interaction partners, common neighbors, and network-based distance.
+    
+    Args:
+        ppi_network: ProteinNetwork object
+        protein1: First protein identifier
+        protein2: Second protein identifier
+        min_confidence: Minimum interaction confidence to consider
+        
+    Returns:
+        Dictionary containing similarity metrics:
+        - jaccard_similarity: Jaccard similarity of interaction partners
+        - common_neighbors: Number of shared interaction partners
+        - total_neighbors: Total unique neighbors
+        - network_distance: Shortest path distance in network (inf if disconnected)
+        
+    Examples:
+        >>> ppi = ProteinNetwork()
+        >>> ppi.add_interaction("P1", "P2")
+        >>> ppi.add_interaction("P1", "P3")
+        >>> ppi.add_interaction("P2", "P3")
+        >>> sim = protein_similarity(ppi, "P1", "P2")
+        >>> sim["common_neighbors"]
+        1  # P3 is common neighbor
+    """
+    partners1 = set(ppi_network.get_protein_partners(protein1, min_confidence=min_confidence))
+    partners2 = set(ppi_network.get_protein_partners(protein2, min_confidence=min_confidence))
+    
+    common_neighbors = partners1.intersection(partners2)
+    total_neighbors = partners1.union(partners2)
+    
+    jaccard = len(common_neighbors) / len(total_neighbors) if total_neighbors else 0.0
+    
+    # Calculate network distance
+    network = ppi_network.create_network(min_confidence=min_confidence)
+    from .graph import shortest_paths
+    
+    distances = shortest_paths(network)
+    network_distance = distances.get(protein1, {}).get(protein2, float("inf"))
+    
+    return {
+        "jaccard_similarity": jaccard,
+        "common_neighbors": len(common_neighbors),
+        "total_neighbors": len(total_neighbors),
+        "network_distance": network_distance,
+    }
+
+
+def detect_complexes(
+    ppi_network: ProteinNetwork, min_confidence: float = 0.7, min_size: int = 3, max_size: int = 50
+) -> List[Dict[str, Any]]:
+    """Detect protein complexes in PPI network.
+    
+    Identifies densely connected subgraphs that likely represent
+    protein complexes. Uses community detection to find complexes.
+    
+    Args:
+        ppi_network: ProteinNetwork object
+        min_confidence: Minimum interaction confidence for network construction
+        min_size: Minimum complex size (default 3)
+        max_size: Maximum complex size (default 50)
+        
+    Returns:
+        List of dictionaries, each containing:
+        - complex_id: Unique identifier for complex
+        - proteins: List of protein IDs in complex
+        - size: Number of proteins
+        - avg_confidence: Average interaction confidence within complex
+        - density: Edge density within complex
+        
+    Examples:
+        >>> ppi = ProteinNetwork()
+        >>> # Add dense interactions
+        >>> complexes = detect_complexes(ppi, min_confidence=0.7)
+        >>> len(complexes) > 0
+        True
+    """
+    # Create high-confidence network
+    network = ppi_network.create_network(min_confidence=min_confidence)
+    
+    # Detect communities
+    from .community import detect_communities
+    
+    communities = detect_communities(network, method="louvain")
+    
+    # Group by community
+    community_proteins = defaultdict(list)
+    for protein, comm_id in communities.items():
+        community_proteins[comm_id].append(protein)
+    
+    # Filter by size and analyze
+    complexes = []
+    for comm_id, proteins in community_proteins.items():
+        if len(proteins) < min_size or len(proteins) > max_size:
+            continue
+        
+        # Calculate average confidence within complex
+        confidences = []
+        for i, p1 in enumerate(proteins):
+            for p2 in proteins[i + 1 :]:
+                interactions = ppi_network.get_interactions(p1, min_confidence=0.0)
+                for partner, data in interactions:
+                    if partner == p2:
+                        confidences.append(data.get("confidence", 0.0))
+        
+        avg_confidence = np.mean(confidences) if confidences else 0.0
+        
+        # Calculate density within complex
+        n = len(proteins)
+        max_possible_edges = n * (n - 1) / 2
+        actual_edges = len(confidences)
+        density = actual_edges / max_possible_edges if max_possible_edges > 0 else 0.0
+        
+        complexes.append(
+            {
+                "complex_id": f"complex_{comm_id}",
+                "proteins": proteins,
+                "size": len(proteins),
+                "avg_confidence": avg_confidence,
+                "density": density,
+            }
+        )
+    
+    # Sort by density (most dense first)
+    complexes.sort(key=lambda x: x["density"], reverse=True)
+    
+    return complexes
+
+
+def export_to_string_format(ppi_network: ProteinNetwork, filepath: str, score_threshold: int = 400) -> None:
+    """Export PPI network to STRING database format.
+    
+    Exports interactions in STRING TSV format compatible with STRING database
+    tools and visualization.
+    
+    Args:
+        ppi_network: ProteinNetwork to export
+        filepath: Output file path
+        score_threshold: Minimum combined score (0-1000) to include.
+            Interactions below threshold are excluded.
+            
+    Examples:
+        >>> ppi = ProteinNetwork()
+        >>> ppi.add_interaction("P1", "P2", confidence=0.8)
+        >>> export_to_string_format(ppi, "output.tsv", score_threshold=400)
+    """
+    import csv
+    
+    with open(filepath, "w", newline="") as f:
+        writer = csv.writer(f, delimiter="\t")
+        writer.writerow(["protein1", "protein2", "combined_score"])
+        
+        for p1, p2, data in ppi_network.interactions:
+            confidence = data.get("confidence", 0.0)
+            combined_score = int(confidence * 1000)  # Convert to 0-1000 scale
+            
+            if combined_score >= score_threshold:
+                writer.writerow([p1, p2, combined_score])

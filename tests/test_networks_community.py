@@ -376,3 +376,64 @@ class TestEdgeCasesAndErrors:
         # Calculate modularity
         Q = modularity(network, communities)
         assert isinstance(Q, float)
+
+
+class TestHierarchicalCommunities:
+    """Test hierarchical community detection."""
+
+    def test_hierarchical_communities(self):
+        """Test hierarchical community detection."""
+        from metainformant.networks.community import hierarchical_communities
+
+        network = create_network(["A", "B", "C", "D", "E", "F"], directed=False)
+        network.add_edge("A", "B")
+        network.add_edge("B", "C")
+        network.add_edge("D", "E")
+        network.add_edge("E", "F")
+
+        hierarchies = hierarchical_communities(network, levels=3, seed=42)
+        assert len(hierarchies) == 3
+        assert 0 in hierarchies
+        assert 2 in hierarchies
+
+    def test_community_stability(self):
+        """Test community stability assessment."""
+        from metainformant.networks.community import community_stability
+
+        network = create_network(["A", "B", "C", "D", "E", "F"], directed=False)
+        network.add_edge("A", "B")
+        network.add_edge("B", "C")
+        network.add_edge("D", "E")
+        network.add_edge("E", "F")
+
+        stability = community_stability(network, n_runs=5, seed=42)
+        assert "stability_score" in stability
+        assert "avg_modularity" in stability
+        assert stability["stability_score"] >= 0.0
+
+    def test_compare_communities(self):
+        """Test community comparison."""
+        from metainformant.networks.community import compare_communities
+
+        comm1 = {"A": 0, "B": 0, "C": 1, "D": 1}
+        comm2 = {"A": 0, "B": 1, "C": 1, "D": 1}
+
+        comparison = compare_communities(comm1, comm2)
+        assert "normalized_mutual_information" in comparison
+        assert "adjusted_rand_index" in comparison
+        assert comparison["normalized_mutual_information"] >= 0.0
+
+    def test_optimize_resolution(self):
+        """Test resolution optimization."""
+        from metainformant.networks.community import optimize_resolution
+
+        network = create_network(["A", "B", "C", "D", "E", "F"], directed=False)
+        network.add_edge("A", "B")
+        network.add_edge("B", "C")
+        network.add_edge("D", "E")
+        network.add_edge("E", "F")
+
+        optimization = optimize_resolution(network, resolution_range=(0.5, 2.0), n_points=5)
+        assert "optimal_resolution" in optimization
+        assert "optimal_modularity" in optimization
+        assert optimization["optimal_resolution"] >= 0.5

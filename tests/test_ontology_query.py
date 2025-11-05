@@ -134,3 +134,4 @@ class TestSubgraph:
         sub = subgraph(onto, [])
         assert len(sub.terms) == 0
 
+

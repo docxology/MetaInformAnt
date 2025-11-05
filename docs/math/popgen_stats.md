@@ -128,3 +128,4 @@ Dictionary mapping statistic names to CI dictionaries.
 - Efron, B., & Tibshirani, R. J. (1994). An introduction to the bootstrap. CRC press.
 - Manly, B. F. (2006). Randomization, bootstrap and Monte Carlo methods in biology. CRC press.
 
+

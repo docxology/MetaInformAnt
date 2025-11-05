@@ -49,145 +49,10 @@ ensure_venv_activated()
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from metainformant.rna.workflow import load_workflow_config
-from metainformant.core.io import read_delimited
+from metainformant.rna import analyze_species_status, check_active_downloads
 from metainformant.core.logging import get_logger
 
 logger = get_logger("analyze_status")
-
-
-def check_active_downloads() -> set:
-    """Check for samples currently being downloaded."""
-    active_samples = set()
-    
-    # Check running amalgkit getfastq processes
-    try:
-        import subprocess
-        result = subprocess.run(
-            ["ps", "aux"],
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
-        import re
-        for line in result.stdout.split("\n"):
-            if "amalgkit getfastq" in line:
-                # Extract all SRR IDs from the line
-                matches = re.findall(r"SRR\d+", line)
-                active_samples.update(matches)
-                
-                # Also check for --id parameter
-                if "--id" in line:
-                    parts = line.split()
-                    for i, part in enumerate(parts):
-                        if part == "--id" and i + 1 < len(parts):
-                            active_samples.add(parts[i + 1])
-    except Exception:
-        pass
-    
-    # Also check for recent fastq directory activity
-    try:
-        repo_root = Path(__file__).parent.parent.parent.resolve()
-        fastq_base = repo_root / "output" / "amalgkit"
-        
-        # Find directories modified in last 10 minutes
-        for species_dir in fastq_base.glob("*/fastq"):
-            if species_dir.exists():
-                # Check for recently modified sample directories
-                for sample_dir in species_dir.glob("getfastq/SRR*"):
-                    if sample_dir.exists():
-                        # Check if directory was modified recently
-                        import time
-                        mtime = sample_dir.stat().st_mtime
-                        if time.time() - mtime < 600:  # 10 minutes
-                            sample_id = sample_dir.name
-                            active_samples.add(sample_id)
-    except Exception:
-        pass
-    
-    return active_samples
-
-
-def analyze_species(species_name: str, config_path: Path, active_downloads: set) -> dict:
-    """Analyze sample status for a single species."""
-    try:
-        cfg = load_workflow_config(config_path)
-    except Exception as e:
-        logger.warning(f"Failed to load config for {species_name}: {e}")
-        return {}
-    
-    fastq_dir = Path(cfg.per_step.get("getfastq", {}).get("out_dir", cfg.work_dir / "fastq"))
-    quant_dir = Path(cfg.per_step.get("quant", {}).get("out_dir", cfg.work_dir / "quant"))
-    
-    # Get metadata
-    metadata_file = cfg.work_dir / "metadata" / "metadata.tsv"
-    if not metadata_file.exists():
-        metadata_file = cfg.work_dir / "metadata" / "metadata.filtered.tissue.tsv"
-    
-    if not metadata_file.exists():
-        return {}
-    
-    try:
-        rows = list(read_delimited(metadata_file, delimiter="\t"))
-        sample_ids = [row.get("run") for row in rows if row.get("run")]
-    except Exception as e:
-        logger.warning(f"Failed to read metadata for {species_name}: {e}")
-        return {}
-    
-    # Categorize samples
-    categories = {
-        "quantified_and_deleted": [],
-        "quantified_not_deleted": [],
-        "downloading": [],
-        "failed_download": [],
-        "undownloaded": [],
-    }
-    
-    for sample_id in sample_ids:
-        if not sample_id:
-            continue
-        
-        # Check if quantified
-        abundance_file = quant_dir / sample_id / "abundance.tsv"
-        is_quantified = abundance_file.exists()
-        
-        # Check for FASTQ/SRA files
-        has_fastq = False
-        has_sra = False
-        
-        # Check getfastq subdirectory
-        sample_dir_getfastq = fastq_dir / "getfastq" / sample_id
-        if sample_dir_getfastq.exists():
-            has_fastq = any(sample_dir_getfastq.glob("*.fastq*"))
-            has_sra = any(sample_dir_getfastq.glob("*.sra"))
-        
-        # Check direct structure
-        sample_dir_direct = fastq_dir / sample_id
-        if sample_dir_direct.exists():
-            has_fastq = has_fastq or any(sample_dir_direct.glob("*.fastq*"))
-            has_sra = has_sra or any(sample_dir_direct.glob("*.sra"))
-        
-        has_files = has_fastq or has_sra
-        
-        # Categorize
-        if sample_id in active_downloads:
-            categories["downloading"].append(sample_id)
-        elif is_quantified and not has_files:
-            categories["quantified_and_deleted"].append(sample_id)
-        elif is_quantified and has_files:
-            categories["quantified_not_deleted"].append(sample_id)
-        elif has_files:
-            # Has files but not quantified - might be failed or in progress
-            # Check if there are error logs or if it's very recent
-            categories["failed_download"].append(sample_id)
-        else:
-            categories["undownloaded"].append(sample_id)
-    
-    return {
-        "species": species_name,
-        "total_in_metadata": len(sample_ids),
-        "categories": categories,
-    }
 
 
 def main():
@@ -232,7 +97,7 @@ def main():
         print("  No active downloads detected")
     print()
     
-    # Analyze each species
+    # Analyze each species using metainformant functions
     all_results = []
     totals = defaultdict(int)
     
@@ -240,8 +105,14 @@ def main():
         if not config_path.exists():
             continue
         
-        result = analyze_species(species_name, config_path, active_downloads)
-        if result:
+        # Use metainformant function
+        status = analyze_species_status(config_path)
+        if status and status.get("total_in_metadata", 0) > 0:
+            result = {
+                "species": species_name,
+                "total_in_metadata": status["total_in_metadata"],
+                "categories": status["categories"],
+            }
             all_results.append(result)
             totals["total_in_metadata"] += result["total_in_metadata"]
             for category, samples in result["categories"].items():

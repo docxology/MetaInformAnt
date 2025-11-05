@@ -298,3 +298,188 @@ def run(
     if check and rc != 0:
         raise subprocess.CalledProcessError(rc, result.args)
     return result
+
+
+def convert_sra_to_fastq(
+    sample_id: str,
+    sra_file: Path,
+    output_dir: Path,
+    *,
+    threads: int = 4,
+    log_dir: Path | None = None,
+) -> tuple[bool, str, list[Path]]:
+    """Convert a local SRA file to FASTQ format.
+    
+    Prefers parallel-fastq-dump (works better with local files) and falls back
+    to fasterq-dump if needed. Automatically compresses output FASTQ files.
+    
+    Args:
+        sample_id: SRA accession ID (e.g., "SRR1234567")
+        sra_file: Path to the SRA file
+        output_dir: Directory where FASTQ files should be written
+        threads: Number of threads for conversion
+        log_dir: Optional directory for log files
+        
+    Returns:
+        Tuple of (success: bool, message: str, fastq_files: list[Path])
+        fastq_files contains paths to created FASTQ files (may be empty if failed)
+    """
+    logger = logging.getLogger(__name__)
+    
+    if not sra_file.exists():
+        return False, f"SRA file not found: {sra_file}", []
+    
+    # Check if FASTQ files already exist
+    fastq_files_existing = list(output_dir.glob(f"{sample_id}_*.fastq.gz"))
+    if not fastq_files_existing:
+        fastq_files_existing = list(output_dir.glob(f"{sample_id}_*.fastq"))
+    if not fastq_files_existing:
+        fastq_files_existing = list(output_dir.glob(f"{sample_id}.fastq.gz"))
+    if not fastq_files_existing:
+        fastq_files_existing = list(output_dir.glob(f"{sample_id}.fastq"))
+    
+    if fastq_files_existing:
+        logger.info(f"FASTQ files already exist for {sample_id}")
+        return True, f"FASTQ files already exist for {sample_id}", fastq_files_existing
+    
+    logger.info(f"Converting SRA to FASTQ for {sample_id} (SRA: {sra_file.name})...")
+    
+    # Try parallel-fastq-dump first (works better with local files)
+    parallel_fastq_dump = shutil.which("parallel-fastq-dump")
+    if parallel_fastq_dump:
+        cmd = [
+            parallel_fastq_dump,
+            "-s", str(sra_file),  # SRA file path
+            "-O", str(output_dir),  # Output directory
+            "--threads", str(threads),
+            "--gzip",  # Compress directly
+        ]
+        
+        log_file = None
+        if log_dir:
+            log_file = log_dir / f"parallel_fastq_dump_{sample_id}.log"
+            log_file.parent.mkdir(parents=True, exist_ok=True)
+        
+        try:
+            with open(log_file, "w") if log_file else open(os.devnull, "w") as f:
+                result = subprocess.run(
+                    cmd,
+                    stdout=f,
+                    stderr=subprocess.STDOUT,
+                    cwd=str(output_dir),
+                    check=False,
+                )
+            
+            # Check for output files
+            fastq_files = list(output_dir.glob(f"{sample_id}_*.fastq.gz"))
+            if not fastq_files:
+                fastq_files = list(output_dir.glob(f"{sample_id}.fastq.gz"))
+            
+            if fastq_files:
+                logger.info(f"Converted SRA to FASTQ for {sample_id} using parallel-fastq-dump ({len(fastq_files)} files)")
+                return True, f"Converted SRA to FASTQ for {sample_id}", fastq_files
+            
+            # If parallel-fastq-dump failed, fall through to fasterq-dump
+            logger.warning(f"parallel-fastq-dump failed (code {result.returncode}), trying fasterq-dump")
+        except Exception as e:
+            logger.warning(f"parallel-fastq-dump error: {e}, trying fasterq-dump")
+    
+    # Fallback to fasterq-dump
+    fasterq_dump = shutil.which("fasterq-dump")
+    if not fasterq_dump:
+        return False, "Neither parallel-fastq-dump nor fasterq-dump found in PATH", []
+    
+    # fasterq-dump needs the accession ID and looks for SRA file in current directory
+    # or we can pass the file path directly (per its usage: fasterq-dump <path>)
+    # We'll run from the directory containing the SRA file
+    sra_dir = sra_file.parent
+    
+    cmd = [
+        fasterq_dump,
+        sample_id,  # Use accession ID
+        "--outdir", str(output_dir),
+        "--threads", str(threads),
+        "--split-files",  # Split paired-end reads
+        "-p",  # Show progress
+    ]
+    
+    log_file = None
+    if log_dir:
+        log_file = log_dir / f"fasterq_dump_{sample_id}.log"
+        log_file.parent.mkdir(parents=True, exist_ok=True)
+    
+    try:
+        with open(log_file, "w") if log_file else open(os.devnull, "w") as f:
+            result = subprocess.run(
+                cmd,
+                stdout=f,
+                stderr=subprocess.STDOUT,
+                cwd=str(sra_dir),  # Run from directory containing SRA file
+                check=False,
+            )
+        
+        # Compress FASTQ files (fasterq-dump doesn't compress automatically)
+        pigz = shutil.which("pigz") or "gzip"
+        for fastq_file in output_dir.glob(f"{sample_id}_*.fastq"):
+            if not fastq_file.name.endswith('.gz'):
+                subprocess.run([pigz, "-f", str(fastq_file)], check=False, capture_output=True)
+        
+        # Also check for single-end FASTQ
+        for fastq_file in output_dir.glob(f"{sample_id}.fastq"):
+            if not fastq_file.name.endswith('.gz'):
+                subprocess.run([pigz, "-f", str(fastq_file)], check=False, capture_output=True)
+        
+        # Check if FASTQ files were created
+        fastq_files = list(output_dir.glob("*.fastq.gz"))
+        if not fastq_files:
+            fastq_files = list(output_dir.glob("*.fastq"))
+        
+        if fastq_files:
+            logger.info(f"Converted SRA to FASTQ for {sample_id} using fasterq-dump ({len(fastq_files)} files)")
+            return True, f"Converted SRA to FASTQ for {sample_id}", fastq_files
+        else:
+            logger.warning(f"SRA conversion failed for {sample_id} (code {result.returncode})")
+            return False, f"SRA conversion failed (code {result.returncode})", []
+    except Exception as e:
+        logger.error(f"Error converting SRA for {sample_id}: {e}", exc_info=True)
+        return False, str(e), []
+
+
+def delete_sample_fastqs(sample_id: str, fastq_dir: Path) -> None:
+    """Delete FASTQ files for a specific sample.
+    
+    Searches for FASTQ files in both getfastq subdirectory and direct structure,
+    and removes them to free disk space.
+    
+    Args:
+        sample_id: SRA accession ID (e.g., "SRR1234567")
+        fastq_dir: Base directory containing FASTQ files
+    """
+    logger = logging.getLogger(__name__)
+    
+    # Check both structures: fastq/getfastq/{sample}/ and fastq/{sample}/
+    sample_dirs = []
+    getfastq_subdir = fastq_dir / "getfastq" / sample_id
+    if getfastq_subdir.exists():
+        sample_dirs.append(getfastq_subdir)
+    direct_dir = fastq_dir / sample_id
+    if direct_dir.exists():
+        sample_dirs.append(direct_dir)
+    
+    # Delete sample directories
+    for sample_dir in sample_dirs:
+        if sample_dir.exists() and sample_dir.is_dir():
+            try:
+                shutil.rmtree(sample_dir)
+                logger.debug(f"Deleted FASTQ directory: {sample_dir}")
+            except Exception as e:
+                logger.warning(f"Failed to delete {sample_dir}: {e}")
+    
+    # Also check for loose FASTQ files
+    for pattern in [f"{sample_id}_*.fastq*", f"{sample_id}.fastq*"]:
+        for fastq_file in fastq_dir.rglob(pattern):
+            try:
+                fastq_file.unlink()
+                logger.debug(f"Deleted loose FASTQ: {fastq_file.name}")
+            except Exception as e:
+                logger.warning(f"Failed to delete {fastq_file}: {e}")

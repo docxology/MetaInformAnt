@@ -4,43 +4,46 @@ import subprocess
 import sys
 from pathlib import Path
 from datetime import datetime
+from glob import glob
+
+# Add src to path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
+
+from metainformant.rna import count_quantified_samples, check_workflow_progress
+from metainformant.core.logging import get_logger
+
+logger = get_logger("check_restart")
 
 repo_root = Path(__file__).parent.parent.parent
 config_dir = repo_root / 'config' / 'amalgkit'
-output_dir = repo_root / 'output' / 'amalgkit'
 log_dir = repo_root / 'output'
 
-species_configs = {
-    'cfloridanus': 'amalgkit_cfloridanus.yaml',
-    'pbarbatus': 'amalgkit_pbarbatus.yaml',
-    'mpharaonis': 'amalgkit_mpharaonis.yaml',
-    'sinvicta': 'amalgkit_sinvicta.yaml',
-}
-
-def count_quantified(species):
-    """Count quantified samples."""
-    quant_dir = output_dir / species / 'quant'
-    if not quant_dir.exists():
-        return 0
-    return len([d for d in quant_dir.iterdir() 
-                if d.is_dir() and (d / 'abundance.tsv').exists()])
-
-def count_total_from_unquantified(species):
-    """Estimate total from unquantified list."""
-    unquant_file = output_dir / f'{species}_unquantified.txt'
-    if not unquant_file.exists():
-        return None
-    unquantified = len([l.strip() for l in unquant_file.read_text().splitlines() if l.strip()])
+# Discover config files dynamically
+def get_species_configs():
+    """Discover all species config files."""
+    if not config_dir.exists():
+        config_dir_alt = repo_root / 'config'
+        if config_dir_alt.exists():
+            config_pattern = str(config_dir_alt / 'amalgkit_*.yaml')
+        else:
+            return {}
+    else:
+        config_pattern = str(config_dir / 'amalgkit_*.yaml')
     
-    # Read metadata to get total
-    metadata_file = output_dir / species / 'work' / 'metadata' / 'metadata.tsv'
-    if metadata_file.exists():
-        with open(metadata_file) as f:
-            lines = f.readlines()
-            total = len(lines) - 1 if len(lines) > 0 else None
-            if total:
-                return total
-    return None
+    config_files = sorted(glob(config_pattern))
+    species_configs = {}
+    
+    for config_file in config_files:
+        path = Path(config_file)
+        if "template" in path.stem.lower():
+            continue
+        
+        species_code = path.stem.replace("amalgkit_", "")
+        species_configs[species_code] = path.name
+    
+    return species_configs
+
+species_configs = get_species_configs()
 
 def check_running_processes():
     """Check if workflow processes are running."""
@@ -130,22 +133,18 @@ def main():
     for species, config_file in species_configs.items():
         print(f"\n{species.upper()}:")
         
-        # Count quantified
-        quantified = count_quantified(species)
-        total = count_total_from_unquantified(species)
-        if total is None:
-            # Fallback estimates
-            total_estimates = {
-                'cfloridanus': 307,
-                'pbarbatus': 83,
-                'mpharaonis': 100,
-                'sinvicta': 354,
-            }
-            total = total_estimates.get(species, 0)
-            print(f"  Quantified: {quantified}/{total} (estimated)")
-        else:
-            pct = (quantified / total * 100) if total > 0 else 0
+        # Use metainformant function to get progress
+        config_path = config_dir / config_file
+        if config_path.exists():
+            progress = check_workflow_progress(config_path)
+            quantified = progress["quantified"]
+            total = progress["total"]
+            pct = progress["percentage"]
             print(f"  Quantified: {quantified}/{total} ({pct:.1f}%)")
+        else:
+            print(f"  ⚠️  Config not found: {config_path}")
+            needs_restart.append((species, config_file))
+            continue
         
         # Check log activity
         is_active, latest_log = check_log_activity(species)

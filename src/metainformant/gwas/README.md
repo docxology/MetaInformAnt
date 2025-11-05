@@ -24,14 +24,14 @@ This module provides comprehensive GWAS functionality integrated with METAINFORM
 from metainformant.gwas import load_gwas_config, execute_gwas_workflow
 
 # Load and execute workflow
-config = load_gwas_config("config/gwas_config.yaml")
+config = load_gwas_config("config/gwas/gwas_template.yaml")
 results = execute_gwas_workflow(config)
 ```
 
 ## CLI Usage
 
 ```bash
-python -m metainformant gwas run --config config/gwas_config.yaml
+python -m metainformant gwas run --config config/gwas/gwas_template.yaml
 ```
 
 ## Documentation

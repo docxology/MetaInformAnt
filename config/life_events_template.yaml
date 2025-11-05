@@ -1,0 +1,81 @@
+# METAINFORMANT Life Events Configuration Template
+# Life Course and Event Sequence Analysis Pipeline Configuration
+
+work_dir: output/life_events/work
+log_dir: output/life_events/logs
+threads: 4
+
+# =============================================================================
+# EMBEDDING CONFIGURATION
+# =============================================================================
+# Configuration for learning event embeddings using Word2Vec-style methods
+embedding:
+  # Dimension of embedding vectors (typical: 50-200)
+  embedding_dim: 100
+
+  # Size of context window for training (number of events before/after target)
+  window_size: 5
+
+  # Number of training epochs
+  epochs: 10
+
+  # Embedding method: skipgram or cbow
+  method: skipgram  # or: cbow
+
+  # Learning rate for gradient descent
+  learning_rate: 0.01
+
+  # Random seed for reproducibility (optional)
+  # random_state: 42
+
+# =============================================================================
+# MODEL CONFIGURATION
+# =============================================================================
+# Configuration for prediction models
+model:
+  # Model type: embedding, simple, or lstm
+  # - embedding: Uses sequence embeddings with linear classifier/regressor
+  # - simple: Event frequency-based model with random forest
+  # - lstm: LSTM-based sequence model (requires PyTorch, falls back if unavailable)
+  model_type: embedding  # or: simple, lstm
+
+  # Task type: classification or regression
+  task_type: classification  # or: regression
+
+  # Random seed for model reproducibility (optional)
+  random_state: 42
+
+# =============================================================================
+# WORKFLOW CONFIGURATION
+# =============================================================================
+# Workflow-specific settings
+workflow:
+  # Whether to save trained model after workflow completes
+  save_model: true
+
+  # Whether to save learned embeddings
+  save_embeddings: true
+
+  # Whether to generate visualizations
+  generate_visualizations: true
+
+  # Whether to compute model interpretability metrics
+  compute_interpretability: true
+
+# =============================================================================
+# OUTPUT CONFIGURATION
+# =============================================================================
+# Output file and format settings
+output:
+  # Output format: json or tsv
+  format: json  # or: tsv
+
+  # Include prediction probabilities for classification tasks
+  include_probabilities: true
+
+  # Directory for saving visualization plots
+  plots_dir: output/life_events/plots
+
+  # Whether to save individual sequence visualizations
+  save_sequence_plots: false
+

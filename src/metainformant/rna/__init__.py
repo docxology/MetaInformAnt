@@ -34,6 +34,26 @@ try:  # pragma: no cover - exercised in integration tests under py311
 except Exception:  # pragma: no cover - defensive for environments <3.11
     _HAS_WORKFLOW = False
 
+# Monitoring and environment functions (always available)
+from .environment import (
+    check_amalgkit,
+    check_dependencies,
+    check_kallisto,
+    check_metainformant,
+    check_rscript,
+    check_sra_toolkit,
+    check_virtual_env,
+    validate_environment,
+)
+from .monitoring import (
+    analyze_species_status,
+    check_active_downloads,
+    check_workflow_progress,
+    count_quantified_samples,
+    find_unquantified_samples,
+    get_sample_status,
+)
+
 __all__ = [
     "AmalgkitParams",
     "build_cli_args",
@@ -52,6 +72,22 @@ __all__ = [
     "curate",
     "csca",
     "sanity",
+    # Monitoring
+    "analyze_species_status",
+    "check_active_downloads",
+    "check_workflow_progress",
+    "count_quantified_samples",
+    "find_unquantified_samples",
+    "get_sample_status",
+    # Environment
+    "check_amalgkit",
+    "check_dependencies",
+    "check_kallisto",
+    "check_metainformant",
+    "check_rscript",
+    "check_sra_toolkit",
+    "check_virtual_env",
+    "validate_environment",
 ]
 
 if _HAS_WORKFLOW:

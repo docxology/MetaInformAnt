@@ -342,6 +342,78 @@ class TestGraphUtilities:
         assert network.num_edges() == 3
         assert network.get_edge_weight("A", "C") == 0.9
 
+    def test_export_import_roundtrip(self, tmp_path):
+        """Test network export and import round-trip."""
+        from metainformant.networks.graph import export_network, import_network
+
+        original = create_network(["A", "B", "C"], directed=False)
+        original.add_edge("A", "B", weight=0.8)
+        original.add_node("A", test_attr="test_value")
+
+        json_file = tmp_path / "test_network.json"
+        export_network(original, str(json_file), format="json")
+        loaded = import_network(str(json_file), format="json")
+
+        assert loaded.num_nodes() == original.num_nodes()
+        assert loaded.num_edges() == original.num_edges()
+        assert loaded.get_edge_weight("A", "B") == original.get_edge_weight("A", "B")
+        assert loaded.node_attrs["A"]["test_attr"] == "test_value"
+
+    def test_hierarchical_community_detection(self):
+        """Test hierarchical community detection."""
+        from metainformant.networks.community import hierarchical_communities
+
+        network = create_network(["A", "B", "C", "D", "E", "F"], directed=False)
+        network.add_edge("A", "B")
+        network.add_edge("B", "C")
+        network.add_edge("D", "E")
+        network.add_edge("E", "F")
+
+        hierarchies = hierarchical_communities(network, levels=3, seed=42)
+        assert len(hierarchies) == 3
+
+    def test_protein_complex_detection(self):
+        """Test protein complex detection."""
+        from metainformant.networks.ppi import detect_complexes
+
+        ppi = ProteinNetwork()
+        # Create dense subgraph
+        for i in range(4):
+            for j in range(i + 1, 4):
+                ppi.add_interaction(f"P{i}", f"P{j}", confidence=0.8)
+
+        complexes = detect_complexes(ppi, min_confidence=0.7, min_size=3)
+        assert len(complexes) > 0
+
+    def test_regulatory_cascade_detection(self):
+        """Test regulatory cascade detection."""
+        from metainformant.networks.regulatory import detect_regulatory_cascades
+
+        grn = GeneRegulatoryNetwork()
+        grn.add_regulation("TF1", "TF2", confidence=0.8)
+        grn.add_regulation("TF2", "GENE1", confidence=0.9)
+
+        cascades = detect_regulatory_cascades(grn, max_length=5)
+        assert isinstance(cascades, list)
+
+    def test_pathway_similarity_and_activity(self):
+        """Test pathway similarity and activity scoring."""
+        from metainformant.networks.pathway import pathway_similarity, pathway_activity_score
+
+        pn = PathwayNetwork()
+        pn.add_pathway("path1", ["GENE1", "GENE2", "GENE3"])
+        pn.add_pathway("path2", ["GENE2", "GENE3", "GENE4"])
+
+        path1_genes = pn.get_pathway_genes("path1")
+        path2_genes = pn.get_pathway_genes("path2")
+
+        similarity = pathway_similarity(path1_genes, path2_genes)
+        assert 0.0 <= similarity <= 1.0
+
+        expression = {"GENE1": 10.0, "GENE2": 8.0, "GENE3": 12.0}
+        activity = pathway_activity_score(pn, "path1", expression)
+        assert activity > 0.0
+
 
 
 

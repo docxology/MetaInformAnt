@@ -121,3 +121,4 @@ def test_permutation_test_with_empty_groups():
     assert result["p_value"] == 1.0
     assert result["n_permutations"] == 0
 
+

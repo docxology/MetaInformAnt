@@ -193,6 +193,103 @@ plots.scatterplot(reduced["embedding"][:, 0], reduced["embedding"][:, 1])
 }
 ```
 
+## Synthetic Data Generation
+
+For testing and demonstration purposes, the module includes a synthetic data generator:
+
+```python
+from metainformant.life_events import generate_synthetic_life_events
+import numpy as np
+
+# Generate synthetic sequences with outcomes
+sequences, outcomes = generate_synthetic_life_events(
+    n_sequences=100,
+    min_events_per_sequence=5,
+    max_events_per_sequence=30,
+    generate_outcomes=True,
+    outcome_relationship="complex",  # or: "random", "health_focused", "education_focused"
+    random_state=42
+)
+
+print(f"Generated {len(sequences)} sequences")
+print(f"Outcomes shape: {outcomes.shape}")
+```
+
+### Synthetic Data Options
+
+- **n_sequences**: Number of event sequences to generate
+- **min/max_events_per_sequence**: Control sequence length
+- **domains**: Custom domain list (defaults to all standard domains)
+- **event_types_by_domain**: Custom event types per domain
+- **generate_outcomes**: Whether to generate outcome labels
+- **outcome_relationship**: How outcomes relate to events:
+  - `"random"`: Random binary outcomes
+  - `"health_focused"`: Higher outcome for more health events
+  - `"education_focused"`: Higher outcome for education events
+  - `"complex"`: Complex pattern based on multiple domains
+
+## Complete End-to-End Workflow
+
+Here's a complete example showing the full workflow from synthetic data generation through visualization:
+
+```python
+from metainformant.life_events import (
+    generate_synthetic_life_events,
+    analyze_life_course,
+    load_life_events_config,
+    plot_event_timeline,
+    plot_event_embeddings,
+    plot_prediction_importance,
+    event_importance,
+    EventSequencePredictor,
+    learn_event_embeddings,
+)
+from pathlib import Path
+import numpy as np
+
+# Step 1: Generate synthetic data
+sequences, outcomes = generate_synthetic_life_events(
+    n_sequences=50,
+    generate_outcomes=True,
+    outcome_relationship="complex",
+    random_state=42
+)
+
+# Step 2: Load configuration (optional)
+config = load_life_events_config("config/life_events_template.yaml")
+
+# Step 3: Run complete analysis workflow
+results = analyze_life_course(
+    sequences,
+    outcomes=outcomes,
+    config_obj=config,
+    output_dir="output/life_events"
+)
+
+# Step 4: Generate visualizations
+output_dir = Path("output/life_events")
+
+# Timeline for first sequence
+plot_event_timeline(sequences[0], output_path=output_dir / "timeline.png")
+
+# Embedding visualization
+embeddings = learn_event_embeddings(
+    [[f"{e.domain}:{e.event_type}" for e in seq.events] for seq in sequences],
+    embedding_dim=100,
+    random_state=42
+)
+plot_event_embeddings(embeddings, method="umap", output_path=output_dir / "embeddings.png")
+
+# Importance plot
+sequences_tokens = [[f"{e.domain}:{e.event_type}" for e in seq.events] for seq in sequences]
+predictor = EventSequencePredictor.load_model(results["model"])
+importance = event_importance(predictor, sequences_tokens, embeddings)
+plot_prediction_importance(importance, output_path=output_dir / "importance.png")
+
+print(f"Analysis complete! Results saved to {output_dir}")
+print(f"Model accuracy: {results.get('accuracy', 'N/A')}")
+```
+
 ## Usage Patterns
 
 ### Loading Event Data
@@ -595,6 +692,10 @@ results = analyze_life_course(
 )
 ```
 
+### Configuration Template
+
+A complete configuration template is available at `config/life_events_template.yaml`. This template includes all configurable sections with comments explaining each parameter.
+
 ### Example Configuration File (YAML)
 
 ```yaml
@@ -818,6 +919,7 @@ If configuration loading fails:
 - Check that required fields are present
 - Ensure environment variable names use correct prefix (LE_)
 - Check file paths in configuration are absolute or relative to working directory
+- See `config/life_events_template.yaml` for a complete example configuration
 
 ### Missing Optional Dependencies
 
@@ -825,6 +927,14 @@ If visualization functions fail:
 - Install matplotlib: `pip install matplotlib`
 - Visualization functions are optional and will gracefully degrade
 - Check that output directory is writable
+
+### Synthetic Data Generation Issues
+
+If synthetic data generation fails:
+- Ensure numpy is installed: `pip install numpy`
+- Check that date ranges are valid (start_date < end_date)
+- Verify domain and event_type dictionaries are properly formatted
+- Use `random_state` parameter for reproducibility
 
 ## Testing
 

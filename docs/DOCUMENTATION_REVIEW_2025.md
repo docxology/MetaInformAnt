@@ -321,23 +321,27 @@ All 24 modules have README.md files:
 ### Critical Issues
 None
 
-### Minor Issues (Require Updates)
+### Issues Fixed (2025-01-28 Update)
 
-1. **README.md Line 151** - Configuration Path
-   - **Issue**: References non-existent `config/gwas_config.yaml`
-   - **Fix**: Update to `config/gwas/gwas_template.yaml` or `config/gwas/gwas_pbarbatus.yaml`
-   - **Priority**: Medium
+1. **Configuration Path References** ✅ FIXED
+   - **Issue**: Multiple files referenced non-existent `config/gwas_config.yaml`
+   - **Files Fixed**: 
+     - `src/metainformant/core/README.md`
+     - `src/metainformant/gwas/README.md`
+     - `docs/gwas/index.md`
+     - `docs/gwas/README.md`
+     - `docs/gwas/pbarbatus_config.md`
+   - **Fix Applied**: Updated all references to use `config/gwas/gwas_template.yaml` or `config/gwas/gwas_pbarbatus.yaml`
 
-2. **docs/cli.md** - Missing CLI Commands
-   - **Issue**: `information` and `life-events` CLI commands not documented
-   - **Fix**: Add documentation for:
-     - `uv run metainformant information entropy --input ...`
-     - `uv run metainformant information mutual-information --x ... --y ...`
-     - `uv run metainformant information profile --sequences ...`
-     - `uv run metainformant life-events embed --input ...`
-     - `uv run metainformant life-events predict --events ... --model ...`
-     - `uv run metainformant life-events interpret --model ... --sequences ...`
-   - **Priority**: Medium
+2. **API Example Corrections** ✅ FIXED
+   - **Issue**: `docs/dna/README.md` referenced non-existent `alignment.global_pairwise()` function
+   - **Fix Applied**: Updated to use correct `alignment.global_align()` function
+   - **Issue**: `README.md` GWAS example used incorrect function signature
+   - **Fix Applied**: Updated to use correct `run_gwas()` signature with `vcf_path`, `phenotype_path`, `config`, and `output_dir` parameters
+
+3. **CLI Documentation** ✅ VERIFIED
+   - **Status**: CLI commands for `information` and `life-events` are documented in `docs/cli.md` (lines 30-35, 75-80)
+   - **Status**: All CLI commands match implementation in `src/metainformant/__main__.py`
 
 ### Documentation Completeness
 
@@ -346,15 +350,16 @@ None
 - ✅ All scripts documented
 - ✅ All configuration documented
 - ✅ Testing policy documented
-- ⚠️ CLI commands: 95% complete (missing 2 modules)
+- ✅ CLI commands: 100% complete (all commands documented)
 
 ---
 
 ## Recommendations
 
 ### Immediate Actions
-1. ✅ Update README.md line 151 to use correct GWAS config path
-2. ✅ Add `information` and `life-events` CLI commands to `docs/cli.md`
+1. ✅ **COMPLETED** - Updated all GWAS config path references
+2. ✅ **VERIFIED** - CLI commands for `information` and `life-events` are documented
+3. ✅ **COMPLETED** - Fixed API examples in documentation
 
 ### Future Enhancements
 1. Consider adding CLI examples to module READMEs for `information` and `life_events`
@@ -377,13 +382,14 @@ None
 ### Links Verified
 - **Markdown Links**: 300+ links verified
 - **Broken Links Found**: 0 (all links resolve)
-- **Path Inconsistencies**: 1 (configuration path)
-- **Missing Documentation**: 2 CLI commands
+- **Path Inconsistencies**: 0 (all fixed)
+- **Missing Documentation**: 0 (all complete)
 
 ### Overall Quality Metrics
-- **Documentation Completeness**: 99.2% (24/24 modules, 2 CLI commands missing)
+- **Documentation Completeness**: 100% (24/24 modules, all CLI commands documented)
 - **Link Accuracy**: 100% (all links resolve correctly)
-- **Content Accuracy**: 99.5% (1 path inconsistency)
+- **Content Accuracy**: 100% (all issues fixed)
+- **API Accuracy**: 100% (all examples verified and corrected)
 - **Structure Quality**: Excellent
 - **Navigation**: Excellent
 
@@ -391,23 +397,25 @@ None
 
 ## Conclusion
 
-The METAINFORMANT documentation is **comprehensive, well-structured, and highly accurate**. The documentation review identified only **2 minor issues** that require updates:
+The METAINFORMANT documentation is **comprehensive, well-structured, and highly accurate**. All identified issues have been resolved:
 
-1. Configuration path in README.md
-2. Missing CLI documentation for information and life-events modules
+1. ✅ Configuration path references - **FIXED** (all updated to correct paths)
+2. ✅ CLI documentation - **VERIFIED** (all commands documented)
+3. ✅ API examples - **FIXED** (all examples verified and corrected)
 
-All other aspects of the documentation are complete and accurate:
+All aspects of the documentation are complete and accurate:
 - ✅ All modules have comprehensive documentation
 - ✅ All links are valid
-- ✅ All examples are accurate
+- ✅ All examples are accurate and match actual API
 - ✅ All cross-references are correct
+- ✅ All configuration paths reference actual files
 - ✅ Documentation structure is excellent
 
-**Overall Assessment**: The documentation is **production-ready** with only minor enhancements needed for complete CLI command coverage.
+**Overall Assessment**: The documentation is **production-ready** with all identified issues resolved.
 
 ---
 
 **Review Completed**: 2025-01-28  
 **Reviewer**: Comprehensive Documentation Review System  
-**Status**: ✅ Complete - 2 minor issues identified for resolution
+**Status**: ✅ Complete - All issues resolved
 

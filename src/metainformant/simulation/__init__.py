@@ -16,6 +16,11 @@ from .popgen import (
 )
 from .rna import simulate_counts_negative_binomial
 from .sequences import generate_random_dna, generate_random_protein, mutate_sequence
+from .workflow import (
+    run_agent_simulation_workflow,
+    run_popgen_simulation_workflow,
+    run_sequence_simulation_workflow,
+)
 
 __all__ = [
     "generate_random_dna",
@@ -32,4 +37,8 @@ __all__ = [
     "simulate_population_expansion",
     "generate_site_frequency_spectrum",
     "generate_linkage_disequilibrium_data",
+    # Workflows
+    "run_sequence_simulation_workflow",
+    "run_agent_simulation_workflow",
+    "run_popgen_simulation_workflow",
 ]

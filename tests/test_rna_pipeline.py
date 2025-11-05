@@ -78,3 +78,4 @@ class TestSummarizeCurateTables:
         assert "data.txt" not in counts
         assert "data.csv" not in counts
 
+

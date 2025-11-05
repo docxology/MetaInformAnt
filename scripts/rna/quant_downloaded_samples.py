@@ -71,66 +71,13 @@ ensure_venv_activated()
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from metainformant.rna.workflow import load_workflow_config
-from metainformant.rna.amalgkit import run_amalgkit, check_cli_available
+from metainformant.rna.amalgkit import check_cli_available
+from metainformant.rna.steps import quantify_sample, delete_sample_fastqs
+from metainformant.rna import find_unquantified_samples
 from metainformant.core.logging import get_logger
-from metainformant.core.io import read_delimited, write_delimited
-import shutil
+from metainformant.core.io import read_delimited
 
 logger = get_logger("quant_downloaded")
-
-
-def find_unquantified_samples(fastq_dir: Path, quant_dir: Path) -> list[str]:
-    """Find samples with FASTQs or SRA files that haven't been quantified."""
-    samples_with_data = set()
-    
-    # Find all samples with FASTQ files or SRA files
-    if not fastq_dir.exists():
-        return []
-    
-    # Handle both structures: fastq/{sample}/ and fastq/getfastq/{sample}/
-    # Check for FASTQ files (direct structure)
-    for fastq_file in fastq_dir.glob("*/*.fastq*"):
-        sample_id = fastq_file.parent.name
-        samples_with_data.add(sample_id)
-    
-    # Check for FASTQ files (nested getfastq structure)
-    for fastq_file in fastq_dir.glob("getfastq/*/*.fastq*"):
-        sample_id = fastq_file.parent.name
-        samples_with_data.add(sample_id)
-    
-    # Check for SRA files (they need to be converted to FASTQ first, but we can still detect them)
-    for sra_file in fastq_dir.glob("getfastq/*/*.sra"):
-        sample_id = sra_file.parent.name
-        samples_with_data.add(sample_id)
-    
-    # Also check direct structure for SRA files
-    for sra_file in fastq_dir.glob("*/*.sra"):
-        sample_id = sra_file.parent.name
-        samples_with_data.add(sample_id)
-    
-    # Filter to samples not yet quantified
-    unquantified = []
-    for sample_id in sorted(samples_with_data):
-        abundance_file = quant_dir / sample_id / "abundance.tsv"
-        if not abundance_file.exists():
-            unquantified.append(sample_id)
-    
-    return unquantified
-
-
-def delete_sample_fastqs(sample_id: str, fastq_dir: Path):
-    """Delete FASTQ files for a sample."""
-    # Try both directory structures
-    sample_dir = fastq_dir / "getfastq" / sample_id
-    if not sample_dir.exists():
-        sample_dir = fastq_dir / sample_id
-    
-    if sample_dir.exists():
-        try:
-            shutil.rmtree(sample_dir)
-            logger.info(f"  🗑️  Deleted FASTQs for {sample_id}")
-        except Exception as e:
-            logger.warning(f"  ⚠️  Failed to delete {sample_dir}: {e}")
 
 
 def quantify_samples(config_path: Path, species_name: str):
@@ -144,8 +91,8 @@ def quantify_samples(config_path: Path, species_name: str):
     fastq_dir = Path(cfg.per_step.get("getfastq", {}).get("out_dir", cfg.work_dir / "fastq"))
     quant_dir = Path(cfg.per_step.get("quant", {}).get("out_dir", cfg.work_dir / "quant"))
     
-    # Find unquantified samples
-    unquantified = find_unquantified_samples(fastq_dir, quant_dir)
+    # Find unquantified samples using metainformant function
+    unquantified = find_unquantified_samples(config_path)
     
     if not unquantified:
         logger.info(f"✅ No downloaded samples need quantification for {species_name}")
@@ -199,12 +146,12 @@ def quantify_samples(config_path: Path, species_name: str):
     success_count = 0
     failed_count = 0
     
-    # Process each sample
+    # Process each sample using metainformant functions
     for idx, sample_id in enumerate(unquantified, 1):
         logger.info(f"\n[{idx}/{len(unquantified)}] Processing {sample_id}")
         
         try:
-            # Create temp metadata with just this sample
+            # Get metadata rows for this sample
             sample_rows = [row for row in rows if row.get("run") == sample_id]
             
             if not sample_rows:
@@ -212,44 +159,29 @@ def quantify_samples(config_path: Path, species_name: str):
                 failed_count += 1
                 continue
             
-            temp_metadata = cfg.work_dir / f"metadata.quant.{sample_id}.tsv"
-            write_delimited(sample_rows, temp_metadata, delimiter="\t")
-            
-            # Run quantification
+            # Use metainformant quantify_sample function
             logger.info(f"  🔬 Quantifying {sample_id}...")
-            quant_params_single = quant_params.copy()
-            quant_params_single["metadata"] = str(temp_metadata.absolute())
-            
-            result = run_amalgkit(
-                "quant",
-                quant_params_single,
-                work_dir=None,
+            success, message, abundance_file = quantify_sample(
+                sample_id=sample_id,
+                metadata_rows=sample_rows,
+                quant_params=quant_params,
                 log_dir=cfg.log_dir or (cfg.work_dir / "logs"),
                 step_name=f"quant_{sample_id}",
-                check=False,
             )
             
-            # Clean up temp metadata
-            try:
-                temp_metadata.unlink()
-            except Exception:
-                pass
-            
-            if result.returncode == 0:
-                logger.info(f"  ✅ Quantified {sample_id}")
+            if success:
+                logger.info(f"  ✅ {message}")
                 success_count += 1
-                
-                # Delete FASTQs
-                logger.info(f"  🗑️  Deleting FASTQs for {sample_id}...")
-                delete_sample_fastqs(sample_id, fastq_dir)
             else:
-                logger.error(f"  ❌ Quantification failed for {sample_id} (code {result.returncode})")
+                logger.error(f"  ❌ {message}")
                 failed_count += 1
-                # Still delete FASTQs to free space
-                delete_sample_fastqs(sample_id, fastq_dir)
+            
+            # Always delete FASTQs to free space (even if quant failed)
+            logger.info(f"  🗑️  Deleting FASTQs for {sample_id}...")
+            delete_sample_fastqs(sample_id, fastq_dir)
         
         except Exception as e:
-            logger.error(f"  ❌ Error processing {sample_id}: {e}")
+            logger.error(f"  ❌ Error processing {sample_id}: {e}", exc_info=True)
             failed_count += 1
             # Attempt cleanup
             try:

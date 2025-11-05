@@ -70,9 +70,9 @@ ensure_venv_activated()
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from metainformant.rna.workflow import load_workflow_config
-from metainformant.rna.amalgkit import run_amalgkit, check_cli_available, getfastq, quant
+from metainformant.rna.amalgkit import check_cli_available
+from metainformant.rna.steps import process_sample_pipeline, delete_sample_fastqs
 from metainformant.core.logging import get_logger
-from metainformant.core.io import read_delimited, write_delimited
 from glob import glob
 
 logger = get_logger("process_sra")
@@ -105,156 +105,7 @@ def find_sra_samples(fastq_dir: Path, quant_dir: Path) -> list[str]:
     return unquantified
 
 
-def delete_sample_files(sample_id: str, fastq_dir: Path):
-    """Delete SRA and FASTQ files for a sample."""
-    deleted = []
-    
-    # Try both directory structures
-    for base_dir in [fastq_dir / "getfastq" / sample_id, fastq_dir / sample_id]:
-        if base_dir.exists():
-            try:
-                # Calculate size before deletion
-                size_mb = sum(f.stat().st_size for f in base_dir.rglob("*") if f.is_file()) / (1024*1024)
-                shutil.rmtree(base_dir)
-                deleted.append(f"{base_dir} ({size_mb:.1f}MB)")
-                logger.info(f"  🗑️  Deleted {base_dir.name} ({size_mb:.1f}MB)")
-            except Exception as e:
-                logger.warning(f"  ⚠️  Failed to delete {base_dir}: {e}")
-    
-    return deleted
-
-
-def process_sra_sample(
-    sample_id: str,
-    config_path: Path,
-    species_name: str,
-    fastq_dir: Path,
-    quant_dir: Path,
-    metadata_file: Path,
-    rows: list[dict],
-) -> tuple[bool, str]:
-    """Process a single SRA sample: convert to FASTQ → quantify → delete."""
-    
-    logger.info(f"\n📦 Processing {sample_id}...")
-    
-    try:
-        # Load config
-        cfg = load_workflow_config(config_path)
-        
-        # Step 1: Convert SRA to FASTQ
-        logger.info(f"  🔄 Converting SRA to FASTQ for {sample_id}...")
-        
-        # Create temp metadata with just this sample
-        sample_rows = [row for row in rows if row.get("run") == sample_id]
-        if not sample_rows:
-            return False, f"Sample {sample_id} not in metadata"
-        
-        temp_metadata_getfastq = cfg.work_dir / f"metadata.getfastq.{sample_id}.tsv"
-        write_delimited(sample_rows, temp_metadata_getfastq, delimiter="\t")
-        
-        # Get getfastq params
-        getfastq_params = dict(cfg.per_step.get("getfastq", {}))
-        getfastq_params["out_dir"] = str(fastq_dir.absolute())
-        getfastq_params["metadata"] = str(temp_metadata_getfastq.absolute())
-        getfastq_params["threads"] = cfg.threads
-        # Ensure we extract existing SRA files
-        getfastq_params["redo"] = "no"  # Don't re-download, just extract
-        
-        getfastq_result = run_amalgkit(
-            "getfastq",
-            getfastq_params,
-            work_dir=None,
-            log_dir=cfg.log_dir or (cfg.work_dir / "logs"),
-            step_name=f"getfastq_{sample_id}",
-            check=False,
-        )
-        
-        # Clean up temp metadata
-        try:
-            temp_metadata_getfastq.unlink()
-        except Exception:
-            pass
-        
-        if getfastq_result.returncode != 0:
-            logger.warning(f"  ⚠️  SRA extraction had warnings (code {getfastq_result.returncode})")
-            # Continue anyway - might have partial extraction
-        
-        # Check if FASTQ files were created
-        fastq_files = list(fastq_dir.glob(f"getfastq/{sample_id}/*.fastq*"))
-        if not fastq_files:
-            fastq_files = list(fastq_dir.glob(f"{sample_id}/*.fastq*"))
-        
-        if not fastq_files:
-            return False, f"No FASTQ files created for {sample_id}"
-        
-        logger.info(f"  ✅ Created {len(fastq_files)} FASTQ file(s) for {sample_id}")
-        
-        # Step 2: Quantify
-        logger.info(f"  🔬 Quantifying {sample_id}...")
-        
-        # Create temp metadata for quantification
-        temp_metadata_quant = cfg.work_dir / f"metadata.quant.{sample_id}.tsv"
-        write_delimited(sample_rows, temp_metadata_quant, delimiter="\t")
-        
-        # Get quant params
-        quant_params = dict(cfg.per_step.get("quant", {}))
-        quant_params["out_dir"] = str(quant_dir.absolute())
-        quant_params["metadata"] = str(temp_metadata_quant.absolute())
-        quant_params["threads"] = cfg.threads
-        
-        # Inject index_dir if needed
-        if "index_dir" not in quant_params and "index-dir" not in quant_params:
-            index_dir = quant_dir.parent / "work" / "index"
-            if not index_dir.exists():
-                genome_dir = Path(cfg.genome.get("dest_dir", cfg.work_dir.parent / "genome"))
-                if genome_dir.exists():
-                    potential_index = genome_dir / "index"
-                    if potential_index.exists():
-                        index_dir = potential_index
-            if index_dir.exists():
-                quant_params["index_dir"] = str(index_dir.absolute())
-            else:
-                fasta_dir = quant_dir.parent / "work" / "fasta"
-                if not fasta_dir.exists():
-                    fasta_dir = quant_dir.parent / "fasta"
-                if fasta_dir.exists():
-                    quant_params["fasta_dir"] = str(fasta_dir.absolute())
-                    quant_params["build_index"] = True
-        
-        quant_result = run_amalgkit(
-            "quant",
-            quant_params,
-            work_dir=None,
-            log_dir=cfg.log_dir or (cfg.work_dir / "logs"),
-            step_name=f"quant_{sample_id}",
-            check=False,
-        )
-        
-        # Clean up temp metadata
-        try:
-            temp_metadata_quant.unlink()
-        except Exception:
-            pass
-        
-        if quant_result.returncode != 0:
-            return False, f"Quantification failed (code {quant_result.returncode})"
-        
-        # Verify quantification succeeded
-        abundance_file = quant_dir / sample_id / "abundance.tsv"
-        if not abundance_file.exists():
-            return False, "Quantification output not found"
-        
-        logger.info(f"  ✅ Successfully quantified {sample_id}")
-        
-        # Step 3: Delete SRA and FASTQ files
-        logger.info(f"  🗑️  Cleaning up {sample_id}...")
-        delete_sample_files(sample_id, fastq_dir)
-        
-        return True, "Success"
-        
-    except Exception as e:
-        logger.error(f"  ❌ Error processing {sample_id}: {e}", exc_info=True)
-        return False, str(e)
+# delete_sample_files and process_sra_sample now use metainformant.rna.steps functions
 
 
 def process_species(config_path: Path, species_name: str):

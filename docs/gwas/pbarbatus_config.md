@@ -4,7 +4,7 @@ This document describes the GWAS configuration setup for *Pogonomyrmex barbatus*
 
 ## Configuration File
 
-**Location**: `config/gwas_pbarbatus.yaml`
+**Location**: `config/gwas/gwas_pbarbatus.yaml`
 
 ## Species Information
 
@@ -68,13 +68,13 @@ Default QC parameters:
 ### Configuration Validation
 
 ```bash
-python -m metainformant gwas run --config config/gwas_pbarbatus.yaml --check
+python -m metainformant gwas run --config config/gwas/gwas_pbarbatus.yaml --check
 ```
 
 ### Full Workflow Execution
 
 ```bash
-python -m metainformant gwas run --config config/gwas_pbarbatus.yaml
+python -m metainformant gwas run --config config/gwas/gwas_pbarbatus.yaml
 ```
 
 ### Python API

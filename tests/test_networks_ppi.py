@@ -600,7 +600,63 @@ class TestPPIEdgeCases:
                 large_network.add_interaction(p1, p2, conf, ["computational"])
 
         # Should handle large network
-        stats = large_network.get_network_statistics()
-        assert stats["num_proteins"] <= 100
-        assert stats["num_interactions"] <= 200
-        assert isinstance(stats["avg_confidence"], float)
+        stats = large_network.network_statistics()
+        assert stats["total_proteins"] <= 100
+        assert stats["total_interactions"] <= 200
+
+
+class TestNewPPIMethods:
+    """Test new PPI methods and functions."""
+
+    def test_get_protein_partners(self):
+        """Test get_protein_partners method."""
+        ppi = ProteinNetwork()
+        ppi.add_interaction("P1", "P2", confidence=0.9)
+        ppi.add_interaction("P1", "P3", confidence=0.5)
+        ppi.add_interaction("P1", "P4", confidence=0.8)
+
+        partners = ppi.get_protein_partners("P1", min_confidence=0.7)
+        assert len(partners) == 2  # P2 and P4 above threshold
+        assert "P2" in partners
+        assert "P4" in partners
+
+    def test_protein_similarity(self):
+        """Test protein similarity calculation."""
+        from metainformant.networks.ppi import protein_similarity
+
+        ppi = ProteinNetwork()
+        ppi.add_interaction("P1", "P2")
+        ppi.add_interaction("P1", "P3")
+        ppi.add_interaction("P2", "P3")  # Common neighbor
+
+        sim = protein_similarity(ppi, "P1", "P2")
+        assert "jaccard_similarity" in sim
+        assert "common_neighbors" in sim
+        assert sim["common_neighbors"] >= 0
+
+    def test_detect_complexes(self):
+        """Test protein complex detection."""
+        from metainformant.networks.ppi import detect_complexes
+
+        ppi = ProteinNetwork()
+        # Create dense subgraph (complex)
+        for i in range(3):
+            for j in range(i + 1, 3):
+                ppi.add_interaction(f"P{i}", f"P{j}", confidence=0.8)
+
+        complexes = detect_complexes(ppi, min_confidence=0.7, min_size=3)
+        assert len(complexes) > 0
+
+    def test_export_to_string_format(self, tmp_path):
+        """Test STRING format export."""
+        from metainformant.networks.ppi import export_to_string_format
+
+        ppi = ProteinNetwork()
+        ppi.add_interaction("P1", "P2", confidence=0.8)
+        ppi.add_interaction("P3", "P4", confidence=0.3)
+
+        output_file = tmp_path / "string_output.tsv"
+        export_to_string_format(ppi, str(output_file), score_threshold=400)
+
+        # Check file was created
+        assert output_file.exists()

@@ -37,7 +37,11 @@ import yaml
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
+from metainformant.rna import count_quantified_samples, find_unquantified_samples
+from metainformant.rna.steps import quantify_sample, delete_sample_fastqs
+from metainformant.rna.workflow import load_workflow_config
 from metainformant.core.logging import get_logger
+from metainformant.core.io import read_delimited
 
 logger = get_logger("orchestrate")
 
@@ -63,40 +67,59 @@ VALID_STEPS = [
 ]
 
 
+def get_config_path(species: str) -> Path | None:
+    """Get config path for a species."""
+    config_path = CONFIG_DIR / f'amalgkit_{species}.yaml'
+    if config_path.exists():
+        return config_path
+    return None
+
+
 def count_quantified(species: str) -> int:
-    """Count successfully quantified samples."""
-    quant_dir = OUTPUT_DIR / species / 'quant'
-    if not quant_dir.exists():
-        return 0
-    return len([d for d in quant_dir.iterdir() 
-                if d.is_dir() and (d / 'abundance.tsv').exists()])
+    """Count successfully quantified samples using metainformant."""
+    config_path = get_config_path(species)
+    if not config_path:
+        # Fallback to direct counting if no config
+        quant_dir = OUTPUT_DIR / species / 'quant'
+        if not quant_dir.exists():
+            return 0
+        return len([d for d in quant_dir.iterdir() 
+                    if d.is_dir() and (d / 'abundance.tsv').exists()])
+    
+    quantified, _ = count_quantified_samples(config_path)
+    return quantified
 
 
 def count_downloaded_unquantified(species: str) -> list[str]:
-    """Find samples with FASTQs but no quantification."""
-    fastq_dir = OUTPUT_DIR / species / 'fastq'
-    quant_dir = OUTPUT_DIR / species / 'quant'
-    
-    if not fastq_dir.exists():
-        return []
-    
-    unquantified = []
-    for sample_dir in fastq_dir.iterdir():
-        if not sample_dir.is_dir():
-            continue
+    """Find samples with FASTQs but no quantification using metainformant."""
+    config_path = get_config_path(species)
+    if not config_path:
+        # Fallback to direct checking if no config
+        fastq_dir = OUTPUT_DIR / species / 'fastq'
+        quant_dir = OUTPUT_DIR / species / 'quant'
         
-        sample_id = sample_dir.name
+        if not fastq_dir.exists():
+            return []
         
-        # Check if quantified
-        if (quant_dir / sample_id / 'abundance.tsv').exists():
-            continue
+        unquantified = []
+        for sample_dir in fastq_dir.iterdir():
+            if not sample_dir.is_dir():
+                continue
+            
+            sample_id = sample_dir.name
+            
+            # Check if quantified
+            if (quant_dir / sample_id / 'abundance.tsv').exists():
+                continue
+            
+            # Check for FASTQ files
+            fastq_files = list(sample_dir.glob('*.fastq.gz'))
+            if fastq_files and all(f.stat().st_size > 1000000 for f in fastq_files):
+                unquantified.append(sample_id)
         
-        # Check for FASTQ files
-        fastq_files = list(sample_dir.glob('*.fastq.gz'))
-        if fastq_files and all(f.stat().st_size > 1000000 for f in fastq_files):
-            unquantified.append(sample_id)
+        return unquantified
     
-    return unquantified
+    return find_unquantified_samples(config_path)
 
 
 def assess_species_status(species: str) -> dict:
@@ -184,63 +207,96 @@ def print_assessment(species_list: Optional[list[str]] = None):
 
 
 def cleanup_unquantified_for_species(species: str) -> tuple[int, int]:
-    """Quantify downloaded samples and cleanup FASTQs."""
+    """Quantify downloaded samples and cleanup FASTQs using metainformant functions."""
     logger.info(f"\n{'='*80}")
     logger.info(f"CLEANUP: {species}")
     logger.info(f"{'='*80}")
     
-    unquantified = count_downloaded_unquantified(species)
+    config_path = get_config_path(species)
+    if not config_path:
+        logger.error(f"  ❌ Config not found for {species}")
+        return 0, 0
+    
+    # Use metainformant function to find unquantified samples
+    unquantified = find_unquantified_samples(config_path)
     if not unquantified:
         logger.info(f"  ✅ No downloaded unquantified samples")
         return 0, 0
     
     logger.info(f"  Found {len(unquantified)} downloaded but unquantified samples")
     
-    species_dir = OUTPUT_DIR / species
-    fastq_dir = species_dir / 'fastq'
-    quant_dir = species_dir / 'quant'
-    index_path = next((species_dir / 'work' / 'index').glob('*.idx'), None)
+    # Load config and get paths
+    cfg = load_workflow_config(config_path)
+    fastq_dir = Path(cfg.per_step.get("getfastq", {}).get("out_dir", cfg.work_dir / "fastq"))
+    quant_dir = Path(cfg.per_step.get("quant", {}).get("out_dir", cfg.work_dir / "quant"))
     
-    if not index_path:
-        logger.error(f"  ❌ No kallisto index found for {species}")
+    # Read metadata
+    metadata_file = cfg.work_dir / "metadata" / "metadata.tsv"
+    if not metadata_file.exists():
+        metadata_file = cfg.work_dir / "metadata" / "metadata.filtered.tissue.tsv"
+    
+    if not metadata_file.exists():
+        logger.error(f"  ❌ No metadata file found for {species}")
         return 0, len(unquantified)
+    
+    rows = list(read_delimited(metadata_file, delimiter="\t"))
+    
+    # Get quant params from config
+    quant_params = dict(cfg.per_step.get("quant", {}))
+    quant_params["out_dir"] = str(quant_dir.absolute())
+    quant_params["threads"] = cfg.threads or 12
+    
+    # Inject index_dir if needed
+    if "index_dir" not in quant_params and "index-dir" not in quant_params:
+        index_dir = quant_dir.parent / "work" / "index"
+        if index_dir.exists():
+            quant_params["index_dir"] = str(index_dir.absolute())
     
     quantified_count = 0
     failed_count = 0
     cleaned_count = 0
     
+    # Process each sample using metainformant functions
     for sample_id in unquantified:
-        sample_dir = fastq_dir / sample_id
-        fastq_files = sorted(sample_dir.glob('*.fastq.gz'))
-        
-        if not fastq_files:
-            continue
-        
-        # Quantify
-        output_dir = quant_dir / sample_id
-        output_dir.mkdir(parents=True, exist_ok=True)
-        
-        cmd = ['kallisto', 'quant', '-i', str(index_path), '-o', str(output_dir), '-t', '12']
-        if len(fastq_files) == 1:
-            cmd.extend(['--single', '-l', '200', '-s', '20'])
-        cmd.extend([str(f) for f in fastq_files])
-        
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
-            if result.returncode == 0 and (output_dir / 'abundance.tsv').exists():
+            # Get metadata rows for this sample
+            sample_rows = [row for row in rows if row.get("run") == sample_id]
+            
+            if not sample_rows:
+                logger.warning(f"    ⚠️  {sample_id} not in metadata, skipping")
+                failed_count += 1
+                continue
+            
+            # Use metainformant quantify_sample function
+            success, message, abundance_file = quantify_sample(
+                sample_id=sample_id,
+                metadata_rows=sample_rows,
+                quant_params=quant_params,
+                log_dir=cfg.log_dir or (cfg.work_dir / "logs"),
+                step_name=f"quant_{species}_{sample_id}",
+            )
+            
+            if success:
                 logger.info(f"    ✅ Quantified: {sample_id}")
                 quantified_count += 1
-                
-                # Cleanup FASTQs
-                shutil.rmtree(sample_dir)
-                cleaned_count += 1
-                logger.info(f"    🗑️  Cleaned: {sample_id}")
             else:
-                logger.warning(f"    ❌ Failed: {sample_id}")
+                logger.warning(f"    ❌ Failed: {sample_id} - {message}")
                 failed_count += 1
+            
+            # Always cleanup FASTQs to free space
+            delete_sample_fastqs(sample_id, fastq_dir)
+            cleaned_count += 1
+            logger.info(f"    🗑️  Cleaned: {sample_id}")
+        
         except Exception as e:
             logger.warning(f"    ❌ Error: {sample_id} - {e}")
             failed_count += 1
+            # Attempt cleanup
+            try:
+                delete_sample_fastqs(sample_id, fastq_dir)
+                cleaned_count += 1
+            except Exception:
+                pass
     
     logger.info(f"\n  Summary: {quantified_count} quantified, {cleaned_count} cleaned, {failed_count} failed")
     return quantified_count, failed_count

@@ -394,6 +394,136 @@ class TestEdgeCases:
         metrics = network_metrics(network)
         assert np.isfinite(metrics["density"])
 
+
+class TestNetworkExportImport:
+    """Test network export and import functionality."""
+
+    def test_export_import_json(self, tmp_path):
+        """Test JSON export and import."""
+        from metainformant.networks.graph import export_network, import_network
+
+        network = create_network(["A", "B", "C"], directed=False)
+        network.add_edge("A", "B", weight=0.8)
+        network.add_node("A", function="test")
+
+        json_file = tmp_path / "test_network.json"
+        export_network(network, str(json_file), format="json")
+
+        loaded = import_network(str(json_file), format="json")
+        assert loaded.num_nodes() == 3
+        assert loaded.num_edges() == 1
+        assert loaded.get_edge_weight("A", "B") == 0.8
+        assert loaded.node_attrs["A"]["function"] == "test"
+
+    def test_export_import_csv(self, tmp_path):
+        """Test CSV export and import."""
+        from metainformant.networks.graph import export_network, import_network
+
+        network = create_network(["A", "B"], directed=False)
+        network.add_edge("A", "B", weight=0.9)
+
+        csv_file = tmp_path / "test_network.csv"
+        export_network(network, str(csv_file), format="csv")
+
+        loaded = import_network(str(csv_file), format="csv")
+        assert loaded.num_nodes() == 2
+        assert loaded.num_edges() == 1
+
+    def test_export_invalid_format(self):
+        """Test error handling for invalid export format."""
+        from metainformant.networks.graph import export_network
+
+        network = create_network(["A", "B"])
+        with pytest.raises(ValueError, match="Unsupported export format"):
+            export_network(network, "test.xyz", format="xyz")
+
+
+class TestNetworkComparison:
+    """Test network comparison utilities."""
+
+    def test_network_similarity(self):
+        """Test network similarity calculation."""
+        from metainformant.networks.graph import network_similarity
+
+        net1 = create_network(["A", "B", "C"], directed=False)
+        net1.add_edge("A", "B", weight=0.8)
+
+        net2 = create_network(["A", "B", "D"], directed=False)
+        net2.add_edge("A", "B", weight=0.9)
+
+        sim = network_similarity(net1, net2)
+        assert "node_jaccard" in sim
+        assert "edge_jaccard" in sim
+        assert sim["edge_jaccard"] > 0.0
+
+    def test_extract_subgraph(self):
+        """Test subgraph extraction."""
+        from metainformant.networks.graph import extract_subgraph
+
+        network = create_network(["A", "B", "C", "D"], directed=False)
+        network.add_edge("A", "B")
+        network.add_edge("B", "C")
+        network.add_edge("C", "D")
+
+        subgraph = extract_subgraph(network, ["A", "B", "C"])
+        assert subgraph.num_nodes() == 3
+        assert subgraph.num_edges() == 2
+
+    def test_filter_network(self):
+        """Test network filtering."""
+        from metainformant.networks.graph import filter_network
+
+        network = create_network(["A", "B", "C", "D"], directed=False)
+        network.add_edge("A", "B", weight=0.9)
+        network.add_edge("C", "D", weight=0.3)
+
+        filtered = filter_network(network, min_edge_weight=0.5)
+        assert filtered.num_edges() == 1
+
+    def test_get_connected_components(self):
+        """Test connected component detection."""
+        from metainformant.networks.graph import get_connected_components
+
+        network = create_network(["A", "B", "C", "D"], directed=False)
+        network.add_edge("A", "B")
+        network.add_edge("C", "D")
+
+        components = get_connected_components(network)
+        assert len(components) == 2
+
+    def test_network_union_intersection(self):
+        """Test network union and intersection."""
+        from metainformant.networks.graph import network_union, network_intersection
+
+        net1 = create_network(["A", "B", "C"], directed=False)
+        net1.add_edge("A", "B", weight=0.5)
+
+        net2 = create_network(["A", "B", "D"], directed=False)
+        net2.add_edge("A", "B", weight=0.3)
+
+        union = network_union(net1, net2)
+        assert union.num_nodes() == 4
+        assert union.get_edge_weight("A", "B") == 0.8  # Sum
+
+        intersection = network_intersection(net1, net2)
+        assert intersection.num_nodes() == 2
+        assert intersection.num_edges() == 1
+
+    def test_remove_node_edge(self):
+        """Test node and edge removal."""
+        from metainformant.networks.graph import remove_node, remove_edge
+
+        network = create_network(["A", "B", "C"], directed=False)
+        network.add_edge("A", "B")
+        network.add_edge("B", "C")
+
+        remove_edge(network, "A", "B")
+        assert network.num_edges() == 1
+
+        remove_node(network, "B")
+        assert network.num_nodes() == 2
+        assert network.num_edges() == 0
+
     def test_duplicate_edges(self):
         """Test behavior with duplicate edge additions."""
         network = BiologicalNetwork()

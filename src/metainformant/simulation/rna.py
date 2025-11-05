@@ -3,6 +3,10 @@ from __future__ import annotations
 import math
 import random
 
+from ..core import logging, validation
+
+logger = logging.get_logger(__name__)
+
 
 def _sample_negative_binomial(rng: random.Random, mean: float, dispersion: float) -> int:
     """Sample from NB parameterized by mean and dispersion (size = 1/dispersion).
@@ -62,8 +66,28 @@ def simulate_counts_negative_binomial(
 ) -> list[list[int]]:
     """Simulate RNA-seq count matrix (genes x samples) from NB.
 
-    Returns a list of rows, each a list of counts per sample.
+    Args:
+        num_genes: Number of genes (rows)
+        num_samples: Number of samples (columns)
+        mean_expression: Mean expression level
+        dispersion: Dispersion parameter (must be > 0)
+        rng: Random number generator
+
+    Returns:
+        List of rows, each a list of counts per sample
+        
+    Raises:
+        ValidationError: If parameters are invalid
     """
+    validation.validate_type(num_genes, int, "num_genes")
+    validation.validate_type(num_samples, int, "num_samples")
+    validation.validate_range(num_genes, min_val=0, name="num_genes")
+    validation.validate_range(num_samples, min_val=0, name="num_samples")
+    validation.validate_range(mean_expression, min_val=0.0, name="mean_expression")
+    validation.validate_range(dispersion, min_val=0.0, name="dispersion")
+    
+    logger.info(f"Simulating RNA-seq counts: {num_genes} genes x {num_samples} samples")
+    
     r = rng or random
     matrix: list[list[int]] = []
     for _ in range(max(0, num_genes)):

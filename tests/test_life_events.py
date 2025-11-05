@@ -371,3 +371,4 @@ class TestEventDatabase:
         assert db.metadata["source"] == "test"
         assert db.sequences[0].person_id == "person1"
 
+

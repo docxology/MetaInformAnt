@@ -679,5 +679,35 @@ class TestRegulatoryNetworkEdgeCases:
         assert isinstance(stats["density"], float)
 
         # Should handle conversion
-        bio_network = large_grn.to_biological_network()
+        bio_network = large_grn.create_network()
         assert isinstance(bio_network, BiologicalNetwork)
+
+
+class TestNewRegulatoryFunctions:
+    """Test new regulatory network functions."""
+
+    def test_detect_regulatory_cascades(self):
+        """Test regulatory cascade detection."""
+        from metainformant.networks.regulatory import detect_regulatory_cascades
+
+        grn = GeneRegulatoryNetwork()
+        grn.add_regulation("TF1", "TF2", confidence=0.8)
+        grn.add_regulation("TF2", "GENE1", confidence=0.9)
+
+        cascades = detect_regulatory_cascades(grn, max_length=5, min_confidence=0.5)
+        assert len(cascades) > 0
+
+    def test_validate_regulation(self):
+        """Test regulation validation."""
+        from metainformant.networks.regulatory import validate_regulation
+
+        grn = GeneRegulatoryNetwork()
+        grn.add_regulation("TF1", "GENE1", confidence=0.8, regulation_type="activation")
+
+        validation = validate_regulation(grn, "TF1", "GENE1", min_confidence=0.5)
+        assert validation["exists"] is True
+        assert validation["confidence"] == 0.8
+
+        # Test non-existent regulation
+        validation2 = validate_regulation(grn, "TF1", "GENE2", min_confidence=0.5)
+        assert validation2["exists"] is False

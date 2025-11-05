@@ -495,3 +495,4 @@ def calculate_confidence_intervals(
     
     return results
 
+

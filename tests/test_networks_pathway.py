@@ -468,3 +468,42 @@ class TestPathwayEdgeCases:
         assert "GENE_2" in genes
         assert "GENE.3" in genes
         assert "GENE@4" in genes
+
+
+class TestNewPathwayFunctions:
+    """Test new pathway functions."""
+
+    def test_pathway_similarity(self):
+        """Test pathway similarity calculation."""
+        from metainformant.networks.pathway import pathway_similarity
+
+        path1 = {"GENE1", "GENE2", "GENE3"}
+        path2 = {"GENE2", "GENE3", "GENE4"}
+
+        similarity = pathway_similarity(path1, path2, method="jaccard")
+        assert similarity > 0.0
+        assert similarity <= 1.0
+
+        overlap = pathway_similarity(path1, path2, method="overlap")
+        assert overlap > 0.0
+
+        dice = pathway_similarity(path1, path2, method="dice")
+        assert dice > 0.0
+
+    def test_pathway_activity_score(self):
+        """Test pathway activity scoring."""
+        from metainformant.networks.pathway import pathway_activity_score
+
+        pn = PathwayNetwork()
+        pn.add_pathway("path1", ["GENE1", "GENE2", "GENE3"])
+
+        expression = {"GENE1": 10.5, "GENE2": 8.2, "GENE3": 12.1}
+
+        score = pathway_activity_score(pn, "path1", expression, method="mean")
+        assert score > 0.0
+
+        score_max = pathway_activity_score(pn, "path1", expression, method="max")
+        assert score_max == 12.1
+
+        score_sum = pathway_activity_score(pn, "path1", expression, method="sum")
+        assert score_sum > score

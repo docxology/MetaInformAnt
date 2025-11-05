@@ -339,8 +339,18 @@ def pathway_enrichment(
         expected = (n * K) / N if N > 0 else 0
         fold_enrichment = (k / expected) if expected > 0 else float("inf")
 
-        # Simple p-value approximation (hypergeometric would be better)
-        p_value = max(0.001, 1.0 / (1.0 + fold_enrichment))
+        # Hypergeometric test for p-value
+        from scipy.stats import hypergeom
+        
+        try:
+            # Hypergeometric test: probability of k or more successes
+            # N = background_size, K = pathway_size, n = query_size, k = overlap_size
+            hg = hypergeom(N, K, n)
+            p_value = 1.0 - hg.cdf(k - 1)  # P(X >= k)
+        except (ImportError, ValueError):
+            # Fallback if scipy not available or invalid parameters
+            # Simple approximation
+            p_value = max(0.001, 1.0 / (1.0 + fold_enrichment))
 
         result = {
             "pathway_id": pathway_id,
@@ -422,3 +432,100 @@ def network_enrichment_analysis(
 
     else:
         raise ValueError(f"Unknown method: {method}")
+
+
+def pathway_similarity(pathway1_genes: Set[str], pathway2_genes: Set[str], method: str = "jaccard") -> float:
+    """Calculate similarity between two pathways.
+    
+    Computes various similarity metrics to assess how similar two
+    pathways are in terms of gene composition.
+    
+    Args:
+        pathway1_genes: Set of gene identifiers in first pathway
+        pathway2_genes: Set of gene identifiers in second pathway
+        method: Similarity metric:
+            - "jaccard": Jaccard similarity (intersection/union)
+            - "overlap": Overlap coefficient (intersection/min)
+            - "dice": Dice coefficient (2*intersection/(sum))
+            
+    Returns:
+        Similarity score in [0, 1]. Higher values indicate more similar pathways.
+        
+    Examples:
+        >>> path1 = {"GENE1", "GENE2", "GENE3"}
+        >>> path2 = {"GENE2", "GENE3", "GENE4"}
+        >>> similarity = pathway_similarity(path1, path2)
+        >>> similarity > 0.0
+        True
+    """
+    if not pathway1_genes or not pathway2_genes:
+        return 0.0
+    
+    intersection = len(pathway1_genes.intersection(pathway2_genes))
+    union = len(pathway1_genes.union(pathway2_genes))
+    min_size = min(len(pathway1_genes), len(pathway2_genes))
+    sum_size = len(pathway1_genes) + len(pathway2_genes)
+    
+    if method == "jaccard":
+        return intersection / union if union > 0 else 0.0
+    elif method == "overlap":
+        return intersection / min_size if min_size > 0 else 0.0
+    elif method == "dice":
+        return (2 * intersection) / sum_size if sum_size > 0 else 0.0
+    else:
+        raise ValueError(f"Unknown similarity method: {method}. Use 'jaccard', 'overlap', or 'dice'")
+
+
+def pathway_activity_score(
+    pathway_network: PathwayNetwork,
+    pathway_id: str,
+    gene_expression: Dict[str, float],
+    method: str = "mean",
+) -> float:
+    """Calculate activity score for a pathway based on gene expression.
+    
+    Computes a summary score representing pathway activity from
+    individual gene expression levels.
+    
+    Args:
+        pathway_network: PathwayNetwork object
+        pathway_id: Pathway identifier
+        gene_expression: Dictionary mapping gene_id to expression value
+        method: Aggregation method:
+            - "mean": Average expression of pathway genes
+            - "median": Median expression
+            - "max": Maximum expression
+            - "sum": Sum of expressions
+            
+    Returns:
+        Pathway activity score (float). Higher values indicate higher activity.
+        
+    Examples:
+        >>> pn = PathwayNetwork()
+        >>> pn.add_pathway("path1", ["GENE1", "GENE2", "GENE3"])
+        >>> expression = {"GENE1": 10.5, "GENE2": 8.2, "GENE3": 12.1}
+        >>> score = pathway_activity_score(pn, "path1", expression)
+        >>> score > 0
+        True
+    """
+    pathway_genes = pathway_network.get_pathway_genes(pathway_id)
+    
+    if not pathway_genes:
+        return 0.0
+    
+    # Get expression values for pathway genes
+    expressions = [gene_expression.get(gene, 0.0) for gene in pathway_genes if gene in gene_expression]
+    
+    if not expressions:
+        return 0.0
+    
+    if method == "mean":
+        return np.mean(expressions)
+    elif method == "median":
+        return np.median(expressions)
+    elif method == "max":
+        return np.max(expressions)
+    elif method == "sum":
+        return np.sum(expressions)
+    else:
+        raise ValueError(f"Unknown method: {method}. Use 'mean', 'median', 'max', or 'sum'")

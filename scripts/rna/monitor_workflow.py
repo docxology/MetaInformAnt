@@ -14,33 +14,29 @@ from collections import defaultdict
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-
-def count_quantified_samples(species_dir: Path) -> int:
-    """Count number of successfully quantified samples."""
-    quant_dir = species_dir / "quant"
-    if not quant_dir.exists():
-        return 0
-    abundance_files = list(quant_dir.glob("*/abundance.tsv"))
-    return len(abundance_files)
+from metainformant.rna import check_workflow_progress
+from metainformant.rna.workflow import load_workflow_config
+from glob import glob
 
 
-def count_total_samples(species_dir: Path) -> int:
-    """Count total samples in metadata."""
-    metadata_files = [
-        species_dir / "work" / "metadata" / "metadata.filtered.tissue.tsv",
-        species_dir / "work" / "metadata" / "metadata.filtered.clean.tsv",
-        species_dir / "work" / "metadata" / "metadata.tsv",
-    ]
+def get_config_for_species_dir(species_dir: Path) -> Path | None:
+    """Find config file for a species directory."""
+    species_name = species_dir.name
+    repo_root = Path(__file__).parent.parent.parent
+    config_dir = repo_root / "config" / "amalgkit"
     
-    for mf in metadata_files:
-        if mf.exists():
-            try:
-                # Simple line count minus header
-                with open(mf) as f:
-                    return sum(1 for _ in f) - 1
-            except Exception:
-                continue
-    return 0
+    config_pattern = str(config_dir / f"amalgkit_{species_name}.yaml")
+    config_files = glob(config_pattern)
+    if config_files:
+        return Path(config_files[0])
+    
+    # Try alternative naming
+    config_pattern = str(config_dir / f"amalgkit_{species_name.replace('_', '*')}.yaml")
+    config_files = glob(config_pattern)
+    if config_files:
+        return Path(config_files[0])
+    
+    return None
 
 
 def get_disk_usage(path: Path) -> tuple[float, str]:
@@ -152,14 +148,25 @@ def display_dashboard():
             continue
         
         species_name = species_dir.name.capitalize()
-        quantified = count_quantified_samples(species_dir)
-        total_count = count_total_samples(species_dir)
+        
+        # Try to get config and use metainformant function
+        config_path = get_config_for_species_dir(species_dir)
+        if config_path and config_path.exists():
+            progress_info = check_workflow_progress(config_path)
+            quantified = progress_info["quantified"]
+            total_count = progress_info["total"]
+            pct = progress_info["percentage"]
+        else:
+            # Fallback: count directly
+            quant_dir = species_dir / "quant"
+            quantified = len(list(quant_dir.glob("*/abundance.tsv"))) if quant_dir.exists() else 0
+            total_count = 0
+            pct = 0.0
         
         total_quantified += quantified
         total_samples += total_count
         
         if total_count > 0:
-            pct = (quantified / total_count) * 100
             progress = f"{'█' * int(pct / 5):<20}"
             status = f"{quantified}/{total_count} ({pct:.1f}%)"
         else:

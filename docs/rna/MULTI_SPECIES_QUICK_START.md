@@ -428,18 +428,36 @@ netstat -an | grep ESTABLISHED | wc -l
 
 ### Disk Space Issues
 
-**Check available space:**
+**Automatic Protection (NEW):**
+The batch download workflow now includes automatic disk space management:
+- ✅ Pre-flight checks before starting downloads
+- ✅ Automatic cleanup of partial/failed downloads when space is low
+- ✅ Default thread count reduced to 8 for smaller drives
+- ✅ Health checks monitor disk space every 10 minutes
+- ✅ Automatic recovery from disk space errors
+
+**Manual Checks:**
 ```bash
+# Check available space
 df -h /home/q/Documents/GitHub/MetaInformAnt/output/
+
+# Clean up partial/failed downloads
+python3 scripts/rna/cleanup_partial_downloads.py --execute
 ```
 
-**Free up space:**
+**Configuration for Different Drive Sizes:**
 ```bash
-# Preview cleanup (dry run)
-bash scripts/rna/cleanup_quantified_sra.sh
+# Small drive (default: 8 threads, auto-cleanup at 5GB)
+python3 scripts/rna/batch_download_species.py --total-threads 8
 
-# Execute cleanup for quantified samples
-bash scripts/rna/cleanup_quantified_sra.sh --execute
+# Large drive (can use more threads)
+python3 scripts/rna/batch_download_species.py --total-threads 30
+
+# Custom thresholds
+python3 scripts/rna/batch_download_species.py \
+  --total-threads 8 \
+  --min-free-gb 15.0 \
+  --auto-cleanup-threshold 10.0
 ```
 
 **Reduce batch size:**

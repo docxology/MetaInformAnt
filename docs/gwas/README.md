@@ -33,10 +33,10 @@ results = execute_gwas_workflow(config)
 
 ```bash
 # Run GWAS workflow from config file
-python -m metainformant gwas run --config config/gwas_config.yaml
+python -m metainformant gwas run --config config/gwas/gwas_template.yaml
 
 # Validate configuration only
-python -m metainformant gwas run --config config/gwas_config.yaml --check
+python -m metainformant gwas run --config config/gwas/gwas_template.yaml --check
 ```
 
 ## Workflow Steps

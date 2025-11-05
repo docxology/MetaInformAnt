@@ -24,6 +24,7 @@ scripts/
 ├── visualization/ # Visualization scripts
 ├── epigenome/     # Epigenome analysis scripts
 ├── ecology/       # Ecology analysis scripts
+├── life_events/   # Life events analysis scripts
 ├── archive/       # Archived/obsolete scripts (see archive/README.md)
 ├── README.md      # This file
 └── AGENTS.md      # AI agent contribution documentation
@@ -296,6 +297,28 @@ See `scripts/rna/README.md` for detailed RNA script documentation.
   - Diversity indices (Shannon, Simpson, etc.)
   - Beta diversity calculations
   - Usage: `python3 scripts/ecology/run_ecology_analysis.py --help` or `uv run metainformant ecology run --help`
+
+## Life Events Analysis Scripts (`scripts/life_events/`)
+
+### Analysis Workflow
+- **`run_life_events_analysis.py`**: ✅ Life events analysis orchestrator (IMPLEMENTED)
+  - Synthetic data generation for testing and demos
+  - Event sequence embedding learning
+  - Model training and prediction
+  - Comprehensive visualization generation
+  - End-to-end workflow from data to visualizations
+  - Usage: `python3 scripts/life_events/run_life_events_analysis.py --help`
+  - **Examples**:
+    ```bash
+    # Generate synthetic data and run complete analysis
+    python3 scripts/life_events/run_life_events_analysis.py --synthetic --n-sequences 100 --generate-outcomes
+    
+    # Analyze existing sequences with config file
+    python3 scripts/life_events/run_life_events_analysis.py --input data/life_events/sequences.json --config config/life_events_template.yaml
+    
+    # Generate all visualizations
+    python3 scripts/life_events/run_life_events_analysis.py --synthetic --all-visualizations
+    ```
 
 ## Usage Guidelines
 

@@ -5,143 +5,106 @@ Runs sequentially with proper threading to avoid overwhelming the system.
 """
 
 import sys
-import subprocess
-import shutil
 from pathlib import Path
-import yaml
-import logging
+from glob import glob
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s | %(levelname)s | %(message)s'
-)
-logger = logging.getLogger(__name__)
+# Add src to path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
+from metainformant.rna.workflow import load_workflow_config
+from metainformant.rna.steps import quantify_sample, delete_sample_fastqs
+from metainformant.rna import find_unquantified_samples
+from metainformant.core.logging import get_logger
+from metainformant.core.io import read_delimited
 
-def load_config(config_path: Path) -> dict:
-    """Load amalgkit config."""
-    with open(config_path) as f:
-        return yaml.safe_load(f)
+logger = get_logger("manual_quant_cleanup")
 
 
-def get_kallisto_index(species_dir: Path) -> Path:
-    """Get kallisto index path."""
-    index_dir = species_dir / "work" / "index"
-    if index_dir.exists():
-        indices = list(index_dir.glob("*.idx"))
-        if indices:
-            return indices[0]
-    return None
-
-
-def find_complete_unquantified(species_dir: Path) -> list:
-    """Find samples with complete FASTQs but no quantification."""
-    fastq_dir = species_dir / "fastq"
-    quant_dir = species_dir / "quant"
-    
-    if not fastq_dir.exists():
-        return []
-    
-    ready = []
-    for sample_dir in fastq_dir.iterdir():
-        if not sample_dir.is_dir():
-            continue
-        
-        sample_id = sample_dir.name
-        
-        # Check if already quantified
-        if (quant_dir / sample_id / "abundance.tsv").exists():
-            continue
-        
-        # Check for complete FASTQ files (>1KB, not empty)
-        fastq_files = []
-        for fq in sample_dir.glob("*.fastq.gz"):
-            if fq.stat().st_size > 1024:  # >1KB
-                fastq_files.append(fq)
-        
-        if fastq_files:
-            ready.append((sample_id, sample_dir, fastq_files))
-    
-    return ready
-
-
-def quantify_sample(sample_id: str, fastq_files: list, kallisto_index: Path, 
-                   output_dir: Path, species: str) -> bool:
-    """Run kallisto quantification."""
-    try:
-        quant_output = output_dir / sample_id
-        quant_output.mkdir(parents=True, exist_ok=True)
-        
-        cmd = [
-            "kallisto", "quant",
-            "-i", str(kallisto_index),
-            "-o", str(quant_output),
-            "-t", "12"  # Use 12 threads for speed
-        ]
-        
-        # Single-end or paired-end
-        if len(fastq_files) == 1:
-            cmd.extend(["--single", "-l", "200", "-s", "20"])
-        
-        cmd.extend([str(f) for f in sorted(fastq_files)])
-        
-        logger.info(f"  Quantifying {species}/{sample_id} ...")
-        
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
-        
-        if result.returncode == 0 and (quant_output / "abundance.tsv").exists():
-            logger.info(f"  ✅ {species}/{sample_id}: Quantified")
-            return True
-        else:
-            logger.error(f"  ❌ {species}/{sample_id}: Failed")
-            return False
-            
-    except Exception as e:
-        logger.error(f"  ❌ {species}/{sample_id}: {e}")
-        return False
-
-
-def cleanup_sample(sample_dir: Path, sample_id: str, species: str):
-    """Delete FASTQs after successful quantification."""
-    try:
-        size_mb = sum(f.stat().st_size for f in sample_dir.rglob("*") if f.is_file()) / (1024*1024)
-        shutil.rmtree(sample_dir)
-        logger.info(f"  🗑️  {species}/{sample_id}: Deleted {size_mb:.1f} MB")
-    except Exception as e:
-        logger.error(f"  ❌ {species}/{sample_id}: Cleanup failed - {e}")
+# Functions now use metainformant - removed duplicate implementations
 
 
 def process_species(species_name: str, config_path: Path):
-    """Process one species."""
+    """Process one species using metainformant functions."""
     logger.info(f"\n{'='*80}")
     logger.info(f"Processing {species_name}")
     logger.info(f"{'='*80}")
     
-    repo_root = Path(__file__).parent.parent.parent
-    species_dir = repo_root / "output" / "amalgkit" / species_name
+    # Load config
+    cfg = load_workflow_config(config_path)
+    fastq_dir = Path(cfg.per_step.get("getfastq", {}).get("out_dir", cfg.work_dir / "fastq"))
+    quant_dir = Path(cfg.per_step.get("quant", {}).get("out_dir", cfg.work_dir / "quant"))
     
-    kallisto_index = get_kallisto_index(species_dir)
-    if not kallisto_index:
-        logger.error(f"❌ No kallisto index for {species_name}")
-        return
-    
-    samples = find_complete_unquantified(species_dir)
-    if not samples:
+    # Find unquantified samples using metainformant function
+    unquantified = find_unquantified_samples(config_path)
+    if not unquantified:
         logger.info(f"✅ No complete samples need quantification")
         return
     
-    logger.info(f"Found {len(samples)} samples ready for quantification")
+    logger.info(f"Found {len(unquantified)} samples ready for quantification")
+    
+    # Read metadata
+    metadata_file = cfg.work_dir / "metadata" / "metadata.tsv"
+    if not metadata_file.exists():
+        metadata_file = cfg.work_dir / "metadata" / "metadata.filtered.tissue.tsv"
+    
+    if not metadata_file.exists():
+        logger.error(f"❌ No metadata file found for {species_name}")
+        return
+    
+    rows = list(read_delimited(metadata_file, delimiter="\t"))
+    
+    # Get quant params from config
+    quant_params = dict(cfg.per_step.get("quant", {}))
+    quant_params["out_dir"] = str(quant_dir.absolute())
+    quant_params["threads"] = cfg.threads or 12
+    
+    # Inject index_dir if needed
+    if "index_dir" not in quant_params and "index-dir" not in quant_params:
+        index_dir = quant_dir.parent / "work" / "index"
+        if index_dir.exists():
+            quant_params["index_dir"] = str(index_dir.absolute())
     
     quantified = 0
     cleaned = 0
     
     # Process sequentially to avoid overwhelming system
-    for sample_id, sample_dir, fastq_files in samples:
-        if quantify_sample(sample_id, fastq_files, kallisto_index, 
-                          species_dir / "quant", species_name):
-            quantified += 1
-            cleanup_sample(sample_dir, sample_id, species_name)
+    for sample_id in unquantified:
+        try:
+            # Get metadata rows for this sample
+            sample_rows = [row for row in rows if row.get("run") == sample_id]
+            
+            if not sample_rows:
+                logger.warning(f"  ⚠️  {sample_id} not in metadata, skipping")
+                continue
+            
+            # Use metainformant quantify_sample function
+            logger.info(f"  Quantifying {species_name}/{sample_id} ...")
+            success, message, abundance_file = quantify_sample(
+                sample_id=sample_id,
+                metadata_rows=sample_rows,
+                quant_params=quant_params,
+                log_dir=cfg.log_dir or (cfg.work_dir / "logs"),
+                step_name=f"quant_{species_name}_{sample_id}",
+            )
+            
+            if success:
+                logger.info(f"  ✅ {species_name}/{sample_id}: {message}")
+                quantified += 1
+            else:
+                logger.error(f"  ❌ {species_name}/{sample_id}: {message}")
+            
+            # Always cleanup FASTQs to free space
+            delete_sample_fastqs(sample_id, fastq_dir)
             cleaned += 1
+        
+        except Exception as e:
+            logger.error(f"  ❌ {species_name}/{sample_id}: {e}")
+            # Attempt cleanup
+            try:
+                delete_sample_fastqs(sample_id, fastq_dir)
+                cleaned += 1
+            except Exception:
+                pass
     
     logger.info(f"\n{species_name} Summary: {quantified} quantified, {cleaned} cleaned")
 
@@ -154,12 +117,21 @@ def main():
     repo_root = Path(__file__).parent.parent.parent
     config_dir = repo_root / "config" / "amalgkit"
     
-    species_configs = [
-        ("cfloridanus", config_dir / "amalgkit_cfloridanus.yaml"),
-        ("pbarbatus", config_dir / "amalgkit_pbarbatus.yaml"),
-        ("mpharaonis", config_dir / "amalgkit_mpharaonis.yaml"),
-        ("sinvicta", config_dir / "amalgkit_sinvicta.yaml")
-    ]
+    # Discover all config files
+    if not config_dir.exists():
+        config_dir = repo_root / "config"
+    
+    config_pattern = str(config_dir / "amalgkit_*.yaml")
+    config_files = sorted(glob(config_pattern))
+    
+    species_configs = []
+    for config_file in config_files:
+        path = Path(config_file)
+        if "template" in path.stem.lower():
+            continue
+        
+        species_code = path.stem.replace("amalgkit_", "")
+        species_configs.append((species_code, path))
     
     for species_name, config_path in species_configs:
         if config_path.exists():

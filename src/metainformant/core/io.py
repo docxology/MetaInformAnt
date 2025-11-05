@@ -5,7 +5,7 @@ import gzip
 import io
 import json
 from pathlib import Path
-from typing import Any, Dict, Iterable, Iterator, Mapping
+from typing import Any, Iterable, Iterator, Mapping
 
 
 def ensure_directory(path: str | Path) -> Path:
@@ -37,22 +37,55 @@ def load_json(path: str | Path) -> Any:
         
     Returns:
         Parsed JSON data (dict, list, or primitive types)
+    
+    Raises:
+        IOError: If file read fails or JSON parsing fails
+        FileNotFoundError: If file does not exist
     """
-    with open_text_auto(path, mode="rt") as fh:
-        return json.load(fh)
+    from .errors import IOError as CoreIOError
+    
+    p = Path(path)
+    if not p.exists():
+        raise FileNotFoundError(f"JSON file not found: {path}")
+    
+    try:
+        with open_text_auto(p, mode="rt") as fh:
+            return json.load(fh)
+    except json.JSONDecodeError as e:
+        raise CoreIOError(f"Failed to parse JSON file {path}: {e}") from e
+    except Exception as e:
+        raise CoreIOError(f"Failed to read JSON file {path}: {e}") from e
 
 
-def dump_json(obj: Any, path: str | Path, *, indent: int | None = None) -> None:
-    """Write object to JSON file.
+def dump_json(obj: Any, path: str | Path, *, indent: int | None = None, atomic: bool = True) -> None:
+    """Write object to JSON file with optional atomic write.
     
     Args:
         obj: Object to serialize (must be JSON-serializable)
         path: Output file path
         indent: Number of spaces for indentation (None for compact)
+        atomic: If True, write to temp file then rename (prevents corruption)
+    
+    Raises:
+        IOError: If file write fails
     """
-    ensure_directory(Path(path).parent)
-    with open_text_auto(path, mode="wt") as fh:
-        json.dump(obj, fh, indent=indent, sort_keys=True)  # Sort keys for consistent output
+    from .errors import IOError as CoreIOError
+    
+    p = Path(path)
+    ensure_directory(p.parent)
+    
+    try:
+        if atomic:
+            # Atomic write: write to temp file, then rename
+            temp_path = p.with_suffix(p.suffix + ".tmp")
+            with open_text_auto(temp_path, mode="wt") as fh:
+                json.dump(obj, fh, indent=indent, sort_keys=True)
+            temp_path.replace(p)  # Atomic rename
+        else:
+            with open_text_auto(p, mode="wt") as fh:
+                json.dump(obj, fh, indent=indent, sort_keys=True)
+    except Exception as e:
+        raise CoreIOError(f"Failed to write JSON file {path}: {e}") from e
 
 
 def dump_json_gz(obj: Any, path: str | Path, *, indent: int | None = None) -> None:
@@ -68,26 +101,6 @@ def load_json_gz(path: str | Path) -> Any:
         return json.load(fh)
 
 
-def read_csv(path: str | Path, **kwargs) -> Any:
-    """Read CSV file with pandas, handling gzip automatically."""
-    try:
-        import pandas as pd
-        if str(path).endswith('.gz'):
-            return pd.read_csv(path, **kwargs)
-        else:
-            return pd.read_csv(path, **kwargs)
-    except ImportError:
-        raise ImportError("pandas is required for CSV reading. Install with: uv add pandas")
-
-
-def write_csv(df: Any, path: str | Path, **kwargs) -> None:
-    """Write DataFrame to CSV file."""
-    try:
-        import pandas as pd
-        ensure_directory(Path(path).parent)
-        df.to_csv(path, **kwargs)
-    except ImportError:
-        raise ImportError("pandas is required for CSV writing. Install with: uv add pandas")
 
 
 def read_parquet(path: str | Path, **kwargs) -> Any:
@@ -110,7 +123,7 @@ def write_parquet(df: Any, path: str | Path, **kwargs) -> None:
 
 
 # JSON Lines utilities
-def read_jsonl(path: str | Path) -> Iterator[Dict[str, Any]]:
+def read_jsonl(path: str | Path) -> Iterator[dict[str, Any]]:
     """Read JSON Lines format (one JSON object per line).
     
     Args:
@@ -127,22 +140,41 @@ def read_jsonl(path: str | Path) -> Iterator[Dict[str, Any]]:
             yield json.loads(line)
 
 
-def write_jsonl(rows: Iterable[Mapping[str, Any]], path: str | Path) -> None:
+def write_jsonl(rows: Iterable[Mapping[str, Any]], path: str | Path, *, atomic: bool = True) -> None:
     """Write rows as JSON Lines format (one JSON object per line).
     
     Args:
         rows: Iterable of dictionaries to write
         path: Output file path
+        atomic: If True, write to temp file then rename (prevents corruption)
+    
+    Raises:
+        IOError: If file write fails
     """
-    ensure_directory(Path(path).parent)
-    with open_text_auto(path, mode="wt") as fh:
-        for row in rows:
-            fh.write(json.dumps(dict(row)))
-            fh.write("\n")
+    from .errors import IOError as CoreIOError
+    
+    p = Path(path)
+    ensure_directory(p.parent)
+    
+    try:
+        if atomic:
+            temp_path = p.with_suffix(p.suffix + ".tmp")
+            with open_text_auto(temp_path, mode="wt") as fh:
+                for row in rows:
+                    fh.write(json.dumps(dict(row)))
+                    fh.write("\n")
+            temp_path.replace(p)
+        else:
+            with open_text_auto(p, mode="wt") as fh:
+                for row in rows:
+                    fh.write(json.dumps(dict(row)))
+                    fh.write("\n")
+    except Exception as e:
+        raise CoreIOError(f"Failed to write JSONL file {path}: {e}") from e
 
 
 # Delimited text utilities (CSV/TSV)
-def read_delimited(path: str | Path, *, delimiter: str = ",") -> Iterator[Dict[str, str]]:
+def read_delimited(path: str | Path, *, delimiter: str = ",") -> Iterator[dict[str, str]]:
     """Read delimited text file (CSV/TSV) as dictionaries.
     
     Args:
@@ -151,45 +183,93 @@ def read_delimited(path: str | Path, *, delimiter: str = ",") -> Iterator[Dict[s
         
     Yields:
         Dictionary for each row with column names as keys
+    
+    Raises:
+        FileNotFoundError: If file does not exist
+        IOError: If file read fails
     """
-    with open_text_auto(path, mode="rt") as fh:
-        reader = csv.DictReader(fh, delimiter=delimiter)
-        for row in reader:
-            yield {k: (v if v is not None else "") for k, v in row.items()}
+    from .errors import IOError as CoreIOError
+    
+    p = Path(path)
+    if not p.exists():
+        raise FileNotFoundError(f"File not found: {path}")
+    
+    try:
+        with open_text_auto(p, mode="rt") as fh:
+            reader = csv.DictReader(fh, delimiter=delimiter)
+            for row in reader:
+                yield {k: (v if v is not None else "") for k, v in row.items()}
+    except Exception as e:
+        raise CoreIOError(f"Failed to read delimited file {path}: {e}") from e
 
 
-def write_delimited(rows: Iterable[Mapping[str, Any]], path: str | Path, *, delimiter: str = ",") -> None:
+def write_delimited(rows: Iterable[Mapping[str, Any]], path: str | Path, *, delimiter: str = ",", atomic: bool = True) -> None:
     """Write rows to delimited text file (CSV/TSV).
     
     Args:
         rows: Iterable of dictionaries to write
         path: Output file path
         delimiter: Field delimiter (default: comma for CSV, use "\\t" for TSV)
+        atomic: If True, write to temp file then rename (prevents corruption)
+    
+    Raises:
+        IOError: If file write fails
     """
-    ensure_directory(Path(path).parent)
-    rows_iter = iter(rows)
+    from .errors import IOError as CoreIOError
+    
+    p = Path(path)
+    ensure_directory(p.parent)
+    
     try:
-        first = next(rows_iter)
-    except StopIteration:
-        # create empty file
-        Path(path).write_text("")
-        return
-    fieldnames = list(first.keys())
-    with open_text_auto(path, mode="wt") as fh:
-        writer = csv.DictWriter(fh, fieldnames=fieldnames, delimiter=delimiter)
-        writer.writeheader()
-        writer.writerow({k: first.get(k, "") for k in fieldnames})
-        for row in rows_iter:
-            writer.writerow({k: row.get(k, "") for k in fieldnames})
+        rows_iter = iter(rows)
+        try:
+            first = next(rows_iter)
+        except StopIteration:
+            # create empty file
+            if atomic:
+                temp_path = p.with_suffix(p.suffix + ".tmp")
+                temp_path.write_text("")
+                temp_path.replace(p)
+            else:
+                p.write_text("")
+            return
+        
+        fieldnames = list(first.keys())
+        
+        if atomic:
+            temp_path = p.with_suffix(p.suffix + ".tmp")
+            with open_text_auto(temp_path, mode="wt") as fh:
+                writer = csv.DictWriter(fh, fieldnames=fieldnames, delimiter=delimiter)
+                writer.writeheader()
+                writer.writerow({k: first.get(k, "") for k in fieldnames})
+                for row in rows_iter:
+                    writer.writerow({k: row.get(k, "") for k in fieldnames})
+            temp_path.replace(p)
+        else:
+            with open_text_auto(p, mode="wt") as fh:
+                writer = csv.DictWriter(fh, fieldnames=fieldnames, delimiter=delimiter)
+                writer.writeheader()
+                writer.writerow({k: first.get(k, "") for k in fieldnames})
+                for row in rows_iter:
+                    writer.writerow({k: row.get(k, "") for k in fieldnames})
+    except Exception as e:
+        raise CoreIOError(f"Failed to write delimited file {path}: {e}") from e
 
 
 # Pandas-compatible CSV/TSV utilities
-def read_csv(path: str | Path):
-    """Read CSV file using pandas if available, fallback to native implementation."""
+def read_csv(path: str | Path, **kwargs) -> Any:
+    """Read CSV file using pandas if available, fallback to native implementation.
+    
+    Args:
+        path: Path to CSV file (supports gzip compression automatically)
+        **kwargs: Additional arguments passed to pandas.read_csv if pandas available
+        
+    Returns:
+        pandas DataFrame if pandas available, otherwise dict of lists
+    """
     try:
         import pandas as pd
-
-        return pd.read_csv(path)
+        return pd.read_csv(path, **kwargs)
     except ImportError:
         # Fallback to native implementation
         rows = list(read_delimited(path, delimiter=","))
@@ -206,13 +286,26 @@ def read_csv(path: str | Path):
         return dict(data)
 
 
-def write_csv(data, path: str | Path) -> None:
-    """Write CSV file using pandas if available, fallback to native implementation."""
+def write_csv(data: Any, path: str | Path, **kwargs) -> None:
+    """Write CSV file using pandas if available, fallback to native implementation.
+    
+    Args:
+        data: pandas DataFrame or dict-like data to write
+        path: Output file path
+        **kwargs: Additional arguments passed to pandas DataFrame.to_csv if pandas available
+    """
     try:
+        import pandas as pd
+        ensure_directory(Path(path).parent)
         # Assume pandas DataFrame
-        data.to_csv(path, index=False)
-    except AttributeError:
-        # Handle dict-like data
+        if isinstance(data, pd.DataFrame):
+            data.to_csv(path, **kwargs)
+        else:
+            # Try to convert to DataFrame
+            df = pd.DataFrame(data)
+            df.to_csv(path, **kwargs)
+    except (ImportError, AttributeError):
+        # Fallback to native implementation
         if isinstance(data, dict):
             rows = []
             keys = list(data.keys())
@@ -221,6 +314,17 @@ def write_csv(data, path: str | Path) -> None:
                 for i in range(num_rows):
                     row = {key: data[key][i] for key in keys}
                     rows.append(row)
+                write_delimited(rows, path, delimiter=",")
+        else:
+            # Try to convert to list of dicts
+            rows = []
+            if hasattr(data, '__iter__'):
+                for row in data:
+                    if isinstance(row, dict):
+                        rows.append(row)
+                    elif hasattr(row, '_asdict'):  # namedtuple
+                        rows.append(row._asdict())
+            if rows:
                 write_delimited(rows, path, delimiter=",")
 
 

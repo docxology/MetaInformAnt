@@ -56,6 +56,7 @@ from .interpretability import (
 # Import utility functions
 from .utils import (
     convert_sequences_to_tokens,
+    generate_synthetic_life_events,
     get_event_statistics,
     load_sequences_from_json,
     validate_sequence,
@@ -95,5 +96,6 @@ __all__ = [
     "validate_sequence",
     "convert_sequences_to_tokens",
     "get_event_statistics",
+    "generate_synthetic_life_events",
 ]
 

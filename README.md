@@ -194,13 +194,19 @@ bash scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit/config.yaml
 ### GWAS Analysis
 
 ```python
-from metainformant.gwas import run_gwas, manhattan_plot
+from metainformant.gwas import run_gwas, manhattan_plot, load_gwas_config
 
-# Run association testing
-results = run_gwas(genotypes, phenotypes, covariates)
+# Load configuration and run workflow
+config = load_gwas_config("config/gwas/gwas_template.yaml")
+results = run_gwas(
+    vcf_path="data/variants/cohort.vcf.gz",
+    phenotype_path="data/phenotypes/traits.tsv",
+    config={"association": {"model": "linear"}},
+    output_dir="output/gwas"
+)
 
-# Visualize
-manhattan_plot(results, output="output/gwas/manhattan.png")
+# Visualize results
+manhattan_plot(results["association_results"], output_path="output/gwas/manhattan.png")
 ```
 
 ### Visualization

@@ -408,7 +408,16 @@ def infer_grn(
 
     elif method == "mutual_info":
         # Mutual information-based inference
-        from ..ml.features import _calculate_mi
+        try:
+            from ..information.syntactic import mutual_information
+        except ImportError:
+            try:
+                from ..ml.features import _calculate_mi as mutual_information
+            except ImportError:
+                raise ImportError(
+                    "Mutual information calculation requires either information or ml.features module. "
+                    "Please ensure one is available."
+                )
 
         # Discretize expression data for MI calculation
         expr_discretized = np.zeros_like(expression_data)
@@ -425,10 +434,10 @@ def infer_grn(
                 if i == j:
                     continue
 
-                reg_expr = expr_discretized[:, i].astype(int)
-                target_expr = expr_discretized[:, j].astype(int)
+                reg_expr = expr_discretized[:, i].astype(int).tolist()
+                target_expr = expr_discretized[:, j].astype(int).tolist()
 
-                mi = _calculate_mi(reg_expr, target_expr)
+                mi = mutual_information(reg_expr, target_expr)
 
                 if mi >= threshold:
                     # Determine regulation type (simplified)
@@ -671,3 +680,148 @@ def pathway_regulation_analysis(
         results[pathway_id] = pathway_results
 
     return results
+
+
+def detect_regulatory_cascades(
+    grn: GeneRegulatoryNetwork, max_length: int = 5, min_confidence: float = 0.5
+) -> List[Dict[str, Any]]:
+    """Detect regulatory cascades (multi-level regulation chains).
+    
+    Identifies chains of regulation where one regulator controls another,
+    which in turn controls downstream targets. Cascades reveal hierarchical
+    regulatory structure.
+    
+    Args:
+        grn: Gene regulatory network
+        max_length: Maximum cascade length to detect (default 5)
+        min_confidence: Minimum confidence for regulatory interactions
+        
+    Returns:
+        List of cascade dictionaries, each containing:
+        - cascade_id: Unique identifier
+        - length: Number of regulatory steps
+        - regulators: List of regulator IDs in cascade order
+        - target: Final target gene
+        - avg_confidence: Average confidence across cascade
+        
+    Examples:
+        >>> grn = GeneRegulatoryNetwork()
+        >>> grn.add_regulation("TF1", "TF2", confidence=0.8)
+        >>> grn.add_regulation("TF2", "GENE1", confidence=0.9)
+        >>> cascades = detect_regulatory_cascades(grn)
+        >>> len(cascades) > 0
+        True
+    """
+    cascades = []
+    cascade_id = 0
+    
+    # Build adjacency list for efficient traversal
+    adjacency = {}
+    for reg, target, data in grn.regulations:
+        if data.get("confidence", 1.0) < min_confidence:
+            continue
+        if reg not in adjacency:
+            adjacency[reg] = []
+        adjacency[reg].append((target, data))
+    
+    # Find cascades starting from each TF
+    for start_tf in grn.transcription_factors:
+        if start_tf not in adjacency:
+            continue
+        
+        # BFS to find cascades
+        queue = [(start_tf, [start_tf], 0.0)]  # (current, path, avg_conf)
+        
+        while queue:
+            current, path, avg_conf = queue.pop(0)
+            
+            if len(path) > max_length:
+                continue
+            
+            if current in adjacency:
+                for target, data in adjacency[current]:
+                    if target in path:  # Avoid cycles
+                        continue
+                    
+                    conf = data.get("confidence", 1.0)
+                    new_avg = (avg_conf * (len(path) - 1) + conf) / len(path)
+                    new_path = path + [target]
+                    
+                    # Record cascade
+                    if len(new_path) >= 2:
+                        cascades.append(
+                            {
+                                "cascade_id": f"cascade_{cascade_id}",
+                                "length": len(new_path) - 1,
+                                "regulators": new_path[:-1],
+                                "target": target,
+                                "avg_confidence": new_avg,
+                            }
+                        )
+                        cascade_id += 1
+                    
+                    # Continue if target is also a regulator
+                    if target in grn.transcription_factors and len(new_path) < max_length:
+                        queue.append((target, new_path, new_avg))
+    
+    return cascades
+
+
+def validate_regulation(
+    grn: GeneRegulatoryNetwork, regulator: str, target: str, min_confidence: float = 0.5
+) -> Dict[str, Any]:
+    """Validate a regulatory interaction and provide evidence.
+    
+    Checks if a regulation exists and provides validation metrics
+    including confidence, evidence types, and network context.
+    
+    Args:
+        grn: Gene regulatory network
+        regulator: Regulator identifier
+        target: Target gene identifier
+        min_confidence: Minimum confidence threshold
+        
+    Returns:
+        Dictionary containing:
+        - exists: Whether regulation exists
+        - confidence: Confidence score if exists
+        - regulation_type: Type of regulation (activation/repression)
+        - strength: Regulatory strength
+        - evidence: List of evidence types
+        - network_support: Whether supported by network structure
+        
+    Examples:
+        >>> grn = GeneRegulatoryNetwork()
+        >>> grn.add_regulation("TF1", "GENE1", confidence=0.8)
+        >>> validation = validate_regulation(grn, "TF1", "GENE1")
+        >>> validation["exists"]
+        True
+    """
+    # Find regulation
+    regulation = None
+    for reg, tgt, data in grn.regulations:
+        if reg == regulator and tgt == target:
+            regulation = data
+            break
+    
+    if not regulation:
+        return {"exists": False}
+    
+    confidence = regulation.get("confidence", 0.0)
+    if confidence < min_confidence:
+        return {"exists": True, "confidence": confidence, "below_threshold": True}
+    
+    # Check network support (common neighbors, etc.)
+    reg_targets = set(tgt for reg, tgt, _ in grn.regulations if reg == regulator)
+    target_regulators = set(reg for reg, tgt, _ in grn.regulations if tgt == target)
+    common_neighbors = reg_targets.intersection(target_regulators)
+    
+    return {
+        "exists": True,
+        "confidence": confidence,
+        "regulation_type": regulation.get("type", "unknown"),
+        "strength": regulation.get("strength", 1.0),
+        "evidence": regulation.get("evidence_types", []),
+        "network_support": len(common_neighbors) > 0,
+        "common_neighbors": len(common_neighbors),
+    }

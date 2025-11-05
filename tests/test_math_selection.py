@@ -125,3 +125,4 @@ class TestMultilevelSelectionDecomposition:
         assert within == 0.0
         assert total == between
 
+

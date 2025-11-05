@@ -4,6 +4,10 @@ import random
 from dataclasses import dataclass
 from typing import List, Tuple
 
+from ..core import logging, validation
+
+logger = logging.get_logger(__name__)
+
 
 @dataclass
 class Agent:
@@ -46,13 +50,25 @@ class GridWorld:
             height: Grid height (minimum 1)
             num_agents: Number of agents to create
             rng: Random number generator (default: new Random())
+            
+        Raises:
+            ValidationError: If parameters are invalid
         """
+        validation.validate_type(width, int, "width")
+        validation.validate_type(height, int, "height")
+        validation.validate_type(num_agents, int, "num_agents")
+        validation.validate_range(width, min_val=1, name="width")
+        validation.validate_range(height, min_val=1, name="height")
+        validation.validate_range(num_agents, min_val=0, name="num_agents")
+        
         self.width = max(1, width)
         self.height = max(1, height)
         self.rng = rng or random.Random()
         self.agents: List[Agent] = [
             Agent(self.rng.randrange(self.width), self.rng.randrange(self.height)) for _ in range(max(0, num_agents))
         ]
+        
+        logger.info(f"Initialized GridWorld: {width}x{height} with {num_agents} agents")
 
     def step(self) -> None:
         """Advance simulation one time step (all agents move)."""

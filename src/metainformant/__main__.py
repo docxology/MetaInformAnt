@@ -871,8 +871,12 @@ def main() -> None:
                 print("Computing event importance...")
                 importance = event_importance(predictor, sequences_tokens, event_embeddings, method="permutation")
 
+                # Get predictions for temporal patterns analysis
+                print("Making predictions for temporal analysis...")
+                predictions = predictor.predict(sequences_tokens)
+
                 print("Computing temporal patterns...")
-                temporal = temporal_patterns(predictor, sequences_tokens, event_embeddings)
+                temporal = temporal_patterns(sequences_tokens, predictions)
 
                 print("Computing feature attribution...")
                 attribution = feature_attribution(predictor, sequences_tokens, event_embeddings, use_shap=False)
