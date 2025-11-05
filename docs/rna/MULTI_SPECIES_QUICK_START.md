@@ -143,12 +143,12 @@ ps aux | grep workflow_ena
 **Best for:** Testing, single species, environments without ENA access
 
 ```bash
-# Prerequisites: .venv must exist with amalgkit installed
+# Prerequisites: venv must exist with amalgkit installed
 # If not set up, run:
-#   python3 -m venv .venv
-#   source .venv/bin/activate
-#   pip install -e .
-#   pip install git+https://github.com/kfuku52/amalgkit
+#   uv venv .venv  # or /tmp/metainformant_venv on ext6 filesystems
+#   source .venv/bin/activate  # or /tmp/metainformant_venv/bin/activate
+#   uv pip install -e .
+#   uv pip install git+https://github.com/kfuku52/amalgkit
 
 # Activates venv automatically (if .venv exists)
 python3 scripts/rna/run_multi_species.py
@@ -185,7 +185,13 @@ python3 scripts/rna/workflow_ena_integrated.py \
 
 ```bash
 # Run once for current status
-python3 scripts/rna/monitor_comprehensive.py
+python3 scripts/rna/orchestrate_workflows.py --status
+
+# Real-time monitoring with updates
+python3 scripts/rna/orchestrate_workflows.py --monitor
+
+# Detailed status with sample categories
+python3 scripts/rna/orchestrate_workflows.py --status --detailed
 ```
 
 **Output:**
@@ -226,22 +232,15 @@ python3 scripts/rna/monitor_comprehensive.py
 **Continuous monitoring:**
 ```bash
 # Watch mode (updates every 60 seconds)
-watch -n 60 python3 scripts/rna/monitor_comprehensive.py
+python3 scripts/rna/orchestrate_workflows.py --monitor --watch 60
 ```
 
 ### Alternative Monitors
 
-**Detailed workflow monitor:**
+**Watch mode (continuous updates):**
 ```bash
-python3 scripts/rna/monitor_workflow.py
-```
-
-**Simple bash monitor:**
-```bash
-bash scripts/rna/monitor_amalgkit_progress.sh
-
-# Or watch mode
-watch -n 60 bash scripts/rna/monitor_amalgkit_progress.sh
+# Unified orchestrator with watch interval
+python3 scripts/rna/orchestrate_workflows.py --monitor --watch 60
 ```
 
 ### Check Running Processes
@@ -403,11 +402,11 @@ output/amalgkit/
 
 **Check virtual environment:**
 ```bash
-# Verify venv exists
-ls -la .venv/
+# Verify venv exists (check both locations)
+ls -la .venv/ || ls -la /tmp/metainformant_venv/
 
 # Verify amalgkit installed
-source .venv/bin/activate
+source .venv/bin/activate || source /tmp/metainformant_venv/bin/activate
 amalgkit --version
 ```
 
@@ -531,7 +530,7 @@ tail -100 output/workflow_cfloridanus_*.log
 **Monitor comprehensive status:**
 ```bash
 # Get detailed current state
-python3 scripts/rna/monitor_comprehensive.py
+python3 scripts/rna/orchestrate_workflows.py --status --detailed
 ```
 
 **Report issues:**
@@ -546,7 +545,10 @@ python3 scripts/rna/monitor_comprehensive.py
 ```bash
 # START WORKFLOWS
 # Batch 1: Top 10 species (production)
-# bash scripts/rna/run_top10_ant_species.sh
+# Use run_all_species_parallel.py for parallel execution
+python3 scripts/rna/run_all_species_parallel.py --threads-per-species 12
+
+# Or run individual species workflows
 for species in cfloridanus pbarbatus mpharaonis sinvicta; do
   nohup python3 scripts/rna/workflow_ena_integrated.py \
     --config config/amalgkit/amalgkit_${species}.yaml \
@@ -555,8 +557,8 @@ for species in cfloridanus pbarbatus mpharaonis sinvicta; do
 done
 
 # MONITOR PROGRESS
-python3 scripts/rna/monitor_comprehensive.py          # Once
-watch -n 60 python3 scripts/rna/monitor_comprehensive.py  # Continuous
+python3 scripts/rna/orchestrate_workflows.py --status              # Once
+python3 scripts/rna/orchestrate_workflows.py --monitor --watch 60  # Continuous
 
 # CHECK PROCESSES
 ps aux | grep workflow_ena | grep -v grep             # Main workflows
@@ -571,7 +573,8 @@ tail -f output/workflow_cfloridanus_*.log             # Follow log
 grep -i error output/workflow_*.log                   # Find errors
 
 # CLEANUP
-bash scripts/rna/cleanup_quantified_sra.sh --execute  # Free disk space
+python3 scripts/rna/orchestrate_workflows.py --cleanup-unquantified  # Quantify and cleanup
+python3 scripts/rna/cleanup_partial_downloads.py --execute            # Clean partial downloads
 
 # STOP WORKFLOWS (if needed)
 pkill -f workflow_ena                                 # Stop all
@@ -600,7 +603,7 @@ pkill -f workflow_ena                                 # Stop all
 
 1. **Verify all samples quantified:**
    ```bash
-   python3 scripts/rna/monitor_comprehensive.py
+   python3 scripts/rna/orchestrate_workflows.py --status --detailed
    ```
 
 2. **Generate expression matrices:**

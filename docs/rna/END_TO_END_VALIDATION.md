@@ -40,12 +40,12 @@ python3 scripts/test_end_to_end_startup.py
 ### Method 1: All Species (SRA Workflow)
 
 ```bash
-# Prerequisites: .venv must exist with amalgkit installed
+# Prerequisites: venv must exist with amalgkit installed
 # If not set up:
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .
-pip install git+https://github.com/kfuku52/amalgkit
+uv venv .venv  # or /tmp/metainformant_venv on ext6 filesystems
+source .venv/bin/activate  # or /tmp/metainformant_venv/bin/activate
+uv pip install -e .
+uv pip install git+https://github.com/kfuku52/amalgkit
 
 # Start all species with configurable threads
 export AK_THREADS=12
@@ -62,7 +62,7 @@ python3 scripts/rna/run_multi_species.py
 ### Method 2: All Species (ENA Workflow - Recommended)
 
 ```bash
-# Prerequisites: .venv must exist with amalgkit installed
+# Prerequisites: venv must exist with amalgkit installed (scripts auto-discover location)
 
 # Start all species in parallel (background)
 for config in config/amalgkit/amalgkit_*.yaml; do

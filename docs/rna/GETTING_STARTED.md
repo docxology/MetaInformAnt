@@ -174,12 +174,12 @@ python3 scripts/rna/batch_download_species.py \
 ```bash
 # Prerequisites: .venv must exist with amalgkit installed (see Installation section above)
 # If not set up, run:
-#   python3 -m venv .venv
-#   source .venv/bin/activate
-#   pip install -e .
-#   pip install git+https://github.com/kfuku52/amalgkit
+#   uv venv .venv  # or /tmp/metainformant_venv on ext6 filesystems
+#   source .venv/bin/activate  # or /tmp/metainformant_venv/bin/activate
+#   uv pip install -e .
+#   uv pip install git+https://github.com/kfuku52/amalgkit
 
-# Auto-activates venv automatically (if .venv exists)
+# Scripts auto-discover venv location (.venv or /tmp/metainformant_venv)
 python3 scripts/rna/run_multi_species.py
 
 # With configurable threads:

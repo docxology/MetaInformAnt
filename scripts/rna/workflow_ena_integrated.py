@@ -113,7 +113,7 @@ def download_batch_ena(run_ids: list[str], metadata_path: Path, fastq_dir: Path,
         fastq_dir: Directory to save downloaded FASTQ files
         threads: Number of parallel download threads
         batch_num: Batch number for logging
-        
+    
     Returns:
         Tuple of (successful_downloads, failed_downloads)
         
@@ -192,7 +192,7 @@ def quantify_batch_kallisto(run_ids: list[str], fastq_dir: Path, quant_dir: Path
         index_path: Path to kallisto transcriptome index
         threads: Number of threads for kallisto
         batch_num: Batch number for logging
-        
+    
     Returns:
         Tuple of (successful_quants, failed_quants)
         

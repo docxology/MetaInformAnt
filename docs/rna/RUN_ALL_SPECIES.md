@@ -8,18 +8,24 @@
 
 Before running workflows, ensure you have:
 
-1. **Virtual Environment**: Created and activated
+1. **Virtual Environment**: Created and activated using `uv` (recommended)
    ```bash
-   # Create virtual environment if it doesn't exist
-   python3 -m venv .venv
+   # Install uv if not already installed
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   
+   # Create virtual environment (uses /tmp/metainformant_venv on ext6 filesystems)
+   uv venv .venv
    
    # Activate it
    source .venv/bin/activate
+   # Or if using alternative location: source /tmp/metainformant_venv/bin/activate
    
    # Install dependencies
-   pip install -e .
-   pip install git+https://github.com/kfuku52/amalgkit
+   uv pip install -e .
+   uv pip install git+https://github.com/kfuku52/amalgkit
    ```
+   
+   **Note**: On ext6 filesystems (which don't support symlinks), the setup automatically uses `/tmp/metainformant_venv` if `.venv` creation fails. Scripts automatically discover and use the venv location.
 
 2. **Verify Installation**:
    ```bash
@@ -39,7 +45,7 @@ Before running workflows, ensure you have:
    export AK_THREADS=12
    ```
 
-**Note**: `run_multi_species.py` will auto-activate the virtual environment if `.venv` exists, but it must be set up first.
+**Note**: Scripts automatically discover and activate virtual environments (`.venv` or `/tmp/metainformant_venv`). The venv must be set up first using `uv venv` and `uv pip install`.
 
 ## Quick Start
 
@@ -134,14 +140,15 @@ python3 scripts/rna/workflow_ena_integrated.py \
 
 ```bash
 # 1. Ensure virtual environment is set up
-if [ ! -d ".venv" ]; then
-    echo "Creating virtual environment..."
-    python3 -m venv .venv
-    source .venv/bin/activate
-    pip install -e .
-    pip install git+https://github.com/kfuku52/amalgkit
+if [ ! -d ".venv" ] && [ ! -d "/tmp/metainformant_venv" ]; then
+    echo "Creating virtual environment with uv..."
+    uv venv .venv || uv venv /tmp/metainformant_venv
+    source .venv/bin/activate || source /tmp/metainformant_venv/bin/activate
+    uv pip install -e .
+    uv pip install git+https://github.com/kfuku52/amalgkit
 else
-    source .venv/bin/activate
+    # Activate existing venv (scripts auto-discover location)
+    [ -d ".venv" ] && source .venv/bin/activate || source /tmp/metainformant_venv/bin/activate
 fi
 
 # 2. Set threads via environment variable
@@ -213,26 +220,35 @@ done
 **Example:**
 ```bash
 # 1. Setup (one-time, if not already done)
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e .
-pip install git+https://github.com/kfuku52/amalgkit
+uv venv .venv  # or /tmp/metainformant_venv on ext6 filesystems
+source .venv/bin/activate  # or /tmp/metainformant_venv/bin/activate
+uv pip install -e .
+uv pip install git+https://github.com/kfuku52/amalgkit
 
 # 2. Run all species with configurable threads
+# Note: Scripts automatically discover venv location (.venv or /tmp/metainformant_venv)
 export AK_THREADS=12
-python3 scripts/rna/run_multi_species.py
+python3 scripts/rna/run_all_species_parallel.py  # Recommended: parallel execution
+# Or: python3 scripts/rna/run_multi_species.py  # Sequential execution
 ```
 
 ## Monitoring
 
 ```bash
-# Check progress
-python3 scripts/rna/monitor_comprehensive.py
+# Check status (unified orchestrator)
+python3 scripts/rna/orchestrate_workflows.py --status
+
+# Real-time monitoring
+python3 scripts/rna/orchestrate_workflows.py --monitor
+
+# Detailed status with categories
+python3 scripts/rna/orchestrate_workflows.py --status --detailed
 
 # Check running processes
-ps aux | grep -E "(workflow_ena|run_multi_species)" | grep -v grep
+ps aux | grep -E "(workflow_ena|run_all_species_parallel|run_multi_species)" | grep -v grep
 
 # View logs
+tail -f output/parallel_all_species_*.log
 tail -f output/workflow_*.log
 ```
 

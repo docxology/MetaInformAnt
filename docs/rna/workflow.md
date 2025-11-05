@@ -50,12 +50,12 @@ See [ORCHESTRATION/ENA_WORKFLOW.md](ORCHESTRATION/ENA_WORKFLOW.md) for detailed 
 ```bash
 # Prerequisites: .venv must exist with amalgkit installed
 # If not set up, run:
-#   python3 -m venv .venv
-#   source .venv/bin/activate
-#   pip install -e .
-#   pip install git+https://github.com/kfuku52/amalgkit
+#   uv venv .venv  # or /tmp/metainformant_venv on ext6 filesystems
+#   source .venv/bin/activate  # or /tmp/metainformant_venv/bin/activate
+#   uv pip install -e .
+#   uv pip install git+https://github.com/kfuku52/amalgkit
 
-# Alternative using SRA Toolkit (auto-activates venv if .venv exists)
+# Alternative using SRA Toolkit (scripts auto-discover venv location)
 python3 scripts/rna/run_multi_species.py
 
 # With configurable threads:
@@ -144,10 +144,10 @@ See **[Multi-Species Quick Start Guide](MULTI_SPECIES_QUICK_START.md#monitoring-
 **Quick monitoring:**
 ```bash
 # Real-time comprehensive monitor
-python3 scripts/rna/monitor_comprehensive.py
+python3 scripts/rna/orchestrate_workflows.py --status
 
 # Continuous watch mode
-watch -n 60 python3 scripts/rna/monitor_comprehensive.py
+python3 scripts/rna/orchestrate_workflows.py --monitor --watch 60
 
 # Check running processes
 ps aux | grep workflow_ena | grep -v grep
@@ -247,24 +247,25 @@ No manual configuration needed - all handled automatically by the workflow scrip
 
 **Issue**: "amalgkit: command not found" or import errors
 
-**Solution**: The script automatically activates virtual environment (if .venv exists):
+**Solution**: Scripts automatically discover and activate virtual environments using `uv`:
 ```bash
-# Prerequisites: .venv must exist with amalgkit installed
+# Prerequisites: venv must exist with amalgkit installed
 # If not set up, run:
-#   python3 -m venv .venv
-#   source .venv/bin/activate
-#   pip install -e .
-#   pip install git+https://github.com/kfuku52/amalgkit
+#   uv venv .venv  # or /tmp/metainformant_venv on ext6 filesystems
+#   source .venv/bin/activate  # or /tmp/metainformant_venv/bin/activate
+#   uv pip install -e .
+#   uv pip install git+https://github.com/kfuku52/amalgkit
 
-# Just run the script - no manual activation needed (if .venv exists)
-python3 scripts/rna/run_multi_species.py
+# Just run the script - no manual activation needed
+# Scripts automatically discover venv location (.venv or /tmp/metainformant_venv)
+python3 scripts/rna/run_all_species_parallel.py
 
 # With configurable threads:
 export AK_THREADS=12
-python3 scripts/rna/run_multi_species.py
+python3 scripts/rna/run_all_species_parallel.py
 ```
 
-The script detects if it's running outside the venv and re-executes itself within it using `os.execve()`, but `.venv` must exist first.
+**Note**: On ext6 filesystems (which don't support symlinks), scripts automatically use `/tmp/metainformant_venv` if `.venv` creation fails. The venv discovery handles both locations transparently.
 
 ### SRA Download Failures
 

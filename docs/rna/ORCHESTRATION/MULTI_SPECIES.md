@@ -48,12 +48,12 @@ Use this orchestrator when:
 ### Basic Usage
 
 ```bash
-# Prerequisites: Ensure .venv exists with amalgkit installed
+# Prerequisites: Ensure venv exists with amalgkit installed
 # If not set up, run:
-#   python3 -m venv .venv
-#   source .venv/bin/activate
-#   pip install -e .
-#   pip install git+https://github.com/kfuku52/amalgkit
+#   uv venv .venv  # or /tmp/metainformant_venv on ext6 filesystems
+#   source .venv/bin/activate  # or /tmp/metainformant_venv/bin/activate
+#   uv pip install -e .
+#   uv pip install git+https://github.com/kfuku52/amalgkit
 
 # Processes all discovered species (automatically activates venv)
 python3 scripts/rna/run_multi_species.py
@@ -196,9 +196,10 @@ output/amalgkit/
 ## Troubleshooting
 
 ### "amalgkit: command not found"
-Script auto-activates venv. If still failing:
+Scripts automatically discover and activate venv. If still failing:
 ```bash
-source .venv/bin/activate
+# Activate venv (scripts auto-discover location)
+source .venv/bin/activate  # or /tmp/metainformant_venv/bin/activate
 uv pip install git+https://github.com/kfuku52/amalgkit
 ```
 

@@ -78,12 +78,12 @@ python3 scripts/rna/workflow_ena_integrated.py \
 ```bash
 # Prerequisites: .venv must exist with amalgkit installed
 # If not set up, run:
-#   python3 -m venv .venv
-#   source .venv/bin/activate
-#   pip install -e .
-#   pip install git+https://github.com/kfuku52/amalgkit
+#   uv venv .venv  # or /tmp/metainformant_venv on ext6 filesystems
+#   source .venv/bin/activate  # or /tmp/metainformant_venv/bin/activate
+#   uv pip install -e .
+#   uv pip install git+https://github.com/kfuku52/amalgkit
 
-# Alternative workflow using SRA Toolkit (auto-activates venv if .venv exists)
+# Alternative workflow using SRA Toolkit (scripts auto-discover venv location)
 python3 scripts/rna/run_multi_species.py
 
 # With configurable threads:
@@ -146,10 +146,10 @@ See `output/amalgkit/pbarbatus/QUICK_REFERENCE.md` for immediate usage.
 1. **Review workflow guide**: `quick_start.md`
 2. **Setup R environment**: `R_INSTALLATION.md` and `r_packages.md`
 3. **Run ENA workflow**: See `scripts/rna/workflow_ena_integrated.py`
-4. **For batch processing**: Use `scripts/rna/run_top10_ant_species.sh` or `run_batch2_ant_species.sh`
+4. **For batch processing**: Use `scripts/rna/run_all_species_parallel.py` for parallel execution of all species
 5. **Validate outputs**: Run sanity and curate steps
 
-**No manual venv activation needed** - scripts handle environment setup automatically.
+**No manual venv activation needed** - scripts automatically discover and activate virtual environments (`.venv` or `/tmp/metainformant_venv`). Setup uses `uv` for reliable package management, with automatic fallback to `/tmp/metainformant_venv` on ext6 filesystems that don't support symlinks.
 
 **Disk space requirements:**
 - ~50-100 GB peak usage (temporary, during download/quant)

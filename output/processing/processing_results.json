@@ -1,0 +1,1 @@
+{"config": {"downloads": {"sample": {"filename": "sample.json", "url": "https://httpbin.org/json"}}}, "downloads": {"sample": {"error": "Failed to download https://httpbin.org/json", "success": false}}, "end_time": 1762373296.9383411, "errors": ["Download failed: sample"], "output_dir": "output/processing", "processing": {}, "start_time": 1762373296.234267, "warnings": []}

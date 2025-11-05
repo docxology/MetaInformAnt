@@ -42,8 +42,8 @@ Automated system for discovering all ant species with publicly available RNA-seq
 - `scripts/rna/generate_ant_configs_with_genomes.py` - Generate configs
 
 ### Execution
-- `scripts/rna/run_top10_ant_species.sh` - Launch Batch 1
-- `scripts/rna/run_batch2_ant_species.sh` - Launch Batch 2
+- `scripts/rna/run_all_species_parallel.py` - Launch all species in parallel (recommended)
+- `scripts/rna/run_multi_species.py` - Launch all species sequentially
 
 ### Monitoring  
 - `scripts/rna/get_current_status.py` - Check workflow status

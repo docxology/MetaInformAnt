@@ -26,10 +26,11 @@ New to RNA-seq analysis with METAINFORMANT? Start here:
 
 ```bash
 # All species, end-to-end workflow (configurable threads)
-# Prerequisites: .venv must exist with amalgkit installed
+# Prerequisites: venv must exist with amalgkit installed (see RUN_ALL_SPECIES.md)
 # See docs/rna/RUN_ALL_SPECIES.md for complete setup instructions
 export AK_THREADS=12  # Optional: set threads globally
-python3 scripts/rna/run_multi_species.py
+python3 scripts/rna/run_all_species_parallel.py  # Recommended: parallel execution
+# Or: python3 scripts/rna/run_multi_species.py  # Sequential execution
 
 # Single species workflow (ENA-based, recommended)
 python3 scripts/rna/workflow_ena_integrated.py \

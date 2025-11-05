@@ -28,7 +28,7 @@ Processing 20 ant species in 2 batches of 10 to manage disk space efficiently.
 - **Species**: 10 (remaining)
 - **Samples**: 728 total  
 - **Launch**: After Batch 1 completes
-- **Script**: `scripts/rna/run_batch2_ant_species.sh`
+- **Script**: `scripts/rna/run_all_species_parallel.py` (or `run_multi_species.py` for sequential)
 - **ETA**: 12-24 hours
 
 ## Disk Management
@@ -74,10 +74,11 @@ ps aux | grep run_amalgkit | wc -l
 
 ```bash
 # Batch 1 (already running)
-bash scripts/rna/run_top10_ant_species.sh
+# Run all species in parallel (recommended)
+python3 scripts/rna/run_all_species_parallel.py --threads-per-species 12
 
-# Batch 2 (run after Batch 1)
-bash scripts/rna/run_batch2_ant_species.sh
+# Or run sequentially (one at a time)
+python3 scripts/rna/run_multi_species.py
 ```
 
 ---

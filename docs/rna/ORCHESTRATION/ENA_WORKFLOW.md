@@ -128,7 +128,7 @@ Download a batch of samples using the robust ENA downloader.
 
 **Returns**: Tuple of (successful_downloads, failed_downloads)
 
-**Dependencies**: `download_ena_robust.py` script, wget command
+**Dependencies**: wget command (downloads handled directly in workflow_ena_integrated.py)
 
 ### `quantify_batch_kallisto(run_ids: list[str], fastq_dir: Path, quant_dir: Path, index_path: Path, threads: int, batch_num: int) -> tuple[list[str], list[str]]`
 Quantify samples using kallisto.
@@ -168,7 +168,7 @@ Main entry point for ENA-integrated workflow.
 ## Workflow Steps
 
 1. **Metadata**: Must be run first (using amalgkit) to generate metadata.tsv
-2. **Download**: Batched ENA downloads using `download_ena_robust.py`
+2. **Download**: Batched ENA downloads using integrated wget-based downloader
 3. **Quantify**: Kallisto quantification per batch
 4. **Cleanup**: FASTQ deletion after quantification
 5. **Repeat**: Process next batch until all samples complete
@@ -226,6 +226,6 @@ amalgkit quant --build_index yes --index_dir output/amalgkit/{species}/work/inde
 ## See Also
 
 - **Source Script**: `scripts/rna/workflow_ena_integrated.py`
-- **ENA Downloader**: `scripts/rna/download_ena_robust.py`
+- **ENA Downloads**: Integrated directly in `workflow_ena_integrated.py` using wget
 - **Configuration Guide**: [CONFIGURATION.md](../CONFIGURATION.md)
 

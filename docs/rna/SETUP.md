@@ -265,12 +265,12 @@ export PATH=$PATH:/path/to/sratoolkit/bin
 chmod -R u+w output/
 
 # Run script from repository root
-# Prerequisites: .venv must exist with amalgkit installed
+# Prerequisites: venv must exist with amalgkit installed
 # If not set up, run:
-#   python3 -m venv .venv
-#   source .venv/bin/activate
-#   pip install -e .
-#   pip install git+https://github.com/kfuku52/amalgkit
+#   uv venv .venv  # or /tmp/metainformant_venv on ext6 filesystems
+#   source .venv/bin/activate  # or /tmp/metainformant_venv/bin/activate
+#   uv pip install -e .
+#   uv pip install git+https://github.com/kfuku52/amalgkit
 
 cd /home/q/Documents/GitHub/MetaInformAnt
 python3 scripts/rna/run_multi_species.py
@@ -295,13 +295,13 @@ The script provides automatic environment management:
 ```bash
 cd /home/q/Documents/GitHub/MetaInformAnt
 
-# No manual venv activation needed - script handles it automatically (if .venv exists)
-# Prerequisites: .venv must exist with amalgkit installed
+# No manual venv activation needed - scripts automatically discover venv location
+# Prerequisites: venv must exist with amalgkit installed
 # If not set up, run:
-#   python3 -m venv .venv
-#   source .venv/bin/activate
-#   pip install -e .
-#   pip install git+https://github.com/kfuku52/amalgkit
+#   uv venv .venv  # or /tmp/metainformant_venv on ext6 filesystems
+#   source .venv/bin/activate  # or /tmp/metainformant_venv/bin/activate
+#   uv pip install -e .
+#   uv pip install git+https://github.com/kfuku52/amalgkit
 
 python3 scripts/rna/run_multi_species.py
 

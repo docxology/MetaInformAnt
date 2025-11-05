@@ -2,6 +2,7 @@
 Common setup utilities for RNA scripts.
 
 Provides automatic virtual environment setup, dependency installation, and environment validation.
+Uses uv for all environment management to handle filesystem limitations (e.g., ext6 without symlinks).
 """
 
 import os
@@ -9,6 +10,7 @@ import sys
 import shutil
 import subprocess
 from pathlib import Path
+from typing import Optional
 
 # Add src to path before imports
 repo_root = Path(__file__).parent.parent.parent.resolve()
@@ -18,10 +20,47 @@ from metainformant.core.logging import get_logger
 
 logger = get_logger("rna_setup")
 
+# Check if uv is available
+def _check_uv() -> bool:
+    """Check if uv is available."""
+    return shutil.which("uv") is not None
+
+
+def _find_venv_location() -> tuple[Path, Path]:
+    """
+    Find suitable location for virtual environment.
+    
+    Tries .venv in repo root first. If that fails due to symlink issues,
+    tries /tmp/metainformant_venv and creates symlink reference.
+    
+    Returns:
+        Tuple of (venv_dir, venv_python)
+    """
+    venv_dir = repo_root / ".venv"
+    venv_python = venv_dir / "bin" / "python3"
+    
+    # If venv exists and is valid, use it
+    if venv_python.exists():
+        return venv_dir, venv_python
+    
+    # Try alternative location if .venv creation will fail
+    alt_venv_dir = Path("/tmp/metainformant_venv")
+    alt_venv_python = alt_venv_dir / "bin" / "python3"
+    
+    # If alternative exists, use it
+    if alt_venv_python.exists():
+        logger.info(f"Using alternative venv location: {alt_venv_dir}")
+        return alt_venv_dir, alt_venv_python
+    
+    # Default to repo root
+    return venv_dir, venv_python
+
 
 def setup_venv_and_dependencies(auto_setup: bool = True) -> bool:
     """
-    Automatically setup virtual environment and install dependencies if needed.
+    Automatically setup virtual environment and install dependencies using uv.
+    
+    Uses uv for all operations to handle filesystem limitations (e.g., ext6 without symlinks).
     
     Args:
         auto_setup: If True, automatically create venv and install dependencies
@@ -29,63 +68,141 @@ def setup_venv_and_dependencies(auto_setup: bool = True) -> bool:
     Returns:
         True if venv exists and is ready, False otherwise
     """
-    venv_python = repo_root / ".venv" / "bin" / "python3"
-    venv_dir = repo_root / ".venv"
+    venv_dir, venv_python = _find_venv_location()
     
-    # Check if venv exists
+    # Check if venv exists and is valid
     if venv_python.exists():
         logger.info(f"✓ Virtual environment found at {venv_dir}")
-        return True
+        # Verify amalgkit is installed
+        try:
+            result = subprocess.run(
+                [str(venv_python), "-c", "import amalgkit; print('ok')"],
+                capture_output=True, text=True, timeout=5
+            )
+            if result.returncode == 0:
+                return True
+            else:
+                logger.info("Venv exists but missing dependencies, installing...")
+        except Exception:
+            logger.info("Venv exists but verifying dependencies...")
     
     if not auto_setup:
         logger.error("Virtual environment not found!")
-        logger.error("Run: python3 -m venv .venv && source .venv/bin/activate && pip install -e . && pip install git+https://github.com/kfuku52/amalgkit")
+        if _check_uv():
+            logger.error("Run: uv venv .venv && uv pip install -e . --python .venv/bin/python3 && uv pip install git+https://github.com/kfuku52/amalgkit --python .venv/bin/python3")
+        else:
+            logger.error("Run: python3 -m venv .venv && source .venv/bin/activate && pip install -e . && pip install git+https://github.com/kfuku52/amalgkit")
         return False
     
-    # Auto-setup venv
-    logger.info("Setting up virtual environment...")
-    logger.info(f"Creating venv at {venv_dir}")
+    if not _check_uv():
+        logger.error("uv not found! Please install uv first:")
+        logger.error("  curl -LsSf https://astral.sh/uv/install.sh | sh")
+        logger.error("Or use: pip install uv")
+        return False
+    
+    # Auto-setup venv with uv
+    logger.info("Setting up virtual environment with uv...")
+    
+    # Try creating venv in repo root first
+    try:
+        if venv_dir.exists():
+            logger.info(f"Clearing existing venv at {venv_dir}...")
+            result = subprocess.run(
+                ["uv", "venv", "--clear", str(venv_dir)],
+                capture_output=True, text=True, timeout=30
+            )
+        else:
+            logger.info(f"Creating venv at {venv_dir}...")
+            result = subprocess.run(
+                ["uv", "venv", str(venv_dir)],
+                capture_output=True, text=True, timeout=30
+            )
+        
+        if result.returncode != 0:
+            # Try alternative location if repo root fails (symlink issues)
+            logger.warning(f"Could not create venv at {venv_dir}: {result.stderr}")
+            logger.info("Trying alternative location: /tmp/metainformant_venv")
+            alt_venv_dir = Path("/tmp/metainformant_venv")
+            result = subprocess.run(
+                ["uv", "venv", str(alt_venv_dir)],
+                capture_output=True, text=True, timeout=30
+            )
+            if result.returncode == 0:
+                venv_dir = alt_venv_dir
+                venv_python = alt_venv_dir / "bin" / "python3"
+                logger.info(f"✓ Virtual environment created at {venv_dir}")
+            else:
+                logger.error(f"Failed to create venv: {result.stderr}")
+                return False
+        else:
+            venv_python = venv_dir / "bin" / "python3"
+            logger.info("✓ Virtual environment created")
+    except subprocess.TimeoutExpired:
+        logger.error("Venv creation timed out")
+        return False
+    except Exception as e:
+        logger.error(f"Venv creation failed: {e}")
+        return False
+    
+    # Install dependencies with uv pip
+    logger.info("Installing dependencies with uv pip...")
     
     try:
-        # Create venv (may fail on some systems, but that's OK - user can create manually)
-        result = subprocess.run([sys.executable, "-m", "venv", str(venv_dir)], 
-                              capture_output=True, text=True)
-        if result.returncode != 0:
-            logger.warning(f"Could not auto-create venv: {result.stderr}")
-            logger.warning("Please create manually: python3 -m venv .venv")
-            return False
-        
-        logger.info("✓ Virtual environment created")
-        
-        # Install dependencies
-        logger.info("Installing dependencies...")
-        
         # Install metainformant
-        result = subprocess.run([str(venv_python), "-m", "pip", "install", "-e", str(repo_root)], 
-                              capture_output=True, text=True)
+        # Use /tmp for uv cache to avoid symlink issues on ext6
+        logger.info("Installing metainformant...")
+        env = os.environ.copy()
+        env["UV_CACHE_DIR"] = str(Path("/tmp/uv-cache"))
+        result = subprocess.run(
+            ["uv", "pip", "install", "-e", str(repo_root), "--python", str(venv_python)],
+            capture_output=True, text=True, timeout=300,
+            env=env
+        )
         if result.returncode != 0:
             logger.error(f"Failed to install metainformant: {result.stderr}")
             return False
         logger.info("✓ metainformant installed")
         
         # Install amalgkit
-        result = subprocess.run([str(venv_python), "-m", "pip", "install", "git+https://github.com/kfuku52/amalgkit"], 
-                              capture_output=True, text=True)
+        # Use /tmp for uv cache to avoid symlink issues on ext6
+        logger.info("Installing amalgkit...")
+        env = os.environ.copy()
+        env["UV_CACHE_DIR"] = str(Path("/tmp/uv-cache"))
+        result = subprocess.run(
+            ["uv", "pip", "install", "git+https://github.com/kfuku52/amalgkit", "--python", str(venv_python)],
+            capture_output=True, text=True, timeout=300,
+            env=env
+        )
         if result.returncode != 0:
             logger.error(f"Failed to install amalgkit: {result.stderr}")
             return False
         logger.info("✓ amalgkit installed")
         
         logger.info("✓ Setup complete!")
+        
+        # Update venv location tracking
+        if venv_dir != repo_root / ".venv":
+            logger.info(f"Note: Using venv at {venv_dir} (repo .venv has symlink limitations)")
+            logger.info(f"Scripts will use this venv automatically")
+        
         return True
         
+    except subprocess.TimeoutExpired:
+        logger.error("Package installation timed out")
+        return False
     except Exception as e:
         logger.error(f"Setup failed: {e}")
-        logger.info("Please setup manually:")
-        logger.info("  1. python3 -m venv .venv")
-        logger.info("  2. source .venv/bin/activate")
-        logger.info("  3. pip install -e .")
-        logger.info("  4. pip install git+https://github.com/kfuku52/amalgkit")
+        if _check_uv():
+            logger.info("Please setup manually:")
+            logger.info("  1. uv venv .venv")
+            logger.info("  2. uv pip install -e . --python .venv/bin/python3")
+            logger.info("  3. uv pip install git+https://github.com/kfuku52/amalgkit --python .venv/bin/python3")
+        else:
+            logger.info("Please setup manually:")
+            logger.info("  1. python3 -m venv .venv")
+            logger.info("  2. source .venv/bin/activate")
+            logger.info("  3. pip install -e .")
+            logger.info("  4. pip install git+https://github.com/kfuku52/amalgkit")
         return False
 
 
@@ -93,20 +210,20 @@ def ensure_venv_activated(auto_setup: bool = True) -> bool:
     """
     Automatically activate virtual environment if needed.
     
+    Uses uv-based venv discovery to handle filesystem limitations.
+    
     Args:
         auto_setup: If True, automatically setup venv if missing
         
     Returns:
         True if venv is activated, False if setup needed
     """
-    venv_python = repo_root / ".venv" / "bin" / "python3"
-    venv_dir = repo_root / ".venv"
-    
+    venv_dir, venv_python = _find_venv_location()
     current_python = Path(sys.executable)
     
-    # Check if already using venv Python
+    # Check if already using venv Python (check both locations)
     try:
-        current_python.relative_to(repo_root / ".venv")
+        current_python.relative_to(venv_dir)
         # Already in venv - ensure environment variables are set
         if "VIRTUAL_ENV" not in os.environ:
             os.environ["VIRTUAL_ENV"] = str(venv_dir)
@@ -115,18 +232,34 @@ def ensure_venv_activated(auto_setup: bool = True) -> bool:
                 os.environ["PATH"] = f"{venv_bin}:{os.environ.get('PATH', '')}"
         return True
     except ValueError:
-        pass
+        # Also check alternative location
+        alt_venv_dir = Path("/tmp/metainformant_venv")
+        try:
+            current_python.relative_to(alt_venv_dir)
+            if "VIRTUAL_ENV" not in os.environ:
+                os.environ["VIRTUAL_ENV"] = str(alt_venv_dir)
+                venv_bin = str(alt_venv_dir / "bin")
+                if venv_bin not in os.environ.get("PATH", ""):
+                    os.environ["PATH"] = f"{venv_bin}:{os.environ.get('PATH', '')}"
+            return True
+        except ValueError:
+            pass
     
     # Check if venv exists
     if not venv_python.exists():
         if auto_setup:
-            logger.info("Virtual environment not found - setting up automatically...")
+            logger.info("Virtual environment not found - setting up automatically with uv...")
             if not setup_venv_and_dependencies(auto_setup=True):
                 logger.error("Failed to setup virtual environment")
                 return False
+            # Re-find venv location after setup
+            venv_dir, venv_python = _find_venv_location()
         else:
             logger.error("Virtual environment not found!")
-            logger.error("Run: python3 -m venv .venv && source .venv/bin/activate && pip install -e . && pip install git+https://github.com/kfuku52/amalgkit")
+            if _check_uv():
+                logger.error("Run: uv venv .venv && uv pip install -e . --python .venv/bin/python3 && uv pip install git+https://github.com/kfuku52/amalgkit --python .venv/bin/python3")
+            else:
+                logger.error("Run: python3 -m venv .venv && source .venv/bin/activate && pip install -e . && pip install git+https://github.com/kfuku52/amalgkit")
             return False
     
     # Activate venv by re-executing with venv Python
@@ -139,6 +272,7 @@ def ensure_venv_activated(auto_setup: bool = True) -> bool:
     logger.info("🔄 Auto-activating virtual environment...")
     logger.info(f"Current Python: {current_python}")
     logger.info(f"Venv Python: {venv_python}")
+    logger.info(f"Venv Location: {venv_dir}")
     
     # Re-execute with venv Python
     os.execve(str(venv_python), [str(venv_python)] + sys.argv, new_env)
@@ -149,20 +283,34 @@ def check_environment() -> tuple[bool, list[str], list[str]]:
     """
     Check that all required tools are available.
     
+    Uses uv-based venv discovery to handle filesystem limitations.
+    
     Returns:
         Tuple of (success: bool, missing: list[str], warnings: list[str])
     """
     missing = []
     warnings = []
     
-    # Check virtual environment
+    # Check virtual environment (check both locations)
+    venv_dir, venv_python = _find_venv_location()
     if os.environ.get("VIRTUAL_ENV") is None:
-        venv_python = repo_root / ".venv" / "bin" / "python3"
         if not venv_python.exists():
             missing.append("Virtual environment (.venv)")
     
-    # Check amalgkit
-    if not shutil.which("amalgkit"):
+    # Check amalgkit (check in venv first, then PATH)
+    amalgkit_found = False
+    if venv_python.exists():
+        try:
+            result = subprocess.run(
+                [str(venv_python), "-c", "import amalgkit; print('ok')"],
+                capture_output=True, text=True, timeout=5
+            )
+            if result.returncode == 0:
+                amalgkit_found = True
+        except Exception:
+            pass
+    
+    if not amalgkit_found and not shutil.which("amalgkit"):
         missing.append("amalgkit")
     
     # Check other tools (warnings, not critical)
