@@ -1,0 +1,49 @@
+# Phenotype Module Rules (`metainformant.phenotype`)
+
+## Purpose
+Phenotypic trait analysis: life course phenotype extraction and AntWiki integration.
+
+## Dependencies
+- **Required**: `core`
+- **Optional**: `life_events` (for life course integration)
+
+## Key Submodules
+
+### Life Course (`life_course`)
+- Life course phenotype extraction
+- Temporal trait patterns
+- Integration with life events
+
+### AntWiki (`antwiki`)
+- AntWiki integration
+- Species trait data
+- Ecological metadata
+
+## Patterns
+
+### Phenotype Data Structure
+- Phenotype data should be structured as trait dictionaries
+- Include trait names, values, and metadata
+- Support temporal phenotype data
+
+### Integration with GWAS
+- Integration with GWAS for phenotype-genotype associations
+- Provide phenotype data for association testing
+- Support both continuous and categorical traits
+
+### Output Paths
+- Base: `output/phenotype/<analysis>/`
+- Life course: `output/phenotype/life_course/`
+- Traits: `output/phenotype/traits/`
+
+## Integration
+
+- **Uses**: `life_events` (optional, for life course integration)
+- **Used by**: `gwas` (phenotype-genotype associations)
+- **Integrates with**: `ontology` (trait functional annotation)
+
+## Testing
+
+- Test with real phenotype data from `data/`
+- Write test outputs to `output/phenotype/test/`
+

@@ -30,7 +30,11 @@ if str(src_dir) not in sys.path:
 from metainformant.core.config import load_mapping_from_file
 from metainformant.core.io import dump_json, ensure_directory
 
-logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s: %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
 logger = logging.getLogger(__name__)
 
 
@@ -296,7 +300,7 @@ def main() -> None:
     config_files = sorted(config_dir.glob("amalgkit_*.yaml"))
     config_files = [f for f in config_files if f.name != "amalgkit_template.yaml" and f.name != "amalgkit_test.yaml"]
     
-    logger.info(f"Found {len(config_files)} config files")
+    logger.info(f"Found {len(config_files)} config file(s)")
     logger.info("")
     
     results: list[dict[str, Any]] = []

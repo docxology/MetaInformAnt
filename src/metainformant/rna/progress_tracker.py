@@ -406,8 +406,15 @@ class ProgressTracker:
         
         try:
             # Get all species states
-            species_states = self.get_all_species_states()
+            species_states = self.get_all_species_state()
             if not species_states:
+                logger.debug("No species states available for PNG generation")
+                return None
+            
+            # Filter out species with zero total samples
+            species_states = {k: v for k, v in species_states.items() if v.get("total", 0) > 0}
+            if not species_states:
+                logger.debug("No species with samples for PNG generation")
                 return None
             
             # Prepare data
@@ -524,10 +531,12 @@ class ProgressTracker:
             with open(self.dashboard_file, 'w') as f:
                 f.write(dashboard_text)
             
-            # Generate PNG visualization
+            # Generate PNG visualization (log at info level so it's visible)
             png_file = self.generate_png_visualization()
             if png_file:
-                logger.debug(f"PNG visualization updated: {png_file}")
+                logger.info(f"✓ PNG visualization updated: {png_file.name} ({png_file.stat().st_size / 1024:.1f} KB)")
+            else:
+                logger.debug("PNG visualization generation returned None (may be normal if no species with samples)")
             
             update_time = time.time() - update_start
             if update_time > 1.0:

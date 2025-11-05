@@ -1,0 +1,72 @@
+# Math Module Rules (`metainformant.math`)
+
+## Purpose
+Mathematical and theoretical biology: population genetics theory, selection models, evolutionary dynamics, and epidemiological models.
+
+## Dependencies
+- **Required**: `core`
+- **Optional**: `scipy`, `numpy`
+
+## Key Submodules
+
+### Population Genetics (`popgen`)
+- Population genetics theory
+- Used by `dna.population` and `gwas`
+
+### Selection (`selection`)
+- Selection models and experiments
+- Fitness landscapes
+- Selection coefficient estimation
+
+### DDM (`ddm`)
+- Diffusion-drift-mutation models
+- Allele frequency dynamics
+- Stochastic processes
+
+### Price (`price`)
+- Price equation applications
+- Evolutionary game theory
+- Covariance and selection
+
+### EGT (`egt`)
+- Evolutionary game theory
+- Strategy dynamics
+- Nash equilibria
+
+### Epidemiology (`epidemiology`)
+- Epidemiological models
+- SIR/SIRS models
+- Disease dynamics
+
+## Patterns
+
+### Mathematical Functions
+- Mathematical functions should be well-documented with equations
+- Include references to theoretical foundations
+- Document assumptions and limitations
+
+### Return Formats
+- Return results as dictionaries with named statistics
+- Include parameter values and model fits
+- Provide confidence intervals where applicable
+
+### Numerical Algorithms
+- Use efficient numerical algorithms
+- Consider `numba` for performance-critical code
+- Handle edge cases and numerical stability
+
+### Output Paths
+- Simulations: `output/math/simulations/`
+- Model fits: `output/math/models/`
+- Plots: `output/math/plots/`
+
+## Integration
+
+- **Used by**: `dna.population` (population genetics theory), `gwas` (statistical models)
+
+## Testing
+
+- Test with known theoretical results
+- Test numerical accuracy
+- Write test outputs to `output/math/test/`
+

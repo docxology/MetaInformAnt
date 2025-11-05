@@ -1,0 +1,49 @@
+# Simulation Module Rules (`metainformant.simulation`)
+
+## Purpose
+Synthetic data generation and modeling: sequence generation, agent-based ecosystem modeling, and expression count simulation.
+
+## Dependencies
+- **Required**: `core`
+
+## Key Submodules
+
+### Sequence Generation
+- DNA/RNA/protein sequence generation
+- Realistic sequence properties
+- Evolutionary simulation
+
+### Agent-Based Modeling
+- Ecosystem modeling
+- Population dynamics
+- Environmental interactions
+
+### Expression Simulation
+- Expression count simulation
+- Realistic expression distributions
+- Batch effects and noise
+
+## Patterns
+
+### Reproducibility
+- Use deterministic seeds for reproducibility
+- Document random number generation
+- Support seed specification in functions
+
+### Output Paths
+- Base: `output/simulation/<type>/`
+- Sequences: `output/simulation/sequences/`
+- Ecosystems: `output/simulation/ecosystems/`
+- Expression: `output/simulation/expression/`
+
+## Integration
+
+- **Used by**: Testing and validation workflows
+- **Integrates with**: All modules (for generating test data)
+
+## Testing
+
+- Test with deterministic seeds
+- Verify simulated data properties
+- Write test outputs to `output/simulation/test/`
+

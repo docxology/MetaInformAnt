@@ -1,0 +1,65 @@
+# Visualization Module Rules (`metainformant.visualization`)
+
+## Purpose
+Plotting and animation utilities for biological data visualization across all domains.
+
+## Dependencies
+- **Required**: `core`
+- **Optional**: `matplotlib`, `seaborn`, `plotly`
+
+## Key Submodules
+
+### Domain-Specific Visualization
+- Phylogenetic trees (DNA)
+- Network plots (Networks)
+- Manhattan plots (GWAS)
+- Expression heatmaps (RNA/Single-Cell)
+- Trajectory plots (Life Events)
+
+## Patterns
+
+### Output Path Parameter
+- All visualization functions accept `output_path` parameter
+- Default output format: PNG for static plots
+- Support SVG, PDF formats when requested
+
+**Pattern**:
+```python
+from metainformant.visualization import trees
+
+trees.visualize_tree(
+    tree=phylogenetic_tree,
+    output_path="output/visualization/tree.png"
+)
+```
+
+### Figure Objects
+- Return figure objects when interactive inspection needed
+- Allow further customization before saving
+- Support both static and interactive plots
+
+### Color Schemes
+- Use consistent color schemes across plots
+- Support colorblind-friendly palettes
+- Document color mappings
+
+### Styling
+- Consistent styling across all visualizations
+- Professional appearance suitable for publications
+- Configurable style parameters
+
+### Output Paths
+- Base: `output/visualization/<domain>/`
+- Domain-specific: `output/visualization/<domain>/<plot_type>/`
+
+## Integration
+
+- **Used by**: All modules (plotting support)
+- **Integrates with**: Domain-specific visualization (phylogenetic trees, network graphs)
+
+## Testing
+
+- Test that output files are created
+- Verify plot dimensions and format
+- Write test outputs to `output/visualization/test/`
+

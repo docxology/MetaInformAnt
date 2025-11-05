@@ -1,0 +1,54 @@
+# Epigenome Module Rules (`metainformant.epigenome`)
+
+## Purpose
+Epigenetic modification analysis: DNA methylation analysis and epigenomic track analysis.
+
+## Dependencies
+- **Required**: `core`, `dna` (for genomic coordinates)
+
+## Key Submodules
+
+### Methylation (`methylation`)
+- DNA methylation analysis
+- CpG site identification
+- Methylation level quantification
+
+**Patterns**:
+```python
+from metainformant.epigenome import methylation
+
+methylation_data = methylation.analyze_methylation(
+    bam_file="data/methylation.bam",
+    genome="data/genome.fa",
+    output_dir="output/epigenome/methylation/"
+)
+```
+
+### Tracks (`tracks`)
+- Epigenomic track analysis
+- ChIP-seq data processing
+- Histone modification tracks
+
+## Patterns
+
+### Genomic Coordinates
+- Use genomic coordinates from `dna` module
+- Support BED, BigWig, and other track formats
+- Handle coordinate systems consistently
+
+### Output Paths
+- Base: `output/epigenome/<analysis>/`
+- Methylation: `output/epigenome/methylation/`
+- Tracks: `output/epigenome/tracks/`
+
+## Integration
+
+- **Uses**: `dna` (for genomic coordinates)
+- **Used by**: `multiomics` (epigenomics integration)
+- **Integrates with**: `visualization` (methylation plots)
+
+## Testing
+
+- Test with real methylation data from `data/`
+- Write test outputs to `output/epigenome/test/`
+

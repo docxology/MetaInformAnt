@@ -1,0 +1,151 @@
+# Core Module Rules (`metainformant.core`)
+
+## Purpose
+Shared utilities across all domains. Foundation for all other modules.
+
+## Dependencies
+- **Required**: Standard library only
+- **Optional**: Handled defensively (try/except imports)
+
+## Key Submodules
+
+### Configuration (`config`)
+- Configuration loading from YAML/TOML/JSON
+- Environment variable overrides
+- Type-safe config classes
+- Database configuration (PostgreSQL)
+
+**Patterns**:
+```python
+from metainformant.core.config import load_mapping_from_file, apply_env_overrides
+
+raw = load_mapping_from_file("config/file.yaml")
+config = apply_env_overrides(raw, prefix="MODULE")
+```
+
+### I/O (`io`)
+- JSON/JSONL/CSV/TSV operations
+- Gzip-aware file operations
+- Atomic writes for data integrity
+- Automatic directory creation
+
+**Patterns**:
+```python
+from metainformant.core import io
+
+# Reading
+data = io.load_json("data/file.json")
+records = list(io.read_jsonl("data/records.jsonl"))
+
+# Writing (creates parent dirs automatically)
+io.dump_json(data, "output/result.json")
+io.write_csv(df, "output/table.csv")
+```
+
+### Paths (`paths`)
+- Path expansion and resolution
+- Containment checks (security)
+- Safe path validation
+
+**Patterns**:
+```python
+from metainformant.core import paths
+from pathlib import Path
+
+# Expand and resolve
+path = paths.expand_and_resolve("~/data/file.txt")
+
+# Security check
+if paths.is_within(user_path, base_dir):
+    # Safe to use
+    pass
+```
+
+### Logging (`logging`)
+- Structured logging with consistent formatting
+- Module-specific loggers
+
+**Patterns**:
+```python
+from metainformant.core.logging import get_logger
+
+logger = get_logger(__name__)
+logger.info("Operation started")
+logger.error("Error occurred", exc_info=True)
+```
+
+### Cache (`cache`)
+- JSON-based caching with TTL
+- Cache under `output/` directory
+
+### Parallel (`parallel`)
+- Thread-based parallel processing
+- Preserves order of results
+
+### Errors (`errors`)
+- Custom error types
+- Biological context in error messages
+
+### Progress (`progress`)
+- Progress tracking utilities
+- Integration with long-running operations
+
+### Validation (`validation`)
+- Data validation utilities
+- Type checking and format validation
+
+### Workflow (`workflow`)
+- Workflow orchestration functions
+- Config-based workflow execution
+
+## Patterns
+
+### Defensive Imports
+```python
+try:
+    import optional_library
+except ImportError:
+    optional_library = None  # type: ignore
+
+def function():
+    if optional_library is None:
+        raise ImportError("optional_library required")
+    # Use library
+```
+
+### Pure Functions
+- Prefer pure functions with minimal side effects
+- Functions should be testable in isolation
+- Side effects limited to I/O operations
+
+### Error Handling
+- Use `metainformant.core.errors` types
+- Provide clear, actionable error messages
+- Include biological context when relevant
+
+### Type Hints
+- Comprehensive type hints throughout
+- Use `from __future__ import annotations` for forward references
+- Union types: `str | Path | None`
+
+## Testing
+
+- Core utilities must have comprehensive tests
+- No mocks: test real implementations
+- Use `tmp_path` fixture for test outputs
+- Write test artifacts to `output/` only
+
+## Documentation
+
+- Each submodule should have clear docstrings
+- Examples in docstrings should use `output/` paths
+- Document optional dependencies and their availability
+- Reference module-specific cursorrules for domain patterns
+
+## Integration with Other Modules
+
+All other modules depend on `core` utilities:
+- Import core utilities: `from metainformant.core import io, paths, logging, config`
+- Use core utilities for all I/O, logging, and path operations
+- Do not reimplement core functionality in domain modules
+

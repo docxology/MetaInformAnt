@@ -1,0 +1,72 @@
+# Information Theory Module Rules (`metainformant.information`)
+
+## Purpose
+Information-theoretic analysis of biological data: entropy, mutual information, complexity measures, and cross-module integration.
+
+## Dependencies
+- **Required**: `core`
+
+## Key Submodules
+
+### Syntactic (`syntactic`)
+- Syntactic entropy and complexity
+- Sequence entropy
+- Compression-based complexity
+
+**Patterns**:
+```python
+from metainformant.information import syntactic
+
+entropy = syntactic.sequence_entropy(sequence)
+complexity = syntactic.complexity_score(sequence)
+```
+
+### Semantic (`semantic`)
+- Semantic information measures
+- Functional information content
+- Biological meaning quantification
+
+### Continuous (`continuous`)
+- Continuous entropy estimation
+- Kernel density estimation
+- Non-parametric entropy
+
+### Networks (`networks`)
+- Network information measures
+- Graph entropy
+- Network complexity
+
+### Integration (`integration`)
+- Cross-module information integration
+- Multi-omic information analysis
+- Information flow analysis
+
+## Patterns
+
+### Data Type Agnostic
+- Functions should accept any biological data type
+- Handle sequences, matrices, networks, etc.
+- Use efficient algorithms for large datasets
+
+### Return Formats
+- Return information measures as dictionaries
+- Include multiple metrics when relevant
+- Provide confidence intervals where applicable
+
+### Output Paths
+- Base: `output/information/<analysis_type>/`
+- Entropy: `output/information/entropy/`
+- Complexity: `output/information/complexity/`
+- Integration: `output/information/integration/`
+
+## Integration
+
+- **Used by**: All modules (can analyze any biological data)
+- **Integrates with**: `dna`, `rna`, `singlecell`, `multiomics` (cross-module integration functions)
+
+## Testing
+
+- Test with various data types (sequences, matrices, networks)
+- Write test outputs to `output/information/test/`
+- Test with known entropy values
+

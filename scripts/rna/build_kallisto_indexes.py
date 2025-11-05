@@ -153,8 +153,10 @@ def build_index_for_species(
     # Check if index already exists
     index_path = get_expected_index_path(work_dir, species_name)
     if index_path.exists():
-        logger.info(f"  ✓ {species_name}: Index already exists at {index_path}")
+        logger.info(f"  ✓ {species_name}: Index already exists")
+        logger.debug(f"    Index path: {index_path}")
         result["index_built"] = True
+        result["already_built"] = True
         result["success"] = True
         result["index_path"] = str(index_path)
         return result
@@ -182,12 +184,14 @@ def build_index_for_species(
     # Build index
     logger.info(f"  Building kallisto index for {species_name} (k={kmer_size})...")
     logger.info(f"    FASTA: {fasta_path.name}")
+    logger.debug(f"    FASTA path: {fasta_path}")
     
     # Get FASTA file size
     fasta_size = fasta_path.stat().st_size
     fasta_size_mb = round(fasta_size / (1024 * 1024), 2)
     logger.info(f"    FASTA size: {format_file_size(fasta_size)}")
     logger.info(f"    k-mer size: {kmer_size}")
+    logger.debug(f"    Index path: {index_path}")
     
     try:
         import time
@@ -205,6 +209,7 @@ def build_index_for_species(
         if success and index_path.exists():
             result["success"] = True
             result["index_built"] = True
+            result["newly_built"] = True
             result["elapsed_seconds"] = round(elapsed_time, 2)
             
             # Get index file size
@@ -342,13 +347,19 @@ def main() -> None:
         
         logger.info("")  # Blank line between species
         
-        if result.get("index_built"):
-            if result.get("would_build"):
-                built += 1
-            elif result.get("success"):
-                already_built += 1
+        # Count results correctly
+        if result.get("would_build"):
+            built += 1  # Dry run - would build
+        elif result.get("already_built"):
+            already_built += 1
+        elif result.get("newly_built"):
+            built += 1  # Actually built in this run
         elif result.get("success"):
-            built += 1
+            # Success but not clearly categorized
+            if result.get("elapsed_seconds"):
+                built += 1  # Likely newly built
+            else:
+                already_built += 1  # Likely already existed
         elif result.get("error") and "not found" in result.get("error", "").lower():
             skipped += 1
         else:

@@ -1,0 +1,150 @@
+# GWAS Module Rules (`metainformant.gwas`)
+
+## Purpose
+Genome-wide association studies: variant quality control, association testing, population structure, and visualization.
+
+## Dependencies
+- **Required**: `core`, `dna.variants`, `dna.population`, `math.popgen`, `ml.regression`
+- **Optional**: External tools (bcftools, GATK) for variant calling
+
+## Key Submodules
+
+### Association (`association`)
+- Statistical association testing
+- Linear and logistic regression models
+- Effect size calculation
+- P-value computation
+
+**Patterns**:
+```python
+from metainformant.gwas import association
+
+results = association.test_association(
+    genotypes=genotypes,
+    phenotypes=phenotypes,
+    covariates=covariates
+)
+# Returns: DataFrame with p-values, effect sizes, etc.
+```
+
+### Correction (`correction`)
+- Multiple testing correction
+- Bonferroni correction
+- False Discovery Rate (FDR) - Benjamini-Hochberg
+- Family-wise error rate control
+
+**Patterns**:
+```python
+from metainformant.gwas import correction
+
+corrected = correction.apply_bonferroni(p_values)
+corrected = correction.apply_fdr(p_values, method="bh")
+```
+
+### Quality (`quality`)
+- Variant quality control
+- Missingness filtering
+- Minor allele frequency (MAF) filtering
+- Hardy-Weinberg equilibrium testing
+
+### Structure (`structure`)
+- Population structure analysis
+- Principal Component Analysis (PCA)
+- Population stratification correction
+- Admixture estimation
+
+### Visualization (`visualization`)
+- Manhattan plots
+- Q-Q plots
+- Regional association plots
+- Effect size plots
+
+**Patterns**:
+```python
+from metainformant.gwas import visualization
+
+visualization.plot_manhattan(
+    results=association_results,
+    output_path="output/gwas/manhattan.png",
+    significance_threshold=5e-8
+)
+```
+
+### Workflow (`workflow`)
+- End-to-end GWAS workflow
+- Configuration-based execution
+- Step orchestration
+
+## Patterns
+
+### Configuration
+- Use `GWASWorkflowConfig` for configuration
+- Config files in `config/gwas/<name>.yaml`
+- Environment prefix: `GWAS_` (e.g., `GWAS_THREADS`, `GWAS_WORK_DIR`)
+
+**Config Structure**:
+```yaml
+work_dir: output/gwas/analysis/work
+log_dir: output/gwas/analysis/logs
+threads: 8
+genome:
+  reference: "path/to/reference.fa"
+variants:
+  vcf_path: "data/variants.vcf"
+association:
+  model: "linear"
+  covariates: ["age", "sex"]
+correction:
+  method: "fdr"
+  alpha: 0.05
+```
+
+### Output Paths
+- Base: `output/gwas/<analysis_type>/`
+- Association results: `output/gwas/<analysis>/association/`
+- Visualizations: `output/gwas/<analysis>/plots/`
+- Quality reports: `output/gwas/<analysis>/qc/`
+
+### Statistical Models
+- Use `ml.regression` for regression models
+- Support both linear and logistic regression
+- Handle missing data appropriately
+- Report effect sizes and confidence intervals
+
+### Visualization
+- All visualization functions accept `output_path` parameter
+- Default format: PNG
+- Include significance thresholds in plots
+- Use consistent color schemes
+
+### Quality Control
+- Filter variants before association testing
+- Report QC metrics in structured format
+- Output QC reports to JSON and text files
+
+## Environment Variables
+
+- `GWAS_THREADS`: Number of threads
+- `GWAS_WORK_DIR`: Working directory override
+- `GWAS_LOG_DIR`: Log directory override
+- `GWAS_ALPHA`: Significance threshold
+
+## Integration
+
+- **Uses**: `dna.variants`, `dna.population`, `math.popgen`, `ml.regression`
+- **Used by**: `multiomics` (genomics integration)
+- **Integrates with**: `visualization` (plotting), external tools (bcftools, GATK)
+
+## Testing
+
+- Test with real VCF files from `data/`
+- Test statistical functions with known results
+- Write test outputs to `output/gwas/test/`
+- Test visualization functions (check output files exist)
+
+## Documentation
+
+- Document statistical methods and assumptions
+- Provide examples with real GWAS data
+- Document visualization customization options
+

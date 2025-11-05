@@ -1,46 +1,370 @@
 # METAINFORMANT Cursor Rules
 
-## Directories
-- output/: All outputs from tests and real runs must go here by default. Treat as ephemeral and reproducible.
-- config/: Repository-level configuration files and options. Read via metainformant.core.config; allow env overrides.
-- data/: Inputs such as datasets and local databases. Read-mostly, organized by domain and version.
+## Directory Structure
+
+### Core Directories
+- **`output/`**: All outputs from tests and real runs must go here by default. Treat as ephemeral and reproducible. Safe to delete.
+- **`config/`**: Repository-level configuration files and options. Read via `metainformant.core.config`; allow env overrides.
+- **`data/`**: Inputs such as datasets and local databases. Read-mostly, organized by domain and version.
+- **`docs/`**: All documentation organized by domain (`docs/<domain>/<topic>.md`). NEVER create new docs in repo root.
+- **`src/metainformant/`**: Source code organized by domain modules.
+- **`tests/`**: Test files mirroring source structure (`tests/test_<module>_<submodule>.py`).
+
+### Domain-Specific Output Paths
+- **RNA**: `output/amalgkit/<species>/<step>/` (e.g., `quant/`, `work/`, `logs/`)
+- **GWAS**: `output/gwas/<analysis_type>/` (e.g., `association/`, `plots/`, `qc/`)
+- **Life Events**: `output/life_events/<workflow>/` (e.g., `embeddings/`, `models/`, `plots/`)
+- **Multi-Omics**: `output/multiomics/<integration>/` (e.g., `integrated/`, `plots/`)
+- **Single-Cell**: `output/singlecell/<analysis>/` (e.g., `preprocessing/`, `clustering/`)
+- **Networks**: `output/networks/<network_type>/` (e.g., `ppi/`, `regulatory/`, `pathways/`)
+- **Information Theory**: `output/information/<analysis_type>/` (e.g., `entropy/`, `complexity/`)
+- **DNA**: `output/dna/<analysis_type>/` (e.g., `phylogeny/`, `population/`, `variants/`)
+- **Protein**: `output/protein/<analysis_type>/` (e.g., `structures/`, `alignments/`)
+- **Quality**: `output/quality/<dataset>/` (e.g., `fastq/`, `reports/`)
+- **Math**: `output/math/<type>/` (e.g., `simulations/`, `models/`, `plots/`)
+- **Simulation**: `output/simulation/<type>/` (e.g., `sequences/`, `ecosystems/`)
 
 ## Path and I/O
-- Do not write outside output/ unless an explicit user path is provided.
-- Prefer functional APIs that accept a destination path; if omitted, default to output/ with a sensible subpath.
-- Use metainformant.core.io for file I/O (JSON/JSONL/CSV/TSV) and gzip-aware open.
-- Use metainformant.core.paths for path handling and containment checks.
-- Use metainformant.core.cache for small JSON caches under output/ if needed.
+
+### Path Handling Rules
+- **DO NOT write outside `output/`** unless an explicit user path is provided.
+- Prefer functional APIs that accept a destination path; if omitted, default to `output/` with a sensible subpath.
+- Use `metainformant.core.io` for file I/O (JSON/JSONL/CSV/TSV) and gzip-aware operations.
+- Use `metainformant.core.paths` for path handling and containment checks.
+- Use `metainformant.core.cache` for small JSON caches under `output/` if needed.
+- Always use `Path` objects from `pathlib` for path manipulation.
+- Expand user paths (`~`) and resolve to absolute paths using `paths.expand_and_resolve()`.
+- Validate paths with `paths.is_within()` to prevent directory traversal attacks.
+
+### File I/O Patterns
+```python
+from metainformant.core import io, paths
+from pathlib import Path
+
+# Reading files
+data = io.load_json("config/example.yaml")
+records = list(io.read_jsonl("data/records.jsonl"))
+df = io.load_csv("data/table.csv")
+
+# Writing files (always to output/ by default)
+output_path = Path("output/module/subdir") / "result.json"
+io.dump_json(data, output_path)  # Automatically creates parent dirs
+io.write_csv(df, output_path.with_suffix(".csv"))
+
+# Gzip-aware operations
+with io.open_text_auto("data/large_file.txt.gz") as f:
+    content = f.read()
+```
 
 ## Configuration
-- Centralize config loading in metainformant.core.config.
-- Allow env vars to override files in config/.
+
+### Configuration Loading
+- Centralize config loading in `metainformant.core.config`.
+- Allow env vars to override files in `config/` using `apply_env_overrides()`.
 - Domain modules must not hardcode absolute paths; accept config objects/paths from callers.
+- Use type-safe config classes (dataclasses) for domain-specific configs.
+
+### Environment Variable Patterns
+- **RNA Module**: Use prefix `AK_` (e.g., `AK_THREADS`, `AK_WORK_DIR`, `AK_LOG_DIR`)
+- **GWAS Module**: Use prefix `GWAS_` (e.g., `GWAS_THREADS`, `GWAS_WORK_DIR`)
+- **Life Events Module**: Use prefix `LE_` (e.g., `LE_THREADS`, `LE_EMBEDDING_DIM`)
+- **General**: Use prefix matching domain name (e.g., `SC_` for single-cell, `NET_` for networks)
+
+### Configuration File Structure
+```yaml
+# config/<domain>/<name>.yaml
+work_dir: output/<domain>/<workflow>/
+log_dir: output/<domain>/<workflow>/logs
+threads: 8
+domain_specific:
+  key: value
+```
+
+### Config Loading Pattern
+```python
+from metainformant.core.config import load_mapping_from_file, apply_env_overrides
+from dataclasses import dataclass
+
+# Define domain-specific config class
+@dataclass
+class DomainConfig:
+    work_dir: Path
+    threads: int
+    # ... other fields
+
+def load_domain_config(config_file: str | Path, prefix: str = "DOMAIN") -> DomainConfig:
+    raw = load_mapping_from_file(config_file)
+    raw = apply_env_overrides(raw, prefix=prefix)
+    # Process and validate config
+    return DomainConfig(**raw)
+```
+
+**Real Examples**:
+- RNA: `AmalgkitWorkflowConfig` with prefix `"AK"`
+- GWAS: `GWASWorkflowConfig` with prefix `"GWAS"`
+- Life Events: `LifeEventsWorkflowConfig` with prefix `"LE"`
 
 ## Testing Policy (STRICTLY NO MOCKS/FAKES)
-- **ABSOLUTE PROHIBITION**: Never use fake/mocked/stubbed methods, objects, or network shims in code or tests.
+
+### Absolute Prohibition
+- **NEVER use fake/mocked/stubbed methods, objects, or network shims** in code or tests.
 - **Real Implementation Only**: Tests must exercise real code paths and real external behavior without exceptions.
-  - Networked tests: perform real HTTP requests with short timeouts. If offline, skip gracefully with clear messages.
-  - CLI-dependent tests (e.g., amalgkit): run only when the dependency is available on PATH; otherwise skip with dependency notes.
-  - Database tests: use real database connections or skip when unavailable.
-  - API tests: make real API calls or skip when network/credentials unavailable.
-- **Anti-Pattern Enforcement**: Mocking is an anti-pattern that creates brittle tests disconnected from reality.
-- **Quality Assurance**: Real implementations reveal actual bugs, performance issues, and integration problems.
+
+### Test Patterns
+- **Networked tests**: Perform real HTTP requests with short timeouts. If offline, skip gracefully with clear messages.
+- **CLI-dependent tests** (e.g., amalgkit): Run only when dependency is available on PATH; otherwise skip with dependency notes.
+- **Database tests**: Use real database connections or skip when unavailable.
+- **API tests**: Make real API calls or skip when network/credentials unavailable.
 - **Environment Setup**: It is acceptable to set environment variables for test setup, but do not monkeypatch or replace functions.
-- **Test Artifacts**: Tests must write all artifacts only under output/ directory.
+- **Test Artifacts**: Tests must write all artifacts only under `output/` directory (use `tmp_path` fixture).
 - **Reproducibility**: Prefer deterministic seeds and stable filenames for reproducible test runs.
 - **Clear Documentation**: When external dependencies are unavailable, tests must clearly document what is being skipped and why.
 
+### Test Structure
+```python
+import pytest
+from pathlib import Path
+from metainformant.core import io
+
+def test_functionality(tmp_path: Path) -> None:
+    """Test description."""
+    # Use tmp_path for all test outputs
+    output_file = tmp_path / "result.json"
+    
+    # Test real implementation
+    result = function_under_test(output_file)
+    
+    # Verify real output
+    assert output_file.exists()
+    data = io.load_json(output_file)
+    assert data["key"] == expected_value
+
+@pytest.mark.network
+def test_network_operation() -> None:
+    """Test that requires network access."""
+    try:
+        result = fetch_from_api()
+        assert result is not None
+    except (requests.ConnectionError, requests.Timeout) as e:
+        pytest.skip(f"Network unavailable: {e}")
+
+@pytest.mark.external_tool
+def test_cli_integration() -> None:
+    """Test that requires external CLI tool."""
+    import shutil
+    if not shutil.which("amalgkit"):
+        pytest.skip("amalgkit not available on PATH")
+    # Test real CLI integration
+```
+
+### Test Markers
+- `@pytest.mark.slow`: Tests that take significant time
+- `@pytest.mark.network`: Tests requiring internet connectivity (real API calls)
+- `@pytest.mark.external_tool`: Tests requiring external CLI tools
+- `@pytest.mark.integration`: End-to-end integration tests
+
+## Module-Specific Rules
+
+Module-specific rules are organized in the `cursorrules/` directory. Each module has its own `.cursorrules` file with detailed patterns, conventions, and guidelines.
+
+**Available Module Rules:**
+- `cursorrules/core.cursorrules` - Core utilities and shared patterns
+- `cursorrules/dna.cursorrules` - DNA sequence analysis and genomics
+- `cursorrules/rna.cursorrules` - RNA transcriptomic analysis
+- `cursorrules/gwas.cursorrules` - Genome-wide association studies
+- `cursorrules/protein.cursorrules` - Protein sequence and structure analysis
+- `cursorrules/singlecell.cursorrules` - Single-cell transcriptomic analysis
+- `cursorrules/networks.cursorrules` - Biological network analysis
+- `cursorrules/ml.cursorrules` - Machine learning for biological data
+- `cursorrules/multiomics.cursorrules` - Multi-omic data integration
+- `cursorrules/information.cursorrules` - Information-theoretic analysis
+- `cursorrules/life_events.cursorrules` - Life course event analysis
+- `cursorrules/math.cursorrules` - Mathematical and theoretical biology
+- `cursorrules/visualization.cursorrules` - Plotting and visualization
+- `cursorrules/quality.cursorrules` - Data quality assessment
+- `cursorrules/ontology.cursorrules` - Functional annotation and ontologies
+- `cursorrules/phenotype.cursorrules` - Phenotypic trait analysis
+- `cursorrules/epigenome.cursorrules` - Epigenetic modification analysis
+- `cursorrules/ecology.cursorrules` - Ecological metadata and community analysis
+- `cursorrules/simulation.cursorrules` - Synthetic data generation
+
+**See `cursorrules/README.md` for detailed information about the modular structure.**
+
+## Import Patterns
+
+### Standard Import Structure
+```python
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
+# Core imports
+from metainformant.core import io, paths, logging, config
+
+# Domain imports (lazy when optional dependencies)
+try:
+    import networkx as nx
+except ImportError:
+    nx = None  # type: ignore
+```
+
+### Import Order
+1. `__future__` imports
+2. Standard library imports
+3. Third-party imports
+4. Local imports (from `metainformant.*`)
+5. Optional imports (with try/except)
+
+### Lazy Import Pattern
+```python
+# For optional dependencies
+def _lazy_import_networkx():
+    """Lazy import networkx."""
+    try:
+        import networkx as nx
+        return nx
+    except ImportError:
+        return None
+
+def graph_operation():
+    nx = _lazy_import_networkx()
+    if nx is None:
+        raise ImportError("networkx required for this operation")
+    # Use nx
+```
+
+## Code Style
+
+### Python Version
+- **Minimum**: Python 3.11+
+- Use type hints throughout (`typing` module, `|` syntax for unions)
+- Use `from __future__ import annotations` for forward references
+
+### Code Formatting
+- **Line length**: 120 characters (configured in `pyproject.toml`)
+- **Formatter**: Black (configured in `pyproject.toml`)
+- **Import sorting**: isort (configured in `pyproject.toml`)
+- **Type checking**: mypy (configured in `pyproject.toml`)
+
+### Function Design
+- Prefer functional APIs that accept destination paths
+- Use `Path` or `str` for file paths (accept both)
+- Return structured data (dictionaries, dataclasses) rather than raw values
+- Use clear, descriptive function names
+- Document with docstrings (Google style)
+
+### Error Handling
+- Use `metainformant.core.errors` for custom error types
+- Provide clear, actionable error messages
+- Handle missing optional dependencies gracefully
+- Log errors with context using `metainformant.core.logging`
+
+### Logging Pattern
+```python
+from metainformant.core.logging import get_logger
+
+logger = get_logger(__name__)
+
+def function():
+    logger.info("Starting operation")
+    try:
+        result = process_data()
+        logger.info(f"Completed: {result}")
+        return result
+    except Exception as e:
+        logger.error(f"Operation failed: {e}", exc_info=True)
+        raise
+```
+
 ## Documentation
-- Keep docs concise and reference core utilities. Examples that write files must write under output/ and mention how to override paths.
-- **NEVER create new documentation files in the repository root**. All documentation belongs in `docs/` subdirectories organized by domain.
-- **UPDATE existing documentation** rather than creating new files. Add sections to existing docs for new features, fixes, or status updates.
-- Temporary status reports and progress logs belong in `output/` and should be deleted when no longer needed.
+
+### Documentation Structure
+- **NEVER create new documentation files in repository root**
+- All documentation belongs in `docs/` subdirectories organized by domain
+- **UPDATE existing documentation** rather than creating new files
+- Temporary status reports and progress logs belong in `output/` and should be deleted when no longer needed
 - Documentation structure: `docs/<domain>/<topic>.md` or `docs/<domain>/<subtopic>/<specific>.md`
 
-## Style
-- Python 3.11+. Clear, modular functions; avoid hidden global state.
-- Follow the repository code style and typing practices.
+### Documentation Patterns
+- Keep docs concise and reference core utilities
+- Examples that write files must write under `output/` and mention how to override paths
+- Include code examples with real usage patterns
+- Document environment variable overrides
+- Document optional dependencies and their availability
+
+### Module Documentation
+Each module should have:
+- `README.md`: Overview of module functionality
+- `AGENTS.md`: AI agent contributions (if applicable)
+- Function docstrings: Google-style docstrings with Args, Returns, Raises, Examples
+
+## Workflow Integration
+
+### Cross-Module Integration
+- DNA → GWAS: Variant calling and population genetics
+- DNA → RNA: Genomic coordinates for transcriptomic analysis
+- RNA → Single-Cell: Expression data for single-cell analysis
+- Protein → Networks: PPI networks from protein data
+- Multi-Omics: Integration of all omics types
+
+### Workflow Patterns
+```python
+from metainformant.core.workflow import run_config_based_workflow
+
+# Domain-specific workflow
+from metainformant.rna.workflow import load_workflow_config, plan_workflow
+
+config = load_workflow_config("config/amalgkit/species.yaml")
+steps = plan_workflow(config)
+# Execute steps
+```
 
 ## Contributions
-- New modules should: (1) read configs from config/ (with env overrides), (2) read inputs from data/, and (3) write outputs to output/ by default.
+
+### New Module Requirements
+New modules should:
+1. Read configs from `config/` (with env overrides)
+2. Read inputs from `data/`
+3. Write outputs to `output/` by default
+4. Use `core` utilities for I/O, logging, paths
+5. Follow module-specific patterns above
+6. Include comprehensive tests (no mocks)
+7. Include documentation in `docs/<domain>/`
+
+### Module Initialization
+```python
+# src/metainformant/new_domain/__init__.py
+"""New domain functionality.
+
+Brief description of domain purpose and capabilities.
+"""
+
+from __future__ import annotations
+
+__all__ = [
+    # List exported submodules
+    "submodule1",
+    "submodule2",
+]
+```
+
+## Summary
+
+### Core Principles
+1. **Output Directory**: Always write to `output/` by default
+2. **Configuration**: Use `config/` with env overrides
+3. **No Mocks**: Real implementations only in tests
+4. **Modular Design**: Clear interfaces, minimal dependencies
+5. **Documentation**: Update existing docs, never create root-level docs
+6. **Type Safety**: Comprehensive type hints throughout
+7. **Error Handling**: Clear errors with biological context
+8. **Path Safety**: Always validate paths, prevent traversal attacks
+
+### Quick Reference
+- **Config**: `metainformant.core.config.load_mapping_from_file()`
+- **I/O**: `metainformant.core.io.load_json()`, `dump_json()`, etc.
+- **Paths**: `metainformant.core.paths.expand_and_resolve()`, `is_within()`
+- **Logging**: `metainformant.core.logging.get_logger(__name__)`
+- **Tests**: Use `tmp_path` fixture, write to `output/`, no mocks
+- **Docs**: Update `docs/<domain>/<topic>.md`, never root-level

@@ -1,0 +1,58 @@
+# Quality Module Rules (`metainformant.quality`)
+
+## Purpose
+Data quality assessment and control: FASTQ quality metrics, general quality metrics, and contamination detection.
+
+## Dependencies
+- **Required**: `core`, `dna.fastq`
+
+## Key Submodules
+
+### FASTQ (`fastq`)
+- FASTQ quality metrics
+- Per-base quality scores
+- Read quality assessment
+
+**Patterns**:
+```python
+from metainformant.quality import fastq
+
+metrics = fastq.assess_fastq_quality(
+    fastq_file="data/reads.fastq",
+    output_dir="output/quality/fastq/"
+)
+# Returns: dict with quality metrics
+```
+
+### Metrics (`metrics`)
+- General quality metrics
+- Data integrity checking
+- Format validation
+
+### Contamination (`contamination`)
+- Contamination detection
+- Taxonomic classification
+- Contaminant identification
+
+## Patterns
+
+### Quality Metrics
+- Quality metrics should return structured dictionaries
+- Include summary statistics and distributions
+- Report quality thresholds and pass/fail status
+
+### Output Paths
+- Base: `output/quality/<dataset>/`
+- FASTQ: `output/quality/<dataset>/fastq/`
+- Reports: `output/quality/<dataset>/reports/`
+
+## Integration
+
+- **Used by**: `rna` (FASTQ quality control), `gwas` (variant QC)
+
+## Testing
+
+- Test with real FASTQ files from `data/`
+- Write test outputs to `output/quality/test/`
+- Test contamination detection with known samples
+

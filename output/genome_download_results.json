@@ -1,0 +1,211 @@
+{
+  "results": [
+    {
+      "accession": "GCF_000204515.1",
+      "already_downloaded": true,
+      "config_file": "/media/q/ext6/github/MetaInformAnt/config/amalgkit/amalgkit_acromyrmex_echinatior.yaml",
+      "downloaded": true,
+      "dry_run": false,
+      "genome_dir": "/media/q/ext6/github/MetaInformAnt/output/amalgkit/acromyrmex_echinatior/genome",
+      "species_name": "Acromyrmex_echinatior",
+      "success": true
+    },
+    {
+      "accession": "GCF_000143395.1",
+      "already_downloaded": true,
+      "config_file": "/media/q/ext6/github/MetaInformAnt/config/amalgkit/amalgkit_atta_cephalotes.yaml",
+      "downloaded": true,
+      "dry_run": false,
+      "genome_dir": "/media/q/ext6/github/MetaInformAnt/output/amalgkit/atta_cephalotes/genome",
+      "species_name": "Atta_cephalotes",
+      "success": true
+    },
+    {
+      "accession": "GCF_003227725.1",
+      "already_downloaded": true,
+      "config_file": "/media/q/ext6/github/MetaInformAnt/config/amalgkit/amalgkit_camponotus_floridanus.yaml",
+      "downloaded": true,
+      "dry_run": false,
+      "genome_dir": "/media/q/ext6/github/MetaInformAnt/output/amalgkit/camponotus_floridanus/genome",
+      "species_name": "Camponotus_floridanus",
+      "success": true
+    },
+    {
+      "accession": "GCF_003672105.1",
+      "already_downloaded": true,
+      "config_file": "/media/q/ext6/github/MetaInformAnt/config/amalgkit/amalgkit_cardiocondyla_obscurior.yaml",
+      "downloaded": true,
+      "dry_run": false,
+      "genome_dir": "/media/q/ext6/github/MetaInformAnt/output/amalgkit/cardiocondyla_obscurior/genome",
+      "species_name": "Cardiocondyla_obscurior",
+      "success": true
+    },
+    {
+      "accession": "GCF_947570615.1",
+      "already_downloaded": true,
+      "config_file": "/media/q/ext6/github/MetaInformAnt/config/amalgkit/amalgkit_formica_exsecta.yaml",
+      "downloaded": true,
+      "dry_run": false,
+      "genome_dir": "/media/q/ext6/github/MetaInformAnt/output/amalgkit/formica_exsecta/genome",
+      "species_name": "Formica_exsecta",
+      "success": true
+    },
+    {
+      "accession": "GCF_003227715.1",
+      "already_downloaded": true,
+      "config_file": "/media/q/ext6/github/MetaInformAnt/config/amalgkit/amalgkit_harpegnathos_saltator.yaml",
+      "downloaded": true,
+      "dry_run": false,
+      "genome_dir": "/media/q/ext6/github/MetaInformAnt/output/amalgkit/harpegnathos_saltator/genome",
+      "species_name": "Harpegnathos_saltator",
+      "success": true
+    },
+    {
+      "accession": "GCA_029212285.1",
+      "already_downloaded": true,
+      "config_file": "/media/q/ext6/github/MetaInformAnt/config/amalgkit/amalgkit_lasius_neglectus.yaml",
+      "downloaded": true,
+      "dry_run": false,
+      "genome_dir": "/media/q/ext6/github/MetaInformAnt/output/amalgkit/lasius_neglectus/genome",
+      "species_name": "Lasius_neglectus",
+      "success": true
+    },
+    {
+      "accession": "GCF_001045655.1",
+      "already_downloaded": true,
+      "config_file": "/media/q/ext6/github/MetaInformAnt/config/amalgkit/amalgkit_lasius_niger.yaml",
+      "downloaded": true,
+      "dry_run": false,
+      "genome_dir": "/media/q/ext6/github/MetaInformAnt/output/amalgkit/lasius_niger/genome",
+      "species_name": "Lasius_niger",
+      "success": true
+    },
+    {
+      "accession": "GCF_001045655.1",
+      "already_downloaded": true,
+      "config_file": "/media/q/ext6/github/MetaInformAnt/config/amalgkit/amalgkit_linepithema_humile.yaml",
+      "downloaded": true,
+      "dry_run": false,
+      "genome_dir": "/media/q/ext6/github/MetaInformAnt/output/amalgkit/linepithema_humile/genome",
+      "species_name": "Linepithema_humile",
+      "success": true
+    },
+    {
+      "accession": "GCF_013373865.1",
+      "already_downloaded": true,
+      "config_file": "/media/q/ext6/github/MetaInformAnt/config/amalgkit/amalgkit_monomorium_pharaonis.yaml",
+      "downloaded": true,
+      "dry_run": false,
+      "genome_dir": "/media/q/ext6/github/MetaInformAnt/output/amalgkit/monomorium_pharaonis/genome",
+      "species_name": "Monomorium_pharaonis",
+      "success": true
+    },
+    {
+      "accession": "GCA_021155985.1",
+      "already_downloaded": true,
+      "config_file": "/media/q/ext6/github/MetaInformAnt/config/amalgkit/amalgkit_myrmica_rubra.yaml",
+      "downloaded": true,
+      "dry_run": false,
+      "genome_dir": "/media/q/ext6/github/MetaInformAnt/output/amalgkit/myrmica_rubra/genome",
+      "species_name": "Myrmica_rubra",
+      "success": true
+    },
+    {
+      "accession": "GCF_003672135.1",
+      "already_downloaded": true,
+      "config_file": "/media/q/ext6/github/MetaInformAnt/config/amalgkit/amalgkit_ooceraea_biroi.yaml",
+      "downloaded": true,
+      "dry_run": false,
+      "genome_dir": "/media/q/ext6/github/MetaInformAnt/output/amalgkit/ooceraea_biroi/genome",
+      "species_name": "Ooceraea_biroi",
+      "success": true
+    },
+    {
+      "accession": "GCF_000187915.1",
+      "already_downloaded": true,
+      "config_file": "/media/q/ext6/github/MetaInformAnt/config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml",
+      "downloaded": true,
+      "dry_run": false,
+      "genome_dir": "/media/q/ext6/github/MetaInformAnt/output/amalgkit/pogonomyrmex_barbatus/genome",
+      "species_name": "Pogonomyrmex_barbatus",
+      "success": true
+    },
+    {
+      "accession": "GCF_016802725.1",
+      "already_downloaded": true,
+      "config_file": "/media/q/ext6/github/MetaInformAnt/config/amalgkit/amalgkit_solenopsis_invicta.yaml",
+      "downloaded": true,
+      "dry_run": false,
+      "genome_dir": "/media/q/ext6/github/MetaInformAnt/output/amalgkit/solenopsis_invicta/genome",
+      "species_name": "Solenopsis_invicta",
+      "success": true
+    },
+    {
+      "accession": "GCA_014633215.1",
+      "already_downloaded": true,
+      "config_file": "/media/q/ext6/github/MetaInformAnt/config/amalgkit/amalgkit_temnothorax_curvispinosus.yaml",
+      "downloaded": true,
+      "dry_run": false,
+      "genome_dir": "/media/q/ext6/github/MetaInformAnt/output/amalgkit/temnothorax_curvispinosus/genome",
+      "species_name": "Temnothorax_curvispinosus",
+      "success": true
+    },
+    {
+      "accession": "GCA_028515285.1",
+      "already_downloaded": true,
+      "config_file": "/media/q/ext6/github/MetaInformAnt/config/amalgkit/amalgkit_temnothorax_longispinosus.yaml",
+      "downloaded": true,
+      "dry_run": false,
+      "genome_dir": "/media/q/ext6/github/MetaInformAnt/output/amalgkit/temnothorax_longispinosus/genome",
+      "species_name": "Temnothorax_longispinosus",
+      "success": true
+    },
+    {
+      "accession": "GCA_911622025.1",
+      "already_downloaded": true,
+      "config_file": "/media/q/ext6/github/MetaInformAnt/config/amalgkit/amalgkit_temnothorax_nylanderi.yaml",
+      "downloaded": true,
+      "dry_run": false,
+      "genome_dir": "/media/q/ext6/github/MetaInformAnt/output/amalgkit/temnothorax_nylanderi/genome",
+      "species_name": "Temnothorax_nylanderi",
+      "success": true
+    },
+    {
+      "accession": "GCA_028515645.1",
+      "already_downloaded": true,
+      "config_file": "/media/q/ext6/github/MetaInformAnt/config/amalgkit/amalgkit_temnothorax_rugatulus.yaml",
+      "downloaded": true,
+      "dry_run": false,
+      "genome_dir": "/media/q/ext6/github/MetaInformAnt/output/amalgkit/temnothorax_rugatulus/genome",
+      "species_name": "Temnothorax_rugatulus",
+      "success": true
+    },
+    {
+      "accession": "GCF_001594055.1",
+      "already_downloaded": true,
+      "config_file": "/media/q/ext6/github/MetaInformAnt/config/amalgkit/amalgkit_vollenhovia_emeryi.yaml",
+      "downloaded": true,
+      "dry_run": false,
+      "genome_dir": "/media/q/ext6/github/MetaInformAnt/output/amalgkit/vollenhovia_emeryi/genome",
+      "species_name": "Vollenhovia_emeryi",
+      "success": true
+    },
+    {
+      "accession": "GCF_000956235.1",
+      "already_downloaded": true,
+      "config_file": "/media/q/ext6/github/MetaInformAnt/config/amalgkit/amalgkit_wasmannia_auropunctata.yaml",
+      "downloaded": true,
+      "dry_run": false,
+      "genome_dir": "/media/q/ext6/github/MetaInformAnt/output/amalgkit/wasmannia_auropunctata/genome",
+      "species_name": "Wasmannia_auropunctata",
+      "success": true
+    }
+  ],
+  "summary": {
+    "already_downloaded": 20,
+    "downloaded": 0,
+    "failed": 0,
+    "total": 20,
+    "would_download": 0
+  }
+}

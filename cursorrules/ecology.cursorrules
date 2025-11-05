@@ -1,0 +1,38 @@
+# Ecology Module Rules (`metainformant.ecology`)
+
+## Purpose
+Ecological metadata and community analysis: community structure analysis and diversity calculations.
+
+## Dependencies
+- **Required**: `core`
+- **Optional**: `math` (diversity calculations)
+
+## Key Submodules
+
+### Community (`community`)
+- Community structure analysis
+- Species abundance
+- Diversity metrics
+
+## Patterns
+
+### Community Data Formats
+- Community data should use standard ecological formats
+- Support species abundance matrices
+- Handle metadata (sites, samples, etc.)
+
+### Output Paths
+- Base: `output/ecology/<analysis>/`
+- Communities: `output/ecology/communities/`
+- Diversity: `output/ecology/diversity/`
+
+## Integration
+
+- **Used by**: Workflow scripts
+- **Integrates with**: `math` (diversity calculations)
+
+## Testing
+
+- Test with real ecological data from `data/`
+- Write test outputs to `output/ecology/test/`
+

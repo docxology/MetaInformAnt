@@ -1,0 +1,168 @@
+# RNA Module Rules (`metainformant.rna`)
+
+## Purpose
+RNA transcriptomic analysis via amalgkit integration and workflow orchestration.
+
+## Dependencies
+- **Required**: `core`, `dna` (for genomic coordinates)
+- **External**: `amalgkit` CLI tool (must be on PATH)
+
+## Key Submodules
+
+### Workflow (`workflow`)
+- Workflow orchestration for amalgkit pipeline
+- Configuration loading and validation
+- Step planning and execution
+
+**Patterns**:
+```python
+from metainformant.rna.workflow import load_workflow_config, plan_workflow
+
+config = load_workflow_config("config/amalgkit/species.yaml")
+steps = plan_workflow(config)
+# Execute workflow steps
+```
+
+### Configs (`configs`)
+- Configuration building for amalgkit steps
+- Parameter merging (common + step-specific)
+- Layout management
+
+### Amalgkit (`amalgkit`)
+- Wrapper for amalgkit CLI calls
+- Command building and execution
+- Error handling and logging
+
+**Patterns**:
+```python
+from metainformant.rna.amalgkit import run_amalgkit_step
+
+result = run_amalgkit_step(
+    step="metadata",
+    config=step_config,
+    work_dir=config.work_dir
+)
+```
+
+### Genome Prep (`genome_prep`)
+- Genome preparation utilities
+- Transcriptome FASTA handling
+- Decompression and validation
+
+### Progress Tracker (`progress_tracker`)
+- Progress tracking across workflow steps
+- State persistence (JSON)
+- Dashboard generation
+
+**Patterns**:
+```python
+from metainformant.rna.progress_tracker import ProgressTracker
+
+tracker = ProgressTracker(state_file="output/amalgkit/progress_state.json")
+tracker.update_step("metadata", status="completed")
+```
+
+### Steps (`steps/`)
+- Step-specific implementations
+- Metadata, config, download, etc.
+- Each step has its own module
+
+## Patterns
+
+### Amalgkit Availability
+- Always check for `amalgkit` availability before use
+- Skip tests gracefully if not available
+- Provide clear error messages
+
+**Pattern**:
+```python
+import shutil
+
+if not shutil.which("amalgkit"):
+    raise RuntimeError("amalgkit not found on PATH")
+```
+
+### Configuration
+- Use `AmalgkitWorkflowConfig` for configuration
+- Config files in `config/amalgkit/<species>.yaml`
+- Environment prefix: `AK_` (e.g., `AK_THREADS`, `AK_WORK_DIR`, `AK_LOG_DIR`)
+
+**Config Structure**:
+```yaml
+work_dir: output/amalgkit/species/work
+log_dir: output/amalgkit/species/logs
+threads: 8
+species_list: ["Homo sapiens"]
+steps:
+  metadata: {}
+  config: {}
+  # Other steps: select, getfastq, quant, merge, cstmm, curate, csca, sanity
+genome:
+  # Optional genome configuration
+filters:
+  # Optional filter configuration
+auto_install_amalgkit: false  # Optional
+```
+
+**Actual Config Loading**:
+```python
+from metainformant.rna.workflow import load_workflow_config
+
+config = load_workflow_config("config/amalgkit/species.yaml")
+# Returns AmalgkitWorkflowConfig instance
+# Environment variables with AK_ prefix override config values
+```
+
+### Output Paths
+- Base: `output/amalgkit/<species>/`
+- Work: `output/amalgkit/<species>/work/`
+- Logs: `output/amalgkit/<species>/logs/`
+- Step-specific: `output/amalgkit/<species>/<step>/`
+
+### Workflow Execution
+- Use `plan_workflow()` to get step list
+- Execute steps in order
+- Track progress with `progress_tracker`
+- Handle step failures gracefully
+
+### Long-Running Workflows
+- Use `progress_tracker` for state persistence
+- Support workflow restart/resume
+- Log progress to files
+
+## Environment Variables
+
+- `AK_THREADS`: Number of threads
+- `AK_WORK_DIR`: Working directory override
+- `AK_LOG_DIR`: Log directory override
+- Other step-specific overrides via `AK_<STEP>_<PARAM>`
+
+## Integration
+
+- **Uses**: `dna` (genomic coordinates)
+- **Used by**: `multiomics` (transcriptomics integration)
+- **External**: `amalgkit` CLI tool
+
+## Testing
+
+- Skip tests if `amalgkit` not available
+- Use real config files from `config/amalgkit/`
+- Write test outputs to `output/amalgkit/test/`
+- Test workflow planning (not full execution in unit tests)
+
+**Test Pattern**:
+```python
+@pytest.mark.external_tool
+def test_amalgkit_integration():
+    import shutil
+    if not shutil.which("amalgkit"):
+        pytest.skip("amalgkit not available")
+    # Test real integration
+```
+
+## Documentation
+
+- Document amalgkit requirements
+- Provide examples with real config files
+- Document workflow restart/resume procedures
+

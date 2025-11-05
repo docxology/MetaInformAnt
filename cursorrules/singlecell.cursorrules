@@ -1,0 +1,91 @@
+# Single-Cell Module Rules (`metainformant.singlecell`)
+
+## Purpose
+Single-cell transcriptomic analysis: quality control, normalization, dimensionality reduction, clustering, and trajectory analysis.
+
+## Dependencies
+- **Required**: `core`, `rna` (expression data), `ml.dimensionality`
+- **Optional**: `scanpy`, `anndata`
+
+## Key Submodules
+
+### Preprocessing
+- Quality control metrics
+- Cell and gene filtering
+- Normalization (log-normalization, scaling)
+
+### Dimensionality
+- Principal Component Analysis (PCA)
+- t-SNE
+- UMAP
+
+**Patterns**:
+```python
+from metainformant.singlecell import dimensionality
+from metainformant.ml.dimensionality import pca
+
+# Use shared dimensionality reduction
+pca_result = pca(expression_matrix, n_components=50)
+```
+
+### Clustering
+- Leiden algorithm
+- Louvain algorithm
+- Community detection
+
+### Trajectory
+- Pseudotime analysis
+- Trajectory inference
+- Branch point detection
+
+## Patterns
+
+### scanpy Integration
+- Use `scanpy` when available
+- Fallback to scikit-learn implementations
+- Handle `AnnData` objects when available
+
+**Pattern**:
+```python
+try:
+    import scanpy as sc
+    SCANPY_AVAILABLE = True
+except ImportError:
+    SCANPY_AVAILABLE = False
+
+def normalize_data(data):
+    if SCANPY_AVAILABLE:
+        return sc.pp.normalize_total(data)
+    else:
+        # Fallback implementation
+        return normalize_manual(data)
+```
+
+### AnnData Objects
+- Support `AnnData` format when available
+- Convert to/from standard formats (pandas, numpy)
+- Preserve metadata in AnnData objects
+
+### Output Paths
+- Base: `output/singlecell/<analysis>/`
+- Preprocessing: `output/singlecell/<analysis>/preprocessing/`
+- Clustering: `output/singlecell/<analysis>/clustering/`
+- Trajectory: `output/singlecell/<analysis>/trajectory/`
+
+### Dimensionality Reduction
+- Use `ml.dimensionality` for shared implementations
+- Support both scanpy and scikit-learn APIs
+- Return consistent data structures
+
+## Integration
+
+- **Uses**: `rna` (expression data), `ml.dimensionality`
+- **Used by**: `multiomics` (single-cell omics integration), `information` (single-cell information analysis)
+- **External**: `scanpy`, `anndata` when available
+
+## Testing
+
+- Skip tests if scanpy/anndata unavailable
+- Test with real expression matrices from `data/`
+- Write test outputs to `output/singlecell/test/`
+

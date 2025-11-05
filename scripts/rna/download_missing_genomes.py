@@ -159,6 +159,7 @@ def download_genome_for_species(
     if check_genome_downloaded(dest_dir, accession):
         logger.info(f"  ✓ {species_name}: Genome already downloaded")
         result["downloaded"] = True
+        result["already_downloaded"] = True
         result["success"] = True
         return result
     
@@ -172,6 +173,7 @@ def download_genome_for_species(
     logger.info(f"  Downloading {species_name} ({accession})...")
     logger.info(f"    Method: Best effort (CLI → API → FTP)")
     logger.info(f"    Include: {', '.join(genome.get('include', []))}")
+    logger.debug(f"    Destination directory: {dest_dir}")
     
     include = genome.get("include") or ["gff3", "rna", "cds", "protein", "genome", "seq-report"]
     ftp_url = genome.get("ftp_url")
@@ -207,6 +209,7 @@ def download_genome_for_species(
                 result["zip_size_bytes"] = zip_size
                 result["zip_size_mb"] = round(zip_size / (1024 * 1024), 2)
                 logger.info(f"    Downloaded: {zip_path.name} ({format_file_size(zip_size)})")
+                logger.debug(f"    Zip path: {zip_path}")
         
         # Get extracted directory information
         extracted_dir_str = dl_rec.get("extracted_dir", "")
@@ -218,6 +221,7 @@ def download_genome_for_species(
                 result["extracted_size_bytes"] = total_size
                 result["extracted_size_mb"] = round(total_size / (1024 * 1024), 2)
                 logger.info(f"    Extracted: {extracted_dir.name} ({format_file_size(total_size)})")
+                logger.debug(f"    Extracted directory: {extracted_dir}")
                 
                 # Find RNA FASTA file if present
                 rna_files = list(extracted_dir.rglob("rna.fna*"))
@@ -228,10 +232,12 @@ def download_genome_for_species(
                     result["rna_fasta_path"] = str(rna_file)
                     result["rna_fasta_size_mb"] = round(rna_size / (1024 * 1024), 2)
                     logger.info(f"    RNA FASTA: {rna_file.name} ({format_file_size(rna_size)})")
+                    logger.debug(f"    RNA FASTA path: {rna_file}")
         
         if return_code == 0:
             result["success"] = True
             result["downloaded"] = True
+            result["newly_downloaded"] = True
             logger.info(f"  ✓ {species_name}: Download successful ({result['method']}, {elapsed_time:.1f}s)")
         else:
             result["error"] = dl_rec.get("error", "Download failed")
@@ -358,15 +364,19 @@ def main() -> None:
         if result.get("zip_size_mb"):
             total_size_mb += result["zip_size_mb"]
         
-        if result.get("downloaded"):
-            if result.get("would_download"):
-                pass  # Dry run
-            elif result.get("success"):
-                already_downloaded += 1
-            else:
-                downloaded += 1
+        # Count results correctly
+        if result.get("would_download"):
+            downloaded += 1  # Dry run - would download
+        elif result.get("already_downloaded"):
+            already_downloaded += 1
+        elif result.get("newly_downloaded"):
+            downloaded += 1  # Actually downloaded in this run
         elif result.get("success"):
-            downloaded += 1
+            # Success but not clearly categorized - check if it's a download
+            if result.get("method") and result.get("elapsed_seconds"):
+                downloaded += 1  # Likely a new download
+            else:
+                already_downloaded += 1  # Likely already existed
         else:
             failed += 1
         

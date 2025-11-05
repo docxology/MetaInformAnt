@@ -155,6 +155,7 @@ def prepare_transcriptome_for_species(
     if check_transcriptome_prepared(work_dir, species_name):
         logger.info(f"  ✓ {species_name}: Transcriptome already prepared")
         result["prepared"] = True
+        result["already_prepared"] = True
         result["success"] = True
         return result
     
@@ -179,6 +180,10 @@ def prepare_transcriptome_for_species(
     # Prepare transcriptome
     logger.info(f"  Preparing transcriptome for {species_name}...")
     logger.info(f"    Source: {rna_fasta}")
+    # Log resolved work_dir path for clarity
+    logger.debug(f"    Work directory: {work_dir}")
+    expected_output = work_dir / "fasta" / f"{species_name.replace(' ', '_')}_rna.fasta"
+    logger.debug(f"    Expected output: {expected_output}")
     
     # Get source file size
     source_size = rna_fasta.stat().st_size
@@ -201,6 +206,7 @@ def prepare_transcriptome_for_species(
         if fasta_path:
             result["success"] = True
             result["prepared"] = True
+            result["newly_prepared"] = True
             result["fasta_path"] = str(fasta_path)
             result["elapsed_seconds"] = round(elapsed_time, 2)
             
@@ -211,6 +217,7 @@ def prepare_transcriptome_for_species(
             result["fasta_size_mb"] = output_size_mb
             
             logger.info(f"    Destination: {fasta_path.name}")
+            logger.debug(f"    Destination path: {fasta_path}")
             logger.info(f"    Output size: {format_file_size(output_size)}")
             logger.info(f"  ✓ {species_name}: Transcriptome prepared ({elapsed_time:.1f}s)")
         else:
@@ -320,13 +327,19 @@ def main() -> None:
         if result.get("fasta_size_mb"):
             total_size_mb += result["fasta_size_mb"]
         
-        if result.get("prepared"):
-            if result.get("would_prepare"):
-                prepared += 1
-            elif result.get("success"):
-                already_prepared += 1
+        # Count results correctly
+        if result.get("would_prepare"):
+            prepared += 1  # Dry run - would prepare
+        elif result.get("already_prepared"):
+            already_prepared += 1
+        elif result.get("newly_prepared"):
+            prepared += 1  # Actually prepared in this run
         elif result.get("success"):
-            prepared += 1
+            # Success but not clearly categorized
+            if result.get("elapsed_seconds"):
+                prepared += 1  # Likely newly prepared
+            else:
+                already_prepared += 1  # Likely already existed
         elif result.get("error") and "not downloaded" in result.get("error", "").lower():
             skipped += 1
         else:

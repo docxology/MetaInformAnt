@@ -4,6 +4,7 @@ import matplotlib
 
 
 def test_plot_phylo_tree_smoke():
+    """Test that phylogenetic tree plotting works with basic tree structure."""
     matplotlib.use("Agg")
     from Bio.Phylo.TreeConstruction import DistanceMatrix, DistanceTreeConstructor
 

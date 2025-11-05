@@ -1,0 +1,63 @@
+# Ontology Module Rules (`metainformant.ontology`)
+
+## Purpose
+Functional annotation and ontologies: Gene Ontology operations, OBO format parsing, and ontology querying.
+
+## Dependencies
+- **Required**: `core`
+- **Optional**: External databases (Gene Ontology)
+
+## Key Submodules
+
+### GO (`go`)
+- Gene Ontology operations
+- GO term enrichment
+- Annotation retrieval
+
+### OBO (`obo`)
+- OBO format parsing
+- Ontology file reading
+- Term hierarchy navigation
+
+### Query (`query`)
+- Ontology querying
+- Term search
+- Relationship queries
+
+### Serialize (`serialize`)
+- Ontology serialization
+- Format conversion
+- Cache management
+
+## Patterns
+
+### Missing Ontology Files
+- Handle missing ontology files gracefully
+- Provide clear error messages
+- Support automatic download (with user confirmation)
+
+### Annotation Results
+- Return annotation results as structured dictionaries
+- Include GO terms, evidence codes, and confidence scores
+- Support multiple annotation formats
+
+### Cache Management
+- Cache ontology files under `output/ontology/cache/`
+- Invalidate cache when ontology versions change
+- Support cache cleanup
+
+### Output Paths
+- Base: `output/ontology/<analysis>/`
+- Cache: `output/ontology/cache/`
+- Annotations: `output/ontology/<analysis>/annotations/`
+
+## Integration
+
+- **Used by**: `networks` (functional enrichment), `phenotype` (trait annotation)
+
+## Testing
+
+- Skip tests if ontology files unavailable
+- Test with real GO ontology files from `data/`
+- Write test outputs to `output/ontology/test/`
+

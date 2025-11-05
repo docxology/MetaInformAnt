@@ -1,0 +1,148 @@
+# DNA Module Rules (`metainformant.dna`)
+
+## Purpose
+DNA sequence analysis, genomics, population genetics, and variant calling.
+
+## Dependencies
+- **Required**: `core`
+- **Optional**: `biopython`, `ncbi-datasets-pylib`, `pysam`
+
+## Key Submodules
+
+### Sequences (`sequences`)
+- FASTA/FASTQ reading and writing
+- Basic sequence operations
+- Sequence validation
+
+**Patterns**:
+```python
+from metainformant.dna import sequences
+
+seqs = sequences.read_fasta("data/sequences.fasta")
+for seq_id, sequence in seqs:
+    # Process sequence
+    pass
+```
+
+### Alignment (`alignment`)
+- Pairwise sequence alignment
+- Multiple sequence alignment
+- Alignment scoring
+
+### Phylogeny (`phylogeny`)
+- Phylogenetic tree construction (Neighbor-Joining)
+- Tree format: Newick
+- Output to `output/dna/phylogeny/`
+
+**Patterns**:
+```python
+from metainformant.dna import phylogeny
+
+tree = phylogeny.neighbor_joining_tree(sequences)
+# Returns Newick format string or tree object
+```
+
+### Population (`population`)
+- Population genetics statistics
+- π (pi), Tajima's D, Fst
+- Returns dictionaries with named statistics
+
+**Patterns**:
+```python
+from metainformant.dna import population
+
+stats = population.calculate_pi(sequences)
+# Returns: {"pi": 0.001, "segregating_sites": 42, ...}
+```
+
+### Variants (`variants`)
+- Variant calling and analysis
+- VCF file support
+- Variant filtering and quality control
+
+### NCBI/Entrez (`ncbi`, `entrez`)
+- Genomic data retrieval from NCBI
+- Genome download utilities
+- API integration with error handling
+
+**Patterns**:
+```python
+from metainformant.dna import ncbi
+
+genome_data = ncbi.download_genome(
+    species="Homo sapiens",
+    output_dir="output/dna/genomes/"
+)
+```
+
+### FastQ (`fastq`)
+- FASTQ-specific processing
+- Quality score analysis
+- Read filtering
+
+### Motifs (`motifs`)
+- Pattern discovery
+- Position Weight Matrix (PWM) analysis
+- Motif enrichment
+
+### Restriction (`restriction`)
+- Restriction enzyme analysis
+- Cutting site prediction
+- Fragment size calculation
+
+## Patterns
+
+### Lazy Imports
+- Use lazy imports for optional dependencies
+- Avoid import failures during unrelated commands
+
+**Pattern**:
+```python
+def _lazy_import_biopython():
+    try:
+        from Bio import SeqIO
+        return SeqIO
+    except ImportError:
+        return None
+```
+
+### File Path Handling
+- Functions accept `Path` or `str` for file paths
+- Always resolve and validate paths
+- Default outputs to `output/dna/<analysis_type>/`
+
+### Return Formats
+- Population genetics stats: dictionaries with named keys
+- Phylogenetic trees: Newick format strings
+- Sequence data: iterators or lists of (id, sequence) tuples
+
+### Error Handling
+- Handle missing optional dependencies gracefully
+- Provide clear error messages for missing data files
+- Validate input sequences before processing
+
+## Configuration
+
+- No module-specific config (uses core config)
+- Genome data paths can be specified via config
+- Output paths default to `output/dna/`
+
+## Output Directories
+
+- Phylogenetic trees: `output/dna/phylogeny/`
+- Population genetics: `output/dna/population/`
+- Variants: `output/dna/variants/`
+- Genomes: `output/dna/genomes/`
+- Alignments: `output/dna/alignments/`
+
+## Integration
+
+- **Used by**: `gwas` (variants, population genetics), `rna` (genomic coordinates), `information` (sequence analysis)
+- **Integrates with**: `visualization` (phylogenetic trees), `math.popgen` (theoretical models)
+
+## Testing
+
+- Test with real FASTA/FASTQ files from `data/`
+- Optional dependency tests should skip gracefully
+- Write test outputs to `output/dna/test/`
+

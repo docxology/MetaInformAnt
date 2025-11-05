@@ -1,0 +1,109 @@
+# Networks Module Rules (`metainformant.networks`)
+
+## Purpose
+Biological network analysis: protein-protein interactions, regulatory networks, pathway enrichment, and community detection.
+
+## Dependencies
+- **Required**: `core`, `protein` (PPI networks), `ontology` (functional annotation)
+- **Optional**: `networkx`, `python-louvain`
+
+## Key Submodules
+
+### Graph (`graph`)
+- Graph construction and basic operations
+- Node and edge operations
+- Graph metrics (degree, centrality, etc.)
+
+**Patterns**:
+```python
+from metainformant.networks import graph
+
+# Create graph from edge list
+G = graph.create_from_edges(edges, directed=False)
+# Calculate metrics
+metrics = graph.calculate_centrality(G)
+```
+
+### PPI (`ppi`)
+- Protein-protein interaction networks
+- PPI database integration
+- Interaction confidence scoring
+
+### Regulatory (`regulatory`)
+- Gene regulatory network inference
+- Transcription factor binding prediction
+- Regulatory motif analysis
+
+### Pathway (`pathway`)
+- Pathway enrichment analysis
+- KEGG/Reactome integration
+- Enrichment statistics
+
+### Community (`community`)
+- Community detection algorithms
+- Module identification
+- Returns node-to-community mappings
+
+**Patterns**:
+```python
+from metainformant.networks import community
+
+communities = community.detect_communities(
+    graph=G,
+    algorithm="leiden"
+)
+# Returns: dict mapping node -> community_id
+```
+
+## Patterns
+
+### NetworkX Integration
+- Use `networkx` when available for graph operations
+- Fallback to manual implementations if needed
+- Support both directed and undirected graphs
+
+**Pattern**:
+```python
+try:
+    import networkx as nx
+    NETWORKX_AVAILABLE = True
+except ImportError:
+    NETWORKX_AVAILABLE = False
+
+def create_graph(edges):
+    if NETWORKX_AVAILABLE:
+        return nx.Graph(edges)
+    else:
+        # Fallback implementation
+        return create_graph_manual(edges)
+```
+
+### Network File Formats
+- Support standard formats: GML, GraphML, JSON
+- Write network files in standard formats
+- Preserve node and edge attributes
+
+### Output Paths
+- Base: `output/networks/<network_type>/`
+- PPI: `output/networks/ppi/`
+- Regulatory: `output/networks/regulatory/`
+- Pathways: `output/networks/pathways/`
+- Communities: `output/networks/communities/`
+
+### Community Detection
+- Return node-to-community mappings as dictionaries
+- Support multiple algorithms (Leiden, Louvain)
+- Include community quality metrics
+
+## Integration
+
+- **Uses**: `protein` (PPI networks), `ontology` (functional enrichment)
+- **Used by**: `multiomics` (network-based integration)
+- **Integrates with**: `visualization` (network plots)
+
+## Testing
+
+- Skip tests if networkx unavailable
+- Test with real network data from `data/`
+- Write test outputs to `output/networks/test/`
+

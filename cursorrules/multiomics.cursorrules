@@ -1,0 +1,57 @@
+# Multi-Omics Module Rules (`metainformant.multiomics`)
+
+## Purpose
+Multi-omic data integration: cross-platform data harmonization, joint statistical analysis, and systems biology integration.
+
+## Dependencies
+- **Required**: `core`, `dna`, `rna`, `protein`, `singlecell`, `ml.dimensionality`
+
+## Key Submodules
+
+### Integration (`integration`)
+- Cross-platform data harmonization
+- Joint dimensionality reduction
+- Multi-omic data fusion
+
+**Patterns**:
+```python
+from metainformant.multiomics import integration
+
+# Integrate multiple omics types
+integrated = integration.integrate_omics(
+    dna_data=dna_data,
+    rna_data=rna_data,
+    protein_data=protein_data,
+    method="cca"  # or "pca", "nmf"
+)
+```
+
+## Patterns
+
+### Data Harmonization
+- Accept data from multiple omics modules
+- Handle different data formats and scales
+- Normalize across platforms
+
+### Joint Analysis
+- Use `ml.dimensionality` for joint dimensionality reduction
+- Support multiple integration methods (CCA, PCA, NMF)
+- Return integrated data structures
+
+### Output Paths
+- Base: `output/multiomics/<integration>/`
+- Integrated data: `output/multiomics/<integration>/integrated/`
+- Visualizations: `output/multiomics/<integration>/plots/`
+
+## Integration
+
+- **Uses**: All omics modules (`dna`, `rna`, `protein`, `singlecell`)
+- **Used by**: Workflow orchestration scripts
+- **Integrates with**: All omics modules for cross-platform integration
+
+## Testing
+
+- Test with real multi-omic datasets from `data/`
+- Write test outputs to `output/multiomics/test/`
+- Test integration methods with known results
+

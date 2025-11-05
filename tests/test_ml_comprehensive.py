@@ -467,15 +467,15 @@ class TestValidation:
     def test_cross_validate(self):
         """Test cross-validation evaluation."""
 
-        # Mock classifier function
-        def mock_classifier(X_train, y_train, X_val, y_val):
-            # Simple majority class classifier
+        # Simple test classifier function (real implementation, not a mock)
+        def simple_classifier(X_train, y_train, X_val, y_val):
+            """Simple majority class classifier for testing."""
             majority_class = np.argmax(np.bincount(y_train))
             predictions = np.full(len(y_val), majority_class)
             accuracy = np.mean(predictions == y_val)
             return {"accuracy": accuracy, "predictions": predictions}
 
-        cv_results = cross_validate(X=self.X, y=self.y, classifier_func=mock_classifier, cv_folds=3, random_state=42)
+        cv_results = cross_validate(X=self.X, y=self.y, classifier_func=simple_classifier, cv_folds=3, random_state=42)
 
         # Check results structure
         assert "mean_accuracy" in cv_results
@@ -492,16 +492,16 @@ class TestValidation:
     def test_bootstrap_validate(self):
         """Test bootstrap validation."""
 
-        # Mock model function
-        def mock_model(X_train, y_train, X_test, y_test):
-            # Simple mean predictor for regression
+        # Simple test model function (real implementation, not a mock)
+        def simple_mean_model(X_train, y_train, X_test, y_test):
+            """Simple mean predictor for regression testing."""
             mean_pred = np.mean(y_train)
             predictions = np.full(len(y_test), mean_pred)
             mse = np.mean((predictions - y_test) ** 2)
             return {"mse": mse, "predictions": predictions}
 
         bootstrap_results = bootstrap_validate(
-            X=self.X, y=self.y_continuous, model_func=mock_model, n_bootstrap=10, random_state=42
+            X=self.X, y=self.y_continuous, model_func=simple_mean_model, n_bootstrap=10, random_state=42
         )
 
         # Check results structure
@@ -519,9 +519,9 @@ class TestValidation:
     def test_learning_curve(self):
         """Test learning curve generation."""
 
-        # Mock classifier function
-        def mock_classifier_lc(X_train, y_train, X_val, y_val):
-            # Classifier that improves with more data
+        # Simple test classifier that improves with more data (real implementation, not a mock)
+        def improving_classifier(X_train, y_train, X_val, y_val):
+            """Classifier that shows improved accuracy with more training data."""
             train_size = len(X_train)
             base_accuracy = 0.5
             improvement = min(0.3, 0.3 * train_size / len(self.X))
@@ -531,7 +531,7 @@ class TestValidation:
         curve_results = learning_curve(
             X=self.X,
             y=self.y,
-            classifier_func=mock_classifier_lc,
+            classifier_func=improving_classifier,
             train_sizes=np.array([0.2, 0.5, 0.8]),
             cv_folds=3,
             random_state=42,

@@ -1,0 +1,104 @@
+# Protein Module Rules (`metainformant.protein`)
+
+## Purpose
+Protein sequence and structure analysis, database integration, and 3D structure handling.
+
+## Dependencies
+- **Required**: `core`
+- **Optional**: `biopython`, external databases (UniProt, InterPro, AlphaFold, PDB)
+
+## Key Submodules
+
+### Sequences (`sequences`)
+- Protein sequence operations
+- Sequence validation
+- Amino acid composition
+
+### Alignment (`alignment`)
+- Protein sequence alignment
+- Scoring matrices (BLOSUM, PAM)
+- Gap penalties
+
+### Structure (`structure`)
+- 3D structure analysis
+- Structure validation
+- Secondary structure prediction
+
+### Structure I/O (`structure_io`)
+- PDB/mmCIF file reading and writing
+- Structure format conversion
+
+**Patterns**:
+```python
+from metainformant.protein import structure_io
+
+structure = structure_io.read_pdb("data/structure.pdb")
+structure_io.write_pdb(structure, "output/protein/structure.pdb")
+```
+
+### UniProt (`uniprot`)
+- UniProt database integration
+- Protein record retrieval
+- Annotation extraction
+
+### InterPro (`interpro`)
+- InterPro domain annotation
+- Functional domain prediction
+- Domain architecture analysis
+
+### AlphaFold (`alphafold`)
+- AlphaFold structure retrieval
+- Structure quality assessment
+- Confidence score analysis
+
+### PDB (`pdb`)
+- PDB database integration
+- Structure download utilities
+- Metadata extraction
+
+## Patterns
+
+### Defensive Imports
+- Use defensive imports for optional database libraries
+- Handle missing database connections gracefully
+
+**Pattern**:
+```python
+try:
+    from Bio import PDB
+    PDB_AVAILABLE = True
+except ImportError:
+    PDB_AVAILABLE = False
+
+def download_structure(pdb_id):
+    if not PDB_AVAILABLE:
+        raise ImportError("Bio.PDB required for structure download")
+    # Download structure
+```
+
+### Structure Formats
+- Support standard formats: PDB, mmCIF
+- Prefer mmCIF for new structures (more complete)
+- Validate structure files before processing
+
+### Output Paths
+- Structures: `output/protein/structures/`
+- Alignments: `output/protein/alignments/`
+- Annotations: `output/protein/annotations/`
+
+### Error Handling
+- Gracefully handle missing database connections
+- Provide clear error messages for missing files
+- Validate structure integrity
+
+## Integration
+
+- **Used by**: `networks` (PPI networks), `multiomics` (proteomics integration)
+- **External**: UniProt, InterPro, AlphaFold, PDB databases
+
+## Testing
+
+- Skip tests if optional dependencies unavailable
+- Test with real PDB files from `data/`
+- Write test outputs to `output/protein/test/`
+

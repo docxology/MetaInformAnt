@@ -1,0 +1,105 @@
+# ML Module Rules (`metainformant.ml`)
+
+## Purpose
+Machine learning for biological data: classification, regression, dimensionality reduction, feature selection, and model validation.
+
+## Dependencies
+- **Required**: `core`
+- **Optional**: `scikit-learn`, `xgboost`, `lightgbm`
+
+## Key Submodules
+
+### Classification (`classification`)
+- Classification models
+- Support vector machines
+- Random forests
+- Gradient boosting
+
+### Regression (`regression`)
+- Regression models
+- Linear regression
+- Ridge/Lasso regression
+- Used by GWAS module
+
+**Patterns**:
+```python
+from metainformant.ml import regression
+
+model = regression.fit_linear_model(
+    X=features,
+    y=phenotypes,
+    covariates=covariates
+)
+predictions = model.predict(X_test)
+```
+
+### Dimensionality (`dimensionality`)
+- Dimensionality reduction
+- PCA, UMAP
+- Shared across modules (single-cell, multi-omics)
+
+**Patterns**:
+```python
+from metainformant.ml.dimensionality import pca
+
+pca_result = pca(
+    data=expression_matrix,
+    n_components=50
+)
+# Returns: transformed data and explained variance
+```
+
+### Features (`features`)
+- Feature selection
+- Feature importance scores
+- Returns dictionaries with feature rankings
+
+### Validation (`validation`)
+- Cross-validation
+- Model assessment
+- Performance metrics
+
+**Patterns**:
+```python
+from metainformant.ml import validation
+
+scores = validation.cross_validate(
+    model=model,
+    X=data,
+    y=labels,
+    cv=5
+)
+```
+
+## Patterns
+
+### scikit-learn API
+- Follow scikit-learn API conventions
+- Models support `fit()`, `predict()`, `predict_proba()` methods
+- Return consistent data structures
+
+### Feature Importance
+- Return feature importance scores as dictionaries
+- Include feature names and scores
+- Support multiple importance metrics
+
+### Model Validation
+- Use `validation` module for cross-validation
+- Report multiple performance metrics
+- Support stratified cross-validation
+
+### Output Paths
+- Models: `output/ml/models/`
+- Predictions: `output/ml/predictions/`
+- Feature importance: `output/ml/features/`
+
+## Integration
+
+- **Used by**: `gwas` (regression models), `singlecell` (dimensionality reduction), `life_events` (sequence models)
+
+## Testing
+
+- Test with real biological datasets from `data/`
+- Write test outputs to `output/ml/test/`
+- Test model serialization/deserialization
+

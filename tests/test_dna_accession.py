@@ -2,11 +2,13 @@ from metainformant.dna.genomes import is_valid_assembly_accession
 
 
 def test_is_valid_assembly_accession_valid_cases():
+    """Test that valid NCBI assembly accession formats are recognized."""
     assert is_valid_assembly_accession("GCF_000001405.39")
     assert is_valid_assembly_accession("GCA_000001405")
 
 
 def test_is_valid_assembly_accession_invalid_cases():
+    """Test that invalid NCBI assembly accession formats are rejected."""
     for invalid in [
         "",
         "GCF_",

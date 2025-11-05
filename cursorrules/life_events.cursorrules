@@ -1,0 +1,93 @@
+# Life Events Module Rules (`metainformant.life_events`)
+
+## Purpose
+Life course event analysis and prediction: event extraction, embedding generation, sequence modeling, and interpretability.
+
+## Dependencies
+- **Required**: `core`
+- **Optional**: `ml` (sequence models)
+
+## Key Submodules
+
+### Events (`events`)
+- Event extraction and analysis
+- Event sequence processing
+- Temporal patterns
+
+### Embeddings (`embeddings`)
+- Event embedding generation
+- Configurable embedding methods
+- Window-based embeddings
+
+**Patterns**:
+```python
+from metainformant.life_events import embeddings
+
+embeddings_dict = embeddings.generate_embeddings(
+    events=event_sequence,
+    embedding_dim=100,
+    window_size=5,
+    method="skipgram"
+)
+```
+
+### Models (`models`)
+- Sequence models for event prediction
+- Classification and regression
+- Temporal dependencies
+
+### Interpretability (`interpretability`)
+- Model interpretation utilities
+- Feature importance
+- Event contribution analysis
+
+### Visualization (`visualization`)
+- Event timeline visualization
+- Sequence plots
+- Temporal patterns
+
+## Patterns
+
+### Configuration
+- Use `LifeEventsWorkflowConfig` for configuration
+- Config files in `config/life_events_template.yaml`
+- Environment prefix: `LE_` (e.g., `LE_THREADS`, `LE_EMBEDDING_DIM`)
+
+**Config Structure**:
+```yaml
+work_dir: output/life_events/workflow/work
+log_dir: output/life_events/workflow/logs
+threads: 4
+embedding:
+  embedding_dim: 100
+  window_size: 5
+  epochs: 10
+  method: "skipgram"
+  learning_rate: 0.01
+model:
+  model_type: "embedding"
+  task_type: "classification"
+```
+
+### Embeddings
+- Embeddings should be configurable (dimension, window size, method)
+- Support multiple embedding methods (skipgram, CBOW, etc.)
+- Return embedding dictionaries
+
+### Output Paths
+- Base: `output/life_events/<workflow>/`
+- Embeddings: `output/life_events/<workflow>/embeddings/`
+- Models: `output/life_events/<workflow>/models/`
+- Visualizations: `output/life_events/<workflow>/plots/`
+
+## Integration
+
+- **Used by**: `phenotype` (life course phenotype extraction)
+- **Integrates with**: `ml` (sequence models), `visualization` (event timeline plots)
+
+## Testing
+
+- Test with real event sequences from `data/`
+- Write test outputs to `output/life_events/test/`
+- Test embedding generation with known results
+
