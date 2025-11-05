@@ -154,6 +154,35 @@ class PathwayNetwork:
 
         return overlap, jaccard
 
+    def pathway_similarity(self, pathway1: str, pathway2: str, method: str = "jaccard") -> float:
+        """Calculate similarity between two pathways.
+
+        Computes similarity metrics to assess how similar two pathways
+        are in terms of gene composition.
+
+        Args:
+            pathway1: First pathway identifier
+            pathway2: Second pathway identifier
+            method: Similarity metric:
+                - "jaccard": Jaccard similarity (intersection/union)
+                - "overlap": Overlap coefficient (intersection/min)
+                - "dice": Dice coefficient (2*intersection/(sum))
+
+        Returns:
+            Similarity score in [0, 1]. Higher values indicate more similar pathways.
+
+        Examples:
+            >>> pn = PathwayNetwork()
+            >>> pn.add_pathway("path1", ["GENE1", "GENE2", "GENE3"])
+            >>> pn.add_pathway("path2", ["GENE2", "GENE3", "GENE4"])
+            >>> similarity = pn.pathway_similarity("path1", "path2")
+            >>> similarity > 0.0
+            True
+        """
+        genes1 = self.get_pathway_genes(pathway1)
+        genes2 = self.get_pathway_genes(pathway2)
+        return pathway_similarity(genes1, genes2, method=method)
+
     def create_pathway_network(self, min_overlap: int = 2, min_jaccard: float = 0.1) -> BiologicalNetwork:
         """Create network where pathways are nodes connected by gene overlap.
         

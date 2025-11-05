@@ -1,3 +1,8 @@
+"""Tests for metainformant.rna.configs module.
+
+Tests species profile configuration, run layout generation, and step parameter building.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -9,6 +14,7 @@ from metainformant.rna.workflow import plan_workflow_with_params
 
 
 def test_build_step_params_includes_species_tissues_and_layout(tmp_path: Path):
+    """Test that build_step_params includes species, tissues, and layout information in step parameters."""
     species = SpeciesProfile(
         name="Apis mellifera",
         taxon_id=7460,
@@ -36,6 +42,7 @@ def test_build_step_params_includes_species_tissues_and_layout(tmp_path: Path):
 
 
 def test_plan_workflow_with_params_merges_common_and_specific(tmp_path: Path):
+    """Test that plan_workflow_with_params correctly merges common config with step-specific parameters."""
     cfg = AmalgkitWorkflowConfig(work_dir=tmp_path, threads=7)
     species = SpeciesProfile(name="Apis mellifera", taxon_id=7460, tissues=["brain"])
     layout = AmalgkitRunLayout(base_dir=tmp_path)

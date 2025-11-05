@@ -28,6 +28,10 @@ classifier.fit(X_train, y_train)
 # Make predictions
 predictions = classifier.predict(X_test)
 
+# Get feature importance
+importance = classifier.get_feature_importance()
+top_features = np.argsort(importance)[-10:]
+
 # Evaluate performance
 metrics = evaluate_classifier(classifier, X_test, y_test)
 ```

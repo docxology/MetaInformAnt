@@ -11,9 +11,10 @@ flowchart LR
   E --> F[Logs + Manifest]
 ```
 
-See: [amalgkit](amalgkit/amalgkit.md), [Workflow](./workflow.md), [Configs](./configs.md).
+See: [amalgkit/README.md](amalgkit/README.md), [WORKFLOW.md](WORKFLOW.md), [CONFIGURATION.md](CONFIGURATION.md).
+
 Advanced: step runners in `metainformant.rna.steps` provide a stable call surface per subcommand.
-See: [RNA Steps](./steps.md)
+See: [STEPS.md](STEPS.md)
 
 Notes
 
@@ -44,7 +45,16 @@ The `metainformant.rna` wrappers organize these concerns into reproducible steps
 - Curation and QC: `curate`, `csca` (sample clustering/assessment), `sanity` (final checks)
 - Downstream DE/meta-analysis: export merged counts/TPMs to R/Python tools (e.g., DESeq2/edgeR/metaRNASeq) for study-level DE and cross-study meta-analysis
 
-See [Workflow](./workflow.md) for planning/execution and [Steps](./steps.md) for per-step details and expected artifacts.
+See [WORKFLOW.md](WORKFLOW.md) for planning/execution and [STEPS.md](STEPS.md) for per-step details and expected artifacts.
+
+## See Also
+
+- **[GETTING_STARTED.md](GETTING_STARTED.md)**: Installation and setup
+- **[WORKFLOW.md](WORKFLOW.md)**: Workflow planning and execution
+- **[STEPS.md](STEPS.md)**: Individual step documentation
+- **[CONFIGURATION.md](CONFIGURATION.md)**: Configuration management
+- **[ORCHESTRATION/README.md](ORCHESTRATION/README.md)**: Orchestrator overview
+- **[README.md](README.md)**: Complete documentation index
 
 ### References
 

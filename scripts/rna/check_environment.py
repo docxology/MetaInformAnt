@@ -13,9 +13,13 @@ Usage:
 import sys
 from pathlib import Path
 
+# Import setup utilities (must be before other imports)
+sys.path.insert(0, str(Path(__file__).parent))
+from _setup_utils import check_environment
+
 # Add repo root to path for imports
 repo_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(repo_root))
+sys.path.insert(0, str(repo_root / "src"))
 
 from metainformant.rna import (
     check_amalgkit,
@@ -26,14 +30,33 @@ from metainformant.rna import (
     check_virtual_env,
     validate_environment,
 )
+from metainformant.core.logging import get_logger
+
+logger = get_logger("check_environment")
 
 
 def main():
     """Run all environment checks and report results."""
-    print("=" * 80)
-    print("RNA-SEQ WORKFLOW ENVIRONMENT CHECK")
-    print("=" * 80)
-    print()
+    logger.info("=" * 80)
+    logger.info("RNA-SEQ WORKFLOW ENVIRONMENT CHECK")
+    logger.info("=" * 80)
+    logger.info("")
+    
+    # Use setup_utils for basic checks
+    success, missing, warnings = check_environment()
+    if not success:
+        logger.warning("⚠️  Basic environment check failed:")
+        for item in missing:
+            logger.warning(f"  ❌ Missing: {item}")
+    else:
+        logger.info("✅ Basic environment check passed")
+    
+    if warnings:
+        logger.info("⚠️  Optional tools not found:")
+        for warning in warnings:
+            logger.info(f"  ⚠️  {warning}")
+    
+    logger.info("")
     
     # Use metainformant function for comprehensive validation
     validation = validate_environment()
@@ -51,29 +74,29 @@ def main():
     max_name_len = max(len(name) for name, _ in checks)
     for name, (passed, message) in checks:
         status = "✅" if passed else "❌"
-        print(f"{status} {name:<{max_name_len}} : {message}")
+        logger.info(f"{status} {name:<{max_name_len}} : {message}")
     
-    print()
-    print("=" * 80)
+    logger.info("")
+    logger.info("=" * 80)
     
     if validation["all_passed"]:
-        print("✅ ALL CHECKS PASSED - Ready to run RNA-seq workflows!")
-        print()
-        print("To run multi-species workflow:")
-        print("  python3 scripts/rna/run_multi_species.py")
+        logger.info("✅ ALL CHECKS PASSED - Ready to run RNA-seq workflows!")
+        logger.info("")
+        logger.info("To run multi-species workflow:")
+        logger.info("  python3 scripts/rna/run_multi_species.py")
         return 0
     else:
-        print("❌ SOME CHECKS FAILED - Please fix issues before running workflows")
-        print()
+        logger.error("❌ SOME CHECKS FAILED - Please fix issues before running workflows")
+        logger.info("")
         
         # Print recommendations
         if validation["recommendations"]:
             for rec in validation["recommendations"]:
-                print(f"  - {rec}")
-            print()
+                logger.info(f"  - {rec}")
+            logger.info("")
         
-        print("For complete setup instructions, see:")
-        print("  docs/rna/SETUP.md")
+        logger.info("For complete setup instructions, see:")
+        logger.info("  docs/rna/GETTING_STARTED.md")
         return 1
 
 

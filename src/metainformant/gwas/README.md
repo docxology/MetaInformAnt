@@ -55,13 +55,20 @@ vcf_data = parse_vcf_full("variants.vcf")
 # Use DNA module for additional variant operations
 vcf_info = variants.parse_vcf("variants.vcf")
 
-# Apply quality control filters
-qc_variants = apply_qc_filters(
-    vcf_data,
-    maf_threshold=0.05,
-    missing_threshold=0.1,
-    hwe_threshold=1e-6
+# Apply quality control filters and write filtered VCF
+qc_results = apply_qc_filters(
+    vcf_path="variants.vcf",
+    config={
+        "min_maf": 0.05,
+        "max_missing": 0.1,
+        "hwe_pval": 1e-6,
+        "min_qual": 30.0,
+        "exclude_indels": True
+    },
+    output_vcf="output/filtered_variants.vcf.gz"  # Write filtered VCF
 )
+print(f"Variants before: {qc_results['num_variants_before']}")
+print(f"Variants after: {qc_results['num_variants_after']}")
 
 # Extract variant information for association testing
 genotype_matrix = extract_genotypes(qc_variants)

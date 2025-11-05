@@ -1,6 +1,6 @@
 # RNA Domain Documentation
 
-This directory contains comprehensive documentation for METAINFORMANT's RNA analysis capabilities.
+Comprehensive documentation for METAINFORMANT's RNA analysis capabilities, including transcriptomic workflows, species discovery, and multi-species orchestration.
 
 ## Current Status (November 2025)
 
@@ -9,23 +9,101 @@ This directory contains comprehensive documentation for METAINFORMANT's RNA anal
 ⏳ **Batch 2 Queued**: 10 species (728 samples) ready to launch  
 📊 **Total Pipeline**: 4,548 samples across 20 ant species  
 
-See `discovery/` for complete details.
+See [Discovery Results](DISCOVERY/README.md) for complete details.
 
-## Quick Start
+---
 
-**→ [Multi-Species Quick Start Guide](MULTI_SPECIES_QUICK_START.md)** ⭐
+## Getting Started
 
-Complete guide for starting and monitoring multi-species RNA-seq workflows:
-- Step-by-step workflow launching
-- Real-time progress monitoring
-- Troubleshooting and optimization
-- Expected timelines and resource usage
+New to RNA-seq analysis with METAINFORMANT? Start here:
 
-**→ [Ant Species Discovery](ANT_SPECIES_DISCOVERY.md)** 🐜  
-Automated discovery system for finding ant species with RNA-seq data
+- **[Getting Started Guide](GETTING_STARTED.md)** ⭐ - Installation, setup, and first workflow
+- **[Multi-Species Quick Start](MULTI_SPECIES_QUICK_START.md)** ⭐⭐ - Production workflow guide
+- **[Run All Species](RUN_ALL_SPECIES.md)** ⭐⭐⭐ - Complete guide for all 24 species with configurable threads
+- **[Workflow Orchestration](ORCHESTRATION/README.md)** - Choose the right orchestrator for your needs
 
-**→ [Batched Processing Strategy](discovery/batched_processing.md)** 📦  
-Efficient batch processing approach for large-scale workflows
+### Quick Commands
+
+```bash
+# All species, end-to-end workflow (configurable threads)
+# Prerequisites: .venv must exist with amalgkit installed
+# See docs/rna/RUN_ALL_SPECIES.md for complete setup instructions
+export AK_THREADS=12  # Optional: set threads globally
+python3 scripts/rna/run_multi_species.py
+
+# Single species workflow (ENA-based, recommended)
+python3 scripts/rna/workflow_ena_integrated.py \
+  --config config/amalgkit/amalgkit_cfloridanus.yaml \
+  --batch-size 12 --threads 12
+
+# Multi-species batch download (getfastq + quant only)
+python3 scripts/rna/batch_download_species.py \
+  --species-count 3 --threads-per-species 10
+
+# Discover ant species with RNA-seq data
+python3 scripts/rna/discover_ant_rnaseq_by_genus.py
+```
+
+**Quick Start for All Species**: See [RUN_ALL_SPECIES.md](RUN_ALL_SPECIES.md) for complete guide.
+
+---
+
+## Core Concepts
+
+### Workflow Execution
+- **[WORKFLOW.md](WORKFLOW.md)** - Planning and executing RNA-seq workflows
+- **[STEPS.md](STEPS.md)** - Individual workflow steps (metadata, getfastq, quant, etc.)
+- **[CONFIGURATION.md](CONFIGURATION.md)** - Configuration management and species profiles
+
+### Amalgkit Integration
+- **[amalgkit/README.md](amalgkit/README.md)** - Overview of amalgkit wrapper
+- **[amalgkit/steps/](amalgkit/steps/)** - Detailed step documentation (11 steps)
+- **[amalgkit/testing_coverage.md](amalgkit/testing_coverage.md)** - Test coverage and validation
+
+### Module Reference
+- **[index.md](index.md)** - RNA domain overview and module index
+- **Source Code**: `src/metainformant/rna/` - Implementation details
+- **Tests**: `tests/test_rna_*.py` - Comprehensive test coverage
+
+---
+
+## Advanced Topics
+
+### Species Discovery
+- **[DISCOVERY/GUIDE.md](DISCOVERY/GUIDE.md)** - Comprehensive discovery system documentation
+- **[DISCOVERY/QUICK_REF.md](DISCOVERY/QUICK_REF.md)** - Quick reference for discovery
+- **[DISCOVERY/README.md](DISCOVERY/README.md)** - Discovery results and current status
+
+### Orchestration
+- **[ORCHESTRATION/README.md](ORCHESTRATION/README.md)** - Overview of all orchestrators
+- **[ORCHESTRATION/ENA_WORKFLOW.md](ORCHESTRATION/ENA_WORKFLOW.md)** - ENA-based workflow documentation
+- **[ORCHESTRATION/MULTI_SPECIES.md](ORCHESTRATION/MULTI_SPECIES.md)** - Multi-species SRA workflow
+- **[ORCHESTRATION/BATCH_DOWNLOAD.md](ORCHESTRATION/BATCH_DOWNLOAD.md)** - Configurable batch download
+
+### Examples
+- **[examples/](examples/)** - Real-world analysis examples and case studies
+
+---
+
+## Reference
+
+### API Documentation
+- **Source Module**: `src/metainformant/rna/README.md` - Module-specific API reference
+- **Workflow Functions**: See [WORKFLOW.md](WORKFLOW.md) for `plan_workflow`, `execute_workflow`
+- **Step Runners**: See [STEPS.md](STEPS.md) for individual step functions
+
+### Troubleshooting
+- **Common Issues**: See [WORKFLOW.md](WORKFLOW.md#common-issues-and-solutions)
+- **Setup Problems**: See [GETTING_STARTED.md](GETTING_STARTED.md#troubleshooting)
+- **Performance**: See [MULTI_SPECIES_QUICK_START.md](MULTI_SPECIES_QUICK_START.md#performance-characteristics)
+
+### Testing
+- **Test Coverage**: [amalgkit/testing_coverage.md](amalgkit/testing_coverage.md)
+- **Running Tests**: `pytest tests/test_rna_*.py -v`
+- **Integration Tests**: See test files for comprehensive coverage
+- **End-to-End Validation**: [END_TO_END_VALIDATION.md](END_TO_END_VALIDATION.md) - Validate all 24 species ready for workflows
+
+---
 
 ## Overview
 
@@ -40,84 +118,6 @@ The RNA domain provides tools for transcriptomic analysis, workflow orchestratio
 - **Multi-species Support**: Coordinated analysis across multiple species
 - **Production-Ready**: Currently processing 3,820 samples in Batch 1 (10 ant species)
 
-## Documentation Files
-
-### Getting Started
-- **`MULTI_SPECIES_QUICK_START.md`**: Complete guide for production workflows ⭐
-- **`BATCH_DOWNLOAD_CONFIGURATION.md`**: Configurable batch download guide ⭐⭐
-- **`ANT_SPECIES_DISCOVERY.md`**: Comprehensive discovery system documentation 🐜
-- **`ANT_DISCOVERY_QUICK_REF.md`**: Quick reference for discovery system
-- **`SETUP.md`**: Installation and environment setup
-- **`workflow.md`**: Complete workflow planning and execution
-
-### Discovery & Batch Processing
-- **`discovery/README.md`**: Discovery results and current status
-- **`discovery/batched_processing.md`**: Batch processing strategy and timeline
-- Raw discovery data: `output/ant_discovery/*.json`
-
-### Core RNA Analysis
-- **`index.md`**: RNA domain overview and module index
-- **`configs.md`**: Configuration management and species profiles
-- **`steps.md`**: Individual workflow step documentation
-
-### Amalgkit Integration
-- **`amalgkit/`**: Amalgkit CLI wrapper documentation
-  - **`README.md`**: Overview and quick start
-  - **`amalgkit.md`**: Complete transcriptomic analysis pipeline
-  - **`comprehensive_guide.md`**: Detailed workflow documentation
-  - **`testing_coverage.md`**: Testing, validation, and production results
-  - **`R_INSTALLATION.md`**: R dependency installation guide
-  - **`steps/`**: Individual step documentation (11 steps)
-- **`workflow.md`**: Workflow orchestration with troubleshooting and optimizations
-
-## Related Source Code
-
-- See `src/metainformant/rna/` for implementation details
-- See `tests/test_rna_*.py` for comprehensive test coverage
-- See `src/metainformant/rna/README.md` for module-specific documentation
-
-## Usage Examples
-
-The RNA domain supports complete transcriptomic workflows:
-
-```python
-from metainformant.rna import workflow
-
-# Execute complete RNA analysis workflow
-cfg = AmalgkitWorkflowConfig(
-    work_dir="output/amalgkit/work",
-    species_list=["Homo sapiens"],
-    threads=12  # Default thread count for parallel processing
-)
-results = workflow.execute_workflow(cfg)
-```
-
-**Command-line usage** (configurable batch download for multiple species):
-```bash
-# Default: 3 species × 10 threads = 30 total downloads
-python3 scripts/rna/batch_download_species.py
-
-# Custom configuration
-python3 scripts/rna/batch_download_species.py --species-count 4 --threads-per-species 12
-```
-
-See `docs/rna/BATCH_DOWNLOAD_CONFIGURATION.md` for complete configuration guide.
-
-**Production ENA-based workflow** (single species focus):
-```bash
-# Production workflow - no manual venv activation needed
-python3 scripts/rna/workflow_ena_integrated.py \
-  --config config/amalgkit/amalgkit_cfloridanus.yaml \
-  --batch-size 12 \
-  --threads 12
-```
-
-**Legacy SRA-based workflow** (alternative):
-```bash
-# Legacy workflow using SRA Toolkit
-python3 scripts/rna/run_multi_species.py
-```
-
 ## Integration
 
 RNA analysis integrates with:
@@ -126,24 +126,23 @@ RNA analysis integrates with:
 - **Statistical methods** for differential expression
 - **Visualization tools** for expression plots
 
-## Testing
+See [WORKFLOW.md](WORKFLOW.md) for integration examples and patterns.
 
-Comprehensive tests ensure workflow reliability:
-- Workflow execution validation
-- Configuration parsing and validation
-- External tool integration testing
-- Error handling and recovery
-- Production validation with 4,548 samples across 20 ant species (November 2025)
+## Navigation Map
 
-Performance characteristics:
-- 12 parallel threads for download and quantification
-- Batched processing: ~50-100 GB peak disk usage (temporary)
-- Direct ENA downloads with 100% reliability (vs 0% SRA Toolkit)
-- Virtual environment auto-activation
-- wget-based downloads with automatic resume
-- Auto-cleanup: FASTQs deleted after quantification
+### By Use Case
+- **New User**: [GETTING_STARTED.md](GETTING_STARTED.md) → [WORKFLOW.md](WORKFLOW.md) → [STEPS.md](STEPS.md)
+- **Production Workflows**: [MULTI_SPECIES_QUICK_START.md](MULTI_SPECIES_QUICK_START.md) → [ORCHESTRATION/README.md](ORCHESTRATION/README.md)
+- **Species Discovery**: [DISCOVERY/GUIDE.md](DISCOVERY/GUIDE.md) → [DISCOVERY/QUICK_REF.md](DISCOVERY/QUICK_REF.md)
+- **Configuration**: [CONFIGURATION.md](CONFIGURATION.md) → [ORCHESTRATION/README.md](ORCHESTRATION/README.md)
+- **API Reference**: [index.md](index.md) → [WORKFLOW.md](WORKFLOW.md) → [STEPS.md](STEPS.md)
 
-See `amalgkit/testing_coverage.md` for production validation results.
+### By Component
+- **Core Module**: [index.md](index.md), [WORKFLOW.md](WORKFLOW.md), [STEPS.md](STEPS.md), [CONFIGURATION.md](CONFIGURATION.md)
+- **Amalgkit**: [amalgkit/README.md](amalgkit/README.md), [amalgkit/steps/](amalgkit/steps/)
+- **Orchestration**: [ORCHESTRATION/README.md](ORCHESTRATION/README.md)
+- **Discovery**: [DISCOVERY/](DISCOVERY/)
+- **Examples**: [examples/](examples/)
 
 ## Current Project Timeline (November 2025)
 
@@ -171,6 +170,13 @@ See `amalgkit/testing_coverage.md` for production validation results.
 
 **Total Project Duration**: ~36-72 hours from discovery to complete analysis
 
+## See Also
+
+- **Source Code**: `src/metainformant/rna/` - Implementation details
+- **Module Documentation**: `src/metainformant/rna/README.md` - API reference
+- **Tests**: `tests/test_rna_*.py` - Comprehensive test coverage
+- **Production Validation**: [amalgkit/testing_coverage.md](amalgkit/testing_coverage.md)
+
 ## Contributing
 
 When adding new RNA analysis functionality:
@@ -178,5 +184,10 @@ When adding new RNA analysis functionality:
 2. Add comprehensive integration tests
 3. Update configuration templates
 4. Ensure compatibility with amalgkit ecosystem
+5. Update this README if adding new documentation sections
 
-This documentation provides complete coverage of METAINFORMANT's RNA analysis capabilities.
+---
+
+**Last Updated**: November 2025  
+**Documentation Status**: Complete and organized  
+**Production Status**: Validated with 4,548 samples across 20 ant species

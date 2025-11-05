@@ -27,6 +27,10 @@ class TestAmalgkitEndToEnd:
     
     def test_metadata_to_config_workflow(self):
         """Test metadata → integrate → config workflow."""
+        available, _ = amalgkit.check_cli_available()
+        if not available:
+            pytest.skip("amalgkit CLI not available")
+        
         work_dir = self.test_dir / "workflow1"
         work_dir.mkdir(parents=True, exist_ok=True)
         
@@ -73,7 +77,7 @@ class TestAmalgkitEndToEnd:
     
     def test_cli_availability(self):
         """Test that amalgkit CLI is available."""
-        available = amalgkit.check_cli_available()
+        available, _ = amalgkit.check_cli_available()
         
         if not available:
             pytest.skip("amalgkit CLI not available")
@@ -90,6 +94,10 @@ class TestAmalgkitEndToEnd:
     
     def test_workflow_step_sequence(self):
         """Test that workflow steps execute in correct sequence."""
+        available, _ = amalgkit.check_cli_available()
+        if not available:
+            pytest.skip("amalgkit CLI not available")
+        
         work_dir = self.test_dir / "sequence_test"
         work_dir.mkdir(parents=True, exist_ok=True)
         
@@ -114,7 +122,8 @@ class TestAmalgkitEndToEnd:
     
     def test_complete_mini_workflow(self):
         """Test a minimal complete workflow with very limited data."""
-        if not amalgkit.check_cli_available():
+        available, _ = amalgkit.check_cli_available()
+        if not available:
             pytest.skip("amalgkit CLI not available")
         
         work_dir = self.test_dir / "mini_workflow"
@@ -193,7 +202,8 @@ class TestAmalgkitStepRunners:
     
     def test_metadata_runner(self):
         """Test metadata step runner."""
-        if not amalgkit.check_cli_available():
+        available, _ = amalgkit.check_cli_available()
+        if not available:
             pytest.skip("amalgkit CLI not available")
         
         result = amalgkit.metadata(
@@ -213,7 +223,8 @@ class TestAmalgkitStepRunners:
     
     def test_config_runner(self):
         """Test config step runner."""
-        if not amalgkit.check_cli_available():
+        available, _ = amalgkit.check_cli_available()
+        if not available:
             pytest.skip("amalgkit CLI not available")
         
         # Need metadata first
@@ -238,7 +249,8 @@ class TestAmalgkitStepRunners:
     
     def test_sanity_runner(self):
         """Test sanity step runner."""
-        if not amalgkit.check_cli_available():
+        available, _ = amalgkit.check_cli_available()
+        if not available:
             pytest.skip("amalgkit CLI not available")
         
         # Create minimal required structure
@@ -320,14 +332,25 @@ class TestAmalgkitUtilities:
         assert isinstance(result[0], bool)
     
     def test_ensure_cli_available(self):
-        """Test CLI availability assertion."""
-        available, _ = amalgkit.check_cli_available()
-        if not available:
-            with pytest.raises(RuntimeError, match="amalgkit.*not available"):
-                amalgkit.ensure_cli_available()
+        """Test CLI availability check and optional auto-install.
+        
+        Note: ensure_cli_available returns a tuple (ok, msg, install_record),
+        it does not raise exceptions. This test verifies the return value.
+        """
+        ok, msg, install_record = amalgkit.ensure_cli_available()
+        
+        # Should return boolean, message, and optional install record
+        assert isinstance(ok, bool)
+        assert isinstance(msg, str)
+        assert install_record is None or isinstance(install_record, dict)
+        
+        # If amalgkit is available, ok should be True
+        # If not available, ok should be False and msg should explain
+        if not ok:
+            assert len(msg) > 0, "Error message should be provided when amalgkit unavailable"
         else:
-            # Should not raise
-            amalgkit.ensure_cli_available()
+            # When available, should have help text or version info
+            assert len(msg) > 0
 
 
 if __name__ == "__main__":

@@ -2,6 +2,20 @@
 """
 Run amalgkit workflows for multiple ant species with cross-species analysis.
 
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
+# Scope: Multi-species SRA-based workflow with auto-discovery
+# Steps: metadata → select → getfastq → quant → merge → curate → cstmm → csca → sanity
+# Config: Auto-discovers all config/amalgkit/amalgkit_*.yaml files
+# Threads: Per-config (default 10) or config override
+# Batch Size: 10 samples per species (configurable via threads in config)
+# Output: output/amalgkit/{species}/work/ per species
+# Dependencies: SRA Toolkit, kallisto, fastp, seqkit, amalgkit
+# Virtual Env: Auto-activates if .venv exists
+# Reliability: ~0% for large samples (SRA Toolkit limitation)
+# ============================================================================
+
 This script provides production-ready multi-species RNA-seq workflow orchestration with:
 
 Features:
@@ -285,11 +299,19 @@ def check_environment_or_exit():
 def discover_species_configs(config_dir: Path = Path("config/amalgkit")) -> list[tuple[str, Path]]:
     """Discover all species configuration files.
     
-    Looks in config/amalgkit/ directory for amalgkit_*.yaml files.
-    Resolves paths relative to repository root.
+    Args:
+        config_dir: Directory to search for config files (default: config/amalgkit)
     
     Returns:
-        List of (species_name, config_path) tuples
+        List of (species_name, config_path) tuples, sorted by filename
+        
+    Side effects:
+        None (read-only operation)
+        
+    Notes:
+        - Excludes template files (containing 'template' in name)
+        - Extracts species name from filename: amalgkit_<species>.yaml
+        - Resolves paths relative to repository root
     """
     # Get repository root (3 levels up from this script: scripts/rna/run_multi_species.py)
     repo_root = Path(__file__).parent.parent.parent.resolve()
@@ -316,8 +338,22 @@ def discover_species_configs(config_dir: Path = Path("config/amalgkit")) -> list
 
 
 def run_species_workflow(config_path: Path, species_name: str) -> tuple[bool, Path]:
-    """
-    Run full workflow for a single species using batched processing.
+    """Run full workflow for a single species using batched processing.
+    
+    Args:
+        config_path: Path to species YAML configuration file
+        species_name: Human-readable species name for logging
+        
+    Returns:
+        Tuple of (success, work_dir) where:
+        - success: True if workflow completed without errors
+        - work_dir: Path to workflow output directory
+        
+    Side effects:
+        - Loads workflow configuration
+        - Executes complete amalgkit workflow (metadata → sanity)
+        - Creates output directories and files
+        - Writes logs to work_dir/logs/
     
     The workflow automatically uses batched download-quant-delete processing:
         - Downloads 10 samples (batch size from config.threads)
@@ -410,8 +446,22 @@ def run_cross_species_analysis(work_dirs: list[Path], output_dir: Path = Path("o
     """Run cross-species TMM normalization and correlation analysis.
     
     Args:
-        work_dirs: List of work directories for all species
-        output_dir: Output directory for cross-species results
+        work_dirs: List of work directories for all species (must have completed workflows)
+        output_dir: Output directory for cross-species results (default: output/amalgkit/cross_species)
+        
+    Returns:
+        None (results written to output_dir)
+        
+    Side effects:
+        - Creates output_dir if it doesn't exist
+        - Runs amalgkit cstmm (Cross-Species TMM Normalization)
+        - Runs amalgkit csca (Cross-Species Correlation Analysis)
+        - Writes results to output_dir/cstmm/ and output_dir/csca/
+        
+    Dependencies:
+        - All species workflows must have completed successfully
+        - Merged abundance tables must exist in work_dirs
+        - amalgkit CLI must be available
     """
     logger = get_logger("amalgkit_cross_species")
     

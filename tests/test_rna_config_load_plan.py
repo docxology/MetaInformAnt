@@ -1,9 +1,15 @@
+"""Tests for RNA workflow configuration loading and planning.
+
+Tests YAML config parsing, environment variable overrides, and workflow planning.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
 
 
 def test_load_workflow_config_and_plan_uses_yaml_values():
+    """Test that workflow config loading and planning uses YAML values correctly."""
     from metainformant.rna.workflow import load_workflow_config, plan_workflow
 
     repo_root = Path(__file__).resolve().parents[1]
@@ -17,8 +23,8 @@ def test_load_workflow_config_and_plan_uses_yaml_values():
     else:
         expected_threads = 6
 
-    # Sanity: file exists in repo
-    assert cfg_path.exists()
+    # Sanity: file exists in repo (either test or pbarbatus)
+    assert cfg_path.exists(), f"Config file not found: {cfg_path}"
 
     cfg = load_workflow_config(cfg_path)
 
@@ -50,6 +56,7 @@ def test_load_workflow_config_and_plan_uses_yaml_values():
 
 
 def test_env_overrides_for_config_threads(tmp_path: Path):
+    """Test that environment variables can override config values."""
     from metainformant.rna.workflow import load_workflow_config
 
     repo_root = Path(__file__).resolve().parents[1]
@@ -57,14 +64,20 @@ def test_env_overrides_for_config_threads(tmp_path: Path):
     cfg_path = repo_root / "config" / "amalgkit" / "amalgkit_test.yaml"
     if not cfg_path.exists():
         cfg_path = repo_root / "config" / "amalgkit" / "amalgkit_pbarbatus.yaml"
+    
+    # Ensure at least one config exists
+    assert cfg_path.exists(), f"Config file not found: {cfg_path}"
 
     import os
 
     old = os.environ.get("AK_THREADS")
-    os.environ["AK_THREADS"] = "3"
-    cfg = load_workflow_config(cfg_path)
-    assert cfg.threads == 3
-    if old is None:
-        del os.environ["AK_THREADS"]
-    else:
-        os.environ["AK_THREADS"] = old
+    try:
+        os.environ["AK_THREADS"] = "3"
+        cfg = load_workflow_config(cfg_path)
+        assert cfg.threads == 3, f"Expected threads=3, got {cfg.threads}"
+    finally:
+        # Restore original value or remove if not set
+        if old is None:
+            os.environ.pop("AK_THREADS", None)
+        else:
+            os.environ["AK_THREADS"] = old

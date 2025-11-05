@@ -1,3 +1,8 @@
+"""Tests for metainformant.rna.amalgkit module.
+
+Tests CLI argument building, command construction, and CLI availability checks.
+"""
+
 from __future__ import annotations
 
 import os
@@ -8,6 +13,7 @@ import pytest
 
 
 def test_build_cli_args_transforms_types():
+    """Test that build_cli_args correctly transforms various parameter types."""
     from metainformant.rna.amalgkit import build_cli_args
 
     params = {
@@ -42,6 +48,7 @@ def test_build_cli_args_transforms_types():
 
 
 def test_build_amalgkit_command_prefix_and_order():
+    """Test that build_amalgkit_command creates commands with correct prefix and order."""
     from metainformant.rna.amalgkit import build_amalgkit_command
 
     cmd = build_amalgkit_command(
@@ -56,6 +63,7 @@ def test_build_amalgkit_command_prefix_and_order():
 
 @pytest.mark.skipif(shutil.which("amalgkit") is None, reason="amalgkit not installed")
 def test_check_cli_available_runs_help():
+    """Test that check_cli_available returns True and help text when amalgkit is available."""
     from metainformant.rna.amalgkit import check_cli_available
 
     ok, version_text = check_cli_available()
@@ -64,6 +72,7 @@ def test_check_cli_available_runs_help():
 
 
 def test_curate_summary_counts_from_fixture(tmp_path: Path):
+    """Test that summarize_curate_tables correctly counts TSV files from test fixtures."""
     from metainformant.rna.pipeline import summarize_curate_tables
 
     # Use repo test data under tests/data/rna/curate/Apis_mellifera/tables

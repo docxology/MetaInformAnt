@@ -143,7 +143,18 @@ ps aux | grep workflow_ena
 **Best for:** Testing, single species, environments without ENA access
 
 ```bash
-# Activates venv automatically
+# Prerequisites: .venv must exist with amalgkit installed
+# If not set up, run:
+#   python3 -m venv .venv
+#   source .venv/bin/activate
+#   pip install -e .
+#   pip install git+https://github.com/kfuku52/amalgkit
+
+# Activates venv automatically (if .venv exists)
+python3 scripts/rna/run_multi_species.py
+
+# With configurable threads:
+export AK_THREADS=12
 python3 scripts/rna/run_multi_species.py
 ```
 
@@ -609,6 +620,17 @@ pkill -f workflow_ena                                 # Stop all
    - Differential expression
    - Gene ontology enrichment
    - Publication figures
+
+---
+
+## See Also
+
+- **[ORCHESTRATION/README.md](ORCHESTRATION/README.md)**: Orchestrator comparison and selection
+- **[ORCHESTRATION/ENA_WORKFLOW.md](ORCHESTRATION/ENA_WORKFLOW.md)**: ENA workflow documentation
+- **[ORCHESTRATION/BATCH_DOWNLOAD.md](ORCHESTRATION/BATCH_DOWNLOAD.md)**: Batch download documentation
+- **[CONFIGURATION.md](CONFIGURATION.md)**: Configuration management
+- **[WORKFLOW.md](WORKFLOW.md)**: Workflow planning and execution
+- **[GETTING_STARTED.md](GETTING_STARTED.md)**: Setup and installation
 
 ---
 

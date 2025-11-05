@@ -5,12 +5,15 @@ Our workflow creates abundance.tsv but amalgkit merge expects {SRR}_abundance.ts
 This script creates symlinks with the expected naming convention.
 """
 
-import logging
 import sys
 from pathlib import Path
 
-logging.basicConfig(level=logging.INFO, format='%(asctime)s | %(levelname)s | %(message)s')
-logger = logging.getLogger(__name__)
+# Add src to path
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
+
+from metainformant.core.logging import get_logger
+
+logger = get_logger("fix_abundance_naming")
 
 
 def fix_abundance_naming(species: str, base_dir: Path = Path("output/amalgkit")) -> tuple[int, int]:

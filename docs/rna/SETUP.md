@@ -38,11 +38,16 @@ kallisto version
 fastp --version
 seqkit version
 
-# 6. Run multi-species workflow (auto-activates venv)
+# 6. Run multi-species workflow (auto-activates venv if .venv exists)
+# Prerequisites: .venv must exist with amalgkit installed (see steps 1-5 above)
+python3 scripts/rna/run_multi_species.py
+
+# With configurable threads:
+export AK_THREADS=12
 python3 scripts/rna/run_multi_species.py
 ```
 
-**Note**: The script automatically activates the virtual environment if it exists. Manual activation is optional.
+**Note**: The script automatically activates the virtual environment if `.venv` exists. The virtual environment must be set up first (steps 1-5 above).
 
 ## Detailed Setup Instructions
 
@@ -260,7 +265,18 @@ export PATH=$PATH:/path/to/sratoolkit/bin
 chmod -R u+w output/
 
 # Run script from repository root
+# Prerequisites: .venv must exist with amalgkit installed
+# If not set up, run:
+#   python3 -m venv .venv
+#   source .venv/bin/activate
+#   pip install -e .
+#   pip install git+https://github.com/kfuku52/amalgkit
+
 cd /home/q/Documents/GitHub/MetaInformAnt
+python3 scripts/rna/run_multi_species.py
+
+# With configurable threads:
+export AK_THREADS=12
 python3 scripts/rna/run_multi_species.py
 ```
 
@@ -279,7 +295,18 @@ The script provides automatic environment management:
 ```bash
 cd /home/q/Documents/GitHub/MetaInformAnt
 
-# No manual venv activation needed - script handles it automatically
+# No manual venv activation needed - script handles it automatically (if .venv exists)
+# Prerequisites: .venv must exist with amalgkit installed
+# If not set up, run:
+#   python3 -m venv .venv
+#   source .venv/bin/activate
+#   pip install -e .
+#   pip install git+https://github.com/kfuku52/amalgkit
+
+python3 scripts/rna/run_multi_species.py
+
+# With configurable threads:
+export AK_THREADS=12
 python3 scripts/rna/run_multi_species.py
 
 # Output will be in:

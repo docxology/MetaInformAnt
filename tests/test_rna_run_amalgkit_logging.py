@@ -1,9 +1,15 @@
+"""Tests for amalgkit logging functionality.
+
+Tests that run_amalgkit creates log files for stdout and stderr.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
 
 
 def test_run_amalgkit_writes_logs(tmp_path: Path):
+    """Test that run_amalgkit writes log files for stdout and stderr."""
     from metainformant.rna.amalgkit import check_cli_available, run_amalgkit
 
     ok, _ = check_cli_available()

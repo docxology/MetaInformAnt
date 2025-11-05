@@ -38,6 +38,14 @@ The amalgkit integration provides a complete transcriptomic analysis pipeline fr
 - See `src/metainformant/rna/workflow.py` for workflow orchestration
 - See `tests/test_rna_*.py` for comprehensive test coverage
 
+## See Also
+
+- **[../WORKFLOW.md](../WORKFLOW.md)**: Workflow planning and execution
+- **[../STEPS.md](../STEPS.md)**: Individual step documentation
+- **[../CONFIGURATION.md](../CONFIGURATION.md)**: Configuration management
+- **[../ORCHESTRATION/README.md](../ORCHESTRATION/README.md)**: Orchestrator overview
+- **[../GETTING_STARTED.md](../GETTING_STARTED.md)**: Setup and installation
+
 ## Usage Examples
 
 The amalgkit integration supports complete RNA-seq workflows:
@@ -68,7 +76,18 @@ python3 scripts/rna/workflow_ena_integrated.py \
 
 **Legacy SRA-based workflow**:
 ```bash
-# Alternative workflow using SRA Toolkit
+# Prerequisites: .venv must exist with amalgkit installed
+# If not set up, run:
+#   python3 -m venv .venv
+#   source .venv/bin/activate
+#   pip install -e .
+#   pip install git+https://github.com/kfuku52/amalgkit
+
+# Alternative workflow using SRA Toolkit (auto-activates venv if .venv exists)
+python3 scripts/rna/run_multi_species.py
+
+# With configurable threads:
+export AK_THREADS=12
 python3 scripts/rna/run_multi_species.py
 ```
 

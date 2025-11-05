@@ -17,8 +17,20 @@ Usage:
     python3 workflow_ena_integrated.py --config config/amalgkit/amalgkit_cfloridanus.yaml --batch-size 12 --threads 12
 """
 
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
+# Scope: Single-species ENA-based workflow with batched processing
+# Steps: metadata → config → select → getfastq → quant → merge
+# Config: YAML file via --config argument (required)
+# Threads: Per-config (default 12) or --threads override
+# Batch Size: Per-config or --batch-size override (default 12)
+# Output: output/amalgkit/{species}/work/
+# Dependencies: wget, kallisto, amalgkit (for metadata/index setup)
+# Reliability: 100% (ENA direct downloads vs 0% SRA Toolkit for large samples)
+# ============================================================================
+
 import argparse
-import logging
 import subprocess
 import sys
 import time
@@ -30,22 +42,42 @@ import yaml
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from metainformant.core.io import read_delimited, write_delimited
+from metainformant.core.logging import get_logger
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def load_config(config_path: Path) -> dict:
-    """Load amalgkit YAML config."""
+    """Load amalgkit YAML config.
+    
+    Args:
+        config_path: Path to YAML configuration file
+        
+    Returns:
+        Dictionary containing configuration values
+        
+    Side effects:
+        None (read-only operation)
+    """
     with open(config_path) as f:
         return yaml.safe_load(f)
 
 
 def get_sample_list(metadata_path: Path) -> list[str]:
-    """Get list of run IDs from metadata file."""
+    """Get list of run IDs from metadata file.
+    
+    Args:
+        metadata_path: Path to TSV metadata file with 'run' column
+        
+    Returns:
+        List of SRA run IDs (SRR*)
+        
+    Raises:
+        ValueError: If metadata file lacks 'run' column
+        
+    Side effects:
+        None (read-only operation)
+    """
     rows = list(read_delimited(metadata_path, delimiter='\t'))
     if not rows or 'run' not in rows[0]:
         raise ValueError(f"Metadata must have 'run' column: {metadata_path}")
@@ -55,18 +87,44 @@ def get_sample_list(metadata_path: Path) -> list[str]:
 
 
 def sample_already_quantified(run_id: str, quant_dir: Path) -> bool:
-    """Check if sample has abundance.tsv."""
+    """Check if sample has abundance.tsv.
+    
+    Args:
+        run_id: SRA run ID (e.g., 'SRR1234567')
+        quant_dir: Directory containing quantification results
+        
+    Returns:
+        True if abundance.tsv exists and has non-zero size
+        
+    Side effects:
+        None (read-only operation)
+    """
     abundance = quant_dir / run_id / "abundance.tsv"
     return abundance.exists() and abundance.stat().st_size > 0
 
 
 def download_batch_ena(run_ids: list[str], metadata_path: Path, fastq_dir: Path, 
                        threads: int, batch_num: int) -> tuple[list[str], list[str]]:
-    """
-    Download a batch of samples using the robust ENA downloader.
+    """Download a batch of samples using the robust ENA downloader.
     
+    Args:
+        run_ids: List of SRA run IDs to download
+        metadata_path: Path to metadata TSV file
+        fastq_dir: Directory to save downloaded FASTQ files
+        threads: Number of parallel download threads
+        batch_num: Batch number for logging
+        
     Returns:
-        (successful_downloads, failed_downloads)
+        Tuple of (successful_downloads, failed_downloads)
+        
+    Side effects:
+        - Creates temporary batch metadata file
+        - Downloads FASTQ files to fastq_dir/{run_id}/
+        - Removes temporary batch metadata file
+        
+    Dependencies:
+        - download_ena_robust.py script in same directory
+        - wget command available
     """
     logger.info(f"  📥 Downloading batch {batch_num} ({len(run_ids)} samples)...")
     
@@ -125,11 +183,27 @@ def download_batch_ena(run_ids: list[str], metadata_path: Path, fastq_dir: Path,
 
 def quantify_batch_kallisto(run_ids: list[str], fastq_dir: Path, quant_dir: Path,
                             index_path: Path, threads: int, batch_num: int) -> tuple[list[str], list[str]]:
-    """
-    Quantify samples using kallisto.
+    """Quantify samples using kallisto.
     
+    Args:
+        run_ids: List of SRA run IDs to quantify
+        fastq_dir: Directory containing downloaded FASTQ files
+        quant_dir: Directory to save quantification results
+        index_path: Path to kallisto transcriptome index
+        threads: Number of threads for kallisto
+        batch_num: Batch number for logging
+        
     Returns:
-        (successful_quants, failed_quants)
+        Tuple of (successful_quants, failed_quants)
+        
+    Side effects:
+        - Creates quant_dir/{run_id}/ directories
+        - Writes abundance.tsv and run_info.json per sample
+        - Skips already-quantified samples
+        
+    Dependencies:
+        - kallisto command available on PATH
+        - Index must exist and be valid
     """
     logger.info(f"  🧬 Quantifying batch {batch_num} ({len(run_ids)} samples)...")
     
@@ -193,7 +267,22 @@ def quantify_batch_kallisto(run_ids: list[str], fastq_dir: Path, quant_dir: Path
 
 
 def cleanup_fastqs(run_ids: list[str], fastq_dir: Path) -> int:
-    """Delete FASTQ files for samples. Returns number deleted."""
+    """Delete FASTQ files for samples.
+    
+    Args:
+        run_ids: List of SRA run IDs whose FASTQs to delete
+        fastq_dir: Directory containing FASTQ files
+        
+    Returns:
+        Number of sample directories successfully deleted
+        
+    Side effects:
+        - Removes fastq_dir/{run_id}/ directories recursively
+        - Logs warnings for deletion failures
+        
+    Dependencies:
+        - shutil module (standard library)
+    """
     import shutil
     
     deleted = 0
@@ -210,6 +299,24 @@ def cleanup_fastqs(run_ids: list[str], fastq_dir: Path) -> int:
 
 
 def main():
+    """Main entry point for ENA-integrated workflow.
+    
+    Orchestrates the complete workflow:
+    1. Load configuration from YAML
+    2. Get sample list from metadata
+    3. Process samples in batches (download → quantify → cleanup)
+    4. Report statistics
+    
+    Side effects:
+        - Downloads FASTQ files
+        - Creates quantification results
+        - Deletes FASTQ files after quantification
+        - Writes logs to console
+        
+    Exit codes:
+        0: Success (all samples processed)
+        1: Failure (some samples failed)
+    """
     parser = argparse.ArgumentParser(description="Integrated ENA download + quantification workflow")
     parser.add_argument('--config', required=True, help="Amalgkit config YAML")
     parser.add_argument('--batch-size', type=int, default=12, help="Samples per batch (default: 12)")

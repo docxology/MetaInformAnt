@@ -74,9 +74,16 @@ All discovery data stored in `output/ant_discovery/`:
 ## Usage
 
 See parent directory documentation:
-- `../ANT_SPECIES_DISCOVERY.md` - Comprehensive guide
-- `../ANT_DISCOVERY_QUICK_REF.md` - Quick reference
-- `../README.md` - RNA analysis overview
+- **[GUIDE.md](GUIDE.md)** - Comprehensive guide
+- **[QUICK_REF.md](QUICK_REF.md)** - Quick reference
+- **[../README.md](../README.md)** - RNA analysis overview
+
+## See Also
+
+- **[GUIDE.md](GUIDE.md)**: Comprehensive discovery system documentation
+- **[QUICK_REF.md](QUICK_REF.md)**: Quick reference for discovery
+- **[WORKFLOW.md](../WORKFLOW.md)**: Workflow planning and execution
+- **[ORCHESTRATION/README.md](../ORCHESTRATION/README.md)**: Orchestrator overview
 
 ## Scientific Impact
 

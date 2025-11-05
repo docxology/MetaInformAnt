@@ -104,6 +104,30 @@ class GeneRegulatoryNetwork:
         # Mark regulator as TF if it regulates other genes
         self.transcription_factors.add(regulator)
 
+    def add_transcription_factor(self, tf_id: str, **metadata: Any) -> None:
+        """Explicitly mark a gene as a transcription factor.
+
+        Convenience method to add a transcription factor without requiring
+        a regulatory interaction. Useful for pre-annotating known TFs.
+
+        Args:
+            tf_id: Transcription factor gene identifier
+            **metadata: Optional keyword arguments for TF metadata
+                (e.g., tf_family="bHLH", domain="homeodomain")
+
+        Examples:
+            >>> grn = GeneRegulatoryNetwork()
+            >>> grn.add_transcription_factor("TF1", tf_family="bHLH")
+            >>> "TF1" in grn.transcription_factors
+            True
+        """
+        self.transcription_factors.add(tf_id)
+        self.genes.add(tf_id)
+        if metadata:
+            if tf_id not in self.gene_metadata:
+                self.gene_metadata[tf_id] = {}
+            self.gene_metadata[tf_id].update(metadata)
+
     def add_gene_metadata(self, gene_id: str, **metadata) -> None:
         """Add or update metadata for a gene.
         

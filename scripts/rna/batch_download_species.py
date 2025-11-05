@@ -2,6 +2,21 @@
 """
 Batch download samples for multiple species in parallel with dynamic thread allocation and immediate per-sample quantification.
 
+# ============================================================================
+# CONFIGURATION
+# ============================================================================
+# Scope: Multi-species parallel batch download with configurable throughput
+# Steps: getfastq → quant (per-sample, immediate)
+# Config: Auto-discovers all config/amalgkit/amalgkit_*.yaml files
+# Threads: Configurable total (default 8) distributed across species
+# Batch Size: Per-sample processing (download → quant → delete immediately)
+# Output: output/amalgkit/{species}/fastq/ and quant/ per species
+# Dependencies: amalgkit, kallisto, wget (for ENA) or SRA Toolkit
+# Virtual Env: Auto-activates if .venv exists
+# Disk Management: Pre-flight checks, auto-cleanup when space low
+# Reliability: Depends on download method (ENA recommended)
+# ============================================================================
+
 Features:
 - Configurable total thread count (default: 8 for smaller drives, can increase to 30+ on larger drives)
 - Even initial distribution across species (minimum 1 thread per species)
@@ -131,7 +146,14 @@ def is_sample_download_complete(sample_dir: Path) -> bool:
         sample_dir: Path to sample directory (e.g., fastq/getfastq/SRR12345 or fastq/SRR12345)
         
     Returns:
-        True if sample has valid FASTQ files (non-empty .fastq.gz files)
+        True if sample has valid FASTQ files (non-empty .fastq.gz files, minimum 1KB each)
+        
+    Side effects:
+        None (read-only operation)
+        
+    Notes:
+        - Checks for .fastq.gz files
+        - Validates file size (minimum 1KB to avoid empty/partial files)
     """
     if not sample_dir.exists() or not sample_dir.is_dir():
         return False
@@ -156,7 +178,16 @@ def is_sra_download_complete(sample_dir: Path) -> bool:
         sample_dir: Path to sample directory (e.g., fastq/getfastq/SRR12345)
         
     Returns:
-        True if sample has SRA file that appears complete (not modified recently, reasonable size)
+        True if sample has SRA file that appears complete:
+        - Size > 100 MB and < 100 GB (reasonable range)
+        - Not modified in last 5 minutes (download finished)
+        
+    Side effects:
+        None (read-only operation)
+        
+    Notes:
+        - Uses file modification time to detect completion
+        - Filters out suspiciously large files (>100 GB)
     """
     if not sample_dir.exists() or not sample_dir.is_dir():
         return False
@@ -202,6 +233,13 @@ def detect_completed_downloads(
         List of (species_name, sample_id, sample_dir, status) tuples where status is:
         - "fastq": Has FASTQ files ready for quant
         - "sra": Has SRA file ready for conversion
+        
+    Side effects:
+        - Updates processed_samples set to mark detected samples
+        
+    Notes:
+        - Checks both fastq/getfastq/{sample}/ and fastq/{sample}/ directory structures
+        - Skips samples already quantified or currently being processed
     """
     completed = []
     
@@ -700,12 +738,33 @@ def start_download_process(config_path: Path, species_name: str, threads: int, l
 
 
 def main():
-    """Download samples for multiple species with dynamic thread allocation.
+    """Main entry point for batch download orchestrator.
     
-    Configuration:
-        --total-threads: Total threads to use across all species (default: 30)
-        --max-species: Maximum number of species to process (default: all)
+    Orchestrates multi-species parallel downloads with:
+    1. Auto-discovery of species configs
+    2. Dynamic thread allocation across species
+    3. Per-sample immediate quantification and cleanup
+    4. Disk space monitoring and automatic cleanup
+    5. Process health checks and recovery
+    
+    Configuration (command-line arguments):
+        --total-threads: Total threads across all species (default: 8)
+        --max-species: Maximum species to process (default: all)
         --check-interval: Seconds between completion checks (default: 300)
+        --monitor-interval: Seconds between sample monitoring (default: 60)
+        --quant-threads: Threads for quantification pool (default: 10)
+        --min-free-gb: Minimum free disk space GB (default: 10.0)
+        --auto-cleanup-threshold: GB threshold for auto-cleanup (default: 5.0)
+        
+    Side effects:
+        - Downloads FASTQ files for all species
+        - Quantifies samples immediately after download
+        - Deletes FASTQ files after quantification
+        - Writes logs to output/amalgkit/{species}/logs/
+        
+    Exit codes:
+        0: Success (all species processed or completed)
+        1: Failure (critical errors encountered)
     """
     import argparse
     

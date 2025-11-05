@@ -1,9 +1,15 @@
+"""Tests for CLI argument building in metainformant.rna.amalgkit.
+
+Tests parameter normalization, flag ordering, and type conversion.
+"""
+
 from pathlib import Path
 
 from metainformant.rna.amalgkit import build_cli_args
 
 
 def test_build_cli_args_basic():
+    """Test basic CLI argument building with various parameter types."""
     args = build_cli_args(
         {
             "threads": 8,

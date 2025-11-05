@@ -28,16 +28,25 @@ import argparse
 import shutil
 import subprocess
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 import yaml
 
+# Import setup utilities (must be before other imports)
+sys.path.insert(0, str(Path(__file__).parent))
+from _setup_utils import ensure_venv_activated, check_environment_or_exit
+
+# Auto-setup and activate venv
+ensure_venv_activated(auto_setup=True)
+
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from metainformant.rna import count_quantified_samples, find_unquantified_samples
+from metainformant.rna.monitoring import analyze_species_status, check_workflow_progress, check_active_downloads
 from metainformant.rna.steps import quantify_sample, delete_sample_fastqs
 from metainformant.rna.workflow import load_workflow_config
 from metainformant.core.logging import get_logger
@@ -51,13 +60,50 @@ CONFIG_DIR = REPO_ROOT / "config" / "amalgkit"
 OUTPUT_DIR = REPO_ROOT / "output" / "amalgkit"
 LOG_DIR = REPO_ROOT / "output"
 
-# Species metadata
-SPECIES_INFO = {
-    'cfloridanus': {'name': 'Camponotus floridanus', 'total': 307},
-    'pbarbatus': {'name': 'Pogonomyrmex barbatus', 'total': 83},
-    'mpharaonis': {'name': 'Monomorium pharaonis', 'total': 100},
-    'sinvicta': {'name': 'Solenopsis invicta', 'total': 354},
-}
+# Auto-discover species from config files
+def discover_species_configs() -> dict[str, dict[str, any]]:
+    """Discover all species configs and extract metadata."""
+    species_info = {}
+    for config_file in sorted(CONFIG_DIR.glob("amalgkit_*.yaml")):
+        if "template" in config_file.stem.lower() or "test" in config_file.stem.lower():
+            continue
+        
+        species_id = config_file.stem.replace("amalgkit_", "")
+        
+        # Try to load config to get species name
+        try:
+            config = yaml.safe_load(config_file.read_text())
+            species_list = config.get("species_list", [])
+            if species_list:
+                name = species_list[0].replace("_", " ")
+            else:
+                name = species_id.replace("_", " ").title()
+            
+            # Try to get total from metadata if available
+            work_dir = Path(config.get("work_dir", ""))
+            if work_dir.exists():
+                metadata_file = work_dir / "metadata" / "metadata.tsv"
+                if not metadata_file.exists():
+                    metadata_file = work_dir / "metadata" / "metadata.filtered.tissue.tsv"
+                
+                if metadata_file.exists():
+                    rows = list(read_delimited(metadata_file, delimiter="\t"))
+                    total = len([r for r in rows if r.get("run")])
+                else:
+                    total = 0  # Will be calculated dynamically
+            else:
+                total = 0
+            
+            species_info[species_id] = {'name': name, 'total': total}
+        except Exception:
+            # Fallback
+            species_info[species_id] = {'name': species_id.replace("_", " ").title(), 'total': 0}
+    
+    return species_info
+
+
+# Discover species (will be used throughout)
+SPECIES_INFO = discover_species_configs()
 
 # Valid amalgkit steps in order
 VALID_STEPS = [
@@ -386,6 +432,185 @@ def run_steps_for_species(species: str, steps: list[str]) -> dict:
     return results
 
 
+def print_status(species_list: Optional[list[str]] = None, detailed: bool = False):
+    """Print status summary (replaces unified_status.py, check_status.py, etc.)."""
+    if species_list is None:
+        species_list = list(SPECIES_INFO.keys())
+    
+    if detailed:
+        # Detailed status with categories (replaces unified_status.py --detailed)
+        logger.info("=" * 100)
+        logger.info("COMPREHENSIVE RNA-SEQ WORKFLOW STATUS")
+        logger.info("=" * 100)
+        logger.info(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        
+        all_totals = {
+            "total_in_metadata": 0,
+            "quantified_and_deleted": 0,
+            "quantified_not_deleted": 0,
+            "downloading": 0,
+            "failed_download": 0,
+            "undownloaded": 0,
+        }
+        
+        for species in species_list:
+            config_path = get_config_path(species)
+            if not config_path or not config_path.exists():
+                continue
+            
+            status = analyze_species_status(config_path)
+            if not status or status["total_in_metadata"] == 0:
+                continue
+            
+            categories = status["categories"]
+            info = SPECIES_INFO.get(species, {})
+            name = info.get('name', species)
+            
+            logger.info(f"\n{name} ({species}):")
+            logger.info(f"  Total in metadata: {status['total_in_metadata']}")
+            logger.info(f"  ✅ Quantified and deleted: {len(categories['quantified_and_deleted'])}")
+            logger.info(f"  ⚠️  Quantified but not deleted: {len(categories['quantified_not_deleted'])}")
+            logger.info(f"  ⬇️  Currently downloading: {len(categories['downloading'])}")
+            logger.info(f"  ❌ Failed download: {len(categories['failed_download'])}")
+            logger.info(f"  ⏳ Undownloaded: {len(categories['undownloaded'])}")
+            
+            # Update totals
+            all_totals["total_in_metadata"] += status["total_in_metadata"]
+            all_totals["quantified_and_deleted"] += len(categories["quantified_and_deleted"])
+            all_totals["quantified_not_deleted"] += len(categories["quantified_not_deleted"])
+            all_totals["downloading"] += len(categories["downloading"])
+            all_totals["failed_download"] += len(categories["failed_download"])
+            all_totals["undownloaded"] += len(categories["undownloaded"])
+        
+        # Print summary
+        logger.info("\n" + "=" * 100)
+        logger.info("OVERALL SUMMARY")
+        logger.info("=" * 100)
+        total = all_totals["total_in_metadata"]
+        if total > 0:
+            logger.info(f"Total samples: {total}")
+            logger.info(f"✅ Quantified and deleted: {all_totals['quantified_and_deleted']} ({all_totals['quantified_and_deleted']/total*100:.1f}%)")
+            logger.info(f"⚠️  Quantified but not deleted: {all_totals['quantified_not_deleted']} ({all_totals['quantified_not_deleted']/total*100:.1f}%)")
+            logger.info(f"⬇️  Currently downloading: {all_totals['downloading']} ({all_totals['downloading']/total*100:.1f}%)")
+            logger.info(f"❌ Failed download: {all_totals['failed_download']} ({all_totals['failed_download']/total*100:.1f}%)")
+            logger.info(f"⏳ Undownloaded: {all_totals['undownloaded']} ({all_totals['undownloaded']/total*100:.1f}%)")
+            
+            total_quantified = all_totals["quantified_and_deleted"] + all_totals["quantified_not_deleted"]
+            logger.info(f"\nQuantification Progress: {total_quantified}/{total} ({total_quantified/total*100:.1f}%)")
+        logger.info("=" * 100)
+    else:
+        # Brief status (replaces check_status.py, quick_status.py, etc.)
+        logger.info("=" * 100)
+        logger.info("RNA-SEQ WORKFLOW STATUS")
+        logger.info("=" * 100)
+        logger.info(f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        
+        total_quantified = 0
+        total_samples = 0
+        
+        for species in species_list:
+            config_path = get_config_path(species)
+            if not config_path or not config_path.exists():
+                continue
+            
+            progress = check_workflow_progress(config_path)
+            info = SPECIES_INFO.get(species, {})
+            name = info.get('name', species)
+            
+            total_quantified += progress["quantified"]
+            total_samples += progress["total"]
+            
+            pct = progress["percentage"]
+            logger.info(f"{name:<30} {progress['quantified']:>4}/{progress['total']:<4} ({pct:>5.1f}%)")
+        
+        logger.info("-" * 100)
+        overall_pct = (total_quantified / total_samples * 100) if total_samples > 0 else 0.0
+        logger.info(f"{'TOTAL':<30} {total_quantified:>4}/{total_samples:<4} ({overall_pct:>5.1f}%)")
+        logger.info("=" * 100)
+
+
+def monitor_workflows(species_list: Optional[list[str]] = None, watch_interval: int = 60):
+    """Real-time monitoring (replaces monitor_comprehensive.py, monitor_workflow.py)."""
+    if species_list is None:
+        species_list = list(SPECIES_INFO.keys())
+    
+    try:
+        while True:
+            # Clear screen (works on most terminals)
+            print("\033[2J\033[H", end="")
+            
+            print("\n" + "=" * 80)
+            print("  MULTI-SPECIES RNA-SEQ WORKFLOW MONITOR")
+            print("=" * 80)
+            print(f"\n⏰ {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            
+            total_samples = 0
+            total_quantified = 0
+            active_downloads = check_active_downloads()
+            
+            for species in species_list:
+                info = SPECIES_INFO.get(species, {})
+                name = info.get('name', species)
+                total = info.get('total', 0)
+                
+                config_path = get_config_path(species)
+                if config_path and config_path.exists():
+                    quantified, _ = count_quantified_samples(config_path)
+                else:
+                    quantified = count_quantified(species)
+                
+                percent = (quantified * 100) // total if total > 0 else 0
+                remaining = total - quantified
+                
+                # Count downloading samples for this species
+                # active_downloads returns sample IDs, check if they're in this species' fastq dir
+                fastq_dir = OUTPUT_DIR / species / 'fastq'
+                downloading_count = 0
+                if fastq_dir.exists():
+                    # Count sample directories that might be downloading
+                    downloading_count = len([d for d in fastq_dir.iterdir() if d.is_dir() and d.name.startswith("SRR")])
+                
+                # Get FASTQ directory size (reuse fastq_dir from above)
+                if fastq_dir.exists():
+                    try:
+                        result = subprocess.run(
+                            ["du", "-sh", str(fastq_dir)],
+                            capture_output=True,
+                            text=True,
+                            timeout=5
+                        )
+                        fastq_size = result.stdout.split()[0] if result.returncode == 0 else "?"
+                    except Exception:
+                        fastq_size = "?"
+                else:
+                    fastq_size = "0"
+                
+                total_samples += total
+                total_quantified += quantified
+                
+                print(f"📊 {name} ({species})")
+                print(f"   Progress: {quantified}/{total} ({percent}%)")
+                print(f"   Downloading: {downloading_count} samples ({fastq_size})")
+                print()
+            
+            print("=" * 80)
+            overall_percent = (total_quantified * 100) // total_samples if total_samples > 0 else 0
+            print(f"🎯 OVERALL: {total_quantified}/{total_samples} samples ({overall_percent}%)")
+            print("=" * 80)
+            
+            # Estimate remaining time (rough estimate: 7.5 min per sample)
+            remaining = total_samples - total_quantified
+            if remaining > 0:
+                estimated_hours = (remaining * 7.5) / 60
+                print(f"\n⏳ Estimated remaining: {estimated_hours:.1f} hours ({remaining} samples)")
+            
+            print(f"\nPress Ctrl+C to stop monitoring (updates every {watch_interval}s)")
+            
+            time.sleep(watch_interval)
+    except KeyboardInterrupt:
+        print("\n\nMonitoring stopped.")
+
+
 def resume_downloads(species_list: Optional[list[str]] = None):
     """Resume incomplete downloads by restarting workflows."""
     if species_list is None:
@@ -443,6 +668,14 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  # Status (replaces unified_status.py, check_status.py, etc.)
+  %(prog)s --status                    # Brief status
+  %(prog)s --status --detailed         # Detailed status with categories
+  
+  # Monitoring (replaces monitor_comprehensive.py, monitor_workflow.py)
+  %(prog)s --monitor                   # Real-time monitoring
+  %(prog)s --monitor --watch 60        # Watch mode with interval
+  
   # Full assessment
   %(prog)s --assess
   
@@ -462,6 +695,14 @@ Examples:
     
     parser.add_argument('--assess', action='store_true',
                         help='Print comprehensive status assessment')
+    parser.add_argument('--status', action='store_true',
+                        help='Print status summary (brief)')
+    parser.add_argument('--detailed', action='store_true',
+                        help='Show detailed status with sample categories (use with --status)')
+    parser.add_argument('--monitor', action='store_true',
+                        help='Real-time monitoring (replaces monitor_comprehensive.py)')
+    parser.add_argument('--watch', type=int, default=60,
+                        help='Watch interval in seconds for --monitor (default: 60)')
     parser.add_argument('--cleanup-unquantified', action='store_true',
                         help='Quantify downloaded samples and cleanup FASTQs')
     parser.add_argument('--resume-downloads', action='store_true',
@@ -494,7 +735,15 @@ Examples:
         species_list = list(SPECIES_INFO.keys())
     
     # Execute requested actions
-    if args.assess or not any([args.cleanup_unquantified, args.resume_downloads, args.steps]):
+    if args.monitor:
+        monitor_workflows(species_list, watch_interval=args.watch)
+        return 0
+    
+    if args.status:
+        print_status(species_list, detailed=args.detailed)
+        return 0
+    
+    if args.assess or not any([args.cleanup_unquantified, args.resume_downloads, args.steps, args.status, args.monitor]):
         print_assessment(species_list)
         return 0
     

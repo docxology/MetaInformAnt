@@ -1,3 +1,8 @@
+"""Tests for RNA workflow manifest generation during execution.
+
+Tests that workflow execution creates manifest files with execution records.
+"""
+
 import json
 from pathlib import Path
 
@@ -6,6 +11,7 @@ from metainformant.rna.workflow import AmalgkitWorkflowConfig, execute_workflow
 
 
 def test_manifest_written_with_records(tmp_path: Path):
+    """Test that workflow execution writes manifest files with execution records."""
     ok, _ = check_cli_available()
     if not ok:
         import pytest

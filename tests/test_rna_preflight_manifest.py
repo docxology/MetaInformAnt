@@ -1,9 +1,15 @@
+"""Tests for preflight manifest generation when amalgkit is missing.
+
+Tests that workflows create preflight manifests documenting missing dependencies.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
 
 
 def test_preflight_manifest_when_amalgkit_missing(tmp_path: Path):
+    """Test that workflow creates preflight manifest when amalgkit CLI is not available."""
     from metainformant.rna.amalgkit import check_cli_available
     from metainformant.rna.workflow import AmalgkitWorkflowConfig, execute_workflow
 

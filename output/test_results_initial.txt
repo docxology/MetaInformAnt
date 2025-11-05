@@ -1,0 +1,500 @@
+============================= test session starts ==============================
+platform linux -- Python 3.11.2, pytest-7.2.1, pluggy-1.0.0+repack -- /usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /media/q/ext6/github/MetaInformAnt, configfile: pyproject.toml
+plugins: anyio-3.6.2
+collecting ... collected 195 items / 126 errors
+
+==================================== ERRORS ====================================
+__________________ ERROR collecting tests/test_core_cache.py ___________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_core_cache.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_core_cache.py:5: in <module>
+    from metainformant.core import cache as core_cache
+E   ModuleNotFoundError: No module named 'metainformant'
+______________ ERROR collecting tests/test_core_comprehensive.py _______________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_core_comprehensive.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_core_comprehensive.py:16: in <module>
+    from metainformant.core import cache, config, hash, io, logging, parallel, paths, text
+E   ModuleNotFoundError: No module named 'metainformant'
+__________________ ERROR collecting tests/test_core_config.py __________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_core_config.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_core_config.py:6: in <module>
+    from metainformant.core import config as core_config
+E   ModuleNotFoundError: No module named 'metainformant'
+____________________ ERROR collecting tests/test_core_db.py ____________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_core_db.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_core_db.py:8: in <module>
+    from metainformant.core.db import (
+E   ModuleNotFoundError: No module named 'metainformant'
+______________ ERROR collecting tests/test_core_functionality.py _______________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_core_functionality.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_core_functionality.py:17: in <module>
+    from metainformant.core.hash import sha256_bytes, sha256_file
+E   ModuleNotFoundError: No module named 'metainformant'
+___________________ ERROR collecting tests/test_core_hash.py ___________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_core_hash.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_core_hash.py:5: in <module>
+    from metainformant.core import hash as core_hash
+E   ModuleNotFoundError: No module named 'metainformant'
+____________________ ERROR collecting tests/test_core_io.py ____________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_core_io.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_core_io.py:6: in <module>
+    from metainformant.core import io as core_io
+E   ModuleNotFoundError: No module named 'metainformant'
+_______________ ERROR collecting tests/test_core_io_enhanced.py ________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_core_io_enhanced.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_core_io_enhanced.py:7: in <module>
+    from metainformant.core import io, paths
+E   ModuleNotFoundError: No module named 'metainformant'
+_________________ ERROR collecting tests/test_core_logging.py __________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_core_logging.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_core_logging.py:5: in <module>
+    from metainformant.core import logging as core_logging
+E   ModuleNotFoundError: No module named 'metainformant'
+_________________ ERROR collecting tests/test_core_parallel.py _________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_core_parallel.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_core_parallel.py:5: in <module>
+    from metainformant.core import parallel as core_parallel
+E   ModuleNotFoundError: No module named 'metainformant'
+__________________ ERROR collecting tests/test_core_paths.py ___________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_core_paths.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_core_paths.py:6: in <module>
+    from metainformant.core import paths as core_paths
+E   ModuleNotFoundError: No module named 'metainformant'
+________________ ERROR collecting tests/test_core_processing.py ________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_core_processing.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_core_processing.py:7: in <module>
+    from metainformant.core import io
+E   ModuleNotFoundError: No module named 'metainformant'
+___________________ ERROR collecting tests/test_core_text.py ___________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_core_text.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_core_text.py:5: in <module>
+    from metainformant.core import text as core_text
+E   ModuleNotFoundError: No module named 'metainformant'
+_________________ ERROR collecting tests/test_dna_accession.py _________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_accession.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_accession.py:1: in <module>
+    from metainformant.dna.genomes import is_valid_assembly_accession
+E   ModuleNotFoundError: No module named 'metainformant'
+_________________ ERROR collecting tests/test_dna_alignment.py _________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_alignment.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_alignment.py:5: in <module>
+    from metainformant.dna import alignment, sequences
+E   ModuleNotFoundError: No module named 'metainformant'
+____________ ERROR collecting tests/test_dna_alignment_enhanced.py _____________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_alignment_enhanced.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_alignment_enhanced.py:4: in <module>
+    from metainformant.dna import alignment
+E   ModuleNotFoundError: No module named 'metainformant'
+________________ ERROR collecting tests/test_dna_codon_usage.py ________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_codon_usage.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_codon_usage.py:1: in <module>
+    from metainformant.dna import codon
+E   ModuleNotFoundError: No module named 'metainformant'
+_______________ ERROR collecting tests/test_dna_comprehensive.py _______________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_comprehensive.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_comprehensive.py:17: in <module>
+    from metainformant.dna.composition import gc_skew  # We'll use a different approach for gc_content
+E   ModuleNotFoundError: No module named 'metainformant'
+_________________ ERROR collecting tests/test_dna_consensus.py _________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_consensus.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_consensus.py:3: in <module>
+    from metainformant.dna import consensus
+E   ModuleNotFoundError: No module named 'metainformant'
+_________________ ERROR collecting tests/test_dna_distances.py _________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_distances.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_distances.py:3: in <module>
+    from metainformant.dna import distances
+E   ModuleNotFoundError: No module named 'metainformant'
+____________ ERROR collecting tests/test_dna_entrez_integration.py _____________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_entrez_integration.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_entrez_integration.py:7: in <module>
+    from metainformant.dna import entrez
+E   ModuleNotFoundError: No module named 'metainformant'
+___________________ ERROR collecting tests/test_dna_fastq.py ___________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_fastq.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_fastq.py:5: in <module>
+    from metainformant.dna import fastq
+E   ModuleNotFoundError: No module named 'metainformant'
+________________ ERROR collecting tests/test_dna_gc_skew_tm.py _________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_gc_skew_tm.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_gc_skew_tm.py:1: in <module>
+    from metainformant.dna import composition
+E   ModuleNotFoundError: No module named 'metainformant'
+______________ ERROR collecting tests/test_dna_kmer_distances.py _______________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_kmer_distances.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_kmer_distances.py:3: in <module>
+    from metainformant.dna import distances
+E   ModuleNotFoundError: No module named 'metainformant'
+__________________ ERROR collecting tests/test_dna_motifs.py ___________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_motifs.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_motifs.py:3: in <module>
+    from metainformant.dna import motifs
+E   ModuleNotFoundError: No module named 'metainformant'
+____________________ ERROR collecting tests/test_dna_msa.py ____________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_msa.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_msa.py:5: in <module>
+    from metainformant.dna import msa, sequences
+E   ModuleNotFoundError: No module named 'metainformant'
+__________________ ERROR collecting tests/test_dna_msa_cli.py __________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_msa_cli.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_msa_cli.py:8: in <module>
+    from metainformant.dna import msa, sequences
+E   ModuleNotFoundError: No module named 'metainformant'
+_________________ ERROR collecting tests/test_dna_mutations.py _________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_mutations.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_mutations.py:1: in <module>
+    from metainformant.dna import mutations
+E   ModuleNotFoundError: No module named 'metainformant'
+___________________ ERROR collecting tests/test_dna_ncbi.py ____________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_ncbi.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_ncbi.py:8: in <module>
+    from metainformant.dna import ncbi
+E   ModuleNotFoundError: No module named 'metainformant'
+_________________ ERROR collecting tests/test_dna_phylogeny.py _________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_phylogeny.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_phylogeny.py:5: in <module>
+    from metainformant.dna import phylogeny, sequences
+E   ModuleNotFoundError: No module named 'metainformant'
+____________ ERROR collecting tests/test_dna_phylogeny_bootstrap.py ____________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_phylogeny_bootstrap.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_phylogeny_bootstrap.py:5: in <module>
+    from metainformant.dna import phylogeny, sequences
+E   ModuleNotFoundError: No module named 'metainformant'
+______________ ERROR collecting tests/test_dna_phylogeny_extra.py ______________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_phylogeny_extra.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_phylogeny_extra.py:5: in <module>
+    from metainformant.dna import phylogeny, sequences
+E   ModuleNotFoundError: No module named 'metainformant'
+______________ ERROR collecting tests/test_dna_phylogeny_kmer.py _______________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_phylogeny_kmer.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_phylogeny_kmer.py:5: in <module>
+    from metainformant.dna import phylogeny, sequences
+E   ModuleNotFoundError: No module named 'metainformant'
+____________ ERROR collecting tests/test_dna_population_analysis.py ____________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_population_analysis.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_population_analysis.py:7: in <module>
+    from metainformant.dna.population_analysis import (
+E   ModuleNotFoundError: No module named 'metainformant'
+_________ ERROR collecting tests/test_dna_population_comprehensive.py __________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_population_comprehensive.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_population_comprehensive.py:7: in <module>
+    from metainformant.dna import population
+E   ModuleNotFoundError: No module named 'metainformant'
+____________ ERROR collecting tests/test_dna_population_genetics.py ____________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_population_genetics.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_population_genetics.py:3: in <module>
+    from metainformant.dna import population
+E   ModuleNotFoundError: No module named 'metainformant'
+______________ ERROR collecting tests/test_dna_population_more.py ______________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_population_more.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_population_more.py:3: in <module>
+    from metainformant.dna import population
+E   ModuleNotFoundError: No module named 'metainformant'
+_____________ ERROR collecting tests/test_dna_population_stats.py ______________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_population_stats.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_population_stats.py:3: in <module>
+    from metainformant.dna import population
+E   ModuleNotFoundError: No module named 'metainformant'
+______________ ERROR collecting tests/test_dna_population_viz.py _______________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_population_viz.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_population_viz.py:9: in <module>
+    from metainformant.dna.population_viz import (
+E   ModuleNotFoundError: No module named 'metainformant'
+__________ ERROR collecting tests/test_dna_population_viz_advanced.py __________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_population_viz_advanced.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_population_viz_advanced.py:8: in <module>
+    from metainformant.dna.population_viz import (
+E   ModuleNotFoundError: No module named 'metainformant'
+_____________ ERROR collecting tests/test_dna_restriction_sites.py _____________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_restriction_sites.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_restriction_sites.py:1: in <module>
+    from metainformant.dna import restriction
+E   ModuleNotFoundError: No module named 'metainformant'
+______________ ERROR collecting tests/test_dna_sequence_utils.py _______________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_sequence_utils.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_sequence_utils.py:3: in <module>
+    from metainformant.dna import sequences
+E   ModuleNotFoundError: No module named 'metainformant'
+_________________ ERROR collecting tests/test_dna_sequences.py _________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_sequences.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_sequences.py:5: in <module>
+    from metainformant.dna import sequences
+E   ModuleNotFoundError: No module named 'metainformant'
+____________ ERROR collecting tests/test_dna_sequences_enhanced.py _____________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_sequences_enhanced.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_sequences_enhanced.py:4: in <module>
+    from metainformant.dna import sequences
+E   ModuleNotFoundError: No module named 'metainformant'
+_______________ ERROR collecting tests/test_dna_transcription.py _______________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_transcription.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_transcription.py:1: in <module>
+    from metainformant.dna import sequences, transcription
+E   ModuleNotFoundError: No module named 'metainformant'
+________________ ERROR collecting tests/test_dna_translation.py ________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_translation.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_translation.py:3: in <module>
+    from metainformant.dna import translation
+E   ModuleNotFoundError: No module named 'metainformant'
+_______________ ERROR collecting tests/test_dna_variants_vcf.py ________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_dna_variants_vcf.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_dna_variants_vcf.py:5: in <module>
+    from metainformant.dna import variants
+E   ModuleNotFoundError: No module named 'metainformant'
+________________ ERROR collecting tests/test_domain_modules.py _________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_domain_modules.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_domain_modules.py:3: in <module>
+    from metainformant.ontology.go import count_go_scripts
+E   ModuleNotFoundError: No module named 'metainformant'
+_________________ ERROR collecting tests/test_ecology_basic.py _________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_ecology_basic.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_ecology_basic.py:5: in <module>
+    from metainformant.ecology import community
+E   ModuleNotFoundError: No module named 'metainformant'
+___________________ ERROR collecting tests/test_epigenome.py ___________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_epigenome.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_epigenome.py:5: in <module>
+    from metainformant.epigenome import compute_beta_values, load_cpg_table, read_bedgraph, summarize_beta_by_chromosome
+E   ModuleNotFoundError: No module named 'metainformant'
+_______________ ERROR collecting tests/test_gwas_association.py ________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_gwas_association.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_gwas_association.py:10: in <module>
+    from metainformant.gwas import association_test_linear, association_test_logistic, run_gwas
+E   ModuleNotFoundError: No module named 'metainformant'
+_________________ ERROR collecting tests/test_gwas_calling.py __________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_gwas_calling.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_gwas_calling.py:9: in <module>
+    from metainformant.gwas.calling import (
+E   ModuleNotFoundError: No module named 'metainformant'
+__________________ ERROR collecting tests/test_gwas_config.py __________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_gwas_config.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_gwas_config.py:9: in <module>
+    from metainformant.gwas import GWASWorkflowConfig, load_gwas_config
+E   ModuleNotFoundError: No module named 'metainformant'
+_____________ ERROR collecting tests/test_gwas_config_pbarbatus.py _____________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_gwas_config_pbarbatus.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests/test_gwas_config_pbarbatus.py:9: in <module>
+    from metainformant.gwas import execute_gwas_workflow, load_gwas_config
+E   ModuleNotFoundError: No module named 'metainformant'
+________________ ERROR collecting tests/test_gwas_correction.py ________________
+ImportError while importing test module '/media/q/ext6/github/MetaInformAnt/tests/test_gwas_correction.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.11/importlib/__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)

@@ -61,6 +61,29 @@ class BiologicalClassifier:
         self.is_fitted = True
         return self
 
+    def get_feature_importance(self) -> np.ndarray:
+        """Get feature importance scores.
+
+        Returns:
+            Array of feature importance scores, one per feature.
+            Importance scores are non-negative and indicate the relative
+            contribution of each feature to the classification.
+
+        Raises:
+            ValueError: If classifier has not been fitted yet.
+
+        Examples:
+            >>> clf = BiologicalClassifier(algorithm="random_forest")
+            >>> clf.fit(X_train, y_train)
+            >>> importance = clf.get_feature_importance()
+            >>> top_features = np.argsort(importance)[-5:]
+        """
+        if not self.is_fitted:
+            raise ValueError("Classifier must be fitted before getting feature importance")
+        if self.feature_importance_ is None:
+            return np.array([])
+        return self.feature_importance_.copy()
+
     def predict(self, X: np.ndarray) -> np.ndarray:
         """Predict class labels for samples.
 

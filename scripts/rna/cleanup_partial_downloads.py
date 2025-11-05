@@ -8,41 +8,18 @@ This frees up disk space for retrying downloads.
 
 import os
 import sys
+import shutil
 from pathlib import Path
 from datetime import datetime
-import shutil
-from glob import glob
 
-# Ensure virtual environment is activated
-def ensure_venv_activated():
-    """Automatically activate virtual environment if it exists."""
-    repo_root = Path(__file__).parent.parent.parent.resolve()
-    venv_python = repo_root / ".venv" / "bin" / "python3"
-    venv_dir = repo_root / ".venv"
-    
-    current_python = Path(sys.executable)
-    
-    try:
-        current_python.relative_to(repo_root / ".venv")
-        if "VIRTUAL_ENV" not in os.environ:
-            os.environ["VIRTUAL_ENV"] = str(venv_dir)
-            venv_bin = str(venv_dir / "bin")
-            if venv_bin not in os.environ.get("PATH", ""):
-                os.environ["PATH"] = f"{venv_bin}:{os.environ.get('PATH', '')}"
-        return
-    except ValueError:
-        pass
-    
-    if venv_python.exists():
-        new_env = os.environ.copy()
-        new_env["VIRTUAL_ENV"] = str(venv_dir)
-        venv_bin = str(venv_dir / "bin")
-        new_env["PATH"] = f"{venv_bin}:{new_env.get('PATH', '')}"
-        new_env.pop("PYTHONHOME", None)
-        os.execve(str(venv_python), [str(venv_python)] + sys.argv, new_env)
+# Import setup utilities (must be before other imports)
+sys.path.insert(0, str(Path(__file__).parent))
+from _setup_utils import ensure_venv_activated
 
-ensure_venv_activated()
+# Auto-setup and activate venv
+ensure_venv_activated(auto_setup=True)
 
+# Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 from metainformant.rna.workflow import load_workflow_config

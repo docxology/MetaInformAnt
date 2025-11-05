@@ -91,6 +91,9 @@ print(f"Hub proteins: {stats['hub_proteins']}")
 
 # Get protein partners
 partners = ppi_network.get_protein_partners("P12345", min_confidence=0.7)
+
+# Pathway similarity
+similarity = pathway_net.pathway_similarity("pathway1", "pathway2", method="jaccard")
 print(f"Partners of P12345: {partners}")
 
 # Calculate protein similarity

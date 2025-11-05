@@ -10,6 +10,8 @@ High-level planning and execution live in `metainformant.rna.workflow`.
 - Troubleshooting common issues
 - Performance optimization
 
+**For orchestrator selection**, see **[ORCHESTRATION/README.md](ORCHESTRATION/README.md)** to choose the right orchestrator for your needs.
+
 ## Plan
 
 ```python
@@ -42,11 +44,26 @@ python3 scripts/rna/workflow_ena_integrated.py \
   --threads 12
 ```
 
+See [ORCHESTRATION/ENA_WORKFLOW.md](ORCHESTRATION/ENA_WORKFLOW.md) for detailed documentation.
+
 **Legacy SRA-based workflow:**
 ```bash
-# Alternative using SRA Toolkit (auto-activates venv)
+# Prerequisites: .venv must exist with amalgkit installed
+# If not set up, run:
+#   python3 -m venv .venv
+#   source .venv/bin/activate
+#   pip install -e .
+#   pip install git+https://github.com/kfuku52/amalgkit
+
+# Alternative using SRA Toolkit (auto-activates venv if .venv exists)
+python3 scripts/rna/run_multi_species.py
+
+# With configurable threads:
+export AK_THREADS=12
 python3 scripts/rna/run_multi_species.py
 ```
+
+See [ORCHESTRATION/MULTI_SPECIES.md](ORCHESTRATION/MULTI_SPECIES.md) for detailed documentation.
 
 The ENA-based workflow provides:
 - Direct ENA downloads with 100% reliability (vs 0% SRA Toolkit)
@@ -153,6 +170,14 @@ Downstream, you can:
 
 All outputs default under `output/` in keeping with repository policy; override via `work_dir` in the config.
 
+## See Also
+
+- **[STEPS.md](STEPS.md)**: Individual workflow step documentation
+- **[CONFIGURATION.md](CONFIGURATION.md)**: Configuration management
+- **[ORCHESTRATION/README.md](ORCHESTRATION/README.md)**: Orchestrator overview and selection
+- **[GETTING_STARTED.md](GETTING_STARTED.md)**: Setup and installation
+- **[MULTI_SPECIES_QUICK_START.md](MULTI_SPECIES_QUICK_START.md)**: Production workflow guide
+
 ## Common Issues and Solutions
 
 ### Metadata Format Selection
@@ -166,6 +191,7 @@ The workflow intelligently selects metadata files for downstream steps. Steps li
 ```python
 # Automatic detection and fallback in workflow.py
 if rows and 'run' not in rows[0]:  # Pivot format detected
+    metadata_file = work_dir / "metadata" / "metadata.filtered.tissue.tsv"
     # Use metadata.filtered.tissue.tsv instead
 ```
 
@@ -221,13 +247,24 @@ No manual configuration needed - all handled automatically by the workflow scrip
 
 **Issue**: "amalgkit: command not found" or import errors
 
-**Solution**: The script automatically activates virtual environment:
+**Solution**: The script automatically activates virtual environment (if .venv exists):
 ```bash
-# Just run the script - no manual activation needed
+# Prerequisites: .venv must exist with amalgkit installed
+# If not set up, run:
+#   python3 -m venv .venv
+#   source .venv/bin/activate
+#   pip install -e .
+#   pip install git+https://github.com/kfuku52/amalgkit
+
+# Just run the script - no manual activation needed (if .venv exists)
+python3 scripts/rna/run_multi_species.py
+
+# With configurable threads:
+export AK_THREADS=12
 python3 scripts/rna/run_multi_species.py
 ```
 
-The script detects if it's running outside the venv and re-executes itself within it using `os.execve()`.
+The script detects if it's running outside the venv and re-executes itself within it using `os.execve()`, but `.venv` must exist first.
 
 ### SRA Download Failures
 

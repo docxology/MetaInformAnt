@@ -1,3 +1,8 @@
+"""Tests for RNA CLI commands in metainformant.__main__.
+
+Tests command-line interface for RNA workflow planning and execution.
+"""
+
 from __future__ import annotations
 
 import subprocess
@@ -6,6 +11,7 @@ from pathlib import Path
 
 
 def test_rna_plan_cli_lists_expected_steps(tmp_path: Path):
+    """Test that 'rna plan' CLI command lists all expected workflow steps."""
     cmd = [
         sys.executable,
         "-m",
@@ -27,6 +33,7 @@ def test_rna_plan_cli_lists_expected_steps(tmp_path: Path):
 
 
 def test_rna_plan_species_cli_includes_species_and_tissue(tmp_path: Path):
+    """Test that 'rna plan-species' CLI includes species and tissue parameters in output."""
     cmd = [
         sys.executable,
         "-m",

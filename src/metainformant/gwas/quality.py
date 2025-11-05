@@ -423,9 +423,120 @@ def apply_qc_filters(
     # Write filtered VCF if output path provided
     if output_vcf:
         logger.info(f"apply_qc_filters: Writing filtered VCF to {output_vcf}")
-        # TODO: Implement VCF writing (requires proper VCF format handling)
-        result["output_vcf"] = str(Path(output_vcf))
-        result["message"] = "Filtered VCF writing not yet fully implemented"
+        try:
+            write_filtered_vcf(
+                vcf_data=vcf_data,
+                passing_indices=passing_indices,
+                output_path=Path(output_vcf),
+            )
+            result["output_vcf"] = str(Path(output_vcf))
+            result["message"] = f"Filtered VCF written successfully with {len(passing_indices)} variants"
+        except Exception as e:
+            logger.warning(f"Failed to write filtered VCF: {e}")
+            result["output_vcf"] = str(Path(output_vcf))
+            result["message"] = f"VCF writing failed: {str(e)}"
 
     return result
+
+
+def write_filtered_vcf(
+    vcf_data: dict[str, Any],
+    passing_indices: list[int],
+    output_path: Path,
+) -> None:
+    """Write filtered VCF file with only passing variants.
+
+    Writes a VCF file containing only variants that passed QC filters,
+    preserving the original VCF format and metadata.
+
+    Args:
+        vcf_data: Parsed VCF data from parse_vcf_full()
+        passing_indices: List of variant indices to include in output
+        output_path: Path to output VCF file (supports .gz extension)
+
+    Raises:
+        ValueError: If vcf_data is missing required fields
+        IOError: If file writing fails
+    """
+    logger.info(f"write_filtered_vcf: Writing {len(passing_indices)} variants to {output_path}")
+
+    # Validate required fields
+    required_fields = ["samples", "variants", "genotypes"]
+    for field in required_fields:
+        if field not in vcf_data:
+            raise ValueError(f"Missing required field in vcf_data: {field}")
+
+    samples = vcf_data["samples"]
+    variants = vcf_data["variants"]
+    genotypes = vcf_data["genotypes"]  # samples x variants
+
+    # Handle gzipped output
+    if output_path.suffix == ".gz":
+        import gzip
+
+        open_func = gzip.open
+        mode = "wt"
+    else:
+        open_func = open
+        mode = "w"
+
+    # Ensure output directory exists
+    ensure_directory(output_path.parent)
+
+    with open_func(output_path, mode) as fh:
+        # Write VCF header
+        fh.write("##fileformat=VCFv4.3\n")
+        fh.write("##source=METAINFORMANT_GWAS_QC\n")
+        fh.write("##FILTER=<ID=PASS,Description=\"All filters passed\">\n")
+
+        # Write column header
+        header_cols = ["#CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT"]
+        if samples:
+            header_cols.extend(samples)
+        fh.write("\t".join(header_cols) + "\n")
+
+        # Write passing variants
+        for var_idx in passing_indices:
+            if var_idx >= len(variants):
+                continue
+
+            variant = variants[var_idx]
+
+            # Build variant line
+            line_parts = [
+                variant.get("CHROM", "."),
+                str(variant.get("POS", ".")),
+                variant.get("ID", "."),
+                variant.get("REF", "."),
+                variant.get("ALT", "."),
+                variant.get("QUAL", "."),
+                "PASS",  # Mark as passing QC
+                variant.get("INFO", "."),
+                variant.get("FORMAT", "GT"),  # Default to GT if missing
+            ]
+
+            # Add genotype data for each sample
+            for sample_idx in range(len(samples)):
+                if sample_idx < len(genotypes) and var_idx < len(genotypes[sample_idx]):
+                    genotype_code = genotypes[sample_idx][var_idx]
+
+                    # Convert genotype code back to VCF format
+                    if genotype_code == -1:
+                        gt_str = "./."
+                    elif genotype_code == 0:
+                        gt_str = "0/0"  # homozygous REF
+                    elif genotype_code == 1:
+                        gt_str = "0/1"  # heterozygous
+                    elif genotype_code == 2:
+                        gt_str = "1/1"  # homozygous ALT
+                    else:
+                        gt_str = "./."  # Unknown
+
+                    line_parts.append(gt_str)
+                else:
+                    line_parts.append("./.")  # Missing
+
+            fh.write("\t".join(line_parts) + "\n")
+
+    logger.info(f"write_filtered_vcf: Successfully wrote {len(passing_indices)} variants to {output_path}")
 

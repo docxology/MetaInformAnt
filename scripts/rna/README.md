@@ -11,15 +11,15 @@ scripts/rna/
 │   ├── verify_workflow.sh         # Workflow validation
 │   └── README.md                  # Detailed amalgkit documentation
 ├── orchestrate_workflows.py       # **UNIFIED ORCHESTRATOR** ⭐⭐⭐ (START HERE)
+│                                  # Status, monitoring, cleanup, workflow execution
 ├── workflow_ena_integrated.py     # Integrated ENA download + quantification (PRODUCTION) ⭐
-├── download_ena_robust.py         # Robust ENA downloader with retry logic ⭐
 ├── run_multi_species.py           # Multi-species with cross-species analysis (legacy SRA-based)
-├── restart_all_workflows.py       # Restart all workflows in parallel
+├── run_all_species_parallel.py    # Parallel execution of all species workflows
+├── batch_download_species.py      # Configurable batch download for multiple species
 ├── check_environment.py           # Environment validation
-├── cleanup_quantified_sra.sh      # Safe deletion of FASTQ files after quantification
-├── monitor_comprehensive.py       # Comprehensive real-time monitoring
-├── check_and_restart_workflows.py # Smart status check and conditional restart
-├── [Legacy monitoring scripts]    # Various status/progress scripts
+├── cleanup_partial_downloads.py   # Clean up partial/failed downloads
+├── fix_abundance_naming.py        # Fix abundance file naming for merge compatibility
+├── _setup_utils.py                # Shared setup utilities (venv, dependencies)
 ├── README.md                      # This file
 └── AGENTS.md                      # AI agent documentation
 ```
@@ -31,32 +31,40 @@ scripts/rna/
 ### Common Tasks
 
 ```bash
-# 1. Check status of all workflows
+# 1. Status and monitoring (replaces unified_status.py, monitor_comprehensive.py, etc.)
+python3 scripts/rna/orchestrate_workflows.py --status                    # Brief status
+python3 scripts/rna/orchestrate_workflows.py --status --detailed         # Detailed status with categories
+python3 scripts/rna/orchestrate_workflows.py --monitor                   # Real-time monitoring
+python3 scripts/rna/orchestrate_workflows.py --monitor --watch 60        # Watch mode with interval
+
+# 2. Full assessment
 python3 scripts/rna/orchestrate_workflows.py --assess
 
-# 2. Cleanup: quantify downloaded samples and delete FASTQs
+# 3. Cleanup: quantify downloaded samples and delete FASTQs
 python3 scripts/rna/orchestrate_workflows.py --cleanup-unquantified
 
-# 3. Run merge+curate+sanity for species ready
+# 4. Run merge+curate+sanity for species ready
 python3 scripts/rna/orchestrate_workflows.py --steps merge curate sanity --auto-species
 
-# 4. Resume incomplete downloads
+# 5. Resume incomplete downloads
 python3 scripts/rna/orchestrate_workflows.py --resume-downloads
 
-# 5. Run specific steps for specific species
+# 6. Run specific steps for specific species
 python3 scripts/rna/orchestrate_workflows.py --species cfloridanus --steps merge curate sanity
 
-# 6. Full pipeline for one species
+# 7. Full pipeline for one species
 python3 scripts/rna/orchestrate_workflows.py --species pbarbatus --steps metadata select getfastq quant merge curate sanity
 ```
 
 ### Key Features
 
+- **Status & Monitoring**: Comprehensive status checks and real-time monitoring (replaces 11+ status/monitoring scripts)
 - **Smart Assessment**: Comprehensive status check showing progress, readiness, and recommendations
 - **Flexible Execution**: Run any combination of steps for any combination of species
 - **Auto-Selection**: Automatically choose species ready for specific steps (--auto-species)
 - **Cleanup**: Quantify downloaded samples and cleanup FASTQs in one command
 - **Resume Support**: Restart incomplete downloads intelligently
+- **Auto-Discovery**: Automatically discovers all species from config files
 
 ## Script Consolidation
 
@@ -72,15 +80,27 @@ All scripts in `scripts/rna/` have been consolidated to use thin orchestration p
 - `metainformant.rna.check_workflow_progress()` - Get workflow progress
 - `metainformant.rna.analyze_species_status()` - Comprehensive status analysis
 
-**Obsolete Scripts (Replaced by `unified_status.py`):**
-- `check_status.py` → Use `unified_status.py`
-- `comprehensive_status.py` → Use `unified_status.py --detailed`
-- `detailed_progress.py` → Use `unified_status.py`
-- `full_assessment.py` → Use `unified_status.py --detailed`
-- `get_current_status.py` → Use `unified_status.py`
-- `quick_status.py` → Use `unified_status.py`
+**Consolidated Functionality:**
 
-These scripts are kept for reference but should not be used. All functionality is available in `unified_status.py` which uses metainformant functions.
+All status, monitoring, and workflow management functionality has been consolidated into `orchestrate_workflows.py`:
+
+- **Status scripts** (11 removed): `check_status.py`, `comprehensive_status.py`, `detailed_progress.py`, `full_assessment.py`, `get_current_status.py`, `quick_status.py`, `unified_status.py`, `monitor_workflow.py`, `monitor_comprehensive.py`, `check_progress_now.py`, `run_assessment.py`
+  → Use `orchestrate_workflows.py --status` or `--status --detailed`
+
+- **Monitoring scripts** (2 removed): `monitor_comprehensive.py`, `monitor_workflow.py`
+  → Use `orchestrate_workflows.py --monitor`
+
+- **Quant/cleanup scripts** (3 removed): `quant_and_cleanup.py`, `quant_downloaded_samples.py`, `manual_quant_cleanup.py`
+  → Use `orchestrate_workflows.py --cleanup-unquantified` or `--steps quant`
+
+- **Workflow management scripts** (4 removed): `restart_all_workflows.py`, `check_and_restart_workflows.py`, `process_sra_samples.py`, `analyze_sample_status.py`
+  → Use `orchestrate_workflows.py --resume-downloads` or `--steps <step>`
+
+- **Download scripts** (1 removed): `download_ena_robust.py`
+  → Functionality integrated into `workflow_ena_integrated.py`
+
+- **Shell scripts** (6 removed): `run_all_ant_species.sh`, `run_top10_ant_species.sh`, `run_batch2_ant_species.sh`, `cleanup_quantified_sra.sh`, `list_unquantified.sh`, `monitor_amalgkit_progress.sh`
+  → Use `orchestrate_workflows.py` or `run_all_species_parallel.py`
 
 ## Available Scripts
 
@@ -166,137 +186,48 @@ Alternative workflow using SRA Toolkit instead of ENA direct downloads:
 python3 scripts/rna/run_multi_species.py
 ```
 
-### Monitoring Scripts
+### Status and Monitoring
 
-#### `monitor_comprehensive.py` ⭐
-**Comprehensive real-time workflow monitor**
+All status and monitoring functionality is now in `orchestrate_workflows.py`:
 
-Tracks all 4 species simultaneously with detailed progress:
-- Sample counts (quantified/total)
-- Current batch numbers
-- Downloading sample counts
-- FASTQ directory sizes
-- Time estimates
-
-**Usage:**
+**Status:**
 ```bash
-python3 scripts/rna/monitor_comprehensive.py
+# Brief status (replaces check_status.py, quick_status.py, etc.)
+python3 scripts/rna/orchestrate_workflows.py --status
+
+# Detailed status with sample categories (replaces unified_status.py --detailed)
+python3 scripts/rna/orchestrate_workflows.py --status --detailed
 ```
 
-#### `monitor_workflow.py`
-**Alternative monitoring dashboard**
-
-Real-time monitoring dashboard with:
-- Species progress tracking
-- Disk usage monitoring
-- Running process detection
-- Batch activity logs
-
-**Usage:**
+**Monitoring:**
 ```bash
-python3 scripts/rna/monitor_workflow.py
-```
+# Real-time monitoring (replaces monitor_comprehensive.py, monitor_workflow.py)
+python3 scripts/rna/orchestrate_workflows.py --monitor
 
-#### `monitor_amalgkit_progress.sh`
-**Simple progress monitor**
-
-Lightweight bash-based monitoring (no Python dependencies):
-
-**Usage:**
-```bash
-bash scripts/rna/monitor_amalgkit_progress.sh
-
-# Or watch mode
-watch -n 60 bash scripts/rna/monitor_amalgkit_progress.sh
-```
-
-#### `unified_status.py` ⭐ **NEW**
-**Unified status checking script (replaces multiple status scripts)**
-
-Replaces: `check_status.py`, `comprehensive_status.py`, `detailed_progress.py`, `full_assessment.py`, `get_current_status.py`, `quick_status.py`
-
-**Usage:**
-```bash
-# Brief status
-python3 scripts/rna/unified_status.py
-
-# Detailed status with sample categories
-python3 scripts/rna/unified_status.py --detailed
-
-# Filter by species
-python3 scripts/rna/unified_status.py --species cfloridanus --detailed
-```
-
-**Output:**
-- Per-species progress and quantified counts
-- Sample categories (quantified and deleted, downloading, failed, etc.)
-- Overall summary statistics
-
-#### `restart_all_workflows.py` ⭐
-**Restart all workflows in parallel**
-
-Convenient script to restart all 4 species workflows simultaneously:
-
-**Usage:**
-```bash
-python3 scripts/rna/restart_all_workflows.py
-```
-
-This will start all workflows with:
-- 12 samples per batch
-- 12 parallel threads
-- Background execution (nohup)
-- Timestamped log files
-
-#### `check_and_restart_workflows.py`
-**Smart status check and conditional restart**
-
-Checks workflow status and only restarts inactive workflows:
-
-**Usage:**
-```bash
-python3 scripts/rna/check_and_restart_workflows.py
+# Watch mode with custom interval
+python3 scripts/rna/orchestrate_workflows.py --monitor --watch 60
 ```
 
 ### Utility Scripts
 
-#### `list_unquantified.sh`
-**Generate reports of samples needing quantification**
+#### `cleanup_partial_downloads.py`
+**Clean up partial and failed downloads**
 
-Identifies samples with downloaded FASTQ or SRA files but no quantification output:
-- Works with standardized flat `fastq/` structure
-- Detects both `.fastq.gz` (ENA downloads) and `.sra` (SRA Toolkit) files
-- Scans all species directories
-- Reports size and sample count
-- Creates sample lists in output/amalgkit/
+Removes samples with partial FASTQ/SRA files that aren't quantified:
+- Safe deletion with dry-run option
+- Frees disk space for retrying downloads
+- Processes all species automatically
 
 **Usage:**
 ```bash
-bash scripts/rna/list_unquantified.sh
+# Dry run (see what would be deleted)
+python3 scripts/rna/cleanup_partial_downloads.py --dry-run
+
+# Actually delete partial downloads
+python3 scripts/rna/cleanup_partial_downloads.py --execute
 ```
 
-**Output:**
-- `output/amalgkit/{species}_unquantified.txt` - Sample lists
-- Console report with sizes and counts
-
-#### `cleanup_quantified_sra.sh`
-**Safe deletion of FASTQ files after quantification**
-
-Reclaims disk space by removing FASTQ files after successful quantification.
-Works with both SRA Toolkit downloads (.sra files) and ENA downloads (.fastq.gz files):
-- Verifies quantification completion before deletion
-- Detailed logging of operations
-- Safe: skips unquantified samples
-- Uses standardized flat `fastq/` structure
-
-**Usage:**
-```bash
-# Preview what will be deleted (dry run)
-bash scripts/rna/cleanup_quantified_sra.sh
-
-# Execute cleanup
-bash scripts/rna/cleanup_quantified_sra.sh --execute
-```
+**Note:** For quantifying downloaded samples and cleaning up FASTQs, use `orchestrate_workflows.py --cleanup-unquantified`.
 
 #### `batch_download_species.py` ⭐ **NEW**
 **Configurable batch download for multiple species in parallel**
@@ -321,76 +252,17 @@ python3 scripts/rna/batch_download_species.py --species-count 2 --threads-per-sp
 
 See `docs/rna/BATCH_DOWNLOAD_CONFIGURATION.md` for complete configuration guide.
 
-#### `quant_downloaded_samples.py`
-**Quantify already-downloaded samples**
+#### `fix_abundance_naming.py`
+**Fix abundance file naming for amalgkit merge compatibility**
 
-Automatically discovers all species and quantifies downloaded but unquantified samples:
-- Auto-activates virtual environment
-- Discovers all species configs automatically
-- Handles both FASTQ and SRA files
-- Deletes FASTQs after successful quantification
+Creates symlinks from `abundance.tsv` to `{SRR}_abundance.tsv` for amalgkit merge compatibility:
 
 **Usage:**
 ```bash
-# Quantify all downloaded samples across all species
-python3 scripts/rna/quant_downloaded_samples.py
+python3 scripts/rna/fix_abundance_naming.py
 ```
 
-#### `analyze_sample_status.py` ⭐ **NEW**
-**Comprehensive sample status analysis**
-
-Categorizes samples into:
-- Quantified and deleted
-- Quantified but not deleted
-- Currently downloading
-- Failed download
-- Undownloaded
-
-**Usage:**
-```bash
-# Analyze all samples across all species
-python3 scripts/rna/analyze_sample_status.py
-```
-
-#### `cleanup_partial_downloads.py` ⭐ **NEW**
-**Clean up partial and failed downloads**
-
-Removes samples with partial FASTQ/SRA files that aren't quantified:
-- Safe deletion with dry-run option
-- Frees disk space for retrying downloads
-- Processes all species automatically
-
-**Usage:**
-```bash
-# Dry run (see what would be deleted)
-python3 scripts/rna/cleanup_partial_downloads.py --dry-run
-
-# Actually delete partial downloads
-python3 scripts/rna/cleanup_partial_downloads.py --execute
-```
-
-#### `manual_quant_cleanup.py`
-**Manual quantification and cleanup utility**
-
-Sequential processing for manual control:
-
-**Usage:**
-```bash
-python3 scripts/rna/manual_quant_cleanup.py \
-  --config config/amalgkit/amalgkit_cfloridanus.yaml
-```
-
-#### `quant_and_cleanup.py`
-**Batch quantification and cleanup**
-
-Parallel quantification followed by cleanup:
-
-**Usage:**
-```bash
-python3 scripts/rna/quant_and_cleanup.py \
-  --config config/amalgkit/amalgkit_cfloridanus.yaml \
-  --threads 12
-```
+**Note:** For quantifying downloaded samples and cleaning up FASTQs, use `orchestrate_workflows.py --cleanup-unquantified`.
 
 ### Testing Scripts
 
@@ -404,11 +276,8 @@ See that file for comprehensive integration tests of the ENA workflow.
 All workflows and scripts now automatically delete FASTQ/SRA files after quantification to manage disk space. This is handled by `metainformant.rna.steps.delete_sample_fastqs()` which is called automatically by:
 
 - `batch_download_species.py` - Deletes immediately after per-sample quant
-- `process_sample_pipeline()` - Automatically deletes after quant
-- `quant_downloaded_samples.py` - Deletes after quant
-- `quant_and_cleanup.py` - Deletes after quant
-- `orchestrate_workflows.py` - Deletes after quant during cleanup
-- `manual_quant_cleanup.py` - Deletes after quant
+- `workflow_ena_integrated.py` - Deletes after batch quant
+- `orchestrate_workflows.py --cleanup-unquantified` - Deletes after quant during cleanup
 
 **Batched Processing:**
 - Downloads N samples from ENA (parallel, robust)
@@ -419,7 +288,8 @@ All workflows and scripts now automatically delete FASTQ/SRA files after quantif
 
 **FASTQ Cleanup:**
 - Automatic cleanup via `metainformant.rna.steps.delete_sample_fastqs()`
-- Manual cleanup available via `cleanup_quantified_sra.sh`
+- Manual cleanup available via `orchestrate_workflows.py --cleanup-unquantified`
+- Partial/failed downloads cleanup via `cleanup_partial_downloads.py`
 - Quantification files retained permanently (~2 MB per sample)
 - Low disk space warnings indicate the delete pipeline is working correctly
 

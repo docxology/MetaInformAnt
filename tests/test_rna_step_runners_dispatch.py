@@ -1,9 +1,15 @@
+"""Tests for RNA step runner dispatch.
+
+Tests that all step runners can be invoked and handle real subcommand execution.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
 
 
 def test_each_step_runner_invokes_real_subcommand_or_skips(tmp_path: Path):
+    """Test that each step runner can invoke real amalgkit subcommands or skip gracefully."""
     from metainformant.rna import steps as step_mod
     from metainformant.rna.amalgkit import check_cli_available
 

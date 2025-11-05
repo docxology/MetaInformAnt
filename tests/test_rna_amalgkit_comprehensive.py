@@ -492,6 +492,11 @@ class TestAmalgkitWrapperRobustness:
         """Test error handling in step runners."""
         from metainformant.rna.steps import STEP_RUNNERS
 
+        # Check if amalgkit is available first
+        available, _ = amalgkit.check_cli_available()
+        if not available:
+            pytest.skip("amalgkit CLI not available - cannot test step runner error handling")
+
         runner = STEP_RUNNERS["metadata"]
         params = {
             "out_dir": str(self.test_dir / "work"),

@@ -1,3 +1,8 @@
+"""Tests for RNA workflow manifest generation.
+
+Tests manifest file creation and log directory configuration.
+"""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -6,7 +11,10 @@ from metainformant.rna.workflow import AmalgkitWorkflowConfig, plan_workflow
 
 
 def test_manifest_written_and_logs_directory(tmp_path: Path):
-    # We won't actually run amalgkit; this test only checks planning and default paths
+    """Test that workflow planning creates correct default paths for logs and manifest.
+    
+    Note: This test only checks planning and default paths, not actual execution.
+    """
     cfg = AmalgkitWorkflowConfig(work_dir=tmp_path)
     steps = plan_workflow(cfg)
     assert len(steps) > 0
