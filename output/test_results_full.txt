@@ -1,5 +1,0 @@
-ERROR: usage: __main__.py [options] [file_or_dir] [file_or_dir] [...]
-__main__.py: error: unrecognized arguments: --cov=src/metainformant --cov-report=term-missing --cov-report=html --cov-report=xml --cov-fail-under=85 --no-cov
-  inifile: /media/q/ext6/github/MetaInformAnt/pyproject.toml
-  rootdir: /media/q/ext6/github/MetaInformAnt
-
