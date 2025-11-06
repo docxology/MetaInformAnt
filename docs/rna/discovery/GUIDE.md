@@ -18,8 +18,8 @@ This system automatically discovers all ant species with publicly available RNA-
 ### Prerequisites
 
 ```bash
-# Install required dependencies
-pip install biopython ncbi-datasets-pylib
+# Install required dependencies (using uv)
+uv pip install biopython ncbi-datasets-pylib
 
 # Set NCBI email (required for Entrez API)
 export NCBI_EMAIL="your.email@example.com"
@@ -299,8 +299,10 @@ Given assemblies:
 
 **Solution**:
 ```bash
-pip install ncbi-datasets-pylib
-# Or with conda
+# Using uv (recommended)
+uv pip install ncbi-datasets-pylib
+
+# Or with conda (alternative for system-level installation)
 conda install -c conda-forge ncbi-datasets-pylib
 ```
 
@@ -347,7 +349,7 @@ Generated configurations are fully compatible with:
 
 1. **Manual workflows**: `bash scripts/rna/amalgkit/run_amalgkit.sh`
 2. **Orchestrator**: `python3 scripts/rna/orchestrate_workflows.py`
-3. **Status monitoring**: `python3 scripts/rna/get_current_status.py`
+3. **Status monitoring**: `python3 scripts/rna/orchestrate_workflows.py --status`
 4. **Batch processing**: Works with existing batch scripts
 
 ## Updating Configurations

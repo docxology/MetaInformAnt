@@ -450,7 +450,7 @@ Discovery vs replication scatter plot.
 
 ---
 
-## Comprehensive Visualization Suite
+## Visualization Suite
 
 Generate all plots at once:
 
@@ -485,7 +485,7 @@ Enable comprehensive plots in workflow:
 output:
   results_dir: output/gwas/amellifera/results
   plots_dir: output/gwas/amellifera/plots
-  comprehensive_plots: true  # Enable all visualizations
+  comprehensive_plots: true  # Enable visualization suite (all plot types)
   significance_threshold: 5e-8
 ```
 

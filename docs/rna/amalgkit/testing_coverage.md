@@ -234,7 +234,7 @@ All step runners: 100% coverage
 
 ### External Documentation
 ✅ `docs/rna/amalgkit/amalgkit.md`: Complete pipeline documentation  
-✅ `docs/rna/amalgkit/comprehensive_guide.md`: Full usage guide  
+✅ `docs/rna/amalgkit/guide.md`: Full usage guide  
 ✅ `docs/rna/amalgkit/complete_success_summary.md`: Production deployment  
 ✅ `docs/rna/amalgkit/README.md`: Overview and quick start
 
@@ -368,7 +368,7 @@ The getfastq execution test takes ~5 minutes because it:
 
 To generate coverage reports for critical modules:
 ```bash
-pip install pytest-cov
+uv pip install pytest-cov
 export PYTHONPATH=src
 pytest tests/test_rna_*.py --cov=src/metainformant/rna/workflow \
   --cov=src/metainformant/rna/amalgkit \

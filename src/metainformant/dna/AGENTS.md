@@ -219,5 +219,5 @@ This DNA module integrates with:
 
 **Last Updated**: October 29, 2025  
 **Primary Model**: grok-code-fast-1  
-**Version**: METAINFORMANT 1.0  
+**Version**: METAINFORMANT 0.2.0  
 **Status**: ✅ Production-ready, comprehensively tested

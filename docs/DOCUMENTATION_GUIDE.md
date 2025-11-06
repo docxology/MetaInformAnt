@@ -156,7 +156,7 @@ Comprehensive guide to integrating genomics, transcriptomics, proteomics, and ot
 
 ### Testing and Quality
 1. [testing.md](testing.md) - Testing policy and execution
-2. [comprehensive_test_analysis.md](comprehensive_test_analysis.md) - Test coverage report
+2. [test_analysis.md](test_analysis.md) - Test coverage report
 3. Module-specific test documentation
 
 ## Documentation Standards
@@ -194,9 +194,9 @@ AI contributions are documented at multiple levels:
 
 ## Additional Resources
 
-### Comprehensive Guides
-- [comprehensive_uv_setup.md](comprehensive_uv_setup.md) - UV environment setup and optimization
-- [comprehensive_test_analysis.md](comprehensive_test_analysis.md) - Complete test suite analysis
+### Guides
+- [uv_setup.md](uv_setup.md) - UV environment setup and optimization
+- [test_analysis.md](test_analysis.md) - Test suite analysis
 
 ### Development Resources
 - [architecture.md](architecture.md) - System architecture with diagrams

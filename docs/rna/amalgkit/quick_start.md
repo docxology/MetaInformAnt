@@ -310,7 +310,7 @@ After successful sanity and curate:
 
 - **R Package Setup**: `docs/rna/amalgkit/r_packages.md`
 - **R Installation**: `docs/rna/amalgkit/R_INSTALLATION.md`
-- **Comprehensive Guide**: `docs/rna/amalgkit/comprehensive_guide.md`
+- **Guide**: `docs/rna/amalgkit/guide.md`
 - **Step Documentation**: `docs/rna/amalgkit/steps/`
 - **Workflow Orchestration**: `docs/rna/workflow.md`
 

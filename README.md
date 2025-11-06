@@ -62,7 +62,7 @@ ax.figure.savefig("output/gc_content.png", dpi=300)
 
 ```bash
 # Run comprehensive workflow demo
-python3 scripts/run_complete_demo.py
+python3 scripts/core/run_demo.py
 
 # Demonstrates:
 # - Configuration management
@@ -71,7 +71,7 @@ python3 scripts/run_complete_demo.py
 # - Complete output organization
 ```
 
-See `scripts/run_complete_demo.py` for the complete workflow demonstration. Outputs are saved to `output/demo/` with workflow configuration, processed data, visualizations, and summary reports.
+See `scripts/core/run_demo.py` for the workflow demonstration. Outputs are saved to `output/demo/` with workflow configuration, processed data, visualizations, and summary reports.
 
 ## Module Overview
 
@@ -372,7 +372,7 @@ Some modules have lower test success rates due to optional dependencies:
 - **Multi-omics**: Framework exists, tests may skip without dependencies
 - **Network Analysis**: Core tests pass; advanced features may need additional setup
 
-See [Comprehensive Test Analysis](docs/comprehensive_test_analysis.md) for detailed coverage information.
+See [Test Analysis](docs/test_analysis.md) for detailed coverage information.
 
 ## Best Practices
 

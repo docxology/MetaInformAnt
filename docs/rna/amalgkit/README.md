@@ -16,7 +16,7 @@ The amalgkit integration provides a complete transcriptomic analysis pipeline fr
 
 ### Core Amalgkit Integration
 - **`amalgkit.md`**: Complete transcriptomic analysis pipeline documentation
-- **`comprehensive_guide.md`**: Comprehensive amalgkit workflow guide
+- **`guide.md`**: Amalgkit workflow guide
 - **`README.md`**: This file - overview and quick start
 
 ### Workflow Guides

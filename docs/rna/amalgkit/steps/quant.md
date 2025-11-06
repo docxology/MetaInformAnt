@@ -136,7 +136,7 @@ The workflow execution in `metainformant.rna.workflow` automatically integrates 
 
 | Tool | Purpose | Installation |
 |------|---------|--------------|
-| **kallisto** | Pseudoalignment & quantification | `conda install -c bioconda kallisto` |
+| **kallisto** | Pseudoalignment & quantification | `conda install -c bioconda kallisto` or `sudo apt-get install -y kallisto` |
 
 ### Reference Transcriptome Sources
 
@@ -395,12 +395,16 @@ amalgkit quant \
 
 **Solutions**:
 ```bash
-# Install kallisto
+# Install kallisto (system tool)
 conda install -c bioconda kallisto
+# Or using system package manager:
+sudo apt-get install -y kallisto
 
 # Verify installation
 which kallisto
 kallisto version
+
+# Note: For Python packages, use uv pip install (primary method)
 ```
 
 ### Issue: Index file not found

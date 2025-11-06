@@ -29,7 +29,7 @@ This document outlines AI assistance in creating comprehensive documentation for
 
 ## Documentation Strategy
 
-### Comprehensive Coverage
+### Coverage
 Every amalgkit step includes:
 - ✅ **Purpose**: Clear explanation of step functionality
 - ✅ **Overview**: Key features and capabilities
@@ -76,7 +76,7 @@ Every amalgkit step includes:
 
 ## AI-Enhanced Features
 
-### Comprehensive Parameter Documentation
+### Parameter Documentation
 AI assistance enabled:
 - Systematic extraction of all CLI parameters for 11 workflow steps
 - Type annotations and default value documentation
@@ -129,7 +129,7 @@ AI designed:
 
 This step documentation integrates with:
 - **[../amalgkit.md](../amalgkit.md)**: Complete pipeline overview
-- **[../comprehensive_guide.md](../comprehensive_guide.md)**: Detailed usage guide
+- **[../guide.md](../guide.md)**: Usage guide
 - **[../testing_coverage.md](../testing_coverage.md)**: Test coverage and validation
 - **[../../workflow.md](../../workflow.md)**: RNA workflow orchestration
 - **[../../configs.md](../../configs.md)**: Configuration management
@@ -140,7 +140,7 @@ This step documentation integrates with:
 
 **Documentation Created**: October 29, 2025  
 **Amalgkit Version**: 0.12.19  
-**METAINFORMANT Version**: 1.0  
+**METAINFORMANT Version**: 0.2.0  
 **Status**: ✅ Production-ready, comprehensively tested
 
 

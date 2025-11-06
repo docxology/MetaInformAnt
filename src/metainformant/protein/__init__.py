@@ -14,6 +14,19 @@ from .secondary import simple_helix_coil_propensity
 from .sequences import calculate_aa_composition, is_valid_protein_sequence, kmer_frequencies, parse_fasta
 from .structure import compute_rmsd_kabsch
 from .structure_io import read_pdb_ca_coordinates
+
+try:
+    from .structure_analysis import (
+        analyze_post_translational_modifications,
+        analyze_protein_stability,
+        identify_domains,
+        predict_protein_family,
+        predict_secondary_structure,
+    )
+    _structure_analysis_available = True
+except ImportError:
+    _structure_analysis_available = False
+
 from .uniprot import fetch_uniprot_fasta, map_ids_uniprot
 
 __all__ = [
@@ -42,3 +55,12 @@ __all__ = [
     # Secondary structure
     "simple_helix_coil_propensity",
 ]
+
+if _structure_analysis_available:
+    __all__.extend([
+        "predict_secondary_structure",
+        "identify_domains",
+        "analyze_protein_stability",
+        "predict_protein_family",
+        "analyze_post_translational_modifications",
+    ])

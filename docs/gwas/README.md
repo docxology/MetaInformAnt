@@ -155,7 +155,7 @@ See [Examples](./examples/) directory for complete usage examples.
 
 ## Limitations
 
-See [Comprehensive Review](./comprehensive_review.md) for detailed assessment of functionality and gaps.
+See [Review](./review.md) for detailed assessment of functionality and gaps.
 
 **Current Status**:
 - ✅ Core GWAS workflow: Fully functional

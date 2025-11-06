@@ -175,14 +175,19 @@ def enrich_genes(
     background: List[str] | None,
     onto: Ontology,
     gene_to_terms: dict[str, Set[str]],
+    method: str = "fisher_exact",
+    correction: str = "fdr",
+    alpha: float = 0.05,
+    propagate_annotations: bool = True,
 ) -> dict[str, Any]:
     """Gene enrichment analysis using Gene Ontology.
     
     **Note**: This function requires the `scipy` package for statistical tests.
     Install with: `pip install scipy`
     
-    Performs Fisher's exact test or hypergeometric test for GO term enrichment.
-    Requires gene-to-term mappings (typically from GAF/GPAD annotation files).
+    Performs Fisher's exact test for GO term enrichment. Annotations are
+    automatically propagated to ancestor terms (if a gene is annotated with a term,
+    it's also considered annotated with all parent terms).
     
     Args:
         genes: List of gene identifiers to test for enrichment
@@ -190,12 +195,20 @@ def enrich_genes(
             gene_to_terms as background
         onto: Ontology object containing GO terms
         gene_to_terms: Dictionary mapping gene_id -> set of GO term IDs
+        method: Statistical test method ("fisher_exact" only currently supported)
+        correction: Multiple testing correction ("fdr", "bonferroni", or "none")
+        alpha: Significance level (default: 0.05)
+        propagate_annotations: If True, propagate annotations to ancestor terms
         
     Returns:
         Dictionary with enrichment results:
-        - 'terms': List of enriched GO terms with statistics
+        - 'terms': List of enriched GO terms with statistics, sorted by p-value
         - 'method': Statistical test used
         - 'correction': Multiple testing correction method
+        - 'n_genes': Number of genes in query set
+        - 'n_background': Number of genes in background
+        - 'n_tests': Number of GO terms tested
+        - 'n_significant': Number of significantly enriched terms
         
     Raises:
         ImportError: If scipy is not installed
@@ -206,16 +219,12 @@ def enrich_genes(
         >>> gene_to_terms = {"GENE1": {"GO:0008150"}, "GENE2": {"GO:0008150"}}
         >>> genes = ["GENE1", "GENE2"]
         >>> onto = load_go_obo("go.obo")
-        >>> # result = enrich_genes(genes, None, onto, gene_to_terms)
-    
-    Note:
-        This function is a placeholder. Full implementation requires:
-        - scipy for statistical tests (fisher_exact, hypergeom)
-        - GAF/GPAD file parsers for gene-to-term mappings
-        - Multiple testing correction (FDR, Bonferroni)
+        >>> result = enrich_genes(genes, None, onto, gene_to_terms)
+        >>> len(result["terms"]) > 0
+        True
     """
     try:
-        import scipy.stats  # noqa: F401
+        import scipy.stats
     except ImportError:
         raise ImportError(
             "scipy is required for enrichment analysis. "
@@ -228,18 +237,167 @@ def enrich_genes(
     if not genes:
         raise ValueError("genes list cannot be empty")
     
-    # Placeholder implementation
-    logger.warning(
-        "enrich_genes is a placeholder. Full implementation requires "
-        "scipy.stats for statistical tests and GAF/GPAD parsers for "
-        "gene-to-term mappings."
-    )
+    if method != "fisher_exact":
+        raise ValueError(f"Method '{method}' not supported. Use 'fisher_exact'")
+    
+    if correction not in ("fdr", "bonferroni", "none"):
+        raise ValueError(f"Correction '{correction}' not supported. Use 'fdr', 'bonferroni', or 'none'")
+    
+    # Determine background
+    if background is None:
+        background = list(gene_to_terms.keys())
+    
+    # Convert to sets for efficient operations
+    genes_set = set(genes)
+    background_set = set(background)
+    
+    # Validate that all query genes are in background
+    missing_genes = genes_set - background_set
+    if missing_genes:
+        logger.warning(f"Query genes not in background: {len(missing_genes)} genes")
+        # Remove missing genes from query
+        genes_set = genes_set & background_set
+    
+    if not genes_set:
+        raise ValueError("No valid query genes found in background")
+    
+    # Propagate annotations to ancestors if requested
+    from .query import ancestors
+    
+    gene_to_all_terms: dict[str, Set[str]] = {}
+    for gene_id, terms in gene_to_terms.items():
+        all_terms = set(terms)
+        if propagate_annotations:
+            # Add all ancestor terms for each annotation
+            for term_id in terms:
+                if onto.has_term(term_id):
+                    ancestor_set = ancestors(onto, term_id)
+                    all_terms.update(ancestor_set)
+        gene_to_all_terms[gene_id] = all_terms
+    
+    # Count genes per term in query and background
+    n_query = len(genes_set)
+    n_background = len(background_set)
+    
+    # Get all terms that appear in background
+    all_terms_in_background: Set[str] = set()
+    for gene_id in background_set:
+        if gene_id in gene_to_all_terms:
+            all_terms_in_background.update(gene_to_all_terms[gene_id])
+    
+    # Filter to terms that exist in ontology
+    terms_to_test = [term_id for term_id in all_terms_in_background if onto.has_term(term_id)]
+    
+    if not terms_to_test:
+        logger.warning("No valid GO terms found in background annotations")
+        return {
+            "terms": [],
+            "method": method,
+            "correction": correction,
+            "n_genes": n_query,
+            "n_background": n_background,
+            "n_tests": 0,
+            "n_significant": 0,
+        }
+    
+    # Perform enrichment test for each term
+    enrichment_results = []
+    pvalues = []
+    
+    for term_id in terms_to_test:
+        # Count genes annotated with this term in query and background
+        query_annotated = sum(1 for g in genes_set if g in gene_to_all_terms and term_id in gene_to_all_terms[g])
+        query_not_annotated = n_query - query_annotated
+        
+        background_annotated = sum(1 for g in background_set if g in gene_to_all_terms and term_id in gene_to_all_terms[g])
+        background_not_annotated = n_background - background_annotated
+        
+        # Skip if no genes annotated in background
+        if background_annotated == 0:
+            continue
+        
+        # Fisher's exact test: 2x2 contingency table
+        #                Annotated  Not Annotated
+        # Query         a          b
+        # Background    c          d
+        a = query_annotated
+        b = query_not_annotated
+        c = background_annotated - query_annotated
+        d = background_not_annotated - query_not_annotated
+        
+        # Ensure all counts are non-negative
+        if a < 0 or b < 0 or c < 0 or d < 0:
+            continue
+        
+        # Perform Fisher's exact test
+        try:
+            table = [[a, b], [c, d]]
+            odds_ratio, p_value = scipy.stats.fisher_exact(table, alternative="greater")
+        except Exception as e:
+            logger.debug(f"Fisher's exact test failed for {term_id}: {e}")
+            continue
+        
+        # Get term information
+        term = onto.terms.get(term_id)
+        term_name = term.name if term else "Unknown"
+        term_namespace = term.namespace if term else None
+        
+        enrichment_results.append({
+            "term_id": term_id,
+            "term_name": term_name,
+            "namespace": term_namespace,
+            "query_annotated": a,
+            "query_total": n_query,
+            "background_annotated": background_annotated,
+            "background_total": n_background,
+            "odds_ratio": float(odds_ratio),
+            "p_value": float(p_value),
+        })
+        pvalues.append(float(p_value))
+    
+    if not enrichment_results:
+        return {
+            "terms": [],
+            "method": method,
+            "correction": correction,
+            "n_genes": n_query,
+            "n_background": n_background,
+            "n_tests": 0,
+            "n_significant": 0,
+        }
+    
+    # Apply multiple testing correction
+    if correction == "fdr":
+        from metainformant.gwas.correction import fdr_correction
+        fdr_result = fdr_correction(pvalues, alpha=alpha)
+        corrected_pvalues = fdr_result.get("corrected_pvalues", pvalues)
+        significant_indices = set(fdr_result.get("significant_indices", []))
+    elif correction == "bonferroni":
+        from metainformant.gwas.correction import bonferroni_correction
+        bonf_result = bonferroni_correction(pvalues, alpha=alpha)
+        corrected_alpha = bonf_result.get("corrected_alpha", alpha)
+        significant_indices = {i for i, p in enumerate(pvalues) if p < corrected_alpha}
+        corrected_pvalues = [min(p * len(pvalues), 1.0) for p in pvalues]
+    else:  # none
+        corrected_pvalues = pvalues
+        significant_indices = {i for i, p in enumerate(pvalues) if p < alpha}
+    
+    # Add corrected p-values to results
+    for i, result in enumerate(enrichment_results):
+        result["corrected_p_value"] = corrected_pvalues[i]
+        result["significant"] = i in significant_indices
+    
+    # Sort by p-value (ascending)
+    enrichment_results.sort(key=lambda x: x["p_value"])
     
     return {
-        "terms": [],
-        "method": "fisher_exact",
-        "correction": "fdr",
-        "note": "Placeholder implementation - requires scipy and annotation parsers",
+        "terms": enrichment_results,
+        "method": method,
+        "correction": correction,
+        "n_genes": n_query,
+        "n_background": n_background,
+        "n_tests": len(enrichment_results),
+        "n_significant": len(significant_indices),
     }
 
 
@@ -308,10 +466,47 @@ def semantic_similarity(
         )
         return 0.0
     
-    # Placeholder implementation
-    logger.warning(
-        "semantic_similarity is a placeholder. Full implementation requires "
-        "information content calculations and LCA finding."
-    )
+    # Calculate information content for all terms
+    from metainformant.information.semantic import information_content_from_annotations
     
-    return 0.0
+    # Convert gene_to_terms format for information module
+    term_annotations = {gene_id: terms for gene_id, terms in gene_to_terms.items()}
+    term_ic = information_content_from_annotations(term_annotations)
+    
+    # Get term ICs
+    ic1 = term_ic.get(term1, 0.0)
+    ic2 = term_ic.get(term2, 0.0)
+    
+    if ic1 == 0.0 or ic2 == 0.0:
+        logger.debug(f"Term {term1} or {term2} has zero information content")
+        return 0.0
+    
+    # Find most informative common ancestor (MICA)
+    from .query import common_ancestors
+    
+    common_ancs = common_ancestors(onto, term1, term2)
+    
+    if not common_ancs:
+        return 0.0
+    
+    # Find MICA (term with highest IC among common ancestors)
+    mica_ic = max(term_ic.get(anc, 0.0) for anc in common_ancs)
+    
+    if method == "resnik":
+        # Resnik similarity: IC of MICA
+        return float(mica_ic)
+    elif method == "lin":
+        # Lin similarity: 2 * IC(MICA) / (IC(term1) + IC(term2))
+        if (ic1 + ic2) == 0:
+            return 0.0
+        return float(2.0 * mica_ic / (ic1 + ic2))
+    elif method == "jiang_conrath":
+        # Jiang-Conrath distance: IC(term1) + IC(term2) - 2 * IC(MICA)
+        # Convert distance to similarity: 1 / (1 + distance)
+        distance = ic1 + ic2 - 2.0 * mica_ic
+        if distance < 0:
+            distance = 0.0
+        similarity = 1.0 / (1.0 + distance)
+        return float(similarity)
+    else:
+        raise ValueError(f"Unknown method: {method}")

@@ -119,7 +119,7 @@ output:
   plots_dir: output/gwas/pbarbatus/plots
   format: tsv
   
-  # Generate comprehensive visualization suite
+  # Generate visualization suite (all plot types)
   comprehensive_plots: true
   
   # Plot types to generate

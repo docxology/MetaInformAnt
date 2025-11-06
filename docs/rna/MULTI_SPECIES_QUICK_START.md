@@ -74,7 +74,7 @@ nohup python3 scripts/rna/batch_download_species.py --total-threads 24 > output/
 - ✅ **Progress tracking**: Logs all download activity
 
 **Configuration Options:**
-- `--total-threads`: Total threads across all species (default: 8, recommended: 24)
+- `--total-threads`: Total threads across all species (default: 24, recommended for standard systems)
 - `--max-species`: Limit total species processed (optional)
 - `--quant-threads`: Separate thread pool for quantification (default: 10)
 
@@ -445,7 +445,7 @@ netstat -an | grep ESTABLISHED | wc -l
 The batch download workflow now includes automatic disk space management:
 - ✅ Pre-flight checks before starting downloads
 - ✅ Automatic cleanup of partial/failed downloads when space is low
-- ✅ Default thread count reduced to 8 for smaller drives
+- ✅ Default thread count is 24 (can be reduced to 16 for smaller drives)
 - ✅ Health checks monitor disk space every 10 minutes
 - ✅ Automatic recovery from disk space errors
 
@@ -460,15 +460,15 @@ python3 scripts/rna/cleanup_partial_downloads.py --execute
 
 **Configuration for Different Drive Sizes:**
 ```bash
-# Small drive (default: 8 threads, auto-cleanup at 5GB)
-python3 scripts/rna/batch_download_species.py --total-threads 8
+# Small drive (conservative: 16 threads, auto-cleanup at 5GB)
+python3 scripts/rna/batch_download_species.py --total-threads 16
 
 # Large drive (can use more threads)
 python3 scripts/rna/batch_download_species.py --total-threads 30
 
 # Custom thresholds
 python3 scripts/rna/batch_download_species.py \
-  --total-threads 8 \
+  --total-threads 16 \
   --min-free-gb 15.0 \
   --auto-cleanup-threshold 10.0
 ```

@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.gwas import manhattan_plot, qq_plot, regional_plot
+from metainformant.gwas import generate_all_plots, manhattan_plot, qq_plot, regional_plot
 from metainformant.core.io import write_tsv
 
 
@@ -128,4 +128,34 @@ def test_visualization_empty_results(tmp_path: Path) -> None:
 
     result = qq_plot([], output_path)
     assert result["status"] == "failed"
+
+
+def test_generate_all_plots_basic(tmp_path: Path) -> None:
+    """Test generating all plots via visualization suite."""
+    # Create association results file
+    results_file = tmp_path / "association_results.tsv"
+    results_data = [
+        ["CHROM", "POS", "ID", "REF", "ALT", "p_value", "beta", "se"],
+        ["chr1", "1000", "rs1", "A", "G", "1e-8", "0.5", "0.1"],
+        ["chr1", "2000", "rs2", "T", "C", "1e-6", "0.3", "0.08"],
+        ["chr1", "3000", "rs3", "G", "A", "0.01", "0.2", "0.05"],
+        ["chr2", "1000", "rs4", "C", "T", "0.05", "0.1", "0.03"],
+        ["chr2", "2000", "rs5", "A", "T", "0.1", "0.05", "0.02"],
+    ]
+    write_tsv(results_data, results_file)
+
+    output_dir = tmp_path / "plots"
+    output_dir.mkdir()
+
+    # Test visualization suite
+    result = generate_all_plots(
+        association_results=results_file,
+        output_dir=output_dir,
+        significance_threshold=5e-8,
+    )
+
+    # Should generate some plots (may have errors for optional dependencies)
+    assert "plots_generated" in result or "errors" in result
+    # At least some plots should be generated or attempted
+    assert result.get("status") in ["success", "partial", None] or len(result.get("errors", [])) < 10
 

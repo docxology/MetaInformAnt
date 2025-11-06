@@ -110,10 +110,12 @@ steps:
 
 | Tool | Purpose | Installation |
 |------|---------|--------------|
-| **prefetch** | Download SRA files | `conda install -c bioconda sra-tools` |
+| **prefetch** | Download SRA files | `conda install -c bioconda sra-tools` or `sudo apt-get install -y sra-toolkit` |
 | **fasterq-dump** | Extract FASTQs from SRA | Included in sra-tools |
 | **parallel-fastq-dump** | Parallel FASTQ extraction | `conda install -c bioconda parallel-fastq-dump` |
-| **fastp** | Quality filtering | `conda install -c bioconda fastp` |
+| **fastp** | Quality filtering | `conda install -c bioconda fastp` or `sudo apt-get install -y fastp` |
+
+**Note**: For Python packages, use `uv pip install` (primary method). System tools can use conda or system package managers.
 
 ## Output Files
 
@@ -364,11 +366,15 @@ execute_workflow(cfg, stream_logs=True)
 
 **Solutions**:
 ```bash
-# Install SRA toolkit
+# Install SRA toolkit (system tool)
 conda install -c bioconda sra-tools
+# Or using system package manager:
+sudo apt-get install -y sra-toolkit
 
 # Or specify full path
 --prefetch_exe /path/to/prefetch
+
+# Note: For Python packages, use uv pip install (primary method)
 ```
 
 ### Issue: Download very slow

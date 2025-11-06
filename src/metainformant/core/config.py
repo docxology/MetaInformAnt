@@ -449,3 +449,236 @@ def _parse_simple_yaml_mapping(text: str) -> dict[str, Any]:
         result[key] = children
 
     return result
+
+
+#
+# Config discovery functions
+#
+
+
+def discover_config_files(repo_root: str | Path, domain: str | None = None) -> list[dict[str, Any]]:
+    """Discover all config files matching patterns.
+
+    Args:
+        repo_root: Root directory of repository
+        domain: Optional domain filter (e.g., 'rna', 'gwas', 'amalgkit')
+
+    Returns:
+        List of dictionaries with config file information:
+        - path: Path to config file
+        - domain: Domain name (extracted from path)
+        - format: File format ('yaml', 'toml', 'json')
+        - size: File size in bytes
+        - modified_time: Modification timestamp
+    """
+    from pathlib import Path
+
+    repo_root = Path(repo_root)
+    config_dir = repo_root / "config"
+    if not config_dir.exists():
+        return []
+
+    configs: list[dict[str, Any]] = []
+
+    # Search in config directory
+    for config_file in config_dir.rglob("*"):
+        if not config_file.is_file():
+            continue
+
+        suffix = config_file.suffix.lower()
+        if suffix not in {".yaml", ".yml", ".toml", ".json"}:
+            continue
+
+        # Extract domain from path
+        rel_path = config_file.relative_to(config_dir)
+        path_parts = rel_path.parts
+        file_domain = path_parts[0] if len(path_parts) > 1 else None
+
+        # Filter by domain if specified
+        if domain:
+            # Support both exact match and partial match
+            if file_domain != domain and (not file_domain or domain not in file_domain):
+                continue
+
+        try:
+            stat = config_file.stat()
+            config_info = {
+                "path": str(config_file),
+                "domain": file_domain,
+                "format": suffix.lstrip("."),
+                "size": stat.st_size,
+                "modified_time": stat.st_mtime,
+                "relative_path": str(rel_path),
+            }
+            configs.append(config_info)
+        except OSError:
+            # Skip files that can't be accessed
+            continue
+
+    return sorted(configs, key=lambda x: x["path"])
+
+
+def get_config_schema(config_path: str | Path) -> dict[str, Any]:
+    """Extract schema/structure from config file.
+
+    Args:
+        config_path: Path to configuration file
+
+    Returns:
+        Dictionary with schema information:
+        - top_level_keys: List of top-level keys
+        - nested_structure: Nested structure of config
+        - types: Inferred types for values
+    """
+    try:
+        config_data = load_mapping_from_file(config_path)
+    except Exception:
+        return {}
+
+    schema: dict[str, Any] = {
+        "top_level_keys": list(config_data.keys()),
+        "nested_structure": {},
+        "types": {},
+    }
+
+    def infer_type(value: Any) -> str:
+        """Infer type of a value."""
+        if isinstance(value, dict):
+            return "dict"
+        elif isinstance(value, list):
+            return "list"
+        elif isinstance(value, bool):
+            return "bool"
+        elif isinstance(value, int):
+            return "int"
+        elif isinstance(value, float):
+            return "float"
+        elif isinstance(value, str):
+            return "str"
+        else:
+            return "unknown"
+
+    def extract_structure(data: dict[str, Any], prefix: str = "") -> dict[str, Any]:
+        """Recursively extract structure."""
+        structure: dict[str, Any] = {}
+        for key, value in data.items():
+            full_key = f"{prefix}.{key}" if prefix else key
+            schema["types"][full_key] = infer_type(value)
+
+            if isinstance(value, dict):
+                structure[key] = extract_structure(value, full_key)
+            elif isinstance(value, list) and value and isinstance(value[0], dict):
+                # List of dicts - extract structure from first item
+                structure[key] = [extract_structure(value[0], f"{full_key}[0]")]
+            else:
+                structure[key] = infer_type(value)
+
+        return structure
+
+    schema["nested_structure"] = extract_structure(config_data)
+
+    return schema
+
+
+def find_configs_for_module(module_name: str, repo_root: str | Path | None = None) -> list[dict[str, Any]]:
+    """Find configs used by a module.
+
+    Args:
+        module_name: Name of module (e.g., 'rna', 'gwas', 'life_events')
+        repo_root: Root directory of repository
+
+    Returns:
+        List of config file information dictionaries
+    """
+    from pathlib import Path
+
+    if repo_root is None:
+        repo_root = Path.cwd()
+    else:
+        repo_root = Path(repo_root)
+
+    # Map module names to config patterns
+    module_config_map = {
+        "rna": "amalgkit",
+        "gwas": "gwas",
+        "life_events": "life_events",
+        "singlecell": "singlecell",
+        "networks": "networks",
+        "multiomics": "multiomics",
+    }
+
+    # Get config pattern for module
+    config_pattern = module_config_map.get(module_name.lower(), module_name.lower())
+
+    # Discover configs for this pattern
+    configs = discover_config_files(repo_root, domain=config_pattern)
+
+    return configs
+
+
+def list_config_templates(repo_root: str | Path | None = None) -> list[dict[str, Any]]:
+    """List available config templates.
+
+    Args:
+        repo_root: Root directory of repository
+
+    Returns:
+        List of template information dictionaries:
+        - path: Path to template file
+        - domain: Domain name
+        - name: Template name
+    """
+    from pathlib import Path
+
+    if repo_root is None:
+        repo_root = Path.cwd()
+    else:
+        repo_root = Path(repo_root)
+
+    config_dir = repo_root / "config"
+    if not config_dir.exists():
+        return []
+
+    templates: list[dict[str, Any]] = []
+
+    # Find all template files
+    for template_file in config_dir.rglob("*template*.yaml"):
+        if not template_file.is_file():
+            continue
+
+        rel_path = template_file.relative_to(config_dir)
+        path_parts = rel_path.parts
+        domain = path_parts[0] if len(path_parts) > 1 else None
+
+        template_name = template_file.stem.replace("_template", "").replace("template", "")
+
+        templates.append(
+            {
+                "path": str(template_file),
+                "domain": domain,
+                "name": template_name,
+                "relative_path": str(rel_path),
+            }
+        )
+
+    # Also check for .yml extension
+    for template_file in config_dir.rglob("*template*.yml"):
+        if not template_file.is_file():
+            continue
+
+        rel_path = template_file.relative_to(config_dir)
+        path_parts = rel_path.parts
+        domain = path_parts[0] if len(path_parts) > 1 else None
+
+        template_name = template_file.stem.replace("_template", "").replace("template", "")
+
+        templates.append(
+            {
+                "path": str(template_file),
+                "domain": domain,
+                "name": template_name,
+                "relative_path": str(rel_path),
+            }
+        )
+
+    return sorted(templates, key=lambda x: x["path"])

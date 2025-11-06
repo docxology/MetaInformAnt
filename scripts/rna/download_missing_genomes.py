@@ -70,23 +70,35 @@ def check_genome_downloaded(genome_dir: Path, accession: str) -> bool:
     Returns:
         True if genome is downloaded, False otherwise
     """
-    # Check download record
+    # Check download record - must have return_code == 0 AND extracted_dir
     download_record = genome_dir / "download_record.json"
     if download_record.exists():
         try:
             with open(download_record, "r") as f:
                 record = json.load(f)
-                if record.get("return_code") == 0:
-                    return True
+                return_code = record.get("return_code", 1)
+                extracted_dir = record.get("extracted_dir", "")
+                
+                # Must have successful return code AND extracted directory
+                if return_code == 0 and extracted_dir:
+                    extracted_path = Path(extracted_dir)
+                    if extracted_path.exists():
+                        return True
         except Exception:
             pass
     
-    # Check if extracted directory exists
+    # Check if extracted directory exists and has content
     extracted_dirs = [
         genome_dir / "ncbi_dataset_api_extracted",
         genome_dir / "ncbi_dataset_extracted",
     ]
-    return any(d.exists() for d in extracted_dirs)
+    for ext_dir in extracted_dirs:
+        if ext_dir.exists():
+            # Check if it has actual content (not just empty directory)
+            if any(ext_dir.rglob("*")):
+                return True
+    
+    return False
 
 
 def download_genome_for_species(

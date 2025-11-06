@@ -53,7 +53,7 @@ Processing 20 ant species with immediate per-sample processing (download → imm
 
 ```bash
 # Check status
-python3 scripts/rna/get_current_status.py
+python3 scripts/rna/orchestrate_workflows.py --status
 
 # View logs
 tail -f output/top10_*.log

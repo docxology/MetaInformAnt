@@ -361,13 +361,13 @@ def _generate_visualizations(config: GWASWorkflowConfig, association_result: dic
     if not results:
         return {"status": "failed", "error": "No results to visualize"}
 
-    # Check if comprehensive visualization is requested
+    # Check if visualization suite (all plots) is requested
     comprehensive = output_config.get("comprehensive_plots", False)
     
     if comprehensive:
-        logger.info("_generate_visualizations: Generating comprehensive visualization suite")
+        logger.info("_generate_visualizations: Generating visualization suite")
         try:
-            from .visualization_comprehensive import generate_all_plots
+            from .visualization_suite import generate_all_plots
             
             # Get paths to required files
             results_file = association_result.get("output_file")

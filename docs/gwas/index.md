@@ -180,7 +180,7 @@ Core functions:
 - [P. barbatus Example](./pbarbatus_config.md) - Real-world example configuration
 - [A. mellifera Example](./amellifera_config.md) - Honeybee GWAS with extensive datasets
 - [Verification Report](./verification_report.md) - Validation and testing
-- [Comprehensive Review](./comprehensive_review.md) - End-to-end functionality assessment
+- [Review](./review.md) - End-to-end functionality assessment
 
 ## References
 

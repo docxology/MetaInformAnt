@@ -1,4 +1,4 @@
-# Math Module: Comprehensive Review and Improvement Plan
+# Math Module: Review and Improvement Plan
 
 **Date**: 2025-01-06  
 **Scope**: Complete review of `src/metainformant/math/` module  

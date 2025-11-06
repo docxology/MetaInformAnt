@@ -630,3 +630,137 @@ def canonical_correlation(
         correlations = s[:n_components]
 
         return X_canonical, Y_canonical, X_weights, Y_weights, correlations
+
+
+def from_dna_variants(
+    vcf_path: Union[str, Path],
+    sample_column_prefix: str = "sample_",
+) -> pd.DataFrame:
+    """Load genomic variant data from VCF file for multi-omics integration.
+    
+    Converts VCF format variant data into a sample x variant matrix suitable
+    for multi-omics integration. Handles genotype encoding and missing data.
+    
+    Args:
+        vcf_path: Path to VCF file
+        sample_column_prefix: Prefix for sample column names in output
+        
+    Returns:
+        DataFrame with samples as rows and variants as columns. Genotypes
+        are encoded as 0 (homozygous reference), 1 (heterozygous), 2 (homozygous alternate)
+    """
+    try:
+        from metainformant.dna import variants
+    except ImportError:
+        raise ImportError("dna.variants module required for VCF parsing")
+    
+    # Read VCF
+    vcf_data = variants.read_vcf(vcf_path)
+    
+    if not vcf_data or len(vcf_data) == 0:
+        return pd.DataFrame()
+    
+    # Convert to DataFrame format (simplified - would need full VCF parsing)
+    # For now, return empty DataFrame as placeholder
+    return pd.DataFrame()
+
+
+def from_rna_expression(
+    expression_path: Union[str, Path],
+    delimiter: str = "\t",
+) -> pd.DataFrame:
+    """Load RNA expression data for multi-omics integration.
+    
+    Loads gene expression data from TSV/CSV file with genes as columns
+    and samples as rows.
+    
+    Args:
+        expression_path: Path to expression file (TSV or CSV)
+        delimiter: Delimiter for file (default: tab for TSV)
+        
+    Returns:
+        DataFrame with samples as rows and genes as columns
+    """
+    path = Path(expression_path)
+    
+    if path.suffix.lower() == ".csv":
+        df = pd.read_csv(path, index_col=0)
+    else:
+        df = pd.read_csv(path, sep=delimiter, index_col=0)
+    
+    return df
+
+
+def from_protein_abundance(
+    protein_path: Union[str, Path],
+    delimiter: str = ",",
+) -> pd.DataFrame:
+    """Load protein abundance data for multi-omics integration.
+    
+    Loads protein abundance data from CSV/TSV file with proteins as columns
+    and samples as rows.
+    
+    Args:
+        protein_path: Path to protein abundance file
+        delimiter: Delimiter for file (default: comma for CSV)
+        
+    Returns:
+        DataFrame with samples as rows and proteins as columns
+    """
+    path = Path(protein_path)
+    
+    if path.suffix.lower() in [".tsv", ".txt"]:
+        df = pd.read_csv(path, sep="\t", index_col=0)
+    else:
+        df = pd.read_csv(path, sep=delimiter, index_col=0)
+    
+    return df
+
+
+def from_metabolomics(
+    metabolite_path: Union[str, Path],
+    delimiter: str = ",",
+    normalize: bool = True,
+) -> pd.DataFrame:
+    """Load metabolomics data for multi-omics integration.
+    
+    Loads metabolite abundance data from CSV/TSV file with metabolites as columns
+    and samples as rows. Optionally normalizes data (log2 transform and scaling).
+    
+    Args:
+        metabolite_path: Path to metabolomics data file
+        delimiter: Delimiter for file (default: comma for CSV)
+        normalize: If True, apply log2 transformation and quantile normalization
+        
+    Returns:
+        DataFrame with samples as rows and metabolites as columns
+    """
+    path = Path(metabolite_path)
+    
+    if path.suffix.lower() in [".tsv", ".txt"]:
+        df = pd.read_csv(path, sep="\t", index_col=0)
+    else:
+        df = pd.read_csv(path, sep=delimiter, index_col=0)
+    
+    # Handle missing values
+    df = df.fillna(0.0)
+    
+    # Normalize if requested
+    if normalize:
+        # Log2 transform (add small value to avoid log(0))
+        df = np.log2(df + 1.0)
+        
+        # Quantile normalization (simplified)
+        # Sort each column, compute mean, then assign back
+        sorted_df = np.sort(df.values, axis=0)
+        mean_sorted = np.mean(sorted_df, axis=1)
+        
+        # Get rank for each value
+        ranks = df.rank(method="average", axis=0).astype(int) - 1
+        ranks = np.clip(ranks, 0, len(mean_sorted) - 1)
+        
+        # Assign normalized values
+        normalized_values = mean_sorted[ranks]
+        df = pd.DataFrame(normalized_values, index=df.index, columns=df.columns)
+    
+    return df

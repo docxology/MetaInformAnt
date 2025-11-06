@@ -283,7 +283,7 @@ This RNA module integrates with:
 
 **Last Updated**: November 1, 2025  
 **Primary Model**: Claude Sonnet 4.5 (grok-code-fast-1 initial development)  
-**Version**: METAINFORMANT 0.1.0  
+**Version**: METAINFORMANT 0.2.0  
 **Amalgkit Version**: Latest (October 2025)  
 **Status**: ✅ Production-ready, validated with P. barbatus analysis (83 samples)  
 **Recent Enhancements**: ENA direct downloads (100% reliability vs 0% SRA Toolkit), auto-activation, robust retry logic, 12-thread configuration

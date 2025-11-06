@@ -240,7 +240,12 @@ ValueError: PATH to fastq directory does not exist: output/amalgkit/fastq
 1. Install seqkit:
    ```bash
    # Via conda
+   # System tool installation (seqkit)
    conda install -c bioconda seqkit
+   # Or using system package manager:
+   sudo apt-get install -y seqkit
+   
+   # Note: For Python packages, use uv pip install (primary method)
    
    # Via homebrew (macOS)
    brew install seqkit

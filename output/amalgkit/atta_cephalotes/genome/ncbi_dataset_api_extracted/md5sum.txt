@@ -1,8 +1,0 @@
-1ebe11ad7172d5f7f24f37e138b3e245  ncbi_dataset/data/assembly_data_report.jsonl
-25d58571462893fd6ecc3461ae25820e  ncbi_dataset/data/GCF_000143395.1/cds_from_genomic.fna
-6f9201e0ad0b859cd1f5a54cd16907f5  ncbi_dataset/data/GCF_000143395.1/GCF_000143395.1_Attacep1.0_genomic.fna
-badd4f17603414b57d54176b35ecc410  ncbi_dataset/data/GCF_000143395.1/genomic.gff
-f26e928b88f6e702e3c7e5d5550ca7b3  ncbi_dataset/data/GCF_000143395.1/protein.faa
-1c2ab6e90dcf0cc47024c7583309c445  ncbi_dataset/data/GCF_000143395.1/rna.fna
-3514f0669af7d0e4ea5b0b4933dd1373  ncbi_dataset/data/GCF_000143395.1/sequence_report.jsonl
-e2b32f1aab8145026d3b78517fd040f6  ncbi_dataset/data/dataset_catalog.json

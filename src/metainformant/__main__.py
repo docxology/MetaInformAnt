@@ -4,6 +4,8 @@ import argparse
 import sys
 from pathlib import Path
 
+import pandas as pd
+
 from .rna.configs import AmalgkitRunLayout, SpeciesProfile, build_step_params
 
 # defer DNA imports until the DNA subcommand is used to avoid optional deps at import time
@@ -27,6 +29,29 @@ def main() -> None:
     dna_sub = dna_parser.add_subparsers(dest="dna_cmd")
     fetch = dna_sub.add_parser("fetch", help="Fetch genome by assembly accession")
     fetch.add_argument("--assembly", required=True, help="NCBI assembly accession, e.g., GCF_*")
+    
+    dna_align = dna_sub.add_parser("align", help="Sequence alignment operations")
+    dna_align.add_argument("--input", type=Path, required=True, help="Input FASTA file with sequences")
+    dna_align.add_argument("--output", type=Path, default=Path("output/dna/alignment"), help="Output directory")
+    dna_align.add_argument("--method", choices=["pairwise", "msa"], default="pairwise", help="Alignment method")
+    dna_align.add_argument("--pairwise-type", choices=["global", "local"], default="global", help="Pairwise alignment type")
+    
+    dna_phylogeny = dna_sub.add_parser("phylogeny", help="Phylogenetic tree construction")
+    dna_phylogeny.add_argument("--input", type=Path, required=True, help="Input alignment file or FASTA")
+    dna_phylogeny.add_argument("--output", type=Path, default=Path("output/dna/phylogeny"), help="Output directory")
+    dna_phylogeny.add_argument("--method", choices=["neighbor_joining"], default="neighbor_joining", help="Tree construction method")
+    dna_phylogeny.add_argument("--format", choices=["newick", "json"], default="newick", help="Output format")
+    
+    dna_population = dna_sub.add_parser("population", help="Population genetics analysis")
+    dna_population.add_argument("--input", type=Path, required=True, help="Input sequences file (FASTA)")
+    dna_population.add_argument("--output", type=Path, default=Path("output/dna/population"), help="Output directory")
+    dna_population.add_argument("--statistics", action="append", choices=["pi", "tajima_d", "fst", "all"], default=["all"], help="Statistics to calculate")
+    
+    dna_variants = dna_sub.add_parser("variants", help="Variant calling and analysis")
+    dna_variants.add_argument("--input", type=Path, required=True, help="Input BAM/VCF file")
+    dna_variants.add_argument("--reference", type=Path, help="Reference genome FASTA")
+    dna_variants.add_argument("--output", type=Path, default=Path("output/dna/variants"), help="Output directory")
+    dna_variants.add_argument("--format", choices=["vcf", "bam"], default="vcf", help="Input format")
 
     # rna subcommand
     rna_parser = subparsers.add_parser("rna", help="RNA-related operations (amalgkit)")
@@ -69,6 +94,26 @@ def main() -> None:
     rmsd_ca = protein_sub.add_parser("rmsd-ca", help="Compute Kabsch RMSD using CA atoms from two PDB files")
     rmsd_ca.add_argument("--pdb-a", required=True)
     rmsd_ca.add_argument("--pdb-b", required=True)
+    
+    protein_align = protein_sub.add_parser("align", help="Protein sequence alignment")
+    protein_align.add_argument("--input", type=Path, required=True, help="Input FASTA file with sequences")
+    protein_align.add_argument("--output", type=Path, default=Path("output/protein/alignment"), help="Output directory")
+    protein_align.add_argument("--method", choices=["needleman_wunsch", "pairwise"], default="needleman_wunsch", help="Alignment method")
+    
+    protein_structure = protein_sub.add_parser("structure", help="Protein structure analysis")
+    protein_structure.add_argument("--input", type=Path, required=True, help="Input FASTA file or PDB file")
+    protein_structure.add_argument("--output", type=Path, default=Path("output/protein/structure"), help="Output directory")
+    protein_structure.add_argument("--analyze", choices=["secondary", "stability", "domains", "ptm", "all"], default=["all"], action="append", help="Analysis type")
+    
+    protein_domains = protein_sub.add_parser("domains", help="Protein domain annotation")
+    protein_domains.add_argument("--input", type=Path, required=True, help="Input FASTA file")
+    protein_domains.add_argument("--output", type=Path, default=Path("output/protein/domains"), help="Output directory")
+    protein_domains.add_argument("--uniprot", action="store_true", help="Fetch InterPro domains from UniProt")
+    
+    protein_families = protein_sub.add_parser("families", help="Protein family classification")
+    protein_families.add_argument("--input", type=Path, required=True, help="Input FASTA file")
+    protein_families.add_argument("--output", type=Path, default=Path("output/protein/families"), help="Output directory")
+    protein_families.add_argument("--method", choices=["similarity", "pattern"], default="similarity", help="Classification method")
 
     # math subcommand
     math_parser = subparsers.add_parser("math", help="Math experiments and demos")
@@ -77,6 +122,17 @@ def main() -> None:
     from .math.selection_experiments.cli import add_math_selection_subparser as _add_sel
 
     _add_sel(math_sub)
+    
+    math_popgen = math_sub.add_parser("popgen", help="Population genetics models")
+    math_popgen.add_argument("--input", type=Path, help="Input sequence file (FASTA)")
+    math_popgen.add_argument("--output", type=Path, default=Path("output/math/popgen"), help="Output directory")
+    math_popgen.add_argument("--analysis", choices=["tajima_d", "fst", "ld", "coalescent", "all"], default=["all"], action="append", help="Analysis type")
+    
+    math_coalescent = math_sub.add_parser("coalescent", help="Coalescent simulations")
+    math_coalescent.add_argument("--n-samples", type=int, default=10, help="Number of samples")
+    math_coalescent.add_argument("--n-loci", type=int, default=1000, help="Number of loci")
+    math_coalescent.add_argument("--output", type=Path, default=Path("output/math/coalescent"), help="Output directory")
+    math_coalescent.add_argument("--model", choices=["constant", "exponential", "bottleneck"], default="constant", help="Demographic model")
 
     # gwas subcommand
     gwas_parser = subparsers.add_parser("gwas", help="GWAS (Genome-Wide Association Studies) workflow")
@@ -286,16 +342,166 @@ def main() -> None:
         rc = subprocess.run(cmd).returncode
         sys.exit(rc)
 
-    if args.command == "dna" and args.dna_cmd == "fetch":
-        # Lazy import here to avoid importing optional Bio dependencies unless needed
-        from .dna.genomes import is_valid_assembly_accession
+    if args.command == "dna":
+        if args.dna_cmd == "fetch":
+            # Lazy import here to avoid importing optional Bio dependencies unless needed
+            from .dna.genomes import is_valid_assembly_accession
 
-        if not is_valid_assembly_accession(args.assembly):
-            print(f"Invalid assembly accession: {args.assembly}")
-            sys.exit(2)
-        print(f"Validated assembly accession: {args.assembly}")
-        # Future: call into actual fetch workflow
-        return
+            if not is_valid_assembly_accession(args.assembly):
+                print(f"Invalid assembly accession: {args.assembly}")
+                sys.exit(2)
+            print(f"Validated assembly accession: {args.assembly}")
+            # Future: call into actual fetch workflow
+            return
+        
+        if args.dna_cmd == "align":
+            from .dna import sequences, alignment
+            from .core import io, paths
+            
+            paths.ensure_directory(args.output)
+            
+            # Read sequences
+            seqs = sequences.read_fasta(args.input)
+            seq_list = list(seqs.values())
+            
+            if args.method == "pairwise":
+                if len(seq_list) < 2:
+                    print("Error: Need at least 2 sequences for pairwise alignment", file=sys.stderr)
+                    sys.exit(1)
+                
+                # Perform pairwise alignment
+                aln_result = alignment.global_pairwise(seq_list[0], seq_list[1]) if args.pairwise_type == "global" else alignment.local_pairwise(seq_list[0], seq_list[1])
+                
+                result = {
+                    "method": args.method,
+                    "type": args.pairwise_type,
+                    "score": aln_result.get("score", 0),
+                    "alignment": aln_result.get("alignment", []),
+                }
+                
+                output_file = args.output / "pairwise_alignment.json"
+                io.dump_json(result, output_file)
+                print(f"Pairwise alignment complete. Results saved to {output_file}")
+                return
+            
+            elif args.method == "msa":
+                from .dna import msa
+                
+                if len(seq_list) < 2:
+                    print("Error: Need at least 2 sequences for MSA", file=sys.stderr)
+                    sys.exit(1)
+                
+                # Perform MSA
+                msa_result = msa.multiple_sequence_alignment(seq_list)
+                
+                result = {
+                    "method": "msa",
+                    "n_sequences": len(seq_list),
+                    "alignment": msa_result,
+                }
+                
+                output_file = args.output / "msa_alignment.json"
+                io.dump_json(result, output_file)
+                print(f"MSA complete. Results saved to {output_file}")
+                return
+        
+        if args.dna_cmd == "phylogeny":
+            from .dna import sequences, phylogeny, alignment
+            from .core import io, paths
+            
+            paths.ensure_directory(args.output)
+            
+            # Read sequences
+            seqs = sequences.read_fasta(args.input)
+            seq_list = list(seqs.values())
+            seq_ids = list(seqs.keys())
+            
+            if len(seq_list) < 3:
+                print("Error: Need at least 3 sequences for phylogeny", file=sys.stderr)
+                sys.exit(1)
+            
+            # Build distance matrix
+            from .dna.distances import pairwise_distances
+            dist_matrix = pairwise_distances(seq_list)
+            
+            # Build tree
+            tree = phylogeny.neighbor_joining(dist_matrix, labels=seq_ids)
+            
+            if args.format == "newick":
+                output_file = args.output / "tree.newick"
+                output_file.write_text(tree)
+                print(f"Phylogenetic tree saved to {output_file}")
+            else:
+                result = {
+                    "method": args.method,
+                    "tree": tree,
+                    "n_sequences": len(seq_list),
+                }
+                output_file = args.output / "tree.json"
+                io.dump_json(result, output_file)
+                print(f"Phylogenetic tree saved to {output_file}")
+            return
+        
+        if args.dna_cmd == "population":
+            from .dna import sequences, population
+            from .core import io, paths
+            
+            paths.ensure_directory(args.output)
+            
+            # Read sequences
+            seqs = sequences.read_fasta(args.input)
+            seq_list = list(seqs.values())
+            
+            if len(seq_list) < 2:
+                print("Error: Need at least 2 sequences for population analysis", file=sys.stderr)
+                sys.exit(1)
+            
+            results = {}
+            
+            if "all" in args.statistics or "pi" in args.statistics:
+                pi = population.nucleotide_diversity(seq_list)
+                results["nucleotide_diversity"] = pi
+            
+            if "all" in args.statistics or "tajima_d" in args.statistics:
+                tajima_d = population.tajimas_d(seq_list)
+                results["tajimas_d"] = tajima_d
+            
+            if "all" in args.statistics or "fst" in args.statistics:
+                # For Fst, need two populations - split sequences in half
+                mid = len(seq_list) // 2
+                pop1 = seq_list[:mid]
+                pop2 = seq_list[mid:]
+                fst = population.fst(pop1, pop2)
+                results["fst"] = fst
+            
+            output_file = args.output / "population_statistics.json"
+            io.dump_json(results, output_file)
+            print(f"Population genetics analysis complete. Results saved to {output_file}")
+            return
+        
+        if args.dna_cmd == "variants":
+            from .dna import variants
+            from .core import io, paths
+            
+            paths.ensure_directory(args.output)
+            
+            if args.format == "vcf":
+                # Read VCF file
+                vcf_data = variants.read_vcf(args.input)
+                
+                result = {
+                    "format": "vcf",
+                    "n_variants": len(vcf_data) if isinstance(vcf_data, list) else 0,
+                    "variants": vcf_data[:100] if isinstance(vcf_data, list) else [],  # Limit output
+                }
+                
+                output_file = args.output / "variants.json"
+                io.dump_json(result, output_file)
+                print(f"Variant analysis complete. Results saved to {output_file}")
+                return
+            else:
+                print("Error: BAM format variant calling not yet implemented", file=sys.stderr)
+                sys.exit(1)
 
     if args.command == "rna":
         if args.rna_cmd == "plan":
@@ -373,8 +579,285 @@ def main() -> None:
             rmsd = compute_rmsd_kabsch(np.array(coords_a), np.array(coords_b))
             print(f"{rmsd:.6f}")
             return
+        
+        if args.protein_cmd == "align":
+            from .protein import sequences, alignment
+            from .core import io, paths
+            
+            paths.ensure_directory(args.output)
+            
+            # Read sequences
+            seqs = sequences.parse_fasta(args.input)
+            seq_list = list(seqs.values())
+            seq_ids = list(seqs.keys())
+            
+            if len(seq_list) < 2:
+                print("Error: Need at least 2 sequences for alignment", file=sys.stderr)
+                sys.exit(1)
+            
+            if args.method == "needleman_wunsch":
+                # Pairwise alignment
+                score, aln1, aln2 = alignment.needleman_wunsch(seq_list[0], seq_list[1])
+                
+                result = {
+                    "method": args.method,
+                    "score": score,
+                    "alignment": [aln1, aln2],
+                    "sequences": seq_ids[:2],
+                }
+                
+                output_file = args.output / "alignment.json"
+                io.dump_json(result, output_file)
+                print(f"Alignment complete. Score: {score}, saved to {output_file}")
+                return
+            else:
+                # Pairwise identity for all pairs
+                from .protein import pairwise_identity
+                
+                results = []
+                for i, seq1 in enumerate(seq_list):
+                    for j, seq2 in enumerate(seq_list[i+1:], i+1):
+                        identity = pairwise_identity(seq1, seq2)
+                        results.append({
+                            "sequence1": seq_ids[i],
+                            "sequence2": seq_ids[j],
+                            "identity": identity,
+                        })
+                
+                result_df = pd.DataFrame(results)
+                output_file = args.output / "pairwise_identity.tsv"
+                result_df.to_csv(output_file, sep="\t", index=False)
+                print(f"Pairwise identity analysis complete. Saved to {output_file}")
+                return
+        
+        if args.protein_cmd == "structure":
+            from .protein import sequences
+            from .core import io, paths
+            
+            paths.ensure_directory(args.output)
+            
+            # Read sequences
+            seqs = sequences.parse_fasta(args.input)
+            
+            results = {}
+            
+            for seq_id, seq in seqs.items():
+                seq_results = {}
+                
+                if "all" in args.analyze or "secondary" in args.analyze:
+                    try:
+                        from .protein import predict_secondary_structure
+                        secondary = predict_secondary_structure(seq)
+                        seq_results["secondary_structure"] = secondary
+                    except ImportError:
+                        pass
+                
+                if "all" in args.analyze or "stability" in args.analyze:
+                    try:
+                        from .protein import analyze_protein_stability
+                        stability = analyze_protein_stability(seq)
+                        seq_results["stability"] = stability
+                    except ImportError:
+                        pass
+                
+                if "all" in args.analyze or "domains" in args.analyze:
+                    try:
+                        from .protein import identify_domains
+                        domains = identify_domains(seq)
+                        seq_results["domains"] = domains
+                    except ImportError:
+                        pass
+                
+                if "all" in args.analyze or "ptm" in args.analyze:
+                    try:
+                        from .protein import analyze_post_translational_modifications
+                        ptm = analyze_post_translational_modifications(seq)
+                        seq_results["ptm"] = ptm
+                    except ImportError:
+                        pass
+                
+                results[seq_id] = seq_results
+            
+            output_file = args.output / "structure_analysis.json"
+            io.dump_json(results, output_file, indent=2)
+            print(f"Structure analysis complete. Saved to {output_file}")
+            return
+        
+        if args.protein_cmd == "domains":
+            from .protein import sequences
+            from .core import io, paths
+            
+            paths.ensure_directory(args.output)
+            
+            # Read sequences
+            seqs = sequences.parse_fasta(args.input)
+            
+            domain_results = []
+            
+            for seq_id, seq in seqs.items():
+                if args.uniprot:
+                    # Try to fetch from UniProt (would need sequence ID mapping)
+                    try:
+                        from .protein import fetch_interpro_domains
+                        # Would need UniProt accession - placeholder
+                        domains = []
+                    except ImportError:
+                        domains = []
+                else:
+                    try:
+                        from .protein import identify_domains
+                        domains = identify_domains(seq)
+                    except ImportError:
+                        domains = []
+                
+                domain_results.append({
+                    "sequence_id": seq_id,
+                    "n_domains": len(domains),
+                    "domains": domains,
+                })
+            
+            result_df = pd.DataFrame(domain_results)
+            output_file = args.output / "domains.json"
+            io.dump_json(domain_results, output_file, indent=2)
+            print(f"Domain annotation complete. Saved to {output_file}")
+            return
+        
+        if args.protein_cmd == "families":
+            from .protein import sequences
+            from .core import io, paths
+            
+            paths.ensure_directory(args.output)
+            
+            # Read sequences
+            seqs = sequences.parse_fasta(args.input)
+            
+            family_results = []
+            
+            for seq_id, seq in seqs.items():
+                try:
+                    from .protein import predict_protein_family
+                    families = predict_protein_family(seq)
+                    family_results.append({
+                        "sequence_id": seq_id,
+                        "predicted_families": families[:5],  # Top 5
+                    })
+                except ImportError:
+                    family_results.append({
+                        "sequence_id": seq_id,
+                        "predicted_families": [],
+                    })
+            
+            output_file = args.output / "families.json"
+            io.dump_json(family_results, output_file, indent=2)
+            print(f"Family classification complete. Saved to {output_file}")
+            return
 
     if args.command == "math":
+        if args.math_cmd == "popgen":
+            from .dna import sequences
+            from .core import io, paths
+            
+            paths.ensure_directory(args.output)
+            
+            if args.input:
+                seqs = sequences.read_fasta(args.input)
+                seq_list = list(seqs.values())
+            else:
+                # Generate synthetic data
+                from .simulation.popgen import generate_population_sequences
+                seq_list = generate_population_sequences(n_sequences=10, sequence_length=1000)
+            
+            results = {}
+            
+            if "all" in args.analysis or "tajima_d" in args.analysis:
+                from .dna.population import tajimas_d
+                tajima_d = tajimas_d(seq_list)
+                results["tajimas_d"] = tajima_d
+            
+            if "all" in args.analysis or "fst" in args.analysis:
+                from .dna.population import fst
+                if len(seq_list) >= 4:
+                    mid = len(seq_list) // 2
+                    pop1 = seq_list[:mid]
+                    pop2 = seq_list[mid:]
+                    fst_value = fst(pop1, pop2)
+                    results["fst"] = fst_value
+            
+            if "all" in args.analysis or "ld" in args.analysis:
+                # LD calculation requires genotype data (not just sequences)
+                # Would need phased haplotypes or genotype calls
+                results["ld_analysis"] = {
+                    "note": "LD calculation requires genotype data (phased haplotypes or VCF)",
+                    "available_functions": "Use metainformant.math.ld.ld_coefficients() with haplotype frequencies",
+                }
+            
+            if "all" in args.analysis or "coalescent" in args.analysis:
+                from .math.coalescent import expected_time_to_mrca, expected_total_branch_length
+                # Calculate expected coalescent statistics
+                Ne = 1000.0  # Default effective population size
+                t_mrca = expected_time_to_mrca(len(seq_list), Ne)
+                total_length = expected_total_branch_length(len(seq_list), Ne)
+                results["coalescent"] = {
+                    "expected_time_to_mrca": float(t_mrca),
+                    "expected_total_branch_length": float(total_length),
+                    "effective_population_size": Ne,
+                }
+            
+            output_file = args.output / "popgen_analysis.json"
+            io.dump_json(results, output_file)
+            print(f"Population genetics analysis complete. Saved to {output_file}")
+            return
+        
+        if args.math_cmd == "coalescent":
+            from .math.coalescent import (
+                expected_coalescent_waiting_times,
+                expected_time_to_mrca,
+                expected_total_branch_length,
+            )
+            from .math.demography import (
+                bottleneck_effective_size,
+                exponential_growth_effective_size,
+            )
+            from .core import io, paths
+            
+            paths.ensure_directory(args.output)
+            
+            # Calculate effective population size based on model
+            if args.model == "constant":
+                Ne = 1000.0
+            elif args.model == "exponential":
+                Ne = exponential_growth_effective_size(
+                    current_size=1000,
+                    growth_rate=0.01,
+                )
+            else:  # bottleneck
+                Ne = bottleneck_effective_size(
+                    pre_bottleneck_size=1000,
+                    bottleneck_size=100,
+                    bottleneck_duration=0.1,
+                )
+            
+            # Calculate coalescent statistics
+            t_mrca = expected_time_to_mrca(args.n_samples, Ne)
+            total_length = expected_total_branch_length(args.n_samples, Ne)
+            waiting_times = expected_coalescent_waiting_times(args.n_samples, Ne)
+            
+            results = {
+                "model": args.model,
+                "n_samples": args.n_samples,
+                "n_loci": args.n_loci,
+                "effective_population_size": float(Ne),
+                "expected_time_to_mrca": float(t_mrca),
+                "expected_total_branch_length": float(total_length),
+                "expected_waiting_times": [float(t) for t in waiting_times],
+            }
+            
+            output_file = args.output / "coalescent_results.json"
+            io.dump_json(results, output_file)
+            print(f"Coalescent analysis complete. Saved to {output_file}")
+            return
+        
+        # Handle selection experiments (existing)
         func = getattr(args, "func", None)
         if callable(func):
             func(args)
@@ -509,29 +992,68 @@ def main() -> None:
 
     if args.command == "epigenome":
         if args.epigenome_cmd == "run":
-            import subprocess
-            root = Path(__file__).resolve().parents[2]
-            script = root / "scripts" / "epigenome" / "run_epigenome_analysis.py"
-            cmd = ["python3", str(script), f"--output={args.output}"]
+            from .epigenome import run_methylation_workflow, run_chipseq_workflow, run_atacseq_workflow
+            from .core import paths
+            
+            paths.ensure_directory(args.output)
+            
             if args.methylation:
-                cmd.append(f"--methylation={args.methylation}")
+                # Run methylation workflow
+                try:
+                    results = run_methylation_workflow(
+                        args.methylation,
+                        args.output,
+                        compute_beta=args.compute_beta,
+                    )
+                    print(f"Methylation analysis complete. Results in {args.output}")
+                    return
+                except Exception as e:
+                    print(f"Error running methylation workflow: {e}", file=sys.stderr)
+                    sys.exit(1)
+            
             if args.bedgraph:
-                cmd.append(f"--bedgraph={args.bedgraph}")
-            if args.compute_beta:
-                cmd.append("--compute-beta")
-            sys.exit(subprocess.run(cmd).returncode)
+                # Determine if ChIP-seq or ATAC-seq based on file or user input
+                # For now, try ChIP-seq
+                from .epigenome.tracks import read_bedgraph
+                try:
+                    signal = read_bedgraph(args.bedgraph)
+                    
+                    if not signal.empty:
+                        # Get chromosome from data
+                        chroms = signal["chrom"].unique()
+                        if len(chroms) > 0:
+                            chrom = chroms[0]
+                            results = run_chipseq_workflow(args.bedgraph, args.output, chrom=chrom)
+                            print(f"ChIP-seq analysis complete. Results in {args.output}")
+                            return
+                    else:
+                        print("Warning: bedGraph file is empty", file=sys.stderr)
+                except Exception as e:
+                    print(f"Error reading bedGraph file: {e}", file=sys.stderr)
+                    sys.exit(1)
+            
+            print("Error: Specify --methylation or --bedgraph", file=sys.stderr)
+            sys.exit(1)
 
     if args.command == "ecology":
         if args.ecology_cmd == "run":
-            import subprocess
-            root = Path(__file__).resolve().parents[2]
-            script = root / "scripts" / "ecology" / "run_ecology_analysis.py"
-            cmd = ["python3", str(script), f"--input={args.input}", f"--output={args.output}"]
-            if args.diversity:
-                cmd.append("--diversity")
-            if args.beta_diversity:
-                cmd.append("--beta-diversity")
-            sys.exit(subprocess.run(cmd).returncode)
+            from .ecology import run_community_analysis_workflow
+            from .core import paths
+            
+            paths.ensure_directory(args.output)
+            
+            try:
+                results = run_community_analysis_workflow(
+                    args.input,
+                    args.output,
+                    calculate_diversity=args.diversity,
+                    calculate_beta=args.beta_diversity,
+                )
+                print(f"Ecology analysis complete. Results in {args.output}")
+                return
+            except Exception as e:
+                print(f"Error running ecology workflow: {e}", file=sys.stderr)
+                sys.exit(1)
 
     if args.command == "ml":
         if args.ml_cmd == "run":

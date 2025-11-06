@@ -118,7 +118,7 @@ python3 scripts/rna/batch_download_species.py --total-threads 16
 ### Configuration Parameters
 
 #### `--total-threads`
-- **Default**: 8
+- **Default**: 24
 - **Description**: Total number of threads to distribute across all species
 - **Range**: 8-64 (recommended: 24 for standard systems)
 - **Impact**: Threads distributed evenly (minimum 1 per species). More threads = faster overall but higher resource usage
@@ -150,8 +150,8 @@ python3 scripts/rna/batch_download_species.py --total-threads 16
 
 #### Standard System (Recommended)
 ```bash
-# 24 threads total distributed across all species
-python3 scripts/rna/batch_download_species.py --total-threads 24
+# Default: 24 threads total distributed across all species
+python3 scripts/rna/batch_download_species.py
 ```
 
 #### High-End System
@@ -185,8 +185,8 @@ ps aux | grep "amalgkit getfastq" | grep -c "amalgkit"
 
 #### Analyze Sample Status
 ```bash
-# Comprehensive status analysis
-python3 scripts/rna/analyze_sample_status.py
+# Comprehensive status analysis (replaces analyze_sample_status.py)
+python3 scripts/rna/orchestrate_workflows.py --status --detailed
 ```
 
 ### Performance Tuning
@@ -218,7 +218,7 @@ python3 scripts/rna/analyze_sample_status.py
 
 #### Out of Disk Space
 1. Clean up partial downloads: `python3 scripts/rna/cleanup_partial_downloads.py --execute`
-2. Clean up quantified samples: `bash scripts/rna/cleanup_quantified_sra.sh --execute`
+2. Clean up quantified samples: `python3 scripts/rna/orchestrate_workflows.py --cleanup-unquantified` (replaces cleanup_quantified_sra.sh)
 3. Check for large temp files: `du -sh output/amalgkit/*/fastq`
 
 #### High CPU Usage

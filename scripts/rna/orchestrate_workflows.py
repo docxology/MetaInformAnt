@@ -33,14 +33,16 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-import yaml
-
 # Import setup utilities (must be before other imports)
 sys.path.insert(0, str(Path(__file__).parent))
 from _setup_utils import ensure_venv_activated, check_environment_or_exit
 
-# Auto-setup and activate venv
+# Auto-setup and activate venv using uv (must be before yaml import)
 ensure_venv_activated(auto_setup=True)
+check_environment_or_exit(auto_setup=True)
+
+# Now safe to import yaml (venv is activated)
+import yaml
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))

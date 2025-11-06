@@ -180,7 +180,7 @@ With 150 samples and α=0.05:
 ## Reproducibility
 
 ### Script Location
-`scripts/gwas/run_complete_pbarbatus_gwas.py`
+`scripts/gwas/run_pbarbatus_gwas.py`
 
 ### Configuration
 `config/gwas/gwas_pbarbatus_synthetic.yaml`
@@ -188,7 +188,7 @@ With 150 samples and α=0.05:
 ### Execution
 ```bash
 cd /home/q/Documents/GitHub/MetaInformAnt
-python3 scripts/gwas/run_complete_pbarbatus_gwas.py
+python3 scripts/gwas/run_pbarbatus_gwas.py
 ```
 
 ### Random Seeds

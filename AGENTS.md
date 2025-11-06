@@ -144,8 +144,9 @@ For detailed documentation about AI contributions to specific modules, organized
 - **Main Source Development**: [`src/metainformant/AGENTS.md`](src/metainformant/AGENTS.md) - Overall AI assistance in source code development
 - **Source Organization**: [`src/AGENTS.md`](src/AGENTS.md) - Source code infrastructure and organization
 - **Configuration Management**: [`config/AGENTS.md`](config/AGENTS.md) - Configuration system development
-- **Output Management**: [`output/AGENTS.md`](output/AGENTS.md) - Output directory structure and policies
 - **General Documentation**: [`docs/AGENTS.md`](docs/AGENTS.md) - AI assistance in documentation development
+
+Note: The `output/` directory is ephemeral and contains generated analysis results. Documentation about output structure is in the `.cursorrules` file and module-specific documentation.
 
 ### Source Module Documentation (Implementation)
 - **Core Utilities**: [`src/metainformant/core/AGENTS.md`](src/metainformant/core/AGENTS.md) - Core infrastructure and shared utilities

@@ -67,97 +67,13 @@ from pathlib import Path
 from datetime import datetime
 from glob import glob
 
-# AUTO-ACTIVATE VIRTUAL ENVIRONMENT if not already active
-def ensure_venv_activated():
-    """
-    Automatically activate virtual environment if it exists and we're not using it.
-    
-    This function:
-    1. Checks if current Python is running from .venv directory
-    2. If not, finds the venv Python executable
-    3. Re-executes the script using venv Python with os.execve()
-    4. Sets up environment variables (VIRTUAL_ENV, PATH)
-    5. Removes PYTHONHOME if set (can interfere with venv)
-    
-    The re-execution replaces the current process, so this function never returns
-    if venv activation is needed. If already in venv or venv is missing, it returns
-    normally.
-    
-    Environment Setup:
-        - VIRTUAL_ENV: Path to .venv directory
-        - PATH: Prepends .venv/bin to existing PATH
-        - PYTHONHOME: Removed if present
-    
-    Raises:
-        SystemExit: If virtual environment not found, exits with instructions
-    """
-    repo_root = Path(__file__).parent.parent.parent.resolve()
-    venv_python = repo_root / ".venv" / "bin" / "python3"
-    venv_dir = repo_root / ".venv"
-    
-    # Check if we're already running with venv Python
-    # Don't resolve() - we want to check if we're actually using the venv path
-    current_python = Path(sys.executable)
-    
-    # Check if current Python is inside .venv directory
-    try:
-        current_python.relative_to(repo_root / ".venv")
-        # We're already using venv Python - ensure environment variables are set
-        if "VIRTUAL_ENV" not in os.environ:
-            os.environ["VIRTUAL_ENV"] = str(venv_dir)
-            # Prepend venv/bin to PATH
-            venv_bin = str(venv_dir / "bin")
-            if venv_bin not in os.environ.get("PATH", ""):
-                os.environ["PATH"] = f"{venv_bin}:{os.environ.get('PATH', '')}"
-        return
-    except ValueError:
-        # Not using venv Python - need to switch
-        pass
-    
-    if venv_python.exists():
-        # Set up environment variables BEFORE re-exec
-        new_env = os.environ.copy()
-        new_env["VIRTUAL_ENV"] = str(venv_dir)
-        venv_bin = str(venv_dir / "bin")
-        new_env["PATH"] = f"{venv_bin}:{new_env.get('PATH', '')}"
-        # Remove PYTHONHOME if set (can interfere with venv)
-        new_env.pop("PYTHONHOME", None)
-        
-        # Re-exec this script using venv Python with proper environment
-        print("=" * 80)
-        print("🔄 AUTO-ACTIVATING VIRTUAL ENVIRONMENT")
-        print("=" * 80)
-        print(f"Current Python:  {current_python}")
-        print(f"Venv Python:     {venv_python}")
-        print(f"Setting VIRTUAL_ENV={venv_dir}")
-        print(f"Updating PATH to include {venv_bin}")
-        print("=" * 80)
-        print()
-        sys.stdout.flush()
-        
-        # Use os.execve to pass the new environment
-        os.execve(str(venv_python), [str(venv_python)] + sys.argv, new_env)
-    else:
-        print()
-        print("=" * 80)
-        print("⚠️  ERROR: Virtual environment not found")
-        print("=" * 80)
-        print(f"Expected location: {venv_python}")
-        print()
-        print("Setup instructions:")
-        print("  1. Create virtual environment:")
-        print("     python3 -m venv .venv")
-        print()
-        print("  2. Activate and install dependencies:")
-        print("     source .venv/bin/activate")
-        print("     pip install -e .")
-        print("     pip install git+https://github.com/kfuku52/amalgkit")
-        print("=" * 80)
-        print()
-        sys.exit(1)
+# Import setup utilities (must be before other imports)
+sys.path.insert(0, str(Path(__file__).parent))
+from _setup_utils import ensure_venv_activated, check_environment_or_exit
 
-# Activate venv BEFORE any other imports
-ensure_venv_activated()
+# Auto-setup and activate venv using uv
+ensure_venv_activated(auto_setup=True)
+check_environment_or_exit(auto_setup=True)
 
 # Configure SRA toolkit to use /home for temp storage instead of /tmp
 # /tmp is only 16GB but samples can be 130GB+ each

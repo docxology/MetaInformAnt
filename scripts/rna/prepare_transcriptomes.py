@@ -186,12 +186,19 @@ def prepare_transcriptome_for_species(
         import time
         start_time = time.time()
         
+        # Get FTP URL and assembly name from config
+        ftp_url = genome.get("ftp_url")
+        assembly_name = genome.get("assembly_name")
+        
         fasta_path = prepare_transcriptome_for_kallisto(
             dest_dir,
             species_name,
             work_dir,
             accession=accession,
             use_cds_fallback=True,  # Enable CDS fallback
+            ftp_url=ftp_url,
+            assembly_name=assembly_name,
+            config=config,  # Pass full config for GFF extraction
         )
         
         elapsed_time = time.time() - start_time

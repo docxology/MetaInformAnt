@@ -8,7 +8,7 @@ Batch download samples for multiple species in parallel with dynamic thread allo
 # Scope: Multi-species parallel batch download with configurable throughput
 # Steps: getfastq → quant (per-sample, immediate)
 # Config: Auto-discovers all config/amalgkit/amalgkit_*.yaml files
-# Threads: Configurable total (default 8) distributed across species
+# Threads: Configurable total (default 24) distributed across species
 # Batch Size: Per-sample processing (download → quant → delete immediately)
 # Output: output/amalgkit/{species}/fastq/ and quant/ per species
 # Dependencies: amalgkit, kallisto, wget (for ENA) or SRA Toolkit
@@ -18,7 +18,7 @@ Batch download samples for multiple species in parallel with dynamic thread allo
 # ============================================================================
 
 Features:
-- Configurable total thread count (default: 8 for smaller drives, can increase to 30+ on larger drives)
+- Configurable total thread count (default: 24, recommended for standard systems)
 - Even initial distribution across species (minimum 1 thread per species)
 - Dynamic reallocation as species complete
 - Automatic thread concentration on remaining species
@@ -28,8 +28,8 @@ Features:
 - Resilient error handling: Automatic retry and recovery from disk space issues
 
 Thread Allocation:
-- Downloads: 8 threads default (distributed evenly, minimum 1 per species)
-- Can increase to 30+ threads on larger drives with more disk space
+- Downloads: 24 threads default (distributed evenly, minimum 1 per species)
+- Can increase to 48+ threads on larger drives with more disk space
 - Quantification: Separate pool (default: 10 threads) for immediate quant+delete operations
 - Dynamic: As species complete, download threads redistribute to remaining species
 - Concentration: Threads concentrate on fewer species as workflow progresses
@@ -50,11 +50,11 @@ Workflow:
 5. No waiting for batch completion - maximum disk efficiency
 
 Usage:
-  # Default (8 threads, suitable for smaller drives)
+  # Default (24 threads, recommended for standard systems)
   python3 scripts/rna/batch_download_species.py
   
-  # Larger drive (30 threads)
-  python3 scripts/rna/batch_download_species.py --total-threads 30
+  # Larger drive (48 threads)
+  python3 scripts/rna/batch_download_species.py --total-threads 48
   
   # Custom disk space thresholds
   python3 scripts/rna/batch_download_species.py --min-free-gb 15.0 --auto-cleanup-threshold 10.0
@@ -71,56 +71,13 @@ from glob import glob
 from typing import Optional
 from concurrent.futures import ThreadPoolExecutor, as_completed, Future
 
-# Ensure virtual environment is activated before imports
-def ensure_venv_activated():
-    """Automatically activate virtual environment if it exists and we're not using it."""
-    repo_root = Path(__file__).parent.parent.parent.resolve()
-    venv_python = repo_root / ".venv" / "bin" / "python3"
-    venv_dir = repo_root / ".venv"
-    
-    current_python = Path(sys.executable)
-    
-    try:
-        current_python.relative_to(repo_root / ".venv")
-        if "VIRTUAL_ENV" not in os.environ:
-            os.environ["VIRTUAL_ENV"] = str(venv_dir)
-            venv_bin = str(venv_dir / "bin")
-            if venv_bin not in os.environ.get("PATH", ""):
-                os.environ["PATH"] = f"{venv_bin}:{os.environ.get('PATH', '')}"
-        return
-    except ValueError:
-        pass
-    
-    if venv_python.exists():
-        new_env = os.environ.copy()
-        new_env["VIRTUAL_ENV"] = str(venv_dir)
-        venv_bin = str(venv_dir / "bin")
-        new_env["PATH"] = f"{venv_bin}:{new_env.get('PATH', '')}"
-        new_env.pop("PYTHONHOME", None)
-        
-        print("=" * 80)
-        print("🔄 AUTO-ACTIVATING VIRTUAL ENVIRONMENT")
-        print("=" * 80)
-        print(f"Current Python:  {current_python}")
-        print(f"Venv Python:     {venv_python}")
-        print(f"Setting VIRTUAL_ENV={venv_dir}")
-        print(f"Updating PATH to include {venv_bin}")
-        print("=" * 80)
-        print()
-        sys.stdout.flush()
-        
-        os.execve(str(venv_python), [str(venv_python)] + sys.argv, new_env)
-    else:
-        print()
-        print("=" * 80)
-        print("⚠️  WARNING: Virtual environment not found")
-        print("=" * 80)
-        print(f"Expected location: {venv_python}")
-        print("Continuing with system Python...")
-        print("=" * 80)
-        print()
+# Import setup utilities (must be before other imports)
+sys.path.insert(0, str(Path(__file__).parent))
+from _setup_utils import ensure_venv_activated, check_environment_or_exit
 
-ensure_venv_activated()
+# Auto-setup and activate venv using uv
+ensure_venv_activated(auto_setup=True)
+check_environment_or_exit(auto_setup=True)
 
 # Add src to path (must be before any imports)
 repo_root = Path(__file__).parent.parent.parent.resolve()
@@ -129,9 +86,10 @@ if str(src_path) not in sys.path:
     sys.path.insert(0, str(src_path))
 
 from metainformant.rna.workflow import load_workflow_config
-from metainformant.rna.amalgkit import build_amalgkit_command, check_cli_available, run_amalgkit
+from metainformant.rna.amalgkit import build_amalgkit_command, run_amalgkit
 from metainformant.rna.steps import process_sample_pipeline, delete_sample_fastqs
 from metainformant.rna import count_quantified_samples
+from metainformant.rna.progress_tracker import get_tracker
 from metainformant.core.disk import check_disk_space, get_disk_space_info
 from metainformant.core.io import read_delimited, write_delimited
 from metainformant.core.logging import get_logger
@@ -217,10 +175,101 @@ def is_sra_download_complete(sample_dir: Path) -> bool:
     return False
 
 
+def get_species_id_from_config(config_path: Path) -> str:
+    """Extract species ID from config file.
+    
+    Args:
+        config_path: Path to config file
+        
+    Returns:
+        Species ID (e.g., "camponotus_floridanus" from config filename or species_list)
+    """
+    try:
+        cfg = load_workflow_config(config_path)
+        # Try to get from species_list first
+        if cfg.species_list:
+            # Use first species, convert to lowercase with underscores
+            species_id = cfg.species_list[0].lower().replace(" ", "_")
+            return species_id
+    except Exception:
+        pass
+    
+    # Fallback: extract from filename
+    # e.g., "amalgkit_camponotus_floridanus.yaml" -> "camponotus_floridanus"
+    stem = config_path.stem
+    if stem.startswith("amalgkit_"):
+        return stem.replace("amalgkit_", "")
+    return stem
+
+
+def process_sample_with_tracker(
+    sample_id: str,
+    config_path: Path,
+    status: str,
+    tracker=None,
+    *,
+    log_dir: Path | None = None,
+) -> tuple[bool, str]:
+    """Process a sample with progress tracking.
+    
+    Wraps process_sample_pipeline to add ProgressTracker integration.
+    
+    Args:
+        sample_id: SRA accession ID
+        config_path: Path to species config file
+        status: "sra" or "fastq"
+        tracker: ProgressTracker instance (optional)
+        log_dir: Optional log directory
+        
+    Returns:
+        Tuple of (success: bool, message: str)
+    """
+    if tracker:
+        try:
+            species_id = get_species_id_from_config(config_path)
+            # Download is already complete (reported in detect_completed_downloads)
+            # Now process: quant + delete
+        except Exception as e:
+            logger.debug(f"Failed to get species_id for tracker: {e}")
+            tracker = None
+    
+    # Process the sample
+    success, message = process_sample_pipeline(
+        sample_id,
+        config_path,
+        status,
+        log_dir=log_dir,
+    )
+    
+    # Update tracker based on result
+    if tracker:
+        try:
+            species_id = get_species_id_from_config(config_path)
+            if success:
+                # Quant and delete both completed
+                tracker.on_quant_complete(species_id, sample_id)
+                tracker.on_delete_complete(species_id, sample_id)
+            else:
+                # Quant may have failed, but check if it actually completed
+                cfg = load_workflow_config(config_path)
+                quant_params = dict(cfg.per_step.get("quant", {}))
+                quant_dir = Path(quant_params.get("out_dir", cfg.work_dir / "quant"))
+                abundance_file = quant_dir / sample_id / "abundance.tsv"
+                if abundance_file.exists():
+                    # Quant actually succeeded, just delete failed or something else
+                    tracker.on_quant_complete(species_id, sample_id)
+                    tracker.on_delete_complete(species_id, sample_id)
+        except Exception as e:
+            logger.debug(f"Failed to update tracker after processing {sample_id}: {e}")
+    
+    return success, message
+
+
 def detect_completed_downloads(
     species_configs: list[tuple[str, Path]],
     processed_samples: set[str],
     quant_dirs: dict[str, Path],
+    tracker=None,
 ) -> list[tuple[str, str, Path, str]]:
     """Detect samples that have completed download but not yet been quantified.
     
@@ -281,10 +330,24 @@ def detect_completed_downloads(
                     if is_sample_download_complete(sample_dir):
                         completed.append((species_name, sample_id, sample_dir, "fastq"))
                         processed_samples.add(sample_key)
+                        # Report download complete to tracker
+                        if tracker:
+                            try:
+                                species_id = get_species_id_from_config(config_path)
+                                tracker.on_download_complete(species_id, sample_id)
+                            except Exception as e:
+                                logger.debug(f"Failed to update tracker for {sample_id}: {e}")
                     # Check for completed SRA files (need conversion)
                     elif is_sra_download_complete(sample_dir):
                         completed.append((species_name, sample_id, sample_dir, "sra"))
                         processed_samples.add(sample_key)
+                        # Report download complete to tracker (SRA is downloaded, needs conversion)
+                        if tracker:
+                            try:
+                                species_id = get_species_id_from_config(config_path)
+                                tracker.on_download_complete(species_id, sample_id)
+                            except Exception as e:
+                                logger.debug(f"Failed to update tracker for {sample_id}: {e}")
         
         except Exception as e:
             logger.debug(f"Error checking downloads for {species_name}: {e}")
@@ -748,7 +811,7 @@ def main():
     5. Process health checks and recovery
     
     Configuration (command-line arguments):
-        --total-threads: Total threads across all species (default: 8)
+        --total-threads: Total threads across all species (default: 24)
         --max-species: Maximum species to process (default: all)
         --check-interval: Seconds between completion checks (default: 300)
         --monitor-interval: Seconds between sample monitoring (default: 60)
@@ -773,11 +836,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  # Default: 30 total threads, distributed evenly across all species
+  # Default: 24 total threads, distributed evenly across all species
   python3 scripts/rna/batch_download_species.py
   
-  # 50 total threads, redistributed as species complete
-  python3 scripts/rna/batch_download_species.py --total-threads 50
+  # 48 total threads, redistributed as species complete
+  python3 scripts/rna/batch_download_species.py --total-threads 48
   
   # Process only first 10 species
   python3 scripts/rna/batch_download_species.py --max-species 10
@@ -786,8 +849,8 @@ Examples:
     parser.add_argument(
         "--total-threads",
         type=int,
-        default=8,
-        help="Total number of threads to use across all species (default: 8 for smaller drives, can increase to 30+ on larger drives)"
+        default=24,
+        help="Total number of threads to use across all species (default: 24, recommended for standard systems, can increase to 48+ on larger drives)"
     )
     parser.add_argument(
         "--max-species",
@@ -811,7 +874,7 @@ Examples:
         "--quant-threads",
         type=int,
         default=10,
-        help="Number of threads for quantification operations (default: 10)"
+        help="Number of parallel quantification operations (separate from download threads, default: 10)"
     )
     parser.add_argument(
         "--max-retries",
@@ -865,7 +928,8 @@ Examples:
     species_configs = []
     for config_file in config_files:
         path = Path(config_file)
-        if "template" in path.stem.lower():
+        stem_lower = path.stem.lower()
+        if "template" in stem_lower or "test" in stem_lower:
             continue
         
         species_code = path.stem.replace("amalgkit_", "")
@@ -961,14 +1025,16 @@ Examples:
             logger.error("Please free up disk space manually before continuing")
             return 1
     
-    print(f"\nTotal threads: {args.total_threads} (downloads only)")
-    print(f"Species discovered: {len(species_configs)}")
+    print(f"\nThread Allocation:")
+    print(f"  Downloads: {args.total_threads} threads TOTAL (distributed across all species)")
+    print(f"  Quantification: {args.quant_threads} parallel operations (separate pool)")
+    print(f"  Note: Each kallisto quant operation uses threads from config (typically 4-8)")
+    print(f"\nSpecies discovered: {len(species_configs)}")
     print(f"Check interval: {args.check_interval} seconds")
     print(f"Monitor interval: {args.monitor_interval} seconds")
     print(f"Health check interval: {args.health_check_interval} seconds")
     print(f"Process timeout: {args.process_timeout} seconds")
     print(f"Max retries: {args.max_retries}")
-    print(f"Quant threads: {args.quant_threads}")
     print(f"Min free space: {min_free_gb}GB")
     print(f"Auto-cleanup threshold: {auto_cleanup_threshold}GB")
     print("=" * 80)
@@ -986,16 +1052,9 @@ Examples:
     print(f"  • Resilient to disk space issues: Pre-flight checks and auto-recovery")
     print("=" * 80 + "\n")
     
-    # Check if amalgkit is available
-    logger.info("Checking for amalgkit...")
-    amalgkit_available, amalgkit_msg = check_cli_available()
-    if not amalgkit_available:
-        logger.error(f"❌ amalgkit not available: {amalgkit_msg}")
-        logger.error("Please ensure virtual environment is activated and amalgkit is installed:")
-        logger.error("  source .venv/bin/activate")
-        logger.error("  pip install git+https://github.com/kfuku52/amalgkit")
-        return 1
-    logger.info(f"✅ amalgkit available: {amalgkit_msg[:100] if len(amalgkit_msg) > 100 else amalgkit_msg}")
+    # Environment check already verified amalgkit in check_environment_or_exit()
+    # Just log confirmation
+    logger.info("✅ Environment check passed (amalgkit and dependencies verified)")
     print()
     
     # Filter out already-complete species
@@ -1024,9 +1083,17 @@ Examples:
     # Initial thread distribution
     thread_allocation = redistribute_threads(args.total_threads, active_species)
     
-    print("Initial Thread Allocation:")
+    # Validate allocation sums to exactly total_threads
+    total_allocated = sum(thread_allocation.values())
+    if total_allocated != args.total_threads:
+        logger.warning(f"⚠️  Thread allocation mismatch: {total_allocated} allocated, {args.total_threads} requested")
+    else:
+        logger.info(f"✅ Thread allocation verified: {total_allocated} threads allocated across {len(thread_allocation)} species")
+    
+    print("Initial Thread Allocation (downloads):")
     for species_name, threads in sorted(thread_allocation.items()):
         print(f"  {species_name:30s}: {threads} threads")
+    print(f"  {'TOTAL':30s}: {total_allocated} threads")
     print()
     
     # Setup logging directory
@@ -1059,6 +1126,30 @@ Examples:
     
     # Create thread pool for quant operations
     quant_executor = ThreadPoolExecutor(max_workers=args.quant_threads, thread_name_prefix="quant")
+    
+    # Initialize progress tracker
+    tracker = get_tracker()
+    logger.info("Progress tracker initialized - visualization will update automatically")
+    
+    # Initialize tracker for all active species
+    for species_name, config_path in active_species:
+        try:
+            species_id = get_species_id_from_config(config_path)
+            cfg = load_workflow_config(config_path)
+            
+            # Get metadata to find all sample IDs
+            metadata_file = cfg.work_dir / "metadata" / "metadata.tsv"
+            if not metadata_file.exists():
+                metadata_file = cfg.work_dir / "metadata" / "metadata.filtered.tissue.tsv"
+            
+            if metadata_file.exists():
+                rows = list(read_delimited(metadata_file, delimiter="\t"))
+                sample_ids = [row.get("run") for row in rows if row.get("run")]
+                if sample_ids:
+                    tracker.initialize_species(species_id, len(sample_ids), sample_ids)
+                    logger.debug(f"Initialized tracker for {species_id} with {len(sample_ids)} samples")
+        except Exception as e:
+            logger.debug(f"Failed to initialize tracker for {species_name}: {e}")
     
     # Start initial processes
     for species_name, config_path in active_species:
@@ -1220,6 +1311,7 @@ Examples:
                 [(name, process_configs[name]) for name in running_processes.keys()],
                 processed_samples,
                 quant_dirs,
+                tracker=tracker,
             )
             
             # Also check ALL species for backlogged completed downloads
@@ -1230,6 +1322,7 @@ Examples:
                 all_species_configs,
                 processed_samples,
                 quant_dirs,
+                tracker=tracker,
             )
             # Add backlogged samples (avoid duplicates)
             for item in backlogged:
@@ -1249,10 +1342,11 @@ Examples:
                 if config_path:
                     try:
                         future = quant_executor.submit(
-                            process_sample_pipeline,
+                            process_sample_with_tracker,
                             sample_id,
                             config_path,
                             status,
+                            tracker=tracker,
                             log_dir=log_dir,
                         )
                         quant_futures[sample_key] = future
@@ -1371,8 +1465,15 @@ Examples:
                             # Note: Can't change threads on running process, but will use new allocation when restarting
                             thread_allocation[species_name] = new_threads
                     
+                    # Validate redistribution
+                    redistributed_total = sum(new_allocation.values())
+                    if redistributed_total != args.total_threads:
+                        logger.warning(f"⚠️  Redistribution mismatch: {redistributed_total} allocated, {args.total_threads} requested")
+                    else:
+                        logger.debug(f"✅ Redistribution verified: {redistributed_total} threads")
+                    
                     print(f"Redistributed threads: {len(completed + newly_complete)} completed, "
-                          f"{len(running_processes)} still running")
+                          f"{len(running_processes)} still running ({redistributed_total} threads total)")
                 else:
                     print(f"All species complete or in progress")
             

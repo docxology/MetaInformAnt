@@ -1,4 +1,4 @@
-# Complete Genome Setup Guide
+# Genome Setup Guide
 
 This guide provides step-by-step instructions for setting up genomes and kallisto indexes for all species in the METAINFORMANT RNA-seq workflow.
 
@@ -14,8 +14,10 @@ The genome setup process consists of three main steps:
 
 - Python 3.11+
 - METAINFORMANT installed or accessible
-- `kallisto` installed (for index building): `conda install -c bioconda kallisto`
+- `kallisto` installed (for index building): `conda install -c bioconda kallisto` or `sudo apt-get install -y kallisto`
 - NCBI datasets CLI (optional, but recommended): `conda install -c bioconda ncbi-datasets-cli`
+
+**Note**: For Python packages, use `uv pip install` (primary method). System tools like kallisto can use conda or system package managers.
 - Sufficient disk space (genomes: 100MB-1GB each, indexes: 20-50MB each)
 
 ## Quick Start

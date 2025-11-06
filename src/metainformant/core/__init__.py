@@ -14,6 +14,8 @@ Modules:
 - progress: progress tracking utilities
 - validation: validation utilities
 - workflow: workflow orchestration functions
+- discovery: symbolic mapping and context discovery utilities
+- symbols: symbol indexing and cross-referencing utilities
 """
 
 from __future__ import annotations
@@ -21,7 +23,23 @@ from __future__ import annotations
 from pathlib import Path
 
 # Import core utilities eagerly
-from . import cache, config, disk, errors, hash, io, logging, parallel, paths, progress, text, validation, workflow  # noqa: F401
+from . import (  # noqa: F401
+    cache,
+    config,
+    discovery,
+    disk,
+    errors,
+    hash,
+    io,
+    logging,
+    parallel,
+    paths,
+    progress,
+    symbols,
+    text,
+    validation,
+    workflow,
+)
 
 # Import optional modules defensively to avoid hard deps during unrelated commands
 try:  # noqa: SIM105
@@ -38,4 +56,42 @@ from .workflow import (  # noqa: F401
     download_and_process_data,
     run_config_based_workflow,
     validate_config_file,
+)
+
+# Re-export discovery functions
+from .discovery import (  # noqa: F401
+    build_call_graph,
+    discover_configs,
+    discover_functions,
+    discover_output_patterns,
+    discover_workflows,
+    find_symbol_usage,
+    get_module_dependencies,
+)
+
+# Re-export symbol functions
+from .symbols import (  # noqa: F401
+    find_symbol,
+    find_symbol_references,
+    fuzzy_find_symbol,
+    get_symbol_metadata,
+    get_symbol_signature,
+    index_classes,
+    index_functions,
+)
+
+# Re-export config discovery functions
+from .config import (  # noqa: F401
+    discover_config_files,
+    find_configs_for_module,
+    get_config_schema,
+    list_config_templates,
+)
+
+# Re-export path discovery functions
+from .paths import (  # noqa: F401
+    discover_output_patterns as discover_path_output_patterns,
+    find_output_locations,
+    get_module_output_base,
+    list_output_structure,
 )

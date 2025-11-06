@@ -1,4 +1,4 @@
-# Pogonomyrmex barbatus RNA-seq Pipeline - Complete Guide
+# Pogonomyrmex barbatus RNA-seq Pipeline - Guide
 
 **Date**: October 28, 2025  
 **Species**: *Pogonomyrmex barbatus* (red harvester ant)  

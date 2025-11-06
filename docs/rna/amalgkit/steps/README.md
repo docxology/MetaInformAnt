@@ -2,7 +2,7 @@
 
 This directory contains comprehensive documentation for all 11 amalgkit workflow steps.
 
-## Complete Step Documentation
+## Step Documentation
 
 1. **[metadata.md](metadata.md)** - NCBI SRA metadata retrieval
 2. **[integrate.md](integrate.md)** - Appending local FASTQ info to metadata tables
@@ -139,7 +139,7 @@ pytest tests/test_rna_amalgkit_steps.py::test_metadata_basic_execution -v
 ## Related Documentation
 
 - **[../amalgkit.md](../amalgkit.md)** - Complete pipeline overview
-- **[../comprehensive_guide.md](../comprehensive_guide.md)** - Comprehensive usage guide
+- **[../guide.md](../guide.md)** - Usage guide
 - **[../quick_start.md](../quick_start.md)** - Quick start guide
 - **[../testing_coverage.md](../testing_coverage.md)** - Test coverage report
 - **[../r_packages.md](../r_packages.md)** - R package requirements

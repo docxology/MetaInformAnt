@@ -46,7 +46,7 @@ Automated system for discovering all ant species with publicly available RNA-seq
 - `scripts/rna/run_multi_species.py` - Launch all species sequentially
 
 ### Monitoring  
-- `scripts/rna/get_current_status.py` - Check workflow status
+- `scripts/rna/orchestrate_workflows.py --status` - Check workflow status
 
 ## Discovery Data
 

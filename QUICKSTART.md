@@ -113,7 +113,7 @@ See [`docs/cli.md`](docs/cli.md) for complete CLI reference.
 
 ```bash
 # Run comprehensive workflow demo
-python scripts/run_complete_demo.py
+python scripts/core/run_demo.py
 
 # View results in output/demo/ directory
 ls output/demo/

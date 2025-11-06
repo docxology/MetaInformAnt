@@ -1,4 +1,4 @@
-# Apis mellifera GWAS - Comprehensive Execution Summary
+# Apis mellifera GWAS - Execution Summary
 
 **Date**: December 2024  
 **Status**: ✅ **GENOME DOWNLOADED - PIPELINE READY**

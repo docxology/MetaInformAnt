@@ -1,8 +1,0 @@
-{
-  "error": "File is not a zip file",
-  "ftp_error": "HTTP Error 404: Not Found",
-  "ftp_method": "ftp",
-  "ftp_return_code": 1,
-  "method": "datasets-api",
-  "return_code": 1
-}

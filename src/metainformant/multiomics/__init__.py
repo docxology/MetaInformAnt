@@ -12,6 +12,7 @@ from .integration import (
     MultiOmicsData,
     canonical_correlation,
     from_dna_variants,
+    from_metabolomics,
     from_protein_abundance,
     from_rna_expression,
     integrate_omics_data,
@@ -30,4 +31,5 @@ __all__ = [
     "from_dna_variants",
     "from_rna_expression",
     "from_protein_abundance",
+    "from_metabolomics",
 ]

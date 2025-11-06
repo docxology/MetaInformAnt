@@ -23,6 +23,38 @@ This document outlines AI assistance in developing METAINFORMANT's core infrastr
 - Database integration helpers for PostgreSQL connections
 - Text processing utilities for normalization and encoding
 - Content hashing utilities for file integrity verification
+- Symbolic mapping and context discovery utilities for repo-wide navigation
+- Symbol indexing and cross-referencing for functions and classes
+- Enhanced configuration discovery with schema extraction
+- Output pattern discovery and directory structure mapping
+
+### Symbolic Mapping and Discovery
+**Code Assistant Agent** implemented:
+- `discovery.py`: Comprehensive symbolic mapping and context discovery module
+  - Function discovery with AST-based signature extraction
+  - Config file discovery with domain filtering and metadata
+  - Output pattern identification per module
+  - Call graph construction for entry points
+  - Symbol usage tracking across repository
+  - Module dependency analysis with import extraction
+  - Workflow discovery for all domain modules
+- `symbols.py`: Symbol indexing and cross-referencing module
+  - Function and class indexing across entire repository
+  - Symbol definition lookup with fuzzy matching
+  - Reference finding with context extraction
+  - Signature extraction with type hints
+  - Metadata retrieval (docstrings, decorators, parameters)
+  - Caching for performance optimization
+- Enhanced `config.py`: Configuration discovery extensions
+  - Config file discovery with domain filtering
+  - Config schema extraction and structure analysis
+  - Module-to-config mapping
+  - Template listing and discovery
+- Enhanced `paths.py`: Output pattern discovery extensions
+  - Output pattern discovery per module
+  - Output location finding with pattern matching
+  - Module output base path resolution
+  - Complete output directory structure mapping
 
 ### Quality Assurance
 **Documentation Agent** assisted with:
@@ -30,6 +62,8 @@ This document outlines AI assistance in developing METAINFORMANT's core infrastr
 - API reference generation
 - Usage examples and best practices
 - Integration guides and patterns
+- Discovery and symbols module documentation
+- Context discovery usage patterns and examples
 
 ## Development Approach
 

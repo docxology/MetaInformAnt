@@ -66,7 +66,7 @@ from .visualization_comparison import (
     cross_cohort_forest,
     concordance_plot,
 )
-from .visualization_comprehensive import generate_all_plots
+from .visualization_suite import generate_all_plots
 
 try:
     from .workflow import execute_gwas_workflow
@@ -148,7 +148,7 @@ __all__ = [
     "multi_trait_manhattan",
     "cross_cohort_forest",
     "concordance_plot",
-    # Comprehensive visualization
+    # Visualization suite
     "generate_all_plots",
 ]
 

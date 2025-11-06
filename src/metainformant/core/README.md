@@ -544,4 +544,170 @@ if not is_valid:
 create_sample_config("sample_config.json", "scientific")
 ```
 
+### Symbolic Mapping and Discovery (`discovery.py`)
+Symbolic mapping and context discovery utilities for repo-wide navigation and sensemaking.
+
+**Key Features:**
+- Function discovery with signature extraction
+- Config file discovery and metadata
+- Output pattern identification
+- Call graph construction
+- Symbol usage tracking
+- Module dependency analysis
+- Workflow discovery
+
+**Usage:**
+```python
+from metainformant.core import discovery
+
+# Discover all functions in a module
+functions = discovery.discover_functions("src/metainformant/dna/sequences.py")
+for func in functions:
+    print(f"{func.name}: {func.signature}")
+
+# Find all config files
+configs = discovery.discover_configs(".", domain="rna")
+for cfg in configs:
+    print(f"{cfg.domain}: {cfg.path}")
+
+# Get output patterns for a module
+pattern = discovery.discover_output_patterns("rna")
+print(f"Base pattern: {pattern.base_pattern}")
+
+# Build call graph
+call_graph = discovery.build_call_graph("src/metainformant/rna/workflow.py")
+print(f"Functions called: {call_graph}")
+
+# Find symbol usage
+usages = discovery.find_symbol_usage("load_fasta", ".")
+for usage in usages:
+    print(f"Used in {usage.file}:{usage.line}")
+
+# Get module dependencies
+deps = discovery.get_module_dependencies("src/metainformant/dna/sequences.py")
+print(f"Imports: {deps.imports}")
+
+# Discover workflows
+workflows = discovery.discover_workflows(".")
+for wf in workflows:
+    print(f"{wf['domain']}: {wf['entry_point']}")
+```
+
+### Symbol Indexing (`symbols.py`)
+Symbol indexing and cross-referencing for functions, classes, and other symbols.
+
+**Key Features:**
+- Function and class indexing across repository
+- Symbol definition lookup
+- Reference finding
+- Signature extraction
+- Metadata retrieval (docstrings, type hints)
+- Fuzzy symbol matching
+
+**Usage:**
+```python
+from metainformant.core import symbols
+
+# Index all functions
+func_index = symbols.index_functions(".")
+for name, defs in func_index.items():
+    print(f"{name}: {len(defs)} definition(s)")
+
+# Index all classes
+class_index = symbols.index_classes(".")
+for name, defs in class_index.items():
+    print(f"{name}: {len(defs)} definition(s)")
+
+# Find symbol definition
+definitions = symbols.find_symbol("load_fasta", "function", ".")
+for defn in definitions:
+    print(f"Found in {defn.file_path}:{defn.line_number}")
+
+# Get symbol signature
+sig = symbols.get_symbol_signature("src/metainformant/dna/sequences.py", "load_fasta")
+print(f"Signature: {sig}")
+
+# Find all references
+refs = symbols.find_symbol_references("load_fasta", ".")
+for ref in refs:
+    print(f"{ref.file_path}:{ref.line_number} - {ref.context}")
+
+# Get symbol metadata
+metadata = symbols.get_symbol_metadata("src/metainformant/dna/sequences.py", "load_fasta")
+print(f"Docstring: {metadata.get('docstring')}")
+
+# Fuzzy find symbols
+matches = symbols.fuzzy_find_symbol("load_fas", "function", ".", threshold=0.6)
+for name, score in matches:
+    print(f"{name}: {score:.2f}")
+```
+
+### Enhanced Configuration Discovery (`config.py` extensions)
+Extended configuration discovery capabilities.
+
+**Key Features:**
+- Config file discovery with domain filtering
+- Config schema extraction
+- Module-to-config mapping
+- Template listing
+
+**Usage:**
+```python
+from metainformant.core import config
+
+# Discover all config files
+configs = config.discover_config_files(".", domain="rna")
+for cfg in configs:
+    print(f"{cfg['domain']}: {cfg['path']}")
+
+# Get config schema
+schema = config.get_config_schema("config/amalgkit/amalgkit_test.yaml")
+print(f"Top-level keys: {schema['top_level_keys']}")
+print(f"Structure: {schema['nested_structure']}")
+
+# Find configs for a module
+configs = config.find_configs_for_module("rna", ".")
+for cfg in configs:
+    print(f"Config: {cfg['path']}")
+
+# List config templates
+templates = config.list_config_templates(".")
+for tmpl in templates:
+    print(f"Template: {tmpl['name']} ({tmpl['domain']})")
+```
+
+### Enhanced Path Discovery (`paths.py` extensions)
+Extended path discovery for output patterns and directory structures.
+
+**Key Features:**
+- Output pattern discovery per module
+- Output location finding
+- Module output base paths
+- Complete output directory structure mapping
+
+**Usage:**
+```python
+from metainformant.core import paths
+
+# Get output patterns for a module
+patterns = paths.discover_output_patterns("rna")
+print(f"Base pattern: {patterns['base_pattern']}")
+print(f"Subdirs: {patterns['subdirs']}")
+
+# Find existing output locations
+locations = paths.find_output_locations(".", pattern="rna")
+for loc in locations:
+    print(f"Output location: {loc}")
+
+# Get module output base
+base = paths.get_module_output_base("rna")
+print(f"Output base: {base}")
+
+# List entire output structure
+structure = paths.list_output_structure(".")
+print(f"Total dirs: {structure['total_dirs']}")
+print(f"Total files: {structure['total_files']}")
+print(f"Total size: {structure['total_size']} bytes")
+```
+
 This ensures consistency and reduces code duplication across the entire codebase.

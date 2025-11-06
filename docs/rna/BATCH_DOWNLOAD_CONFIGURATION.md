@@ -2,94 +2,110 @@
 
 ## Overview
 
-The batch download system allows you to configure how many species download in parallel and how many threads each species uses. This provides fine-grained control over download throughput and system resource usage.
+The batch download system uses **total thread allocation** across all species, providing fine-grained control over download throughput and system resource usage while ensuring maximum disk efficiency through immediate per-sample processing.
 
 ## Quick Start
 
 ### Default Configuration (Recommended)
 ```bash
-# 3 species in parallel, 10 threads each (30 total downloads)
+# 24 threads TOTAL distributed across all species (minimum 1 per species)
 python3 scripts/rna/batch_download_species.py
 ```
 
 ### Custom Configuration
 ```bash
-# 4 species, 12 threads each (48 total downloads)
-python3 scripts/rna/batch_download_species.py --species-count 4 --threads-per-species 12
+# 48 threads total (more throughput on high-end systems)
+python3 scripts/rna/batch_download_species.py --total-threads 48
 
-# 2 species, 8 threads each (16 total downloads)
-python3 scripts/rna/batch_download_species.py --species-count 2 --threads-per-species 8
+# 16 threads total (conservative for limited resources)
+python3 scripts/rna/batch_download_species.py --total-threads 16
 ```
 
 ## Configuration Parameters
 
-### `--species-count`
-- **Default**: 3
-- **Description**: Number of species to download in parallel
-- **Range**: 1-10 (recommended: 2-5)
-- **Impact**: More species = faster overall but higher resource usage
-
-### `--threads-per-species`
-- **Default**: 10
-- **Description**: Number of download threads per species
-- **Range**: 4-20 (recommended: 8-12)
-- **Impact**: More threads = faster per-species but diminishing returns
+### `--total-threads`
+- **Default**: 24
+- **Description**: Total number of threads to distribute across all species
+- **Range**: 8-64 (recommended: 24 for standard systems)
+- **Impact**: Threads distributed evenly (minimum 1 per species). More threads = faster overall but higher resource usage
+- **Distribution**: For 20 species with 24 threads: 4 species get 2 threads, 16 get 1 thread
 
 ### `--max-species`
 - **Default**: None (all species)
 - **Description**: Maximum number of species to process
 - **Use case**: Testing or processing subset of species
 
+### `--quant-threads`
+- **Default**: 10
+- **Description**: Separate thread pool for quantification operations
+- **Range**: 4-20 (recommended: 10)
+- **Impact**: Quantification runs in parallel with downloads
+
+## Thread Allocation Strategy
+
+The system uses **total thread allocation** where threads are distributed across all species:
+
+1. **Initial Distribution**: Threads distributed evenly (minimum 1 per species)
+2. **Dynamic Redistribution**: As species complete, threads redistribute to remaining species
+3. **Concentration**: Threads concentrate on fewer species as workflow progresses
+4. **Immediate Processing**: Each sample is downloaded, quantified, and FASTQs deleted immediately
+
+### Example Distribution
+
+For 20 species with 24 total threads:
+- 4 species get 2 threads each (8 threads)
+- 16 species get 1 thread each (16 threads)
+- Total: 24 threads
+
+As species complete, remaining species receive more threads automatically.
+
 ## Thread Count Recommendations
-
-### Network Bandwidth Considerations
-
-| Bandwidth | Recommended Threads | Total (3 species) |
-|-----------|---------------------|------------------|
-| < 100 Mbps | 8 per species | 24 total |
-| 100-400 Mbps | 10 per species | 30 total |
-| 400-500 Mbps | 12 per species | 36 total |
-| > 500 Mbps | 16 per species | 48 total |
 
 ### System Resource Considerations
 
-| CPU Cores | Recommended Config | Total Threads |
-|-----------|-------------------|---------------|
-| 4 cores | 2 species × 8 threads | 16 total |
-| 8 cores | 3 species × 10 threads | 30 total |
-| 16 cores | 4 species × 12 threads | 48 total |
-| 32+ cores | 5 species × 16 threads | 80 total |
+| CPU Cores | Recommended Total Threads | Distribution (20 species) |
+|-----------|---------------------------|---------------------------|
+| 4-8 cores | 16-24 total | 1 thread per species |
+| 16 cores | 24-32 total | 1-2 threads per species |
+| 32 cores | 48-64 total | 2-3 threads per species |
+| 64+ cores | 64-96 total | 3-4 threads per species |
 
 ## Examples
 
-### High-Speed Network (500+ Mbps)
+### Standard System (Recommended)
 ```bash
-python3 scripts/rna/batch_download_species.py \
-    --species-count 4 \
-    --threads-per-species 16
+# 24 threads total distributed across all species
+python3 scripts/rna/batch_download_species.py --total-threads 24
 ```
 
-### Limited Bandwidth (< 100 Mbps)
+### High-End System
 ```bash
-python3 scripts/rna/batch_download_species.py \
-    --species-count 2 \
-    --threads-per-species 8
+# 48 threads total for faster processing
+python3 scripts/rna/batch_download_species.py --total-threads 48
 ```
 
-### Balanced Configuration (Default)
+### Limited Resources
 ```bash
-python3 scripts/rna/batch_download_species.py \
-    --species-count 3 \
-    --threads-per-species 10
+# 16 threads total for conservative resource usage
+python3 scripts/rna/batch_download_species.py --total-threads 16
 ```
 
-### Testing (Single Species)
+### Testing (Limited Species)
 ```bash
-python3 scripts/rna/batch_download_species.py \
-    --species-count 1 \
-    --threads-per-species 10 \
-    --max-species 1
+# Process only first 5 species with 24 threads total
+python3 scripts/rna/batch_download_species.py --total-threads 24 --max-species 5
 ```
+
+## Immediate Processing
+
+The system processes samples immediately (not in batches):
+
+1. **Download**: Sample FASTQ files are downloaded
+2. **Immediate Quantification**: Sample is quantified as soon as download completes
+3. **Immediate Deletion**: FASTQ files are deleted immediately after quantification
+4. **Next Sample**: Process moves to next sample without waiting for batch completion
+
+This ensures maximum disk efficiency - only one sample's FASTQs exist at any time.
 
 ## Monitoring Download Progress
 
@@ -105,7 +121,7 @@ ps aux | grep "amalgkit getfastq" | grep -c "amalgkit"
 ### Analyze Sample Status
 ```bash
 # Comprehensive status analysis
-python3 scripts/rna/analyze_sample_status.py
+python3 scripts/rna/assess_progress.py
 ```
 
 ### Check Disk Space
@@ -115,23 +131,6 @@ df -h /
 du -sh output/amalgkit/
 ```
 
-## Cleanup and Maintenance
-
-### Clean Up Partial Downloads
-```bash
-# Dry run (see what would be deleted)
-python3 scripts/rna/cleanup_partial_downloads.py --dry-run
-
-# Actually delete partial/failed downloads
-python3 scripts/rna/cleanup_partial_downloads.py --execute
-```
-
-### Clean Up Quantified Samples
-```bash
-# Delete FASTQ/SRA files for quantified samples
-bash scripts/rna/cleanup_quantified_sra.sh --execute
-```
-
 ## Performance Tuning
 
 ### Signs of Optimal Configuration
@@ -139,6 +138,7 @@ bash scripts/rna/cleanup_quantified_sra.sh --execute
 - ✅ CPU usage is moderate (not pegged at 100%)
 - ✅ Downloads complete without excessive retries
 - ✅ System remains responsive
+- ✅ Only one sample's FASTQs exist at a time (immediate processing working)
 
 ### Signs of Too Many Threads
 - ⚠️ High latency/packet loss
@@ -155,33 +155,36 @@ bash scripts/rna/cleanup_quantified_sra.sh --execute
 
 ### Downloads Stuck or Slow
 1. Check network connectivity: `ping -c 4 8.8.8.8`
-2. Reduce threads: `--threads-per-species 8`
-3. Reduce parallel species: `--species-count 2`
-4. Check disk space: `df -h /`
+2. Reduce total threads: `--total-threads 16`
+3. Check disk space: `df -h /`
+4. Verify immediate processing is working (only one sample's FASTQs should exist)
 
 ### Out of Disk Space
 1. Clean up partial downloads: `python3 scripts/rna/cleanup_partial_downloads.py --execute`
-2. Clean up quantified samples: `bash scripts/rna/cleanup_quantified_sra.sh --execute`
-3. Check for large temp files: `du -sh output/amalgkit/*/fastq`
+2. Check for large temp files: `du -sh output/amalgkit/*/fastq`
+3. Verify immediate processing: FASTQs should be deleted after quantification
 
 ### High CPU Usage
-1. Reduce threads: `--threads-per-species 8`
-2. Reduce parallel species: `--species-count 2`
-3. Check other processes: `top` or `htop`
+1. Reduce total threads: `--total-threads 16`
+2. Check other processes: `top` or `htop`
+3. Monitor thread distribution: Should see threads distributed across species
+
+## Best Practices
+
+1. **Start Conservative**: Begin with 24 total threads (distributed across all species)
+2. **Monitor Progress**: Watch resource usage and download speeds
+3. **Adjust Gradually**: Increase total threads if bandwidth and CPU allow
+4. **Verify Immediate Processing**: Only one sample's FASTQs should exist at a time
+5. **Thread Distribution**: Threads automatically redistribute as species complete
+
+## Related Documentation
+
+- **[CONFIGURATION.md](CONFIGURATION.md)**: Complete configuration guide
+- **[ORCHESTRATION/BATCH_DOWNLOAD.md](ORCHESTRATION/BATCH_DOWNLOAD.md)**: Orchestration details
+- **[WORKFLOW.md](WORKFLOW.md)**: Workflow planning and execution
 
 ## Related Scripts
 
 - `scripts/rna/batch_download_species.py` - Main batch download script
 - `scripts/rna/cleanup_partial_downloads.py` - Clean up partial/failed downloads
-- `scripts/rna/cleanup_quantified_sra.sh` - Clean up quantified samples
-- `scripts/rna/analyze_sample_status.py` - Analyze sample status
-- `scripts/rna/quant_downloaded_samples.py` - Quantify downloaded samples
-
-## Best Practices
-
-1. **Start Conservative**: Begin with default (3 species × 10 threads)
-2. **Monitor First Batch**: Watch resource usage and download speeds
-3. **Adjust Gradually**: Increase threads/species if bandwidth allows
-4. **Clean Regularly**: Clean up partial downloads to free space
-5. **Use Dry Runs**: Always test cleanup with `--dry-run` first
-
+- `scripts/rna/assess_progress.py` - Analyze sample status and progress

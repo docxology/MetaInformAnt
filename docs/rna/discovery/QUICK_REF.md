@@ -22,7 +22,8 @@ bash scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit/amalgkit_SPEC
 ## Prerequisites
 
 ```bash
-pip install biopython ncbi-datasets-pylib
+# Using uv (recommended)
+uv pip install biopython ncbi-datasets-pylib
 export NCBI_EMAIL="your.email@example.com"
 ```
 
@@ -59,14 +60,14 @@ output/ant_discovery/
 2. **Check priorities**: Species with chromosome genomes + many samples
 3. **Deploy configs**: `cp output/ant_discovery/configs/amalgkit_*.yaml config/amalgkit/`
 4. **Start workflows**: Use existing scripts with new configs
-5. **Monitor progress**: `python3 scripts/rna/get_current_status.py`
+5. **Monitor progress**: `python3 scripts/rna/orchestrate_workflows.py --status`
 
 ## Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
 | No NCBI_EMAIL set | `export NCBI_EMAIL="your@email.com"` |
-| ncbi-datasets-pylib missing | `pip install ncbi-datasets-pylib` |
+| ncbi-datasets-pylib missing | `uv pip install ncbi-datasets-pylib` |
 | Slow SRA search | Normal - NCBI API, wait 5-10 minutes |
 | FTP URL invalid | Manually verify assembly on NCBI, update YAML |
 

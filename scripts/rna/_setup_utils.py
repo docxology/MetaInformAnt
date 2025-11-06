@@ -74,13 +74,17 @@ def setup_venv_and_dependencies(auto_setup: bool = True) -> bool:
     # Check if venv exists and is valid
     if venv_python.exists():
         logger.info(f"✓ Virtual environment found at {venv_dir}")
-        # Verify amalgkit is installed
+        # Verify amalgkit and pyyaml are installed
         try:
-            result = subprocess.run(
+            amalgkit_result = subprocess.run(
                 [str(venv_python), "-c", "import amalgkit; print('ok')"],
                 capture_output=True, text=True, timeout=5
             )
-            if result.returncode == 0:
+            yaml_result = subprocess.run(
+                [str(venv_python), "-c", "import yaml; print('ok')"],
+                capture_output=True, text=True, timeout=5
+            )
+            if amalgkit_result.returncode == 0 and yaml_result.returncode == 0:
                 return True
             else:
                 logger.info("Venv exists but missing dependencies, installing...")
@@ -324,6 +328,18 @@ def check_environment() -> tuple[bool, list[str], list[str]]:
     
     if not amalgkit_found and not shutil.which("amalgkit"):
         missing.append("amalgkit")
+    
+    # Check pyyaml (required for config parsing)
+    if venv_python.exists():
+        try:
+            result = subprocess.run(
+                [str(venv_python), "-c", "import yaml; print('ok')"],
+                capture_output=True, text=True, timeout=5
+            )
+            if result.returncode != 0:
+                missing.append("pyyaml")
+        except Exception:
+            missing.append("pyyaml")
     
     # Check other tools (warnings, not critical)
     optional_tools = {

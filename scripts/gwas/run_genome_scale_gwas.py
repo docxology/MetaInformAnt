@@ -285,12 +285,12 @@ def main():
     logger.info("STEP 4: Run GWAS Analysis")
     logger.info("─" * 80)
     
-    # Enable comprehensive plots
+    # Enable visualization suite (all plot types)
     if args.comprehensive_plots:
         if not config.output:
             config.output = {}
         config.output["comprehensive_plots"] = True
-        logger.info("Comprehensive visualization suite enabled")
+        logger.info("Visualization suite enabled")
     
     logger.info("Executing full GWAS workflow...")
     workflow_result = execute_gwas_workflow(config)

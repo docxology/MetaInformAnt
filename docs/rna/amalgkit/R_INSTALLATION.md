@@ -157,8 +157,10 @@ If R cannot be installed, you can:
 sudo -l
 
 # If no sudo access, contact system administrator
-# Or use conda/mamba for user-level R installation:
+# Or use conda/mamba for user-level R installation (system tool):
 conda install -c conda-forge r-base
+
+# Note: For Python packages, use uv pip install (primary method)
 ```
 
 ### Issue: Package conflicts

@@ -201,3 +201,215 @@ def create_temp_file(suffix: str = "", prefix: str = "tmp", directory: str | Pat
         temp_path = dir_path / temp_name
         if not temp_path.exists():
             return temp_path
+
+
+#
+# Output pattern discovery functions
+#
+
+
+def discover_output_patterns(module_name: str) -> dict[str, Any]:
+    """Get output directory patterns for a module.
+
+    Args:
+        module_name: Name of the module (e.g., 'rna', 'gwas', 'dna')
+
+    Returns:
+        Dictionary with output pattern information:
+        - base_pattern: Base output pattern
+        - subdirs: List of common subdirectories
+        - examples: Example output paths
+    """
+    # Map from .cursorrules patterns
+    patterns_map: dict[str, dict[str, Any]] = {
+        "rna": {
+            "base_pattern": "output/amalgkit/<species>/<step>/",
+            "subdirs": ["quant/", "work/", "logs/"],
+            "examples": ["output/amalgkit/Apis_mellifera/quant/", "output/amalgkit/Apis_mellifera/work/"],
+        },
+        "gwas": {
+            "base_pattern": "output/gwas/<analysis_type>/",
+            "subdirs": ["association/", "plots/", "qc/"],
+            "examples": ["output/gwas/association/", "output/gwas/plots/"],
+        },
+        "life_events": {
+            "base_pattern": "output/life_events/<workflow>/",
+            "subdirs": ["embeddings/", "models/", "plots/"],
+            "examples": ["output/life_events/embeddings/", "output/life_events/models/"],
+        },
+        "multiomics": {
+            "base_pattern": "output/multiomics/<integration>/",
+            "subdirs": ["integrated/", "plots/"],
+            "examples": ["output/multiomics/integrated/", "output/multiomics/plots/"],
+        },
+        "singlecell": {
+            "base_pattern": "output/singlecell/<analysis>/",
+            "subdirs": ["preprocessing/", "clustering/"],
+            "examples": ["output/singlecell/preprocessing/", "output/singlecell/clustering/"],
+        },
+        "networks": {
+            "base_pattern": "output/networks/<network_type>/",
+            "subdirs": ["ppi/", "regulatory/", "pathways/"],
+            "examples": ["output/networks/ppi/", "output/networks/regulatory/"],
+        },
+        "information": {
+            "base_pattern": "output/information/<analysis_type>/",
+            "subdirs": ["entropy/", "complexity/"],
+            "examples": ["output/information/entropy/", "output/information/complexity/"],
+        },
+        "dna": {
+            "base_pattern": "output/dna/<analysis_type>/",
+            "subdirs": ["phylogeny/", "population/", "variants/"],
+            "examples": ["output/dna/phylogeny/", "output/dna/population/"],
+        },
+        "protein": {
+            "base_pattern": "output/protein/<analysis_type>/",
+            "subdirs": ["structures/", "alignments/"],
+            "examples": ["output/protein/structures/", "output/protein/alignments/"],
+        },
+        "quality": {
+            "base_pattern": "output/quality/<dataset>/",
+            "subdirs": ["fastq/", "reports/"],
+            "examples": ["output/quality/fastq/", "output/quality/reports/"],
+        },
+        "math": {
+            "base_pattern": "output/math/<type>/",
+            "subdirs": ["simulations/", "models/", "plots/"],
+            "examples": ["output/math/simulations/", "output/math/models/"],
+        },
+        "simulation": {
+            "base_pattern": "output/simulation/<type>/",
+            "subdirs": ["sequences/", "ecosystems/"],
+            "examples": ["output/simulation/sequences/", "output/simulation/ecosystems/"],
+        },
+    }
+
+    # Return known pattern or default
+    if module_name.lower() in patterns_map:
+        return patterns_map[module_name.lower()]
+
+    # Default pattern
+    return {
+        "base_pattern": f"output/{module_name}/",
+        "subdirs": [],
+        "examples": [f"output/{module_name}/"],
+    }
+
+
+def find_output_locations(repo_root: str | Path, pattern: str | None = None) -> list[Path]:
+    """Find existing output directories.
+
+    Args:
+        repo_root: Root directory of repository
+        pattern: Optional pattern to match (e.g., 'rna', 'gwas')
+
+    Returns:
+        List of Path objects for existing output directories
+    """
+    repo_root = Path(repo_root)
+    output_dir = repo_root / "output"
+    if not output_dir.exists():
+        return []
+
+    locations: list[Path] = []
+
+    if pattern:
+        # Search for directories matching pattern
+        for path in output_dir.rglob("*"):
+            if path.is_dir() and pattern.lower() in str(path).lower():
+                locations.append(path)
+    else:
+        # Return all output subdirectories
+        for path in output_dir.rglob("*"):
+            if path.is_dir():
+                locations.append(path)
+
+    return sorted(set(locations))
+
+
+def get_module_output_base(module_name: str) -> str:
+    """Get default output base for module.
+
+    Args:
+        module_name: Name of the module
+
+    Returns:
+        Default output base path string
+    """
+    patterns = discover_output_patterns(module_name)
+    base_pattern = patterns.get("base_pattern", f"output/{module_name}/")
+    # Remove template variables for base
+    base = base_pattern.split("<")[0].rstrip("/")
+    return base if base else f"output/{module_name}"
+
+
+def list_output_structure(repo_root: str | Path) -> dict[str, Any]:
+    """Map entire output directory structure.
+
+    Args:
+        repo_root: Root directory of repository
+
+    Returns:
+        Dictionary with output structure information:
+        - total_dirs: Total number of directories
+        - total_files: Total number of files
+        - total_size: Total size in bytes
+        - structure: Nested structure of directories
+    """
+    repo_root = Path(repo_root)
+    output_dir = repo_root / "output"
+    if not output_dir.exists():
+        return {
+            "total_dirs": 0,
+            "total_files": 0,
+            "total_size": 0,
+            "structure": {},
+        }
+
+    total_dirs = 0
+    total_files = 0
+    total_size = 0
+    structure: dict[str, Any] = {}
+
+    def build_structure(path: Path, rel_path: Path) -> dict[str, Any]:
+        """Recursively build structure."""
+        nonlocal total_dirs, total_files, total_size
+
+        node: dict[str, Any] = {
+            "type": "directory" if path.is_dir() else "file",
+            "path": str(rel_path),
+        }
+
+        if path.is_dir():
+            total_dirs += 1
+            node["children"] = {}
+            try:
+                for child in sorted(path.iterdir()):
+                    if child.name.startswith("."):
+                        continue
+                    child_rel = rel_path / child.name
+                    node["children"][child.name] = build_structure(child, child_rel)
+            except (OSError, PermissionError):
+                pass
+        else:
+            total_files += 1
+            try:
+                size = path.stat().st_size
+                total_size += size
+                node["size"] = size
+            except OSError:
+                node["size"] = 0
+
+        return node
+
+    try:
+        structure = build_structure(output_dir, Path("output"))
+    except Exception:
+        pass
+
+    return {
+        "total_dirs": total_dirs,
+        "total_files": total_files,
+        "total_size": total_size,
+        "structure": structure,
+    }

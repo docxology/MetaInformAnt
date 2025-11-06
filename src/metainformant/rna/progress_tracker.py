@@ -36,12 +36,14 @@ class ProgressTracker:
     - completed: Samples quantified and deleted
     """
     
-    def __init__(self, state_file: Path | None = None, dashboard_file: Path | None = None):
+    def __init__(self, state_file: Path | None = None, dashboard_file: Path | None = None,
+                 visualization_file: Path | None = None):
         """Initialize progress tracker.
         
         Args:
             state_file: Path to JSON file for state persistence (default: output/amalgkit/progress_state.json)
             dashboard_file: Path to dashboard visualization file (default: output/amalgkit/progress_dashboard.txt)
+            visualization_file: Path to PNG visualization file (default: output/amalgkit/progress_dashboard.png)
         """
         repo_root = Path(__file__).parent.parent.parent.parent.resolve()
         output_dir = repo_root / "output"
@@ -49,6 +51,7 @@ class ProgressTracker:
         
         self.state_file = state_file or (amalgkit_dir / "progress_state.json")
         self.dashboard_file = dashboard_file or (amalgkit_dir / "progress_dashboard.txt")
+        self.visualization_file = visualization_file or (amalgkit_dir / "progress_dashboard.png")
         self.log_file = amalgkit_dir / "progress_tracker.log"
         
         # Per-species state: species_name -> dict with category sets
@@ -384,137 +387,44 @@ class ProgressTracker:
         
         return "\n".join(lines)
     
-    def generate_png_visualization(self) -> Path | None:
-        """Generate PNG visualization of workflow progress.
+    def generate_visualization(self) -> Path | None:
+        """Generate PNG visualization of workflow progress using the new visualization module.
         
-        Creates a multi-panel visualization showing:
-        - Overall progress bar
-        - Per-species progress bars
-        - Category breakdown (completed, in progress, failed)
+        Creates a multi-panel bar chart visualization showing sample counts in each category
+        (need_download, ongoing_download, failed_download, needs_quant, needs_delete, completed)
+        for each species, plus an overall summary panel.
         
         Returns:
             Path to generated PNG file, or None if generation failed
         """
         try:
-            import matplotlib
-            matplotlib.use('Agg')  # Non-interactive backend
-            import matplotlib.pyplot as plt
-            import numpy as np
+            from ..visualization.amalgkit_visualization import plot_progress_dashboard
         except ImportError:
-            logger.debug("matplotlib not available, skipping PNG visualization")
-            return None
+            try:
+                from metainformant.visualization.amalgkit_visualization import plot_progress_dashboard
+            except ImportError:
+                logger.debug("amalgkit_visualization module not available, skipping PNG visualization")
+                return None
         
         try:
-            # Get all species states
-            species_states = self.get_all_species_state()
-            if not species_states:
-                logger.debug("No species states available for PNG generation")
+            # Load current state from file (or use in-memory state)
+            if self.state_file.exists():
+                # Use the state file directly
+                output_path = plot_progress_dashboard(
+                    self.state_file,
+                    output_path=self.visualization_file,
+                    dpi=300
+                )
+                if output_path:
+                    logger.debug(f"PNG visualization generated: {output_path}")
+                return output_path
+            else:
+                # No state file yet, can't generate visualization
+                logger.debug("No state file available for PNG generation")
                 return None
-            
-            # Filter out species with zero total samples
-            species_states = {k: v for k, v in species_states.items() if v.get("total", 0) > 0}
-            if not species_states:
-                logger.debug("No species with samples for PNG generation")
-                return None
-            
-            # Prepare data
-            species_names = sorted(species_states.keys())
-            totals = [species_states[s]["total"] for s in species_names]
-            completed = [species_states[s]["completed"] for s in species_names]
-            percentages = [(c / t * 100) if t > 0 else 0.0 for c, t in zip(completed, totals)]
-            
-            # Calculate category totals
-            total_samples = sum(totals)
-            total_completed = sum(completed)
-            total_ongoing = sum(species_states[s]["ongoing_download"] + 
-                               species_states[s]["needs_quant"] + 
-                               species_states[s]["needs_delete"] for s in species_names)
-            total_failed = sum(species_states[s]["failed_download"] for s in species_names)
-            total_remaining = total_samples - total_completed - total_ongoing
-            
-            # Create figure with subplots
-            fig = plt.figure(figsize=(14, 10))
-            gs = fig.add_gridspec(3, 2, hspace=0.3, wspace=0.3)
-            
-            # Panel 1: Overall progress bar
-            ax1 = fig.add_subplot(gs[0, :])
-            overall_pct = (total_completed / total_samples * 100) if total_samples > 0 else 0.0
-            ax1.barh([0], [overall_pct], color='#2ecc71', height=0.5, label='Completed')
-            ax1.barh([0], [(total_ongoing / total_samples * 100) if total_samples > 0 else 0.0], 
-                    left=[overall_pct], color='#f39c12', height=0.5, label='In Progress')
-            ax1.barh([0], [(total_failed / total_samples * 100) if total_samples > 0 else 0.0],
-                    left=[overall_pct + (total_ongoing / total_samples * 100) if total_samples > 0 else 0.0],
-                    color='#e74c3c', height=0.5, label='Failed')
-            ax1.set_xlim(0, 100)
-            ax1.set_ylim(-0.5, 0.5)
-            ax1.set_xlabel('Progress (%)', fontsize=12, fontweight='bold')
-            ax1.set_title(f'Overall Progress: {total_completed}/{total_samples} samples ({overall_pct:.1f}%)', 
-                         fontsize=14, fontweight='bold')
-            ax1.legend(loc='upper right')
-            ax1.set_yticks([])
-            ax1.grid(axis='x', alpha=0.3)
-            
-            # Panel 2: Per-species progress bars
-            ax2 = fig.add_subplot(gs[1, :])
-            y_pos = np.arange(len(species_names))
-            colors = ['#2ecc71' if p == 100 else '#f39c12' if p > 0 else '#95a5a6' 
-                     for p in percentages]
-            bars = ax2.barh(y_pos, percentages, color=colors, alpha=0.8)
-            ax2.set_yticks(y_pos)
-            ax2.set_yticklabels([s.replace('_', ' ').title() for s in species_names], fontsize=9)
-            ax2.set_xlabel('Progress (%)', fontsize=11)
-            ax2.set_title('Per-Species Progress', fontsize=12, fontweight='bold')
-            ax2.set_xlim(0, 100)
-            ax2.grid(axis='x', alpha=0.3)
-            
-            # Add percentage labels on bars
-            for i, (bar, pct) in enumerate(zip(bars, percentages)):
-                if pct > 5:  # Only label if bar is visible
-                    ax2.text(pct / 2, i, f'{pct:.1f}%', 
-                            ha='center', va='center', fontweight='bold', fontsize=8)
-            
-            # Panel 3: Category breakdown (pie chart)
-            ax3 = fig.add_subplot(gs[2, 0])
-            categories = ['Completed', 'In Progress', 'Failed', 'Remaining']
-            sizes = [total_completed, total_ongoing, total_failed, total_remaining]
-            colors_pie = ['#2ecc71', '#f39c12', '#e74c3c', '#95a5a6']
-            # Only show non-zero categories
-            non_zero = [(c, s, col) for c, s, col in zip(categories, sizes, colors_pie) if s > 0]
-            if non_zero:
-                cats, szs, cols = zip(*non_zero)
-                ax3.pie(szs, labels=cats, colors=cols, autopct='%1.1f%%', startangle=90)
-                ax3.set_title('Sample Status Distribution', fontsize=11, fontweight='bold')
-            
-            # Panel 4: Statistics table
-            ax4 = fig.add_subplot(gs[2, 1])
-            ax4.axis('off')
-            stats_text = [
-                f"Total Samples: {total_samples:,}",
-                f"Completed: {total_completed:,} ({total_completed/total_samples*100:.1f}%)" if total_samples > 0 else "Completed: 0",
-                f"In Progress: {total_ongoing:,}",
-                f"Failed Downloads: {total_failed:,}",
-                f"Remaining: {total_remaining:,}",
-                "",
-                f"Last Update: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
-            ]
-            ax4.text(0.1, 0.9, '\n'.join(stats_text), transform=ax4.transAxes,
-                    fontsize=10, verticalalignment='top', family='monospace',
-                    bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.5))
-            
-            # Overall title
-            fig.suptitle('RNA-Seq Workflow Progress Summary', fontsize=16, fontweight='bold', y=0.98)
-            
-            # Save PNG
-            png_file = self.dashboard_file.with_suffix('.png')
-            png_file.parent.mkdir(parents=True, exist_ok=True)
-            plt.savefig(png_file, dpi=150, bbox_inches='tight', facecolor='white')
-            plt.close(fig)
-            
-            logger.debug(f"PNG visualization generated: {png_file}")
-            return png_file
             
         except Exception as e:
-            logger.warning(f"Failed to generate PNG visualization: {e}")
+            logger.warning(f"Failed to generate PNG visualization: {e}", exc_info=True)
             return None
     
     def update_dashboard(self) -> None:
@@ -532,8 +442,8 @@ class ProgressTracker:
                 f.write(dashboard_text)
             
             # Generate PNG visualization (log at info level so it's visible)
-            png_file = self.generate_png_visualization()
-            if png_file:
+            png_file = self.generate_visualization()
+            if png_file and png_file.exists():
                 logger.info(f"✓ PNG visualization updated: {png_file.name} ({png_file.stat().st_size / 1024:.1f} KB)")
             else:
                 logger.debug("PNG visualization generation returned None (may be normal if no species with samples)")
@@ -550,12 +460,14 @@ _tracker_instance: ProgressTracker | None = None
 _tracker_lock = threading.Lock()
 
 
-def get_tracker(state_file: Path | None = None, dashboard_file: Path | None = None) -> ProgressTracker:
+def get_tracker(state_file: Path | None = None, dashboard_file: Path | None = None,
+                visualization_file: Path | None = None) -> ProgressTracker:
     """Get or create the global progress tracker instance.
     
     Args:
         state_file: Optional path to state file
         dashboard_file: Optional path to dashboard file
+        visualization_file: Optional path to PNG visualization file
         
     Returns:
         ProgressTracker instance
@@ -564,6 +476,10 @@ def get_tracker(state_file: Path | None = None, dashboard_file: Path | None = No
     
     with _tracker_lock:
         if _tracker_instance is None:
-            _tracker_instance = ProgressTracker(state_file=state_file, dashboard_file=dashboard_file)
+            _tracker_instance = ProgressTracker(
+                state_file=state_file, 
+                dashboard_file=dashboard_file,
+                visualization_file=visualization_file
+            )
         return _tracker_instance
 

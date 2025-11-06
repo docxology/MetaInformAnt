@@ -272,7 +272,7 @@ For each detected issue, the script provides:
 
 This script documentation integrates with:
 - **[README.md](README.md)**: Amalgkit script overview and usage
-- **[docs/rna/amalgkit/comprehensive_guide.md](../../../docs/rna/amalgkit/comprehensive_guide.md)**: Complete workflow guide
+- **[docs/rna/amalgkit/guide.md](../../../docs/rna/amalgkit/guide.md)**: Workflow guide
 - **[docs/rna/amalgkit/steps/](../../../docs/rna/amalgkit/steps/)**: Individual step documentation
 - **[docs/rna/workflow.md](../../../docs/rna/workflow.md)**: Workflow orchestration
 - **[CENTRALIZATION_COMPLETE.md](CENTRALIZATION_COMPLETE.md)**: Workflow consolidation status
@@ -301,7 +301,7 @@ Scripts validated through:
 *These workflow verification scripts demonstrate effective AI-assisted development of production-ready bioinformatics workflow tooling, combining systematic validation logic with practical troubleshooting guidance.*
 
 **Scripts Updated**: November 1, 2025  
-**METAINFORMANT Version**: 1.0  
+**METAINFORMANT Version**: 0.2.0  
 **Amalgkit Compatibility**: 0.12.19  
 **Status**: ✅ Production-tested, comprehensive validation
 **Recent Enhancements**: ENA direct downloads (100% reliability), auto-activation, 12-thread configuration

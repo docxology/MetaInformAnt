@@ -27,7 +27,7 @@ from urllib.request import urlopen
 try:
     from Bio import Entrez
 except ImportError:
-    print("ERROR: Biopython not installed. Install with: pip install biopython")
+    print("ERROR: Biopython not installed. Install with: uv pip install biopython")
     sys.exit(1)
 
 try:
@@ -37,7 +37,7 @@ try:
 except ImportError:
     NCBI_DATASETS_AVAILABLE = False
     print("WARNING: ncbi-datasets-pylib not installed. Genome data will be limited.")
-    print("Install with: pip install ncbi-datasets-pylib")
+    print("Install with: uv pip install ncbi-datasets-pylib")
 
 # Configure logging
 logging.basicConfig(

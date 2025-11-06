@@ -15,7 +15,7 @@ Configurable batch download orchestrator for multiple species with dynamic threa
 # Scope: Multi-species parallel batch download with configurable throughput
 # Steps: getfastq → quant (per-sample, immediate)
 # Config: Auto-discovers all config/amalgkit/amalgkit_*.yaml files
-# Threads: Configurable total (default 8) distributed across species
+# Threads: Configurable total (default 24) distributed across species
 # Batch Size: Per-sample processing (download → quant → delete immediately)
 # Output: output/amalgkit/{species}/fastq/ and quant/ per species
 # Dependencies: amalgkit, kallisto, wget (for ENA) or SRA Toolkit
@@ -49,11 +49,11 @@ Use this orchestrator when:
 ### Basic Usage
 
 ```bash
-# Default: 8 threads total, distributed across all species
+# Default: 24 threads total, distributed across all species
 python3 scripts/rna/batch_download_species.py
 
-# Larger drive: 30 threads
-python3 scripts/rna/batch_download_species.py --total-threads 30
+# Larger drive: 48 threads
+python3 scripts/rna/batch_download_species.py --total-threads 48
 
 # Custom disk space thresholds
 python3 scripts/rna/batch_download_species.py \
@@ -65,7 +65,7 @@ python3 scripts/rna/batch_download_species.py \
 
 | Argument | Type | Default | Description |
 |----------|------|---------|-------------|
-| `--total-threads` | int | 8 | Total threads across all species |
+| `--total-threads` | int | 24 | Total threads across all species |
 | `--max-species` | int | None | Maximum species to process |
 | `--check-interval` | int | 300 | Seconds between completion checks |
 | `--monitor-interval` | int | 60 | Seconds between sample monitoring |
@@ -121,13 +121,13 @@ Main entry point for batch download orchestrator.
 ### Initial Distribution
 
 - Threads distributed evenly across species (minimum 1 per species)
-- Example: 8 threads, 3 species → [3, 3, 2] threads
+- Example: 24 threads, 20 species → 4 species get 2 threads, 16 get 1 thread
 
 ### Dynamic Reallocation
 
 - As species complete, threads redistribute to remaining species
 - Threads concentrate on fewer species as workflow progresses
-- Example: 8 threads, 2 species remaining → [4, 4] threads
+- Example: 24 threads, 2 species remaining → [12, 12] threads
 
 ## Disk Space Management
 
@@ -183,7 +183,7 @@ Main entry point for batch download orchestrator.
 
 ### Downloads Stuck or Slow
 1. Check network connectivity
-2. Reduce threads: `--total-threads 8`
+2. Reduce threads: `--total-threads 16`
 3. Check disk space: `df -h /`
 
 ### Out of Disk Space
@@ -191,7 +191,7 @@ Main entry point for batch download orchestrator.
 - Or manually: `python3 scripts/rna/cleanup_partial_downloads.py --execute`
 
 ### High CPU Usage
-- Reduce threads: `--total-threads 8`
+- Reduce threads: `--total-threads 16`
 - Check other processes: `top` or `htop`
 
 ## Related Documentation

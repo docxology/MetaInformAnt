@@ -1,8 +1,0 @@
-47332867a488874d3fec4132e724bef6  ncbi_dataset/data/assembly_data_report.jsonl
-e86b345ce688c91692fc84bbde8c5269  ncbi_dataset/data/GCF_000956235.1/cds_from_genomic.fna
-471b480b0549c2f755fb84e8cf46f2e1  ncbi_dataset/data/GCF_000956235.1/GCF_000956235.1_wasmannia.A_1.0_genomic.fna
-8ea829a033304ddaa523106f1b1a4a3e  ncbi_dataset/data/GCF_000956235.1/genomic.gff
-f3886d2e667ca8244ae0caf51e1f9b5e  ncbi_dataset/data/GCF_000956235.1/protein.faa
-e0460cd41cda22dd9fbeba3b1d29c61d  ncbi_dataset/data/GCF_000956235.1/rna.fna
-f28df50611cd2131cce576fa5f0fc51b  ncbi_dataset/data/GCF_000956235.1/sequence_report.jsonl
-7f463dddc88d61f5067581b8ff0208da  ncbi_dataset/data/dataset_catalog.json

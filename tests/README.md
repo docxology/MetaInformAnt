@@ -167,7 +167,7 @@ Comprehensive test suite for the METAINFORMANT bioinformatics toolkit. This docu
 - ✅ `test_math_selection.py` - Added for [`math/selection.py`](../src/metainformant/math/selection.py) module
 
 #### Remaining Coverage Gaps
-- **GWAS Visualization Modules**: Multiple `gwas/visualization_*.py` modules exist (genome, statistical, regional, population, variants, effects, comparison, comprehensive, enhanced) but only basic `visualization.py` is tested in `test_gwas_visualization.py`. Additional visualization modules should be tested or documented as covered by comprehensive tests.
+- **GWAS Visualization Modules**: Multiple `gwas/visualization_*.py` modules exist (genome, statistical, regional, population, variants, effects, comparison, suite, enhanced) but only basic `visualization.py` is tested in `test_gwas_visualization.py`. Additional visualization modules should be tested or documented as covered by comprehensive tests.
 - **RNA steps**: Individual step modules in [`rna/steps/`](../src/metainformant/rna/steps/) partially covered by `test_rna_steps_comprehensive.py` but could benefit from dedicated tests
 - **Protein proteomes**: [`protein/proteomes.py`](../src/metainformant/protein/proteomes.py) has minimal coverage
 - **Simulation domains**: Basic tests exist in `test_simulation.py` but comprehensive coverage could be expanded
