@@ -429,11 +429,200 @@ scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --s
 
 ---
 
+## 🔧 Advanced Usage
+
+### Custom Step Execution
+
+Run individual steps with fine-grained control:
+
+```python
+# Run individual steps using step runners
+from metainformant.rna.steps import STEP_RUNNERS
+
+# Run metadata step
+metadata_runner = STEP_RUNNERS["metadata"]
+result = metadata_runner(
+    {"out_dir": str(work_dir), "threads": 4},
+    work_dir=str(work_dir)
+)
+
+# Run quantification step
+quant_runner = STEP_RUNNERS["quant"]
+result = quant_runner(
+    {"out_dir": str(work_dir / "quant"), "threads": 8},
+    work_dir=str(work_dir)
+)
+```
+
+### Parallel Execution
+
+Execute multiple workflows in parallel:
+
+```python
+# Run multiple workflows in parallel
+import concurrent.futures
+from metainformant.rna.workflow import AmalgkitWorkflowConfig, execute_workflow
+
+def run_workflow_for_species(species):
+    config_data = {
+        "work_dir": f"output/amalgkit/{species}",
+        "species_list": [species],
+        "threads": 4,
+        "steps": ["metadata", "select"]
+    }
+    cfg = AmalgkitWorkflowConfig(**config_data)
+    return execute_workflow(cfg)
+
+# Execute for multiple species
+species_list = ["Homo_sapiens", "Mus_musculus", "Drosophila_melanogaster"]
+with concurrent.futures.ThreadPoolExecutor(max_workers=3) as executor:
+    results = list(executor.map(run_workflow_for_species, species_list))
+```
+
+### Performance Optimization
+
+#### Memory Management
+
+For large datasets, use streaming processing:
+
+```python
+config_data = {
+    "work_dir": "output/amalgkit/large",
+    "threads": 8,
+    "steps": ["metadata", "select", "getfastq"],  # Stop before memory-intensive steps
+    "filters": {
+        "max_spots": 10000000  # Limit sample size
+    }
+}
+```
+
+#### Network Optimization
+
+Use multiple download sources for faster downloads:
+
+```yaml
+steps:
+  getfastq:
+    aws: yes
+    ncbi: yes
+    gcp: yes
+    accelerate: true  # Enable cloud acceleration
+```
+
+### Integration Examples
+
+#### With Visualization
+
+```python
+from metainformant.visualization import plots
+import pandas as pd
+
+# Load results
+results_file = work_dir / "merged" / "merged_abundance.tsv"
+if results_file.exists():
+    data = pd.read_csv(results_file, sep='\t')
+    
+    # Create expression heatmap
+    plots.heatmap(
+        data.iloc[:100, :50].values,  # First 100 genes, 50 samples
+        title="Expression Heatmap",
+        xlabel="Samples",
+        ylabel="Genes"
+    )
+```
+
+#### With Statistical Analysis
+
+```python
+from metainformant.math import statistics
+import numpy as np
+
+# Analyze expression data
+if results_file.exists():
+    data = pd.read_csv(results_file, sep='\t')
+    
+    # Calculate diversity metrics
+    expression_matrix = data.iloc[:, 1:].values  # Exclude gene names
+    shannon_diversities = []
+    
+    for sample in expression_matrix.T:  # Transpose for per-sample
+        diversity = statistics.shannon_diversity(sample)
+        shannon_diversities.append(diversity)
+    
+    print(f"Average Shannon diversity: {np.mean(shannon_diversities):.3f}")
+```
+
+### Testing and Validation
+
+#### Unit Tests
+
+```bash
+# Run amalgkit integration tests
+uv run pytest tests/test_rna_amalgkit_comprehensive.py -v
+
+# Test specific functionality
+uv run pytest tests/test_rna_amalgkit_comprehensive.py::TestAmalgkitIntegration::test_check_cli_available -v
+```
+
+#### Integration Tests
+
+```bash
+# Run workflow integration tests
+uv run pytest tests/test_rna_workflow.py -v
+
+# Test with real data (requires network)
+NCBI_EMAIL="your@email.com" uv run pytest tests/test_rna_amalgkit.py::test_metadata_step_execution -v
+```
+
+### Advanced Troubleshooting
+
+#### Debug Mode
+
+```python
+# Enable debug logging
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
+# Run with detailed output
+from metainformant.rna.workflow import load_workflow_config, execute_workflow
+cfg = load_workflow_config('config.yaml')
+result = execute_workflow(cfg)
+```
+
+#### Common Issues
+
+1. **Network timeouts**: Add retry configuration in YAML
+2. **Insufficient disk space**: Use smaller datasets or enable auto-cleanup
+3. **Memory issues**: Reduce parallelization or limit sample size
+
+### Best Practices
+
+#### Configuration
+- Start with simple configurations and add complexity
+- Test configurations with small datasets first
+- Use descriptive names for work directories
+- Document configuration changes
+
+#### Execution
+- Run steps individually for debugging
+- Monitor disk space and memory usage
+- Keep logs for troubleshooting
+
+#### Data Management
+- Use versioned work directories
+- Archive large intermediate files
+- Document data sources and processing steps
+- Validate data integrity at each step
+
+---
+
 ## 📚 API Reference
 
 ### Core Functions
 
 Key functions: `build_cli_args`, `build_amalgkit_command`, `check_cli_available`, `run_amalgkit`, and convenience wrappers per subcommand: `metadata`, `integrate`, `config`, `select`, `getfastq`, `quant`, `merge`, `cstmm`, `curate`, `csca`, `sanity`.
+
+**See Also**: [Complete API Reference](../API.md) | [Function Index](FUNCTIONS.md)
 
 ### Parameter Mapping
 
@@ -462,6 +651,23 @@ cfg = load_workflow_config("config/amalgkit_pbarbatus.yaml")
 results = execute_workflow(cfg, check=False)
 print(f"Pipeline completed with exit codes: {results}")
 ```
+
+---
+
+## See Also
+
+### Documentation
+- **[API Reference](../API.md)** - Complete function documentation
+- **[Function Index](FUNCTIONS.md)** - Quick function lookup
+- **[Step Documentation](steps/README.md)** - Detailed step guides
+- **[Quick Start](quick_start.md)** - Quick start guide
+- **[Genome Setup](genome_setup_guide.md)** - Genome preparation guide
+- **[Main Index](../README.md)** - RNA domain master index
+
+### Related Topics
+- **[Workflow Guide](../workflow.md)** - Workflow planning and execution
+- **[Configuration Guide](../CONFIGURATION.md)** - Configuration management
+- **[Orchestration](../ORCHESTRATION/README.md)** - Workflow orchestration
 
 ---
 

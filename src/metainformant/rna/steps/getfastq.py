@@ -13,6 +13,7 @@ from typing import Any
 
 from ...core.io import read_delimited
 from ..amalgkit import getfastq as _getfastq
+from .download_progress import DownloadProgressMonitor
 
 
 def _inject_robust_defaults(raw_params: Mapping[str, Any] | None) -> dict[str, Any]:
@@ -39,17 +40,33 @@ def _inject_robust_defaults(raw_params: Mapping[str, Any] | None) -> dict[str, A
     pfd_path = shutil.which("parallel-fastq-dump")
     prefetch_path = shutil.which("prefetch")
 
-    # Enable parallel-fastq-dump for faster downloads when available
+    # Normalize pfd parameter (handle "yes"/"no" strings and booleans)
+    # Determine if PFD should be enabled based on user preference and tool availability
+    pfd_value = params.get("pfd")
     if "pfd" not in params:
-        params["pfd"] = True if pfd_path else False  # Use PFD when available
-    if pfd_path and not params.get("pfd_exe"):
-        params["pfd_exe"] = pfd_path
+        # Not specified - enable if tool is available
+        pfd_enabled = pfd_path is not None
+        params["pfd"] = pfd_enabled
+    else:
+        # User specified a value - normalize it
+        if isinstance(pfd_value, str):
+            pfd_enabled = pfd_value.lower() in ("yes", "true", "1")
+            params["pfd"] = "yes" if pfd_enabled else "no"
+        else:
+            pfd_enabled = bool(pfd_value)
+            params["pfd"] = pfd_enabled
+
+    # Only set pfd_exe if PFD is actually enabled AND tool is available
+    # If PFD is disabled, explicitly remove pfd_exe to prevent amalgkit from checking
+    if pfd_enabled and pfd_path:
+        if not params.get("pfd_exe"):
+            params["pfd_exe"] = pfd_path
+    else:
+        # PFD is disabled or not available - explicitly remove pfd_exe to prevent amalgkit from checking
+        params.pop("pfd_exe", None)
+    
     if prefetch_path and not params.get("prefetch_exe"):
         params["prefetch_exe"] = prefetch_path
-
-    # If user explicitly enabled PFD, provide its path when available
-    if bool(params.get("pfd")) and pfd_path and not params.get("pfd_exe"):
-        params["pfd_exe"] = pfd_path
 
     # Improve diagnostics by default unless user opted out
     params.setdefault("pfd_print", True)
@@ -92,6 +109,21 @@ def run(
     # (they're internal to prefetch, which amalgkit manages automatically)
     effective_params.pop("max_size", None)
     effective_params.pop("min_size", None)
+    
+    # Initialize progress monitor if enabled
+    progress_monitor: DownloadProgressMonitor | None = None
+    show_progress = effective_params.get("show_progress", True)
+    if show_progress:
+        update_interval = float(effective_params.get("progress_update_interval", 2.0))
+        use_bars = effective_params.get("progress_style", "bar") == "bar"
+        progress_monitor = DownloadProgressMonitor(
+            out_dir=out_dir,
+            update_interval=update_interval,
+            use_progress_bars=use_bars,
+            show_summary=not use_bars,
+        )
+        progress_monitor.start_monitoring()
+        logging.getLogger(__name__).info("📊 Progress tracking enabled for getfastq step")
     
     # 1) Bulk attempt (metadata or id)
     bulk_result = _getfastq(
@@ -141,7 +173,6 @@ def run(
                 meta_path = str(actual_work_dir / "metadata" / "metadata.tsv")
             
             # Debug: print what we're looking for
-            import logging
             logging.getLogger(__name__).debug(f"Looking for metadata at: {meta_path}")
             logging.getLogger(__name__).debug(f"Work dir: {actual_work_dir}")
             logging.getLogger(__name__).debug(f"Out dir: {out_dir}")
@@ -157,7 +188,6 @@ def run(
                             srr_list.append(val)
         except Exception as e:
             # If metadata cannot be read, proceed without verification
-            import logging
             logging.getLogger(__name__).warning(f"Could not read metadata file {meta_path}: {e}")
             # Continue with empty metadata
 
@@ -179,7 +209,13 @@ def run(
 
     # 3) Targeted retries for missing SRRs
     missing = [s for s in srr_list if not _has_fastq(s)] if srr_list else []
-    for srr in missing:
+    
+    # Register missing samples with progress monitor for tracking
+    if progress_monitor and missing:
+        for idx, srr in enumerate(missing, 1):
+            progress_monitor.register_thread(idx, srr)
+    
+    for idx, srr in enumerate(missing, 1):
         # Attempt 0: Accelerated sources (ENA HTTP FASTQ or AWS ODP S3 .sra)
         if accelerate_enabled:
             try:
@@ -196,7 +232,6 @@ def run(
                                 shutil.copyfileobj(resp, out_f)
                 except Exception as e:
                     # Log error but continue - file copy issues shouldn't block entire download
-                    import logging
                     logging.getLogger(__name__).debug(f"Could not copy file for {srr}: {e}")
                 # If we now have a local .sra, try fasterq-dump quickly
                 if (srr_dir / f"{srr}.sra").exists():
@@ -221,6 +256,8 @@ def run(
                         if (srr_dir / f"{srr}_2.fastq").exists():
                             subprocess.run([pigz or "gzip", "-f", str(srr_dir / f"{srr}_2.fastq")], check=False)
                         if _has_fastq(srr):
+                            if progress_monitor:
+                                progress_monitor.unregister_thread(idx, success=True)
                             continue
             except Exception:
                 pass
@@ -236,6 +273,8 @@ def run(
             check=False,
         )
         if _has_fastq(srr):
+            if progress_monitor:
+                progress_monitor.unregister_thread(idx, success=True)
             continue
         # Attempt B: direct sra-tools fallback: prefetch + fasterq-dump (+ gzip)
         prefetch_bin = shutil.which("prefetch")
@@ -273,6 +312,15 @@ def run(
                             subprocess.run(["gzip", "-f", str(srr_dir / f"{srr}_2.fastq")], check=False)
             except Exception:
                 pass
+        
+        # Unregister from progress monitor
+        if progress_monitor:
+            success = _has_fastq(srr)
+            progress_monitor.unregister_thread(idx, success=success)
+
+    # Stop progress monitoring
+    if progress_monitor:
+        progress_monitor.stop_monitoring()
 
     # 4) Final status: success if all SRRs (if known) have FASTQs
     final_missing = [s for s in srr_list if not _has_fastq(s)] if srr_list else []

@@ -20,6 +20,7 @@ from typing import Any
 
 from ...core.io import read_delimited, write_delimited
 from ..amalgkit import run_amalgkit
+from .download_progress import DownloadProgressMonitor
 
 logger = logging.getLogger(__name__)
 
@@ -159,6 +160,21 @@ def run_batched_download_quant(
     logger.info(f"   Total samples: {len(all_run_ids)}")
     logger.info(f"   Already quantified (skipped): {len(already_quantified)}")
     logger.info(f"   Samples to process: {len(samples_to_process)}")
+    
+    # Initialize progress monitor if enabled
+    progress_monitor: DownloadProgressMonitor | None = None
+    show_progress = getfastq_params_dict.get("show_progress", True)
+    if show_progress:
+        update_interval = float(getfastq_params_dict.get("progress_update_interval", 2.0))
+        use_bars = getfastq_params_dict.get("progress_style", "bar") == "bar"
+        progress_monitor = DownloadProgressMonitor(
+            out_dir=fastq_dir,
+            update_interval=update_interval,
+            use_progress_bars=use_bars,
+            show_summary=not use_bars,
+        )
+        progress_monitor.start_monitoring()
+        logger.info("📊 Progress tracking enabled for batched downloads")
     logger.info(f"   Batch size: {batch_size}")
     logger.info(f"   Number of batches: {len(batches)}")
     logger.info("=" * 80)
@@ -183,6 +199,11 @@ def run_batched_download_quant(
             # Step 1: Download this batch
             logger.info(f"  ⬇️  Downloading batch {batch_num} ({len(batch_run_ids)} samples)...")
             
+            # Register batch samples with progress monitor
+            if progress_monitor:
+                for idx, run_id in enumerate(batch_run_ids, 1):
+                    progress_monitor.register_thread(batch_num * 1000 + idx, run_id)  # Use batch-based thread IDs
+            
             download_params = getfastq_params_dict.copy()
             download_params["metadata"] = str(batch_metadata.absolute())  # Use absolute path
             
@@ -194,6 +215,14 @@ def run_batched_download_quant(
                 step_name=f"getfastq_batch{batch_num}",
                 check=False,
             )
+            
+            # Unregister batch samples from progress monitor
+            if progress_monitor:
+                for idx, run_id in enumerate(batch_run_ids, 1):
+                    # Check if sample was downloaded
+                    sample_dir = fastq_dir / run_id
+                    success = sample_dir.exists() or any(fastq_dir.glob(f"{run_id}*.fastq*"))
+                    progress_monitor.unregister_thread(batch_num * 1000 + idx, success=success)
             
             if download_result.returncode != 0:
                 logger.warning(f"  ⚠️  Download batch {batch_num} had errors (code {download_result.returncode})")
@@ -272,6 +301,10 @@ def run_batched_download_quant(
                 batch_metadata.unlink()
             except Exception:
                 pass
+    
+    # Stop progress monitoring
+    if progress_monitor:
+        progress_monitor.stop_monitoring()
     
     # Final summary
     logger.info("")

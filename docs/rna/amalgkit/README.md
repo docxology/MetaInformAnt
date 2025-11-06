@@ -15,9 +15,9 @@ The amalgkit integration provides a complete transcriptomic analysis pipeline fr
 ## Documentation Files
 
 ### Core Amalgkit Integration
-- **`amalgkit.md`**: Complete transcriptomic analysis pipeline documentation
-- **`guide.md`**: Amalgkit workflow guide
+- **`amalgkit.md`**: Complete transcriptomic analysis pipeline documentation (includes advanced usage)
 - **`README.md`**: This file - overview and quick start
+- **`FUNCTIONS.md`**: Quick function lookup table
 
 ### Workflow Guides
 - **`quick_start.md`**: Quick start guide for sanity and curate steps (all species)
@@ -51,16 +51,32 @@ The amalgkit integration provides a complete transcriptomic analysis pipeline fr
 - See `src/metainformant/rna/workflow.py` for workflow orchestration
 - See `tests/test_rna_*.py` for comprehensive test coverage
 
+## Quick Links
+
+- **[API Reference](../API.md)** - Complete function documentation
+- **[Function Index](FUNCTIONS.md)** - Quick function lookup
+- **[Step Documentation](steps/README.md)** - All 11 step guides
+- **[Pipeline Overview](amalgkit.md)** - Complete pipeline documentation
+- **[Main Index](../README.md)** - RNA domain master index
+
 ## See Also
 
-- **[../WORKFLOW.md](../WORKFLOW.md)**: Workflow planning and execution
-- **[../STEPS.md](../STEPS.md)**: Individual step documentation
-- **[../CONFIGURATION.md](../CONFIGURATION.md)**: Configuration management
-- **[../ORCHESTRATION/README.md](../ORCHESTRATION/README.md)**: Orchestrator overview
-- **[../GETTING_STARTED.md](../GETTING_STARTED.md)**: Setup and installation
-- **[genome_preparation.md](genome_preparation.md)**: Genome preparation and index building
-- **[genome_setup_guide.md](genome_setup_guide.md)**: Complete genome setup guide
-- **[commands.md](commands.md)**: Genome setup command reference
+### Documentation
+- **[API Reference](../API.md)** - Complete function documentation
+- **[Function Index](FUNCTIONS.md)** - Quick function lookup
+- **[Step Documentation](steps/README.md)** - All 11 step guides
+- **[Pipeline Overview](amalgkit.md)** - Complete pipeline documentation (includes advanced usage)
+
+### Related Topics
+- **[Workflow Guide](../workflow.md)** - Workflow planning and execution
+- **[Configuration Guide](../CONFIGURATION.md)** - Configuration management
+- **[Orchestration Guide](../ORCHESTRATION/README.md)** - Orchestrator overview
+- **[Getting Started](../GETTING_STARTED.md)** - Setup and installation
+
+### Genome Setup
+- **[genome_setup_guide.md](genome_setup_guide.md)** - User guide (step-by-step)
+- **[genome_preparation.md](genome_preparation.md)** - Technical API reference
+- **[commands.md](commands.md)** - Command reference
 
 ## Usage Examples
 

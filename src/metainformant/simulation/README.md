@@ -340,4 +340,79 @@ The simulation module now uses core utilities consistently:
 - **Error handling**: Custom exceptions from core.errors
 - **Path handling**: Uses core.paths for output directory management
 
+## Module-Specific Simulation Scripts
+
+The simulation module includes dedicated scripts for each domain module, providing comprehensive synthetic data generation capabilities across all biological domains. These scripts are located in `scripts/simulation/` and can be run standalone or integrated into workflows.
+
+### Available Simulation Scripts
+
+Each module has a corresponding simulation script that generates domain-specific synthetic data:
+
+- **`simulate_core.py`**: Core utilities simulation (config files, workflow test data, I/O patterns)
+- **`simulate_dna.py`**: DNA sequence simulation (sequences, mutations, population genetics, alignment, phylogeny)
+- **`simulate_rna.py`**: RNA expression simulation (count matrices, differential expression, batch effects)
+- **`simulate_protein.py`**: Protein simulation (sequences, structure coordinates, domain annotations, PPI networks)
+- **`simulate_epigenome.py`**: Epigenome simulation (methylation patterns, chromatin accessibility, ChIP-seq peaks)
+- **`simulate_ontology.py`**: Ontology simulation (GO term annotations, enrichment test data)
+- **`simulate_phenotype.py`**: Phenotype simulation (morphological traits, behavioral traits, trait correlations)
+- **`simulate_ecology.py`**: Ecology simulation (species abundance, community composition, environmental metadata)
+- **`simulate_math.py`**: Mathematical biology simulation (coalescent models, selection experiments, population genetics)
+- **`simulate_visualization.py`**: Visualization data simulation (time-series, multi-dimensional, statistical test data)
+- **`simulate_singlecell.py`**: Single-cell simulation (scRNA-seq counts, cell types, trajectories)
+- **`simulate_quality.py`**: Quality control simulation (FASTQ quality scores, contamination patterns, quality metrics)
+- **`simulate_networks.py`**: Network simulation (PPI networks, regulatory networks, pathway networks)
+- **`simulate_ml.py`**: Machine learning simulation (feature matrices, classification/regression test data)
+- **`simulate_multiomics.py`**: Multi-omics simulation (cross-platform data, integrated datasets)
+- **`simulate_gwas.py`**: GWAS simulation (variants/VCF, genotype matrices, phenotypes, population structure)
+- **`simulate_life_events.py`**: Life events simulation (event sequences, life course patterns)
+- **`simulate_information.py`**: Information theory simulation (sequence information content, mutual information test data)
+
+### Usage Pattern
+
+All simulation scripts follow a consistent pattern:
+
+```bash
+# Basic usage
+python3 scripts/simulation/simulate_<module>.py --type <simulation_type> [options]
+
+# Example: Generate DNA sequences
+python3 scripts/simulation/simulate_dna.py --type sequences --n 100 --length 1000
+
+# Example: Generate RNA expression with differential expression
+python3 scripts/simulation/simulate_rna.py --type differential --num-genes 500 --num-samples 10
+
+# Example: Generate GWAS variants
+python3 scripts/simulation/simulate_gwas.py --type variants --n-variants 1000 --n-samples 100
+```
+
+### Script Features
+
+Each script provides:
+- **Multiple simulation types**: Different simulation modes for various use cases
+- **Comprehensive parameters**: Configurable parameters for realistic data generation
+- **Parameter validation**: Full validation using `core.validation` with type checking and range validation
+- **Reproducibility**: Seed-based random number generation for reproducible results
+- **Output organization**: Structured output to `output/simulation/<module>/` by default
+- **Metadata**: Summary files and metadata for tracking simulation parameters
+- **Integration**: Uses core utilities (io, paths, logging, validation) consistently
+- **Error handling**: Comprehensive error handling with clear, contextual messages
+- **Documentation**: Complete docstrings with parameter descriptions and examples
+- **Type safety**: Full type hints for all functions
+
+### Integration with Analysis Modules
+
+The simulated data from these scripts can be directly used with corresponding analysis modules:
+
+```python
+# Simulate DNA sequences
+# python3 scripts/simulation/simulate_dna.py --type sequences --n 100
+
+# Then analyze with DNA module
+from metainformant.dna import sequences, alignment
+seqs = sequences.read_fasta("output/simulation/dna/sequences.fasta")
+aln = alignment.global_pairwise(list(seqs.values())[:2])
+```
+
+See `scripts/simulation/README.md` for detailed documentation and usage examples for each script.
+
 This module provides powerful tools for synthetic data generation and hypothesis testing, enabling researchers to explore biological systems in controlled computational environments.

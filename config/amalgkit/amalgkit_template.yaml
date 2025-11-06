@@ -8,6 +8,10 @@
 # BASIC CONFIGURATION
 # =============================================================================
 
+# NOTE: All paths are resolved relative to repository root.
+# This allows configs to work whether the repo is on /home/q/... or /media/q/ext6/...
+# Absolute paths are also supported and will be used as-is.
+
 # Working directory for all intermediate files
 work_dir: output/amalgkit/my_species/work
 
@@ -183,6 +187,11 @@ steps:
     # Diagnostic output
     pfd_print: no               # Print parallel fastq-dump commands
     fastp_print: no             # Print fastp commands
+
+    # Progress tracking (METAINFORMANT-specific)
+    show_progress: true         # Enable live progress tracking with file size monitoring
+    progress_update_interval: 2.0  # Update interval in seconds (default: 2.0)
+    progress_style: "bar"       # Progress display style: "bar" (tqdm progress bars) or "text" (simple text updates)
 
   # -------------------------------------------------------------------------
   # QUANT: Quantify transcript abundance

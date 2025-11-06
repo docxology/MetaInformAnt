@@ -236,6 +236,27 @@ def run_amalgkit(
         if key in safe_params and isinstance(safe_params[key], (str, Path)):
             safe_params["out_dir"] = _mkdir_parent(str(safe_params[key]))
             break
+    
+    # config_dir style (for select step) - ensure absolute path
+    if "config_dir" in safe_params and isinstance(safe_params["config_dir"], (str, Path)):
+        cfg_path = Path(str(safe_params["config_dir"])).expanduser()
+        try:
+            cfg_path = cfg_path.resolve()
+        except Exception:
+            # If resolution fails, keep original but log
+            import logging
+            logging.getLogger(__name__).debug(f"Could not resolve config_dir path: {safe_params['config_dir']}")
+            cfg_path = Path(str(safe_params["config_dir"]))
+        # Ensure directory exists (amalgkit expects it to exist)
+        if not cfg_path.exists():
+            try:
+                cfg_path.mkdir(parents=True, exist_ok=True)
+            except Exception:
+                # If we can't create it, log but continue - amalgkit will handle the error
+                import logging
+                logging.getLogger(__name__).warning(f"Could not create config_dir: {cfg_path}")
+        safe_params["config_dir"] = str(cfg_path)
+    
     # merge 'out' file path
     if subcommand == "merge" and isinstance(safe_params.get("out"), (str, Path)):
         out_path = Path(str(safe_params["out"]))

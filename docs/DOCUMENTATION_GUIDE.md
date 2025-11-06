@@ -1,268 +1,235 @@
 # METAINFORMANT Documentation Guide
 
-Complete guide to navigating and using the METAINFORMANT documentation system.
+This guide provides comprehensive navigation and best practices for using METAINFORMANT documentation.
 
-## Quick Navigation
+## Documentation Structure
 
-### Essential Starting Points
+METAINFORMANT documentation is organized hierarchically by domain and functionality:
 
-- **[README.md](README.md)** - Documentation structure and organization
-- **[index.md](index.md)** - Complete navigation to all documentation
-- **[setup.md](setup.md)** - Installation and environment configuration
-- **[testing.md](testing.md)** - Comprehensive testing documentation
-- **[architecture.md](architecture.md)** - System design and component relationships
-- **[cli.md](cli.md)** - Command-line interface reference
-
-### Core Documentation
-
-**Core Utilities** - Foundational infrastructure for all modules
-
-- **[Core Overview](core/README.md)** - Introduction to core utilities
-- [cache.md](core/cache.md) - JSON caching with TTL support
-- [config.md](core/config.md) - Configuration management and environment variables
-- [db.md](core/db.md) - Database integration and connection management
-- [hash.md](core/hash.md) - Content hashing and file integrity
-- [io.md](core/io.md) - File I/O utilities and format support
-- [logging.md](core/logging.md) - Logging configuration
-- [parallel.md](core/parallel.md) - Parallel processing utilities
-- [paths.md](core/paths.md) - Path handling and validation
-- [text.md](core/text.md) - Text processing and normalization
-
-### Domain-Specific Documentation
-
-#### DNA Analysis
-**[DNA Overview](dna/index.md)** - Comprehensive DNA analysis toolkit
-
-- [sequences.md](dna/sequences.md) - DNA sequence manipulation
-- [alignment.md](dna/alignment.md) - Pairwise sequence alignment
-- [msa.md](dna/msa.md) - Multiple sequence alignment
-- [phylogeny.md](dna/phylogeny.md) - Phylogenetic tree construction
-- [population.md](dna/population.md) - Population genetics metrics
-- [fastq.md](dna/fastq.md) - FASTQ format processing
-- [codon.md](dna/codon.md) - Codon usage analysis
-- [composition.md](dna/composition.md) - Sequence composition
-- [distances.md](dna/distances.md) - Evolutionary distances
-- [transcription.md](dna/transcription.md) - DNA to RNA transcription
-- [translation.md](dna/translation.md) - Genetic code translation
-- [variants.md](dna/variants.md) - Variant analysis
-
-#### RNA Analysis
-**[RNA Overview](rna/index.md)** - Transcriptomic analysis workflows
-
-- [workflow.md](rna/workflow.md) - Complete workflow orchestration
-- [configs.md](rna/configs.md) - Workflow configuration
-- [steps.md](rna/steps.md) - Individual workflow steps
-
-#### GWAS (Genome-Wide Association Studies)
-**[GWAS Overview](gwas/index.md)** - Complete GWAS pipeline
-
-- [GWAS README](gwas/README.md) - Module overview and features
-- [workflow.md](gwas/workflow.md) - Step-by-step workflow guide
-- [config.md](gwas/config.md) - Configuration reference
-- [pbarbatus_config.md](gwas/pbarbatus_config.md) - Example configuration
-- [verification_report.md](gwas/verification_report.md) - Validation report
-
-#### Protein Analysis
-**[Protein Overview](protein/index.md)** - Protein structure and sequence analysis
-
-- [proteomes.md](protein/proteomes.md) - Proteome databases and analysis
-
-#### Single-Cell Genomics
-**[Single-Cell Overview](singlecell/index.md)** - Single-cell transcriptomics
-
-- [preprocessing.md](singlecell/preprocessing.md) - Data preprocessing
-- [dimensionality.md](singlecell/dimensionality.md) - Dimensionality reduction
-- [clustering.md](singlecell/clustering.md) - Cell clustering
-- [trajectory.md](singlecell/trajectory.md) - Trajectory analysis
-- [visualization.md](singlecell/visualization.md) - Visualization methods
-- [integration.md](singlecell/integration.md) - Data integration
-
-#### Mathematical Biology
-**[Math Overview](math/index.md)** - Theoretical and quantitative biology
-
-- [coalescent.md](math/coalescent.md) - Coalescent theory
-- [ddm.md](math/ddm.md) - Drift-diffusion models
-- [dynamics.md](math/dynamics.md) - Population dynamics
-- [epidemiology.md](math/epidemiology.md) - Disease modeling
-- [ld.md](math/ld.md) - Linkage disequilibrium
-- [popgen.md](math/popgen.md) - Population genetics theory
-- [price.md](math/price.md) - Price equation
-- [selection.md](math/selection.md) - Natural selection models
-
-#### Machine Learning
-**[ML Overview](ml/index.md)** - Machine learning for bioinformatics
-
-Complete ML pipeline documentation with classification, regression, feature selection, and model validation.
-
-#### Network Analysis
-**[Networks Overview](networks/index.md)** - Biological network analysis
-
-- [community.md](networks/community.md) - Community detection
-- [graph.md](networks/graph.md) - Graph algorithms
-- [pathway.md](networks/pathway.md) - Pathway analysis
-- [ppi.md](networks/ppi.md) - Protein-protein interactions
-- [regulatory.md](networks/regulatory.md) - Gene regulatory networks
-
-#### Multi-Omics Integration
-**[Multi-Omics Overview](multiomics/index.md)** - Cross-omic data integration
-
-Comprehensive guide to integrating genomics, transcriptomics, proteomics, and other omic layers.
-
-#### Quality Control
-**[Quality Overview](quality/index.md)** - Data quality assessment
-
-- [fastq.md](quality/fastq.md) - FASTQ quality analysis (comprehensive 645-line guide)
-
-#### Visualization
-**[Visualization Overview](visualization/index.md)** - Data visualization
-
-- [trees.md](visualization/trees.md) - Phylogenetic tree plotting
-- [plots.md](visualization/plots.md) - General plotting utilities
-- [animations.md](visualization/animations.md) - Animation generation
-
-#### Simulation
-**[Simulation Overview](simulation/index.md)** - Synthetic data generation
-
-- [sequences.md](simulation/sequences.md) - Sequence generators
-- [rna_counts.md](simulation/rna_counts.md) - RNA count simulation
-- [agents.md](simulation/agents.md) - Agent-based modeling
-
-#### Specialized Domains
-
-- **[Ontology](ontology/index.md)** - Gene Ontology and functional annotation
-- **[Phenotype](phenotype/index.md)** - Phenotypic data curation
-- **[Epigenome](epigenome/index.md)** - DNA methylation and chromatin
-- **[Ecology](ecology/index.md)** - Community ecology and metadata
-- **[Information Theory](../src/metainformant/information/README.md)** - Shannon entropy, mutual information, semantic similarity
-- **[Life Events](../src/metainformant/life_events/README.md)** - Life course and event sequence analysis
-
-## Documentation by Use Case
-
-### Getting Started
-1. [setup.md](setup.md) - Environment setup with UV
-2. [cli.md](cli.md) - Command-line interface basics
-3. [Core README](core/README.md) - Core utilities overview
-4. Domain-specific index (e.g., [DNA](dna/index.md), [RNA](rna/index.md))
-
-### Running Workflows
-1. **RNA-seq**: [RNA workflow](rna/workflow.md) → [RNA configs](rna/configs.md)
-2. **GWAS**: [GWAS workflow](gwas/workflow.md) → [GWAS config](gwas/config.md)
-3. **Single-cell**: [Single-cell index](singlecell/index.md) → Individual analysis docs
-
-### API Development
-1. [Core utilities](core/README.md) - Use shared infrastructure
-2. Domain-specific READMEs - Module APIs and examples
-3. [architecture.md](architecture.md) - System design patterns
-
-### Testing and Quality
-1. [testing.md](testing.md) - Testing policy and execution
-2. [test_analysis.md](test_analysis.md) - Test coverage report
-3. Module-specific test documentation
-
-## Documentation Standards
-
-### File Organization
-- **README.md** - Module overview, quick start, features
-- **index.md** - Complete navigation and reference
-- **AGENTS.md** - AI assistance documentation
-- **Specific docs** - Detailed guides for individual components
-
-### Navigation Patterns
 ```
-Top-level README → docs/index.md → Domain index → Specific documentation
-                → docs/README.md (documentation structure)
+docs/
+├── README.md                    # Documentation overview and navigation
+├── index.md                    # Hierarchical navigation index
+├── architecture.md            # System design and architecture
+├── cli.md                      # Command-line interface reference
+├── setup.md                    # Installation and environment setup
+├── testing.md                  # Testing documentation
+├── core/                       # Core utilities documentation
+│   ├── README.md              # Core module overview
+│   ├── config.md              # Configuration management
+│   ├── io.md                  # Input/output utilities
+│   └── ...                    # Other core utilities
+├── dna/                        # DNA analysis documentation
+├── rna/                        # RNA analysis documentation
+├── gwas/                       # GWAS documentation
+└── ...                         # Other domain modules
 ```
 
-### Cross-References
-All documentation includes cross-references to:
-- Related modules and functionality
-- Core utilities used (see [Core Utilities](./core.md))
-- Integration examples
-- Testing documentation (see [Testing Guide](./testing.md))
-- Orchestrator scripts (see [Scripts README](../../scripts/README.md))
-- Configuration templates (see [Config README](../../config/README.md))
-- CLI commands (see [CLI Reference](./cli.md))
-
-## AI Assistance Documentation
-
-AI contributions are documented at multiple levels:
-
-- **Repository level**: [AGENTS.md](../AGENTS.md) - Overall AI assistance
-- **Documentation level**: [docs/AGENTS.md](AGENTS.md) - Documentation development
-- **Module level**: Each module has its own AGENTS.md (e.g., [core/AGENTS.md](../src/metainformant/core/AGENTS.md))
-- **Domain level**: Domain-specific AI contributions (e.g., [gwas/AGENTS.md](gwas/AGENTS.md))
-
-## Additional Resources
-
-### Guides
-- [uv_setup.md](uv_setup.md) - UV environment setup and optimization
-- [test_analysis.md](test_analysis.md) - Test suite analysis
-
-### Development Resources
-- [architecture.md](architecture.md) - System architecture with diagrams
-- [testing.md](testing.md) - Testing policy (NO_MOCKING_POLICY)
-- [core.md](core.md) - Core utilities overview
-
-## Finding What You Need
-
-### By Task
-- **Setup/Installation**: [setup.md](setup.md)
-- **Running analyses**: Domain-specific workflows (RNA, GWAS, single-cell)
-- **Writing code**: Core utilities + module READMEs
-- **Testing**: [testing.md](testing.md)
-- **Understanding architecture**: [architecture.md](architecture.md)
+## Navigation Strategies
 
 ### By Domain
-Start with domain index files:
-- DNA → [dna/index.md](dna/index.md) - See also: [DNA Analysis Scripts](../../scripts/README.md#dna-analysis-scripts-scriptsdna)
-- RNA → [rna/index.md](rna/index.md) - See also: [RNA Workflows](../../scripts/rna/README.md) and [CLI Commands](./cli.md#rna-workflows)
-- GWAS → [gwas/index.md](gwas/index.md) - See also: [GWAS Scripts](../../scripts/README.md#gwas-analysis-scripts-scriptsgwas) and [Config Templates](../../config/README.md#gwas-analysis-configurations)
-- Single-cell → [singlecell/index.md](singlecell/index.md) - See also: [Single-Cell Scripts](../../scripts/README.md#single-cell-genomics-scripts-scriptssinglecell) and [Config Template](../../config/README.md#single-cell-analysis-singlecell_templateyaml)
-- Math → [math/index.md](math/index.md) - See also: [Math Scripts](../../scripts/README.md#mathematical-biology-scripts-scriptsmath)
-- ML → [ml/index.md](ml/index.md) - See also: [ML Scripts](../../scripts/README.md#machine-learning-scripts-scriptsml)
-- Networks → [networks/index.md](networks/index.md) - See also: [Network Scripts](../../scripts/README.md#network-analysis-scripts-scriptsnetworks) and [Config Template](../../config/README.md#network-analysis-networkstemplateyaml)
-- Multi-omics → [multiomics/index.md](multiomics/index.md) - See also: [Multi-Omics Scripts](../../scripts/README.md#multi-omics-scripts-scriptsmultiomics) and [Config Template](../../config/README.md#multi-omics-integration-multiomicstemplateyaml)
-- Quality → [quality/index.md](quality/index.md) - See also: [Quality Scripts](../../scripts/README.md#quality-control-scripts-scriptsquality)
-- Visualization → [visualization/index.md](visualization/index.md) - See also: [Visualization Scripts](../../scripts/README.md#visualization-scripts-scriptvisualization)
 
-### By Component
-- **Core utilities**: Start at [core/README.md](core/README.md)
-- **Specific modules**: Navigate via [index.md](index.md)
-- **Examples**: Check module READMEs for quick starts
+If you know which biological domain you're working with:
+
+1. **Start with domain index**: `docs/<domain>/index.md`
+   - Provides overview of domain capabilities
+   - Links to all domain-specific documentation
+   - Examples: `docs/dna/index.md`, `docs/rna/index.md`
+
+2. **Check domain README**: `docs/<domain>/README.md`
+   - Comprehensive module documentation
+   - API reference and usage examples
+   - Integration patterns
+
+3. **Explore specific topics**: `docs/<domain>/<topic>.md`
+   - Focused documentation on specific functionality
+   - Examples: `docs/dna/alignment.md`, `docs/rna/workflow.md`
+
+### By Task
+
+If you have a specific task or question:
+
+1. **Quick Start**: Start with `QUICKSTART.md` in repository root
+2. **Setup**: See `docs/setup.md` for environment configuration
+3. **CLI Usage**: See `docs/cli.md` for command-line interface
+4. **Architecture**: See `docs/architecture.md` for system design
+5. **Testing**: See `docs/testing.md` for testing guidelines
+
+### By Module
+
+If you're looking for module-specific information:
+
+1. **Source Documentation**: `src/metainformant/<module>/README.md`
+   - Detailed module implementation
+   - Function-level documentation
+   - Internal architecture
+
+2. **User Documentation**: `docs/<module>/`
+   - User-facing documentation
+   - Workflow guides
+   - Integration examples
+
+## Documentation Types
+
+### Overview Documents
+
+- **`README.md`**: Comprehensive module documentation with examples
+- **`index.md`**: Navigation and quick reference
+- **`AGENTS.md`**: AI contribution documentation (if applicable)
+
+### Topic-Specific Documents
+
+- **`<topic>.md`**: Focused documentation on specific functionality
+- Examples: `alignment.md`, `workflow.md`, `visualization.md`
+
+### Reference Documents
+
+- **`cli.md`**: Command-line interface reference
+- **`architecture.md`**: System design and architecture
+- **`testing.md`**: Testing guidelines and practices
+
+## Finding Information
+
+### Quick Reference
+
+| What You Need | Where to Look |
+|--------------|---------------|
+| Installation | `QUICKSTART.md`, `docs/setup.md` |
+| Module overview | `docs/<module>/index.md` or `docs/<module>/README.md` |
+| API reference | `src/metainformant/<module>/README.md` |
+| Workflow guide | `docs/<module>/workflow.md` or `docs/<module>/README.md` |
+| Configuration | `docs/<module>/config.md` or `docs/core/config.md` |
+| Examples | `docs/<module>/README.md`, `docs/<module>/examples/` |
+| CLI commands | `docs/cli.md` |
+| Testing | `docs/testing.md` |
+
+### Search Strategies
+
+1. **Use the main index**: `docs/index.md` provides hierarchical navigation
+2. **Check module README**: Each module has comprehensive documentation
+3. **Look for examples**: Most modules include usage examples in README files
+4. **Check integration docs**: Cross-module integration patterns are documented
+
+## Reading Documentation
+
+### Recommended Reading Order
+
+1. **Start with overview**: Read `docs/<module>/index.md` or `docs/<module>/README.md`
+2. **Review examples**: Look at code examples in the README
+3. **Check specific topics**: Read topic-specific docs as needed
+4. **Explore integration**: See how modules work together
+
+### Understanding Code Examples
+
+All code examples in documentation:
+- Write outputs to `output/` by default
+- Use real implementations (no mocks)
+- Include error handling
+- Follow project conventions
+
+### Following Cross-References
+
+Documentation uses consistent cross-reference patterns:
+- **Relative paths**: `./<file>.md` for same directory
+- **Domain paths**: `../<domain>/<file>.md` for other domains
+- **Source links**: `../../src/metainformant/<module>/README.md` for source docs
+
+## Module Documentation Patterns
+
+### Standard Structure
+
+Each module follows a consistent documentation structure:
+
+1. **Overview**: What the module does
+2. **Key Components**: Main functionality areas
+3. **Usage Examples**: Practical code examples
+4. **Integration**: How to use with other modules
+5. **API Reference**: Function and class documentation
+6. **Configuration**: Configuration options and environment variables
+7. **Testing**: Testing approach and coverage
+
+### Documentation Files
+
+- **`index.md`**: Quick navigation and overview
+- **`README.md`**: Comprehensive module documentation
+- **`AGENTS.md`**: AI contribution documentation (if applicable)
+- **`<topic>.md`**: Topic-specific documentation
+
+## Best Practices
+
+### For Readers
+
+1. **Start broad, then narrow**: Begin with overview, then dive into specifics
+2. **Follow examples**: Code examples show real usage patterns
+3. **Check integration docs**: Understand how modules work together
+4. **Read error messages**: Documentation often explains common errors
+
+### For Contributors
+
+1. **Update existing docs**: Don't create new root-level documentation
+2. **Follow structure**: Use established documentation patterns
+3. **Include examples**: All functionality should have usage examples
+4. **Cross-reference**: Link to related documentation
+5. **Keep current**: Update docs when code changes
+
+## Common Documentation Locations
+
+### Core Infrastructure
+
+- **Configuration**: `docs/core/config.md`
+- **I/O Operations**: `docs/core/io.md`
+- **Logging**: `docs/core/logging.md`
+- **Path Handling**: `docs/core/paths.md`
+
+### Domain Modules
+
+- **DNA**: `docs/dna/`
+- **RNA**: `docs/rna/`
+- **GWAS**: `docs/gwas/`
+- **Protein**: `docs/protein/`
+- **Networks**: `docs/networks/`
+- **Multi-Omics**: `docs/multiomics/`
+- **Single-Cell**: `docs/singlecell/`
+- **Information Theory**: `docs/information/`
+- **Life Events**: `docs/life_events/`
+
+### Specialized Domains
+
+- **Math**: `docs/math/`
+- **ML**: `docs/ml/`
+- **Quality**: `docs/quality/`
+- **Visualization**: `docs/visualization/`
+- **Simulation**: `docs/simulation/`
+- **Ontology**: `docs/ontology/`
+- **Phenotype**: `docs/phenotype/`
+- **Epigenome**: `docs/epigenome/`
+- **Ecology**: `docs/ecology/`
+
+## Getting Help
+
+If you can't find what you're looking for:
+
+1. **Check the index**: `docs/index.md` for hierarchical navigation
+2. **Search module README**: Comprehensive module documentation
+3. **Review examples**: Look at `docs/<module>/examples/` or code examples
+4. **Check source**: `src/metainformant/<module>/README.md` for detailed API docs
+5. **Review tests**: `tests/test_<module>_*.py` for usage examples
 
 ## Documentation Maintenance
 
-### Updating Documentation
-1. Follow existing structure and formatting
-2. Update cross-references when adding new modules
-3. Maintain consistency across similar documentation
-4. Update indices when adding new files
+Documentation is maintained alongside code:
+- Updated with each major release
+- Reviewed for accuracy and completeness
+- Cross-references validated
+- Examples tested for correctness
 
-### Documentation Principles
-- **Clear**: Technical but accessible writing
-- **Complete**: Cover all functionality
-- **Current**: Update with code changes
-- **Connected**: Cross-reference related content
-- **Practical**: Include runnable examples
+## Summary
 
-## Support and Contribution
+METAINFORMANT documentation is comprehensive and well-organized:
+- **Hierarchical structure** by domain and functionality
+- **Consistent patterns** across all modules
+- **Practical examples** for all functionality
+- **Clear navigation** through indexes and cross-references
 
-### Getting Help
-1. Check domain-specific documentation
-2. Review examples in module READMEs
-3. Consult [testing.md](testing.md) for test examples
-4. See [cli.md](cli.md) for command-line usage
-
-### Contributing Documentation
-1. Follow existing patterns and structure
-2. Add examples for new functionality
-3. Update indices and navigation
-4. Maintain AGENTS.md for AI-assisted work
-5. Cross-reference related modules
-
----
-
-**This guide provides comprehensive navigation through the METAINFORMANT documentation system. Start with the essential documents above, then explore domain-specific content based on your needs.**
-
-For the most current overview, always check [docs/index.md](index.md) and [docs/README.md](README.md).
+Start with `docs/index.md` or `docs/README.md` for an overview, then navigate to specific modules and topics as needed.
 

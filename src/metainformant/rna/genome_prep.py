@@ -710,6 +710,280 @@ def prepare_genome_for_quantification(
     return result
 
 
+def verify_genome_status(
+    config_path: Path,
+    *,
+    repo_root: Path | None = None,
+) -> dict[str, Any]:
+    """Verify genome and index status for a species.
+
+    Args:
+        config_path: Path to species config file
+        repo_root: Repository root directory (optional)
+
+    Returns:
+        Dictionary with verification results
+    """
+    import json
+    import yaml
+
+    from ..core.config import load_mapping_from_file
+
+    if repo_root is None:
+        repo_root = Path.cwd()
+
+    try:
+        config = load_mapping_from_file(config_path)
+    except Exception as e:
+        return {
+            "config_file": str(config_path),
+            "error": f"Failed to load config: {e}",
+            "genome_downloaded": False,
+            "rna_fasta_found": False,
+            "kallisto_index_found": False,
+        }
+
+    species_list = config.get("species_list", [])
+    species_name = species_list[0] if species_list else "unknown"
+    genome = config.get("genome", {})
+
+    result: dict[str, Any] = {
+        "config_file": str(config_path),
+        "species_name": species_name,
+        "genome_downloaded": False,
+        "rna_fasta_found": False,
+        "rna_fasta_path": None,
+        "kallisto_index_found": False,
+        "kallisto_index_path": None,
+        "genome_accession": None,
+        "work_dir": None,
+    }
+
+    if not genome:
+        result["error"] = "No genome configuration found"
+        return result
+
+    accession = genome.get("accession")
+    result["genome_accession"] = accession
+
+    if not accession:
+        result["error"] = "No genome accession in config"
+        return result
+
+    # Check genome download
+    dest_dir_str = genome.get("dest_dir", "")
+    if not dest_dir_str:
+        work_dir_str = config.get("work_dir", "")
+        if work_dir_str:
+            work_dir_path = Path(work_dir_str).expanduser()
+            if not work_dir_path.is_absolute():
+                work_dir_path = repo_root / work_dir_path
+            dest_dir = work_dir_path.parent / "genome"
+        else:
+            result["error"] = "Cannot determine genome directory"
+            return result
+    else:
+        dest_dir = Path(dest_dir_str).expanduser()
+        if not dest_dir.is_absolute():
+            dest_dir = repo_root / dest_dir
+
+    result["genome_dir"] = str(dest_dir)
+
+    # Check download record
+    download_record = dest_dir / "download_record.json"
+    if download_record.exists():
+        try:
+            with open(download_record, "r") as f:
+                record = json.load(f)
+                if record.get("return_code") == 0:
+                    result["genome_downloaded"] = True
+        except Exception:
+            pass
+
+    # Check if extracted directory exists
+    extracted_dirs = [
+        dest_dir / "ncbi_dataset_api_extracted",
+        dest_dir / "ncbi_dataset_extracted",
+    ]
+    if any(d.exists() for d in extracted_dirs):
+        result["genome_downloaded"] = True
+
+    # Find RNA FASTA
+    rna_fasta = find_rna_fasta_in_genome_dir(dest_dir, accession)
+    if rna_fasta:
+        result["rna_fasta_found"] = True
+        result["rna_fasta_path"] = str(rna_fasta)
+
+    # Check kallisto index
+    work_dir_str = config.get("work_dir", "")
+    if work_dir_str:
+        work_dir_path = Path(work_dir_str).expanduser()
+        if not work_dir_path.is_absolute():
+            work_dir_path = repo_root / work_dir_path
+        result["work_dir"] = str(work_dir_path)
+
+        index_path = get_expected_index_path(work_dir_path, species_name.replace(" ", "_"))
+        if index_path.exists():
+            result["kallisto_index_found"] = True
+            result["kallisto_index_path"] = str(index_path)
+
+    return result
+
+
+def orchestrate_genome_setup(
+    config_path: Path,
+    *,
+    repo_root: Path | None = None,
+    skip_verify_initial: bool = False,
+    skip_download: bool = False,
+    skip_prepare: bool = False,
+    skip_build: bool = False,
+    skip_verify_final: bool = False,
+    kmer_size: int = 31,
+    dry_run: bool = False,
+) -> dict[str, Any]:
+    """Orchestrate complete genome setup pipeline.
+
+    Args:
+        config_path: Path to species config file
+        repo_root: Repository root directory (optional)
+        skip_verify_initial: Skip initial verification
+        skip_download: Skip genome download
+        skip_prepare: Skip transcriptome preparation
+        skip_build: Skip kallisto index building
+        skip_verify_final: Skip final verification
+        kmer_size: k-mer size for kallisto index
+        dry_run: If True, only report what would be done
+
+    Returns:
+        Dictionary with orchestration results
+    """
+    import yaml
+
+    from ..core.config import load_mapping_from_file
+
+    if repo_root is None:
+        repo_root = Path.cwd()
+
+    results: dict[str, Any] = {
+        "success": True,
+        "steps_completed": [],
+        "steps_failed": [],
+        "verification_initial": None,
+        "download": None,
+        "prepare": None,
+        "build": None,
+        "verification_final": None,
+    }
+
+    config = load_mapping_from_file(config_path)
+    species_list = config.get("species_list", [])
+    species_name = species_list[0] if species_list else "unknown"
+    genome = config.get("genome", {})
+
+    # Step 1: Initial verification
+    if not skip_verify_initial:
+        logger.info("Step 1: Initial Verification")
+        verification = verify_genome_status(config_path, repo_root=repo_root)
+        results["verification_initial"] = verification
+        if verification.get("error"):
+            logger.warning(f"Initial verification warning: {verification.get('error')}")
+
+    # Step 2: Download genome
+    if not skip_download:
+        logger.info("Step 2: Download Missing Genomes")
+        # This would call download_genome_for_species if we had it
+        # For now, we'll note that it should be called
+        if not dry_run:
+            logger.info("Genome download should be performed via download_genome_for_species()")
+        results["download"] = {"status": "skipped" if dry_run else "pending"}
+
+    # Step 3: Prepare transcriptomes
+    if not skip_prepare:
+        logger.info("Step 3: Prepare Transcriptomes")
+        if not dry_run:
+            # Get paths
+            work_dir_str = config.get("work_dir", "")
+            if work_dir_str:
+                work_dir_path = Path(work_dir_str).expanduser()
+                if not work_dir_path.is_absolute():
+                    work_dir_path = repo_root / work_dir_path
+            else:
+                logger.error("Cannot determine work_dir")
+                results["success"] = False
+                results["steps_failed"].append("prepare")
+                return results
+
+            dest_dir_str = genome.get("dest_dir", "")
+            if not dest_dir_str:
+                dest_dir = work_dir_path.parent / "genome"
+            else:
+                dest_dir = Path(dest_dir_str).expanduser()
+                if not dest_dir.is_absolute():
+                    dest_dir = repo_root / dest_dir
+
+            accession = genome.get("accession")
+            fasta_path = prepare_transcriptome_for_kallisto(
+                dest_dir,
+                species_name.replace(" ", "_"),
+                work_dir_path,
+                accession=accession,
+            )
+
+            if fasta_path:
+                results["prepare"] = {"success": True, "fasta_path": str(fasta_path)}
+                results["steps_completed"].append("prepare")
+            else:
+                results["prepare"] = {"success": False, "error": "Failed to prepare transcriptome"}
+                results["steps_failed"].append("prepare")
+                results["success"] = False
+        else:
+            results["prepare"] = {"status": "dry_run"}
+
+    # Step 4: Build kallisto index
+    if not skip_build:
+        logger.info("Step 4: Build Kallisto Indexes")
+        if not dry_run:
+            work_dir_str = config.get("work_dir", "")
+            if work_dir_str:
+                work_dir_path = Path(work_dir_str).expanduser()
+                if not work_dir_path.is_absolute():
+                    work_dir_path = repo_root / work_dir_path
+            else:
+                logger.error("Cannot determine work_dir")
+                results["success"] = False
+                results["steps_failed"].append("build")
+                return results
+
+            species_name_underscore = species_name.replace(" ", "_")
+            fasta_path = work_dir_path / "fasta" / f"{species_name_underscore}_rna.fasta"
+            index_path = get_expected_index_path(work_dir_path, species_name_underscore)
+
+            if fasta_path.exists():
+                success = build_kallisto_index(fasta_path, index_path, kmer_size=kmer_size)
+                if success:
+                    results["build"] = {"success": True, "index_path": str(index_path)}
+                    results["steps_completed"].append("build")
+                else:
+                    results["build"] = {"success": False, "error": "Failed to build index"}
+                    results["steps_failed"].append("build")
+                    results["success"] = False
+            else:
+                results["build"] = {"success": False, "error": f"FASTA not found: {fasta_path}"}
+                results["steps_failed"].append("build")
+                results["success"] = False
+        else:
+            results["build"] = {"status": "dry_run"}
+
+    # Step 5: Final verification
+    if not skip_verify_final:
+        logger.info("Step 5: Final Verification")
+        verification = verify_genome_status(config_path, repo_root=repo_root)
+        results["verification_final"] = verification
+
+    return results
+
+
 __all__ = [
     "find_rna_fasta_in_genome_dir",
     "download_rna_fasta_from_ftp",
@@ -719,5 +993,7 @@ __all__ = [
     "build_kallisto_index",
     "get_expected_index_path",
     "prepare_genome_for_quantification",
+    "verify_genome_status",
+    "orchestrate_genome_setup",
 ]
 

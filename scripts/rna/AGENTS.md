@@ -1,18 +1,82 @@
 # AI Agents in RNA Script Development
 
-This document records AI involvement in the high-throughput RNA processing scripts housed here.
+This document records AI involvement in the RNA processing scripts housed here.
 
-## AI Contributions
+## Script Consolidation (December 2025)
+
+**Code Assistant Agent** consolidated 20+ scripts into 4-5 thin orchestrators:
+
+### Phase 1: Move Logic to src/
+
+Created new modules in `src/metainformant/rna/`:
+- **`orchestration.py`**: Workflow orchestration functions
+  - `run_workflow_for_species()` - Run workflow steps for a species
+  - `cleanup_unquantified_samples()` - Quantify and cleanup samples
+  - `monitor_workflows()` - Real-time monitoring
+  - `discover_species_configs()` - Discover species from configs
+
+- **`cleanup.py`**: Cleanup functions
+  - `cleanup_partial_downloads()` - Clean up partial downloads
+  - `fix_abundance_naming_for_species()` - Fix abundance file naming
+
+- **`discovery.py`**: Species discovery and config generation
+  - `search_species_with_rnaseq()` - Search NCBI SRA for species
+  - `get_genome_info()` - Get genome assembly information
+  - `generate_config_yaml()` - Generate amalgkit YAML configs
+
+Extended existing modules:
+- **`genome_prep.py`**: Added orchestration functions
+  - `verify_genome_status()` - Verify genome and index status
+  - `orchestrate_genome_setup()` - Complete genome setup pipeline
+
+- **`monitoring.py`**: Added assessment functions
+  - `assess_all_species_progress()` - Assess progress for all species
+  - `initialize_progress_tracking()` - Initialize progress tracking
+
+### Phase 2: Create Thin Orchestrators
+
+Created thin wrapper scripts that call src methods:
+- **`run_workflow.py`**: Main workflow orchestrator
+  - Calls `metainformant.rna.orchestration.run_workflow_for_species()`
+  - Single-species sequential execution
+  - Status checking, cleanup operations
+
+- **`setup_genome.py`**: Genome setup orchestrator
+  - Calls `metainformant.rna.genome_prep.orchestrate_genome_setup()`
+  - Complete genome setup pipeline
+
+- **`discover_species.py`**: Discovery/config generator
+  - Calls `metainformant.rna.discovery` functions
+  - Discover species and generate configs
+
+- **`check_environment.py`**: Made thinner
+  - Only calls `metainformant.rna.environment.validate_environment()`
+
+### Phase 3: Remove Obsolete Scripts
+
+Deleted 20+ obsolete scripts:
+- Workflow orchestration: `orchestrate_workflows.py`, `run_multi_species.py`, `run_all_species_parallel.py`, `workflow_ena_integrated.py`, `batch_download_species.py`, `assess_progress.py`, `initialize_progress_tracking.py`, `cleanup_progress_state.py`, `cleanup_partial_downloads.py`, `emergency_cleanup.py`, `fix_abundance_naming.py`
+- Genome setup: `orchestrate_genome_setup.py`, `verify_genomes_and_indexes.py`, `download_missing_genomes.py`, `prepare_transcriptomes.py`, `build_kallisto_indexes.py`, `run_genome_setup.sh`
+- Discovery: `discover_ant_species_with_rnaseq.py`, `discover_ant_rnaseq_by_genus.py`, `generate_ant_configs_with_genomes.py`
+- Environment: `check_r_dependencies.py` (merged into `check_environment.py`)
+
+### Phase 4: Update Documentation
+
+Updated `README.md` and `AGENTS.md` to reflect new consolidated structure.
+
+## Design Principles
+
+1. **Thin Scripts**: Scripts only parse args and call src methods
+2. **Single-Species Sequential**: Focus on one species at a time (not parallel multi-species)
+3. **Hybrid Approach**: Use metainformant for complex logic, direct CLI for simple steps
+4. **All Logic in src**: No business logic in scripts directory
+5. **Backward Compatibility**: New orchestrators support same use cases as old scripts
+
+## Previous AI Contributions
 
 ### Pipeline Automation
 **Code Assistant Agent** implemented:
 - `batch_ena.py` for resilient ENA downloads, concurrent quantification, and log management
-- `run_multi_species.py` for multi-species orchestration with cross-species analysis
-  - **Auto-activation**: Virtual environment detection and automatic re-execution
-  - **SRA optimization**: Wrapper script creation and environment configuration
-  - **Disk management**: Batched processing with automatic FASTQ cleanup
-  - **Thread configuration**: 10 parallel threads for downloads and quantification
-- `run_multi_species_sequential.py` for disk-space-friendly sequential processing
 - Kallisto execution orchestration with dynamic thread allocation
 - Multi-species workflow orchestration
 
@@ -20,101 +84,41 @@ This document records AI involvement in the high-throughput RNA processing scrip
 **Code Assistant Agent** developed:
 - `monitor_workflow.py` for real-time workflow monitoring dashboard
 - `monitor_amalgkit_progress.sh` for multi-species progress tracking
-- `test_pbarbatus_workflow.py` for workflow testing
-- `test_single_species.py` for single species validation
-- `test_skip_logic.py` and `verify_skip_logic.sh` for skip logic verification
+- Comprehensive test suites
 
 ### Data Management
 **Code Assistant Agent** created:
-- `cleanup_quantified_sra.sh` for safe deletion of quantified SRA files
-- `list_unquantified.sh` for reporting unquantified samples
-- `quant_downloaded_samples.py` for quantifying already-downloaded samples
+- Cleanup functions for safe deletion of quantified files
+- Progress tracking and assessment functions
 
 ### Download Optimization
 **Code Assistant Agent** implemented:
-- **`download_ena_robust.py`**: Robust ENA downloader with retry logic (PRODUCTION)
-  - ENA API integration for direct FASTQ URL discovery
-  - wget-based downloads with --continue for resume capability
-  - Parallel download orchestration with ThreadPoolExecutor
-  - Automatic retry logic with configurable attempts
-  - 100% reliable vs 0% with SRA Toolkit
-- **`workflow_ena_integrated.py`**: Integrated download + quantification (PRODUCTION)
-  - Combines robust ENA downloads with kallisto quantification
-  - Batched processing: download→quantify→delete cycles
-  - Auto-detection of single vs paired-end data
-  - Resume support for failed workflows
-  - Complete end-to-end testing with real samples
-- ~~`batch_ena.py`~~ (REMOVED - superseded by workflow_ena_integrated.py)
-- ~~`force_fasterq.sh`~~ (REMOVED - SRA Toolkit approach superseded by ENA)
-- ~~`force_fasterq_parallel.sh`~~ (REMOVED - SRA Toolkit approach superseded by ENA)
-- ~~`process_one_srr.sh`~~ (REMOVED - SRA Toolkit helper superseded by ENA)
+- ENA API integration for direct FASTQ URL discovery
+- wget-based downloads with --continue for resume capability
+- Parallel download orchestration
+- Automatic retry logic
 
 ### Operational Guidance
 **Documentation Agent** authored:
 - Usage instructions in `README.md`
-- Environment and dependency reminders for wget, kallisto, and uv workflows
-- Integration notes tying script output paths to `docs/rna/examples`
+- Environment and dependency reminders
 - Comprehensive workflow documentation
 
-### Validation Support
-**Code Assistant Agent** cross-checked:
-- CLI argument handling with amalgkit metadata expectations
-- File placement within `output/` per repository rules
-- Error handling branches used during large cohort reprocessing
-- Skip logic for already-quantified samples
-
 ## Maintenance Practices
-- Capture real run logs when updating retry semantics or concurrency parameters
-- Reflect new script flags in both this AGENTS file and the accompanying README
-- Keep tests in `tests/rna` aligned with the automation behavior documented here
-- Remove obsolete scripts with hardcoded user-specific paths
-- Maintain consistency across multi-species workflows
-- Document production fixes: auto-activation, SRA wrappers, disk management
-- Update thread counts and performance characteristics based on actual usage
+
+- All business logic in `src/metainformant/rna/`
+- Scripts are thin wrappers that call src methods
+- Single-species sequential execution focus
+- Hybrid approach: metainformant for complex logic, direct CLI for simple steps
+- Update documentation when adding new functionality
+- Keep tests in `tests/rna` aligned with automation behavior
 
 ## Script Organization
-- **Production workflows**: `workflow_ena_integrated.py` (recommended), `run_multi_species.py` (legacy SRA-based)
-- **Download utilities**: `download_ena_robust.py` (production)
+
+- **Main orchestrator**: `run_workflow.py` (single-species workflows)
+- **Genome setup**: `setup_genome.py` (genome preparation pipeline)
+- **Discovery**: `discover_species.py` (species discovery and config generation)
+- **Environment**: `check_environment.py` (environment validation)
 - **Amalgkit workflows**: Centralized in `scripts/rna/amalgkit/`
-- **Monitoring**: `monitor_comprehensive.py` (recommended), `monitor_workflow.py`, `monitor_amalgkit_progress.sh`
-- **Utility**: `cleanup_quantified_sra.sh`, `list_unquantified.sh`, `quant_downloaded_samples.py`
-- **Environment**: `check_environment.py`
 
 All scripts follow repository standards with no hardcoded paths and proper integration with `output/` directory structure.
-
-## Production Enhancements
-
-### ENA Download Integration (November 2025)
-**Code Assistant Agent** developed robust ENA-based workflow:
-- Bypassed SRA Toolkit (100% failure rate on large samples)
-- Implemented ENA API integration for reliable FASTQ URL discovery
-- Used wget with --continue for resume capability after network failures
-- Achieved 100% download success rate vs 0% with SRA Toolkit
-- Integrated with kallisto quantification in batched workflow
-- Tested end-to-end with 3 real samples, then 12 samples (successful download + quantification)
-- Auto-detection of single-end vs paired-end data
-- Performance: ~6 min download + ~2 min quantification per batch of 3 samples
-- Currently processing 844 samples across 4 species in production (November 2025)
-
-### Auto-Activation Implementation
-**Code Assistant Agent** developed automatic virtual environment activation:
-- Detection of virtual environment using path analysis
-- Process replacement via `os.execve()` for seamless activation
-- Environment variable configuration (`VIRTUAL_ENV`, `PATH`)
-- Clear error messages with setup instructions if venv missing
-
-### SRA Download Optimization
-**Code Assistant Agent** implemented disk space management:
-- Wrapper script creation for `fasterq-dump` with `--size-check off`
-- Environment variable configuration for SRA toolkit (`TMPDIR`, `TEMP`, `TMP`)
-- Tool symlink management (fastp, kallisto, seqkit)
-- PATH manipulation to prioritize wrapper directory
-- Configuration to use project directory instead of `/tmp` partition
-
-### Performance Configuration
-- Updated from 8 to 10 threads for parallel operations
-- Batched processing: 10 samples at a time
-- Peak disk usage: ~20-50 GB (10 samples of FASTQs)
-- Validated with 300+ samples per species across 4 ant species
-
-

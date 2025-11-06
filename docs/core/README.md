@@ -6,6 +6,39 @@ This directory contains comprehensive documentation for METAINFORMANT's core inf
 
 The core module provides essential utilities used across all METAINFORMANT domains, including configuration management, I/O operations, logging, and parallel processing.
 
+## Core Utilities
+
+- [config](config.md): environment, typed env loaders, Postgres config
+- [io](io.md): JSON/JSONL, CSV/TSV, gzip-aware open, mkdir
+- [logging](logging.md): consistent logger factory
+- [text](text.md): normalization, slugify, safe filenames
+- [parallel](parallel.md): thread-based map
+- [hash](hash.md): SHA-256 hashing helpers
+- [paths](paths.md): path expansion, resolution, and containment checks
+- [cache](cache.md): simple JSON cache with TTL
+- [db](db.md): PostgreSQL client initialization
+
+```mermaid
+graph LR
+  subgraph Core
+    A[config] --> B[io]
+    A --> C[logging]
+    B --> D[cache]
+    B --> E[db]
+    F[parallel]
+    G[hash]
+    H[text]
+    I[paths]
+  end
+  Core -->|used by| DNA & RNA & Simulation & Math & Viz
+```
+
+## Conventions
+
+- **Outputs**: write to `output/` by default; accept an override path parameter.
+- **Configs**: read from `config/` using `core.config` helpers; allow env overrides.
+- **Data**: read inputs from `data/` unless explicit paths are provided.
+
 ## Documentation Files
 
 ### Infrastructure Utilities
@@ -28,6 +61,15 @@ The core module provides essential utilities used across all METAINFORMANT domai
 ## Usage Examples
 
 Core utilities are used throughout METAINFORMANT:
+
+```python
+from metainformant.core import io, parallel, hash
+
+io.ensure_directory("output")
+checksums = parallel.thread_map(hash.sha256_file, ["README.md"])  # list[str]
+```
+
+Additional examples:
 
 ```python
 from metainformant.core import config, io, logging, download_and_process_data

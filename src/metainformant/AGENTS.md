@@ -84,6 +84,7 @@ This document outlines the AI agents and language models that have contributed t
 - Agent-based grid world modeling
 - Evolutionary simulation frameworks
 - Sequence mutation and evolution models
+- Module-specific simulation scripts for all domain modules (DNA, RNA, protein, epigenome, ontology, phenotype, ecology, math, visualization, single-cell, quality, networks, ML, multi-omics, GWAS, life events, information, core)
 
 ### Single Cell (`singlecell/`)
 **Code Assistant Agent** developed:

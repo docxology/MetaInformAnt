@@ -2,6 +2,14 @@
 
 Thin, modular wrapper over the external `amalgkit` CLI with a plan/execute workflow.
 
+## Quick Links
+
+- **[Main Documentation Index](README.md)** - Complete documentation map
+- **[API Reference](API.md)** - Complete function documentation
+- **[Workflow Guide](workflow.md)** - Workflow planning and execution
+- **[Step Documentation](amalgkit/steps/README.md)** - All 11 step guides
+- **[Function Index](amalgkit/FUNCTIONS.md)** - Quick function lookup
+
 ```mermaid
 flowchart LR
   A[Workflow Config] --> B[plan_workflow]
@@ -49,12 +57,18 @@ See [WORKFLOW.md](WORKFLOW.md) for planning/execution and [STEPS.md](STEPS.md) f
 
 ## See Also
 
-- **[GETTING_STARTED.md](GETTING_STARTED.md)**: Installation and setup
-- **[WORKFLOW.md](WORKFLOW.md)**: Workflow planning and execution
-- **[STEPS.md](STEPS.md)**: Individual step documentation
-- **[CONFIGURATION.md](CONFIGURATION.md)**: Configuration management
-- **[ORCHESTRATION/README.md](ORCHESTRATION/README.md)**: Orchestrator overview
-- **[README.md](README.md)**: Complete documentation index
+### Getting Started
+- **[GETTING_STARTED.md](GETTING_STARTED.md)** - Installation and setup
+- **[README.md](README.md)** - Complete documentation index
+
+### Core Documentation
+- **[workflow.md](workflow.md)** - Workflow planning and execution
+- **[steps.md](steps.md)** - Individual step documentation
+- **[CONFIGURATION.md](CONFIGURATION.md)** - Configuration management
+- **[API.md](API.md)** - Complete API reference
+
+### Orchestration
+- **[ORCHESTRATION/README.md](ORCHESTRATION/README.md)** - Orchestrator overview
 
 ### References
 

@@ -11,6 +11,7 @@ from typing import Any, Iterable, Mapping
 
 from ..core.config import apply_env_overrides, load_mapping_from_file
 from ..core.io import dump_json, ensure_directory, read_delimited, write_delimited, write_jsonl
+from ..core.paths import expand_and_resolve
 from . import steps as _steps_mod
 from .amalgkit import AmalgkitParams, build_amalgkit_command, check_cli_available, ensure_cli_available
 from .deps import check_step_dependencies
@@ -56,6 +57,63 @@ class AmalgkitWorkflowConfig:
         if self.species_list:
             params["species-list"] = list(self.species_list)
         return params
+
+
+def _find_repo_root(config_file: Path) -> Path:
+    """Find repository root directory by walking up from config file location.
+    
+    Looks for common repository markers: .git, pyproject.toml, or setup.py.
+    If not found, uses the directory containing the config file as fallback.
+    
+    Args:
+        config_file: Path to config file
+        
+    Returns:
+        Path to repository root directory
+    """
+    config_path = Path(config_file).resolve()
+    current = config_path.parent
+    
+    # Walk up directory tree looking for repo markers
+    markers = [".git", "pyproject.toml", "setup.py", ".cursorrules"]
+    for _ in range(10):  # Limit search to 10 levels up
+        for marker in markers:
+            if (current / marker).exists():
+                return current
+        if current.parent == current:  # Reached filesystem root
+            break
+        current = current.parent
+    
+    # Fallback: use config directory's parent (assuming config/ is in repo root)
+    if "config" in config_path.parts:
+        config_index = config_path.parts.index("config")
+        return Path(*config_path.parts[:config_index])
+    
+    # Last resort: use current working directory
+    return Path.cwd()
+
+
+def _resolve_path_relative_to_repo(path_str: str | Path, repo_root: Path) -> Path:
+    """Resolve a path relative to repository root.
+    
+    If path is absolute, returns it as-is (after expand_and_resolve).
+    If path is relative, resolves it relative to repo_root.
+    
+    Args:
+        path_str: Path string (can be relative or absolute)
+        repo_root: Repository root directory
+        
+    Returns:
+        Resolved absolute Path
+    """
+    path = Path(path_str)
+    
+    # If absolute, just expand and resolve
+    if path.is_absolute():
+        return expand_and_resolve(path)
+    
+    # If relative, resolve relative to repo root
+    return expand_and_resolve(repo_root / path)
 
 
 def _build_default_search_string(species_list: list[str]) -> str | None:
@@ -226,8 +284,100 @@ def _sanitize_params_for_subcommand(subcommand: str, params: Mapping[str, Any]) 
     return {k: v for k, v in params.items() if k in allowed}
 
 
+def _validate_genome_ready(config: AmalgkitWorkflowConfig) -> dict[str, Any]:
+    """Validate that genome and kallisto index are ready for quantification.
+    
+    Checks:
+    - Genome directory exists and contains transcriptome FASTA
+    - Kallisto index exists if build_index is enabled in quant config
+    
+    Args:
+        config: Workflow configuration
+        
+    Returns:
+        Dictionary with validation results:
+        - ready: bool - True if genome/index ready
+        - genome_exists: bool - True if genome directory exists
+        - transcriptome_exists: bool - True if transcriptome FASTA found
+        - index_exists: bool - True if kallisto index exists (or not required)
+        - genome_dir: Path | None - Path to genome directory
+        - transcriptome_path: Path | None - Path to transcriptome FASTA
+        - index_path: Path | None - Path to kallisto index
+        - errors: list[str] - List of error messages
+    """
+    result: dict[str, Any] = {
+        "ready": False,
+        "genome_exists": False,
+        "transcriptome_exists": False,
+        "index_exists": False,
+        "genome_dir": None,
+        "transcriptome_path": None,
+        "index_path": None,
+        "errors": [],
+    }
+    
+    if not config.genome:
+        result["ready"] = True  # No genome config means no validation needed
+        return result
+    
+    from .genome_prep import find_rna_fasta_in_genome_dir, get_expected_index_path
+    
+    # Check genome directory
+    acc = str(config.genome.get("accession", ""))
+    default_dest = config.work_dir.parent / "genome"
+    dest_dir_str = config.genome.get("dest_dir", default_dest)
+    dest_dir = Path(dest_dir_str) if isinstance(dest_dir_str, str) else dest_dir_str
+    
+    if not dest_dir.exists():
+        result["errors"].append(f"Genome directory does not exist: {dest_dir}")
+        return result
+    
+    result["genome_exists"] = True
+    result["genome_dir"] = dest_dir
+    
+    # Check for transcriptome FASTA
+    transcriptome_path = find_rna_fasta_in_genome_dir(dest_dir, acc)
+    if not transcriptome_path:
+        result["errors"].append(f"Transcriptome FASTA not found in genome directory: {dest_dir}")
+        return result
+    
+    result["transcriptome_exists"] = True
+    result["transcriptome_path"] = transcriptome_path
+    
+    # Check for kallisto index if build_index is enabled
+    quant_params = dict(config.per_step.get("quant", {}))
+    build_index = quant_params.get("build_index", False)
+    if isinstance(build_index, str):
+        build_index = build_index.lower() in {"yes", "true", "1"}
+    
+    if build_index:
+        species_name = config.species_list[0] if config.species_list else "unknown"
+        index_path = get_expected_index_path(config.work_dir, species_name)
+        
+        if index_path.exists():
+            result["index_exists"] = True
+            result["index_path"] = index_path
+            result["ready"] = True
+        else:
+            result["errors"].append(f"Kallisto index not found (expected: {index_path})")
+    else:
+        # Index not required
+        result["index_exists"] = True
+        result["ready"] = True
+    
+    return result
+
+
 def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> list[int]:
     """Execute the full amalgkit workflow in order.
+
+    This workflow provides end-to-end functionality:
+    1. Automatic genome download → transcriptome preparation → kallisto indexing (if genome config exists)
+    2. Metadata retrieval for available samples
+    3. Immediate per-sample processing: download → quantify → delete FASTQ (default behavior)
+    
+    Genome setup is automatic: if genome config exists but genome/index is missing,
+    the workflow will automatically download and prepare everything before proceeding.
 
     Returns a list of return codes per step in order.
     """
@@ -242,99 +392,136 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
     # Ensure defaults are applied for required amalgkit params
     _apply_step_defaults(config)
 
-    # 1) Optional genome preparation FIRST (so it's logged even if amalgkit missing)
+    # 1) Genome validation and automatic setup FIRST (before any sample processing)
     if config.genome:
         from ..dna.ncbi import download_genome_package_best_effort
-
-        acc = str(config.genome.get("accession", ""))
-        include = config.genome.get("include") or ["gff3", "rna", "cds", "protein", "genome", "seq-report"]
-        ftp_url = config.genome.get("ftp_url")
-        default_dest = config.work_dir.parent / "genome"
-        dest_dir = Path(config.genome.get("dest_dir", default_dest)).expanduser().resolve()
-        start_ts = datetime.utcnow()
-        dl_rec = download_genome_package_best_effort(acc, dest_dir, include=include, ftp_url=ftp_url)
-        end_ts = datetime.utcnow()
-        genome_rec = {
-            "step": "genome-prepare",
-            "return_code": int(dl_rec.get("return_code", 0)),
-            "stdout_bytes": len(dl_rec.get("stdout", "")),
-            "stderr_bytes": len(dl_rec.get("stderr", "")),
-            "started_utc": start_ts.isoformat() + "Z",
-            "finished_utc": end_ts.isoformat() + "Z",
-            "duration_seconds": max(0.0, (end_ts - start_ts).total_seconds()),
-            "work_dir": str(config.work_dir),
-            "log_dir": str(config.log_dir or (config.work_dir / "logs")),
-            "params": {"accession": acc, "include": include, "dest_dir": str(dest_dir), "ftp_url": ftp_url or ""},
-            "command": dl_rec.get("command", dl_rec.get("url", dl_rec.get("method", ""))),
-            "extracted_dir": dl_rec.get("extracted_dir", ""),
-            "zip_path": dl_rec.get("zip_path", ""),
-            "method": dl_rec.get("method", ""),
-        }
-        manifest_records.append(genome_rec)
-        return_codes.append(genome_rec["return_code"])  # record genome step code
+        from .genome_prep import prepare_genome_for_quantification
         
-        # Prepare transcriptome for kallisto if download was successful
-        if genome_rec["return_code"] == 0:
-            from .genome_prep import prepare_genome_for_quantification
-            
-            species_name = config.species_list[0] if config.species_list else "unknown"
-            genome_dir_path = Path(dl_rec.get("extracted_dir") or str(dest_dir))
-            
-            # Check if build_index is enabled in quant config
+        # Validate genome/index status
+        validation = _validate_genome_ready(config)
+        
+        if validation["ready"]:
+            logger.info("Genome and index already ready, skipping setup")
+            # Use existing paths for quant params
             quant_params = dict(config.per_step.get("quant", {}))
-            build_index = quant_params.get("build_index", False)
-            if isinstance(build_index, str):
-                build_index = build_index.lower() in {"yes", "true", "1"}
-            
-            prep_start_ts = datetime.utcnow()
-            prep_result = prepare_genome_for_quantification(
-                genome_dir_path,
-                species_name,
-                config.work_dir,
-                accession=acc,
-                build_index=build_index,
-                kmer_size=31,
-            )
-            prep_end_ts = datetime.utcnow()
-            
-            prep_rec = {
-                "step": "transcriptome-prepare",
-                "return_code": 0 if prep_result["success"] else 1,
-                "stdout_bytes": 0,
-                "stderr_bytes": 0,
-                "started_utc": prep_start_ts.isoformat() + "Z",
-                "finished_utc": prep_end_ts.isoformat() + "Z",
-                "duration_seconds": max(0.0, (prep_end_ts - prep_start_ts).total_seconds()),
-                "work_dir": str(config.work_dir),
-                "log_dir": str(config.log_dir or (config.work_dir / "logs")),
-                "params": {
-                    "species_name": species_name,
-                    "genome_dir": str(genome_dir_path),
-                    "build_index": build_index,
-                },
-                "fasta_path": prep_result.get("fasta_path"),
-                "index_path": prep_result.get("index_path"),
-                "error": prep_result.get("error"),
-            }
-            manifest_records.append(prep_rec)
-            return_codes.append(prep_rec["return_code"])
-            
-            # Update quant params with fasta_dir and index_dir if available
-            if prep_result.get("fasta_path"):
-                quant_params["fasta_dir"] = str(Path(prep_result["fasta_path"]).parent)
-                logger.info(f"Set fasta_dir for quant: {quant_params['fasta_dir']}")
-            
-            if prep_result.get("index_path"):
-                quant_params["index_dir"] = str(Path(prep_result["index_path"]).parent)
-                logger.info(f"Set index_dir for quant: {quant_params['index_dir']}")
-            
+            if validation.get("transcriptome_path"):
+                quant_params["fasta_dir"] = str(Path(validation["transcriptome_path"]).parent)
+            if validation.get("index_path"):
+                quant_params["index_dir"] = str(Path(validation["index_path"]).parent)
             config.per_step["quant"] = quant_params
         else:
-            # Still inject quant param if index/genome-dir not present (fallback)
-            quant_params = dict(config.per_step.get("quant", {}))
-            if "index" not in quant_params and "genome-dir" not in quant_params and "genome_dir" not in quant_params:
-                genome_dir = dl_rec.get("extracted_dir") or str(dest_dir)
-                quant_params["genome_dir"] = genome_dir
+            logger.info("Genome/index not ready, running automatic setup...")
+            logger.info(f"Validation status: genome_exists={validation['genome_exists']}, "
+                       f"transcriptome_exists={validation['transcriptome_exists']}, "
+                       f"index_exists={validation['index_exists']}")
+            if validation["errors"]:
+                logger.info(f"Validation errors: {validation['errors']}")
+            
+            acc = str(config.genome.get("accession", ""))
+            include = config.genome.get("include") or ["gff3", "rna", "cds", "protein", "genome", "seq-report"]
+            ftp_url = config.genome.get("ftp_url")
+            default_dest = config.work_dir.parent / "genome"
+            dest_dir_str = config.genome.get("dest_dir", default_dest)
+            # dest_dir is already resolved in load_workflow_config, but handle both string and Path
+            dest_dir = Path(dest_dir_str) if isinstance(dest_dir_str, str) else dest_dir_str
+            dest_dir = dest_dir.resolve()  # Ensure absolute path
+            
+            # Step 1: Download genome if missing
+            genome_dir_path = None
+            if not validation["genome_exists"] or not validation["transcriptome_exists"]:
+                logger.info(f"Downloading genome package to {dest_dir}...")
+                start_ts = datetime.utcnow()
+                dl_rec = download_genome_package_best_effort(acc, dest_dir, include=include, ftp_url=ftp_url)
+                end_ts = datetime.utcnow()
+                genome_dir_path = Path(dl_rec.get("extracted_dir") or str(dest_dir))
+                
+                genome_rec = {
+                    "step": "genome-download",
+                    "return_code": int(dl_rec.get("return_code", 0)),
+                    "stdout_bytes": len(dl_rec.get("stdout", "")),
+                    "stderr_bytes": len(dl_rec.get("stderr", "")),
+                    "started_utc": start_ts.isoformat() + "Z",
+                    "finished_utc": end_ts.isoformat() + "Z",
+                    "duration_seconds": max(0.0, (end_ts - start_ts).total_seconds()),
+                    "work_dir": str(config.work_dir),
+                    "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                    "params": {"accession": acc, "include": include, "dest_dir": str(dest_dir), "ftp_url": ftp_url or ""},
+                    "command": dl_rec.get("command", dl_rec.get("url", dl_rec.get("method", ""))),
+                    "extracted_dir": str(genome_dir_path),
+                    "zip_path": dl_rec.get("zip_path", ""),
+                    "method": dl_rec.get("method", ""),
+                }
+                manifest_records.append(genome_rec)
+                return_codes.append(genome_rec["return_code"])
+            else:
+                # Genome already exists, use existing directory
+                genome_dir_path = validation["genome_dir"]
+                logger.info(f"Genome already exists at {genome_dir_path}, skipping download")
+            
+            # Step 2: Prepare transcriptome and build index if needed
+            if genome_dir_path and (not validation["transcriptome_exists"] or not validation["index_exists"]):
+                species_name = config.species_list[0] if config.species_list else "unknown"
+                
+                # Check if build_index is enabled in quant config
+                quant_params = dict(config.per_step.get("quant", {}))
+                build_index = quant_params.get("build_index", False)
+                if isinstance(build_index, str):
+                    build_index = build_index.lower() in {"yes", "true", "1"}
+                
+                # Only build index if it doesn't exist and is requested
+                should_build_index = build_index and not validation["index_exists"]
+                
+                logger.info(f"Preparing transcriptome (build_index={should_build_index})...")
+                prep_start_ts = datetime.utcnow()
+                prep_result = prepare_genome_for_quantification(
+                    genome_dir_path,
+                    species_name,
+                    config.work_dir,
+                    accession=acc,
+                    build_index=should_build_index,
+                    kmer_size=31,
+                )
+                prep_end_ts = datetime.utcnow()
+                
+                prep_rec = {
+                    "step": "transcriptome-prepare",
+                    "return_code": 0 if prep_result["success"] else 1,
+                    "stdout_bytes": 0,
+                    "stderr_bytes": 0,
+                    "started_utc": prep_start_ts.isoformat() + "Z",
+                    "finished_utc": prep_end_ts.isoformat() + "Z",
+                    "duration_seconds": max(0.0, (prep_end_ts - prep_start_ts).total_seconds()),
+                    "work_dir": str(config.work_dir),
+                    "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                    "params": {
+                        "species_name": species_name,
+                        "genome_dir": str(genome_dir_path),
+                        "build_index": should_build_index,
+                    },
+                    "fasta_path": prep_result.get("fasta_path"),
+                    "index_path": prep_result.get("index_path"),
+                    "error": prep_result.get("error"),
+                }
+                manifest_records.append(prep_rec)
+                return_codes.append(prep_rec["return_code"])
+                
+                # Update quant params with fasta_dir and index_dir if available
+                if prep_result.get("fasta_path"):
+                    quant_params["fasta_dir"] = str(Path(prep_result["fasta_path"]).parent)
+                    logger.info(f"Set fasta_dir for quant: {quant_params['fasta_dir']}")
+                
+                if prep_result.get("index_path"):
+                    quant_params["index_dir"] = str(Path(prep_result["index_path"]).parent)
+                    logger.info(f"Set index_dir for quant: {quant_params['index_dir']}")
+                
+                config.per_step["quant"] = quant_params
+            elif validation["ready"]:
+                # Everything already exists, just set quant params
+                quant_params = dict(config.per_step.get("quant", {}))
+                if validation.get("transcriptome_path"):
+                    quant_params["fasta_dir"] = str(Path(validation["transcriptome_path"]).parent)
+                if validation.get("index_path"):
+                    quant_params["index_dir"] = str(Path(validation["index_path"]).parent)
                 config.per_step["quant"] = quant_params
 
     # 2) Ensure amalgkit is available; optionally auto-install
@@ -666,10 +853,38 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
                 fallback = config.work_dir / "config"
                 use_dir = preferred if preferred.exists() else fallback
                 filtered["config_dir"] = str(use_dir)
+            else:
+                # Ensure config_dir is an absolute resolved path
+                cfg_path = Path(str(cfg_dir)).expanduser()
+                try:
+                    cfg_path = cfg_path.resolve()
+                except Exception:
+                    # If resolution fails, try relative to work_dir
+                    if not cfg_path.is_absolute():
+                        cfg_path = (config.work_dir / cfg_path).resolve()
+                # Verify directory exists
+                if not cfg_path.exists():
+                    # Try to find it relative to work_dir
+                    work_relative = config.work_dir / cfg_path
+                    if work_relative.exists():
+                        cfg_path = work_relative.resolve()
+                    else:
+                        # Fallback to config_base or config
+                        preferred = config.work_dir / "config_base"
+                        fallback = config.work_dir / "config"
+                        cfg_path = preferred if preferred.exists() else fallback
+                        if not cfg_path.exists():
+                            cfg_path = preferred  # Use preferred even if it doesn't exist yet
+                filtered["config_dir"] = str(cfg_path)
         
         # Inject metadata path for steps that need it if not provided
         # CRITICAL: getfastq, integrate, quant, merge need row-per-sample format (NOT pivot tables)
         # Use smart fallback logic: metadata.filtered.tissue → metadata.tsv (skip pivot files)
+        # select also needs metadata but can use the standard metadata.tsv format
+        if subcommand == "select":
+            if not filtered.get("metadata") or filtered.get("metadata") == "inferred":
+                filtered["metadata"] = str(config.work_dir / "metadata" / "metadata.tsv")
+        
         if subcommand in {"integrate", "getfastq", "quant", "merge"}:
             current_metadata = filtered.get("metadata")
             needs_fallback = False
@@ -823,21 +1038,32 @@ def _write_run_reports(config: AmalgkitWorkflowConfig, records: list[dict[str, A
 def load_workflow_config(config_file: str | Path) -> AmalgkitWorkflowConfig:
     """Load `AmalgkitWorkflowConfig` from a config file with env overrides.
 
+    Paths in the config file are resolved relative to repository root.
+    This allows configs to work whether the repo is on `/home/q/...` or `/media/q/ext6/...`.
+    
     Expected top-level keys:
-      - work_dir (str)
-      - log_dir (str, optional)
+      - work_dir (str) - resolved relative to repo root
+      - log_dir (str, optional) - resolved relative to repo root
       - threads (int)
       - species_list (list[str])
       - steps (mapping of step name -> params mapping)
       - auto_install_amalgkit (bool, optional)
-      - genome (mapping, optional)
+      - genome (mapping, optional) - dest_dir resolved relative to repo root
     """
+    config_path = Path(config_file).resolve()
+    repo_root = _find_repo_root(config_path)
+    
     raw = load_mapping_from_file(config_file)
     raw = apply_env_overrides(raw, prefix="AK")
 
-    work_dir = Path(raw.get("work_dir", "output/amalgkit/work")).expanduser().resolve()
+    # Resolve work_dir relative to repo root
+    work_dir_str = raw.get("work_dir", "output/amalgkit/work")
+    work_dir = _resolve_path_relative_to_repo(work_dir_str, repo_root)
+    
+    # Resolve log_dir relative to repo root
     log_dir_val = raw.get("log_dir")
-    log_dir = Path(log_dir_val).expanduser().resolve() if isinstance(log_dir_val, str) else None
+    log_dir = _resolve_path_relative_to_repo(log_dir_val, repo_root) if isinstance(log_dir_val, str) else None
+    
     threads = int(raw.get("threads", 4))
     # Accept YAML list for species_list
     species_raw = raw.get("species_list", [])
@@ -863,9 +1089,24 @@ def load_workflow_config(config_file: str | Path) -> AmalgkitWorkflowConfig:
         "sanity",
     }
     steps_map = {k: v for k, v in steps_map.items() if str(k) in allowed and isinstance(v, dict)}
+    
+    # Resolve paths in step configs relative to repo root
+    for step_name, step_params in steps_map.items():
+        if isinstance(step_params, dict):
+            # Resolve out_dir if present
+            if "out_dir" in step_params:
+                step_params["out_dir"] = str(_resolve_path_relative_to_repo(step_params["out_dir"], repo_root))
+            # Resolve out if present (for merge step)
+            if "out" in step_params:
+                step_params["out"] = str(_resolve_path_relative_to_repo(step_params["out"], repo_root))
 
     auto_install_amalgkit = bool(raw.get("auto_install_amalgkit", False))
     genome_cfg = raw.get("genome") if isinstance(raw.get("genome"), dict) else None
+    
+    # Resolve genome dest_dir relative to repo root
+    if genome_cfg and "dest_dir" in genome_cfg:
+        genome_cfg["dest_dir"] = str(_resolve_path_relative_to_repo(genome_cfg["dest_dir"], repo_root))
+    
     filters = raw.get("filters") if isinstance(raw.get("filters"), dict) else {}
 
     return AmalgkitWorkflowConfig(

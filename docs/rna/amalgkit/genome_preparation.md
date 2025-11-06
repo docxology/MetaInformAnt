@@ -1,8 +1,16 @@
 # Genome Preparation and Kallisto Index Building
 
+**Technical API Reference** - Complete function documentation for genome preparation.
+
+> **For step-by-step user guide**: See [genome_setup_guide.md](genome_setup_guide.md)  
+> **For command reference**: See [commands.md](commands.md)  
+> **For API functions**: See [API Reference](../API.md#genome-preparation-functions)
+
 ## Overview
 
 This document describes the genome preparation pipeline for RNA-seq quantification workflows. The process automatically downloads genomes, extracts transcriptome FASTA files, and builds kallisto indexes for reproducible transcript abundance estimation.
+
+**This is the technical reference** - for user-friendly step-by-step instructions, see [genome_setup_guide.md](genome_setup_guide.md).
 
 ## Pipeline Flow
 
@@ -542,11 +550,14 @@ python3 scripts/rna/build_kallisto_indexes.py
 
 ## See Also
 
-- [Genome Setup Guide](genome_setup_guide.md) - Complete step-by-step setup guide
-- [Genome Setup Commands](commands.md) - Command reference for all scripts
-- [Quantification Step](steps/quant.md) - Using kallisto indexes for quantification
-- [Workflow Guide](amalgkit.md) - Complete workflow documentation
-- [Amalgkit README](README.md) - Overview of amalgkit integration
-- [RNA Domain README](../README.md) - RNA domain overview
-- [Scripts README](../../../../scripts/rna/README.md) - Production workflow scripts documentation
+### User Guides
+- **[genome_setup_guide.md](genome_setup_guide.md)** - Step-by-step user guide
+- **[commands.md](commands.md)** - Command reference for all scripts
+
+### Documentation
+- **[API Reference](../API.md#genome-preparation-functions)** - Complete function documentation
+- **[Function Index](FUNCTIONS.md)** - Quick function lookup
+- **[Quantification Step](steps/quant.md)** - Using kallisto indexes
+- **[Pipeline Overview](amalgkit.md)** - Complete workflow documentation
+- **[Main Index](../README.md)** - RNA domain master index
 

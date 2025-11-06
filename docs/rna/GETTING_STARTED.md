@@ -41,13 +41,22 @@ export NCBI_EMAIL="your.email@example.com"
 
 ### 3. Run Your First Workflow
 
+The workflow automatically handles genome setup: if a genome configuration is provided in the YAML file, it will automatically download the genome, prepare the transcriptome, and build the kallisto index before starting sample processing.
+
 ```bash
 # Single species workflow (ENA-based, recommended)
+# Genome setup happens automatically if configured
 python3 scripts/rna/workflow_ena_integrated.py \
   --config config/amalgkit/amalgkit_cfloridanus.yaml \
   --batch-size 12 \
   --threads 12
 ```
+
+**End-to-End Workflow**:
+1. **Automatic genome setup** (if genome config exists): Download → Prepare transcriptome → Build kallisto index
+2. **Metadata retrieval**: Download sample metadata from NCBI SRA
+3. **Immediate per-sample processing**: For each sample: download → immediately quantify → immediately delete FASTQ
+4. **Post-processing**: Merge, curate, and analyze results
 
 ## System Requirements
 

@@ -103,6 +103,8 @@ Each biological domain has its own subdirectory with detailed documentation:
 - `simulation/` - Synthetic data generation
 - `singlecell/` - Single-cell transcriptomic analysis
 - `visualization/` - Plotting and animation utilities
+- `information/` - Information-theoretic analysis (entropy, mutual information, semantic similarity)
+- `life_events/` - Life course and event sequence analysis
 
 ## Documentation Standards
 

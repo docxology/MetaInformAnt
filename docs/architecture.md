@@ -268,4 +268,4 @@ RNA (FASTQ) → Quality
 3. **Cache → Compute → Cache**: Expensive operations use `core.cache` for results
 4. **Logging**: All modules use `core.logging` for consistent log messages
 
-See also: [CLI](./cli.md), [Core](./core.md).
+See also: [CLI](./cli.md), [Core](./core/README.md).

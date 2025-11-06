@@ -14,6 +14,33 @@ The `quant` step:
 - Supports batch processing for HPC environments
 - Automatically cleans up FASTQs after successful quantification (configurable)
 
+## Function Signature
+
+### Python API
+
+```python
+from metainformant.rna import amalgkit
+
+# High-level wrapper
+def quant(
+    params: AmalgkitParams | None = None,
+    **kwargs: Any
+) -> subprocess.CompletedProcess[str]
+
+# Step runner (low-level)
+from metainformant.rna.steps.quant import run_quant
+
+def run_quant(
+    params: Mapping[str, Any] | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]
+```
+
+**See Also**: [API Reference](../../API.md#quant) | [Function Index](../FUNCTIONS.md)
+
 ## Usage
 
 ### Basic Usage
@@ -677,10 +704,17 @@ steps:
 
 ## See Also
 
-- **Previous Step**: [`getfastq.md`](getfastq.md) - Downloading FASTQ files
-- **Next Step**: [`merge.md`](merge.md) - Combining abundance estimates
-- **Workflow Overview**: [`../amalgkit.md`](../amalgkit.md)
-- **Testing**: `tests/test_rna_amalgkit_steps.py::test_quant_basic_execution`
+### Related Steps
+- **[getfastq.md](getfastq.md)** - Previous: Download FASTQ files
+- **[merge.md](merge.md)** - Next: Merge quantification results
+
+### Documentation
+- **[API Reference](../../API.md#quant)** - Complete function documentation
+- **[Function Index](../FUNCTIONS.md)** - Quick function lookup
+- **[Pipeline Overview](../amalgkit.md)** - Complete pipeline documentation
+- **[Steps Index](README.md)** - All step documentation
+- **[Workflow Guide](../../workflow.md)** - Workflow planning and execution
+- **[Main Index](../../README.md)** - RNA domain master index
 
 ---
 

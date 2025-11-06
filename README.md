@@ -372,7 +372,7 @@ Some modules have lower test success rates due to optional dependencies:
 - **Multi-omics**: Framework exists, tests may skip without dependencies
 - **Network Analysis**: Core tests pass; advanced features may need additional setup
 
-See [Test Analysis](docs/test_analysis.md) for detailed coverage information.
+See [Testing Guide](docs/testing.md) for detailed testing documentation and coverage information.
 
 ## Best Practices
 

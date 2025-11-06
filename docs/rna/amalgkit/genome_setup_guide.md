@@ -1,5 +1,11 @@
 # Genome Setup Guide
 
+**User Guide** - Step-by-step instructions for setting up genomes and kallisto indexes.
+
+> **For technical API reference**: See [genome_preparation.md](genome_preparation.md)  
+> **For command reference**: See [commands.md](commands.md)  
+> **For API functions**: See [API Reference](../API.md#genome-preparation-functions)
+
 This guide provides step-by-step instructions for setting up genomes and kallisto indexes for all species in the METAINFORMANT RNA-seq workflow.
 
 ## Overview
@@ -383,10 +389,14 @@ All scripts generate JSON result files. Keep these for:
 
 ## See Also
 
-- [Genome Preparation Documentation](genome_preparation.md) - Detailed API reference and technical documentation
-- [Genome Setup Commands](commands.md) - Complete command reference for all scripts
-- [Quantification Step](steps/quant.md) - Using indexes for quantification
-- [Workflow Guide](amalgkit.md) - Complete workflow documentation
-- [Amalgkit README](README.md) - Overview of amalgkit integration
-- [RNA Domain README](../README.md) - RNA domain overview
+### Technical Reference
+- **[genome_preparation.md](genome_preparation.md)** - Technical API reference
+- **[commands.md](commands.md)** - Command reference for all scripts
+
+### Documentation
+- **[API Reference](../API.md#genome-preparation-functions)** - Complete function documentation
+- **[Function Index](FUNCTIONS.md)** - Quick function lookup
+- **[Quantification Step](steps/quant.md)** - Using indexes for quantification
+- **[Pipeline Overview](amalgkit.md)** - Complete workflow documentation
+- **[Main Index](../README.md)** - RNA domain master index
 

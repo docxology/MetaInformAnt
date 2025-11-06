@@ -129,7 +129,7 @@ AI designed:
 
 This step documentation integrates with:
 - **[../amalgkit.md](../amalgkit.md)**: Complete pipeline overview
-- **[../guide.md](../guide.md)**: Usage guide
+- **[../amalgkit.md](../amalgkit.md)**: Complete pipeline documentation (includes advanced usage)
 - **[../testing_coverage.md](../testing_coverage.md)**: Test coverage and validation
 - **[../../workflow.md](../../workflow.md)**: RNA workflow orchestration
 - **[../../configs.md](../../configs.md)**: Configuration management

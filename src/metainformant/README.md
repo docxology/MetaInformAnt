@@ -111,8 +111,9 @@ Synthetic data generation and agent-based modeling:
 - **Expression Simulation**: Gene expression count simulation
 - **Agent-Based Models**: Grid-world and multi-agent simulations
 - **Evolutionary Dynamics**: Population genetic simulations
+- **Module-Specific Scripts**: Dedicated simulation scripts for each domain module (DNA, RNA, protein, GWAS, single-cell, etc.)
 
-See [`simulation/README.md`](simulation/README.md) for detailed documentation.
+See [`simulation/README.md`](simulation/README.md) for detailed documentation. Module-specific simulation scripts are documented in `scripts/simulation/README.md`.
 
 ### 🔬 Single Cell (`singlecell/`)
 Single-cell transcriptomic analysis:

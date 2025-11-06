@@ -1,0 +1,1033 @@
+# RNA Module API Reference
+
+Complete function and method reference for the METAINFORMANT RNA analysis module.
+
+## Quick Navigation
+
+- [Amalgkit Step Functions](#amalgkit-step-functions) - High-level step wrappers
+- [Step Runner Functions](#step-runner-functions) - Low-level step execution
+- [Workflow Functions](#workflow-functions) - Workflow planning and execution
+- [Genome Preparation Functions](#genome-preparation-functions) - Genome setup and indexing
+- [Orchestration Functions](#orchestration-functions) - Multi-species workflow management
+- [Utility Functions](#utility-functions) - CLI helpers and checks
+- [Processing Functions](#processing-functions) - Sample processing pipelines
+
+---
+
+## Amalgkit Step Functions
+
+High-level wrapper functions for each amalgkit subcommand. These functions provide a clean Python interface to the amalgkit CLI.
+
+### `metadata`
+
+```python
+def metadata(
+    params: AmalgkitParams | None = None,
+    **kwargs: Any
+) -> subprocess.CompletedProcess[str]
+```
+
+**Purpose**: Retrieve RNA-seq metadata from NCBI SRA/ENA databases.
+
+**Parameters**:
+- `params`: Dictionary of amalgkit parameters (e.g., `{"out_dir": "work", "search_string": "..."}`)
+- `**kwargs`: Additional arguments passed to `run_amalgkit` (e.g., `work_dir`, `log_dir`, `check`)
+
+**Returns**: `subprocess.CompletedProcess[str]` with execution results
+
+**See Also**: [Step Documentation: metadata](amalgkit/steps/metadata.md)
+
+---
+
+### `integrate`
+
+```python
+def integrate(
+    params: AmalgkitParams | None = None,
+    **kwargs: Any
+) -> subprocess.CompletedProcess[str]
+```
+
+**Purpose**: Integrate FASTQ file paths into metadata tables.
+
+**See Also**: [Step Documentation: integrate](amalgkit/steps/integrate.md)
+
+---
+
+### `config`
+
+```python
+def config(
+    params: AmalgkitParams | None = None,
+    **kwargs: Any
+) -> subprocess.CompletedProcess[str]
+```
+
+**Purpose**: Generate configuration files for metadata selection.
+
+**See Also**: [Step Documentation: config](amalgkit/steps/config.md)
+
+---
+
+### `select`
+
+```python
+def select(
+    params: AmalgkitParams | None = None,
+    **kwargs: Any
+) -> subprocess.CompletedProcess[str]
+```
+
+**Purpose**: Select and filter SRA entries based on quality criteria.
+
+**See Also**: [Step Documentation: select](amalgkit/steps/select.md)
+
+---
+
+### `getfastq`
+
+```python
+def getfastq(
+    params: AmalgkitParams | None = None,
+    **kwargs: Any
+) -> subprocess.CompletedProcess[str]
+```
+
+**Purpose**: Download and convert SRA files to FASTQ format.
+
+**See Also**: [Step Documentation: getfastq](amalgkit/steps/getfastq.md)
+
+---
+
+### `quant`
+
+```python
+def quant(
+    params: AmalgkitParams | None = None,
+    **kwargs: Any
+) -> subprocess.CompletedProcess[str]
+```
+
+**Purpose**: Quantify transcript abundances using kallisto or salmon.
+
+**See Also**: [Step Documentation: quant](amalgkit/steps/quant.md)
+
+---
+
+### `merge`
+
+```python
+def merge(
+    params: AmalgkitParams | None = None,
+    **kwargs: Any
+) -> subprocess.CompletedProcess[str]
+```
+
+**Purpose**: Merge per-sample quantification results into expression matrices.
+
+**See Also**: [Step Documentation: merge](amalgkit/steps/merge.md)
+
+---
+
+### `cstmm`
+
+```python
+def cstmm(
+    params: AmalgkitParams | None = None,
+    **kwargs: Any
+) -> subprocess.CompletedProcess[str]
+```
+
+**Purpose**: Cross-species TMM (Trimmed Mean of M-values) normalization.
+
+**See Also**: [Step Documentation: cstmm](amalgkit/steps/cstmm.md)
+
+---
+
+### `curate`
+
+```python
+def curate(
+    params: AmalgkitParams | None = None,
+    **kwargs: Any
+) -> subprocess.CompletedProcess[str]
+```
+
+**Purpose**: Quality control, outlier detection, and batch effect correction.
+
+**See Also**: [Step Documentation: curate](amalgkit/steps/curate.md)
+
+---
+
+### `csca`
+
+```python
+def csca(
+    params: AmalgkitParams | None = None,
+    **kwargs: Any
+) -> subprocess.CompletedProcess[str]
+```
+
+**Purpose**: Cross-species correlation analysis and visualization.
+
+**See Also**: [Step Documentation: csca](amalgkit/steps/csca.md)
+
+---
+
+### `sanity`
+
+```python
+def sanity(
+    params: AmalgkitParams | None = None,
+    **kwargs: Any
+) -> subprocess.CompletedProcess[str]
+```
+
+**Purpose**: Validate workflow outputs and check data integrity.
+
+**See Also**: [Step Documentation: sanity](amalgkit/steps/sanity.md)
+
+---
+
+## Step Runner Functions
+
+Low-level step execution functions that provide more control over step execution. These are used internally by workflow orchestration but can also be called directly.
+
+### `run_metadata`
+
+```python
+def run_metadata(
+    params: Mapping[str, Any] | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]
+```
+
+**Module**: `metainformant.rna.steps.metadata`
+
+**Purpose**: Execute metadata retrieval step with explicit directory control.
+
+---
+
+### `run_integrate`
+
+```python
+def run_integrate(
+    params: Mapping[str, Any] | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]
+```
+
+**Module**: `metainformant.rna.steps.integrate`
+
+---
+
+### `run_config`
+
+```python
+def run_config(
+    params: Mapping[str, Any] | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]
+```
+
+**Module**: `metainformant.rna.steps.config`
+
+---
+
+### `run_select`
+
+```python
+def run_select(
+    params: Mapping[str, Any] | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]
+```
+
+**Module**: `metainformant.rna.steps.select`
+
+---
+
+### `run_getfastq`
+
+```python
+def run_getfastq(
+    params: Mapping[str, Any] | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]
+```
+
+**Module**: `metainformant.rna.steps.getfastq`
+
+**Note**: Includes robust retry logic and fallback mechanisms for failed downloads.
+
+---
+
+### `run_quant`
+
+```python
+def run_quant(
+    params: Mapping[str, Any] | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]
+```
+
+**Module**: `metainformant.rna.steps.quant`
+
+---
+
+### `run_merge`
+
+```python
+def run_merge(
+    params: Mapping[str, Any] | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]
+```
+
+**Module**: `metainformant.rna.steps.merge`
+
+---
+
+### `run_cstmm`
+
+```python
+def run_cstmm(
+    params: Mapping[str, Any] | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]
+```
+
+**Module**: `metainformant.rna.steps.cstmm`
+
+---
+
+### `run_curate`
+
+```python
+def run_curate(
+    params: Mapping[str, Any] | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]
+```
+
+**Module**: `metainformant.rna.steps.curate`
+
+---
+
+### `run_csca`
+
+```python
+def run_csca(
+    params: Mapping[str, Any] | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]
+```
+
+**Module**: `metainformant.rna.steps.csca`
+
+---
+
+### `run_sanity`
+
+```python
+def run_sanity(
+    params: Mapping[str, Any] | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]
+```
+
+**Module**: `metainformant.rna.steps.sanity`
+
+---
+
+## Workflow Functions
+
+Functions for planning and executing complete RNA-seq workflows.
+
+### `load_workflow_config`
+
+```python
+def load_workflow_config(config_file: str | Path) -> AmalgkitWorkflowConfig
+```
+
+**Module**: `metainformant.rna.workflow`
+
+**Purpose**: Load workflow configuration from YAML file.
+
+**Parameters**:
+- `config_file`: Path to YAML configuration file
+
+**Returns**: `AmalgkitWorkflowConfig` dataclass instance
+
+**See Also**: [Configuration Guide](CONFIGURATION.md)
+
+---
+
+### `plan_workflow`
+
+```python
+def plan_workflow(config: AmalgkitWorkflowConfig) -> list[tuple[str, AmalgkitParams]]
+```
+
+**Module**: `metainformant.rna.workflow`
+
+**Purpose**: Generate ordered list of workflow steps with parameters (dry-run planning).
+
+**Parameters**:
+- `config`: Workflow configuration
+
+**Returns**: List of `(step_name, params)` tuples in execution order
+
+**See Also**: [Workflow Guide](workflow.md)
+
+---
+
+### `plan_workflow_with_params`
+
+```python
+def plan_workflow_with_params(
+    config: AmalgkitWorkflowConfig,
+    step_params: dict[str, AmalgkitParams],
+) -> list[tuple[str, AmalgkitParams]]
+```
+
+**Module**: `metainformant.rna.workflow`
+
+**Purpose**: Plan workflow with explicit per-step parameter overrides.
+
+---
+
+### `execute_workflow`
+
+```python
+def execute_workflow(
+    config: AmalgkitWorkflowConfig,
+    *,
+    check: bool = False
+) -> list[int]
+```
+
+**Module**: `metainformant.rna.workflow`
+
+**Purpose**: Execute complete workflow from configuration.
+
+**Parameters**:
+- `config`: Workflow configuration
+- `check`: If True, raise exception on step failure
+
+**Returns**: List of return codes (one per step)
+
+**See Also**: [Workflow Guide](workflow.md)
+
+---
+
+### `AmalgkitWorkflowConfig`
+
+```python
+@dataclass
+class AmalgkitWorkflowConfig:
+    work_dir: Path
+    threads: int = 6
+    species_list: list[str] = field(default_factory=list)
+    log_dir: Path | None = None
+    manifest_path: Path | None = None
+    per_step: dict[str, AmalgkitParams] = field(default_factory=dict)
+    auto_install_amalgkit: bool = False
+    genome: dict[str, Any] | None = None
+    filters: dict[str, Any] = field(default_factory=dict)
+```
+
+**Module**: `metainformant.rna.workflow`
+
+**Purpose**: Configuration dataclass for workflow execution.
+
+**See Also**: [Configuration Guide](CONFIGURATION.md)
+
+---
+
+## Genome Preparation Functions
+
+Functions for downloading genomes, preparing transcriptomes, and building kallisto indexes.
+
+### `prepare_genome_for_quantification`
+
+```python
+def prepare_genome_for_quantification(
+    genome_dir: Path,
+    species_name: str,
+    work_dir: Path,
+    *,
+    accession: str | None = None,
+    build_index: bool = True,
+    kmer_size: int = 31,
+) -> dict[str, Any]
+```
+
+**Module**: `metainformant.rna.genome_prep`
+
+**Purpose**: Complete genome preparation pipeline (download → extract → index).
+
+**Returns**: Dictionary with `success`, `fasta_path`, `index_path`, `error` keys
+
+**See Also**: [Genome Preparation](amalgkit/genome_preparation.md)
+
+---
+
+### `prepare_transcriptome_for_kallisto`
+
+```python
+def prepare_transcriptome_for_kallisto(
+    genome_dir: Path,
+    species_name: str,
+    work_dir: Path,
+    *,
+    accession: str | None = None,
+) -> Path | None
+```
+
+**Module**: `metainformant.rna.genome_prep`
+
+**Purpose**: Extract and prepare RNA FASTA file from genome package.
+
+**Returns**: Path to prepared FASTA file or None if failed
+
+---
+
+### `build_kallisto_index`
+
+```python
+def build_kallisto_index(
+    fasta_path: Path,
+    index_path: Path,
+    *,
+    kmer_size: int = 31,
+    check_existing: bool = True,
+) -> bool
+```
+
+**Module**: `metainformant.rna.genome_prep`
+
+**Purpose**: Build kallisto index from transcriptome FASTA.
+
+**Parameters**:
+- `fasta_path`: Path to transcriptome FASTA file
+- `index_path`: Output path for kallisto index
+- `kmer_size`: K-mer size (31 for standard reads, 23 for short reads)
+- `check_existing`: Skip if index already exists
+
+**Returns**: True if index was built successfully or already exists
+
+---
+
+### `find_rna_fasta_in_genome_dir`
+
+```python
+def find_rna_fasta_in_genome_dir(
+    genome_dir: Path,
+    accession: str
+) -> Path | None
+```
+
+**Module**: `metainformant.rna.genome_prep`
+
+**Purpose**: Locate RNA FASTA file in extracted genome directory.
+
+---
+
+### `download_rna_fasta_from_ftp`
+
+```python
+def download_rna_fasta_from_ftp(
+    ftp_url: str,
+    genome_dir: Path,
+    accession: str,
+    assembly_name: str | None = None,
+    config: dict[str, Any] | None = None,
+) -> Path | None
+```
+
+**Module**: `metainformant.rna.genome_prep`
+
+**Purpose**: Download RNA FASTA directly from NCBI FTP.
+
+---
+
+### `download_cds_fasta_from_ftp`
+
+```python
+def download_cds_fasta_from_ftp(
+    ftp_url: str,
+    genome_dir: Path,
+    accession: str,
+    assembly_name: str | None = None,
+) -> Path | None
+```
+
+**Module**: `metainformant.rna.genome_prep`
+
+**Purpose**: Download CDS FASTA directly from NCBI FTP.
+
+---
+
+### `extract_transcripts_from_gff`
+
+```python
+def extract_transcripts_from_gff(
+    gff_path: Path,
+    genome_fasta: Path,
+    output_fasta: Path,
+) -> bool
+```
+
+**Module**: `metainformant.rna.genome_prep`
+
+**Purpose**: Extract transcript sequences from GFF annotation using gffread.
+
+---
+
+### `get_expected_index_path`
+
+```python
+def get_expected_index_path(work_dir: Path, species_name: str) -> Path
+```
+
+**Module**: `metainformant.rna.genome_prep`
+
+**Purpose**: Get expected kallisto index path for a species.
+
+---
+
+### `verify_genome_status`
+
+```python
+def verify_genome_status(
+    genome_dir: Path,
+    work_dir: Path,
+    species_name: str,
+    accession: str | None = None,
+) -> dict[str, Any]
+```
+
+**Module**: `metainformant.rna.genome_prep`
+
+**Purpose**: Check genome download, transcriptome preparation, and index status.
+
+**Returns**: Dictionary with status flags and paths
+
+---
+
+### `orchestrate_genome_setup`
+
+```python
+def orchestrate_genome_setup(
+    config_dir: Path = Path("config/amalgkit"),
+    *,
+    species: str | None = None,
+    skip_download: bool = False,
+    skip_prepare: bool = False,
+    skip_build: bool = False,
+) -> dict[str, Any]
+```
+
+**Module**: `metainformant.rna.genome_prep`
+
+**Purpose**: Run complete genome setup pipeline for all or specific species.
+
+**See Also**: [Genome Setup Guide](amalgkit/genome_setup_guide.md)
+
+---
+
+## Orchestration Functions
+
+Functions for managing multi-species workflows and monitoring progress.
+
+### `discover_species_configs`
+
+```python
+def discover_species_configs(
+    config_dir: Path = Path("config/amalgkit")
+) -> dict[str, dict[str, Any]]
+```
+
+**Module**: `metainformant.rna.orchestration`
+
+**Purpose**: Discover all species configuration files in config directory.
+
+**Returns**: Dictionary mapping species names to config dictionaries
+
+---
+
+### `run_workflow_for_species`
+
+```python
+def run_workflow_for_species(
+    config_path: Path,
+    species_name: str,
+    *,
+    steps: list[str] | None = None,
+    check: bool = False,
+) -> tuple[bool, Path]
+```
+
+**Module**: `metainformant.rna.orchestration`
+
+**Purpose**: Execute workflow for a single species.
+
+**Returns**: Tuple of `(success: bool, work_dir: Path)`
+
+---
+
+### `check_workflow_status`
+
+```python
+def check_workflow_status(
+    config_path: Path,
+    *,
+    detailed: bool = False,
+) -> dict[str, Any]
+```
+
+**Module**: `metainformant.rna.orchestration`
+
+**Purpose**: Check completion status of workflow steps.
+
+**Returns**: Dictionary with step status information
+
+---
+
+### `cleanup_unquantified_samples`
+
+```python
+def cleanup_unquantified_samples(
+    config_path: Path,
+    *,
+    execute: bool = False,
+) -> dict[str, Any]
+```
+
+**Module**: `metainformant.rna.orchestration`
+
+**Purpose**: Find and optionally clean up FASTQ files for samples that have been quantified.
+
+---
+
+### `monitor_workflows`
+
+```python
+def monitor_workflows(
+    config_dir: Path = Path("config/amalgkit"),
+    *,
+    interval: int = 60,
+    max_iterations: int | None = None,
+) -> None
+```
+
+**Module**: `metainformant.rna.orchestration`
+
+**Purpose**: Monitor multiple species workflows in real-time.
+
+---
+
+## Utility Functions
+
+Core utilities for CLI interaction and parameter handling.
+
+### `check_cli_available`
+
+```python
+def check_cli_available() -> tuple[bool, str]
+```
+
+**Module**: `metainformant.rna.amalgkit`
+
+**Purpose**: Check if `amalgkit` CLI is available on PATH.
+
+**Returns**: Tuple of `(is_available: bool, help_text_or_error: str)`
+
+---
+
+### `ensure_cli_available`
+
+```python
+def ensure_cli_available(
+    *,
+    auto_install: bool = False
+) -> tuple[bool, str, dict | None]
+```
+
+**Module**: `metainformant.rna.amalgkit`
+
+**Purpose**: Ensure amalgkit CLI is available, optionally attempting auto-install.
+
+**Returns**: Tuple of `(ok: bool, message: str, install_record: dict | None)`
+
+---
+
+### `build_cli_args`
+
+```python
+def build_cli_args(
+    params: AmalgkitParams | None,
+    *,
+    for_cli: bool = False
+) -> list[str]
+```
+
+**Module**: `metainformant.rna.amalgkit`
+
+**Purpose**: Convert parameter dictionary to CLI argument list.
+
+**Parameters**:
+- `params`: Parameter mapping
+- `for_cli`: If True, use snake_case flags (for actual CLI); if False, use kebab-case (for display)
+
+**Returns**: List of CLI argument strings
+
+---
+
+### `build_amalgkit_command`
+
+```python
+def build_amalgkit_command(
+    subcommand: str,
+    params: AmalgkitParams | None = None
+) -> list[str]
+```
+
+**Module**: `metainformant.rna.amalgkit`
+
+**Purpose**: Build complete amalgkit command as token list.
+
+**Example**: `build_amalgkit_command("metadata", {"threads": 8})` → `["amalgkit", "metadata", "--threads", "8"]`
+
+---
+
+### `run_amalgkit`
+
+```python
+def run_amalgkit(
+    subcommand: str,
+    params: AmalgkitParams | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    env: Mapping[str, str] | None = None,
+    check: bool = False,
+    capture_output: bool = True,
+    log_dir: str | Path | None = None,
+    step_name: str | None = None,
+) -> subprocess.CompletedProcess[str]
+```
+
+**Module**: `metainformant.rna.amalgkit`
+
+**Purpose**: Execute amalgkit subcommand with optional logging and directory management.
+
+**Parameters**:
+- `subcommand`: Amalgkit subcommand name (e.g., "metadata", "quant")
+- `params`: Parameter dictionary
+- `work_dir`: Working directory (created if missing)
+- `env`: Additional environment variables
+- `check`: Raise exception on non-zero exit
+- `capture_output`: Capture stdout/stderr
+- `log_dir`: Directory for timestamped log files
+- `step_name`: Optional label for log filenames
+
+**Returns**: `subprocess.CompletedProcess[str]` with execution results
+
+---
+
+## Processing Functions
+
+Functions for sample-level processing pipelines.
+
+### `quantify_sample`
+
+```python
+def quantify_sample(
+    sample_id: str,
+    metadata_rows: list[dict[str, Any]],
+    quant_params: Mapping[str, Any],
+    *,
+    log_dir: Path | None = None,
+    step_name: str | None = None,
+) -> tuple[bool, str, Path | None]
+```
+
+**Module**: `metainformant.rna.steps.quant`
+
+**Purpose**: Quantify a single sample using amalgkit quant.
+
+**Returns**: Tuple of `(success: bool, message: str, abundance_file: Path | None)`
+
+---
+
+### `convert_sra_to_fastq`
+
+```python
+def convert_sra_to_fastq(
+    sra_file: Path,
+    output_dir: Path,
+    *,
+    threads: int = 1,
+    compress: bool = True,
+) -> tuple[bool, str, list[Path] | None]
+```
+
+**Module**: `metainformant.rna.steps.getfastq`
+
+**Purpose**: Convert SRA file to FASTQ using fasterq-dump.
+
+**Returns**: Tuple of `(success: bool, message: str, fastq_files: list[Path] | None)`
+
+---
+
+### `delete_sample_fastqs`
+
+```python
+def delete_sample_fastqs(
+    sample_id: str,
+    fastq_dir: Path
+) -> None
+```
+
+**Module**: `metainformant.rna.steps.getfastq`
+
+**Purpose**: Delete FASTQ files for a specific sample.
+
+---
+
+### `process_sample_pipeline`
+
+```python
+def process_sample_pipeline(
+    sample_id: str,
+    metadata_rows: list[dict[str, Any]],
+    download_params: Mapping[str, Any],
+    quant_params: Mapping[str, Any],
+    *,
+    log_dir: Path | None = None,
+    delete_after_quant: bool = True,
+) -> dict[str, Any]
+```
+
+**Module**: `metainformant.rna.steps.sample_pipeline`
+
+**Purpose**: Complete per-sample pipeline: download → quantify → cleanup.
+
+**Returns**: Dictionary with processing results
+
+---
+
+### `run_sequential_download_quant`
+
+```python
+def run_sequential_download_quant(
+    metadata_path: Path,
+    download_params: Mapping[str, Any],
+    quant_params: Mapping[str, Any],
+    *,
+    log_dir: Path | None = None,
+    delete_after_quant: bool = True,
+) -> dict[str, Any]
+```
+
+**Module**: `metainformant.rna.steps.sequential_process`
+
+**Purpose**: Process samples sequentially: download → quantify → delete.
+
+---
+
+### `run_parallel_download_sequential_quant`
+
+```python
+def run_parallel_download_sequential_quant(
+    metadata_path: Path,
+    download_params: Mapping[str, Any],
+    quant_params: Mapping[str, Any],
+    *,
+    max_workers: int = 4,
+    log_dir: Path | None = None,
+    delete_after_quant: bool = True,
+) -> dict[str, Any]
+```
+
+**Module**: `metainformant.rna.steps.parallel_download`
+
+**Purpose**: Parallel downloads with sequential quantification.
+
+---
+
+### `run_batched_download_quant`
+
+```python
+def run_batched_download_quant(
+    metadata_path: Path,
+    download_params: Mapping[str, Any],
+    quant_params: Mapping[str, Any],
+    *,
+    batch_size: int = 10,
+    log_dir: Path | None = None,
+    delete_after_quant: bool = True,
+) -> dict[str, Any]
+```
+
+**Module**: `metainformant.rna.steps.batched_process`
+
+**Purpose**: Process samples in batches: download batch → quantify batch → cleanup.
+
+---
+
+## Type Definitions
+
+### `AmalgkitParams`
+
+```python
+AmalgkitParams = Mapping[str, Any]
+```
+
+**Module**: `metainformant.rna.amalgkit`
+
+**Purpose**: Type alias for amalgkit parameter dictionaries.
+
+---
+
+## See Also
+
+- [Function Index](amalgkit/FUNCTIONS.md) - Quick reference table
+- [Step Documentation](amalgkit/steps/README.md) - Detailed step guides
+- [Workflow Guide](workflow.md) - Workflow planning and execution
+- [Configuration Guide](CONFIGURATION.md) - Configuration management
+

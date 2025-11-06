@@ -72,10 +72,10 @@ Subcommands
   - Options: `--input` (required, abundance table), `--output` (default: output/ecology), `--diversity`, `--beta-diversity`
 - **ml run**: machine learning pipeline workflow (feature selection, classification, regression, validation)
   - Options: `--features` (required, feature matrix), `--labels` (optional), `--output` (default: output/ml), `--classify`, `--regress`, `--feature-selection`
-- **information entropy**: calculates Shannon entropy for sequences or data files (see [Information Theory](../src/metainformant/information/README.md))
+- **information entropy**: calculates Shannon entropy for sequences or data files (see [Information Theory](./information/index.md))
 - **information mutual-information**: calculates mutual information between two variables/data files
 - **information profile**: calculates information profile for sequences with optional visualization
-- **life-events embed**: learns event embeddings from life course event sequences (see [Life Events](../src/metainformant/life_events/README.md))
+- **life-events embed**: learns event embeddings from life course event sequences (see [Life Events](./life_events/index.md))
 - **life-events predict**: predicts life outcomes from event sequences using pre-trained models
 - **life-events interpret**: interprets model predictions and provides feature importance analysis
 - **tests**: runs the repo tests (see [Testing](./testing.md))

@@ -27,6 +27,7 @@ from typing import Any
 
 from ...core.io import read_delimited
 from ..amalgkit import run_amalgkit
+from .download_progress import DownloadProgressMonitor
 
 logger = logging.getLogger(__name__)
 
@@ -184,6 +185,21 @@ def run_sequential_download_quant(
     logger.info(f"FASTQ dir: {fastq_dir}")
     logger.info(f"Quant dir: {quant_dir}")
     
+    # Initialize progress monitor if enabled
+    progress_monitor: DownloadProgressMonitor | None = None
+    show_progress = getfastq_params_dict.get("show_progress", True)
+    if show_progress:
+        update_interval = float(getfastq_params_dict.get("progress_update_interval", 2.0))
+        use_bars = getfastq_params_dict.get("progress_style", "bar") == "bar"
+        progress_monitor = DownloadProgressMonitor(
+            out_dir=fastq_dir,
+            update_interval=update_interval,
+            use_progress_bars=use_bars,
+            show_summary=not use_bars,
+        )
+        progress_monitor.start_monitoring()
+        logger.info("📊 Progress tracking enabled for sequential downloads")
+    
     for idx, run_id in enumerate(run_ids, 1):
         logger.info(f"[{idx}/{len(run_ids)}] Processing sample: {run_id}")
         
@@ -195,7 +211,11 @@ def run_sequential_download_quant(
         try:
             # Step 1: Download FASTQ for this sample only
             # Create a temporary single-sample metadata file
-            logger.info(f"  → Downloading FASTQ for {run_id}")
+            logger.info(f"  → Downloading FASTQ for {run_id} ({idx}/{len(run_ids)})")
+            
+            # Register with progress monitor
+            if progress_monitor:
+                progress_monitor.register_thread(1, run_id)  # Use thread_id=1 for sequential
             
             # Read full metadata and filter to this run only
             rows = list(read_delimited(metadata_path, delimiter="\t"))
@@ -203,6 +223,8 @@ def run_sequential_download_quant(
             
             if len(single_row) == 0:
                 logger.warning(f"  ⚠ Run {run_id} not found in metadata, skipping")
+                if progress_monitor:
+                    progress_monitor.unregister_thread(1, success=False)
                 stats["failed"] += 1
                 stats["failed_runs"].append(run_id)
                 continue
@@ -230,7 +252,12 @@ def run_sequential_download_quant(
             except Exception:
                 pass
             
-            if result_download.returncode != 0:
+            # Unregister from progress monitor
+            success = result_download.returncode == 0
+            if progress_monitor:
+                progress_monitor.unregister_thread(1, success=success)
+            
+            if not success:
                 logger.error(f"  ✗ Download failed for {run_id} (code {result_download.returncode})")
                 stats["failed"] += 1
                 stats["failed_runs"].append(run_id)
@@ -283,6 +310,11 @@ def run_sequential_download_quant(
             
         except Exception as e:
             logger.error(f"  ✗ Unexpected error processing {run_id}: {e}", exc_info=True)
+            if progress_monitor:
+                try:
+                    progress_monitor.unregister_thread(1, success=False)
+                except Exception:
+                    pass
             stats["failed"] += 1
             stats["failed_runs"].append(run_id)
             # Attempt cleanup
@@ -290,6 +322,10 @@ def run_sequential_download_quant(
                 _delete_fastq_for_sample(run_id, fastq_dir)
             except Exception:
                 pass
+    
+    # Stop progress monitoring
+    if progress_monitor:
+        progress_monitor.stop_monitoring()
     
     # Final summary
     logger.info("=" * 80)

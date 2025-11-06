@@ -2,6 +2,14 @@
 
 High-level planning and execution live in `metainformant.rna.workflow`.
 
+## Quick Links
+
+- **[API Reference](API.md#workflow-functions)** - Workflow function documentation
+- **[Step Documentation](amalgkit/steps/README.md)** - All 11 step guides
+- **[Configuration Guide](CONFIGURATION.md)** - Configuration management
+- **[Orchestration Guide](ORCHESTRATION/README.md)** - Choose orchestrator
+- **[Main Index](README.md)** - RNA domain master index
+
 ## Quick Start
 
 **For multi-species production workflows**, see **[Multi-Species Quick Start Guide](MULTI_SPECIES_QUICK_START.md)** for:
@@ -11,6 +19,28 @@ High-level planning and execution live in `metainformant.rna.workflow`.
 - Performance optimization
 
 **For orchestrator selection**, see **[ORCHESTRATION/README.md](ORCHESTRATION/README.md)** to choose the right orchestrator for your needs.
+
+## End-to-End Workflow
+
+The `execute_workflow()` function provides complete end-to-end functionality:
+
+1. **Automatic Genome Setup** (if genome config exists):
+   - Validates genome and kallisto index status at startup
+   - Downloads genome package if missing
+   - Prepares transcriptome FASTA if missing
+   - Builds kallisto index if `build_index: yes` and index is missing
+   - Only proceeds after genome/index is confirmed ready
+
+2. **Metadata Retrieval**: Downloads sample metadata from NCBI SRA
+
+3. **Immediate Per-Sample Processing** (default behavior):
+   - For each sample: download → immediately quantify → immediately delete FASTQ
+   - Maximum disk efficiency: only one sample's FASTQs exist at a time
+   - Automatic resume: skips already-quantified samples
+
+4. **Post-Processing**: Merge, curate, and analyze results
+
+**Path Resolution**: All paths in config files are resolved relative to repository root, allowing configs to work on any drive location (`/home/q/...` or `/media/q/ext6/...`).
 
 ## Plan
 
@@ -84,9 +114,19 @@ The immediate processing workflow provides:
 
 ```python
 from metainformant.rna.workflow import load_workflow_config, execute_workflow
-cfg = load_workflow_config("config/amalgkit_pbarbatus.yaml")
+
+# Load config (paths resolved relative to repo root)
+cfg = load_workflow_config("config/amalgkit/amalgkit_pbarbatus.yaml")
+
+# Execute workflow (automatic genome setup + immediate per-sample processing)
 codes = execute_workflow(cfg, check=True)
 ```
+
+**What happens automatically**:
+- Genome download and indexing (if genome config provided)
+- Metadata retrieval
+- Immediate per-sample processing: download → quant → delete FASTQ
+- All organized under `output/amalgkit/`
 
 ## Per-step params
 
@@ -160,10 +200,13 @@ ps aux | grep workflow_ena | grep -v grep
 
 The workflow produces standardized, well-logged artifacts that map to common meta-analysis stages:
 
+- **Genome setup** (automatic): Downloads genome, prepares transcriptome, builds kallisto index
 - Discovery/selection (`metadata`, `integrate`, `config`, `select`): defines the population of samples across studies
-- Acquisition/quantification (`getfastq`, `quant`): yields per-sample abundance estimates using consistent parameters
+- Acquisition/quantification (`getfastq`, `quant`): **Immediate per-sample processing** (default) - download → immediately quantify → immediately delete FASTQ for maximum disk efficiency
 - Aggregation/normalization (`merge`, `cstmm`): constructs study-agnostic matrices for downstream analysis
 - Curation/QC (`curate`, `csca`, `sanity`): ensures input quality and comparability
+
+**Default Processing Mode**: The workflow uses immediate per-sample processing by default. Each sample is downloaded, quantified, and its FASTQ files deleted before moving to the next sample. This ensures maximum disk efficiency - only one sample's FASTQs exist at any time.
 
 Downstream, you can:
 
@@ -175,11 +218,17 @@ All outputs default under `output/` in keeping with repository policy; override 
 
 ## See Also
 
-- **[STEPS.md](STEPS.md)**: Individual workflow step documentation
-- **[CONFIGURATION.md](CONFIGURATION.md)**: Configuration management
-- **[ORCHESTRATION/README.md](ORCHESTRATION/README.md)**: Orchestrator overview and selection
-- **[GETTING_STARTED.md](GETTING_STARTED.md)**: Setup and installation
-- **[MULTI_SPECIES_QUICK_START.md](MULTI_SPECIES_QUICK_START.md)**: Production workflow guide
+### Documentation
+- **[API Reference](API.md#workflow-functions)** - Complete workflow function documentation
+- **[Function Index](amalgkit/FUNCTIONS.md)** - Quick function lookup
+- **[Step Documentation](amalgkit/steps/README.md)** - All 11 step guides
+- **[Configuration Guide](CONFIGURATION.md)** - Configuration management
+- **[Orchestration Guide](ORCHESTRATION/README.md)** - Orchestrator overview and selection
+- **[Main Index](README.md)** - RNA domain master index
+
+### Getting Started
+- **[GETTING_STARTED.md](GETTING_STARTED.md)** - Setup and installation
+- **[MULTI_SPECIES_QUICK_START.md](MULTI_SPECIES_QUICK_START.md)** - Production workflow guide
 
 ## Common Issues and Solutions
 

@@ -9,7 +9,7 @@ Welcome to the METAINFORMANT docs. This site is organized by domain and core uti
 - [Documentation Guide](./DOCUMENTATION_GUIDE.md) - Complete guide to using this documentation
 - [Architecture](./architecture.md)
 - [CLI](./cli.md)
-- [Core Utilities](./core.md)
+- [Core Utilities](./core/README.md)
 - [Setup](./setup.md)
 - [Testing](./testing.md)
 
@@ -82,8 +82,8 @@ Welcome to the METAINFORMANT docs. This site is organized by domain and core uti
   - [Machine Learning](./ml/index.md)
   - [Multi-omics](./multiomics/index.md)
   - [Networks](./networks/index.md)
-  - [Information Theory](../src/metainformant/information/README.md)
-  - [Life Events](../src/metainformant/life_events/README.md)
+  - [Information Theory](./information/index.md)
+  - [Life Events](./life_events/index.md)
 
 See also: the top-level project README for quickstarts.
 
@@ -105,6 +105,8 @@ graph TD
   A --> L[Machine Learning]
   A --> M[Multi-omics]
   A --> N[Networks]
+  A --> INFO[Information Theory]
+  A --> LE[Life Events]
   subgraph Core
     O[config]
     P[io]

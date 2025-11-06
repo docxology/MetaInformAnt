@@ -371,3 +371,92 @@ def check_workflow_progress(config_path: Path) -> dict[str, Any]:
         "remaining": remaining,
     }
 
+
+def assess_all_species_progress(
+    config_dir: Path,
+    *,
+    repo_root: Path | None = None,
+) -> dict[str, dict[str, Any]]:
+    """Assess progress for all species in config directory.
+
+    Args:
+        config_dir: Directory containing amalgkit config files
+        repo_root: Repository root directory (optional)
+
+    Returns:
+        Dictionary mapping species_id -> progress information
+    """
+    if repo_root is None:
+        repo_root = Path.cwd()
+
+    results = {}
+
+    for config_file in sorted(config_dir.glob("amalgkit_*.yaml")):
+        if "template" in config_file.stem.lower() or "test" in config_file.stem.lower():
+            continue
+
+        species_id = config_file.stem.replace("amalgkit_", "")
+
+        try:
+            progress = check_workflow_progress(config_file)
+            results[species_id] = progress
+        except Exception as e:
+            logger.warning(f"Error assessing {species_id}: {e}")
+            results[species_id] = {
+                "quantified": 0,
+                "total": 0,
+                "percentage": 0.0,
+                "remaining": 0,
+                "error": str(e),
+            }
+
+    return results
+
+
+def initialize_progress_tracking(
+    config_path: Path,
+    *,
+    tracker=None,
+) -> dict[str, Any]:
+    """Initialize progress tracking for a species.
+
+    Args:
+        config_path: Path to species workflow config file
+        tracker: Optional progress tracker instance
+
+    Returns:
+        Dictionary with initialization results
+    """
+    try:
+        from metainformant.rna.workflow import load_workflow_config
+
+        cfg = load_workflow_config(config_path)
+        metadata_file = cfg.work_dir / "metadata" / "metadata.tsv"
+        if not metadata_file.exists():
+            metadata_file = cfg.work_dir / "metadata" / "metadata.filtered.tissue.tsv"
+
+        if not metadata_file.exists():
+            return {"success": False, "error": "No metadata file found"}
+
+        rows = list(read_delimited(metadata_file, delimiter="\t"))
+        sample_ids = [row.get("run") for row in rows if row.get("run")]
+
+        if not sample_ids:
+            return {"success": False, "error": "No samples in metadata"}
+
+        # If tracker is provided, initialize it
+        if tracker:
+            species_id = config_path.stem.replace("amalgkit_", "")
+            if species_id not in tracker.state:
+                tracker.initialize_species(species_id, len(sample_ids), sample_ids)
+                tracker._save_state()
+
+        return {
+            "success": True,
+            "total_samples": len(sample_ids),
+            "sample_ids": sample_ids,
+        }
+    except Exception as e:
+        logger.error(f"Error initializing progress tracking: {e}")
+        return {"success": False, "error": str(e)}
+

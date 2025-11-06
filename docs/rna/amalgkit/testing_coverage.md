@@ -234,7 +234,7 @@ All step runners: 100% coverage
 
 ### External Documentation
 ✅ `docs/rna/amalgkit/amalgkit.md`: Complete pipeline documentation  
-✅ `docs/rna/amalgkit/guide.md`: Full usage guide  
+✅ `docs/rna/amalgkit/amalgkit.md`: Complete pipeline documentation (includes advanced usage)  
 ✅ `docs/rna/amalgkit/complete_success_summary.md`: Production deployment  
 ✅ `docs/rna/amalgkit/README.md`: Overview and quick start
 

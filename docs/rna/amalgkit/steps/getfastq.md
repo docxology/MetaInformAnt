@@ -96,6 +96,14 @@ steps:
 | `--entrez_additional_search_term` | STR | `None` | Additional Entrez search terms to restrict SRA entries. |
 | `--tol` | FLOAT | `1` | Acceptable percentage loss of reads relative to --max_bp. |
 
+### METAINFORMANT-Specific Parameters
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `show_progress` | bool | `true` | Enable live progress tracking with file size monitoring. Shows per-thread download progress, rates (MB/s), and elapsed time. |
+| `progress_update_interval` | float | `2.0` | How often to update progress display in seconds. Lower values provide more frequent updates but use more CPU. |
+| `progress_style` | str | `"bar"` | Progress display style: `"bar"` for tqdm progress bars (requires tqdm), or `"text"` for simple text updates. |
+
 ## Input Requirements
 
 ### Prerequisites

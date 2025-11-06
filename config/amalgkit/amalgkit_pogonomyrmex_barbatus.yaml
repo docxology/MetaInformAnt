@@ -10,9 +10,11 @@
 # Generated: 2025-11-03
 
 
-work_dir: /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/pogonomyrmex_barbatus/work
-log_dir: /home/q/Documents/GitHub/MetaInformAnt/output/amalgkit/pogonomyrmex_barbatus/logs
-threads: 24
+# Paths are resolved relative to repository root
+# Works whether repo is on /home/q/... or /media/q/ext6/...
+work_dir: output/amalgkit/pogonomyrmex_barbatus/work
+log_dir: output/amalgkit/pogonomyrmex_barbatus/logs
+threads: 12
 
 
 auto_install_amalgkit: true

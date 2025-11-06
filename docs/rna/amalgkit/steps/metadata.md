@@ -12,6 +12,33 @@ The `metadata` step:
 - Generates standardized metadata tables for downstream processing
 - Supports species-specific and platform-specific filtering
 
+## Function Signature
+
+### Python API
+
+```python
+from metainformant.rna import amalgkit
+
+# High-level wrapper
+def metadata(
+    params: AmalgkitParams | None = None,
+    **kwargs: Any
+) -> subprocess.CompletedProcess[str]
+
+# Step runner (low-level)
+from metainformant.rna.steps.metadata import run_metadata
+
+def run_metadata(
+    params: Mapping[str, Any] | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]
+```
+
+**See Also**: [API Reference](../../API.md#metadata) | [Function Index](../FUNCTIONS.md)
+
 ## Usage
 
 ### Basic Usage
@@ -448,10 +475,17 @@ filters:
 
 ## See Also
 
-- **Next Step**: [`config.md`](config.md) - Generating config files for selection
-- **Next Step**: [`select.md`](select.md) - Filtering samples for analysis  
-- **Workflow Overview**: [`../amalgkit.md`](../amalgkit.md)
-- **Testing**: `tests/test_rna_amalgkit_steps.py::test_metadata_basic_execution`
+### Related Steps
+- **[config.md](config.md)** - Next: Generate configuration files
+- **[select.md](select.md)** - Next: Filter samples by quality
+
+### Documentation
+- **[API Reference](../../API.md#metadata)** - Complete function documentation
+- **[Function Index](../FUNCTIONS.md)** - Quick function lookup
+- **[Pipeline Overview](../amalgkit.md)** - Complete pipeline documentation
+- **[Steps Index](README.md)** - All step documentation
+- **[Workflow Guide](../../workflow.md)** - Workflow planning and execution
+- **[Main Index](../../README.md)** - RNA domain master index
 
 ---
 

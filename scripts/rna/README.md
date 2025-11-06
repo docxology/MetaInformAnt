@@ -1,6 +1,6 @@
 # RNA-seq Processing Scripts
 
-Scripts for RNA-seq data processing, including SRA download, quantification, and multi-species workflows.
+Thin orchestrator scripts for RNA-seq data processing. All business logic is in `src/metainformant/rna/`.
 
 ## Directory Structure
 
@@ -10,420 +10,206 @@ scripts/rna/
 │   ├── run_amalgkit.sh            # Comprehensive pipeline orchestrator
 │   ├── verify_workflow.sh         # Workflow validation
 │   └── README.md                  # Detailed amalgkit documentation
-├── orchestrate_workflows.py       # **UNIFIED ORCHESTRATOR** ⭐⭐⭐ (START HERE)
-│                                  # Status, monitoring, cleanup, workflow execution
-├── workflow_ena_integrated.py     # Integrated ENA download + quantification (PRODUCTION) ⭐
-├── run_multi_species.py           # Multi-species with cross-species analysis (legacy SRA-based)
-├── run_all_species_parallel.py    # Parallel execution of all species workflows
-├── batch_download_species.py      # Configurable batch download for multiple species
+├── run_workflow.py                # Main workflow orchestrator ⭐
+├── setup_genome.py                # Genome setup orchestrator
+├── discover_species.py             # Species discovery and config generator
 ├── check_environment.py           # Environment validation
-├── cleanup_partial_downloads.py   # Clean up partial/failed downloads
-├── fix_abundance_naming.py        # Fix abundance file naming for merge compatibility
 ├── _setup_utils.py                # Shared setup utilities (venv, dependencies)
 ├── README.md                      # This file
 └── AGENTS.md                      # AI agent documentation
 ```
 
-## Quick Start: Unified Orchestrator ⭐
+## Quick Start
 
-**The new `orchestrate_workflows.py` consolidates all workflow management into one intelligent script.**
-
-### Common Tasks
+### Run Workflow for a Species
 
 ```bash
-# 1. Status and monitoring (replaces unified_status.py, monitor_comprehensive.py, etc.)
-python3 scripts/rna/orchestrate_workflows.py --status                    # Brief status
-python3 scripts/rna/orchestrate_workflows.py --status --detailed         # Detailed status with categories
-python3 scripts/rna/orchestrate_workflows.py --monitor                   # Real-time monitoring
-python3 scripts/rna/orchestrate_workflows.py --monitor --watch 60        # Watch mode with interval
+# Full workflow (all steps)
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml
 
-# 2. Full assessment
-python3 scripts/rna/orchestrate_workflows.py --assess
+# Specific steps
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --steps getfastq quant merge
 
-# 3. Cleanup: quantify downloaded samples and delete FASTQs
-python3 scripts/rna/orchestrate_workflows.py --cleanup-unquantified
+# Check status
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --status
 
-# 4. Run merge+curate+sanity for species ready
-python3 scripts/rna/orchestrate_workflows.py --steps merge curate sanity --auto-species
-
-# 5. Resume incomplete downloads
-python3 scripts/rna/orchestrate_workflows.py --resume-downloads
-
-# 6. Run specific steps for specific species
-python3 scripts/rna/orchestrate_workflows.py --species cfloridanus --steps merge curate sanity
-
-# 7. Full pipeline for one species
-python3 scripts/rna/orchestrate_workflows.py --species pbarbatus --steps metadata select getfastq quant merge curate sanity
+# Cleanup unquantified samples
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --cleanup-unquantified
 ```
 
-### Key Features
+### Setup Genome for a Species
 
-- **Status & Monitoring**: Comprehensive status checks and real-time monitoring (replaces 11+ status/monitoring scripts)
-- **Smart Assessment**: Comprehensive status check showing progress, readiness, and recommendations
-- **Flexible Execution**: Run any combination of steps for any combination of species
-- **Auto-Selection**: Automatically choose species ready for specific steps (--auto-species)
-- **Cleanup**: Quantify downloaded samples and cleanup FASTQs in one command
-- **Resume Support**: Restart incomplete downloads intelligently
-- **Auto-Discovery**: Automatically discovers all species from config files
+```bash
+# Full genome setup
+python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pbarbatus.yaml
 
-## Script Consolidation
+# Verify status only
+python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pbarbatus.yaml --verify-only
 
-All scripts in `scripts/rna/` have been consolidated to use thin orchestration patterns that call tested, documented methods in `metainformant.rna`. Core functionality (quantification, deletion, status checking, etc.) is now in the metainformant module, making scripts maintainable and consistent.
+# Skip specific steps
+python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pbarbatus.yaml --skip-download --skip-prepare
+```
 
-**Key Functions in `metainformant.rna`:**
-- `metainformant.rna.steps.quantify_sample()` - Quantify a single sample
-- `metainformant.rna.steps.delete_sample_fastqs()` - Delete FASTQ files for a sample
-- `metainformant.rna.steps.process_sample_pipeline()` - Complete pipeline: SRA→FASTQ→Quant→Delete
-- `metainformant.rna.steps.convert_sra_to_fastq()` - Convert SRA files to FASTQ
-- `metainformant.rna.count_quantified_samples()` - Count quantified samples
-- `metainformant.rna.find_unquantified_samples()` - Find unquantified samples
-- `metainformant.rna.check_workflow_progress()` - Get workflow progress
-- `metainformant.rna.analyze_species_status()` - Comprehensive status analysis
+### Discover Species and Generate Configs
 
-**Consolidated Functionality:**
+```bash
+# Discover ant species with RNA-seq data
+python3 scripts/rna/discover_species.py --output config/amalgkit/
 
-All status, monitoring, and workflow management functionality has been consolidated into `orchestrate_workflows.py`:
+# Generate config for specific species
+python3 scripts/rna/discover_species.py --species "Camponotus floridanus" --output config/amalgkit/
+```
 
-- **Status scripts** (11 removed): `check_status.py`, `comprehensive_status.py`, `detailed_progress.py`, `full_assessment.py`, `get_current_status.py`, `quick_status.py`, `unified_status.py`, `monitor_workflow.py`, `monitor_comprehensive.py`, `check_progress_now.py`, `run_assessment.py`
-  → Use `orchestrate_workflows.py --status` or `--status --detailed`
+### Check Environment
 
-- **Monitoring scripts** (2 removed): `monitor_comprehensive.py`, `monitor_workflow.py`
-  → Use `orchestrate_workflows.py --monitor`
-
-- **Quant/cleanup scripts** (3 removed): `quant_and_cleanup.py`, `quant_downloaded_samples.py`, `manual_quant_cleanup.py`
-  → Use `orchestrate_workflows.py --cleanup-unquantified` or `--steps quant`
-
-- **Workflow management scripts** (4 removed): `restart_all_workflows.py`, `check_and_restart_workflows.py`, `process_sra_samples.py`, `analyze_sample_status.py`
-  → Use `orchestrate_workflows.py --resume-downloads` or `--steps <step>`
-
-- **Download scripts** (1 removed): `download_ena_robust.py`
-  → Functionality integrated into `workflow_ena_integrated.py`
-
-- **Shell scripts** (6 removed): `run_all_ant_species.sh`, `run_top10_ant_species.sh`, `run_batch2_ant_species.sh`, `cleanup_quantified_sra.sh`, `list_unquantified.sh`, `monitor_amalgkit_progress.sh`
-  → Use `orchestrate_workflows.py` or `run_all_species_parallel.py`
+```bash
+python3 scripts/rna/check_environment.py
+```
 
 ## Available Scripts
 
-### `workflow_ena_integrated.py` ⭐ **PRODUCTION**
-**Robust integrated download + quantification workflow**
+### `run_workflow.py` ⭐ **Main Orchestrator**
 
-Production-ready workflow bypassing SRA Toolkit issues:
+Thin wrapper that calls `metainformant.rna.orchestration.run_workflow_for_species()` to run complete amalgkit workflows for single species.
 
 **Features:**
-- **Direct ENA downloads**: Fetches FASTQs directly from European Nucleotide Archive API
-- **Robust retry logic**: Uses wget with --continue for resume capability and automatic retries
-- **Batched processing**: Download N samples → Quantify → Delete FASTQs → Repeat
-- **Disk-friendly**: Only one batch of FASTQs on disk at a time
-- **Auto-detection**: Handles both single-end and paired-end data
-- **Resume support**: Skips already-quantified samples automatically
-
-**Why ENA over SRA Toolkit:**
-- SRA Toolkit downloads fail frequently (~100% failure rate on large samples)
-- ENA provides direct FASTQ files (no SRA→FASTQ conversion needed)
-- wget --continue allows proper resumption after network interruptions
-- Much more reliable for large-scale downloads
+- Single-species sequential execution
+- Run all amalgkit steps: metadata → integrate → config → select → getfastq → quant → merge → cstmm → curate → csca → sanity
+- Status checking and progress monitoring
+- Cleanup operations (partial downloads, unquantified samples)
+- Progress tracking initialization
 
 **Usage:**
 ```bash
-# Full workflow with default settings (12 samples/batch, 12 threads)
-python3 scripts/rna/workflow_ena_integrated.py \
-  --config config/amalgkit/amalgkit_cfloridanus.yaml \
-  --batch-size 12 \
-  --threads 12
+# Full workflow
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml
 
-# Test with 3 samples
-python3 scripts/rna/workflow_ena_integrated.py \
-  --config config/amalgkit/amalgkit_cfloridanus.yaml \
-  --batch-size 3 \
-  --threads 8 \
-  --max-samples 3
+# Specific steps
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --steps getfastq quant merge
 
-# Resume (skip download, only quantify existing FASTQs)
-python3 scripts/rna/workflow_ena_integrated.py \
-  --config config/amalgkit/amalgkit_cfloridanus.yaml \
-  --skip-download
+# Status check
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --status
+
+# Cleanup operations
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --cleanup-unquantified
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --cleanup-partial
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --fix-abundance-naming
 ```
 
-**Performance:**
-- Download: ~6 minutes per 3 samples (varies by sample size)
-- Quantification: ~36 seconds per sample (single-end, 8 threads)
-- Cleanup: Instant FASTQ deletion after quantification
-- Peak disk: ~1.5 GB per sample (batch size × 1.5 GB)
+### `setup_genome.py` **Genome Setup Orchestrator**
 
-**Requirements:**
-- wget (for robust downloads)
-- kallisto (for quantification)
-- Kallisto index must exist (built once per species)
+Thin wrapper that calls `metainformant.rna.genome_prep.orchestrate_genome_setup()` to orchestrate complete genome setup pipelines.
 
-### `download_ena_robust.py` ⭐
-**Standalone robust ENA downloader**
-
-Used internally by `workflow_ena_integrated.py`, but can be used standalone:
+**Features:**
+- Verify genome/index status
+- Download missing genomes
+- Prepare transcriptomes
+- Build kallisto indexes
+- Complete genome setup pipeline
 
 **Usage:**
 ```bash
-python3 scripts/rna/download_ena_robust.py \
-  --metadata output/amalgkit/cfloridanus/work/metadata/metadata.tsv \
-  --out-dir output/amalgkit/cfloridanus/fastq \
-  --threads 12 \
-  --max-retries 3
+# Full setup
+python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pbarbatus.yaml
+
+# Verify only
+python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pbarbatus.yaml --verify-only
+
+# Skip steps
+python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pbarbatus.yaml --skip-download --skip-prepare
+
+# Custom k-mer size
+python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pbarbatus.yaml --kmer-size 23
 ```
 
-### `run_multi_species.py`
-**Legacy multi-species workflow (SRA Toolkit-based)**
+### `discover_species.py` **Discovery/Config Generator**
 
-Alternative workflow using SRA Toolkit instead of ENA direct downloads:
-- Auto-activation and environment management
-- Batched processing (10 samples at a time)
-- Cross-species analysis (CSTMM, CSCA)
-- Complete pipeline automation
+Thin wrapper that calls `metainformant.rna.discovery` functions to discover species with RNA-seq data and generate amalgkit YAML configurations.
 
-**Note:** Consider using `workflow_ena_integrated.py` for better reliability.
+**Features:**
+- Discover species with RNA-seq data
+- Generate amalgkit YAML configurations
+- Get genome assembly information
 
 **Usage:**
 ```bash
-# Process all discovered species
-python3 scripts/rna/run_multi_species.py
+# Discover ant species
+python3 scripts/rna/discover_species.py --output config/amalgkit/
+
+# Specific species
+python3 scripts/rna/discover_species.py --species "Camponotus floridanus" --output config/amalgkit/
+
+# Custom search query
+python3 scripts/rna/discover_species.py --search-query 'txid1234[Organism] AND RNA-Seq[Strategy]' --output config/amalgkit/
+
+# Minimum samples filter
+python3 scripts/rna/discover_species.py --output config/amalgkit/ --min-samples 10
 ```
 
-### Status and Monitoring
+### `check_environment.py` **Environment Checker**
 
-All status and monitoring functionality is now in `orchestrate_workflows.py`:
-
-**Status:**
-```bash
-# Brief status (replaces check_status.py, quick_status.py, etc.)
-python3 scripts/rna/orchestrate_workflows.py --status
-
-# Detailed status with sample categories (replaces unified_status.py --detailed)
-python3 scripts/rna/orchestrate_workflows.py --status --detailed
-```
-
-**Monitoring:**
-```bash
-# Real-time monitoring (replaces monitor_comprehensive.py, monitor_workflow.py)
-python3 scripts/rna/orchestrate_workflows.py --monitor
-
-# Watch mode with custom interval
-python3 scripts/rna/orchestrate_workflows.py --monitor --watch 60
-```
-
-### Genome Setup Scripts
-
-Scripts for downloading genomes, preparing transcriptomes, and building kallisto indexes required for RNA-seq quantification:
-
-#### `verify_genomes_and_indexes.py`
-**Check status of genome downloads and kallisto indexes**
-
-Scans all species configurations and reports:
-- Which genomes are downloaded
-- Which transcriptomes are prepared
-- Which kallisto indexes are built
-- Recommended next steps
+Thin wrapper that calls `metainformant.rna.environment.validate_environment()` to verify all required tools and dependencies.
 
 **Usage:**
 ```bash
-# Check all species
-python3 scripts/rna/verify_genomes_and_indexes.py
-
-# Check specific species
-python3 scripts/rna/verify_genomes_and_indexes.py --species camponotus_floridanus
+python3 scripts/rna/check_environment.py
 ```
 
-#### `download_missing_genomes.py`
-**Download missing genome packages from NCBI**
+## Script Consolidation
 
-Downloads genomes for species that are missing them using best-effort methods (CLI → API → FTP).
+All scripts have been consolidated into 4-5 thin orchestrators that call methods from `src/metainformant/rna/`. All business logic has been moved to the source code, making scripts maintainable and consistent.
 
-**Usage:**
-```bash
-# Download all missing genomes
-python3 scripts/rna/download_missing_genomes.py
+**Key Functions in `metainformant.rna`:**
+- `metainformant.rna.orchestration.run_workflow_for_species()` - Run workflow for a species
+- `metainformant.rna.orchestration.cleanup_unquantified_samples()` - Cleanup unquantified samples
+- `metainformant.rna.genome_prep.orchestrate_genome_setup()` - Orchestrate genome setup
+- `metainformant.rna.genome_prep.verify_genome_status()` - Verify genome status
+- `metainformant.rna.discovery.search_species_with_rnaseq()` - Search for species
+- `metainformant.rna.discovery.generate_config_yaml()` - Generate config files
+- `metainformant.rna.cleanup.cleanup_partial_downloads()` - Cleanup partial downloads
+- `metainformant.rna.monitoring.check_workflow_status()` - Check workflow status
 
-# Download for specific species
-python3 scripts/rna/download_missing_genomes.py --species camponotus_floridanus
+**Consolidated Scripts:**
 
-# Dry run
-python3 scripts/rna/download_missing_genomes.py --dry-run
-```
+The following scripts have been consolidated:
 
-#### `prepare_transcriptomes.py`
-**Extract and prepare RNA FASTA files from genomes**
+- **Workflow orchestration** (12 scripts removed): `orchestrate_workflows.py`, `run_multi_species.py`, `run_all_species_parallel.py`, `workflow_ena_integrated.py`, `batch_download_species.py`, `assess_progress.py`, `initialize_progress_tracking.py`, `cleanup_progress_state.py`, `cleanup_partial_downloads.py`, `emergency_cleanup.py`, `fix_abundance_naming.py`
+  → Use `run_workflow.py`
 
-Finds RNA FASTA files in downloaded genome packages and prepares them for kallisto.
+- **Genome setup** (6 scripts removed): `orchestrate_genome_setup.py`, `verify_genomes_and_indexes.py`, `download_missing_genomes.py`, `prepare_transcriptomes.py`, `build_kallisto_indexes.py`, `run_genome_setup.sh`
+  → Use `setup_genome.py`
 
-**Usage:**
-```bash
-# Prepare all transcriptomes
-python3 scripts/rna/prepare_transcriptomes.py
+- **Discovery/config generation** (3 scripts removed): `discover_ant_species_with_rnaseq.py`, `discover_ant_rnaseq_by_genus.py`, `generate_ant_configs_with_genomes.py`
+  → Use `discover_species.py`
 
-# Prepare for specific species
-python3 scripts/rna/prepare_transcriptomes.py --species camponotus_floridanus
-```
-
-#### `build_kallisto_indexes.py`
-**Build kallisto indexes from transcriptome FASTA files**
-
-Builds kallisto indexes for species with prepared transcriptomes.
-
-**Usage:**
-```bash
-# Build all indexes
-python3 scripts/rna/build_kallisto_indexes.py
-
-# Build for specific species
-python3 scripts/rna/build_kallisto_indexes.py --species camponotus_floridanus
-
-# Custom k-mer size (for short reads)
-python3 scripts/rna/build_kallisto_indexes.py --kmer-size 23
-```
-
-#### `orchestrate_genome_setup.py`
-**Master orchestrator for complete genome setup pipeline**
-
-Runs the complete pipeline sequentially: verification → download → prepare → build → verify.
-
-**Usage:**
-```bash
-# Complete setup for all species
-python3 scripts/rna/orchestrate_genome_setup.py
-
-# Setup for specific species
-python3 scripts/rna/orchestrate_genome_setup.py --species camponotus_floridanus
-
-# Skip specific steps
-python3 scripts/rna/orchestrate_genome_setup.py --skip-download --skip-prepare
-```
-
-#### `run_genome_setup.sh`
-**Shell script to run all steps sequentially**
-
-Convenience script that runs all genome setup steps in order.
-
-**Usage:**
-```bash
-bash scripts/rna/run_genome_setup.sh
-```
-
-**Complete Documentation:**
-- See [docs/rna/amalgkit/genome_setup_guide.md](../../docs/rna/amalgkit/genome_setup_guide.md) for detailed setup instructions
-- See [docs/rna/amalgkit/commands.md](../../docs/rna/amalgkit/commands.md) for complete command reference
-- See [docs/rna/amalgkit/genome_preparation.md](../../docs/rna/amalgkit/genome_preparation.md) for technical documentation
-
-### Utility Scripts
-
-#### `cleanup_partial_downloads.py`
-**Clean up partial and failed downloads**
-
-Removes samples with partial FASTQ/SRA files that aren't quantified:
-- Safe deletion with dry-run option
-- Frees disk space for retrying downloads
-- Processes all species automatically
-
-**Usage:**
-```bash
-# Dry run (see what would be deleted)
-python3 scripts/rna/cleanup_partial_downloads.py --dry-run
-
-# Actually delete partial downloads
-python3 scripts/rna/cleanup_partial_downloads.py --execute
-```
-
-**Note:** For quantifying downloaded samples and cleaning up FASTQs, use `orchestrate_workflows.py --cleanup-unquantified`.
-
-#### `batch_download_species.py` ⭐ **NEW**
-**Configurable batch download for multiple species in parallel**
-
-Downloads samples for multiple species simultaneously with configurable parallelism:
-- Configurable species count and threads per species
-- Automatic virtual environment activation
-- Cloud acceleration (AWS, GCP, NCBI)
-- Processes all species in batches
-
-**Usage:**
-```bash
-# Default: 3 species × 10 threads = 30 total downloads
-python3 scripts/rna/batch_download_species.py
-
-# Custom: 4 species × 12 threads = 48 total downloads
-python3 scripts/rna/batch_download_species.py --species-count 4 --threads-per-species 12
-
-# Limited: 2 species × 8 threads = 16 total downloads
-python3 scripts/rna/batch_download_species.py --species-count 2 --threads-per-species 8
-```
-
-See `docs/rna/BATCH_DOWNLOAD_CONFIGURATION.md` for complete configuration guide.
-
-#### `fix_abundance_naming.py`
-**Fix abundance file naming for amalgkit merge compatibility**
-
-Creates symlinks from `abundance.tsv` to `{SRR}_abundance.tsv` for amalgkit merge compatibility:
-
-**Usage:**
-```bash
-python3 scripts/rna/fix_abundance_naming.py
-```
-
-**Note:** For quantifying downloaded samples and cleaning up FASTQs, use `orchestrate_workflows.py --cleanup-unquantified`.
-
-### Testing Scripts
-
-All test scripts have been moved to `tests/test_rna_ena_workflow.py`.
-See that file for comprehensive integration tests of the ENA workflow.
-
-## Disk Space Management
-
-**Automatic Disk Space Management:**
-
-All workflows and scripts now automatically delete FASTQ/SRA files after quantification to manage disk space. This is handled by `metainformant.rna.steps.delete_sample_fastqs()` which is called automatically by:
-
-- `batch_download_species.py` - Deletes immediately after per-sample quant
-- `workflow_ena_integrated.py` - Deletes after batch quant
-- `orchestrate_workflows.py --cleanup-unquantified` - Deletes after quant during cleanup
-
-**Batched Processing:**
-- Downloads N samples from ENA (parallel, robust)
-- Quantifies all downloaded samples with kallisto
-- Deletes FASTQ files immediately after quantification (via metainformant functions)
-- Repeats with next batch
-- Peak usage: ~1.5 GB per sample × batch size
-
-**FASTQ Cleanup:**
-- Automatic cleanup via `metainformant.rna.steps.delete_sample_fastqs()`
-- Manual cleanup available via `orchestrate_workflows.py --cleanup-unquantified`
-- Partial/failed downloads cleanup via `cleanup_partial_downloads.py`
-- Quantification files retained permanently (~2 MB per sample)
-- Low disk space warnings indicate the delete pipeline is working correctly
+- **Environment checks** (1 script removed): `check_r_dependencies.py`
+  → Merged into `check_environment.py`
 
 ## Output Structure
 
 All outputs go to `output/amalgkit/{species}/`:
 - `quant/` - Quantification results (abundance.tsv, ~2 MB per sample)
 - `work/metadata/` - Filtered metadata
-- `fastq/` - FASTQ files (flat structure, sample directories directly in fastq/, automatically cleaned after quantification)
+- `fastq/` - FASTQ files (automatically cleaned after quantification)
 - `work/index/` - Kallisto index files
-- `logs/` - Processing logs from workflow_ena_integrated.py
-
-**Structure Standardization (Nov 2025):**
-- ✅ All species use flat `fastq/` structure (no nested `getfastq/` subdirectories)
-- ✅ Sample directories: `fastq/{SAMPLE_ID}/` containing `.fastq.gz` or `.sra` files
-- ✅ All utility scripts updated to use standardized paths
-- ✅ Ensures consistent behavior and prevents false positives/negatives in workflow logic
-
-See `docs/rna/examples/` for complete documentation.
+- `logs/` - Processing logs
 
 ## Troubleshooting
 
-**ENA Downloads:**
-- The workflow uses wget with automatic retry and resume
-- If downloads fail, re-run the workflow - it will resume automatically
-- Check network connectivity if many downloads fail
+**Environment:**
+- Run `check_environment.py` to verify all dependencies
+- Virtual environment is auto-activated by scripts
 
-**Virtual Environment:**
-- `run_multi_species.py` auto-activates venv if available
-- If venv missing, script provides setup instructions
-- Manual activation: `source .venv/bin/activate`
+**Workflow:**
+- Check status with `--status` flag
+- Use `--cleanup-unquantified` to quantify downloaded samples
+- Use `--cleanup-partial` to remove partial downloads
+
+**Genome Setup:**
+- Use `--verify-only` to check current status
+- Use `--skip-*` flags to skip specific steps
+- Check logs in `output/amalgkit/{species}/logs/`
 
 ## Examples
 
-See `docs/rna/examples/pbarbatus_analysis.md` for a complete workflow example.
+See `docs/rna/examples/` for complete workflow examples.

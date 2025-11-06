@@ -2,19 +2,254 @@
 
 This directory contains comprehensive documentation for all 11 amalgkit workflow steps.
 
+## Quick Links
+
+- [API Reference](../../API.md) - Complete function documentation
+- [Function Index](../FUNCTIONS.md) - Quick function lookup
+- [Workflow Guide](../../workflow.md) - Workflow planning and execution
+- [Main Documentation](../../README.md) - RNA domain master index
+
 ## Step Documentation
 
-1. **[metadata.md](metadata.md)** - NCBI SRA metadata retrieval
-2. **[integrate.md](integrate.md)** - Appending local FASTQ info to metadata tables
-3. **[config.md](config.md)** - Creating configuration files for metadata selection  
-4. **[select.md](select.md)** - Selecting SRA entries for analysis
-5. **[getfastq.md](getfastq.md)** - Generating FASTQ files from SRA
-6. **[quant.md](quant.md)** - Transcript abundance estimation
-7. **[merge.md](merge.md)** - Generating transcript abundance tables
-8. **[cstmm.md](cstmm.md)** - Cross-species TMM normalization
-9. **[curate.md](curate.md)** - Automatic outlier removal and bias correction
-10. **[csca.md](csca.md)** - Cross-species correlation analysis plots
-11. **[sanity.md](sanity.md)** - Integrity checking of inputs and outputs
+### 1. metadata - NCBI SRA Metadata Retrieval
+
+**Function Signature**:
+```python
+def metadata(
+    params: AmalgkitParams | None = None,
+    **kwargs: Any
+) -> subprocess.CompletedProcess[str]
+
+def run_metadata(
+    params: Mapping[str, Any] | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]
+```
+
+**Documentation**: [metadata.md](metadata.md) | [API Reference](../../API.md#metadata)
+
+---
+
+### 2. integrate - Integrate FASTQ Paths into Metadata
+
+**Function Signature**:
+```python
+def integrate(
+    params: AmalgkitParams | None = None,
+    **kwargs: Any
+) -> subprocess.CompletedProcess[str]
+
+def run_integrate(
+    params: Mapping[str, Any] | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]
+```
+
+**Documentation**: [integrate.md](integrate.md) | [API Reference](../../API.md#integrate)
+
+---
+
+### 3. config - Generate Configuration Files
+
+**Function Signature**:
+```python
+def config(
+    params: AmalgkitParams | None = None,
+    **kwargs: Any
+) -> subprocess.CompletedProcess[str]
+
+def run_config(
+    params: Mapping[str, Any] | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]
+```
+
+**Documentation**: [config.md](config.md) | [API Reference](../../API.md#config)
+
+---
+
+### 4. select - Filter SRA Entries by Quality
+
+**Function Signature**:
+```python
+def select(
+    params: AmalgkitParams | None = None,
+    **kwargs: Any
+) -> subprocess.CompletedProcess[str]
+
+def run_select(
+    params: Mapping[str, Any] | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]
+```
+
+**Documentation**: [select.md](select.md) | [API Reference](../../API.md#select)
+
+---
+
+### 5. getfastq - Download and Convert SRA to FASTQ
+
+**Function Signature**:
+```python
+def getfastq(
+    params: AmalgkitParams | None = None,
+    **kwargs: Any
+) -> subprocess.CompletedProcess[str]
+
+def run_getfastq(
+    params: Mapping[str, Any] | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]
+```
+
+**Documentation**: [getfastq.md](getfastq.md) | [API Reference](../../API.md#getfastq)
+
+---
+
+### 6. quant - Quantify Transcript Abundances
+
+**Function Signature**:
+```python
+def quant(
+    params: AmalgkitParams | None = None,
+    **kwargs: Any
+) -> subprocess.CompletedProcess[str]
+
+def run_quant(
+    params: Mapping[str, Any] | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]
+```
+
+**Documentation**: [quant.md](quant.md) | [API Reference](../../API.md#quant)
+
+---
+
+### 7. merge - Merge Quantification Results
+
+**Function Signature**:
+```python
+def merge(
+    params: AmalgkitParams | None = None,
+    **kwargs: Any
+) -> subprocess.CompletedProcess[str]
+
+def run_merge(
+    params: Mapping[str, Any] | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]
+```
+
+**Documentation**: [merge.md](merge.md) | [API Reference](../../API.md#merge)
+
+---
+
+### 8. cstmm - Cross-Species TMM Normalization
+
+**Function Signature**:
+```python
+def cstmm(
+    params: AmalgkitParams | None = None,
+    **kwargs: Any
+) -> subprocess.CompletedProcess[str]
+
+def run_cstmm(
+    params: Mapping[str, Any] | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]
+```
+
+**Documentation**: [cstmm.md](cstmm.md) | [API Reference](../../API.md#cstmm)
+
+---
+
+### 9. curate - Quality Control and Batch Correction
+
+**Function Signature**:
+```python
+def curate(
+    params: AmalgkitParams | None = None,
+    **kwargs: Any
+) -> subprocess.CompletedProcess[str]
+
+def run_curate(
+    params: Mapping[str, Any] | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]
+```
+
+**Documentation**: [curate.md](curate.md) | [API Reference](../../API.md#curate)
+
+---
+
+### 10. csca - Cross-Species Correlation Analysis
+
+**Function Signature**:
+```python
+def csca(
+    params: AmalgkitParams | None = None,
+    **kwargs: Any
+) -> subprocess.CompletedProcess[str]
+
+def run_csca(
+    params: Mapping[str, Any] | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]
+```
+
+**Documentation**: [csca.md](csca.md) | [API Reference](../../API.md#csca)
+
+---
+
+### 11. sanity - Validate Workflow Outputs
+
+**Function Signature**:
+```python
+def sanity(
+    params: AmalgkitParams | None = None,
+    **kwargs: Any
+) -> subprocess.CompletedProcess[str]
+
+def run_sanity(
+    params: Mapping[str, Any] | None = None,
+    *,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    check: bool = False,
+) -> subprocess.CompletedProcess[str]
+```
+
+**Documentation**: [sanity.md](sanity.md) | [API Reference](../../API.md#sanity)
 
 ## Workflow Order
 
@@ -36,21 +271,21 @@ flowchart TD
     H2 --> J[11. sanity]
 ```
 
-## Quick Reference
+## Quick Reference Table
 
-| Step | Required Input | Primary Output | Typical Runtime |
-|------|----------------|----------------|----------------|
-| metadata | Search string | metadata.tsv | 1-30 min |
-| integrate | FASTQ dir | Updated metadata | <5 min |
-| config | None | .config files | <1 sec |
-| select | metadata.tsv, configs | pivot_qualified.tsv | <1 min |
-| getfastq | pivot_qualified.tsv | FASTQ files | Hours-days |
-| quant | FASTQs, transcriptome | abundance.tsv per sample | 1-10 min/sample |
-| merge | All quant outputs | Merged expression matrix | <1 min |
-| cstmm | Multiple species merge | TMM-normalized matrix | <5 min |
-| curate | Merged matrix | QC'd, corrected matrix + PDFs | 5-30 min |
-| csca | Multiple species curate | Cross-species plots | 5-15 min |
-| sanity | All outputs | Validation reports | <1 min |
+| Step | Function | Required Input | Primary Output | Typical Runtime | Documentation |
+|------|----------|----------------|----------------|----------------|---------------|
+| **metadata** | `metadata()` | Search string | metadata.tsv | 1-30 min | [metadata.md](metadata.md) |
+| **integrate** | `integrate()` | FASTQ dir | Updated metadata | <5 min | [integrate.md](integrate.md) |
+| **config** | `config()` | None | .config files | <1 sec | [config.md](config.md) |
+| **select** | `select()` | metadata.tsv, configs | pivot_qualified.tsv | <1 min | [select.md](select.md) |
+| **getfastq** | `getfastq()` | pivot_qualified.tsv | FASTQ files | Hours-days | [getfastq.md](getfastq.md) |
+| **quant** | `quant()` | FASTQs, transcriptome | abundance.tsv per sample | 1-10 min/sample | [quant.md](quant.md) |
+| **merge** | `merge()` | All quant outputs | Merged expression matrix | <1 min | [merge.md](merge.md) |
+| **cstmm** | `cstmm()` | Multiple species merge | TMM-normalized matrix | <5 min | [cstmm.md](cstmm.md) |
+| **curate** | `curate()` | Merged matrix | QC'd, corrected matrix + PDFs | 5-30 min | [curate.md](curate.md) |
+| **csca** | `csca()` | Multiple species curate | Cross-species plots | 5-15 min | [csca.md](csca.md) |
+| **sanity** | `sanity()` | All outputs | Validation reports | <1 min | [sanity.md](sanity.md) |
 
 ## Usage Patterns
 
@@ -136,14 +371,25 @@ pytest tests/test_rna_amalgkit_steps.py::test_metadata_basic_execution -v
 
 **Test Status**: ✅ 71/71 tests passing (100%)
 
+## Next Steps Navigation
+
+After reading about a step, you might want to:
+
+- **Learn the next step**: Follow the workflow diagram above
+- **See function details**: Check [API Reference](../../API.md) for complete signatures
+- **Find examples**: See [examples/](../../examples/) for real-world usage
+- **Configure workflows**: Read [Configuration Guide](../../CONFIGURATION.md)
+- **Run complete pipeline**: See [Workflow Guide](../../workflow.md)
+
 ## Related Documentation
 
-- **[../amalgkit.md](../amalgkit.md)** - Complete pipeline overview
-- **[../guide.md](../guide.md)** - Usage guide
-- **[../quick_start.md](../quick_start.md)** - Quick start guide
-- **[../testing_coverage.md](../testing_coverage.md)** - Test coverage report
-- **[../r_packages.md](../r_packages.md)** - R package requirements
-- **[../README.md](../README.md)** - Documentation index
+- **[API Reference](../../API.md)** - Complete function documentation with signatures
+- **[Function Index](../FUNCTIONS.md)** - Quick function lookup table
+- **[Pipeline Overview](../amalgkit.md)** - Complete pipeline documentation
+- **[Quick Start](../quick_start.md)** - Quick start guide
+- **[Testing Coverage](../testing_coverage.md)** - Test coverage report
+- **[R Packages](../r_packages.md)** - R package requirements
+- **[Main Index](../../README.md)** - RNA domain master index
 
 ## Contributing
 

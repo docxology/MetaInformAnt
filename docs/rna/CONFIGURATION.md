@@ -2,6 +2,13 @@
 
 Complete guide to configuring RNA-seq workflows, including species profiles, workflow parameters, and batch download settings.
 
+## Quick Links
+
+- **[API Reference](API.md#workflow-functions)** - Workflow configuration functions
+- **[Workflow Guide](workflow.md)** - Workflow planning and execution
+- **[Orchestration Guide](ORCHESTRATION/README.md)** - Orchestrator configuration
+- **[Main Index](README.md)** - RNA domain master index
+
 ## Overview
 
 Configuration in the RNA module is managed through:
@@ -9,6 +16,23 @@ Configuration in the RNA module is managed through:
 - **Species profiles**: High-level species metadata and tissue filters
 - **Step parameters**: Per-step configuration overrides
 - **Command-line arguments**: Runtime parameter overrides
+
+### Path Resolution
+
+**All paths in configuration files are resolved relative to the repository root.** This allows configs to work whether the repository is located on `/home/q/...` or `/media/q/ext6/...` (external drives).
+
+- **Relative paths**: Resolved relative to repository root (e.g., `output/amalgkit/...`)
+- **Absolute paths**: Used as-is if provided
+- **Automatic detection**: Repository root is detected by looking for `.git`, `pyproject.toml`, or `.cursorrules` markers
+
+Example:
+```yaml
+# These paths work on any drive location
+work_dir: output/amalgkit/my_species/work
+log_dir: output/amalgkit/my_species/logs
+genome:
+  dest_dir: output/amalgkit/my_species/genome
+```
 
 ## Quick Start
 
@@ -54,9 +78,10 @@ params = build_step_params(spec, layout)
 
 ### YAML Configuration Files
 
-Example YAML configuration:
+Example YAML configuration with automatic genome setup:
 
 ```yaml
+# Paths are resolved relative to repository root
 work_dir: output/amalgkit/camponotus_floridanus/work
 log_dir: output/amalgkit/camponotus_floridanus/logs
 threads: 24
@@ -69,21 +94,46 @@ filters:
 species_list:
   - Camponotus_floridanus
 
+# Genome configuration - automatically downloaded and indexed if missing
+genome:
+  accession: GCF_003227725.1
+  dest_dir: output/amalgkit/camponotus_floridanus/genome
+  include:
+    - genome
+    - gff3
+    - rna
+    - cds
+    - protein
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/003/227/725/...
+
 steps:
   metadata:
     out_dir: output/amalgkit/camponotus_floridanus/work
     search_string: '"Camponotus floridanus"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
     redo: yes
   getfastq:
+    out_dir: output/amalgkit/camponotus_floridanus/fastq
     threads: 24
     aws: yes
     gcp: yes
     ncbi: yes
   quant:
+    out_dir: output/amalgkit/camponotus_floridanus/quant
     threads: 24
     keep_fastq: no
     redo: no
+    build_index: yes  # Automatically build kallisto index if missing
+  merge:
+    out: output/amalgkit/camponotus_floridanus/merged/merged_abundance.tsv
+    out_dir: output/amalgkit/camponotus_floridanus/merged
 ```
+
+**Automatic Genome Setup**: If `genome` configuration is provided, the workflow automatically:
+1. Validates genome and kallisto index status at startup
+2. Downloads genome package if missing
+3. Prepares transcriptome FASTA if missing
+4. Builds kallisto index if `build_index: yes` and index is missing
+5. Only proceeds to metadata/download steps after genome/index is confirmed ready
 
 ### Environment Variable Overrides
 
@@ -378,6 +428,13 @@ python3 scripts/rna/workflow_ena_integrated.py \
 
 ## See Also
 
+### Documentation
+- **[API Reference](API.md#workflow-functions)** - Workflow configuration functions
+- **[Workflow Guide](workflow.md)** - Workflow planning and execution
+- **[Orchestration Guide](ORCHESTRATION/README.md)** - Orchestrator configuration
+- **[Main Index](README.md)** - RNA domain master index
+
+### Related
 - **Scripts**: `scripts/rna/batch_download_species.py` - Main batch download script
 - **Source Code**: `src/metainformant/rna/configs.py` - Configuration module
 - **Examples**: See `docs/rna/examples/` for real-world configurations

@@ -345,4 +345,4 @@ ptw tests/test_core_text.py
 uv run pytest -x tests/test_core_text.py
 ```
 
-Related: [CLI](./cli.md), [Core](./core.md)
+Related: [CLI](./cli.md), [Core](./core/README.md)

@@ -20,6 +20,7 @@ from typing import Any
 
 from ...core.io import read_delimited, write_delimited
 from ..amalgkit import run_amalgkit
+from .download_progress import DownloadProgressMonitor
 
 logger = logging.getLogger(__name__)
 
@@ -53,8 +54,20 @@ def _download_worker(
     work_dir: Path | None,
     log_dir: Path | None,
     worker_id: int,
+    progress_monitor: DownloadProgressMonitor | None = None,
 ):
-    """Worker thread that downloads FASTQ files."""
+    """Worker thread that downloads FASTQ files.
+    
+    Args:
+        download_queue: Queue of run IDs to download
+        completion_queue: Queue to put completed downloads
+        metadata_path: Path to metadata TSV
+        getfastq_params: Parameters for amalgkit getfastq
+        work_dir: Working directory
+        log_dir: Log directory
+        worker_id: Unique worker identifier
+        progress_monitor: Optional progress monitor for tracking downloads
+    """
     logger.info(f"📥 Download worker {worker_id} started")
     
     while True:
@@ -66,12 +79,18 @@ def _download_worker(
             
             logger.info(f"  [{worker_id}] ⬇️  Downloading {run_id}")
             
+            # Register with progress monitor if available
+            if progress_monitor:
+                progress_monitor.register_thread(worker_id, run_id)
+            
             # Read metadata and filter to this run
             rows = list(read_delimited(metadata_path, delimiter="\t"))
             single_row = [row for row in rows if row.get("run") == run_id]
             
             if len(single_row) == 0:
                 logger.warning(f"  [{worker_id}] ⚠️  {run_id} not in metadata, skipping")
+                if progress_monitor:
+                    progress_monitor.unregister_thread(worker_id, success=False)
                 download_queue.task_done()
                 continue
             
@@ -98,7 +117,13 @@ def _download_worker(
             except Exception:
                 pass
             
-            if result.returncode == 0:
+            success = result.returncode == 0
+            
+            # Unregister from progress monitor
+            if progress_monitor:
+                progress_monitor.unregister_thread(worker_id, success=success)
+            
+            if success:
                 logger.info(f"  [{worker_id}] ✅ Downloaded {run_id}")
                 # Add to quantification queue
                 completion_queue.put(("success", run_id))
@@ -112,6 +137,11 @@ def _download_worker(
             continue
         except Exception as e:
             logger.error(f"  [{worker_id}] 💥 Error in download worker: {e}", exc_info=True)
+            if progress_monitor:
+                try:
+                    progress_monitor.unregister_thread(worker_id, success=False)
+                except Exception:
+                    pass
             download_queue.task_done()
 
 
@@ -216,6 +246,7 @@ def run_parallel_download_sequential_quant(
     log_dir: str | Path | None = None,
     num_download_workers: int = 4,
     max_samples: int | None = None,
+    progress_monitor: DownloadProgressMonitor | None = None,
 ) -> dict[str, Any]:
     """Process samples with parallel downloads and sequential quantification.
     
@@ -279,6 +310,21 @@ def run_parallel_download_sequential_quant(
     logger.info(f"   Download workers: {num_download_workers}")
     logger.info(f"   Quantification: sequential (1 worker)")
     
+    # Initialize progress monitor if not provided
+    if progress_monitor is None:
+        # Check if progress tracking is enabled in params
+        show_progress = getfastq_params_dict.get("show_progress", True)
+        if show_progress:
+            update_interval = float(getfastq_params_dict.get("progress_update_interval", 2.0))
+            use_bars = getfastq_params_dict.get("progress_style", "bar") == "bar"
+            progress_monitor = DownloadProgressMonitor(
+                out_dir=fastq_dir,
+                update_interval=update_interval,
+                use_progress_bars=use_bars,
+                show_summary=not use_bars,  # Show text summary if not using bars
+            )
+            progress_monitor.start_monitoring()
+    
     # Create queues
     download_queue = queue.Queue()
     completion_queue = queue.Queue()
@@ -309,6 +355,7 @@ def run_parallel_download_sequential_quant(
                 work_dir,
                 log_dir,
                 i + 1,
+                progress_monitor,
             ),
             daemon=True,
         )
@@ -344,6 +391,10 @@ def run_parallel_download_sequential_quant(
     for t in download_threads:
         t.join()
     logger.info("📥 All download workers finished")
+    
+    # Stop progress monitoring
+    if progress_monitor:
+        progress_monitor.stop_monitoring()
     
     # Wait for all quantifications to complete
     completion_queue.join()
