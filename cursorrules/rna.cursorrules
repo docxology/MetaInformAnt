@@ -132,10 +132,16 @@ config = load_workflow_config("config/amalgkit/species.yaml")
 
 ## Environment Variables
 
-- `AK_THREADS`: Number of threads
+- `AK_THREADS`: Number of threads (per species for sequential workflows, or total threads for distributed workflows)
 - `AK_WORK_DIR`: Working directory override
 - `AK_LOG_DIR`: Log directory override
 - Other step-specific overrides via `AK_<STEP>_<PARAM>`
+
+## Thread Allocation
+
+- **Sequential workflows** (`run_multi_species.py`): Uses `AK_THREADS` per species (default: 24)
+- **Distributed workflows** (`batch_download_species.py`): Uses `--total-threads` to distribute threads across all species (default: 24 total, minimum 1 per species)
+- **Immediate processing**: Each sample is downloaded, quantified, and FASTQs deleted immediately (not batched)
 
 ## Integration
 

@@ -74,11 +74,13 @@ def prepare_transcriptome_for_kallisto(
     work_dir: Path,
     *,
     accession: str | None = None,
+    use_cds_fallback: bool = True,
 ) -> Path | None:
     """Prepare transcriptome FASTA file for kallisto indexing.
     
     Finds the RNA FASTA file in the extracted genome directory and
     copies it to the expected location for amalgkit/kallisto.
+    If RNA FASTA is not found and use_cds_fallback is True, uses CDS sequences as fallback.
     
     Expected output: work_dir/fasta/{Species_Name}_rna.fasta
     
@@ -87,6 +89,7 @@ def prepare_transcriptome_for_kallisto(
         species_name: Species name (with underscores, e.g., "Camponotus_floridanus")
         work_dir: Work directory for amalgkit workflow
         accession: Optional NCBI assembly accession (for searching)
+        use_cds_fallback: If True, use CDS sequences when RNA FASTA is not available
         
     Returns:
         Path to prepared FASTA file if successful, None otherwise
@@ -102,8 +105,23 @@ def prepare_transcriptome_for_kallisto(
         else:
             rna_fasta = None
     
+    # Fallback to CDS if RNA FASTA not found
+    if (not rna_fasta or not rna_fasta.exists()) and use_cds_fallback:
+        logger.info(f"RNA FASTA not found, searching for CDS sequences as fallback...")
+        cds_matches = list(genome_dir.rglob("*cds*.fna*"))
+        cds_matches.extend(genome_dir.rglob("*cds*.fa*"))
+        if cds_matches:
+            # Prefer unzipped files
+            unzipped = [f for f in cds_matches if not f.name.endswith('.gz')]
+            if unzipped:
+                rna_fasta = unzipped[0]
+                logger.info(f"Using CDS file as transcriptome: {rna_fasta.name}")
+            else:
+                rna_fasta = cds_matches[0]
+                logger.info(f"Using gzipped CDS file as transcriptome: {rna_fasta.name}")
+    
     if not rna_fasta or not rna_fasta.exists():
-        logger.warning(f"RNA FASTA not found in {genome_dir}")
+        logger.warning(f"RNA FASTA and CDS not found in {genome_dir}")
         return None
     
     # Prepare output directory

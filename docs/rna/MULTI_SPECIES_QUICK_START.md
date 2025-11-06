@@ -48,32 +48,35 @@ which wget kallisto
 
 ## Starting Multi-Species Workflows
 
-### Method 1: Configurable Batch Download (NEW ⭐⭐)
+### Method 1: Immediate Processing with Total Threads (NEW ⭐⭐)
 
-**Best for:** Multi-species parallel downloads with configurable throughput
+**Best for:** Multi-species parallel downloads with immediate per-sample processing and configurable total threads
 
 ```bash
-# Default: 3 species × 10 threads = 30 total downloads
-python3 scripts/rna/batch_download_species.py
+# 24 threads TOTAL distributed across all species (minimum 1 per species)
+python3 scripts/rna/batch_download_species.py --total-threads 24
 
-# Custom: 4 species × 12 threads = 48 total downloads
-python3 scripts/rna/batch_download_species.py --species-count 4 --threads-per-species 12
+# Custom total threads (e.g., 48 threads total)
+python3 scripts/rna/batch_download_species.py --total-threads 48
 
 # Run in background with logging
-python3 scripts/rna/batch_download_species.py > output/batch_download.log 2>&1 &
+nohup python3 scripts/rna/batch_download_species.py --total-threads 24 > output/batch_download.log 2>&1 &
 ```
 
 **Features:**
-- ✅ **Configurable parallelism**: Adjust species count and threads per species
+- ✅ **Immediate processing**: Each sample: download → immediately quantify → immediately delete FASTQs
+- ✅ **Total thread allocation**: Threads distributed evenly across all species (minimum 1 per species)
+- ✅ **Dynamic redistribution**: Threads redistribute to remaining species as others complete
+- ✅ **Maximum disk efficiency**: Only one sample's FASTQs exist at a time
 - ✅ **Automatic discovery**: Finds all species configs automatically
 - ✅ **Virtual environment**: Auto-activates if available
 - ✅ **Cloud acceleration**: AWS, GCP, NCBI enabled by default
 - ✅ **Progress tracking**: Logs all download activity
 
 **Configuration Options:**
-- `--species-count`: Number of species to download in parallel (default: 3)
-- `--threads-per-species`: Threads per species (default: 10)
+- `--total-threads`: Total threads across all species (default: 8, recommended: 24)
 - `--max-species`: Limit total species processed (optional)
+- `--quant-threads`: Separate thread pool for quantification (default: 10)
 
 See `docs/rna/BATCH_DOWNLOAD_CONFIGURATION.md` for complete guide.
 

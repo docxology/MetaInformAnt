@@ -527,20 +527,18 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
                 logger.error("=" * 80)
                 return_codes.append(1)
             else:
-                # Use batched download + quant
-                # Get batch size from config threads or default to 8
-                batch_size = config.threads if config.threads and config.threads > 1 else 8
-                logger.info(f"🚀 Using batched processing (batch size: {batch_size})")
-                logger.info(f"   Each batch: download {batch_size} samples → quantify → delete FASTQs → repeat")
+                # Use immediate per-sample processing: download → quant → delete (one at a time)
+                logger.info(f"🚀 Using immediate per-sample processing")
+                logger.info(f"   Each sample: download → immediately quantify → immediately delete FASTQs → next sample")
+                logger.info(f"   This ensures maximum disk efficiency: only one sample's FASTQs exist at a time")
                 
                 start_ts = datetime.utcnow()
-                stats = _steps_mod.run_batched_download_quant(
+                stats = _steps_mod.run_sequential_download_quant(
                     metadata_path=metadata_file,
                     getfastq_params=getfastq_params,
                     quant_params=quant_params,
                     work_dir=config.work_dir,
                     log_dir=(config.log_dir or (config.work_dir / "logs")),
-                    batch_size=batch_size,
                 )
                 end_ts = datetime.utcnow()
                 duration_s = max(0.0, (end_ts - start_ts).total_seconds())
@@ -552,7 +550,7 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
                 return_codes.append(result_code)
                 manifest_records.append(
                     {
-                        "step": "getfastq+quant (batched)",
+                        "step": "getfastq+quant (immediate)",
                         "return_code": result_code,
                         "stdout_bytes": 0,
                         "stderr_bytes": 0,
@@ -564,11 +562,10 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
                         "params": {
                             "getfastq": dict(getfastq_params),
                             "quant": dict(quant_params),
-                            "batch_size": batch_size,
                             "statistics": stats,
                         },
-                        "command": f"batched_download_quant (batch_size={batch_size})",
-                        "note": f"Processed {stats['processed']}, failed {stats['failed']}/{stats['total_samples']} in {stats.get('batches', 0)} batches",
+                        "command": f"sequential_download_quant (immediate per-sample processing)",
+                        "note": f"Processed {stats['processed']}, skipped {stats['skipped']}, failed {stats['failed']}/{stats['total_samples']} (immediate: download→quant→delete per sample)",
                     }
                 )
         

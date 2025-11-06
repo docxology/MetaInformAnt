@@ -63,3 +63,4 @@ trees.visualize_tree(
 - Verify plot dimensions and format
 - Write test outputs to `output/visualization/test/`
 
+

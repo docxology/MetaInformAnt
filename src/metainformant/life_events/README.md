@@ -228,6 +228,586 @@ print(f"Outcomes shape: {outcomes.shape}")
   - `"education_focused"`: Higher outcome for education events
   - `"complex"`: Complex pattern based on multiple domains
 
+### Enhanced Realistic Simulation
+
+For more sophisticated synthetic data with temporal dependencies and realistic patterns:
+
+```python
+from metainformant.life_events import generate_realistic_life_events
+import numpy as np
+
+# Generate sequences with transition probabilities and co-occurrence patterns
+sequences, outcomes = generate_realistic_life_events(
+    n_sequences=100,
+    transition_probabilities={
+        "education": {"occupation": 0.8, "income": 0.2},
+        "occupation": {"income": 0.6, "address": 0.4}
+    },
+    cooccurrence_patterns={
+        "job_change": ["move", "raise"],
+        "degree": ["job_change"]
+    },
+    seasonal_patterns=True,
+    rare_event_probability=0.05,
+    temporal_noise=0.1,
+    missing_data_probability=0.05,
+    random_state=42
+)
+```
+
+**Advanced Features:**
+- **transition_probabilities**: Domain transition probabilities (Markov chain)
+- **cooccurrence_patterns**: Events that tend to co-occur
+- **seasonal_patterns**: Seasonal/cyclical temporal variations
+- **rare_event_probability**: Probability of injecting rare but important events
+- **temporal_noise**: Level of temporal uncertainty/noise
+- **missing_data_probability**: Probability of missing events
+
+### Event Chain Generation
+
+Generate causally linked event sequences:
+
+```python
+from metainformant.life_events import generate_event_chain
+from datetime import datetime
+
+chain_rules = {
+    "education:degree": {"occupation:job_change": 0.8, "income:raise": 0.2},
+    "occupation:job_change": {"address:move": 0.5, "income:raise": 0.5}
+}
+
+events = generate_event_chain(
+    chain_rules=chain_rules,
+    start_event="degree",
+    start_domain="education",
+    n_events=10,
+    start_timestamp=datetime(2010, 1, 1).timestamp(),
+    time_span=365*5*86400,  # 5 years
+    event_types_by_domain={
+        "education": ["degree"],
+        "occupation": ["job_change"],
+        "income": ["raise"],
+        "address": ["move"]
+    },
+    random_state=42
+)
+```
+
+### Cohort Generation
+
+Generate population-level sequences with cohort-specific patterns:
+
+```python
+from metainformant.life_events import generate_cohort_sequences
+
+cohorts = generate_cohort_sequences(
+    n_cohorts=3,
+    n_sequences_per_cohort=50,
+    cohort_differences={
+        "young": {"education": 0.4, "occupation": 0.3},
+        "middle": {"occupation": 0.4, "income": 0.3},
+        "old": {"health": 0.4, "retirement": 0.3}
+    },
+    random_state=42
+)
+
+# Access cohorts
+young_cohort = cohorts["young"]
+middle_cohort = cohorts["middle"]
+old_cohort = cohorts["old"]
+```
+
+### Temporal Noise Injection
+
+Add realistic temporal noise to existing sequences:
+
+```python
+from metainformant.life_events import add_temporal_noise
+
+# Add noise to sequence
+noisy_sequence = add_temporal_noise(
+    sequence,
+    noise_level=0.2,  # 20% of events have temporal noise
+    max_days_shift=30,  # Up to 30 days shift
+    missing_probability=0.05,  # 5% chance of missing events
+    random_state=42
+)
+```
+
+## Advanced Prediction Models
+
+### LSTM Sequence Model
+
+Full PyTorch implementation with batching and padding:
+
+```python
+from metainformant.life_events import LSTMSequenceModel
+import numpy as np
+
+lstm_model = LSTMSequenceModel(
+    embedding_dim=100,
+    hidden_dim=64,
+    num_layers=2,
+    task_type="classification",
+    epochs=20,
+    learning_rate=0.001,
+    random_state=42
+)
+
+lstm_model.fit(sequences_tokens, y, event_embeddings=embeddings)
+predictions = lstm_model.predict(new_sequences_tokens)
+```
+
+### GRU Sequence Model
+
+Similar to LSTM but with GRU cells:
+
+```python
+from metainformant.life_events import GRUSequenceModel
+
+gru_model = GRUSequenceModel(
+    embedding_dim=100,
+    hidden_dim=64,
+    num_layers=2,
+    task_type="classification",
+    epochs=20,
+    random_state=42
+)
+
+gru_model.fit(sequences_tokens, y)
+predictions = gru_model.predict(new_sequences_tokens)
+```
+
+### Ensemble Predictor
+
+Combine multiple models for improved predictions:
+
+```python
+from metainformant.life_events import (
+    EnsemblePredictor,
+    EventSequencePredictor,
+    LSTMSequenceModel,
+    GRUSequenceModel
+)
+
+# Train multiple models
+model1 = EventSequencePredictor(model_type="embedding", random_state=42)
+model1.fit(sequences_tokens, y)
+
+model2 = LSTMSequenceModel(random_state=43)
+model2.fit(sequences_tokens, y)
+
+model3 = GRUSequenceModel(random_state=44)
+model3.fit(sequences_tokens, y)
+
+# Create ensemble
+ensemble = EnsemblePredictor(
+    models=[model1, model2, model3],
+    weights=[0.3, 0.4, 0.3],  # Optional: custom weights
+    task_type="classification"
+)
+
+predictions = ensemble.predict(new_sequences_tokens)
+```
+
+### Survival Predictor
+
+Predict time until an event occurs:
+
+```python
+from metainformant.life_events import SurvivalPredictor
+import numpy as np
+
+survival_model = SurvivalPredictor(method="cox", random_state=42)
+
+# event_times: time until event (or censoring time)
+# event_occurred: 1 if event occurred, 0 if censored
+survival_model.fit(sequences_tokens, event_times, event_occurred)
+
+# Predict time until event
+predicted_times = survival_model.predict(new_sequences_tokens)
+
+# Predict survival function
+times = np.array([365, 730, 1095, 1460])  # 1, 2, 3, 4 years
+survival_probs = survival_model.predict_survival_function(new_sequences_tokens, times)
+```
+
+### Multi-Task Predictor
+
+Predict multiple outcomes simultaneously:
+
+```python
+from metainformant.life_events import MultiTaskPredictor
+import numpy as np
+
+multi_task = MultiTaskPredictor(
+    task_types={
+        "health_outcome": "classification",
+        "income_level": "regression",
+        "education_level": "classification"
+    },
+    embedding_dim=100,
+    random_state=42
+)
+
+# Prepare outcomes for all tasks
+outcomes = {
+    "health_outcome": np.array([0, 1, 0, 1]),
+    "income_level": np.array([50000, 75000, 60000, 80000]),
+    "education_level": np.array([0, 1, 0, 2])
+}
+
+multi_task.fit(sequences_tokens, outcomes)
+
+# Predict all tasks
+all_predictions = multi_task.predict(new_sequences_tokens)
+
+# Predict specific task
+health_predictions = multi_task.predict(new_sequences_tokens, task_name="health_outcome")
+```
+
+## Comprehensive Visualization Suite
+
+### Domain Distribution
+
+Visualize distribution of domains across sequences:
+
+```python
+from metainformant.life_events import plot_domain_distribution
+
+# Bar chart
+plot_domain_distribution(
+    sequences,
+    output_path="output/domain_distribution.png",
+    plot_type="bar"
+)
+
+# Pie chart
+plot_domain_distribution(
+    sequences,
+    output_path="output/domain_distribution_pie.png",
+    plot_type="pie"
+)
+```
+
+### Temporal Density
+
+Visualize event density over time:
+
+```python
+from metainformant.life_events import plot_temporal_density
+
+plot_temporal_density(
+    sequences,
+    output_path="output/temporal_density.png",
+    bins=50
+)
+```
+
+### Event Co-occurrence
+
+Heatmap of event co-occurrence patterns:
+
+```python
+from metainformant.life_events import plot_event_cooccurrence
+
+plot_event_cooccurrence(
+    sequences,
+    output_path="output/cooccurrence.png",
+    top_n=20
+)
+```
+
+### Outcome Distribution
+
+Visualize distribution of outcomes:
+
+```python
+from metainformant.life_events import plot_outcome_distribution
+import numpy as np
+
+plot_outcome_distribution(
+    outcomes,
+    output_path="output/outcome_distribution.png",
+    plot_type="histogram"  # or "boxplot"
+)
+```
+
+### Sequence Similarity
+
+Heatmap of sequence similarity matrix:
+
+```python
+from metainformant.life_events import plot_sequence_similarity
+
+plot_sequence_similarity(
+    sequences,
+    embeddings=embeddings,  # Optional
+    output_path="output/similarity_matrix.png"
+)
+```
+
+### Transition Network
+
+Network graph of event transitions:
+
+```python
+from metainformant.life_events import plot_transition_network
+
+plot_transition_network(
+    sequences,
+    output_path="output/transition_network.png",
+    top_n=15
+)
+```
+
+### Domain Timeline
+
+Multi-domain timeline (Gantt-style) for multiple sequences:
+
+```python
+from metainformant.life_events import plot_domain_timeline
+
+plot_domain_timeline(
+    sequences,
+    output_path="output/domain_timeline.png",
+    max_sequences=10
+)
+```
+
+### Prediction Accuracy
+
+ROC curve, confusion matrix, and calibration plots:
+
+```python
+from metainformant.life_events import plot_prediction_accuracy
+import numpy as np
+
+plot_prediction_accuracy(
+    y_true,
+    y_pred,
+    task_type="classification",  # or "regression"
+    output_path="output/prediction_accuracy.png"
+)
+```
+
+### Temporal Patterns
+
+Time-based importance visualization:
+
+```python
+from metainformant.life_events import plot_temporal_patterns
+
+importance_scores = {0: 0.8, 1: 0.9, 2: 0.7}  # Sequence index -> importance
+plot_temporal_patterns(
+    sequences,
+    importance_scores=importance_scores,
+    output_path="output/temporal_patterns.png"
+)
+```
+
+### Population Comparison
+
+Side-by-side comparison of two groups:
+
+```python
+from metainformant.life_events import plot_population_comparison
+
+plot_population_comparison(
+    sequences_group1,
+    sequences_group2,
+    group1_label="Treatment",
+    group2_label="Control",
+    output_path="output/population_comparison.png"
+)
+```
+
+### Intervention Effects
+
+Before/after intervention visualization:
+
+```python
+from metainformant.life_events import plot_intervention_effects
+import numpy as np
+
+plot_intervention_effects(
+    pre_sequences,
+    post_sequences,
+    pre_outcomes=pre_outcomes,  # Optional
+    post_outcomes=post_outcomes,  # Optional
+    output_path="output/intervention_effects.png"
+)
+```
+
+### Embedding Clusters
+
+Clustered embedding visualization:
+
+```python
+from metainformant.life_events import plot_embedding_clusters
+
+clusters = {
+    "health:diagnosis": 0,
+    "health:hospitalization": 0,
+    "education:degree": 1,
+    "education:certification": 1
+}
+
+plot_embedding_clusters(
+    embeddings,
+    clusters=clusters,  # Optional
+    method="umap",
+    output_path="output/embedding_clusters.png"
+)
+```
+
+### Sequence Length Distribution
+
+Histogram of sequence lengths:
+
+```python
+from metainformant.life_events import plot_sequence_length_distribution
+
+plot_sequence_length_distribution(
+    sequences,
+    output_path="output/sequence_lengths.png"
+)
+```
+
+### Event Frequency Heatmap
+
+Temporal frequency heatmap of events:
+
+```python
+from metainformant.life_events import plot_event_frequency_heatmap
+
+plot_event_frequency_heatmap(
+    sequences,
+    output_path="output/frequency_heatmap.png",
+    time_bins=10
+)
+```
+
+## Modular Scripts
+
+The module provides focused command-line scripts for specific tasks:
+
+### Generate Synthetic Data
+
+```bash
+# Basic generation
+python3 scripts/life_events/generate_synthetic_data.py \
+    --n-sequences 100 \
+    --output output/life_events/synthetic.json
+
+# Realistic generation with patterns
+python3 scripts/life_events/generate_synthetic_data.py \
+    --n-sequences 100 \
+    --realistic \
+    --seasonal-patterns \
+    --temporal-noise 0.1 \
+    --output output/life_events/realistic.json
+```
+
+### Learn Embeddings
+
+```bash
+python3 scripts/life_events/learn_embeddings.py \
+    --input data/sequences.json \
+    --output output/life_events/embeddings.json \
+    --embedding-dim 200 \
+    --window-size 10 \
+    --epochs 20
+```
+
+### Train Model
+
+```bash
+python3 scripts/life_events/train_model.py \
+    --sequences data/sequences.json \
+    --outcomes data/outcomes.json \
+    --output output/life_events/model.json \
+    --model-type lstm \
+    --epochs 20
+```
+
+### Predict Outcomes
+
+```bash
+python3 scripts/life_events/predict_outcomes.py \
+    --model output/life_events/model.json \
+    --sequences data/test_sequences.json \
+    --output output/life_events/predictions.json \
+    --probabilities
+```
+
+### Visualize Sequences
+
+```bash
+python3 scripts/life_events/visualize_sequences.py \
+    --input data/sequences.json \
+    --output output/life_events/visualizations/ \
+    --all-visualizations
+```
+
+### Compare Groups
+
+```bash
+python3 scripts/life_events/compare_groups.py \
+    --group1 data/group1.json \
+    --group2 data/group2.json \
+    --group1-label "Treatment" \
+    --group2-label "Control" \
+    --output output/life_events/comparison/
+```
+
+### Analyze Intervention
+
+```bash
+python3 scripts/life_events/analyze_intervention.py \
+    --sequences data/sequences.json \
+    --intervention-time 2015-01-01 \
+    --pre-outcomes data/pre_outcomes.json \
+    --post-outcomes data/post_outcomes.json \
+    --output output/life_events/intervention/
+```
+
+### Interpret Predictions
+
+```bash
+python3 scripts/life_events/interpret_predictions.py \
+    --model output/life_events/model.json \
+    --sequences data/sequences.json \
+    --output output/life_events/interpretation/ \
+    --method permutation \
+    --top-n 20
+```
+
+### Export Embeddings
+
+```bash
+# Export to CSV
+python3 scripts/life_events/export_embeddings.py \
+    --input output/life_events/embeddings.json \
+    --output output/life_events/embeddings.csv \
+    --format csv
+
+# Export to Word2Vec format
+python3 scripts/life_events/export_embeddings.py \
+    --input output/life_events/embeddings.json \
+    --output output/life_events/embeddings.txt \
+    --format word2vec
+```
+
+### Validate Data
+
+```bash
+python3 scripts/life_events/validate_data.py \
+    --input data/sequences.json \
+    --output output/life_events/validation_report.json \
+    --strict
+```
+
 ## Complete End-to-End Workflow
 
 Here's a complete example showing the full workflow from synthetic data generation through visualization:

@@ -25,15 +25,15 @@ New to RNA-seq analysis with METAINFORMANT? Start here:
 ### Quick Commands
 
 ```bash
-# All species, end-to-end workflow (configurable threads)
+# All species, end-to-end workflow with immediate per-sample processing
 # Prerequisites: venv must exist with amalgkit installed (see RUN_ALL_SPECIES.md)
 # Ensure /tmp has space: bash scripts/rna/fix_tmp_space.sh
 
-# Run all species in parallel with configurable threads
-export AK_THREADS=24  # Threads per species
-python3 scripts/rna/run_all_species_parallel.py --threads-per-species 24
+# Immediate processing with 24 threads TOTAL distributed across all species (recommended)
+# Each sample: download → immediately quantify → immediately delete FASTQs
+python3 scripts/rna/batch_download_species.py --total-threads 24
 
-# Or sequential execution (one species at a time):
+# Or sequential execution (one species at a time, full workflow):
 export AK_THREADS=24
 python3 scripts/rna/run_multi_species.py
 
@@ -44,9 +44,9 @@ python3 scripts/rna/workflow_ena_integrated.py \
   --config config/amalgkit/amalgkit_cfloridanus.yaml \
   --batch-size 12 --threads 12
 
-# Multi-species batch download (getfastq + quant only)
-python3 scripts/rna/batch_download_species.py \
-  --species-count 3 --threads-per-species 10
+# Multi-species immediate processing (getfastq + quant with immediate delete)
+# 24 threads TOTAL distributed evenly across all species (minimum 1 per species)
+python3 scripts/rna/batch_download_species.py --total-threads 24
 
 # Genome setup (download genomes, prepare transcriptomes, build indexes)
 python3 scripts/rna/verify_genomes_and_indexes.py        # Check status

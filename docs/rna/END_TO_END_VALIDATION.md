@@ -23,8 +23,9 @@ python3 scripts/test_end_to_end_startup.py
 
 ### Thread Configuration
 - ✅ **AK_THREADS environment variable** works correctly
-- ✅ Default threads: 12 (configurable per config file)
-- ✅ Override via environment: `export AK_THREADS=12`
+- ✅ Default threads: 24 (configurable per config file)
+- ✅ Override via environment: `export AK_THREADS=24`
+- ✅ Total thread allocation: Use `batch_download_species.py --total-threads 24` for distributed workflows
 
 ### Workflow Planning
 - ✅ All 11 workflow steps can be planned
@@ -47,17 +48,21 @@ source .venv/bin/activate  # or /tmp/metainformant_venv/bin/activate
 uv pip install -e .
 uv pip install git+https://github.com/kfuku52/amalgkit
 
-# Start all species with configurable threads
-export AK_THREADS=12
+# Start all species with immediate processing and 24 threads TOTAL distributed across species
+python3 scripts/rna/batch_download_species.py --total-threads 24
+
+# Or sequential execution with threads per species:
+export AK_THREADS=24
 python3 scripts/rna/run_multi_species.py
 ```
 
-**What happens:**
-1. Auto-discovers all 24 species configs
-2. Runs full end-to-end workflow for each species sequentially
-3. Uses 12 threads per species (from AK_THREADS)
-4. Processes: metadata → select → getfastq → quant → merge → curate → sanity
-5. Cross-species analysis (CSTMM, CSCA) after all complete
+**What happens (immediate processing):**
+1. Auto-discovers all 20 species configs
+2. 24 threads TOTAL distributed evenly across all species (minimum 1 per species)
+3. Immediate per-sample processing: download → immediately quantify → immediately delete FASTQs
+4. Dynamic thread redistribution as species complete
+5. Processes: metadata → select → getfastq → quant → merge → curate → sanity
+6. Cross-species analysis (CSTMM, CSCA) after all complete
 
 ### Method 2: All Species (ENA Workflow - Recommended)
 
@@ -91,8 +96,8 @@ done
 
 **What happens:**
 1. Uses ENA direct downloads (100% reliability)
-2. Batched processing (12 samples at a time)
-3. Auto-cleanup (FASTQs deleted after quantification)
+2. Immediate per-sample processing (download → immediately quantify → immediately delete FASTQs)
+3. Maximum disk efficiency: only one sample's FASTQs exist at a time
 4. Configurable threads via `--threads` argument
 
 ## Validated Species (24 total)
@@ -137,10 +142,11 @@ The workflow can continue from checkpoints:
 
 All species support configurable threads:
 
-- **Default**: 12 threads (in config files)
-- **Override**: `export AK_THREADS=12` (environment variable)
+- **Default**: 24 threads per species (in config files, for sequential workflows)
+- **Total threads**: Use `batch_download_species.py --total-threads 24` for distributed workflows (24 total across all species)
+- **Override**: `export AK_THREADS=24` (environment variable, for sequential workflows)
 - **Per-config**: Edit `threads:` in each YAML file
-- **Command-line**: `--threads 12` (ENA workflow only)
+- **Command-line**: `--threads 24` (ENA workflow only)
 
 ## Validation Commands
 

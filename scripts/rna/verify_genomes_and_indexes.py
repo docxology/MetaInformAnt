@@ -233,11 +233,27 @@ def verify_species_config(config_path: Path, repo_root: Path) -> dict[str, Any]:
     if any(d.exists() for d in extracted_dirs):
         result["genome_downloaded"] = True
     
-    # Find RNA FASTA
+    # Find RNA FASTA in genome directory
     rna_fasta = find_rna_fasta_in_genome_dir(dest_dir, accession)
     if rna_fasta:
         result["rna_fasta_found"] = True
         result["rna_fasta_path"] = str(rna_fasta)
+    else:
+        # Check if transcriptome was prepared from CDS (in work_dir/fasta/)
+        work_dir_str = config.get("work_dir", "")
+        if work_dir_str:
+            work_dir = Path(work_dir_str).expanduser()
+            if not work_dir.is_absolute():
+                work_dir = repo_root / work_dir
+            fasta_dir = work_dir / "fasta"
+            if fasta_dir.exists():
+                # Look for prepared transcriptome
+                expected_name = species_name.replace(" ", "_") + "_rna.fasta"
+                prepared_fasta = fasta_dir / expected_name
+                if prepared_fasta.exists() and prepared_fasta.stat().st_size > 0:
+                    result["rna_fasta_found"] = True
+                    result["rna_fasta_path"] = str(prepared_fasta)
+                    result["prepared_from_cds"] = True  # Likely from CDS if not in genome dir
     
     # Check kallisto index
     work_dir_str = config.get("work_dir", "")

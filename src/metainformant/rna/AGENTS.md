@@ -181,7 +181,7 @@ Successfully orchestrated and validated workflows for:
 
 **Current Configuration:**
 - 12 parallel threads for downloads and quantification (updated November 2025)
-- Batched processing: 12 samples at a time
+- Immediate per-sample processing: download → immediately quantify → immediately delete FASTQs
 - Peak disk usage: ~18 GB per batch (12 samples of FASTQs)
 - Direct ENA downloads with 100% reliability
 - Automatic virtual environment activation
@@ -275,7 +275,7 @@ This RNA module integrates with:
 - **Test Coverage**: 95% line coverage
 - **External Integrations**: amalgkit, kallisto, salmon, R
 - **Production Validated**: 844 samples across 4 ant species (November 2025)
-- **Performance**: 12 parallel threads, batched processing, auto-activation, ENA direct downloads
+- **Performance**: Total threads distributed across species (default: 24 total), immediate per-sample processing, auto-activation, ENA direct downloads
 
 ---
 

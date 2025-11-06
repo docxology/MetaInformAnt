@@ -159,36 +159,28 @@ def prepare_transcriptome_for_species(
         result["success"] = True
         return result
     
-    # Check if genome is downloaded
-    rna_fasta = find_rna_fasta_in_genome_dir(dest_dir, accession)
-    if not rna_fasta:
-        result["error"] = "Genome not downloaded or RNA FASTA not found"
+    # Check if genome is downloaded (will check for RNA FASTA and CDS fallback in prepare_transcriptome_for_kallisto)
+    # Just verify genome directory exists
+    if not dest_dir.exists():
+        result["error"] = "Genome directory not found"
         logger.warning(f"  ⚠ {species_name}: {result['error']}")
         return result
-    
-    result["source_rna_fasta"] = str(rna_fasta)
     
     if dry_run:
         expected_fasta = work_dir / "fasta" / f"{species_name.replace(' ', '_')}_rna.fasta"
         logger.info(f"  [DRY RUN] Would prepare transcriptome for {species_name}")
-        logger.info(f"    Source: {rna_fasta}")
+        logger.info(f"    Will search for RNA FASTA, fallback to CDS if not found")
         logger.info(f"    Destination: {expected_fasta}")
         result["success"] = True
         result["would_prepare"] = True
         return result
     
-    # Prepare transcriptome
+    # Prepare transcriptome (will try RNA FASTA first, then CDS fallback)
     logger.info(f"  Preparing transcriptome for {species_name}...")
-    logger.info(f"    Source: {rna_fasta}")
     # Log resolved work_dir path for clarity
     logger.debug(f"    Work directory: {work_dir}")
     expected_output = work_dir / "fasta" / f"{species_name.replace(' ', '_')}_rna.fasta"
     logger.debug(f"    Expected output: {expected_output}")
-    
-    # Get source file size
-    source_size = rna_fasta.stat().st_size
-    source_size_mb = round(source_size / (1024 * 1024), 2)
-    logger.info(f"    Source size: {format_file_size(source_size)}")
     
     try:
         import time
@@ -199,6 +191,7 @@ def prepare_transcriptome_for_species(
             species_name,
             work_dir,
             accession=accession,
+            use_cds_fallback=True,  # Enable CDS fallback
         )
         
         elapsed_time = time.time() - start_time
@@ -209,6 +202,10 @@ def prepare_transcriptome_for_species(
             result["newly_prepared"] = True
             result["fasta_path"] = str(fasta_path)
             result["elapsed_seconds"] = round(elapsed_time, 2)
+            
+            # Get source file info (for logging)
+            source_file = fasta_path  # Will be updated from prepare_transcriptome_for_kallisto if needed
+            result["source_rna_fasta"] = str(source_file)
             
             # Get output file size
             output_size = fasta_path.stat().st_size
@@ -221,7 +218,7 @@ def prepare_transcriptome_for_species(
             logger.info(f"    Output size: {format_file_size(output_size)}")
             logger.info(f"  ✓ {species_name}: Transcriptome prepared ({elapsed_time:.1f}s)")
         else:
-            result["error"] = "Failed to prepare transcriptome"
+            result["error"] = "Failed to prepare transcriptome (RNA FASTA and CDS not found)"
             logger.error(f"  ✗ {species_name}: {result['error']}")
         
         return result

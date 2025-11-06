@@ -82,33 +82,28 @@ All species configs should be in `config/amalgkit/amalgkit_*.yaml`. The scripts 
 
 ## Thread Configuration
 
-### Option 1: Command-Line Arguments (Recommended)
+### Option 1: Total Threads (Recommended for Immediate Processing)
 
 ```bash
-# Set threads and batch size directly
-python3 scripts/rna/run_all_species_parallel.py \
-  --threads-per-species 24 \
-  --batch-size 50 \
-  --max-batch-size 100
+# 24 threads TOTAL distributed across all species (recommended)
+python3 scripts/rna/batch_download_species.py --total-threads 24
 ```
 
-### Option 2: Environment Variables
+### Option 2: Environment Variables (For Sequential Workflows)
 
 ```bash
-# Set globally
+# Set threads per species (for sequential execution)
 export AK_THREADS=24
-export AK_BATCH_SIZE=50
-python3 scripts/rna/run_all_species_parallel.py
+python3 scripts/rna/run_multi_species.py
 ```
 
-### Option 3: Auto-Detection (Default)
+### Option 3: Auto-Detection (For Immediate Processing)
 
 ```bash
-# Batch size and disk thresholds auto-detected based on drive size
-python3 scripts/rna/run_all_species_parallel.py --threads-per-species 24
-# Large drives (> 1TB): batch_size=50, min_free_gb=50
-# Medium drives (500GB-1TB): batch_size=25, min_free_gb=20
-# Small drives (< 500GB): batch_size=12, min_free_gb=10
+# Total threads distributed automatically (default: 24 total threads)
+python3 scripts/rna/batch_download_species.py --total-threads 24
+# Threads are distributed evenly across all species (minimum 1 per species)
+# Dynamic redistribution as species complete
 ```
 
 ### Option 4: Edit Config Files
@@ -121,14 +116,14 @@ threads: 24  # Change from default
 
 ### Thread Recommendations
 
-| System Resources | Recommended Threads | Total Threads (24 species) |
-|------------------|---------------------|---------------------------|
-| High-end (64+ cores, 128GB+ RAM) | 24-32 per species | 576-768 |
-| Mid-range (32 cores, 64GB RAM) | 12-16 per species | 288-384 |
-| Standard (16 cores, 32GB RAM) | 6-8 per species | 144-192 |
-| Low-end (8 cores, 16GB RAM) | 2-4 per species | 48-96 |
+| System Resources | Recommended Total Threads | Distribution (20 species) |
+|------------------|---------------------------|---------------------------|
+| High-end (64+ cores, 128GB+ RAM) | 48-64 total | 2-3 threads per species |
+| Mid-range (32 cores, 64GB RAM) | 24-32 total | 1-2 threads per species |
+| Standard (16 cores, 32GB RAM) | 16-24 total | 1 thread per species |
+| Low-end (8 cores, 16GB RAM) | 8-16 total | 1 thread per species (shared) |
 
-**Note**: Parallel execution (`run_all_species_parallel.py`) uses **species_count × threads_per_species** total threads. Sequential execution (`run_multi_species.py`) uses only **threads_per_species** total threads.
+**Note**: Immediate processing (`batch_download_species.py`) uses **total threads distributed across all species** (minimum 1 per species). Threads redistribute dynamically as species complete. Sequential execution (`run_multi_species.py`) uses threads per species (default: 24 per species).
 
 ## Monitoring Progress
 
@@ -182,14 +177,14 @@ The workflow automatically resumes from where it left off:
 
 ### Cleanup Strategy
 
-The workflow automatically manages disk space:
+The workflow automatically manages disk space with immediate per-sample processing:
 
-- ✅ **Downloads** batch of samples (e.g., 12 samples)
-- ✅ **Quantifies** all downloaded samples
-- ✅ **Deletes FASTQs** immediately after quantification
-- ✅ **Repeats** with next batch
+- ✅ **Downloads** one sample
+- ✅ **Immediately quantifies** the sample
+- ✅ **Immediately deletes FASTQs** after quantification
+- ✅ **Repeats** with next sample
 
-This ensures peak disk usage is limited to one batch size (e.g., ~150GB for 12 samples).
+This ensures maximum disk efficiency: only one sample's FASTQs exist at any time (typically ~1-5 GB peak usage per sample).
 
 ### Progress Tracking
 

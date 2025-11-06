@@ -93,3 +93,5 @@ coverage.xml
 *.prf
 *.lock
 *.idx
+*.1
+*.2

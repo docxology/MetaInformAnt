@@ -1,46 +1,41 @@
-# RNA-seq Batched Processing Strategy
+# RNA-seq Immediate Processing Strategy
 
-**Last Updated**: November 3, 2025  
-**Status**: Batch 1 Running
+**Last Updated**: November 5, 2025  
+**Status**: Active with immediate per-sample processing
 
 ## Overview
 
-Processing 20 ant species in 2 batches of 10 to manage disk space efficiently.
+Processing 20 ant species with immediate per-sample processing (download → immediately quantify → immediately delete FASTQs) using 24 total threads distributed across all species.
 
 ## Rationale
 
-✅ **Disk Space Management**: FASTQs auto-deleted after quantification  
-✅ **Resource Optimization**: System not overwhelmed  
-✅ **Progress Monitoring**: Assess batch 1 before starting batch 2  
-✅ **Troubleshooting**: Easier to identify and fix issues  
-✅ **Flexibility**: Adjust strategy based on results  
+✅ **Maximum Disk Efficiency**: Only one sample's FASTQs exist at any time  
+✅ **Immediate Processing**: Download → immediately quantify → immediately delete  
+✅ **Total Thread Allocation**: 24 threads distributed across all species (not per species)  
+✅ **Dynamic Redistribution**: Threads redistribute as species complete  
+✅ **Scalability**: Can process all species simultaneously without disk space issues  
 
-## Batch Structure
+## Processing Strategy
 
-### Batch 1 (Running)
-- **Species**: 10 (top by sample count)
-- **Samples**: 3,820 total
-- **Status**: Active (started Nov 3, 2025 16:18 PST)
-- **ETA**: 24-48 hours
-- **Logs**: `output/top10_*.log`
-
-### Batch 2 (Queued)
-- **Species**: 10 (remaining)
-- **Samples**: 728 total  
-- **Launch**: After Batch 1 completes
-- **Script**: `scripts/rna/run_all_species_parallel.py` (or `run_multi_species.py` for sequential)
-- **ETA**: 12-24 hours
+### Immediate Per-Sample Processing
+- **All Species**: 20 species processed simultaneously
+- **Total Samples**: 1,578 samples across all species
+- **Thread Allocation**: 24 threads TOTAL distributed evenly (minimum 1 per species)
+- **Processing Mode**: Each sample: download → immediately quantify → immediately delete FASTQs
+- **Script**: `scripts/rna/batch_download_species.py --total-threads 24`
+- **Status**: Active
 
 ## Disk Management
 
-**Per Sample**:
+**Per Sample** (immediate processing):
 1. Download FASTQ (~2-10 GB)
-2. Quantify with Kallisto
-3. ✅ **Delete FASTQ** immediately
+2. **Immediately** quantify with Kallisto
+3. ✅ **Immediately delete FASTQ** after quantification
 4. Keep results only (~10-50 MB)
+5. Move to next sample
 
-**Peak Usage**: ~50-100 GB (temporary)  
-**Final Usage**: ~40-55 GB (all results)
+**Peak Usage**: ~2-10 GB (only one sample's FASTQs exist at a time)  
+**Final Usage**: ~40-55 GB (all results across all species)
 
 ## Timeline
 
@@ -73,11 +68,11 @@ ps aux | grep run_amalgkit | wc -l
 ## Launch Commands
 
 ```bash
-# Batch 1 (already running)
-# Run all species in parallel (recommended)
-python3 scripts/rna/run_all_species_parallel.py --threads-per-species 12
+# Immediate processing with 24 threads TOTAL distributed across all species (recommended)
+python3 scripts/rna/batch_download_species.py --total-threads 24
 
-# Or run sequentially (one at a time)
+# Or run full workflow sequentially (one species at a time)
+export AK_THREADS=24
 python3 scripts/rna/run_multi_species.py
 ```
 

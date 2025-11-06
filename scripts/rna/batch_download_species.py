@@ -1097,20 +1097,24 @@ Examples:
         iteration += 1
         current_time = time.time()
         
+        # Add periodic status logging to ensure loop is running
+        if iteration % 100 == 0:
+            logger.debug(f"Main loop iteration {iteration}: {len(running_processes)} processes, {len(quant_futures)} quant futures")
+        
         # Check for completed quant operations (every iteration)
         completed_quants = []
         for sample_key, future in list(quant_futures.items()):
             if future.done():
                 completed_quants.append(sample_key)
                 try:
-                    success, message = future.result()
+                    success, message = future.result(timeout=0.1)  # Should be instant if done()
                     species_name, sample_id = sample_key.split(":", 1)
                     if success:
                         logger.info(f"✅ {species_name}/{sample_id}: {message}")
                     else:
                         logger.warning(f"⚠️  {species_name}/{sample_id}: {message}")
                 except Exception as e:
-                    logger.error(f"❌ Error in quant operation for {sample_key}: {e}")
+                    logger.error(f"❌ Error in quant operation for {sample_key}: {e}", exc_info=True)
         
         # Remove completed futures
         for sample_key in completed_quants:
@@ -1128,7 +1132,7 @@ Examples:
             
             # Check disk space
             disk_info = get_disk_space_info(output_dir)
-            if disk_info["free_gb"] < args.auto_cleanup_threshold:
+            if disk_info["free_gb"] < auto_cleanup_threshold:
                 logger.warning(f"⚠️  Low disk space: {disk_info['free_gb']:.1f}GB free (threshold: {auto_cleanup_threshold}GB)")
                 logger.info("Attempting automatic cleanup of partial downloads...")
                 try:
@@ -1243,18 +1247,23 @@ Examples:
                 # Submit to processing thread pool using metainformant function
                 config_path = process_configs.get(species_name)
                 if config_path:
-                    future = quant_executor.submit(
-                        process_sample_pipeline,
-                        sample_id,
-                        config_path,
-                        status,
-                        log_dir=log_dir,
-                    )
-                    quant_futures[sample_key] = future
-                    if status == "fastq":
-                        logger.info(f"📥 {species_name}/{sample_id}: FASTQ ready, queued for quant+delete")
-                    else:
-                        logger.info(f"📦 {species_name}/{sample_id}: SRA complete, queued for SRA→FASTQ→quant→delete")
+                    try:
+                        future = quant_executor.submit(
+                            process_sample_pipeline,
+                            sample_id,
+                            config_path,
+                            status,
+                            log_dir=log_dir,
+                        )
+                        quant_futures[sample_key] = future
+                        if status == "fastq":
+                            logger.info(f"📥 {species_name}/{sample_id}: FASTQ ready, queued for quant+delete")
+                        else:
+                            logger.info(f"📦 {species_name}/{sample_id}: SRA complete, queued for SRA→FASTQ→quant→delete")
+                    except Exception as e:
+                        logger.error(f"❌ Failed to queue {species_name}/{sample_id} for processing: {e}", exc_info=True)
+                else:
+                    logger.warning(f"⚠️  No config path found for {species_name}, skipping {sample_id}")
         
         if do_full_check:
             last_full_check = current_time

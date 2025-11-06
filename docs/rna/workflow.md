@@ -20,7 +20,7 @@ from metainformant.rna.workflow import AmalgkitWorkflowConfig, plan_workflow
 
 cfg = AmalgkitWorkflowConfig(
     work_dir=Path("output/amalgkit/run1"),
-    threads=12,  # Default: 12 threads for downloads and quantification
+    threads=24,  # Default: 24 threads (distributed across species for multi-species workflows)
     species_list=["Apis_mellifera"]
 ) 
 for name, params in plan_workflow(cfg):
@@ -58,24 +58,27 @@ See [ORCHESTRATION/ENA_WORKFLOW.md](ORCHESTRATION/ENA_WORKFLOW.md) for detailed 
 # Alternative using SRA Toolkit (scripts auto-discover venv location)
 python3 scripts/rna/run_multi_species.py
 
-# With configurable threads:
-export AK_THREADS=12
+# With configurable threads (per species for sequential workflows):
+export AK_THREADS=24
 python3 scripts/rna/run_multi_species.py
+
+# Or use total thread allocation (recommended for immediate processing):
+python3 scripts/rna/batch_download_species.py --total-threads 24
 ```
 
 See [ORCHESTRATION/MULTI_SPECIES.md](ORCHESTRATION/MULTI_SPECIES.md) for detailed documentation.
 
 The ENA-based workflow provides:
 - Direct ENA downloads with 100% reliability (vs 0% SRA Toolkit)
-- Batched processing (12 samples at a time)
+- Immediate per-sample processing (download → immediately quantify → immediately delete FASTQs)
 - Automatic resume with `wget --continue`
-- Disk space management (~18 GB peak per batch)
+- Maximum disk efficiency: only one sample's FASTQs exist at a time
 
-The legacy SRA-based workflow provides:
+The immediate processing workflow provides:
 - Automatic virtual environment activation
-- Batched processing (10 samples at a time)
-- SRA download optimization
-- Disk space management (~20-50 GB peak usage)
+- Immediate per-sample processing: download → immediately quantify → immediately delete FASTQs
+- Total threads distributed across all species (default: 24 total threads)
+- Maximum disk efficiency: only one sample's FASTQs exist at a time
 
 ### From config file
 

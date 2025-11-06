@@ -23,7 +23,7 @@ METAINFORMANT provides several orchestrator scripts for RNA-seq workflows:
 | **Reliability** | N/A | 100% | ~0% for large samples | Depends on method | ~0% for large samples |
 | **Species Support** | All (auto-discovered) | Single species | Multiple species | Multiple species | All (parallel) |
 | **Status/Monitoring** | ✅ Yes (consolidates 11+ scripts) | No | No | No | No |
-| **Batching** | N/A | Yes (configurable) | Yes (10 samples) | Yes (configurable) | Per-species |
+| **Processing Mode** | N/A | Immediate per-sample | Immediate per-sample | Immediate per-sample | Per-species |
 | **Auto-cleanup** | Yes | Yes | Yes | Yes | Yes |
 | **Virtual Env** | Auto-setup | Manual | Auto-activation | Auto-activation | Auto-setup |
 | **Best For** | Status, monitoring, cleanup, workflow management | Production, reliability | Testing, legacy | Multi-species parallel | All-species parallel |
@@ -218,11 +218,11 @@ def allocate_threads(species_configs: list[Path], total_threads: int) -> dict[Pa
 - ✅ Auto-activation of venv required
 
 ### Use `batch_download_species.py` when:
-- ✅ Processing multiple species in parallel
-- ✅ Need fine-grained control over parallelism
-- ✅ Disk space is limited
-- ✅ Dynamic resource allocation needed
-- ✅ Immediate quantification per sample
+- ✅ Processing multiple species in parallel with immediate per-sample processing
+- ✅ Need total thread allocation (not per-species)
+- ✅ Disk space is limited (maximum efficiency: only one sample's FASTQs at a time)
+- ✅ Dynamic resource allocation needed (threads redistribute as species complete)
+- ✅ Maximum throughput with controlled resource usage
 
 ## Performance Comparison
 
@@ -230,7 +230,7 @@ def allocate_threads(species_configs: list[Path], total_threads: int) -> dict[Pa
 |--------|---------------------------|---------------------|---------------------------|
 | **Download Speed** | Fast (ENA direct) | Slow (SRA Toolkit) | Fast (configurable) |
 | **Success Rate** | 100% | ~0% (large samples) | Depends on method |
-| **Disk Usage** | Low (auto-cleanup) | Medium (batched) | Low (per-sample cleanup) |
+| **Disk Usage** | Low (auto-cleanup) | Low (immediate delete) | Minimal (one sample at a time) |
 | **CPU Usage** | Moderate | High (SRA conversion) | Configurable |
 | **Parallelism** | Per-species | Per-species | Multi-species |
 

@@ -56,20 +56,20 @@ Before running workflows, ensure you have:
 ```bash
 # Ensure virtual environment is set up (see Prerequisites above)
 
-# Run all species in parallel with configurable threads
-export AK_THREADS=24  # Threads per species
-python3 scripts/rna/run_all_species_parallel.py --threads-per-species 24
+# Immediate processing with 24 threads TOTAL distributed across all species (RECOMMENDED)
+python3 scripts/rna/batch_download_species.py --total-threads 24
 
-# Or use environment variable only:
-export AK_THREADS=24
-python3 scripts/rna/run_all_species_parallel.py
+# Or parallel execution with full workflow (one process per species):
+export AK_THREADS=1  # Threads per species (for parallel execution)
+python3 scripts/rna/run_all_species_parallel.py --threads-per-species 1
 ```
 
 **What it does:**
 - ✅ Auto-discovers all `config/amalgkit/amalgkit_*.yaml` files
-- ✅ Runs full end-to-end workflow for all species **simultaneously** (one process per species)
-- ✅ Each species uses configurable threads (default: 1, or from `AK_THREADS`)
-- ✅ Total threads: species_count × threads_per_species (e.g., 24 × 24 = 576)
+- ✅ Immediate per-sample processing: download → immediately quantify → immediately delete FASTQs
+- ✅ 24 threads TOTAL distributed evenly across all species (minimum 1 per species)
+- ✅ Dynamic thread redistribution as species complete
+- ✅ Maximum disk efficiency: only one sample's FASTQs exist at a time
 - ✅ Auto-activates virtual environment
 - ✅ Progress tracking and dashboard updates automatically
 
@@ -78,19 +78,20 @@ python3 scripts/rna/run_all_species_parallel.py
 **For end-to-end workflows (metadata → sanity) on all species one at a time:**
 
 ```bash
-# Run all species with threads from config files (default: 10 per species)
+# Run all species sequentially with immediate per-sample processing
 python3 scripts/rna/run_multi_species.py
 
 # To customize threads, use environment variable:
-export AK_THREADS=12
+export AK_THREADS=24
 python3 scripts/rna/run_multi_species.py
 ```
 
 **What it does:**
 - ✅ Auto-discovers all `config/amalgkit/amalgkit_*.yaml` files
 - ✅ Runs full end-to-end workflow (metadata → select → getfastq → quant → merge → curate → sanity)
+- ✅ Immediate per-sample processing: download → immediately quantify → immediately delete FASTQs
 - ✅ Processes species sequentially (one at a time)
-- ✅ Uses threads from config files (default: 10) or `AK_THREADS` environment variable
+- ✅ Uses threads from config files (default: 24) or `AK_THREADS` environment variable
 - ✅ Auto-activates virtual environment
 - ✅ Cross-species analysis (CSTMM, CSCA) after all species complete
 
@@ -131,20 +132,27 @@ done
 
 ## Thread Configuration
 
-### Option 1: Environment Variable (Recommended)
+### Option 1: Total Threads (Recommended for Immediate Processing)
 
 ```bash
-# Set threads globally (affects all workflows)
-export AK_THREADS=12
+# 24 threads TOTAL distributed across all species (for batch_download_species.py)
+python3 scripts/rna/batch_download_species.py --total-threads 24
+```
+
+### Option 2: Environment Variable (For Sequential Workflows)
+
+```bash
+# Set threads per species (for run_multi_species.py)
+export AK_THREADS=24
 python3 scripts/rna/run_multi_species.py
 ```
 
-### Option 2: Edit Config Files
+### Option 3: Edit Config Files
 
-Edit `threads:` in each config file:
+Edit `threads:` in each config file (for sequential workflows):
 ```yaml
 # config/amalgkit/amalgkit_cfloridanus.yaml
-threads: 12  # Change from default 10 to 12
+threads: 24  # Change from default 12 to 24
 ```
 
 ### Option 3: Command-Line Override (ENA Workflow Only)

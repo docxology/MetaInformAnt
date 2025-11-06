@@ -9,8 +9,8 @@ The amalgkit integration provides a complete transcriptomic analysis pipeline fr
 - **Direct ENA Downloads**: Production workflow bypasses SRA Toolkit with 100% reliability
 - **Robust Retry Logic**: wget-based downloads with automatic resume capability
 - **Auto-activation**: Scripts automatically activate virtual environments
-- **Batched Processing**: 12-sample batches for disk-friendly workflows
-- **Multi-threading**: 12 parallel threads by default
+- **Immediate Processing**: Per-sample processing (download → immediately quantify → immediately delete FASTQs)
+- **Thread Allocation**: Total threads distributed across all species (default: 24 total, not per species)
 
 ## Documentation Files
 
@@ -126,18 +126,19 @@ Comprehensive tests ensure workflow reliability:
 
 **Disk Space Management:**
 - Direct ENA downloads with automatic retry and resume
-- Batched processing: ~50-100 GB peak disk usage (temporary, auto-cleaned)
-- Automatic FASTQ cleanup after quantification (saves ~2-10 GB per sample)
+- Immediate per-sample processing: only one sample's FASTQs exist at a time
+- Automatic FASTQ deletion immediately after quantification (maximum disk efficiency)
 - Final results: ~40-55 GB for 20 species (4,548 samples total)
 - No /tmp partition limitations
 
 **Performance:**
-- 12 parallel threads for downloads and quantification
+- Total threads distributed across all species (default: 24 total threads)
+- Thread allocation: evenly distributed with minimum 1 thread per species
+- Dynamic redistribution as species complete
+- Immediate processing: download → quant → delete per sample (not batched)
 - Direct ENA downloads: 100% reliability vs 0% SRA Toolkit
 - Multi-species coordination and cross-species analysis
 - Automatic virtual environment activation
-- Currently processing 3,820 samples in Batch 1 (10 ant species, November 2025)
-- Batch 2 queued: 728 samples (10 additional species)
 
 ## Contributing
 
@@ -173,9 +174,9 @@ See `output/amalgkit/pbarbatus/QUICK_REFERENCE.md` for immediate usage.
 **No manual venv activation needed** - scripts automatically discover and activate virtual environments (`.venv` or `/tmp/metainformant_venv`). Setup uses `uv` for reliable package management, with automatic fallback to `/tmp/metainformant_venv` on ext6 filesystems that don't support symlinks.
 
 **Disk space requirements:**
-- ~50-100 GB peak usage (temporary, during download/quant)
+- Minimal peak usage: only one sample's FASTQs exist at a time
+- Immediate deletion after quantification ensures maximum disk efficiency
 - Direct ENA downloads with automatic resume
-- Automatic cleanup after quantification (FASTQs deleted immediately)
 - Final results: ~2-3 GB per species (expression matrices + QC)
 
 ## Related Documentation
