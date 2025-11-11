@@ -41,6 +41,26 @@ complexity = syntactic.complexity_score(sequence)
 - Multi-omic information analysis
 - Information flow analysis
 
+### Analysis (`analysis`)
+- Information analysis utilities
+- Batch processing functions
+- Analysis workflows
+
+### Estimation (`estimation`)
+- Bias-corrected entropy estimation
+- Mutual information estimation
+- Estimation method selection
+
+### Visualization (`visualization`)
+- Information visualization utilities
+- Entropy plots
+- Information flow visualizations
+
+### Workflows (`workflows`)
+- End-to-end information analysis workflows
+- Batch processing pipelines
+- Workflow orchestration
+
 ## Patterns
 
 ### Data Type Agnostic
@@ -58,6 +78,8 @@ complexity = syntactic.complexity_score(sequence)
 - Entropy: `output/information/entropy/`
 - Complexity: `output/information/complexity/`
 - Integration: `output/information/integration/`
+- Visualizations: `output/information/plots/`
+- Workflows: `output/information/workflows/`
 
 ## Integration
 

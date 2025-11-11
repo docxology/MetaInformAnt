@@ -27,7 +27,7 @@ from .export import save_figure
 from .layout import adjust_spacing, create_multi_panel
 from .style import apply_publication_style
 
-logger = get_logger("amalgkit_visualization")
+logger = get_logger(__name__)
 
 # Category color palette
 CATEGORY_COLORS = {

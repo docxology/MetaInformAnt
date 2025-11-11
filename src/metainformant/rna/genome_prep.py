@@ -11,7 +11,6 @@ This module provides functions to:
 from __future__ import annotations
 
 import gzip
-import logging
 import shutil
 import subprocess
 from pathlib import Path
@@ -19,8 +18,9 @@ from typing import Any
 from urllib.request import urlopen
 
 from ..core.io import ensure_directory
+from ..core.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def find_rna_fasta_in_genome_dir(genome_dir: Path, accession: str) -> Path | None:

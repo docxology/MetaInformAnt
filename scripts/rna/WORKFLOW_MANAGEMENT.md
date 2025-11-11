@@ -6,114 +6,112 @@ Complete guide for managing amalgkit RNA-seq workflows.
 
 ### Check Status
 ```bash
-# Comprehensive status with recommendations
-python3 scripts/rna/comprehensive_status.py
+# Single species status (recommended)
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 
-# Real-time monitoring
-python3 scripts/rna/monitor_comprehensive.py
+# Detailed status with recommendations
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status --detailed
 
-# Simple progress
-bash scripts/rna/monitor_amalgkit_progress.sh
-```
-
-### Restart Workflows
-```bash
-# Restart all workflows
-python3 scripts/rna/restart_all_workflows.py
-
-# Check status and restart only if needed
-python3 scripts/rna/check_and_restart_workflows.py
+# Check all species (using monitoring functions)
+python3 -c "from metainformant.rna.monitoring import assess_all_species_progress; from pathlib import Path; print(assess_all_species_progress(Path('config/amalgkit')))"
 ```
 
 ### Monitor Progress
 ```bash
 # Watch mode (updates every 60 seconds)
-watch -n 60 python3 scripts/rna/monitor_comprehensive.py
+watch -n 60 'python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status'
 
 # Check individual logs
-tail -f output/workflow_*_restarted_*.log
+tail -f output/amalgkit/pogonomyrmex_barbatus/logs/*.log
 
 # Check running processes
-ps aux | grep workflow_ena | grep -v grep
+ps aux | grep amalgkit | grep -v grep
+ps aux | grep fasterq-dump | grep -v grep
+```
+
+### Resume Workflows
+```bash
+# Workflows automatically skip completed steps
+# Just re-run the workflow command to resume
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+
+# Or run specific steps
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --steps getfastq,quant
 ```
 
 ## Workflow Status
 
 ### Current Configuration
-- **Workflow**: `workflow_ena_integrated.py` (ENA-based, robust)
-- **Batch Size**: 12 samples per batch
-- **Threads**: 12 parallel downloads/quantifications
-- **Auto-skip**: Already quantified samples are automatically skipped
-- **Cleanup**: FASTQ files deleted immediately after quantification
+- **Workflow**: `run_workflow.py` (recommended orchestrator)
+- **Parallel Downloads**: Configured via `num_download_workers` in YAML
+- **Auto-skip**: Already completed steps are automatically skipped
+- **Cleanup**: FASTQ files deleted immediately after quantification (when using unified processing)
 
 ### Expected Progress Rates
-- **Download**: ~6 minutes per 3 samples (varies by sample size)
-- **Quantification**: ~36 seconds per sample (single-end, 12 threads)
-- **Batch time**: ~15-20 minutes per batch of 12 samples
-- **Peak disk**: ~18 GB per batch (1.5 GB × 12 samples)
+- **Download**: Varies by sample size and network (typically 5-15 minutes per sample)
+- **Quantification**: ~30-60 seconds per sample (depends on transcriptome size and threads)
+- **Disk usage**: Managed automatically with immediate FASTQ deletion after quantification
 
-## Species Status
+## Monitoring Functions
 
-### C. floridanus (cfloridanus)
-- **Total**: 307 samples
-- **Progress**: ~250/307 (81%+)
-- **Remaining**: ~57 samples
+The `src/metainformant/rna/monitoring.py` module provides programmatic access to workflow status:
 
-### P. barbatus (pbarbatus)
-- **Total**: 83 samples
-- **Progress**: ~58/83 (70%+)
-- **Remaining**: ~25 samples
-
-### M. pharaonis (mpharaonis)
-- **Total**: 100 samples
-- **Progress**: ~65/100 (65%+)
-- **Remaining**: ~35 samples
-
-### S. invicta (sinvicta)
-- **Total**: 354 samples
-- **Progress**: ~159/354 (45%+)
-- **Remaining**: ~195 samples
-
-### Overall
-- **Total**: 844 samples
-- **Quantified**: ~532/844 (63%+)
-- **Remaining**: ~312 samples
+```python
+from metainformant.rna.monitoring import (
+    analyze_species_status,      # Comprehensive status for one species
+    assess_all_species_progress,  # Status for all species in config directory
+    check_workflow_progress,      # Step-by-step progress
+    count_quantified_samples,     # Sample counts
+    find_unquantified_samples,    # List of samples needing quantification
+    check_active_downloads,       # Currently downloading samples
+    get_sample_status,            # Status for a specific sample
+)
+```
 
 ## Troubleshooting
 
 ### Workflows Not Running
-1. Check status: `python3 scripts/rna/comprehensive_status.py`
-2. Check logs: `ls -lht output/workflow_*.log | head -5`
-3. Restart if needed: `python3 scripts/rna/restart_all_workflows.py`
+1. Check status: `python3 scripts/rna/run_workflow.py --config <config> --status`
+2. Check logs: `ls -lht output/amalgkit/<species>/logs/ | head -5`
+3. Check environment: `python3 scripts/rna/check_environment.py`
+4. Resume workflow: Re-run the workflow command (auto-skips completed steps)
 
 ### Download Failures
 - Normal: Some samples fail due to network/timeout issues
 - Auto-retry: Workflows retry failed downloads automatically
-- Manual retry: Restart workflow to retry failed samples
+- Manual retry: Re-run workflow to retry failed samples
+- Cleanup: Use `--cleanup-partial` to remove stuck partial downloads
 
 ### Disk Space Issues
-- Batched processing keeps disk usage low (~18 GB per batch)
-- FASTQ files automatically deleted after quantification
+- Unified processing keeps disk usage low (FASTQ deleted immediately after quant)
+- Use `--cleanup-unquantified` to quantify downloaded samples and free space
 - Quantification files are small (~2 MB per sample)
 
 ### Log Files
-- Located in: `output/workflow_{species}_*.log`
+- Located in: `output/amalgkit/<species>/logs/`
 - Old logs can be deleted after workflow completion
-- Keep only the most recent log per species
+- Keep only the most recent logs per species
 
 ## Best Practices
 
-1. **Regular Monitoring**: Check status daily with `comprehensive_status.py`
-2. **Automatic Restart**: Use `check_and_restart_workflows.py` to auto-restart inactive workflows
+1. **Regular Monitoring**: Check status frequently with `--status`
+2. **Resume After Interruption**: Workflows automatically skip completed steps
 3. **Log Management**: Clean up old logs periodically to save space
-4. **Progress Tracking**: Use `monitor_comprehensive.py` for real-time updates
+4. **Progress Tracking**: Use `--status --detailed` for comprehensive information
+5. **Environment Checks**: Run `check_environment.py` before starting workflows
 
 ## File Locations
 
-- **Workflow Scripts**: `scripts/rna/workflow_ena_integrated.py`
+- **Workflow Scripts**: `scripts/rna/run_workflow.py`
 - **Configuration**: `config/amalgkit/amalgkit_*.yaml`
-- **Output**: `output/amalgkit/{species}/`
-- **Logs**: `output/workflow_*.log`
-- **Quantification**: `output/amalgkit/{species}/quant/`
-- **FASTQ**: `output/amalgkit/{species}/fastq/` (temporary, auto-deleted)
+- **Output**: `output/amalgkit/<species>/`
+- **Logs**: `output/amalgkit/<species>/logs/`
+- **Quantification**: `output/amalgkit/<species>/quant/`
+- **FASTQ**: `output/amalgkit/<species>/fastq/` (temporary, auto-deleted after quantification)
 
+## Related Documentation
+
+- **Getting Started**: `docs/rna/GETTING_STARTED.md` - Complete setup and workflow guide
+- **Examples**: `docs/rna/EXAMPLES.md` - Real-world workflow examples
+- **Orchestration**: `docs/rna/ORCHESTRATION.md` - Multi-species and advanced workflows
+- **Monitoring API**: `src/metainformant/rna/monitoring.py` - Programmatic monitoring functions

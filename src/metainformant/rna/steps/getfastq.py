@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
-import logging
 import os
 import shutil
 import subprocess
+import time
 import urllib.request
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
 from ...core.io import read_delimited
+from ...core.logging import get_logger
 from ..amalgkit import getfastq as _getfastq
 from .download_progress import DownloadProgressMonitor
 
@@ -123,9 +124,24 @@ def run(
             show_summary=not use_bars,
         )
         progress_monitor.start_monitoring()
-        logging.getLogger(__name__).info("📊 Progress tracking enabled for getfastq step")
+        get_logger(__name__).info("📊 Progress tracking enabled for getfastq step")
     
     # 1) Bulk attempt (metadata or id)
+    logger = get_logger(__name__)
+    meta_path_used = effective_params.get("metadata", "inferred")
+    if meta_path_used and meta_path_used != "inferred":
+        logger.info(f"📋 Using metadata file: {meta_path_used}")
+        # Verify it has run column
+        try:
+            rows = list(read_delimited(str(meta_path_used), delimiter="\t"))
+            if rows:
+                sample_count = len(rows)
+                has_run = 'run' in rows[0]
+                logger.info(f"   ✓ Metadata file has {sample_count} samples, 'run' column: {has_run}")
+        except Exception as e:
+            logger.warning(f"   ⚠ Could not verify metadata file: {e}")
+    
+    logger.info("🚀 Starting bulk download via amalgkit getfastq...")
     bulk_result = _getfastq(
         effective_params,
         work_dir=work_dir,
@@ -133,6 +149,7 @@ def run(
         step_name="getfastq",
         check=False,
     )
+    logger.info(f"   Bulk download completed with return code: {bulk_result.returncode}")
 
     # 2) Determine SRR list to verify
     srr_list: list[str] = []
@@ -154,9 +171,8 @@ def run(
                 actual_work_dir = Path(out_dir).parent / "work"
             
             # Try multiple metadata file locations in order of preference
+            # Skip pivot tables - they lack Run IDs and are not suitable for getfastq
             candidate_paths = [
-                actual_work_dir / "metadata" / "pivot_qualified.tsv",
-                actual_work_dir / "metadata" / "pivot_selected.tsv",
                 actual_work_dir / "metadata" / "metadata.filtered.tissue.tsv",
                 actual_work_dir / "metadata" / "metadata.tsv",
             ]
@@ -172,10 +188,39 @@ def run(
             if not meta_path:
                 meta_path = str(actual_work_dir / "metadata" / "metadata.tsv")
             
+            # Validate selected metadata file has 'run' column
+            if meta_path:
+                logger = get_logger(__name__)
+                logger.info(f"📋 Validating metadata file: {meta_path}")
+                try:
+                    rows = list(read_delimited(str(meta_path), delimiter="\t"))
+                    if rows and 'run' not in rows[0]:
+                        # This is likely a pivot table - skip it and try fallback
+                        logger.warning(
+                            f"   ⚠ Metadata file lacks 'run' column (likely pivot table). "
+                            f"Skipping and trying fallback."
+                        )
+                        # Try fallback to metadata.tsv
+                        fallback = actual_work_dir / "metadata" / "metadata.tsv"
+                        if fallback.exists() and fallback != Path(meta_path):
+                            meta_path = str(fallback)
+                            logger.info(f"   ✓ Using fallback metadata file: {fallback}")
+                        else:
+                            raise ValueError(
+                                f"Metadata file {meta_path} lacks 'run' column and no fallback available"
+                            )
+                    elif rows:
+                        logger.info(f"   ✓ Metadata file validated: {len(rows)} samples, has 'run' column")
+                except ValueError:
+                    # Re-raise validation errors
+                    raise
+                except Exception as e:
+                    logger.warning(f"   ⚠ Could not validate metadata file {meta_path}: {e}")
+            
             # Debug: print what we're looking for
-            logging.getLogger(__name__).debug(f"Looking for metadata at: {meta_path}")
-            logging.getLogger(__name__).debug(f"Work dir: {actual_work_dir}")
-            logging.getLogger(__name__).debug(f"Out dir: {out_dir}")
+            get_logger(__name__).debug(f"Looking for metadata at: {meta_path}")
+            get_logger(__name__).debug(f"Work dir: {actual_work_dir}")
+            get_logger(__name__).debug(f"Out dir: {out_dir}")
         try:
             rows = list(read_delimited(str(meta_path), delimiter="\t"))
             if rows:
@@ -188,7 +233,7 @@ def run(
                             srr_list.append(val)
         except Exception as e:
             # If metadata cannot be read, proceed without verification
-            logging.getLogger(__name__).warning(f"Could not read metadata file {meta_path}: {e}")
+            get_logger(__name__).warning(f"Could not read metadata file {meta_path}: {e}")
             # Continue with empty metadata
 
     srr_list = sorted(set(srr_list))
@@ -207,8 +252,54 @@ def run(
             )
         )
 
+    def _has_sra(srr: str) -> bool:
+        """Check if SRA file exists for a sample."""
+        srr_dir = out_dir / "getfastq" / srr
+        return (srr_dir / f"{srr}.sra").exists()
+
+    # 2.5) Check for samples with SRA but no FASTQ (conversion failure)
+    logger = get_logger(__name__)
+    if srr_list:
+        logger.info(f"🔍 Verifying {len(srr_list)} samples for FASTQ files...")
+    
+    conversion_needed: list[str] = []
+    if srr_list:
+        for srr in srr_list:
+            if _has_sra(srr) and not _has_fastq(srr):
+                conversion_needed.append(srr)
+                logger.warning(
+                    f"   ⚠ Sample {srr} has SRA file but no FASTQ files. "
+                    f"This indicates SRA-to-FASTQ conversion failed. Attempting automatic conversion."
+                )
+    
+    # Attempt automatic conversion for samples with SRA but no FASTQ
+    if conversion_needed:
+        logger.info(f"🔄 Attempting automatic SRA-to-FASTQ conversion for {len(conversion_needed)} samples")
+        threads = effective_params.get("threads", 6)
+        for idx, srr in enumerate(conversion_needed, 1):
+            logger.info(f"   [{idx}/{len(conversion_needed)}] Converting {srr}...")
+            srr_dir = out_dir / "getfastq" / srr
+            sra_file = srr_dir / f"{srr}.sra"
+            if sra_file.exists():
+                success, message, fastq_files = convert_sra_to_fastq(
+                    srr,
+                    sra_file,
+                    srr_dir,
+                    threads=threads,
+                    log_dir=log_dir,
+                )
+                if success:
+                    logger.info(f"   ✓ Successfully converted {srr}: {len(fastq_files)} FASTQ files")
+                else:
+                    logger.error(f"   ✗ Failed to convert {srr}: {message}")
+            else:
+                logger.warning(f"   ⚠ SRA file not found for {srr} (expected at {sra_file})")
+
     # 3) Targeted retries for missing SRRs
     missing = [s for s in srr_list if not _has_fastq(s)] if srr_list else []
+    
+    if missing:
+        logger.info(f"🔄 Retrying download for {len(missing)} missing samples: {missing[:5]}{'...' if len(missing) > 5 else ''}")
     
     # Register missing samples with progress monitor for tracking
     if progress_monitor and missing:
@@ -232,7 +323,7 @@ def run(
                                 shutil.copyfileobj(resp, out_f)
                 except Exception as e:
                     # Log error but continue - file copy issues shouldn't block entire download
-                    logging.getLogger(__name__).debug(f"Could not copy file for {srr}: {e}")
+                    get_logger(__name__).debug(f"Could not copy file for {srr}: {e}")
                 # If we now have a local .sra, try fasterq-dump quickly
                 if (srr_dir / f"{srr}.sra").exists():
                     fasterq_bin = shutil.which("fasterq-dump")
@@ -243,6 +334,7 @@ def run(
                                 "--threads",
                                 str(effective_params.get("threads", 6)),
                                 "--split-files",
+                                "--size-check", "off",  # Disable disk size check to prevent "disk-limit exceeded" errors
                                 "-O",
                                 str(srr_dir),
                                 str(srr_dir / f"{srr}.sra"),
@@ -324,12 +416,64 @@ def run(
 
     # 4) Final status: success if all SRRs (if known) have FASTQs
     final_missing = [s for s in srr_list if not _has_fastq(s)] if srr_list else []
+    
+    # Detailed diagnostics for failures
+    if final_missing:
+        logger = get_logger(__name__)
+        logger.error(f"Failed to obtain FASTQ files for {len(final_missing)} samples: {final_missing[:10]}{'...' if len(final_missing) > 10 else ''}")
+        
+        # Distinguish between download failures and conversion failures
+        download_failed: list[str] = []
+        conversion_failed: list[str] = []
+        for srr in final_missing:
+            if _has_sra(srr):
+                conversion_failed.append(srr)
+                logger.error(
+                    f"  {srr}: SRA file exists but FASTQ conversion failed. "
+                    f"This indicates a conversion problem, not a download problem."
+                )
+            else:
+                download_failed.append(srr)
+                logger.error(
+                    f"  {srr}: No SRA file found. This indicates a download problem."
+                )
+        
+        if conversion_failed:
+            logger.error(
+                f"Conversion failures ({len(conversion_failed)} samples): "
+                f"These samples were downloaded but failed to convert to FASTQ format. "
+                f"Check SRA file integrity and sra-tools availability."
+            )
+        if download_failed:
+            logger.error(
+                f"Download failures ({len(download_failed)} samples): "
+                f"These samples could not be downloaded from SRA. "
+                f"Check network connectivity and SRA accession validity."
+            )
+    
+    # Determine return code: prioritize missing samples over bulk result
+    # If we have missing samples, return error code 1
+    # Otherwise, use bulk_result return code
     rc = 0 if not final_missing and bulk_result.returncode == 0 else (1 if final_missing else bulk_result.returncode)
+    
+    # Final summary
+    if srr_list:
+        successful = len(srr_list) - len(final_missing)
+        logger.info("=" * 80)
+        logger.info(f"📊 getfastq Step Summary:")
+        logger.info(f"   Total samples: {len(srr_list)}")
+        logger.info(f"   ✓ Successful: {successful}")
+        if final_missing:
+            logger.info(f"   ✗ Failed: {len(final_missing)}")
+        if conversion_needed:
+            logger.info(f"   🔄 Auto-converted: {len([s for s in conversion_needed if _has_fastq(s)])}")
+        logger.info(f"   Return code: {rc}")
+        logger.info("=" * 80)
 
     # 5) Optional cleanup: remove raw FASTQ files if cleanup_raw is enabled
     cleanup_raw = effective_params.get("cleanup_raw", False)
     if cleanup_raw and rc == 0 and not final_missing:
-        logging.getLogger(__name__).info("Cleaning up raw FASTQ files after successful download")
+        get_logger(__name__).info("Cleaning up raw FASTQ files after successful download")
         try:
             for srr in srr_list:
                 srr_dir = out_dir / "getfastq" / srr
@@ -338,9 +482,9 @@ def run(
                     for fastq_file in srr_dir.glob("*.fastq"):
                         if not fastq_file.name.endswith('.gz'):
                             fastq_file.unlink()
-                            logging.getLogger(__name__).debug(f"Removed raw FASTQ file: {fastq_file}")
+                            get_logger(__name__).debug(f"Removed raw FASTQ file: {fastq_file}")
         except Exception as e:
-            logging.getLogger(__name__).warning(f"Failed to cleanup raw FASTQ files: {e}")
+            get_logger(__name__).warning(f"Failed to cleanup raw FASTQ files: {e}")
 
     result = subprocess.CompletedProcess(["amalgkit", "getfastq"], rc, stdout="", stderr="")
     if check and rc != 0:
@@ -372,7 +516,7 @@ def convert_sra_to_fastq(
         Tuple of (success: bool, message: str, fastq_files: list[Path])
         fastq_files contains paths to created FASTQ files (may be empty if failed)
     """
-    logger = logging.getLogger(__name__)
+    logger = get_logger(__name__)
     
     if not sra_file.exists():
         return False, f"SRA file not found: {sra_file}", []
@@ -390,7 +534,10 @@ def convert_sra_to_fastq(
         logger.info(f"FASTQ files already exist for {sample_id}")
         return True, f"FASTQ files already exist for {sample_id}", fastq_files_existing
     
-    logger.info(f"Converting SRA to FASTQ for {sample_id} (SRA: {sra_file.name})...")
+    sra_size_gb = sra_file.stat().st_size / 1e9
+    logger.info(f"Converting SRA to FASTQ for {sample_id} (SRA: {sra_file.name}, {sra_size_gb:.2f} GB)...")
+    
+    conversion_start = time.time()
     
     # Try parallel-fastq-dump first (works better with local files)
     parallel_fastq_dump = shutil.which("parallel-fastq-dump")
@@ -409,6 +556,10 @@ def convert_sra_to_fastq(
             log_file.parent.mkdir(parents=True, exist_ok=True)
         
         try:
+            # Set timeout: 2 hours per GB of SRA file (minimum 30 minutes, maximum 6 hours)
+            sra_size_gb = sra_file.stat().st_size / 1e9
+            timeout_seconds = max(1800, min(21600, int(sra_size_gb * 7200)))  # 30min to 6 hours
+            
             with open(log_file, "w") if log_file else open(os.devnull, "w") as f:
                 result = subprocess.run(
                     cmd,
@@ -416,6 +567,7 @@ def convert_sra_to_fastq(
                     stderr=subprocess.STDOUT,
                     cwd=str(output_dir),
                     check=False,
+                    timeout=timeout_seconds,
                 )
             
             # Check for output files
@@ -424,16 +576,44 @@ def convert_sra_to_fastq(
                 fastq_files = list(output_dir.glob(f"{sample_id}.fastq.gz"))
             
             if fastq_files:
-                logger.info(f"Converted SRA to FASTQ for {sample_id} using parallel-fastq-dump ({len(fastq_files)} files)")
+                elapsed = time.time() - conversion_start
+                total_size_mb = sum(f.stat().st_size for f in fastq_files) / 1e6
+                logger.info(
+                    f"Converted SRA to FASTQ for {sample_id} using parallel-fastq-dump "
+                    f"({len(fastq_files)} files, {total_size_mb:.1f} MB, {elapsed:.1f}s)"
+                )
                 return True, f"Converted SRA to FASTQ for {sample_id}", fastq_files
             
             # If parallel-fastq-dump failed, fall through to fasterq-dump
             logger.warning(f"parallel-fastq-dump failed (code {result.returncode}), trying fasterq-dump")
+        except subprocess.TimeoutExpired:
+            elapsed = time.time() - conversion_start
+            logger.warning(
+                f"parallel-fastq-dump timed out for {sample_id} after {elapsed/60:.1f} minutes, trying fasterq-dump"
+            )
         except Exception as e:
             logger.warning(f"parallel-fastq-dump error: {e}, trying fasterq-dump")
     
     # Fallback to fasterq-dump
-    fasterq_dump = shutil.which("fasterq-dump")
+    # Find the real fasterq-dump binary (not the wrapper)
+    # Check common system locations first
+    fasterq_dump = None
+    for path in ["/usr/bin/fasterq-dump", "/usr/local/bin/fasterq-dump"]:
+        if shutil.which(path) or Path(path).exists():
+            fasterq_dump = path
+            break
+    
+    # If not found in system locations, use which but filter out wrapper
+    if not fasterq_dump:
+        which_result = shutil.which("fasterq-dump")
+        if which_result and "temp" not in which_result:
+            fasterq_dump = which_result
+        elif which_result:
+            # Wrapper found, try to find real binary
+            # The wrapper calls /usr/bin/fasterq-dump, so try that
+            if Path("/usr/bin/fasterq-dump").exists():
+                fasterq_dump = "/usr/bin/fasterq-dump"
+    
     if not fasterq_dump:
         return False, "Neither parallel-fastq-dump nor fasterq-dump found in PATH", []
     
@@ -448,6 +628,7 @@ def convert_sra_to_fastq(
         "--outdir", str(output_dir),
         "--threads", str(threads),
         "--split-files",  # Split paired-end reads
+        "--size-check", "off",  # Disable disk size check to prevent "disk-limit exceeded" errors
         "-p",  # Show progress
     ]
     
@@ -455,6 +636,9 @@ def convert_sra_to_fastq(
     if log_dir:
         log_file = log_dir / f"fasterq_dump_{sample_id}.log"
         log_file.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Set timeout: 2 hours per GB of SRA file (minimum 30 minutes, maximum 6 hours)
+    timeout_seconds = max(1800, min(21600, int(sra_size_gb * 7200)))  # 30min to 6 hours
     
     try:
         with open(log_file, "w") if log_file else open(os.devnull, "w") as f:
@@ -464,6 +648,7 @@ def convert_sra_to_fastq(
                 stderr=subprocess.STDOUT,
                 cwd=str(sra_dir),  # Run from directory containing SRA file
                 check=False,
+                timeout=timeout_seconds,
             )
         
         # Compress FASTQ files (fasterq-dump doesn't compress automatically)
@@ -483,13 +668,31 @@ def convert_sra_to_fastq(
             fastq_files = list(output_dir.glob("*.fastq"))
         
         if fastq_files:
-            logger.info(f"Converted SRA to FASTQ for {sample_id} using fasterq-dump ({len(fastq_files)} files)")
+            elapsed = time.time() - conversion_start
+            total_size_mb = sum(f.stat().st_size for f in fastq_files) / 1e6
+            logger.info(
+                f"Converted SRA to FASTQ for {sample_id} using fasterq-dump "
+                f"({len(fastq_files)} files, {total_size_mb:.1f} MB, {elapsed:.1f}s)"
+            )
             return True, f"Converted SRA to FASTQ for {sample_id}", fastq_files
         else:
-            logger.warning(f"SRA conversion failed for {sample_id} (code {result.returncode})")
+            elapsed = time.time() - conversion_start
+            logger.warning(
+                f"SRA conversion failed for {sample_id} (code {result.returncode}, {elapsed:.1f}s elapsed)"
+            )
             return False, f"SRA conversion failed (code {result.returncode})", []
+    except subprocess.TimeoutExpired:
+        elapsed = time.time() - conversion_start
+        logger.error(
+            f"SRA conversion timed out for {sample_id} after {elapsed/60:.1f} minutes "
+            f"(timeout was {timeout_seconds/60:.1f} minutes). Process may be stuck."
+        )
+        return False, f"SRA conversion timed out after {elapsed/60:.1f} minutes", []
     except Exception as e:
-        logger.error(f"Error converting SRA for {sample_id}: {e}", exc_info=True)
+        elapsed = time.time() - conversion_start
+        logger.error(
+            f"Error converting SRA for {sample_id} after {elapsed:.1f}s: {e}", exc_info=True
+        )
         return False, str(e), []
 
 
@@ -503,7 +706,7 @@ def delete_sample_fastqs(sample_id: str, fastq_dir: Path) -> None:
         sample_id: SRA accession ID (e.g., "SRR1234567")
         fastq_dir: Base directory containing FASTQ files
     """
-    logger = logging.getLogger(__name__)
+    logger = get_logger(__name__)
     
     # Check both structures: fastq/getfastq/{sample}/ and fastq/{sample}/
     sample_dirs = []

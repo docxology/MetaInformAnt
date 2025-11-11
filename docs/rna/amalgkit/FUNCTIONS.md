@@ -100,10 +100,7 @@ Sample-level processing pipelines.
 | `quantify_sample` | `metainformant.rna.steps.quant` | Quantify single sample | [API.md](../API.md#quantify_sample) |
 | `convert_sra_to_fastq` | `metainformant.rna.steps.getfastq` | Convert SRA to FASTQ | [API.md](../API.md#convert_sra_to_fastq) |
 | `delete_sample_fastqs` | `metainformant.rna.steps.getfastq` | Delete sample FASTQs | [API.md](../API.md#delete_sample_fastqs) |
-| `process_sample_pipeline` | `metainformant.rna.steps.sample_pipeline` | Complete per-sample pipeline | [API.md](../API.md#process_sample_pipeline) |
-| `run_sequential_download_quant` | `metainformant.rna.steps.sequential_process` | Sequential processing | [API.md](../API.md#run_sequential_download_quant) |
-| `run_parallel_download_sequential_quant` | `metainformant.rna.steps.parallel_download` | Parallel download, sequential quant | [API.md](../API.md#run_parallel_download_sequential_quant) |
-| `run_batched_download_quant` | `metainformant.rna.steps.batched_process` | Batched processing | [API.md](../API.md#run_batched_download_quant) |
+| `run_download_quant_workflow` | `metainformant.rna.steps.process_samples` | Unified download-quantify workflow (sequential/parallel) | [API.md](../API.md#run_download_quant_workflow) |
 
 ## Quick Links
 

@@ -2,16 +2,16 @@
 
 from __future__ import annotations
 
-import logging
 from pathlib import Path
 from typing import Any
 
 import numpy as np
 
 from ..core.io import dump_json, ensure_directory, write_delimited
+from ..core.logging import get_logger
 from .quality import parse_vcf_full
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Try importing scipy for advanced matrix operations
 try:
@@ -80,6 +80,7 @@ def compute_pca(
     missing_rate_per_variant = missing_per_variant / num_samples
     high_missing_variants = np.sum(missing_rate_per_variant > max_missing_per_variant)
     
+    # Initialize exclude_mask (all False if no high-missing variants)
     if high_missing_variants > 0:
         logger.warning(
             f"compute_pca: Excluding {high_missing_variants} variants with >{max_missing_per_variant:.1%} missing data"
@@ -87,6 +88,8 @@ def compute_pca(
         # Set high-missing variants to 0 (will be excluded in analysis)
         exclude_mask = missing_rate_per_variant > max_missing_per_variant
         X[:, exclude_mask] = 0.0
+    else:
+        exclude_mask = np.zeros(num_variants, dtype=bool)
     
     # Handle missing data: imputation per variant
     imputed_count = 0

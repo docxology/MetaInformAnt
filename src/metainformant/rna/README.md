@@ -10,6 +10,69 @@ This module handles RNA sequencing workflows from raw data to analyzed results:
 - **Data Processing**: RNA-seq processing steps including quality control, alignment, and quantification
 - **Metadata Handling**: Transcriptomic metadata retrieval and curation
 
+### Module Architecture
+
+```mermaid
+graph TB
+    subgraph "RNA Module"
+        Amalgkit[amalgkit<br/>CLI Wrapper]
+        Workflow[workflow<br/>Pipeline Orchestration]
+        Configs[configs<br/>Configuration]
+        Steps[steps<br/>Workflow Steps]
+    end
+    
+    subgraph "Workflow Steps"
+        Meta[metadata]
+        Quant[quant]
+        Integrate[integrate]
+        Select[select]
+        Sanity[sanity]
+    end
+    
+    subgraph "External"
+        AmalgkitCLI[amalgkit CLI]
+        SRA[SRA Database]
+    end
+    
+    subgraph "Other Modules"
+        DNA_Mod[dna]
+        SingleCell[singlecell]
+        MultiOmics[multiomics]
+    end
+    
+    AmalgkitCLI --> Amalgkit
+    SRA --> Meta
+    Amalgkit --> Steps
+    Steps --> Meta
+    Steps --> Quant
+    Steps --> Integrate
+    Steps --> Select
+    Steps --> Sanity
+    Workflow --> Configs
+    Configs --> Steps
+    Quant --> SingleCell
+    Meta --> MultiOmics
+```
+
+### RNA-seq Workflow Pipeline
+
+```mermaid
+flowchart LR
+    Start[Start] --> Config[Load Config]
+    Config --> Plan[Plan Workflow]
+    Plan --> Meta[Metadata Download]
+    Meta --> QC[Quality Control]
+    QC --> Align[Alignment]
+    Align --> Quant[Quantification]
+    Quant --> Merge[Merge Results]
+    Merge --> Sanity[Sanity Check]
+    Sanity --> Results{Valid?}
+    Results -->|Yes| Output[Output Results]
+    Results -->|No| Error[Error Report]
+    Output --> End[End]
+    Error --> End
+```
+
 ## Key Components
 
 ### Amalgkit Integration (`amalgkit.py`)

@@ -3,9 +3,10 @@ from __future__ import annotations
 import random
 from typing import Iterable
 
-from ..core import logging, validation
+from ..core.logging import get_logger
+from ..core import validation
 
-logger = logging.get_logger(__name__)
+logger = get_logger(__name__)
 
 _DNA = "ACGT"
 _AA = "ACDEFGHIKLMNPQRSTVWY"

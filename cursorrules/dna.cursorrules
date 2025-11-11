@@ -26,8 +26,15 @@ for seq_id, sequence in seqs:
 
 ### Alignment (`alignment`)
 - Pairwise sequence alignment
-- Multiple sequence alignment
+- Global and local alignment algorithms
+- Needleman-Wunsch and Smith-Waterman
 - Alignment scoring
+
+### Multiple Sequence Alignment (`msa`)
+- Progressive alignment algorithm
+- External tool integration (MUSCLE, MAFFT, ClustalW)
+- Consensus generation from alignments
+- Gap handling and optimization
 
 ### Phylogeny (`phylogeny`)
 - Phylogenetic tree construction (Neighbor-Joining)
@@ -55,25 +62,49 @@ stats = population.calculate_pi(sequences)
 # Returns: {"pi": 0.001, "segregating_sites": 42, ...}
 ```
 
+### Population Analysis (`population_analysis`)
+- Advanced population genetics analysis
+- Extended population statistics
+- Complex population genetic calculations
+
+### Population Visualization (`population_viz`)
+- Population genetics visualization
+- Statistical plot generation
+- Population structure visualization
+
 ### Variants (`variants`)
 - Variant calling and analysis
 - VCF file support
 - Variant filtering and quality control
 
-### NCBI/Entrez (`ncbi`, `entrez`)
-- Genomic data retrieval from NCBI
+### Genomes (`genomes`)
+- Genome data management
+- Genome accession validation
+- Genome metadata handling
+
+### NCBI (`ncbi`)
+- NCBI Datasets API integration
 - Genome download utilities
 - API integration with error handling
 
 **Patterns**:
 ```python
-from metainformant.dna import ncbi
+from metainformant.dna import ncbi, genomes
 
+# Validate accession
+accession = genomes.validate_accession("GCF_000001405.40")
+
+# Download genome
 genome_data = ncbi.download_genome(
     species="Homo sapiens",
     output_dir="output/dna/genomes/"
 )
 ```
+
+### Entrez (`entrez`)
+- Entrez query construction and execution
+- Sequence search and retrieval
+- Database query utilities
 
 ### FastQ (`fastq`)
 - FASTQ-specific processing
@@ -89,6 +120,50 @@ genome_data = ncbi.download_genome(
 - Restriction enzyme analysis
 - Cutting site prediction
 - Fragment size calculation
+
+### Transcription (`transcription`)
+- DNA to RNA transcription
+- Transcription utilities
+- RNA sequence generation
+
+### Translation (`translation`)
+- RNA to protein translation
+- Genetic code handling
+- Protein sequence generation
+
+### Mutations (`mutations`)
+- Mutation detection and analysis
+- Mutation type classification
+- Mutation spectrum analysis
+- Mutation rate estimation
+
+### Codon (`codon`)
+- Codon usage analysis
+- Codon frequency calculations
+- Genetic code utilities
+
+### Composition (`composition`)
+- Sequence composition analysis
+- GC content calculation
+- Dinucleotide and trinucleotide frequencies
+- Compositional bias detection
+
+### Consensus (`consensus`)
+- Consensus sequence generation
+- Multiple sequence consensus
+- Consensus quality scoring
+- Ambiguity code handling
+
+### Distances (`distances`)
+- Evolutionary distance estimation
+- Jukes-Cantor distance
+- Kimura 2-parameter distance
+- Tamura-Nei distance
+- Distance matrix construction
+
+### RNA Integration (`rna_integration`)
+- Integration with RNA module
+- Cross-domain analysis utilities
 
 ## Patterns
 
@@ -134,6 +209,11 @@ def _lazy_import_biopython():
 - Variants: `output/dna/variants/`
 - Genomes: `output/dna/genomes/`
 - Alignments: `output/dna/alignments/`
+- Multiple alignments: `output/dna/msa/`
+- Mutations: `output/dna/mutations/`
+- Composition: `output/dna/composition/`
+- Consensus: `output/dna/consensus/`
+- Distances: `output/dna/distances/`
 
 ## Integration
 

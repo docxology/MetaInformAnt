@@ -179,7 +179,7 @@ for fasta_file in fasta_files:
 from metainformant.information import information_report
 information_report(
     all_results,
-    output_path="output/information/batch_report.md",
+    output_path="docs/information/batch_report.md",
     format="markdown"
 )
 ```
@@ -279,7 +279,7 @@ results = information_workflow(
 from metainformant.information import information_report
 information_report(
     results,
-    output_path="output/information/full_report.md",
+    output_path="docs/information/full_report.md",
     format="markdown"
 )
 ```

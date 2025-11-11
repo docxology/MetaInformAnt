@@ -56,6 +56,26 @@ structure_io.write_pdb(structure, "output/protein/structure.pdb")
 - Structure download utilities
 - Metadata extraction
 
+### Proteomes (`proteomes`)
+- Proteome retrieval and management
+- Proteome database integration
+- Large-scale proteome analysis
+
+### Contacts (`contacts`)
+- Protein contact analysis
+- Residue-residue contacts
+- Contact map generation
+
+### Secondary Structure (`secondary`)
+- Secondary structure prediction
+- Structure element identification
+- Secondary structure analysis
+
+### Structure Analysis (`structure_analysis`)
+- Advanced structure analysis
+- Structural feature extraction
+- Structure comparison utilities
+
 ## Patterns
 
 ### Defensive Imports
@@ -85,6 +105,9 @@ def download_structure(pdb_id):
 - Structures: `output/protein/structures/`
 - Alignments: `output/protein/alignments/`
 - Annotations: `output/protein/annotations/`
+- Proteomes: `output/protein/proteomes/`
+- Contacts: `output/protein/contacts/`
+- Secondary structure: `output/protein/secondary/`
 
 ### Error Handling
 - Gracefully handle missing database connections

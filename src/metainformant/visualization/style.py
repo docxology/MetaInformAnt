@@ -62,7 +62,7 @@ FIGURE_SIZES = {
 }
 
 
-def apply_publication_style(**overrides):
+def apply_publication_style(**overrides) -> None:
     """Apply publication-quality style settings.
 
     Args:
@@ -109,7 +109,7 @@ def get_figure_size(size: str = 'medium') -> tuple[float, float]:
     return FIGURE_SIZES.get(size, FIGURE_SIZES['medium'])
 
 
-def set_font_family(family: str = 'sans-serif'):
+def set_font_family(family: str = 'sans-serif') -> None:
     """Set the default font family.
 
     Args:
@@ -122,7 +122,7 @@ def set_font_family(family: str = 'sans-serif'):
     plt.rcParams['font.family'] = family
 
 
-def set_font_size(size: float = 10):
+def set_font_size(size: float = 10) -> None:
     """Set the default font size.
 
     Args:
@@ -135,7 +135,7 @@ def set_font_size(size: float = 10):
     plt.rcParams['font.size'] = size
 
 
-def reset_style():
+def reset_style() -> None:
     """Reset matplotlib style to default.
 
     Example:
@@ -145,7 +145,7 @@ def reset_style():
     plt.rcParams.update(plt.rcParamsDefault)
 
 
-def apply_style(style_name: str):
+def apply_style(style_name: str) -> None:
     """Apply a named matplotlib style.
 
     Args:

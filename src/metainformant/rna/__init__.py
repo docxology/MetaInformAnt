@@ -49,10 +49,7 @@ from .steps import (
     run_sanity,
     run_select,
     # Processing functions
-    run_sequential_download_quant,
-    run_parallel_download_sequential_quant,
-    run_batched_download_quant,
-    process_sample_pipeline,
+    run_download_quant_workflow,
     quantify_sample,
     convert_sra_to_fastq,
     delete_sample_fastqs,
@@ -145,10 +142,7 @@ __all__ = [
     "run_csca",
     "run_sanity",
     # Processing functions
-    "run_sequential_download_quant",
-    "run_parallel_download_sequential_quant",
-    "run_batched_download_quant",
-    "process_sample_pipeline",
+    "run_download_quant_workflow",
     "quantify_sample",
     "convert_sra_to_fastq",
     "delete_sample_fastqs",

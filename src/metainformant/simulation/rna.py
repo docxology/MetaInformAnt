@@ -3,9 +3,10 @@ from __future__ import annotations
 import math
 import random
 
-from ..core import logging, validation
+from ..core.logging import get_logger
+from ..core import validation
 
-logger = logging.get_logger(__name__)
+logger = get_logger(__name__)
 
 
 def _sample_negative_binomial(rng: random.Random, mean: float, dispersion: float) -> int:

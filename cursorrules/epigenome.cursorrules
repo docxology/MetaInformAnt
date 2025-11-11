@@ -29,6 +29,22 @@ methylation_data = methylation.analyze_methylation(
 - ChIP-seq data processing
 - Histone modification tracks
 
+### ATAC-seq (`atac`)
+- ATAC-seq data processing
+- Chromatin accessibility analysis
+- Peak calling and analysis
+
+### ChIP-seq (`chipseq`)
+- ChIP-seq data processing
+- Transcription factor binding analysis
+- Histone modification analysis
+- Peak calling and annotation
+
+### Workflow (`workflow`)
+- End-to-end epigenome analysis workflows
+- Workflow orchestration
+- Configuration-based execution
+
 ## Patterns
 
 ### Genomic Coordinates
@@ -40,6 +56,8 @@ methylation_data = methylation.analyze_methylation(
 - Base: `output/epigenome/<analysis>/`
 - Methylation: `output/epigenome/methylation/`
 - Tracks: `output/epigenome/tracks/`
+- ATAC-seq: `output/epigenome/atac/`
+- ChIP-seq: `output/epigenome/chipseq/`
 
 ## Integration
 

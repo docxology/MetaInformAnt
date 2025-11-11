@@ -59,7 +59,7 @@ The workflow automatically integrates genome preparation when `build_index: yes`
 
 ```bash
 # Run complete transcriptomic analysis pipeline
-scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --steps metadata,select,getfastq,quant,merge,curate,sanity --stream
+scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pogonomyrmex_barbatus.yaml --steps metadata,select,getfastq,quant,merge,curate,sanity --stream
 ```
 
 ### Python API Usage
@@ -78,7 +78,7 @@ res = ak.run_amalgkit("metadata", {
 }, work_dir="output/amalgkit/work")
 
 # Run complete workflow from config
-cfg = load_workflow_config("config/amalgkit_pbarbatus.yaml")
+cfg = load_workflow_config("config/amalgkit_pogonomyrmex_barbatus.yaml")
 codes = execute_workflow(cfg)
 ```
 
@@ -89,7 +89,7 @@ codes = execute_workflow(cfg)
 Complete workflow configuration with species, samples, and processing parameters:
 
 ```yaml
-# Example: config/amalgkit_pbarbatus.yaml
+# Example: config/amalgkit_pogonomyrmex_barbatus.yaml
 species: "Pogonomyrmex_barbatus"
 taxon_id: 144034
 threads: 6
@@ -137,26 +137,26 @@ Robust shell orchestration with comprehensive features:
 
 ```bash
 # Complete workflow with streaming logs
-scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --stream
+scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pogonomyrmex_barbatus.yaml --stream
 
 # Run specific steps only
-scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --steps quant,merge,curate
+scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pogonomyrmex_barbatus.yaml --steps quant,merge,curate
 
 # Dry run to check configuration
-scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --dry-run
+scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pogonomyrmex_barbatus.yaml --dry-run
 
 # Force re-execution of completed steps
-scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --force
+scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pogonomyrmex_barbatus.yaml --force
 
 # Check dependencies and system requirements
-scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --check
+scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pogonomyrmex_barbatus.yaml --check
 ```
 
 ### Python CLI
 
 ```bash
 # Python-based execution
-uv run python -m metainformant rna run-config --config config/amalgkit_pbarbatus.yaml --stream
+uv run python -m metainformant rna run-config --config config/amalgkit_pogonomyrmex_barbatus.yaml --stream
 
 # Verify AMALGKIT installation
 amalgkit -h | head -20
@@ -166,7 +166,7 @@ amalgkit -h | head -20
 
 ### Pogonomyrmex barbatus (Red Harvester Ant)
 
-**Production-tested configuration**: `config/amalgkit_pbarbatus.yaml`
+**Production-tested configuration**: `config/amalgkit_pogonomyrmex_barbatus.yaml`
 
 - **NCBI Taxonomy ID**: 144034
 - **Reference Assembly**: GCF_000187915.1 (Pbar_UMD_V03)
@@ -258,7 +258,7 @@ Template configurations available for:
 ### Dependencies
 
 **Core Tools**:
-- `amalgkit` v0.12.19+ (RNA-seq pipeline)
+- `amalgkit` v0.12.20+ (RNA-seq pipeline)
 - `kallisto` v0.46.2+ (pseudoalignment)
 - `sra-toolkit` (NCBI data access)
 - `seqkit`, `fastp` (sequence processing)
@@ -348,7 +348,7 @@ Template configurations available for:
 ```bash
 # Streaming logs during execution  
 [INFO 21:16:35] Starting METAINFORMANT Amalgkit Orchestrator
-[INFO 21:16:35] Configuration: config/amalgkit_pbarbatus.yaml
+[INFO 21:16:35] Configuration: config/amalgkit_pogonomyrmex_barbatus.yaml
 [SUCCESS 21:17:12] Step sanity completed successfully (3s)
 ```
 
@@ -380,16 +380,16 @@ Template configurations available for:
 ```bash
 # Production-ready execution
 scripts/rna/amalgkit/run_amalgkit.sh \
-  --config config/amalgkit_pbarbatus.yaml \
+  --config config/amalgkit_pogonomyrmex_barbatus.yaml \
   --steps metadata,select,getfastq,quant,merge,curate,sanity \
   --stream \
   --parallel
 
 # Quality assurance before deployment
-scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --check
+scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pogonomyrmex_barbatus.yaml --check
 
 # Development/testing with smaller dataset
-scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --steps quant --dry-run
+scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pogonomyrmex_barbatus.yaml --steps quant --dry-run
 ```
 
 ### Scaling Strategies
@@ -397,7 +397,7 @@ scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --s
 1. **Single Species, Multiple Experiments**
    ```bash
    # 8 samples from 2 experiments
-   scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus_multi.yaml
+   scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
    ```
 
 2. **Cross-Species Comparative Analysis**
@@ -645,7 +645,7 @@ from metainformant.rna.workflow import (
 )
 
 # Load configuration
-cfg = load_workflow_config("config/amalgkit_pbarbatus.yaml")
+cfg = load_workflow_config("config/amalgkit_pogonomyrmex_barbatus.yaml")
 
 # Execute workflow
 results = execute_workflow(cfg, check=False)
@@ -660,14 +660,14 @@ print(f"Pipeline completed with exit codes: {results}")
 - **[API Reference](../API.md)** - Complete function documentation
 - **[Function Index](FUNCTIONS.md)** - Quick function lookup
 - **[Step Documentation](steps/README.md)** - Detailed step guides
-- **[Quick Start](quick_start.md)** - Quick start guide
+- **[Getting Started](../GETTING_STARTED.md)** - Complete setup and workflow guide
 - **[Genome Setup](genome_setup_guide.md)** - Genome preparation guide
 - **[Main Index](../README.md)** - RNA domain master index
 
 ### Related Topics
 - **[Workflow Guide](../workflow.md)** - Workflow planning and execution
 - **[Configuration Guide](../CONFIGURATION.md)** - Configuration management
-- **[Orchestration](../ORCHESTRATION/README.md)** - Workflow orchestration
+- **[Orchestration](../ORCHESTRATION.md)** - Workflow orchestration
 
 ---
 

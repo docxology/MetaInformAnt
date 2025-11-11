@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 
 import pandas as pd
 
-from metainformant.core import io, logging, paths
+from metainformant.core import io, paths
 from metainformant.core.logging import get_logger
 
 logger = get_logger(__name__)

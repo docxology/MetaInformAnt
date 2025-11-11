@@ -110,6 +110,42 @@ def chao1_estimator(abundances: Sequence[int]) -> float:
     return S_obs + (f1 * f1) / (2.0 * f2)
 
 
+def community_metrics(abundances: Sequence[float]) -> Dict[str, float]:
+    """Calculate comprehensive community ecology metrics.
+
+    Args:
+        abundances: Species abundance values
+
+    Returns:
+        Dictionary with keys: 'shannon', 'simpson', 'richness', 'pielou', 'chao1'
+    """
+    if len(abundances) == 0:
+        return {
+            "shannon": 0.0,
+            "simpson": 0.0,
+            "richness": 0,
+            "pielou": 0.0,
+            "chao1": 0.0,
+        }
+
+    richness = species_richness(abundances)
+    shannon = shannon_diversity(abundances)
+    simpson = simpson_diversity(abundances)
+    pielou = pielou_evenness(abundances)
+    
+    # Convert abundances to integers for chao1
+    int_abundances = [int(x) for x in abundances if x > 0]
+    chao1 = chao1_estimator(int_abundances) if int_abundances else 0.0
+
+    return {
+        "shannon": shannon,
+        "simpson": simpson,
+        "richness": richness,
+        "pielou": pielou,
+        "chao1": chao1,
+    }
+
+
 def bray_curtis_dissimilarity(site1: Sequence[float], site2: Sequence[float]) -> float:
     """Calculate Bray-Curtis dissimilarity between two sites.
 

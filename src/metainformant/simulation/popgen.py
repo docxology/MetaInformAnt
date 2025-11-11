@@ -12,10 +12,11 @@ import random
 from collections.abc import Sequence
 from typing import Any
 
-from ..core import logging, validation
+from ..core.logging import get_logger
+from ..core import validation
 from ..simulation.sequences import _DNA, generate_random_dna, mutate_sequence
 
-logger = logging.get_logger(__name__)
+logger = get_logger(__name__)
 
 
 def generate_population_sequences(

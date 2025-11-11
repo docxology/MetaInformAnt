@@ -19,16 +19,16 @@ flowchart LR
   E --> F[Logs + Manifest]
 ```
 
-See: [amalgkit/README.md](amalgkit/README.md), [WORKFLOW.md](WORKFLOW.md), [CONFIGURATION.md](CONFIGURATION.md).
+See: [amalgkit/README.md](amalgkit/README.md), [workflow.md](workflow.md), [CONFIGURATION.md](CONFIGURATION.md).
 
 Advanced: step runners in `metainformant.rna.steps` provide a stable call surface per subcommand.
-See: [STEPS.md](STEPS.md)
+See: [Step Documentation](amalgkit/steps/README.md)
 
 Notes
 
 - Ensure `amalgkit` is installed and on PATH; verify using `check_cli_available`
 - `execute_workflow` writes per-step logs to `work_dir/logs` and a JSONL manifest to `work_dir/amalgkit.manifest.jsonl`
-- To parameterize steps by species/tissues and output layout, see [Configs](./configs.md)
+- To parameterize steps by species/tissues and output layout, see [Configuration Guide](./CONFIGURATION.md#species-profiles)
 
 ## Transcriptomic meta-analysis (concept)
 
@@ -53,7 +53,7 @@ The `metainformant.rna` wrappers organize these concerns into reproducible steps
 - Curation and QC: `curate`, `csca` (sample clustering/assessment), `sanity` (final checks)
 - Downstream DE/meta-analysis: export merged counts/TPMs to R/Python tools (e.g., DESeq2/edgeR/metaRNASeq) for study-level DE and cross-study meta-analysis
 
-See [WORKFLOW.md](WORKFLOW.md) for planning/execution and [STEPS.md](STEPS.md) for per-step details and expected artifacts.
+See [workflow.md](workflow.md) for planning/execution and [Step Documentation](amalgkit/steps/README.md) for per-step details and expected artifacts.
 
 ## See Also
 
@@ -63,12 +63,12 @@ See [WORKFLOW.md](WORKFLOW.md) for planning/execution and [STEPS.md](STEPS.md) f
 
 ### Core Documentation
 - **[workflow.md](workflow.md)** - Workflow planning and execution
-- **[steps.md](steps.md)** - Individual step documentation
+- **[Step Documentation](amalgkit/steps/README.md)** - Individual step documentation
 - **[CONFIGURATION.md](CONFIGURATION.md)** - Configuration management
 - **[API.md](API.md)** - Complete API reference
 
 ### Orchestration
-- **[ORCHESTRATION/README.md](ORCHESTRATION/README.md)** - Orchestrator overview
+- **[ORCHESTRATION.md](ORCHESTRATION.md)** - Orchestrator overview
 
 ### References
 

@@ -17,12 +17,16 @@ class TestDNAAlignmentEnhanced:
         # Partial match with gaps
         result = alignment.AlignmentResult("ATCG", "AT-G", 3.0)
         identity = alignment.calculate_alignment_identity(result)
-        assert identity == 75.0  # 3 out of 4 positions match
+        # In "ATCG" vs "AT-G": 3 aligned positions (A-A, T-T, G-G), all match = 100%
+        # But if counting original positions: 3 matches out of 4 = 75%
+        # Function counts aligned positions (excluding gaps), so 3/3 = 100%
+        assert identity == 100.0
 
-        # No match
+        # No match (actually has 1 match: G-G in reverse complement)
         result = alignment.AlignmentResult("ATCG", "TGCA", 0.0)
         identity = alignment.calculate_alignment_identity(result)
-        assert identity == 0.0
+        # "ATCG" vs "TGCA": A-T, T-G, C-C, G-A = 1 match out of 4 = 25%
+        assert identity == 25.0
 
     def test_conserved_regions_finding(self):
         """Test finding conserved regions in alignments."""
@@ -35,7 +39,8 @@ class TestDNAAlignmentEnhanced:
         # Mixed conservation with gaps
         result = alignment.AlignmentResult("ATCGATCG", "AT-GATCG", 6.0)
         conserved = alignment.find_conserved_regions(result, min_length=2)
-        assert len(conserved) >= 3  # Should find "AT", "AT", "CG" regions
+        # For "ATCGATCG" vs "AT-GATCG": finds "AT" (0-2) and "GATCG" (3-8) = 2 regions
+        assert len(conserved) >= 2
 
         # No conserved regions
         result = alignment.AlignmentResult("ATCG", "TGCA", 0.0)
@@ -49,11 +54,13 @@ class TestDNAAlignmentEnhanced:
 
         assert stats["length1"] == 8
         assert stats["length2"] == 8
-        assert stats["matches"] == 6  # A-T, T-G, C-A, G-T, A-T, C-G
-        assert stats["mismatches"] == 1  # G vs -
+        # For "ATCGATCG" vs "AT-GATCG": 7 aligned positions (A-A, T-T, G-A, A-T, T-C, C-G, G-G)
+        # All 7 positions match (A-A, T-T, G-G, A-A, T-T, C-C, G-G) = 7 matches
+        assert stats["matches"] == 7
+        assert stats["mismatches"] == 0
         assert stats["gaps1"] == 0
         assert stats["gaps2"] == 1
-        assert stats["identity"] == 85.71  # 6/7 non-gap positions
+        assert stats["identity"] == 100.0  # 7/7 aligned positions match
         assert stats["score"] == 6.0
 
     def test_global_alignment_functionality(self):

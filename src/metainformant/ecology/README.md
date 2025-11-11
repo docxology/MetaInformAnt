@@ -6,6 +6,54 @@ The `ecology` module provides tools for ecological metadata management, communit
 
 This module handles ecological data including species diversity, community composition, and environmental parameters that influence biological systems.
 
+### Module Architecture
+
+```mermaid
+graph TB
+    subgraph "Ecology Module"
+        Community[community<br/>Community Analysis]
+        Environmental[environmental<br/>Environmental Data]
+        Interactions[interactions<br/>Species Interactions]
+        Workflow[workflow<br/>Workflow Orchestration]
+    end
+    
+    subgraph "Input Data"
+        Abundance[Abundance Tables]
+        EnvData[Environmental Data]
+        InteractionData[Interaction Data]
+    end
+    
+    subgraph "Other Modules"
+        Networks_Mod[networks]
+        DNA_Mod[dna]
+        Info_Mod[information]
+    end
+    
+    Abundance --> Community
+    EnvData --> Environmental
+    InteractionData --> Interactions
+    Community --> Workflow
+    Environmental --> Workflow
+    Interactions --> Workflow
+    Workflow --> Networks_Mod
+    Workflow --> DNA_Mod
+    Workflow --> Info_Mod
+```
+
+### Ecology Analysis Workflow
+
+```mermaid
+flowchart TD
+    Start[Input Data] --> Load[Load Data]
+    Load --> Type{Analysis Type?}
+    Type -->|Diversity| Diversity[Calculate Diversity]
+    Type -->|Community| Community[Community Analysis]
+    Type -->|Beta| Beta[Beta Diversity]
+    Diversity --> Results[Results]
+    Community --> Results
+    Beta --> Results
+```
+
 ## Submodules
 
 ### Community Analysis (`community.py`)

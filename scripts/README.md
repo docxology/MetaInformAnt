@@ -71,6 +71,40 @@ scripts/
 - **`uv_docs.sh`**: Documentation generation
   - Build and update documentation
 
+## RNA Processing Scripts (`scripts/rna/`)
+
+### Production Workflows
+- **`run_workflow.py`**: ✅ Main RNA-seq workflow orchestrator (PRODUCTION) ⭐
+  - End-to-end workflow execution for single species
+  - Status checking and monitoring
+  - Configuration-based execution
+  - Usage: `python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml`
+
+- **`run_e2e_pbarbatus.py`**: End-to-end workflow for *Pogonomyrmex barbatus*
+- **`setup_genome.py`**: Genome setup and preparation utilities
+- **`discover_species.py`**: Species discovery and configuration generation
+- **`convert_existing_sra.py`**: Convert existing SRA data to workflow format
+
+### Amalgkit Workflows (`scripts/rna/amalgkit/`)
+- **`run_amalgkit.sh`**: Comprehensive RNA-seq pipeline orchestrator
+- **`verify_workflow.sh`**: Workflow validation for any species
+- See `scripts/rna/amalgkit/README.md` for details
+
+### Environment and Utilities
+- **`check_environment.py`**: Environment validation
+- **`fix_tmp_space.sh`**: Temporary space management utilities
+
+### Testing and Development
+- **`test_enhanced_heartbeat.py`**: Heartbeat monitoring tests
+- **`test_genome_prep.py`**: Genome preparation tests
+- **`test_getfastq_fix.py`**: FASTQ download fix tests
+- **`test_heartbeat.py`**: Basic heartbeat tests
+
+### Examples
+- **`examples/discover_and_deploy_ant_species.sh`**: Example script for species discovery and deployment
+
+See `scripts/rna/README.md` for detailed RNA script documentation.
+
 ## GWAS Analysis Scripts (`scripts/gwas/`)
 
 Genome-wide association study workflows with comprehensive visualization.
@@ -111,64 +145,6 @@ Genome-wide association study workflows with comprehensive visualization.
 - ✅ Comprehensive error handling
 - ✅ Step-by-step execution with skip options
 - ✅ Dependency checking
-
-## RNA Processing Scripts (`scripts/rna/`)
-
-### Production Workflows
-- **`workflow_ena_integrated.py`**: Integrated ENA download + quantification (PRODUCTION) ⭐
-- **`download_ena_robust.py`**: Robust ENA downloader with retry logic ⭐
-- **`run_multi_species.py`**: Multi-species orchestration (legacy SRA-based)
-
-### Amalgkit Workflows (`scripts/rna/amalgkit/`)
-- **`run_amalgkit.sh`**: Comprehensive RNA-seq pipeline orchestrator
-- **`verify_workflow.sh`**: Workflow validation for any species
-- See `scripts/rna/amalgkit/README.md` for details
-
-### Quantification and Cleanup
-- **`quant_downloaded_samples.py`**: Quantify already-downloaded samples
-- **`cleanup_quantified_sra.sh`**: Safe deletion of FASTQ files after quantification
-- **`list_unquantified.sh`**: Report samples needing quantification
-- **`manual_quant_cleanup.py`**: Manual quantification and cleanup utility
-- **`quant_and_cleanup.py`**: Batch quantification and cleanup
-
-### Monitoring
-- **`monitor_comprehensive.py`**: Comprehensive real-time monitoring (recommended)
-- **`monitor_workflow.py`**: Real-time workflow monitoring dashboard
-- **`monitor_amalgkit_progress.sh`**: Simple progress monitor
-- **`check_status.py`**: Status checking utility
-- **`comprehensive_status.py`**: Detailed status reporting
-
-### Environment and Utilities
-- **`check_environment.py`**: Environment validation
-- **`check_and_restart_workflows.py`**: Workflow restart automation
-- **`restart_all_workflows.py`**: Restart helper
-
-See `scripts/rna/README.md` for detailed RNA script documentation.
-
-## GWAS Analysis Scripts (`scripts/gwas/`)
-
-### Genome-Scale GWAS Workflows
-- **`run_genome_scale_gwas.py`**: Complete GWAS workflow orchestrator
-  - SRA download through variant calling
-  - Association testing with comprehensive visualization
-  - Supports download-only and skip-download modes
-  - Use: `python3 scripts/gwas/run_genome_scale_gwas.py --config config/gwas/gwas_amellifera.yaml`
-
-### Data Acquisition
-- **`download_genome_scale_data.sh`**: Automated GWAS data download
-  - Genome assembly retrieval
-  - SRA sample download
-  - Reference genome preparation
-
-- **`download_real_honeybee_variants.py`**: Real variant data acquisition
-  - Honeybee-specific variant retrieval
-  - Integration with NCBI resources
-
-### Metadata Management
-- **`query_bioproject_metadata.py`**: BioProject metadata extraction
-  - Sample information retrieval
-  - Phenotype data collection
-  - Automated metadata organization
 
 ## DNA Analysis Scripts (`scripts/dna/`)
 
@@ -380,7 +356,7 @@ bash scripts/package/uv_docs.sh
 ### Production Usage
 ```bash
 # Run RNA analysis workflow
-bash scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit/amalgkit_pbarbatus.yaml
+bash scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 
 # Multi-species RNA workflow
 python3 scripts/rna/run_multi_species.py

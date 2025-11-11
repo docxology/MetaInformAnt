@@ -61,8 +61,7 @@ def test_build_amalgkit_command_prefix_and_order():
     assert "--threads" in cmd and cmd[cmd.index("--threads") + 1] == "4"
 
 
-@pytest.mark.skipif(shutil.which("amalgkit") is None, reason="amalgkit not installed")
-def test_check_cli_available_runs_help():
+def test_check_cli_available_runs_help(ensure_amalgkit_available):
     """Test that check_cli_available returns True and help text when amalgkit is available."""
     from metainformant.rna.amalgkit import check_cli_available
 

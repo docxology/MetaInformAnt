@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-import logging
 from typing import Tuple
 
 import psycopg2
 
 from .config import load_postgres_config_from_env
+from .logging import get_logger
+
+logger = get_logger(__name__)
 
 
 def get_db_client() -> Tuple["psycopg2.extensions.connection", "psycopg2.extensions.cursor"]:
@@ -23,7 +25,7 @@ def get_db_client() -> Tuple["psycopg2.extensions.connection", "psycopg2.extensi
     if config is None:
         raise RuntimeError("Postgres configuration not found in environment variables")
 
-    logging.debug("Initializing connection to PostgreSQL database")
+    logger.debug("Initializing connection to PostgreSQL database")
     conn = psycopg2.connect(
         host=config.host,
         port=config.port,

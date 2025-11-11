@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from ..core.errors import error_context
 from ..core.io import dump_json, ensure_directory, read_delimited
+from ..core.logging import get_logger, log_with_metadata
 from .association import run_gwas
 from .calling import call_variants_bcftools, call_variants_gatk
 from .config import GWASWorkflowConfig
@@ -17,7 +18,7 @@ from .quality import apply_qc_filters, parse_vcf_full
 from .structure import estimate_population_structure
 from .visualization import manhattan_plot, qq_plot, regional_plot
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def execute_gwas_workflow(config: GWASWorkflowConfig, *, check: bool = False) -> dict[str, Any]:
@@ -42,7 +43,16 @@ def execute_gwas_workflow(config: GWASWorkflowConfig, *, check: bool = False) ->
     Returns:
         Dictionary with workflow results and metadata
     """
-    logger.info("execute_gwas_workflow: Starting GWAS workflow execution")
+    # Log workflow start with metadata
+    log_with_metadata(
+        logger,
+        "Starting GWAS workflow execution",
+        {
+            "work_dir": str(config.work_dir),
+            "threads": config.threads,
+            "has_genome_config": config.genome is not None,
+        },
+    )
     ensure_directory(config.work_dir)
 
     if check:
@@ -62,14 +72,26 @@ def execute_gwas_workflow(config: GWASWorkflowConfig, *, check: bool = False) ->
     try:
         # Step 1: Genome preparation (if needed)
         if config.genome:
-            logger.info("execute_gwas_workflow: Preparing reference genome")
-            genome_result = _prepare_genome(config)
-            results["steps"].append({"step": "genome_prepare", "result": genome_result})
+            log_with_metadata(logger, "Preparing reference genome", {"step": "genome_prepare"})
+            with error_context("Genome preparation failed"):
+                genome_result = _prepare_genome(config)
+                results["steps"].append({"step": "genome_prepare", "result": genome_result})
+                log_with_metadata(
+                    logger,
+                    "Genome preparation completed",
+                    {"step": "genome_prepare", "status": genome_result.get("status", "unknown")},
+                )
 
         # Step 2: Variant acquisition
-        logger.info("execute_gwas_workflow: Acquiring variant data")
-        variant_result = _acquire_variants(config)
-        results["steps"].append({"step": "variant_acquisition", "result": variant_result})
+        log_with_metadata(logger, "Acquiring variant data", {"step": "variant_acquisition"})
+        with error_context("Variant acquisition failed"):
+            variant_result = _acquire_variants(config)
+            results["steps"].append({"step": "variant_acquisition", "result": variant_result})
+            log_with_metadata(
+                logger,
+                "Variant acquisition completed",
+                {"step": "variant_acquisition", "status": variant_result.get("status", "unknown")},
+            )
 
         # Get VCF path for downstream steps
         vcf_path = None
@@ -85,9 +107,15 @@ def execute_gwas_workflow(config: GWASWorkflowConfig, *, check: bool = False) ->
             raise ValueError(f"VCF file not available: {vcf_path}")
 
         # Step 3: Quality control
-        logger.info("execute_gwas_workflow: Applying quality control filters")
-        qc_result = _apply_quality_control(config, vcf_path)
-        results["steps"].append({"step": "quality_control", "result": qc_result})
+        log_with_metadata(logger, "Applying quality control filters", {"step": "quality_control"})
+        with error_context("Quality control failed"):
+            qc_result = _apply_quality_control(config, vcf_path)
+            results["steps"].append({"step": "quality_control", "result": qc_result})
+            log_with_metadata(
+                logger,
+                "Quality control completed",
+                {"step": "quality_control", "status": qc_result.get("status", "unknown")},
+            )
 
         # Use QC'd VCF if available, otherwise original
         qc_vcf_path = qc_result.get("output_vcf")
@@ -95,36 +123,66 @@ def execute_gwas_workflow(config: GWASWorkflowConfig, *, check: bool = False) ->
             vcf_path = Path(qc_vcf_path)
 
         # Step 4: Population structure
-        logger.info("execute_gwas_workflow: Analyzing population structure")
-        structure_result = _analyze_population_structure(config, vcf_path)
-        results["steps"].append({"step": "population_structure", "result": structure_result})
+        log_with_metadata(logger, "Analyzing population structure", {"step": "population_structure"})
+        with error_context("Population structure analysis failed"):
+            structure_result = _analyze_population_structure(config, vcf_path)
+            results["steps"].append({"step": "population_structure", "result": structure_result})
+            log_with_metadata(
+                logger,
+                "Population structure analysis completed",
+                {"step": "population_structure", "status": structure_result.get("status", "unknown")},
+            )
 
         # Step 5: Association testing
-        logger.info("execute_gwas_workflow: Running association tests")
-        association_result = _run_association_tests(config, vcf_path)
-        results["steps"].append({"step": "association_testing", "result": association_result})
-        
-        # Check if association failed critically - fail workflow
-        if association_result.get("status") == "failed":
-            error_msg = association_result.get("error", "")
-            # Fail workflow if phenotype file is missing or other critical errors
-            if "not found" in error_msg.lower() or "cannot read" in error_msg.lower() or "phenotype" in error_msg.lower():
-                raise ValueError(f"Association testing failed: {error_msg}")
+        log_with_metadata(logger, "Running association tests", {"step": "association_testing"})
+        with error_context("Association testing failed"):
+            association_result = _run_association_tests(config, vcf_path)
+            results["steps"].append({"step": "association_testing", "result": association_result})
+            log_with_metadata(
+                logger,
+                "Association testing completed",
+                {"step": "association_testing", "status": association_result.get("status", "unknown")},
+            )
+            
+            # Check if association failed critically - fail workflow
+            if association_result.get("status") == "failed":
+                error_msg = association_result.get("error", "")
+                # Fail workflow if phenotype file is missing or other critical errors
+                if "not found" in error_msg.lower() or "cannot read" in error_msg.lower() or "phenotype" in error_msg.lower():
+                    raise ValueError(f"Association testing failed: {error_msg}")
 
         # Step 6: Multiple testing correction
-        logger.info("execute_gwas_workflow: Applying multiple testing correction")
-        correction_result = _apply_corrections(config, association_result)
-        results["steps"].append({"step": "multiple_testing", "result": correction_result})
+        log_with_metadata(logger, "Applying multiple testing correction", {"step": "multiple_testing"})
+        with error_context("Multiple testing correction failed"):
+            correction_result = _apply_corrections(config, association_result)
+            results["steps"].append({"step": "multiple_testing", "result": correction_result})
+            log_with_metadata(
+                logger,
+                "Multiple testing correction completed",
+                {"step": "multiple_testing", "status": correction_result.get("status", "unknown")},
+            )
 
         # Step 7: Visualization
-        logger.info("execute_gwas_workflow: Generating visualizations")
-        viz_result = _generate_visualizations(config, association_result)
-        results["steps"].append({"step": "visualization", "result": viz_result})
+        log_with_metadata(logger, "Generating visualizations", {"step": "visualization"})
+        with error_context("Visualization generation failed"):
+            viz_result = _generate_visualizations(config, association_result)
+            results["steps"].append({"step": "visualization", "result": viz_result})
+            log_with_metadata(
+                logger,
+                "Visualization generation completed",
+                {"step": "visualization", "status": viz_result.get("status", "unknown")},
+            )
 
         # Step 8: Results export
-        logger.info("execute_gwas_workflow: Exporting results")
-        export_result = _export_results(config, results)
-        results["steps"].append({"step": "results_export", "result": export_result})
+        log_with_metadata(logger, "Exporting results", {"step": "results_export"})
+        with error_context("Results export failed"):
+            export_result = _export_results(config, results)
+            results["steps"].append({"step": "results_export", "result": export_result})
+            log_with_metadata(
+                logger,
+                "Results export completed",
+                {"step": "results_export", "status": export_result.get("status", "unknown")},
+            )
 
         end_time = datetime.utcnow()
         duration = (end_time - start_time).total_seconds()
@@ -132,7 +190,16 @@ def execute_gwas_workflow(config: GWASWorkflowConfig, *, check: bool = False) ->
         results["duration_seconds"] = duration
         results["status"] = "completed"
 
-        logger.info(f"execute_gwas_workflow: GWAS workflow completed in {duration:.2f} seconds")
+        # Log workflow completion with metadata
+        log_with_metadata(
+            logger,
+            "GWAS workflow completed successfully",
+            {
+                "duration_seconds": duration,
+                "steps_completed": len(results.get("steps", [])),
+                "status": "completed",
+            },
+        )
 
     except Exception as exc:
         end_time = datetime.utcnow()
@@ -141,7 +208,20 @@ def execute_gwas_workflow(config: GWASWorkflowConfig, *, check: bool = False) ->
         results["duration_seconds"] = duration
         results["status"] = "failed"
         results["error"] = str(exc)
-        logger.error(f"execute_gwas_workflow: Workflow failed after {duration:.2f} seconds: {exc}", exc_info=True)
+        # Log workflow failure with metadata
+        with error_context("GWAS workflow execution failed"):
+            log_with_metadata(
+                logger,
+                "Workflow failed",
+                {
+                    "duration_seconds": duration,
+                    "steps_completed": len(results.get("steps", [])),
+                    "error": str(exc),
+                    "status": "failed",
+                },
+                level="ERROR",
+            )
+            logger.error(f"Workflow failed after {duration:.2f} seconds: {exc}", exc_info=True)
         # Don't raise - return failed status instead
 
     # Write results summary

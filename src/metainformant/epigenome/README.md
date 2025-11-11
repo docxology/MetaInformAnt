@@ -6,6 +6,60 @@ The `epigenome` module provides tools for epigenetic modification analysis, incl
 
 This module handles epigenetic data processing, from raw sequencing data to biological interpretation of epigenetic modifications.
 
+### Module Architecture
+
+```mermaid
+graph TB
+    subgraph "Epigenome Module"
+        Methyl[methylation<br/>DNA Methylation]
+        ChIP[chipseq<br/>ChIP-seq Analysis]
+        ATAC[atac<br/>ATAC-seq Analysis]
+        Tracks[tracks<br/>Track Processing]
+        Workflow[workflow<br/>Workflow Orchestration]
+    end
+    
+    subgraph "Input Data"
+        BSSeq[Bisulfite Seq]
+        ChIPData[ChIP-seq Data]
+        ATACData[ATAC-seq Data]
+        BedGraph[BedGraph Files]
+    end
+    
+    subgraph "Other Modules"
+        DNA_Mod[dna]
+        Networks_Mod[networks]
+        MultiOmics[multiomics]
+    end
+    
+    BSSeq --> Methyl
+    ChIPData --> ChIP
+    ATACData --> ATAC
+    BedGraph --> Tracks
+    Methyl --> Workflow
+    ChIP --> Workflow
+    ATAC --> Workflow
+    Tracks --> Workflow
+    Workflow --> DNA_Mod
+    Workflow --> Networks_Mod
+    Workflow --> MultiOmics
+```
+
+### Epigenome Analysis Workflow
+
+```mermaid
+flowchart LR
+    Start[Raw Data] --> Type{Data Type?}
+    Type -->|Methylation| Methyl[Process Methylation]
+    Type -->|ChIP-seq| ChIP[Process ChIP-seq]
+    Type -->|ATAC-seq| ATAC[Process ATAC-seq]
+    Methyl --> QC[Quality Control]
+    ChIP --> QC
+    ATAC --> QC
+    QC --> Analyze[Analysis]
+    Analyze --> Integrate[Integration]
+    Integrate --> Output[Results]
+```
+
 ## Submodules
 
 ### Methylation Analysis (`methylation.py`)

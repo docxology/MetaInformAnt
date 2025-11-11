@@ -6,6 +6,62 @@ The `visualization` module provides unified plotting and animation utilities for
 
 This module offers a cohesive API for creating various types of plots, from statistical charts to phylogenetic trees and animations. It integrates multiple plotting backends while providing a consistent interface.
 
+### Module Architecture
+
+```mermaid
+graph TB
+    subgraph "Visualization Module"
+        Basic[basic<br/>Basic Plots]
+        Statistical[statistical<br/>Statistical Plots]
+        Trees[trees<br/>Phylogenetic Trees]
+        Networks[networks<br/>Network Visualization]
+        Animation[animation<br/>Animations]
+        Style[style<br/>Styling]
+    end
+    
+    subgraph "Input Data"
+        Data[Data Arrays]
+        Trees_Data[Tree Data]
+        Network_Data[Network Data]
+        TimeSeries[Time Series]
+    end
+    
+    subgraph "All Modules"
+        All[All Domain Modules]
+    end
+    
+    Data --> Basic
+    Data --> Statistical
+    Trees_Data --> Trees
+    Network_Data --> Networks
+    TimeSeries --> Animation
+    All --> Basic
+    All --> Statistical
+    All --> Trees
+    All --> Networks
+    All --> Animation
+```
+
+### Visualization Workflow
+
+```mermaid
+flowchart LR
+    Start[Data] --> Prepare[Prepare Data]
+    Prepare --> Type{Plot Type?}
+    Type -->|Basic| Basic[Basic Plot]
+    Type -->|Statistical| Stats[Statistical Plot]
+    Type -->|Tree| Tree[Tree Plot]
+    Type -->|Network| Network[Network Plot]
+    Type -->|Animation| Anim[Animation]
+    Basic --> Style[Apply Styling]
+    Stats --> Style
+    Tree --> Style
+    Network --> Style
+    Anim --> Style
+    Style --> Save[Save Figure]
+    Save --> Output[Output]
+```
+
 ## Module Organization
 
 The visualization package is organized into category-specific modules for clear organization and maintainability:

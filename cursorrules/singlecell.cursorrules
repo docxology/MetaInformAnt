@@ -33,10 +33,66 @@ pca_result = pca(expression_matrix, n_components=50)
 - Louvain algorithm
 - Community detection
 
-### Trajectory
+### Trajectory (`trajectory`)
 - Pseudotime analysis
 - Trajectory inference
 - Branch point detection
+
+**Patterns**:
+```python
+from metainformant.singlecell import compute_pseudotime, trajectory_analysis
+
+data = compute_pseudotime(data, root_cells=0, method="diffusion")
+traj_result = trajectory_analysis(data)
+```
+
+### Integration (`integration`)
+- Multi-sample batch correction
+- Canonical correlation analysis (CCA)
+- Mutual nearest neighbors (MNN) correction
+- Harmony batch correction
+- Data integration quality assessment
+
+**Patterns**:
+```python
+from metainformant.singlecell import (
+    integrate_datasets,
+    harmony_integration,
+    batch_correction
+)
+
+# Integrate multiple samples
+integrated = integrate_datasets([sample1_data, sample2_data, sample3_data])
+
+# Harmony batch correction
+corrected = harmony_integration(integrated, batch_key="batch")
+
+# Alternative: Combat batch correction
+corrected = batch_correction(integrated, batch_key="batch", method="combat")
+```
+
+### Visualization (`visualization`)
+- QC metrics visualization
+- Dimensionality reduction plots (UMAP, t-SNE)
+- Gene expression overlays
+- Trajectory visualizations
+- Cluster annotation plots
+
+**Patterns**:
+```python
+from metainformant.singlecell import (
+    plot_qc_metrics,
+    plot_dimensionality_reduction,
+    plot_gene_expression,
+    plot_clusters
+)
+
+# Create visualizations
+fig = plot_qc_metrics(data)
+fig = plot_dimensionality_reduction(data, method="umap", color_by="cluster")
+fig = plot_gene_expression(data, gene="GENE1")
+fig = plot_clusters(data, cluster_key="cluster")
+```
 
 ## Patterns
 
@@ -71,6 +127,8 @@ def normalize_data(data):
 - Preprocessing: `output/singlecell/<analysis>/preprocessing/`
 - Clustering: `output/singlecell/<analysis>/clustering/`
 - Trajectory: `output/singlecell/<analysis>/trajectory/`
+- Integration: `output/singlecell/<analysis>/integration/`
+- Visualizations: `output/singlecell/<analysis>/plots/`
 
 ### Dimensionality Reduction
 - Use `ml.dimensionality` for shared implementations

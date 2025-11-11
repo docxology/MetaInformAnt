@@ -69,3 +69,4 @@ The information module integrates with:
 - **[Workflows Documentation](../src/metainformant/information/WORKFLOWS.md)** - Workflow guides
 - **[Examples Documentation](../src/metainformant/information/EXAMPLES.md)** - Usage examples
 
+

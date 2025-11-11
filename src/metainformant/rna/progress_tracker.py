@@ -21,7 +21,7 @@ except ImportError:
     from metainformant.core.io import read_delimited
     from metainformant.core.logging import get_logger
 
-logger = get_logger("progress_tracker")
+logger = get_logger(__name__)
 
 
 class ProgressTracker:

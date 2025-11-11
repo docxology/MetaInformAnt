@@ -12,7 +12,9 @@ from typing import Any, Dict, List, Optional, Sequence
 import numpy as np
 from numpy.typing import NDArray
 
-from ..core import config, io, logging, paths
+from ..core import config, io, paths
+from ..core.errors import error_context
+from ..core.logging import log_with_metadata, setup_logger
 from .config import LifeEventsWorkflowConfig, load_life_events_config
 from .events import EventDatabase, EventSequence
 from .embeddings import learn_event_embeddings, sequence_embeddings
@@ -54,16 +56,29 @@ def analyze_life_course(
         >>> "embeddings" in results
         True
     """
-    logger = logging.setup_logger("life_course_analysis")
+    logger = setup_logger(__name__)
+    
+    # Log workflow start with metadata
+    log_with_metadata(
+        logger,
+        "Starting life course analysis",
+        {
+            "num_sequences": len(sequences),
+            "has_outcomes": outcomes is not None,
+            "output_dir": str(output_dir) if output_dir else "default",
+        },
+    )
     
     # Validate inputs
     if not sequences:
-        raise ValueError("sequences list cannot be empty")
+        with error_context("Life course analysis validation failed"):
+            raise ValueError("sequences list cannot be empty")
     
     if outcomes is not None and len(outcomes) != len(sequences):
-        raise ValueError(
-            f"outcomes length ({len(outcomes)}) must match sequences length ({len(sequences)})"
-        )
+        with error_context("Life course analysis validation failed"):
+            raise ValueError(
+                f"outcomes length ({len(outcomes)}) must match sequences length ({len(sequences)})"
+            )
     
     if output_dir is None:
         output_dir = Path("output/life_events")
@@ -198,6 +213,18 @@ def analyze_life_course(
     # Save results
     results_file = output_dir / "analysis_results.json"
     io.dump_json(results, results_file)
+    
+    # Log workflow completion with metadata
+    log_with_metadata(
+        logger,
+        "Life course analysis completed",
+        {
+            "num_sequences": len(sequences),
+            "has_model": "model" in results,
+            "has_embeddings": "embeddings" in results,
+            "results_file": str(results_file),
+        },
+    )
     logger.info(f"Analysis complete. Results saved to {results_file}")
     
     return results
@@ -230,7 +257,7 @@ def compare_populations(
         >>> "comparison" in comparison
         True
     """
-    logger = logging.setup_logger("life_course_comparison")
+    logger = setup_logger(__name__)
     
     # Validate inputs
     if not sequences_group1:
@@ -327,7 +354,7 @@ def intervention_analysis(
         >>> "pre_intervention" in results
         True
     """
-    logger = logging.setup_logger("intervention_analysis")
+    logger = setup_logger(__name__)
     
     # Validate inputs
     if not sequences:

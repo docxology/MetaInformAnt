@@ -10,7 +10,6 @@ This module provides comprehensive progress monitoring for FASTQ downloads:
 
 from __future__ import annotations
 
-import logging
 import threading
 import time
 from collections import defaultdict
@@ -18,9 +17,10 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from ...core.logging import get_logger
 from ...core.progress import progress_bar
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 class FileSizeMonitor:
@@ -157,7 +157,7 @@ class ThreadProgressTracker:
             elapsed = time.time() - self.start_time
             
             # Update progress bar if available
-            if self.progress_bar:
+            if self.progress_bar is not None:
                 try:
                     # Update description with current stats
                     elapsed_str = str(timedelta(seconds=int(elapsed)))
@@ -188,7 +188,7 @@ class ThreadProgressTracker:
             self.is_complete = True
             self.failed = not success
             
-            if self.progress_bar:
+            if self.progress_bar is not None:
                 try:
                     if success:
                         self.progress_bar.set_description(f"Thread {self.thread_id}: {self.run_id} [Complete]")
@@ -214,7 +214,7 @@ class ThreadProgressTracker:
     
     def close(self) -> None:
         """Close progress bar and cleanup."""
-        if self.progress_bar:
+        if self.progress_bar is not None:
             try:
                 self.progress_bar.close()
             except Exception:

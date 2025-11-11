@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 import math
 from collections import defaultdict
 from pathlib import Path
@@ -11,10 +10,11 @@ from typing import Any
 import numpy as np
 
 from ..core.io import ensure_directory
+from ..core.logging import get_logger
 from ..dna.population import allele_frequencies, observed_heterozygosity
 from ..math.popgen import hardy_weinberg_genotype_freqs
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Try importing scipy for statistical tests
 try:

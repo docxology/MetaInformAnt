@@ -55,71 +55,29 @@ This document outlines AI assistance in developing METAINFORMANT's comprehensive
 ### Workflow Steps (`steps/` directory)
 **Code Assistant Agent** implemented modular step implementations:
 
-#### Configuration Step (`steps/config.py`)
-- Base configuration file generation
-- Parameter inheritance and override handling
-- Multi-species configuration coordination
+#### Step Runners (11 modules)
+All 11 amalgkit step wrappers with comprehensive docstrings:
+- `config.py` - Configuration file generation
+- `metadata.py` - NCBI SRA metadata retrieval
+- `select.py` - Sample selection and filtering
+- `getfastq.py` - SRA to FASTQ conversion
+- `integrate.py` - Local FASTQ metadata integration
+- `quant.py` - Transcript abundance quantification
+- `merge.py` - Expression matrix construction
+- `cstmm.py` - Cross-species TMM normalization
+- `curate.py` - Outlier removal and bias correction
+- `csca.py` - Cross-species correlation analysis
+- `sanity.py` - Final integrity validation
 
-#### Metadata Step (`steps/metadata.py`)
-- NCBI SRA metadata retrieval
-- Search string construction and validation
-- Metadata filtering and curation
-- Tissue/condition/treatment categorization
-
-#### Selection Step (`steps/select.py`)
-- Sample selection logic based on criteria
-- Prioritization algorithms for sample ranking
-- Qualified sample list generation
-- Selection statistics and reporting
-
-#### FASTQ Step (`steps/getfastq.py`)
-- SRA to FASTQ conversion orchestration
-- Parallel download management
-- Progress tracking and resumption
-- File integrity validation
-- Download optimization strategies
-
-#### Integration Step (`steps/integrate.py`)
-- Local FASTQ metadata integration
-- File discovery and validation
-- Metadata table updates
-- Path resolution and normalization
-
-#### Quantification Step (`steps/quant.py`)
-- Kallisto/Salmon quantification execution
-- Per-sample abundance estimation
-- Quality metrics collection
-- Parallel quantification management
-
-#### Merge Step (`steps/merge.py`)
-- Expression matrix construction
-- TPM and count table generation
-- Sample metadata integration
-- Missing data handling
-
-#### Curation Step (`steps/curate.py`)
-- Outlier detection and removal
-- Batch effect correction
-- Quality control plot generation
-- Statistical validation
-
-#### Cross-Species Normalization (`steps/cstmm.py`)
-- TMM normalization across species
-- Ortholog table integration
-- Cross-species expression comparison
-- Normalization factor calculation
-
-#### Cross-Species Analysis (`steps/csca.py`)
-- Correlation analysis across species
-- Comparative expression plots
-- Conservation analysis
-- Statistical testing
-
-#### Sanity Checking (`steps/sanity.py`)
-- Input file validation
-- Output completeness checking
-- Data integrity verification
-- Workflow status reporting
+#### Unified Processing (`steps/process_samples.py`)
+**Code Assistant Agent** (2025) consolidated processing approaches:
+- **Unified Function**: Single `run_download_quant_workflow()` handles both sequential and parallel modes
+- **Sequential Mode** (`num_workers=1`): One sample at a time for maximum disk efficiency
+- **Parallel Mode** (`num_workers>1`): Multiple downloads in parallel, sequential quantification
+- **Consolidation**: Merged `parallel_download.py` and `sequential_process.py` into single module
+- **Removed Unused Code**: Deleted `batched_process.py` and `sample_pipeline.py` (never used)
+- **Progress Tracking**: Integrated `DownloadProgressMonitor` for real-time progress
+- **Disk Management**: Automatic FASTQ deletion after quantification to prevent disk exhaustion
 
 ### Pipeline Integration (`pipeline.py`)
 **Code Assistant Agent** designed:

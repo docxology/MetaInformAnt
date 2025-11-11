@@ -98,6 +98,36 @@ logger.error("Error occurred", exc_info=True)
 - Workflow orchestration functions
 - Config-based workflow execution
 
+### Database (`db`)
+- Optional database client helpers (PostgreSQL)
+- Database connection management
+- Query utilities
+
+### Disk (`disk`)
+- Disk space and file system utilities
+- Disk usage monitoring
+- File system operations
+
+### Hash (`hash`)
+- Content and file hashing functions
+- Checksum generation
+- File integrity verification
+
+### Discovery (`discovery`)
+- Symbolic mapping and context discovery utilities
+- Code discovery and analysis
+- Symbol resolution
+
+### Symbols (`symbols`)
+- Symbol indexing and cross-referencing utilities
+- Symbol management
+- Cross-module symbol resolution
+
+### Text (`text`)
+- Text normalization and manipulation utilities
+- Text processing functions
+- String manipulation helpers
+
 ## Patterns
 
 ### Defensive Imports

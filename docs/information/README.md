@@ -671,7 +671,7 @@ seq_list = list(dna_seqs.values())
 results = information_workflow(seq_list, k_values=[1, 2, 3], output_dir="output/information")
 
 # Generate report
-information_report(results, output_path="output/information/report.md", format="markdown")
+information_report(results, output_path="docs/information/report.md", format="markdown")
 ```
 
 ### Tutorial 2: RNA Expression Analysis

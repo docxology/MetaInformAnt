@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import logging
 import math
 from pathlib import Path
 from typing import Any
@@ -10,9 +9,10 @@ from typing import Any
 import numpy as np
 
 from ..core.io import ensure_directory, read_delimited, write_delimited
+from ..core.logging import get_logger
 from .quality import parse_vcf_full
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Try importing scipy for statistical tests
 try:

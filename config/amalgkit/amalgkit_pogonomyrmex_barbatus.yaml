@@ -85,12 +85,18 @@ steps:
   getfastq:
     out_dir: output/amalgkit/pogonomyrmex_barbatus/fastq
     threads: 24
-    # Cloud acceleration via individual mirrors
+    num_download_workers: 10  # Number of parallel download processes
+    # Cloud acceleration: AWS only (full SRA files)
+    # NOTE: NCBI and GCP have LITE files (metadata-only, no sequence data) for this species
+    # AWS has full SRA files with actual sequence data
     aws: yes
-    gcp: yes
-    ncbi: yes
+    gcp: no            # DISABLED: GCP has lite files (no sequence data)
+    ncbi: no           # DISABLED: NCBI has lite files (no sequence data)
     pfd: no           # DISABLED: parallel-fastq-dump usually not needed
     fastp: yes        # ENABLED: fastp QC tool
+    # IMPORTANT: vdb-config must be set to use a location with sufficient disk space
+    # Run: vdb-config -i and set repository root to a location with >50GB free space
+    # Or set via: vdb-config -s /repository/user/main/public/root=/path/to/large/disk
   quant:
     # If a Salmon/Kallisto index is available, set it; otherwise genome_dir is injected from genome step
     out_dir: output/amalgkit/pogonomyrmex_barbatus/quant

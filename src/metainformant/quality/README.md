@@ -6,6 +6,52 @@ The `quality` module provides tools for assessing and ensuring data quality acro
 
 This module handles quality assessment, filtering, and validation for biological datasets including sequences, expression data, and genomic information.
 
+### Module Architecture
+
+```mermaid
+graph TB
+    subgraph "Quality Module"
+        FASTQ[fastq<br/>FASTQ Quality]
+        Metrics[metrics<br/>Quality Metrics]
+        Contamination[contamination<br/>Contamination Detection]
+    end
+    
+    subgraph "Input Data"
+        FASTQFiles[FASTQ Files]
+        Expression[Expression Data]
+        Sequences[Sequences]
+    end
+    
+    subgraph "Other Modules"
+        DNA_Mod[dna]
+        RNA_Mod[rna]
+        All[All Modules]
+    end
+    
+    FASTQFiles --> FASTQ
+    Expression --> Metrics
+    Sequences --> Metrics
+    FASTQ --> Contamination
+    Metrics --> Contamination
+    DNA_Mod --> FASTQ
+    RNA_Mod --> Metrics
+    All --> Metrics
+```
+
+### Quality Control Workflow
+
+```mermaid
+flowchart TD
+    Start[Input Data] --> Assess[Assess Quality]
+    Assess --> Metrics[Calculate Metrics]
+    Metrics --> Filter{Quality OK?}
+    Filter -->|Yes| Pass[Pass Data]
+    Filter -->|No| Clean[Clean/Filter]
+    Clean --> Reassess[Reassess]
+    Reassess --> Filter
+    Pass --> Output[Output]
+```
+
 ## Submodules
 
 ### Sequence Quality (`fastq.py`)

@@ -14,6 +14,21 @@ Ecological metadata and community analysis: community structure analysis and div
 - Species abundance
 - Diversity metrics
 
+### Environmental (`environmental`)
+- Environmental metadata integration
+- Ecological parameter analysis
+- Environmental variable processing
+
+### Interactions (`interactions`)
+- Ecological interaction analysis
+- Species interaction networks
+- Interaction pattern detection
+
+### Workflow (`workflow`)
+- End-to-end ecology analysis workflows
+- Workflow orchestration
+- Configuration-based execution
+
 ## Patterns
 
 ### Community Data Formats
@@ -25,6 +40,8 @@ Ecological metadata and community analysis: community structure analysis and div
 - Base: `output/ecology/<analysis>/`
 - Communities: `output/ecology/communities/`
 - Diversity: `output/ecology/diversity/`
+- Environmental: `output/ecology/environmental/`
+- Interactions: `output/ecology/interactions/`
 
 ## Integration
 

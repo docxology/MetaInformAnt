@@ -146,51 +146,54 @@ For detailed documentation about AI contributions to specific modules, organized
 - **Configuration Management**: [`config/AGENTS.md`](config/AGENTS.md) - Configuration system development
 - **General Documentation**: [`docs/AGENTS.md`](docs/AGENTS.md) - AI assistance in documentation development
 
-Note: The `output/` directory is ephemeral and contains generated analysis results. Documentation about output structure is in the `.cursorrules` file and module-specific documentation.
+Note: The `output/` directory is **strictly ephemeral** and contains **only program-generated analysis results**. 
+
+**CRITICAL**: Never create documentation, reports, test scripts, or planning documents in `output/`. These belong in `docs/`, `tests/`, or `scripts/` respectively. See `output/.cursorrules` for the complete policy. Documentation about output structure is in the `.cursorrules` file and module-specific documentation.
 
 ### Source Module Documentation (Implementation)
 - **Core Utilities**: [`src/metainformant/core/AGENTS.md`](src/metainformant/core/AGENTS.md) - Core infrastructure and shared utilities
 - **DNA Analysis**: [`src/metainformant/dna/AGENTS.md`](src/metainformant/dna/AGENTS.md) - DNA sequence analysis and genomics
 - **RNA Analysis**: [`src/metainformant/rna/AGENTS.md`](src/metainformant/rna/AGENTS.md) - RNA transcriptomic analysis and workflow orchestration
 - **RNA Workflow Steps**: [`src/metainformant/rna/steps/AGENTS.md`](src/metainformant/rna/steps/AGENTS.md) - Modular RNA workflow step implementations
-- **GWAS Module**: [`src/metainformant/gwas/AGENTS.md`](src/metainformant/gwas/AGENTS.md) - Genome-wide association studies implementation
 - **Protein Analysis**: [`src/metainformant/protein/AGENTS.md`](src/metainformant/protein/AGENTS.md) - Protein sequence and structure analysis
-- **Mathematical Biology**: [`src/metainformant/math/AGENTS.md`](src/metainformant/math/AGENTS.md) - Mathematical and theoretical biology
-- **Machine Learning**: [`src/metainformant/ml/AGENTS.md`](src/metainformant/ml/AGENTS.md) - Machine learning for biological data
-- **Network Analysis**: [`src/metainformant/networks/AGENTS.md`](src/metainformant/networks/AGENTS.md) - Biological network analysis
-- **Multi-Omics**: [`src/metainformant/multiomics/AGENTS.md`](src/metainformant/multiomics/AGENTS.md) - Multi-omic data integration
-- **Single-Cell Genomics**: [`src/metainformant/singlecell/AGENTS.md`](src/metainformant/singlecell/AGENTS.md) - Single-cell RNA sequencing analysis
-- **Quality Control**: [`src/metainformant/quality/AGENTS.md`](src/metainformant/quality/AGENTS.md) - Data quality assessment
-- **Visualization**: [`src/metainformant/visualization/AGENTS.md`](src/metainformant/visualization/AGENTS.md) - Plotting and visualization utilities
-- **Simulation**: [`src/metainformant/simulation/AGENTS.md`](src/metainformant/simulation/AGENTS.md) - Synthetic data generation and modeling
+- **Epigenome**: [`src/metainformant/epigenome/AGENTS.md`](src/metainformant/epigenome/AGENTS.md) - Epigenetic modification analysis
 - **Ontology**: [`src/metainformant/ontology/AGENTS.md`](src/metainformant/ontology/AGENTS.md) - Functional annotation and ontologies
 - **Phenotype**: [`src/metainformant/phenotype/AGENTS.md`](src/metainformant/phenotype/AGENTS.md) - Phenotypic trait analysis
-- **Epigenome**: [`src/metainformant/epigenome/AGENTS.md`](src/metainformant/epigenome/AGENTS.md) - Epigenetic modification analysis
 - **Ecology**: [`src/metainformant/ecology/AGENTS.md`](src/metainformant/ecology/AGENTS.md) - Ecological metadata and community analysis
+- **Mathematical Biology**: [`src/metainformant/math/AGENTS.md`](src/metainformant/math/AGENTS.md) - Mathematical and theoretical biology
+- **GWAS Module**: [`src/metainformant/gwas/AGENTS.md`](src/metainformant/gwas/AGENTS.md) - Genome-wide association studies implementation
 - **Information Theory**: [`src/metainformant/information/AGENTS.md`](src/metainformant/information/AGENTS.md) - Information-theoretic analysis
 - **Life Events**: [`src/metainformant/life_events/AGENTS.md`](src/metainformant/life_events/AGENTS.md) - Life course event analysis
+- **Visualization**: [`src/metainformant/visualization/AGENTS.md`](src/metainformant/visualization/AGENTS.md) - Plotting and visualization utilities
+- **Simulation**: [`src/metainformant/simulation/AGENTS.md`](src/metainformant/simulation/AGENTS.md) - Synthetic data generation and modeling
+- **Single-Cell Genomics**: [`src/metainformant/singlecell/AGENTS.md`](src/metainformant/singlecell/AGENTS.md) - Single-cell RNA sequencing analysis
+- **Quality Control**: [`src/metainformant/quality/AGENTS.md`](src/metainformant/quality/AGENTS.md) - Data quality assessment
+- **Network Analysis**: [`src/metainformant/networks/AGENTS.md`](src/metainformant/networks/AGENTS.md) - Biological network analysis
+- **Machine Learning**: [`src/metainformant/ml/AGENTS.md`](src/metainformant/ml/AGENTS.md) - Machine learning for biological data
+- **Multi-Omics**: [`src/metainformant/multiomics/AGENTS.md`](src/metainformant/multiomics/AGENTS.md) - Multi-omic data integration
 
 ### Documentation Module Files (User Documentation)
 - **Core Documentation**: [`docs/core/AGENTS.md`](docs/core/AGENTS.md) - Core utilities documentation development
 - **DNA Documentation**: [`docs/dna/AGENTS.md`](docs/dna/AGENTS.md) - DNA analysis documentation development
-- **GWAS Documentation**: [`docs/gwas/AGENTS.md`](docs/gwas/AGENTS.md) - GWAS module documentation development
-- **Mathematical Biology Documentation**: [`docs/math/AGENTS.md`](docs/math/AGENTS.md) - Mathematical biology documentation development
-- **Machine Learning Documentation**: [`docs/ml/AGENTS.md`](docs/ml/AGENTS.md) - Machine learning documentation development
-- **Network Analysis Documentation**: [`docs/networks/AGENTS.md`](docs/networks/AGENTS.md) - Network analysis documentation development
-- **Quality Control Documentation**: [`docs/quality/AGENTS.md`](docs/quality/AGENTS.md) - Quality control documentation development
-- **Ontology Documentation**: [`docs/ontology/AGENTS.md`](docs/ontology/AGENTS.md) - Ontology documentation development
-- **Protein Documentation**: [`docs/protein/AGENTS.md`](docs/protein/AGENTS.md) - Protein analysis documentation development
-- **Phenotype Documentation**: [`docs/phenotype/AGENTS.md`](docs/phenotype/AGENTS.md) - Phenotype documentation development
-- **Epigenome Documentation**: [`docs/epigenome/AGENTS.md`](docs/epigenome/AGENTS.md) - Epigenome documentation development
-- **Ecology Documentation**: [`docs/ecology/AGENTS.md`](docs/ecology/AGENTS.md) - Ecology documentation development
-- **Visualization Documentation**: [`docs/visualization/AGENTS.md`](docs/visualization/AGENTS.md) - Visualization documentation development
-- **Single-Cell Documentation**: [`docs/singlecell/AGENTS.md`](docs/singlecell/AGENTS.md) - Single-cell documentation development
-- **Simulation Documentation**: [`docs/simulation/agents.md`](docs/simulation/agents.md) - Simulation documentation development
-- **Multi-Omics Documentation**: [`docs/multiomics/AGENTS.md`](docs/multiomics/AGENTS.md) - Multi-omics documentation development
 - **RNA Documentation**: [`docs/rna/AGENTS.md`](docs/rna/AGENTS.md) - RNA analysis documentation development
 - **Amalgkit Documentation**: [`docs/rna/amalgkit/AGENTS.md`](docs/rna/amalgkit/AGENTS.md) - Amalgkit integration documentation
 - **Amalgkit Steps Documentation**: [`docs/rna/amalgkit/steps/AGENTS.md`](docs/rna/amalgkit/steps/AGENTS.md) - Amalgkit workflow steps documentation
-- **RNA Examples Documentation**: [`docs/rna/examples/AGENTS.md`](docs/rna/examples/AGENTS.md) - RNA workflow example guides
+- **Protein Documentation**: [`docs/protein/AGENTS.md`](docs/protein/AGENTS.md) - Protein analysis documentation development
+- **Epigenome Documentation**: [`docs/epigenome/AGENTS.md`](docs/epigenome/AGENTS.md) - Epigenome documentation development
+- **Ontology Documentation**: [`docs/ontology/AGENTS.md`](docs/ontology/AGENTS.md) - Ontology documentation development
+- **Phenotype Documentation**: [`docs/phenotype/AGENTS.md`](docs/phenotype/AGENTS.md) - Phenotype documentation development
+- **Ecology Documentation**: [`docs/ecology/AGENTS.md`](docs/ecology/AGENTS.md) - Ecology documentation development
+- **Mathematical Biology Documentation**: [`docs/math/AGENTS.md`](docs/math/AGENTS.md) - Mathematical biology documentation development
+- **GWAS Documentation**: [`docs/gwas/AGENTS.md`](docs/gwas/AGENTS.md) - GWAS module documentation development
+- **Information Theory Documentation**: [`docs/information/AGENTS.md`](docs/information/AGENTS.md) - Information-theoretic analysis documentation development
+- **Life Events Documentation**: [`docs/life_events/AGENTS.md`](docs/life_events/AGENTS.md) - Life course event analysis documentation development
+- **Visualization Documentation**: [`docs/visualization/AGENTS.md`](docs/visualization/AGENTS.md) - Visualization documentation development
+- **Simulation Documentation**: [`docs/simulation/agents.md`](docs/simulation/agents.md) - Simulation documentation development
+- **Single-Cell Documentation**: [`docs/singlecell/AGENTS.md`](docs/singlecell/AGENTS.md) - Single-cell documentation development
+- **Quality Control Documentation**: [`docs/quality/AGENTS.md`](docs/quality/AGENTS.md) - Quality control documentation development
+- **Network Analysis Documentation**: [`docs/networks/AGENTS.md`](docs/networks/AGENTS.md) - Network analysis documentation development
+- **Machine Learning Documentation**: [`docs/ml/AGENTS.md`](docs/ml/AGENTS.md) - Machine learning documentation development
+- **Multi-Omics Documentation**: [`docs/multiomics/AGENTS.md`](docs/multiomics/AGENTS.md) - Multi-omics documentation development
 
 ### Scripts and Testing
 - **RNA Scripts**: [`scripts/rna/AGENTS.md`](scripts/rna/AGENTS.md) - RNA workflow scripts development

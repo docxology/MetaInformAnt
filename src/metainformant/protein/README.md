@@ -6,6 +6,66 @@ The `protein` module provides comprehensive tools for proteomic analysis, includ
 
 This module handles protein sequence analysis and integrates with various protein databases and structural data sources.
 
+### Module Architecture
+
+```mermaid
+graph TB
+    subgraph "Protein Module"
+        Seq[sequences<br/>Sequence Analysis]
+        Align[alignment<br/>Sequence Alignment]
+        Structure[structure<br/>Structure Analysis]
+        PDB[pdb<br/>PDB I/O]
+        AlphaFold[alphafold<br/>AlphaFold Integration]
+        UniProt[uniprot<br/>UniProt Integration]
+        InterPro[interpro<br/>Domain Annotation]
+        Proteomes[proteomes<br/>Proteome Retrieval]
+    end
+    
+    subgraph "External Databases"
+        UniProtDB[UniProt]
+        PDBDB[PDB]
+        AlphaFoldDB[AlphaFold DB]
+        InterProDB[InterPro]
+    end
+    
+    subgraph "Other Modules"
+        DNA_Mod[dna]
+        Networks_Mod[networks]
+        Ontology_Mod[ontology]
+    end
+    
+    UniProtDB --> UniProt
+    PDBDB --> PDB
+    AlphaFoldDB --> AlphaFold
+    InterProDB --> InterPro
+    UniProt --> Seq
+    PDB --> Structure
+    AlphaFold --> Structure
+    InterPro --> Seq
+    Seq --> Align
+    Structure --> Networks_Mod
+    Seq --> Ontology_Mod
+    DNA_Mod --> Seq
+```
+
+### Protein Analysis Workflow
+
+```mermaid
+flowchart TD
+    Start[Input] --> InputType{Input Type?}
+    InputType -->|Sequence| Seq[Sequence Analysis]
+    InputType -->|Accession| Fetch[Fetch from DB]
+    Fetch --> Seq
+    Seq --> Annotate[Functional Annotation]
+    Annotate --> Structure{Structure?}
+    Structure -->|Yes| AnalyzeStruct[Structure Analysis]
+    Structure -->|No| Predict[Structure Prediction]
+    Predict --> AnalyzeStruct
+    AnalyzeStruct --> Domains[Domain Identification]
+    Domains --> Networks[Network Analysis]
+    Networks --> Output[Results]
+```
+
 ## Submodules
 
 ### Proteome Retrieval (`proteomes.py`)

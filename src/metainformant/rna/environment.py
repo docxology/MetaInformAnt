@@ -6,14 +6,15 @@ and environment validation for RNA-seq workflows.
 
 from __future__ import annotations
 
-import logging
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 from typing import Any
 
-logger = logging.getLogger(__name__)
+from ..core.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 def check_amalgkit() -> tuple[bool, str]:

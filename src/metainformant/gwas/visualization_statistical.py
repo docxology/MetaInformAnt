@@ -6,7 +6,6 @@ and volcano plots to assess statistical quality and identify issues.
 
 from __future__ import annotations
 
-import logging
 import math
 from pathlib import Path
 from typing import Any
@@ -19,8 +18,9 @@ from scipy import stats
 matplotlib.use("Agg", force=True)
 
 from ..core.io import ensure_directory
+from ..core.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 try:
     import pandas as pd

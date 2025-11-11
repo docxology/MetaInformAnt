@@ -10,6 +10,60 @@ This module enables researchers to:
 - **Hypothesis Testing**: Test theoretical models with controlled synthetic data
 - **Training Data Generation**: Create datasets for machine learning applications
 
+### Module Architecture
+
+```mermaid
+graph TB
+    subgraph "Simulation Module"
+        Sequences[sequences<br/>Sequence Simulation]
+        RNA_Sim[rna<br/>RNA Simulation]
+        Agents[agents<br/>Agent-Based Models]
+        PopGen[popgen<br/>Population Genetics]
+    end
+    
+    subgraph "Output Data"
+        SimDNA[Simulated DNA]
+        SimRNA[Simulated RNA]
+        SimAgents[Agent Trajectories]
+        SimPop[Population Data]
+    end
+    
+    subgraph "Other Modules"
+        DNA_Mod[dna]
+        RNA_Mod[rna]
+        Math_Mod[math]
+        All[All Modules for Testing]
+    end
+    
+    Sequences --> SimDNA
+    RNA_Sim --> SimRNA
+    Agents --> SimAgents
+    PopGen --> SimPop
+    SimDNA --> DNA_Mod
+    SimRNA --> RNA_Mod
+    SimPop --> Math_Mod
+    SimDNA --> All
+    SimRNA --> All
+    SimAgents --> All
+    SimPop --> All
+```
+
+### Simulation Workflow
+
+```mermaid
+flowchart LR
+    Start[Parameters] --> Type{Simulation Type?}
+    Type -->|Sequences| Seq[Generate Sequences]
+    Type -->|RNA| RNA[Generate RNA Counts]
+    Type -->|Agents| Agent[Run Agent Model]
+    Type -->|PopGen| Pop[Population Simulation]
+    Seq --> Validate[Validate Output]
+    RNA --> Validate
+    Agent --> Validate
+    Pop --> Validate
+    Validate --> Output[Output Data]
+```
+
 ## Submodules
 
 ### Sequence Simulation (`sequences.py`)

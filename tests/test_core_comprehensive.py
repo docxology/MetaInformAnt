@@ -223,7 +223,7 @@ class TestCoreIO:
         io.write_csv(test_df, csv_file)
         assert csv_file.exists()
 
-        # Read CSV
+        # Read CSV (no index column expected since we write without index)
         loaded_df = io.read_csv(csv_file)
         assert loaded_df.shape == test_df.shape
         assert list(loaded_df.columns) == list(test_df.columns)
@@ -453,8 +453,9 @@ class TestEnhancedCoreMethods:
         assert ">" not in safe
         assert safe == "file_name_test.txt"
 
-        # Test temp file creation
+        # Test temp file creation (function returns path, we create the file)
         temp_file = paths.create_temp_file(suffix=".txt", directory=tmp_path)
+        temp_file.write_text("test content")
         assert temp_file.exists()
         assert temp_file.parent == tmp_path
 

@@ -8,20 +8,155 @@ Synthetic data generation and modeling: sequence generation, agent-based ecosyst
 
 ## Key Submodules
 
-### Sequence Generation
+### Sequences (`sequences`)
 - DNA/RNA/protein sequence generation
 - Realistic sequence properties
 - Evolutionary simulation
+- Sequence mutation
 
-### Agent-Based Modeling
-- Ecosystem modeling
+**Patterns**:
+```python
+from metainformant.simulation import generate_random_dna, mutate_sequence
+
+seq = generate_random_dna(length=1000, gc_content=0.5, rng=rng)
+mutated = mutate_sequence(seq, n_mut=10, rng=rng)
+```
+
+### Agents (`agents`)
+- Agent-based ecosystem modeling
+- GridWorld simulation
 - Population dynamics
 - Environmental interactions
 
-### Expression Simulation
+**Patterns**:
+```python
+from metainformant.simulation import Agent, GridWorld
+
+world = GridWorld(width=100, height=100)
+agent = Agent(world, x=50, y=50)
+agent.move(dx=1, dy=0)
+```
+
+### RNA (`rna`)
 - Expression count simulation
 - Realistic expression distributions
+- Negative binomial count generation
 - Batch effects and noise
+
+**Patterns**:
+```python
+from metainformant.simulation import simulate_counts_negative_binomial
+
+counts = simulate_counts_negative_binomial(
+    n_genes=1000,
+    n_samples=10,
+    mean_expression=5.0,
+    dispersion=0.5
+)
+```
+
+### Population Genetics (`popgen`)
+- Population sequence generation
+- Genotype matrix generation
+- Linkage disequilibrium simulation
+- Site frequency spectrum
+- Population bottlenecks and expansions
+
+**Patterns**:
+```python
+from metainformant.simulation import (
+    generate_population_sequences,
+    generate_genotype_matrix,
+    simulate_bottleneck_population
+)
+
+sequences = generate_population_sequences(
+    n_sequences=50,
+    sequence_length=1000,
+    nucleotide_diversity=0.01
+)
+```
+
+### Workflow (`workflow`)
+- End-to-end simulation pipelines
+- Complete workflow orchestration
+- Parameter validation
+- Reproducible simulation runs
+
+**Patterns**:
+```python
+from metainformant.simulation.workflow import (
+    run_sequence_simulation_workflow,
+    run_agent_simulation_workflow,
+    run_popgen_simulation_workflow
+)
+
+# Sequence simulation workflow
+results = run_sequence_simulation_workflow(
+    output_dir="output/simulation/sequences",
+    n_sequences=1000,
+    sequence_length=1000,
+    gc_content=0.5,
+    seed=42
+)
+
+# Agent-based simulation workflow
+results = run_agent_simulation_workflow(
+    output_dir="output/simulation/agents",
+    width=100,
+    height=100,
+    num_agents=500,
+    num_steps=1000,
+    seed=42
+)
+
+# Population genetics workflow
+results = run_popgen_simulation_workflow(
+    output_dir="output/simulation/popgen",
+    n_sequences=50,
+    sequence_length=1000,
+    nucleotide_diversity=0.01,
+    seed=42
+)
+```
+
+## Module-Specific Simulation Scripts
+
+The simulation module includes dedicated scripts for each domain module in `scripts/simulation/`:
+
+- **`simulate_core.py`**: Core utilities simulation (config files, workflow test data, I/O patterns)
+- **`simulate_dna.py`**: DNA sequence simulation (sequences, mutations, population genetics, alignment, phylogeny)
+- **`simulate_rna.py`**: RNA expression simulation (count matrices, differential expression, batch effects)
+- **`simulate_protein.py`**: Protein simulation (sequences, structure coordinates, domain annotations, PPI networks)
+- **`simulate_epigenome.py`**: Epigenome simulation (methylation patterns, chromatin accessibility, ChIP-seq peaks)
+- **`simulate_ontology.py`**: Ontology simulation (GO term annotations, enrichment test data)
+- **`simulate_phenotype.py`**: Phenotype simulation (morphological traits, behavioral traits, trait correlations)
+- **`simulate_ecology.py`**: Ecology simulation (species abundance, community composition, environmental metadata)
+- **`simulate_math.py`**: Mathematical biology simulation (coalescent models, selection experiments, population genetics)
+- **`simulate_visualization.py`**: Visualization data simulation (time-series, multi-dimensional, statistical test data)
+- **`simulate_singlecell.py`**: Single-cell simulation (scRNA-seq counts, cell types, trajectories)
+- **`simulate_quality.py`**: Quality control simulation (FASTQ quality scores, contamination patterns, quality metrics)
+- **`simulate_networks.py`**: Network simulation (PPI networks, regulatory networks, pathway networks)
+- **`simulate_ml.py`**: Machine learning simulation (feature matrices, classification/regression test data)
+- **`simulate_multiomics.py`**: Multi-omics simulation (cross-platform data, integrated datasets)
+- **`simulate_gwas.py`**: GWAS simulation (variants/VCF, genotype matrices, phenotypes, population structure)
+- **`simulate_life_events.py`**: Life events simulation (event sequences, life course patterns)
+- **`simulate_information.py`**: Information theory simulation (sequence information content, mutual information test data)
+
+**Usage Pattern**:
+```bash
+# Basic usage
+python3 scripts/simulation/simulate_<module>.py --type <simulation_type> [options]
+
+# Example: Generate DNA sequences
+python3 scripts/simulation/simulate_dna.py --type sequences --n 100 --length 1000
+
+# Example: Generate RNA expression with differential expression
+python3 scripts/simulation/simulate_rna.py --type differential --num-genes 500 --num-samples 10
+
+# Example: Generate GWAS variants
+python3 scripts/simulation/simulate_gwas.py --type variants --n-variants 1000 --n-samples 100
+```
 
 ## Patterns
 
@@ -33,8 +168,10 @@ Synthetic data generation and modeling: sequence generation, agent-based ecosyst
 ### Output Paths
 - Base: `output/simulation/<type>/`
 - Sequences: `output/simulation/sequences/`
-- Ecosystems: `output/simulation/ecosystems/`
-- Expression: `output/simulation/expression/`
+- Agents: `output/simulation/agents/`
+- RNA: `output/simulation/rna/`
+- Population Genetics: `output/simulation/popgen/`
+- Module-specific: `output/simulation/<module>/` (for module-specific scripts)
 
 ## Integration
 

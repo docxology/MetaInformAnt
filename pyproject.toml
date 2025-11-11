@@ -84,7 +84,6 @@ dev = [
     "pytest-cov>=4.0.0",
     "pytest-xdist>=3.0.0",  # For parallel test execution
     "pytest-benchmark>=4.0.0",  # Performance benchmarking
-    "pytest-mock>=3.10.0",  # Mock utilities (for external services only)
     "black>=22.0.0",
     "isort>=5.10.0",
     "flake8>=4.0.0",

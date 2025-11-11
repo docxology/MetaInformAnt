@@ -29,8 +29,8 @@ echo ""
 # Step 2: Discover ant species with RNA-seq data
 echo "Step 2: Discovering ant species with RNA-seq data..."
 echo "   This may take 5-15 minutes..."
-python3 scripts/rna/discover_ant_species_with_rnaseq.py \
-    --output-dir output/ant_discovery \
+python3 scripts/rna/discover_species.py \
+    --output config/amalgkit/ \
     --min-samples 10
 
 echo ""
@@ -125,15 +125,14 @@ echo "  bash scripts/rna/amalgkit/run_amalgkit.sh \\"
 echo "      --config config/amalgkit/amalgkit_camponotus_floridanus.yaml \\"
 echo "      --steps metadata,select,getfastq,quant,merge,curate,sanity"
 echo ""
-echo "To run all high-priority species in parallel:"
+echo "To run multiple species (run separately for each):"
 echo ""
-echo "  python3 scripts/rna/orchestrate_workflows.py \\"
-echo "      --species camponotus_floridanus solenopsis_invicta \\"
-echo "      --steps metadata select getfastq quant merge curate sanity"
+echo "  python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_camponotus_floridanus.yaml"
+echo "  python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_solenopsis_invicta.yaml"
 echo ""
 echo "To monitor progress:"
 echo ""
-echo "  python3 scripts/rna/get_current_status.py"
+echo "  python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_<species>.yaml --status"
 echo ""
 
 # Step 7: Optional - Start workflows

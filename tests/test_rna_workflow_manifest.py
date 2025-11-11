@@ -10,13 +10,14 @@ from metainformant.rna.amalgkit import check_cli_available
 from metainformant.rna.workflow import AmalgkitWorkflowConfig, execute_workflow
 
 
-def test_manifest_written_with_records(tmp_path: Path):
-    """Test that workflow execution writes manifest files with execution records."""
+def test_manifest_written_with_records(tmp_path: Path, ensure_amalgkit_available):
+    """Test that workflow execution writes manifest files with execution records.
+    
+    Uses ensure_amalgkit_available fixture to ensure amalgkit is available.
+    """
+    # Verify amalgkit is available (fixture ensures this)
     ok, _ = check_cli_available()
-    if not ok:
-        import pytest
-
-        pytest.skip("amalgkit not available on PATH")
+    assert ok, "amalgkit CLI must be available (ensured by fixture)"
 
     cfg = AmalgkitWorkflowConfig(work_dir=tmp_path / "work", threads=1)
     # Provide minimal metadata to allow downstream steps to run if applicable

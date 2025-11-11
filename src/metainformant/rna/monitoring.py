@@ -6,7 +6,6 @@ sample completion, and progress tracking across all RNA-seq workflows.
 
 from __future__ import annotations
 
-import logging
 import subprocess
 import time
 from collections.abc import Mapping
@@ -16,10 +15,12 @@ from typing import Any
 # Handle both relative and absolute imports
 try:
     from ...core.io import read_delimited
+    from ...core.logging import get_logger
 except ImportError:
     from metainformant.core.io import read_delimited
+    from metainformant.core.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def count_quantified_samples(config_path: Path) -> tuple[int, int]:
@@ -359,16 +360,49 @@ def check_workflow_progress(config_path: Path) -> dict[str, Any]:
         - total: int
         - percentage: float
         - remaining: int
+        - downloading: int (number of samples currently downloading)
+        - has_files: int (number of samples with downloaded files but not quantified)
     """
     quantified, total = count_quantified_samples(config_path)
     percentage = (quantified / total * 100) if total > 0 else 0.0
     remaining = total - quantified
+    
+    # Get downloading status
+    active_downloads = check_active_downloads()
+    downloading = len(active_downloads)
+    
+    # Count samples with files but not quantified
+    try:
+        from metainformant.rna.workflow import load_workflow_config
+        cfg = load_workflow_config(config_path)
+        fastq_dir = Path(cfg.per_step.get("getfastq", {}).get("out_dir", cfg.work_dir / "fastq"))
+        quant_dir = Path(cfg.per_step.get("quant", {}).get("out_dir", cfg.work_dir / "quant"))
+        
+        has_files = 0
+        getfastq_dir = fastq_dir / "getfastq"
+        if not getfastq_dir.exists():
+            getfastq_dir = fastq_dir
+        
+        if getfastq_dir.exists():
+            for sample_dir in getfastq_dir.iterdir():
+                if sample_dir.is_dir() and sample_dir.name.startswith("SRR"):
+                    # Check if has files but not quantified
+                    has_fastq = any(sample_dir.glob("*.fastq*"))
+                    has_sra = any(sample_dir.glob("*.sra"))
+                    if (has_fastq or has_sra):
+                        abundance_file = quant_dir / sample_dir.name / "abundance.tsv"
+                        if not abundance_file.exists() and sample_dir.name not in active_downloads:
+                            has_files += 1
+    except Exception:
+        has_files = 0
     
     return {
         "quantified": quantified,
         "total": total,
         "percentage": percentage,
         "remaining": remaining,
+        "downloading": downloading,
+        "has_files": has_files,
     }
 
 

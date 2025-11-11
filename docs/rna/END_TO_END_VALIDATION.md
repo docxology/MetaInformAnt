@@ -4,14 +4,27 @@
 
 ## Quick Validation
 
-Run the validation script to confirm everything is ready:
+Validate workflow configuration and planning:
 
 ```bash
-# Validate all species configs and workflow capability
-python3 scripts/validate_all_species_workflow.py
+# Check specific species workflow planning
+python3 -c "
+from pathlib import Path
+from metainformant.rna.workflow import load_workflow_config, plan_workflow
 
-# Test workflow planning for all species
-python3 scripts/test_end_to_end_startup.py
+cfg = load_workflow_config('config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml')
+steps = plan_workflow(cfg)
+print(f'✅ {len(steps)} steps planned for cfloridanus')
+"
+
+# Check all species configs
+python3 -c "
+from pathlib import Path
+from metainformant.rna.orchestration import discover_species_configs
+
+configs = discover_species_configs(Path('config/amalgkit'))
+print(f'✅ {len(configs)} species configs discovered')
+"
 ```
 
 ## Validation Results
@@ -25,7 +38,7 @@ python3 scripts/test_end_to_end_startup.py
 - ✅ **AK_THREADS environment variable** works correctly
 - ✅ Default threads: 24 (configurable per config file)
 - ✅ Override via environment: `export AK_THREADS=24`
-- ✅ Total thread allocation: Use `batch_download_species.py --total-threads 24` for distributed workflows
+- ✅ Parallel downloads: Configure `num_download_workers` in each species config file
 
 ### Workflow Planning
 - ✅ All 11 workflow steps can be planned
@@ -34,7 +47,7 @@ python3 scripts/test_end_to_end_startup.py
 
 ### Startup Capability
 - ✅ All species can start workflows
-- ✅ Scripts available: `run_multi_species.py`, `workflow_ena_integrated.py`, `batch_download_species.py`
+- ✅ Script available: `run_workflow.py` (main orchestrator for all workflows)
 
 ## Starting End-to-End Workflows
 
@@ -48,21 +61,21 @@ source .venv/bin/activate  # or /tmp/metainformant_venv/bin/activate
 uv pip install -e .
 uv pip install git+https://github.com/kfuku52/amalgkit
 
-# Start all species with immediate processing and 24 threads TOTAL distributed across species
-python3 scripts/rna/batch_download_species.py --total-threads 24
+# Run separately for each species (recommended)
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species1.yaml
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species2.yaml
 
-# Or sequential execution with threads per species:
-export AK_THREADS=24
-python3 scripts/rna/run_multi_species.py
+# Or run in parallel (background)
+nohup python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species1.yaml > logs/species1.log 2>&1 &
+nohup python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species2.yaml > logs/species2.log 2>&1 &
 ```
 
 **What happens (immediate processing):**
-1. Auto-discovers all 20 species configs
-2. 24 threads TOTAL distributed evenly across all species (minimum 1 per species)
+1. Each species workflow runs independently
+2. Parallel downloads configured via `num_download_workers` in each config file
 3. Immediate per-sample processing: download → immediately quantify → immediately delete FASTQs
-4. Dynamic thread redistribution as species complete
-5. Processes: metadata → select → getfastq → quant → merge → curate → sanity
-6. Cross-species analysis (CSTMM, CSCA) after all complete
+4. Processes: metadata → select → getfastq → quant → merge → curate → sanity
+5. Cross-species analysis (CSTMM, CSCA) can be run after all species complete
 
 ### Method 2: All Species (ENA Workflow - Recommended)
 
@@ -75,10 +88,8 @@ for config in config/amalgkit/amalgkit_*.yaml; do
   [[ "$config" == *test* ]] && continue
   
   species=$(basename "$config" .yaml | sed 's/amalgkit_//')
-  nohup python3 scripts/rna/workflow_ena_integrated.py \
+  nohup python3 scripts/rna/run_workflow.py \
     --config "$config" \
-    --batch-size 12 \
-    --threads 12 \
     > output/workflow_${species}_$(date +%Y%m%d_%H%M%S).log 2>&1 &
 done
 
@@ -87,10 +98,7 @@ for config in config/amalgkit/amalgkit_*.yaml; do
   [[ "$config" == *template* ]] && continue
   [[ "$config" == *test* ]] && continue
   
-  python3 scripts/rna/workflow_ena_integrated.py \
-    --config "$config" \
-    --batch-size 12 \
-    --threads 12
+  python3 scripts/rna/run_workflow.py --config "$config"
 done
 ```
 
@@ -142,35 +150,38 @@ The workflow can continue from checkpoints:
 
 All species support configurable threads:
 
-- **Default**: 24 threads per species (in config files, for sequential workflows)
-- **Total threads**: Use `batch_download_species.py --total-threads 24` for distributed workflows (24 total across all species)
-- **Override**: `export AK_THREADS=24` (environment variable, for sequential workflows)
-- **Per-config**: Edit `threads:` in each YAML file
-- **Command-line**: `--threads 24` (ENA workflow only)
+- **Parallel downloads**: Configure `num_download_workers` in each species config file (default: 16)
+- **Quantification threads**: Configure `threads` in each species config file (default: 24)
+- **Per-config**: Edit `steps.getfastq.num_download_workers` and `steps.getfastq.threads` in each YAML file
+- **Environment override**: `export AK_THREADS=24` (for threads, not num_download_workers)
 
 ## Validation Commands
 
 ```bash
-# Full validation
-python3 scripts/validate_all_species_workflow.py
-
-# Quick startup test
-python3 scripts/test_end_to_end_startup.py
-
-# Check specific species
+# Check specific species workflow planning
 python3 -c "
 from pathlib import Path
 from metainformant.rna.workflow import load_workflow_config, plan_workflow
 
-cfg = load_workflow_config('config/amalgkit/amalgkit_cfloridanus.yaml')
+cfg = load_workflow_config('config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml')
 steps = plan_workflow(cfg)
 print(f'✅ {len(steps)} steps planned')
+"
+
+# Check all species configs
+python3 -c "
+from pathlib import Path
+from metainformant.rna.orchestration import discover_species_configs
+
+configs = discover_species_configs(Path('config/amalgkit'))
+print(f'✅ {len(configs)} species configs discovered')
+for species in sorted(configs.keys())[:5]:
+    print(f'  - {species}')
 "
 ```
 
 ## See Also
 
-- **[RUN_ALL_SPECIES.md](RUN_ALL_SPECIES.md)**: Complete guide for running all species
-- **[ORCHESTRATION/README.md](ORCHESTRATION/README.md)**: Orchestrator selection
-- **[MULTI_SPECIES_QUICK_START.md](MULTI_SPECIES_QUICK_START.md)**: Production workflows
+- **[GETTING_STARTED.md](GETTING_STARTED.md)**: Complete guide for running all species
+- **[ORCHESTRATION.md](ORCHESTRATION.md)**: Orchestrator selection
 

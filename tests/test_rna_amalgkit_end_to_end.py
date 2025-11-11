@@ -3,6 +3,9 @@ Comprehensive end-to-end tests for amalgkit RNA-seq workflow.
 
 Tests the complete amalgkit pipeline from metadata to quantification,
 using real data without mocks.
+
+All tests require amalgkit CLI to be available. The conftest.py fixture
+ensures amalgkit is available before tests run.
 """
 
 import pytest
@@ -25,11 +28,14 @@ class TestAmalgkitEndToEnd:
         if self.test_dir.exists():
             shutil.rmtree(self.test_dir)
     
-    def test_metadata_to_config_workflow(self):
-        """Test metadata → integrate → config workflow."""
+    def test_metadata_to_config_workflow(self, ensure_amalgkit_available):
+        """Test metadata → integrate → config workflow.
+        
+        Uses ensure_amalgkit_available fixture to ensure amalgkit is available.
+        """
+        # Verify amalgkit is available (fixture ensures this)
         available, _ = amalgkit.check_cli_available()
-        if not available:
-            pytest.skip("amalgkit CLI not available")
+        assert available, "amalgkit CLI must be available (ensured by fixture)"
         
         work_dir = self.test_dir / "workflow1"
         work_dir.mkdir(parents=True, exist_ok=True)
@@ -75,12 +81,14 @@ class TestAmalgkitEndToEnd:
         config_dir = work_dir / "config_base"
         assert config_dir.exists(), "config_base directory not created"
     
-    def test_cli_availability(self):
-        """Test that amalgkit CLI is available."""
-        available, _ = amalgkit.check_cli_available()
+    def test_cli_availability(self, ensure_amalgkit_available):
+        """Test that amalgkit CLI is available.
         
-        if not available:
-            pytest.skip("amalgkit CLI not available")
+        Uses ensure_amalgkit_available fixture to ensure amalgkit is available.
+        """
+        # Verify amalgkit is available (fixture ensures this)
+        available, _ = amalgkit.check_cli_available()
+        assert available, "amalgkit CLI must be available (ensured by fixture)"
         
         # Test version check
         result = subprocess.run(
@@ -92,11 +100,14 @@ class TestAmalgkitEndToEnd:
         assert result.returncode == 0
         assert "AMALGKIT version" in result.stdout or "AMALGKIT version" in result.stderr
     
-    def test_workflow_step_sequence(self):
-        """Test that workflow steps execute in correct sequence."""
+    def test_workflow_step_sequence(self, ensure_amalgkit_available):
+        """Test that workflow steps execute in correct sequence.
+        
+        Uses ensure_amalgkit_available fixture to ensure amalgkit is available.
+        """
+        # Verify amalgkit is available (fixture ensures this)
         available, _ = amalgkit.check_cli_available()
-        if not available:
-            pytest.skip("amalgkit CLI not available")
+        assert available, "amalgkit CLI must be available (ensured by fixture)"
         
         work_dir = self.test_dir / "sequence_test"
         work_dir.mkdir(parents=True, exist_ok=True)
@@ -120,11 +131,14 @@ class TestAmalgkitEndToEnd:
             # Allow success or informational codes
             assert result.returncode in (0, 2), f"{step_name} failed with code {result.returncode}"
     
-    def test_complete_mini_workflow(self):
-        """Test a minimal complete workflow with very limited data."""
+    def test_complete_mini_workflow(self, ensure_amalgkit_available):
+        """Test a minimal complete workflow with very limited data.
+        
+        Uses ensure_amalgkit_available fixture to ensure amalgkit is available.
+        """
+        # Verify amalgkit is available (fixture ensures this)
         available, _ = amalgkit.check_cli_available()
-        if not available:
-            pytest.skip("amalgkit CLI not available")
+        assert available, "amalgkit CLI must be available (ensured by fixture)"
         
         work_dir = self.test_dir / "mini_workflow"
         work_dir.mkdir(parents=True, exist_ok=True)
@@ -187,6 +201,101 @@ class TestAmalgkitEndToEnd:
         print("\n✅ Mini workflow completed successfully!")
 
 
+class TestCompleteWorkflowAllSteps:
+    """Test complete workflow with all 11 steps in order."""
+
+    def setup_method(self):
+        """Setup test directory."""
+        self.test_dir = Path("output/test_complete_workflow")
+        self.test_dir.mkdir(parents=True, exist_ok=True)
+
+    def teardown_method(self):
+        """Cleanup test directory."""
+        if self.test_dir.exists():
+            shutil.rmtree(self.test_dir)
+
+    def test_all_steps_execute_in_order(self, ensure_amalgkit_available):
+        """Test that all 11 steps execute in correct order.
+        
+        This test verifies the complete workflow execution order:
+        metadata → integrate → config → select → getfastq → quant → merge → cstmm → curate → csca → sanity
+        """
+        # Verify amalgkit is available
+        available, _ = amalgkit.check_cli_available()
+        assert available, "amalgkit CLI must be available (ensured by fixture)"
+        
+        from metainformant.rna.workflow import (
+            AmalgkitWorkflowConfig,
+            execute_workflow,
+            plan_workflow,
+        )
+        
+        work_dir = self.test_dir / "complete_workflow"
+        work_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Create minimal config
+        cfg = AmalgkitWorkflowConfig(
+            work_dir=work_dir,
+            threads=1,
+            species_list=["Apis_mellifera"],
+            per_step={
+                "metadata": {
+                    "search_string": '"Apis mellifera"[Organism] AND RNA-Seq[Strategy]',
+                    "max_samples": 1,  # Limit to 1 sample for testing
+                },
+            },
+        )
+        
+        # Plan workflow
+        steps = plan_workflow(cfg)
+        step_names = [name for name, _ in steps]
+        
+        # Verify all 11 steps are planned
+        expected_steps = [
+            "metadata",
+            "config",
+            "select",
+            "getfastq",
+            "integrate",
+            "quant",
+            "merge",
+            "cstmm",
+            "curate",
+            "csca",
+            "sanity",
+        ]
+        
+        assert len(step_names) == len(expected_steps)
+        assert step_names == expected_steps, f"Step order mismatch: {step_names} != {expected_steps}"
+        
+        # Execute workflow (may fail due to missing dependencies, but order is verified)
+        return_codes = execute_workflow(cfg, check=False)
+        
+        # Should have return codes for all steps
+        assert len(return_codes) == len(steps)
+        
+        # Verify manifest was created
+        manifest_path = cfg.manifest_path or (cfg.work_dir / "amalgkit.manifest.jsonl")
+        if manifest_path.exists():
+            from metainformant.core.io import read_jsonl
+            
+            records = list(read_jsonl(manifest_path))
+            manifest_step_names = [
+                r["step"] for r in records 
+                if r.get("step") in expected_steps
+            ]
+            
+            # Manifest steps should be in planned order
+            # (allowing for some to be skipped)
+            if manifest_step_names:
+                for i, step_name in enumerate(manifest_step_names):
+                    if i > 0:
+                        prev_step = manifest_step_names[i - 1]
+                        prev_idx = expected_steps.index(prev_step)
+                        curr_idx = expected_steps.index(step_name)
+                        assert curr_idx >= prev_idx, "Steps executed out of order"
+
+
 class TestAmalgkitStepRunners:
     """Test individual step runners work correctly."""
     
@@ -200,11 +309,14 @@ class TestAmalgkitStepRunners:
         if self.test_dir.exists():
             shutil.rmtree(self.test_dir)
     
-    def test_metadata_runner(self):
-        """Test metadata step runner."""
+    def test_metadata_runner(self, ensure_amalgkit_available):
+        """Test metadata step runner.
+        
+        Uses ensure_amalgkit_available fixture to ensure amalgkit is available.
+        """
+        # Verify amalgkit is available (fixture ensures this)
         available, _ = amalgkit.check_cli_available()
-        if not available:
-            pytest.skip("amalgkit CLI not available")
+        assert available, "amalgkit CLI must be available (ensured by fixture)"
         
         result = amalgkit.metadata(
             {
@@ -221,11 +333,14 @@ class TestAmalgkitStepRunners:
         # Metadata may fail due to network issues
         assert result.returncode in (0, 1, 2)
     
-    def test_config_runner(self):
-        """Test config step runner."""
+    def test_config_runner(self, ensure_amalgkit_available):
+        """Test config step runner.
+        
+        Uses ensure_amalgkit_available fixture to ensure amalgkit is available.
+        """
+        # Verify amalgkit is available (fixture ensures this)
         available, _ = amalgkit.check_cli_available()
-        if not available:
-            pytest.skip("amalgkit CLI not available")
+        assert available, "amalgkit CLI must be available (ensured by fixture)"
         
         # Need metadata first
         metadata_dir = self.test_dir / "metadata"
@@ -247,11 +362,14 @@ class TestAmalgkitStepRunners:
         assert hasattr(result, 'returncode')
         assert result.returncode in (0, 2)
     
-    def test_sanity_runner(self):
-        """Test sanity step runner."""
+    def test_sanity_runner(self, ensure_amalgkit_available):
+        """Test sanity step runner.
+        
+        Uses ensure_amalgkit_available fixture to ensure amalgkit is available.
+        """
+        # Verify amalgkit is available (fixture ensures this)
         available, _ = amalgkit.check_cli_available()
-        if not available:
-            pytest.skip("amalgkit CLI not available")
+        assert available, "amalgkit CLI must be available (ensured by fixture)"
         
         # Create minimal required structure
         metadata_dir = self.test_dir / "metadata"

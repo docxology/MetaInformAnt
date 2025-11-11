@@ -62,7 +62,7 @@ def dump_json(obj: Any, path: str | Path, *, indent: int | None = None, atomic: 
     
     Args:
         obj: Object to serialize (must be JSON-serializable)
-        path: Output file path
+        path: Output file path (supports .gz extension for gzip compression)
         indent: Number of spaces for indentation (None for compact)
         atomic: If True, write to temp file then rename (prevents corruption)
     
@@ -74,16 +74,33 @@ def dump_json(obj: Any, path: str | Path, *, indent: int | None = None, atomic: 
     p = Path(path)
     ensure_directory(p.parent)
     
+    # Check if path ends with .gz to determine compression
+    is_gzipped = p.suffix == ".gz"
+    
     try:
         if atomic:
             # Atomic write: write to temp file, then rename
-            temp_path = p.with_suffix(p.suffix + ".tmp")
-            with open_text_auto(temp_path, mode="wt") as fh:
-                json.dump(obj, fh, indent=indent, sort_keys=True)
+            # For .gz files, keep .gz extension on temp file so compression works
+            if is_gzipped:
+                # For file.json.gz, create file.json.gz.tmp
+                temp_path = p.with_suffix(p.suffix + ".tmp")
+            else:
+                temp_path = p.with_suffix(p.suffix + ".tmp")
+            
+            if is_gzipped:
+                with gzip.open(temp_path, "wt", encoding="utf-8") as fh:
+                    json.dump(obj, fh, indent=indent, sort_keys=True)
+            else:
+                with open_text_auto(temp_path, mode="wt") as fh:
+                    json.dump(obj, fh, indent=indent, sort_keys=True)
             temp_path.replace(p)  # Atomic rename
         else:
-            with open_text_auto(p, mode="wt") as fh:
-                json.dump(obj, fh, indent=indent, sort_keys=True)
+            if is_gzipped:
+                with gzip.open(p, "wt", encoding="utf-8") as fh:
+                    json.dump(obj, fh, indent=indent, sort_keys=True)
+            else:
+                with open_text_auto(p, mode="wt") as fh:
+                    json.dump(obj, fh, indent=indent, sort_keys=True)
     except Exception as e:
         raise CoreIOError(f"Failed to write JSON file {path}: {e}") from e
 
@@ -297,6 +314,9 @@ def write_csv(data: Any, path: str | Path, **kwargs) -> None:
     try:
         import pandas as pd
         ensure_directory(Path(path).parent)
+        # Default to not writing index unless explicitly requested
+        if "index" not in kwargs:
+            kwargs["index"] = False
         # Assume pandas DataFrame
         if isinstance(data, pd.DataFrame):
             data.to_csv(path, **kwargs)
@@ -328,7 +348,7 @@ def write_csv(data: Any, path: str | Path, **kwargs) -> None:
                 write_delimited(rows, path, delimiter=",")
 
 
-def read_tsv(path: str | Path):
+def read_tsv(path: str | Path) -> list[list[str]]:
     """Read TSV file."""
     with open_text_auto(path, mode="rt") as fh:
         reader = csv.reader(fh, delimiter="\t")

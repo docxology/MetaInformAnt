@@ -9,7 +9,6 @@ multiple visualization types for publication-quality figures.
 
 from __future__ import annotations
 
-import logging
 import math
 from pathlib import Path
 from typing import Any
@@ -22,8 +21,9 @@ from matplotlib.patches import Rectangle
 matplotlib.use("Agg", force=True)
 
 from ..core.io import ensure_directory
+from ..core.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 # Try importing pandas and seaborn for advanced plotting
 try:

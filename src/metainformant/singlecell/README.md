@@ -6,6 +6,57 @@ The `singlecell` module provides comprehensive tools for single-cell transcripto
 
 This module handles the complete single-cell RNA sequencing analysis pipeline from raw count matrices to biological interpretation.
 
+### Module Architecture
+
+```mermaid
+graph TB
+    subgraph "Single Cell Module"
+        Preprocess[preprocessing<br/>Preprocessing]
+        DimRed[dimensionality<br/>Dimensionality Reduction]
+        Cluster[clustering<br/>Clustering]
+        Trajectory[trajectory<br/>Trajectory Inference]
+        Integration[integration<br/>Integration]
+    end
+    
+    subgraph "Input Data"
+        CountMatrix[Count Matrix]
+        Metadata[Cell Metadata]
+    end
+    
+    subgraph "Other Modules"
+        RNA_Mod[rna]
+        MultiOmics[multiomics]
+        ML_Mod[ml]
+        QC_Mod[quality]
+    end
+    
+    CountMatrix --> Preprocess
+    Metadata --> Preprocess
+    Preprocess --> DimRed
+    DimRed --> Cluster
+    DimRed --> Trajectory
+    Cluster --> Integration
+    Trajectory --> Integration
+    RNA_Mod --> CountMatrix
+    MultiOmics --> Integration
+    ML_Mod --> DimRed
+    QC_Mod --> Preprocess
+```
+
+### Single-Cell Analysis Workflow
+
+```mermaid
+flowchart TD
+    Start[Count Matrix] --> QC[Quality Control]
+    QC --> Filter[Filter Cells/Genes]
+    Filter --> Normalize[Normalize]
+    Normalize --> DimRed[Dimensionality Reduction]
+    DimRed --> Cluster[Clustering]
+    Cluster --> Trajectory[Trajectory Analysis]
+    Trajectory --> DE[Differential Expression]
+    DE --> Output[Results]
+```
+
 ## Key Components
 
 ### Preprocessing (`preprocessing.py`)

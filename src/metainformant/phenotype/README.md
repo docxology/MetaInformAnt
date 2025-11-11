@@ -6,6 +6,49 @@ The `phenotype` module provides tools for phenotypic trait analysis, curation, a
 
 This module handles morphological and behavioral phenotype data, including loading from structured JSON files (e.g., AntWiki format). Enables phenotype-genotype association studies and morphological trait analysis.
 
+### Module Architecture
+
+```mermaid
+graph TB
+    subgraph "Phenotype Module"
+        AntWiki[antwiki<br/>AntWiki Integration]
+        LifeCourse[life_course<br/>Life Course Analysis]
+    end
+    
+    subgraph "Input Data"
+        AntWikiJSON[AntWiki JSON]
+        EventSeqs[Event Sequences]
+    end
+    
+    subgraph "Other Modules"
+        LifeEvents[life_events]
+        GWAS_Mod[gwas]
+        Networks_Mod[networks]
+    end
+    
+    AntWikiJSON --> AntWiki
+    EventSeqs --> LifeCourse
+    AntWiki --> LifeCourse
+    LifeCourse --> LifeEvents
+    LifeCourse --> GWAS_Mod
+    LifeCourse --> Networks_Mod
+```
+
+### Phenotype Analysis Workflow
+
+```mermaid
+flowchart LR
+    Start[Input Data] --> Source{Data Source?}
+    Source -->|AntWiki| LoadAntWiki[Load AntWiki JSON]
+    Source -->|Events| LoadEvents[Load Event Sequences]
+    LoadAntWiki --> Extract[Extract Phenotypes]
+    LoadEvents --> Extract
+    Extract --> Aggregate[Aggregate Traits]
+    Aggregate --> Analyze[Analysis]
+    Analyze --> Associate[GWAS Association]
+    Associate --> Output[Results]
+```
+
 ## Key Components
 
 ### AntWiki Integration (`antwiki.py`)

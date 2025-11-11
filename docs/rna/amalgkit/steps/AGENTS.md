@@ -132,7 +132,7 @@ This step documentation integrates with:
 - **[../amalgkit.md](../amalgkit.md)**: Complete pipeline documentation (includes advanced usage)
 - **[../testing_coverage.md](../testing_coverage.md)**: Test coverage and validation
 - **[../../workflow.md](../../workflow.md)**: RNA workflow orchestration
-- **[../../configs.md](../../configs.md)**: Configuration management
+- **[../../CONFIGURATION.md](../../CONFIGURATION.md)**: Configuration management
 
 ---
 

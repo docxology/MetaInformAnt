@@ -17,7 +17,7 @@ def test_load_workflow_config_and_plan_uses_yaml_values():
     cfg_path = repo_root / "config" / "amalgkit" / "amalgkit_test.yaml"
     if not cfg_path.exists():
         # Fallback to pbarbatus config if test config doesn't exist
-        cfg_path = repo_root / "config" / "amalgkit" / "amalgkit_pbarbatus.yaml"
+        cfg_path = repo_root / "config" / "amalgkit" / "amalgkit_pogonomyrmex_barbatus.yaml"
         # Adjust expectation for pbarbatus config which has threads: 12
         expected_threads = 12
     else:
@@ -63,7 +63,7 @@ def test_env_overrides_for_config_threads(tmp_path: Path):
     # Use test config if available, otherwise use pbarbatus
     cfg_path = repo_root / "config" / "amalgkit" / "amalgkit_test.yaml"
     if not cfg_path.exists():
-        cfg_path = repo_root / "config" / "amalgkit" / "amalgkit_pbarbatus.yaml"
+        cfg_path = repo_root / "config" / "amalgkit" / "amalgkit_pogonomyrmex_barbatus.yaml"
     
     # Ensure at least one config exists
     assert cfg_path.exists(), f"Config file not found: {cfg_path}"

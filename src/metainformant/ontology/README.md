@@ -6,6 +6,56 @@ The `ontology` module provides tools for functional annotation and ontology anal
 
 This module handles ontology parsing, hierarchy traversal, term queries, and serialization. Provides lightweight, efficient tools for working with OBO-format ontologies without requiring external database connections. Includes error handling, validation, caching, and support for multiple relationship types.
 
+### Module Architecture
+
+```mermaid
+graph TB
+    subgraph "Ontology Module"
+        GO[go<br/>Gene Ontology]
+        OBO[obo<br/>OBO Parser]
+        Query[query<br/>Term Queries]
+        Serialize[serialize<br/>Serialization]
+        Types[types<br/>Type System]
+    end
+    
+    subgraph "Input"
+        OBOFile[OBO File]
+        Terms[GO Terms]
+    end
+    
+    subgraph "Other Modules"
+        Protein_Mod[protein]
+        Networks_Mod[networks]
+        Info_Mod[information]
+    end
+    
+    OBOFile --> OBO
+    OBO --> GO
+    Terms --> Query
+    GO --> Query
+    Query --> Serialize
+    GO --> Protein_Mod
+    GO --> Networks_Mod
+    GO --> Info_Mod
+```
+
+### Ontology Analysis Workflow
+
+```mermaid
+flowchart TD
+    Start[OBO File] --> Load[Load Ontology]
+    Load --> Validate[Validate Structure]
+    Validate --> Query{Query Type?}
+    Query -->|Term Info| TermInfo[Get Term Info]
+    Query -->|Ancestors| Ancestors[Get Ancestors]
+    Query -->|Descendants| Descendants[Get Descendants]
+    Query -->|Enrichment| Enrich[Enrichment Analysis]
+    TermInfo --> Results[Results]
+    Ancestors --> Results
+    Descendants --> Results
+    Enrich --> Results
+```
+
 ## Key Components
 
 ### Gene Ontology Loading (`go.py`)

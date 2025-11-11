@@ -82,9 +82,10 @@ Updated `README.md` and `AGENTS.md` to reflect new consolidated structure.
 
 ### Monitoring and Testing
 **Code Assistant Agent** developed:
-- `monitor_workflow.py` for real-time workflow monitoring dashboard
-- `monitor_amalgkit_progress.sh` for multi-species progress tracking
-- Comprehensive test suites
+- Monitoring functions in `src/metainformant/rna/monitoring.py` for programmatic status checking
+- `run_workflow.py --status` for comprehensive workflow status
+- Test scripts in `scripts/rna/` for integration testing (test_*.py, run_e2e_pbarbatus.py)
+- Comprehensive test suites in `tests/rna/`
 
 ### Data Management
 **Code Assistant Agent** created:
@@ -115,10 +116,14 @@ Updated `README.md` and `AGENTS.md` to reflect new consolidated structure.
 
 ## Script Organization
 
-- **Main orchestrator**: `run_workflow.py` (single-species workflows)
+- **Main orchestrator**: `run_workflow.py` (single-species end-to-end workflows) ⭐ **RECOMMENDED**
 - **Genome setup**: `setup_genome.py` (genome preparation pipeline)
 - **Discovery**: `discover_species.py` (species discovery and config generation)
 - **Environment**: `check_environment.py` (environment validation)
-- **Amalgkit workflows**: Centralized in `scripts/rna/amalgkit/`
+- **Amalgkit workflows**: Centralized in `scripts/rna/amalgkit/` (run_amalgkit.sh, verify_workflow.sh)
+- **Utility scripts**: `convert_existing_sra.py` (SRA to FASTQ conversion), `fix_tmp_space.sh` (temp cleanup)
+- **Test scripts**: `test_*.py`, `run_e2e_pbarbatus.py` (integration testing, not for production)
+
+**For end-to-end workflows**: Use `run_workflow.py` which calls `execute_workflow()` to run all 11 amalgkit steps with automatic genome setup and per-sample processing.
 
 All scripts follow repository standards with no hardcoded paths and proper integration with `output/` directory structure.

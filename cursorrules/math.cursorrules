@@ -4,8 +4,8 @@
 Mathematical and theoretical biology: population genetics theory, selection models, evolutionary dynamics, and epidemiological models.
 
 ## Dependencies
-- **Required**: `core`
-- **Optional**: `scipy`, `numpy`
+- **Required**: `core`, `numpy`
+- **Optional**: `scipy` (for advanced statistical functions)
 
 ## Key Submodules
 
@@ -38,6 +38,112 @@ Mathematical and theoretical biology: population genetics theory, selection mode
 - SIR/SIRS models
 - Disease dynamics
 
+### Coalescent (`coalescent`)
+- Coalescent theory and neutrality tests
+- Tajima's D, Fu & Li's tests
+- Expected coalescent times
+- Site frequency spectrum
+
+**Patterns**:
+```python
+from metainformant.math import tajimas_D, expected_time_to_mrca
+
+d = tajimas_D(segregating_sites, Ne=1000)
+t_mrca = expected_time_to_mrca(n=10, Ne=1000)
+```
+
+### Demography (`demography`)
+- Demographic models
+- Population bottlenecks
+- Exponential growth models
+- Two-epoch models
+
+### Effective Size (`effective_size`)
+- Effective population size calculations
+- Harmonic mean effective size
+- Family size variance effects
+- Sex ratio effects
+
+### Fst (`fst`)
+- Population differentiation (Fst)
+- Fst from allele frequencies
+- Fst from heterozygosity
+
+**Patterns**:
+```python
+from metainformant.math import fst_from_allele_freqs, fst_from_heterozygosity
+
+fst = fst_from_allele_freqs(subpop_freqs)
+fst = fst_from_heterozygosity(Hs=0.4, Ht=0.5)
+```
+
+### Linkage Disequilibrium (`ld`)
+- LD coefficients (D, D')
+- r² calculation
+- LD decay analysis
+- Mapping functions (Haldane, Kosambi)
+
+**Patterns**:
+```python
+from metainformant.math import ld_coefficients, r_squared
+
+D, D_prime = ld_coefficients(pA, pa, pB, pb, haplotype_pAB)
+r2 = r_squared(pA, pa, pB, pb, haplotype_pAB)
+```
+
+### Quantitative Genetics (`quantgen`)
+- Heritability calculations
+- Breeder's equation
+- Lande equation
+- Response to selection
+
+**Patterns**:
+```python
+from metainformant.math import narrow_sense_heritability, breeders_equation_response
+
+h2 = narrow_sense_heritability(genetic_variance, phenotypic_variance)
+response = breeders_equation_response(heritability, selection_differential)
+```
+
+### Dynamics (`dynamics`)
+- Population dynamics models
+- Logistic growth
+- Lotka-Volterra predator-prey models
+
+**Patterns**:
+```python
+from metainformant.math import logistic_map, lotka_volterra_step
+
+growth_curve = logistic_map(r=3.5, x0=0.5, steps=100)
+prey_next, predator_next = lotka_volterra_step(
+    prey=100.0, predator=10.0, alpha=1.0, beta=0.1, delta=0.075, gamma=1.5, dt=0.01
+)
+```
+
+### Population Genetics Statistics (`popgen_stats`)
+- Statistical testing for population genetics
+- Bootstrap confidence intervals
+- Permutation tests
+- Outlier detection
+- Tajima's D outlier detection
+
+### Selection Experiments (`selection_experiments`)
+- Natural selection simulation framework
+- Signal processing constraints
+- Structural vs. quality trait evolution
+- Multi-generation evolutionary experiments
+
+**Patterns**:
+```python
+from metainformant.math.selection_experiments import simulate_generations
+
+results = simulate_generations(
+    generations=50,
+    n=10000,
+    s_hat=0.6
+)
+```
+
 ## Patterns
 
 ### Mathematical Functions
@@ -62,7 +168,8 @@ Mathematical and theoretical biology: population genetics theory, selection mode
 
 ## Integration
 
-- **Used by**: `dna.population` (population genetics theory), `gwas` (statistical models)
+- **Used by**: `dna.population` (population genetics theory), `gwas` (statistical models, LD analysis)
+- **Integrates with**: `simulation` (population genetics simulations)
 
 ## Testing
 

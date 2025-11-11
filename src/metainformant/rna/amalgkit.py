@@ -5,10 +5,13 @@ import shutil
 import subprocess
 import sys
 import threading
+import time
 from collections.abc import Mapping
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+
+from ..core.logging import get_logger
 
 # Thin, typed utilities to invoke the external `amalgkit` RNA-seq toolkit.
 #
@@ -74,7 +77,7 @@ def _ensure_str(value: Any) -> str:
 
 _BOOL_VALUE_FLAGS: set[str] = {
     "redo", "pfd", "fastp", "remove_sra", "remove_tmp", "pfd_print", "fastp_print",
-    "ncbi", "aws", "gcp", "cleanup_raw", "build_index"
+    "ncbi", "aws", "gcp", "cleanup_raw", "build_index", "resolve_names", "mark_redundant_biosamples"
 }
 
 
@@ -139,11 +142,22 @@ def check_cli_available() -> tuple[bool, str]:
 
     Returns a tuple: (is_available, help_or_version_text_or_error_message)
     """
-    if shutil.which("amalgkit") is None:
+    # Check standard PATH first
+    amalgkit_path = shutil.which("amalgkit")
+    
+    # Also check user local bin (common for --user installs)
+    if amalgkit_path is None:
+        user_bin = Path.home() / ".local" / "bin" / "amalgkit"
+        if user_bin.exists() and user_bin.is_file():
+            amalgkit_path = str(user_bin)
+    
+    if amalgkit_path is None:
         return False, "amalgkit not found on PATH"
 
     try:
-        proc = subprocess.run(["amalgkit", "-h"], capture_output=True, text=True, check=False)
+        # Use the found path or default to "amalgkit" (which will use PATH)
+        cmd = [amalgkit_path if amalgkit_path else "amalgkit", "-h"]
+        proc = subprocess.run(cmd, capture_output=True, text=True, check=False)
         output = proc.stdout or proc.stderr
         return proc.returncode == 0, output
     except Exception as exc:  # pragma: no cover - defensive
@@ -244,8 +258,7 @@ def run_amalgkit(
             cfg_path = cfg_path.resolve()
         except Exception:
             # If resolution fails, keep original but log
-            import logging
-            logging.getLogger(__name__).debug(f"Could not resolve config_dir path: {safe_params['config_dir']}")
+            get_logger(__name__).debug(f"Could not resolve config_dir path: {safe_params['config_dir']}")
             cfg_path = Path(str(safe_params["config_dir"]))
         # Ensure directory exists (amalgkit expects it to exist)
         if not cfg_path.exists():
@@ -253,8 +266,7 @@ def run_amalgkit(
                 cfg_path.mkdir(parents=True, exist_ok=True)
             except Exception:
                 # If we can't create it, log but continue - amalgkit will handle the error
-                import logging
-                logging.getLogger(__name__).warning(f"Could not create config_dir: {cfg_path}")
+                get_logger(__name__).warning(f"Could not create config_dir: {cfg_path}")
         safe_params["config_dir"] = str(cfg_path)
     
     # merge 'out' file path
@@ -265,8 +277,7 @@ def run_amalgkit(
             out_path = out_path.resolve()
         except Exception as e:
             # Log error but continue - path resolution issues shouldn't block execution
-            import logging
-            logging.getLogger(__name__).debug(f"Could not resolve output path: {e}")
+            get_logger(__name__).debug(f"Could not resolve output path: {e}")
         out_path.parent.mkdir(parents=True, exist_ok=True)
         safe_params["out"] = str(out_path)
 
@@ -275,15 +286,28 @@ def run_amalgkit(
     if env:
         run_env.update(env)
 
-    # Ensure working directory exists if provided
-    # NOTE: work_dir is the CWD where amalgkit runs, NOT used in command args
+    # For getfastq, set working directory to out_dir so prefetch downloads to correct location
+    # This prevents prefetch from using --output-directory ./ which would download to repo root
+    effective_work_dir = None
     if work_dir is not None:
         Path(work_dir).mkdir(parents=True, exist_ok=True)
-        # CRITICAL: Do NOT change to work_dir - let amalgkit use absolute paths in command
-        work_dir = None  # Run from current directory to avoid path resolution issues
+        effective_work_dir = str(work_dir)
+    elif subcommand == "getfastq" and "out_dir" in safe_params:
+        # For getfastq, use out_dir as working directory to ensure prefetch downloads there
+        out_dir_path = Path(str(safe_params["out_dir"])).expanduser().resolve()
+        out_dir_path.mkdir(parents=True, exist_ok=True)
+        effective_work_dir = str(out_dir_path)
 
-    # Streaming mode (for long-running steps) when MI_STREAM_AMALGKIT_LOGS=1 and log_dir is set
-    stream = os.getenv("MI_STREAM_AMALGKIT_LOGS") == "1" and log_dir is not None
+    # Streaming mode (for long-running steps) when log_dir is set
+    # Enable by default for long-running steps, or if MI_STREAM_AMALGKIT_LOGS=1
+    long_running_steps = {"getfastq", "quant", "merge"}
+    stream = (
+        log_dir is not None
+        and (
+            os.getenv("MI_STREAM_AMALGKIT_LOGS") == "1"
+            or subcommand in long_running_steps
+        )
+    )
     ts = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
     base = step_name or subcommand
 
@@ -295,8 +319,7 @@ def run_amalgkit(
             sys.stdout.flush()
         except Exception as e:
             # Log error but continue - path resolution issues shouldn't block execution
-            import logging
-            logging.getLogger(__name__).debug(f"Could not resolve output path: {e}")
+            get_logger(__name__).debug(f"Could not resolve output path: {e}")
         log_path = Path(log_dir)
         log_path.mkdir(parents=True, exist_ok=True)
         stdout_file = log_path / f"{ts}.{base}.stdout.log"
@@ -304,7 +327,7 @@ def run_amalgkit(
 
         proc = subprocess.Popen(
             cmd,
-            cwd=str(work_dir) if work_dir is not None else None,
+            cwd=effective_work_dir,
             env=run_env,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -322,8 +345,7 @@ def run_amalgkit(
                         stream_out.flush()
                     except Exception as e:
                         # Log error but continue - streaming issues shouldn't block execution
-                        import logging
-                        logging.getLogger(__name__).debug(f"Streaming output error: {e}")
+                        get_logger(__name__).debug(f"Streaming output error: {e}")
 
         threads: list[threading.Thread] = []
         if proc.stdout is not None:
@@ -335,24 +357,142 @@ def run_amalgkit(
             t_err.start()
             threads.append(t_err)
 
-        # Heartbeat reporter for long-running quiet periods
+        # Heartbeat reporter for long-running quiet periods with progress tracking
         stop_heartbeat = threading.Event()
+        
+        # Extract output directory for progress monitoring (for getfastq/quant steps)
+        progress_monitor_dir: Path | None = None
+        if subcommand == "getfastq":
+            # Try to find out_dir from params
+            out_dir_val = safe_params.get("out_dir") or safe_params.get("out-dir")
+            if out_dir_val:
+                progress_monitor_dir = Path(str(out_dir_val)).expanduser()
+                try:
+                    progress_monitor_dir = progress_monitor_dir.resolve()
+                except Exception:
+                    pass
+                # Check for getfastq subdirectory
+                getfastq_subdir = progress_monitor_dir / "getfastq"
+                if getfastq_subdir.exists():
+                    progress_monitor_dir = getfastq_subdir
+        elif subcommand == "quant":
+            # For quant, monitor the quant output directory
+            quant_dir_val = safe_params.get("out_dir") or safe_params.get("out-dir") or safe_params.get("quant_dir") or safe_params.get("quant-dir")
+            if quant_dir_val:
+                progress_monitor_dir = Path(str(quant_dir_val)).expanduser()
+                try:
+                    progress_monitor_dir = progress_monitor_dir.resolve()
+                except Exception:
+                    pass
 
         def _heartbeat():
+            """Emit periodic heartbeat messages with progress information."""
+            heartbeat_count = 0
+            last_size = 0
+            last_check_time = time.time()
+            
             while not stop_heartbeat.is_set():
-                # Every 30s, emit a heartbeat if still running
-                stop_heartbeat.wait(30.0)
-                if stop_heartbeat.is_set():
+                # Wait 30 seconds or until event is set
+                event_set = stop_heartbeat.wait(30.0)
+                if event_set:
+                    # Event was set, process finished
                     break
+                # Timeout occurred - check if process is still running
                 if proc.poll() is None:
+                    heartbeat_count += 1
                     try:
                         now_hhmm = datetime.utcnow().strftime("%H:%M:%S")
-                        sys.stdout.write(f"[{now_hhmm}] still running step '{base}' (pid={proc.pid})...\n")
+                        now_time = time.time()
+                        
+                        # Build progress message
+                        progress_info = ""
+                        if progress_monitor_dir and progress_monitor_dir.exists():
+                            try:
+                                # Efficiently calculate total size and find active samples
+                                total_size = 0
+                                file_count = 0
+                                recent_samples: list[tuple[str, float]] = []  # (sample_id, mtime)
+                                
+                                # For getfastq, check sample directories directly (more efficient)
+                                if subcommand == "getfastq":
+                                    # Check sample directories (SRR*)
+                                    for sample_dir in progress_monitor_dir.iterdir():
+                                        if sample_dir.is_dir() and sample_dir.name.startswith("SRR"):
+                                            sample_mtime = 0
+                                            sample_size = 0
+                                            sample_files = 0
+                                            
+                                            # Check files in this sample directory
+                                            for item in sample_dir.rglob("*"):
+                                                if item.is_file():
+                                                    try:
+                                                        stat = item.stat()
+                                                        total_size += stat.st_size
+                                                        file_count += 1
+                                                        sample_size += stat.st_size
+                                                        sample_files += 1
+                                                        # Track most recent modification
+                                                        if stat.st_mtime > sample_mtime:
+                                                            sample_mtime = stat.st_mtime
+                                                    except (OSError, FileNotFoundError):
+                                                        pass
+                                            
+                                            # If sample was modified recently (last 5 min), track it
+                                            if sample_mtime > 0 and (now_time - sample_mtime) < 300:
+                                                recent_samples.append((sample_dir.name, sample_mtime))
+                                else:
+                                    # For other steps (quant, etc.), scan all files
+                                    for item in progress_monitor_dir.rglob("*"):
+                                        if item.is_file():
+                                            try:
+                                                stat = item.stat()
+                                                total_size += stat.st_size
+                                                file_count += 1
+                                            except (OSError, FileNotFoundError):
+                                                pass
+                                
+                                # Format size
+                                if total_size > 1024 * 1024 * 1024:  # GB
+                                    size_str = f"{total_size / (1024**3):.2f}GB"
+                                elif total_size > 1024 * 1024:  # MB
+                                    size_str = f"{total_size / (1024**2):.1f}MB"
+                                elif total_size > 1024:  # KB
+                                    size_str = f"{total_size / 1024:.1f}KB"
+                                else:
+                                    size_str = f"{total_size}B"
+                                
+                                # Calculate download rate
+                                elapsed = now_time - last_check_time
+                                size_delta = total_size - last_size
+                                rate_str = ""
+                                if elapsed > 0 and size_delta > 0:
+                                    rate_mbps = (size_delta / (1024 * 1024)) / elapsed
+                                    rate_str = f" @ {rate_mbps:.2f}MB/s"
+                                
+                                # Find most recently active sample
+                                current_sample = ""
+                                if recent_samples:
+                                    recent_samples.sort(key=lambda x: x[1], reverse=True)
+                                    current_sample = f" | Current: {recent_samples[0][0]}"
+                                
+                                progress_info = f" | {size_str} ({file_count} files){rate_str}{current_sample}"
+                                last_size = total_size
+                                last_check_time = now_time
+                            except Exception as e:
+                                # If monitoring fails, continue without progress info
+                                get_logger(__name__).debug(f"Progress monitoring error: {e}")
+                        
+                        sys.stdout.write(
+                            f"[{now_hhmm}] still running step '{base}' (pid={proc.pid}, "
+                            f"heartbeat #{heartbeat_count}){progress_info}...\n"
+                        )
                         sys.stdout.flush()
                     except Exception as e:
                         # Log error but continue - streaming issues shouldn't block execution
-                        import logging
-                        logging.getLogger(__name__).debug(f"Streaming output error: {e}")
+                        get_logger(__name__).debug(f"Streaming output error: {e}")
+                else:
+                    # Process finished, exit loop
+                    break
 
         hb = threading.Thread(target=_heartbeat, daemon=True)
         hb.start()
@@ -367,8 +507,7 @@ def run_amalgkit(
             sys.stdout.flush()
         except Exception as e:
             # Log error but continue - path resolution issues shouldn't block execution
-            import logging
-            logging.getLogger(__name__).debug(f"Could not resolve output path: {e}")
+            get_logger(__name__).debug(f"Could not resolve output path: {e}")
 
         # Build a CompletedProcess with empty captured text (logs are in files and console)
         result = subprocess.CompletedProcess(cmd, rc, stdout="", stderr="")
@@ -385,7 +524,7 @@ def run_amalgkit(
         pass
     result = subprocess.run(
         cmd,
-        cwd=str(work_dir) if work_dir is not None else None,
+        cwd=effective_work_dir,
         env=run_env,
         capture_output=capture_output,
         text=True,

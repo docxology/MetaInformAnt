@@ -278,7 +278,7 @@ for fasta_file in fasta_files:
 # Generate comprehensive report
 information_report(
     all_results,
-    output_path="output/information/comprehensive_report.md",
+    output_path="docs/information/comprehensive_report.md",
     format="markdown"
 )
 ```

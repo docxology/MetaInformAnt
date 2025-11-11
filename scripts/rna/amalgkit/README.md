@@ -18,16 +18,16 @@ This directory contains centralized scripts and utilities for amalgkit workflows
 **Usage Options**:
 ```bash
 # Full pipeline run
-scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml
+scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pogonomyrmex_barbatus.yaml
 
 # Run specific steps only
-scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --steps metadata,select,getfastq
+scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pogonomyrmex_barbatus.yaml --steps metadata,select,getfastq
 
 # Skip expensive steps for testing
-scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --skip-steps getfastq,quant
+scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pogonomyrmex_barbatus.yaml --skip-steps getfastq,quant
 
 # Dry run to see execution plan
-scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pbarbatus.yaml --dry-run
+scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit_pogonomyrmex_barbatus.yaml --dry-run
 ```
 
 ### `verify_workflow.sh`
@@ -58,19 +58,24 @@ scripts/rna/amalgkit/verify_workflow.sh output/amalgkit/cfloridanus
 
 **Output**: Comprehensive verification report with file counts and quick access commands
 
-### `run_multi_species_amalgkit.py`
-**Purpose**: Orchestrates full workflows for all species with cross-species analysis  
-**Location**: `scripts/rna/run_multi_species_amalgkit.py`
+### `run_workflow.py` (Main Orchestrator)
+**Purpose**: Orchestrates full workflows for single species (run separately for multiple species)  
+**Location**: `scripts/rna/run_workflow.py`
 
 **Features**:
-- Auto-discovers all species configs in `config/`
-- Runs full workflow for each species (metadata → sanity)
-- Performs cross-species TMM normalization (CSTMM)
-- Generates cross-species correlation analysis (CSCA)
+- Complete end-to-end workflow execution
+- All 11 amalgkit steps (metadata → sanity)
+- Status checking and cleanup operations
+- Parallel downloads via `num_download_workers` configuration
 
 **Usage**:
 ```bash
-python3 scripts/rna/run_multi_species_amalgkit.py 2>&1 | tee output/amalgkit_run.log
+# Single species
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+
+# Multiple species (run separately for each)
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species1.yaml
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species2.yaml
 ```
 
 ### Future Scripts
@@ -80,16 +85,6 @@ python3 scripts/rna/run_multi_species_amalgkit.py 2>&1 | tee output/amalgkit_run
 
 ## Why Centralized?
 
-### Before (Problematic)
-```
-output/amalgkit/
-├── pbarbatus/verify_workflow.sh       ❌ Copy in output/
-├── sinvicta/verify_workflow.sh        ❌ Copy in output/
-└── cfloridanus/verify_workflow.sh     ❌ Copy in output/
-```
-- ❌ Scripts copied to output directories (not tracked)
-- ❌ Updates require changing multiple files
-- ❌ Output directories get cluttered
 
 ### After (Clean)
 ```
@@ -109,9 +104,9 @@ output/amalgkit/
 ## Integration
 
 These scripts are referenced in:
-- `docs/rna/amalgkit/quick_start.md` - Workflow guides
+- `docs/rna/GETTING_STARTED.md` - Complete setup and workflow guides
 - `docs/rna/amalgkit/README.md` - Overview and links
-- `output/amalgkit/COMPREHENSIVE_WORKFLOW_STATUS.md` - Execution status
+- `output/amalgkit/COMPREHENSIVE_WORKFLOW_STATUS.md` - Execution status (program-generated)
 
 ## Usage Pattern
 

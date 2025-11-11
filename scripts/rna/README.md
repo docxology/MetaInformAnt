@@ -21,33 +21,68 @@ scripts/rna/
 
 ## Quick Start
 
-### Run Workflow for a Species
+### Environment Setup
+
+**All setup uses `uv` for package management** (required):
 
 ```bash
-# Full workflow (all steps)
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml
+# Install uv if not already installed
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
-# Specific steps
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --steps getfastq quant merge
+# Create virtual environment
+uv venv
+
+# Install metainformant
+uv pip install -e . --python .venv/bin/python3
+
+# Install amalgkit
+uv pip install git+https://github.com/kfuku52/amalgkit --python .venv/bin/python3
+```
+
+**Note**: Scripts automatically detect and use the virtual environment (`.venv` or `/tmp/metainformant_venv` on filesystems without symlink support). No manual activation needed when running scripts.
+
+**External Drive Support**: On filesystems with limitations (e.g., ext6 without symlink support), the system automatically:
+- Uses `/tmp/metainformant_venv` for virtual environment
+- Uses `/tmp/uv-cache` for UV package cache (avoids symlink errors)
+- Handles all filesystem limitations transparently
+
+See [docs/rna/EXTERNAL_DRIVE_SETUP.md](../../docs/rna/EXTERNAL_DRIVE_SETUP.md) for complete documentation.
+
+### Run End-to-End Workflow for a Species
+
+**Recommended**: Use `run_workflow.py` for complete end-to-end execution:
+
+```bash
+# Full end-to-end workflow (all steps: metadata → integrate → config → select → getfastq → quant → merge → cstmm → curate → csca → sanity)
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+
+# Specific steps only
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --steps getfastq quant merge
 
 # Check status
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --status
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 
 # Cleanup unquantified samples
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --cleanup-unquantified
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --cleanup-unquantified
 ```
+
+**What happens automatically**:
+- Genome download and kallisto index preparation (if genome config exists)
+- Metadata retrieval from NCBI SRA
+- Per-sample processing: download → quantify → delete FASTQ (as configured with `keep_fastq: no`)
+- All downstream steps: integrate, merge, cstmm, curate, csca, sanity
 
 ### Setup Genome for a Species
 
 ```bash
 # Full genome setup
-python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pbarbatus.yaml
+python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 
 # Verify status only
-python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pbarbatus.yaml --verify-only
+python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --verify-only
 
 # Skip specific steps
-python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pbarbatus.yaml --skip-download --skip-prepare
+python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --skip-download --skip-prepare
 ```
 
 ### Discover Species and Generate Configs
@@ -68,32 +103,33 @@ python3 scripts/rna/check_environment.py
 
 ## Available Scripts
 
-### `run_workflow.py` ⭐ **Main Orchestrator**
+### `run_workflow.py` ⭐ **Main Orchestrator (Recommended for End-to-End)**
 
-Thin wrapper that calls `metainformant.rna.orchestration.run_workflow_for_species()` to run complete amalgkit workflows for single species.
+Thin wrapper that calls `metainformant.rna.orchestration.run_workflow_for_species()` which uses `execute_workflow()` to run complete amalgkit workflows for single species.
 
 **Features:**
-- Single-species sequential execution
-- Run all amalgkit steps: metadata → integrate → config → select → getfastq → quant → merge → cstmm → curate → csca → sanity
-- Status checking and progress monitoring
-- Cleanup operations (partial downloads, unquantified samples)
-- Progress tracking initialization
+- **Complete end-to-end execution**: All 11 amalgkit steps in correct order
+- **Automatic genome setup**: Downloads genome, prepares transcriptome, builds kallisto index (if genome config exists)
+- **Per-sample processing**: Download → quantify → delete FASTQ (as configured)
+- **Status checking and progress monitoring**: Check workflow status at any time
+- **Cleanup operations**: Partial downloads, unquantified samples, abundance file naming
+- **Resume support**: Automatically skips completed steps
 
 **Usage:**
 ```bash
 # Full workflow
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 
 # Specific steps
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --steps getfastq quant merge
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --steps getfastq quant merge
 
 # Status check
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --status
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 
 # Cleanup operations
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --cleanup-unquantified
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --cleanup-partial
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pbarbatus.yaml --fix-abundance-naming
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --cleanup-unquantified
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --cleanup-partial
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --fix-abundance-naming
 ```
 
 ### `setup_genome.py` **Genome Setup Orchestrator**
@@ -110,16 +146,16 @@ Thin wrapper that calls `metainformant.rna.genome_prep.orchestrate_genome_setup(
 **Usage:**
 ```bash
 # Full setup
-python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pbarbatus.yaml
+python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 
 # Verify only
-python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pbarbatus.yaml --verify-only
+python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --verify-only
 
 # Skip steps
-python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pbarbatus.yaml --skip-download --skip-prepare
+python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --skip-download --skip-prepare
 
 # Custom k-mer size
-python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pbarbatus.yaml --kmer-size 23
+python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --kmer-size 23
 ```
 
 ### `discover_species.py` **Discovery/Config Generator**
@@ -154,6 +190,25 @@ Thin wrapper that calls `metainformant.rna.environment.validate_environment()` t
 ```bash
 python3 scripts/rna/check_environment.py
 ```
+
+### Status Checking
+
+Use `run_workflow.py --status` for comprehensive workflow status:
+
+```bash
+# Quick status check
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+
+# Detailed status with recommendations
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status --detailed
+```
+
+**Status output includes:**
+- Step completion status
+- Sample counts (downloaded, quantified, remaining)
+- Disk usage information
+- Error summaries
+- Recommended next steps
 
 ## Script Consolidation
 
@@ -199,6 +254,9 @@ All outputs go to `output/amalgkit/{species}/`:
 **Environment:**
 - Run `check_environment.py` to verify all dependencies
 - Virtual environment is auto-activated by scripts
+- **All setup uses `uv`**: `uv venv` and `uv pip install` (see Environment Setup above)
+- If venv creation fails (symlink issues), scripts automatically use `/tmp/metainformant_venv`
+- UV cache automatically uses `/tmp/uv-cache` to avoid symlink errors on ext6 filesystems
 
 **Workflow:**
 - Check status with `--status` flag
@@ -210,6 +268,90 @@ All outputs go to `output/amalgkit/{species}/`:
 - Use `--skip-*` flags to skip specific steps
 - Check logs in `output/amalgkit/{species}/logs/`
 
+## Test Scripts
+
+These scripts are for integration testing and debugging specific functionality. They use real implementations (no mocks) and are meant for manual testing.
+
+### `test_heartbeat.py`
+Tests heartbeat logging on a single sample during getfastq step.
+
+**Usage:**
+```bash
+python3 scripts/rna/test_heartbeat.py
+```
+
+### `test_enhanced_heartbeat.py`
+Tests enhanced heartbeat logging with detailed progress tracking.
+
+**Usage:**
+```bash
+python3 scripts/rna/test_enhanced_heartbeat.py
+```
+
+### `test_getfastq_fix.py`
+Tests fixes for getfastq step issues (disk space, LITE SRA files, etc.).
+
+**Usage:**
+```bash
+python3 scripts/rna/test_getfastq_fix.py
+```
+
+### `test_genome_prep.py`
+Tests genome preparation functions (download, transcriptome extraction, index building).
+
+**Usage:**
+```bash
+python3 scripts/rna/test_genome_prep.py
+```
+
+### `run_e2e_pbarbatus.py`
+**TESTING ONLY**: Runs end-to-end workflow for Pogonomyrmex barbatus with a single sample to verify the entire system.
+
+**Note**: This script limits to 1 sample for testing. For production workflows, use `run_workflow.py`.
+
+**Usage:**
+```bash
+python3 scripts/rna/run_e2e_pbarbatus.py
+```
+
+**For automated unit tests**, see `tests/rna/` directory.
+
+## Utility Scripts
+
+### `convert_existing_sra.py`
+Converts existing SRA files to FASTQ format. Finds all SRA files without corresponding FASTQ files and converts them using parallel processing.
+
+**Usage:**
+```bash
+# Convert SRA files for a specific species
+python3 scripts/rna/convert_existing_sra.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+
+# Use specific number of threads
+python3 scripts/rna/convert_existing_sra.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --threads 8
+```
+
+**Features:**
+- Automatically finds SRA files without FASTQ counterparts
+- Parallel conversion for faster processing
+- Progress tracking and error handling
+- Respects workflow configuration
+
+### `fix_tmp_space.sh`
+Quick utility to clean up `/tmp` space by removing pytest temp files and uv cache.
+
+**Usage:**
+```bash
+bash scripts/rna/fix_tmp_space.sh
+```
+
+**What it does:**
+- Checks `/tmp` disk usage
+- Removes pytest temp directories (`/tmp/pytest-of-*`)
+- Removes uv cache (`/tmp/uv-cache`)
+- Shows large temp files for manual review
+
+**Note**: This is a general-purpose utility. Use when `/tmp` space is low and affecting workflow execution.
+
 ## Examples
 
-See `docs/rna/examples/` for complete workflow examples.
+See `docs/rna/EXAMPLES.md` for complete workflow examples.

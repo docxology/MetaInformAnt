@@ -12,8 +12,8 @@ Choose your path:
 3. **[Step Documentation](amalgkit/steps/README.md)** - Learn individual steps
 
 ### 🚀 Production Workflows
-1. **[Multi-Species Quick Start](MULTI_SPECIES_QUICK_START.md)** - Production workflow guide
-2. **[Orchestration Guide](ORCHESTRATION/README.md)** - Choose the right orchestrator
+1. **[Getting Started Guide](GETTING_STARTED.md)** - Complete setup and production workflows
+2. **[Orchestration Guide](ORCHESTRATION.md)** - Orchestrator overview
 3. **[Configuration Guide](CONFIGURATION.md)** - Configure workflows
 
 ### 📚 API Reference
@@ -30,8 +30,8 @@ Choose your path:
 | Use Case | Start Here | Next Steps |
 |----------|------------|------------|
 | **First-time user** | [GETTING_STARTED.md](GETTING_STARTED.md) | [workflow.md](workflow.md) → [amalgkit/steps/](amalgkit/steps/) |
-| **Production analysis** | [MULTI_SPECIES_QUICK_START.md](MULTI_SPECIES_QUICK_START.md) | [ORCHESTRATION/README.md](ORCHESTRATION/README.md) → [CONFIGURATION.md](CONFIGURATION.md) |
-| **Species discovery** | [discovery/GUIDE.md](discovery/GUIDE.md) | [discovery/QUICK_REF.md](discovery/QUICK_REF.md) |
+| **Production analysis** | [GETTING_STARTED.md](GETTING_STARTED.md) | [ORCHESTRATION.md](ORCHESTRATION.md) → [CONFIGURATION.md](CONFIGURATION.md) |
+| **Species discovery** | [DISCOVERY.md](DISCOVERY.md) | [EXAMPLES.md](EXAMPLES.md) |
 | **API development** | [API.md](API.md) | [amalgkit/FUNCTIONS.md](amalgkit/FUNCTIONS.md) → [amalgkit/steps/](amalgkit/steps/) |
 | **Genome setup** | [amalgkit/genome_setup_guide.md](amalgkit/genome_setup_guide.md) | [amalgkit/genome_preparation.md](amalgkit/genome_preparation.md) |
 
@@ -39,7 +39,8 @@ Choose your path:
 
 #### Core Workflow
 - **[workflow.md](workflow.md)** - Workflow planning and execution
-- **[steps.md](steps.md)** - Step overview and integration
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - System architecture and design patterns
+- **[Step Documentation](amalgkit/steps/README.md)** - Step overview and integration
 - **[CONFIGURATION.md](CONFIGURATION.md)** - Configuration management
 - **[index.md](index.md)** - Module overview
 
@@ -48,27 +49,22 @@ Choose your path:
 - **[amalgkit/amalgkit.md](amalgkit/amalgkit.md)** - Complete pipeline documentation
 - **[amalgkit/steps/](amalgkit/steps/)** - All 11 step guides
 - **[amalgkit/FUNCTIONS.md](amalgkit/FUNCTIONS.md)** - Function quick reference
-- **[amalgkit/quick_start.md](amalgkit/quick_start.md)** - Quick start guide
-
 #### Genome Setup
 - **[amalgkit/genome_setup_guide.md](amalgkit/genome_setup_guide.md)** - User guide (step-by-step)
 - **[amalgkit/genome_preparation.md](amalgkit/genome_preparation.md)** - Technical API reference
 - **[amalgkit/commands.md](amalgkit/commands.md)** - Command reference
 
 #### Orchestration
-- **[ORCHESTRATION/README.md](ORCHESTRATION/README.md)** - Orchestrator overview
-- **[ORCHESTRATION/ENA_WORKFLOW.md](ORCHESTRATION/ENA_WORKFLOW.md)** - ENA-based workflow
-- **[ORCHESTRATION/MULTI_SPECIES.md](ORCHESTRATION/MULTI_SPECIES.md)** - Multi-species workflow
-- **[ORCHESTRATION/BATCH_DOWNLOAD.md](ORCHESTRATION/BATCH_DOWNLOAD.md)** - Batch download
+- **[ORCHESTRATION.md](ORCHESTRATION.md)** - Orchestrator overview and configuration
 
 #### Discovery
-- **[discovery/GUIDE.md](discovery/GUIDE.md)** - Comprehensive guide
-- **[discovery/QUICK_REF.md](discovery/QUICK_REF.md)** - Quick reference
-- **[discovery/README.md](discovery/README.md)** - Current status
+- **[DISCOVERY.md](DISCOVERY.md)** - Species discovery system and batch processing
 
 #### Examples
-- **[examples/README.md](examples/README.md)** - Example index
-- **[examples/pbarbatus_analysis.md](examples/pbarbatus_analysis.md)** - Complete analysis example
+- **[EXAMPLES.md](EXAMPLES.md)** - Real-world analysis examples
+
+#### System Setup
+- **[EXTERNAL_DRIVE_SETUP.md](EXTERNAL_DRIVE_SETUP.md)** - External drive and filesystem considerations (ext6, symlinks, etc.)
 
 ---
 
@@ -141,49 +137,51 @@ Automated genome download, transcriptome extraction, and kallisto index building
 
 ## Quick Commands
 
-### Single Species Workflow
+### Single Species End-to-End Workflow (Recommended)
 
 ```bash
-# ENA-based workflow (recommended for production)
-python3 scripts/rna/workflow_ena_integrated.py \
-  --config config/amalgkit/amalgkit_cfloridanus.yaml \
-  --batch-size 12 --threads 12
+# Full end-to-end workflow (all steps)
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+
+# Check status
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+
+# Specific steps only
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --steps getfastq quant merge
 ```
+
+The `run_workflow.py` script provides complete end-to-end execution via `execute_workflow()`, including automatic genome setup, per-sample processing, and all 11 amalgkit steps.
 
 ### Multi-Species Workflow
 
-```bash
-# Immediate processing with 24 threads TOTAL distributed across all species
-python3 scripts/rna/batch_download_species.py --total-threads 24
+**For multiple species**, run `run_workflow.py` separately for each species config:
 
-# Or sequential execution (one species at a time)
-export AK_THREADS=24
-python3 scripts/rna/run_multi_species.py
+```bash
+# Process each species with parallel downloads (configured in each config file)
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species1.yaml
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species2.yaml
 ```
+
+**Parallel downloads** are controlled via `num_download_workers` in each config file. For multiple species, run workflows in parallel (using `nohup` or `screen`) or sequentially.
 
 ### Genome Setup
 
 ```bash
 # Check status
-python3 scripts/rna/verify_genomes_and_indexes.py
+python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --verify-only
 
 # Complete setup (download → prepare → index)
-python3 scripts/rna/orchestrate_genome_setup.py
-
-# Or step-by-step:
-python3 scripts/rna/download_missing_genomes.py
-python3 scripts/rna/prepare_transcriptomes.py
-python3 scripts/rna/build_kallisto_indexes.py
+python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 ```
 
 ### Species Discovery
 
 ```bash
 # Discover ant species with RNA-seq data
-python3 scripts/rna/discover_ant_rnaseq_by_genus.py
+python3 scripts/rna/discover_species.py
 
-# Generate configs for discovered species
-python3 scripts/rna/generate_ant_configs_with_genomes.py
+# Discovery results stored in output/ant_discovery/
+# See DISCOVERY.md for complete workflow
 ```
 
 ---
@@ -194,25 +192,19 @@ python3 scripts/rna/generate_ant_configs_with_genomes.py
 
 Automated discovery of species with RNA-seq data and genome assembly retrieval:
 
-- **[discovery/GUIDE.md](discovery/GUIDE.md)** - Comprehensive guide
-- **[discovery/QUICK_REF.md](discovery/QUICK_REF.md)** - Quick reference
-- **[discovery/README.md](discovery/README.md)** - Current status and results
+- **[DISCOVERY.md](DISCOVERY.md)** - Comprehensive guide and quick reference
 
 ### Orchestration
 
 Multiple orchestrators for different use cases:
 
-- **[ORCHESTRATION/README.md](ORCHESTRATION/README.md)** - Choose the right orchestrator
-- **[ORCHESTRATION/ENA_WORKFLOW.md](ORCHESTRATION/ENA_WORKFLOW.md)** - ENA-based (recommended)
-- **[ORCHESTRATION/MULTI_SPECIES.md](ORCHESTRATION/MULTI_SPECIES.md)** - Multi-species SRA workflow
-- **[ORCHESTRATION/BATCH_DOWNLOAD.md](ORCHESTRATION/BATCH_DOWNLOAD.md)** - Configurable batch downloads
+- **[ORCHESTRATION.md](ORCHESTRATION.md)** - Orchestrator overview and configuration
 
 ### Examples
 
 Real-world analysis examples:
 
-- **[examples/pbarbatus_analysis.md](examples/pbarbatus_analysis.md)** - Complete Pogonomyrmex barbatus analysis
-- **[examples/pbarbatus_quick_reference.md](examples/pbarbatus_quick_reference.md)** - Quick reference
+- **[EXAMPLES.md](EXAMPLES.md)** - Real-world analysis examples including P. barbatus
 
 ---
 
@@ -221,10 +213,11 @@ Real-world analysis examples:
 | Issue | Documentation |
 |-------|---------------|
 | **Setup problems** | [GETTING_STARTED.md](GETTING_STARTED.md#troubleshooting) |
+| **External drive/filesystem issues** | [EXTERNAL_DRIVE_SETUP.md](EXTERNAL_DRIVE_SETUP.md) - Symlinks, ext6, venv location |
 | **Workflow errors** | [workflow.md](workflow.md#troubleshooting) |
 | **Step-specific issues** | [amalgkit/steps/](amalgkit/steps/) - See individual step docs |
 | **Configuration** | [CONFIGURATION.md](CONFIGURATION.md#troubleshooting) |
-| **Performance** | [MULTI_SPECIES_QUICK_START.md](MULTI_SPECIES_QUICK_START.md#performance-characteristics) |
+| **Performance** | [GETTING_STARTED.md](GETTING_STARTED.md#performance-characteristics) |
 
 ---
 
@@ -243,7 +236,7 @@ Real-world analysis examples:
 - **Batch 2**: 10 species (728 samples) queued
 - **Total Pipeline**: 4,548 samples across 20 ant species
 
-See [discovery/README.md](discovery/README.md) for complete details.
+See [DISCOVERY.md](DISCOVERY.md) for complete details.
 
 ---
 

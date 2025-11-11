@@ -6,6 +6,56 @@ The `ml` module provides statistical and machine learning methods for biological
 
 This module offers a comprehensive toolkit for applying machine learning techniques to biological datasets, with emphasis on biological interpretation and robust validation.
 
+### Module Architecture
+
+```mermaid
+graph TB
+    subgraph "ML Module"
+        Classification[classification<br/>Classification]
+        Regression[regression<br/>Regression]
+        Features[features<br/>Feature Selection]
+        Validation[validation<br/>Model Validation]
+        DimRed[dimensionality<br/>Dimensionality Reduction]
+    end
+    
+    subgraph "Input Data"
+        Features_Data[Feature Matrix]
+        Labels[Labels/Outcomes]
+    end
+    
+    subgraph "Other Modules"
+        All[All Modules]
+        SingleCell[singlecell]
+        Networks[networks]
+    end
+    
+    Features_Data --> Classification
+    Features_Data --> Regression
+    Labels --> Classification
+    Labels --> Regression
+    Features_Data --> Features
+    Features --> Validation
+    Classification --> Validation
+    Regression --> Validation
+    All --> Features_Data
+    SingleCell --> DimRed
+    Networks --> Features
+```
+
+### Machine Learning Workflow
+
+```mermaid
+flowchart TD
+    Start[Data] --> Preprocess[Preprocess]
+    Preprocess --> FeatureSel[Feature Selection]
+    FeatureSel --> Split[Train/Test Split]
+    Split --> Train[Train Model]
+    Train --> Validate[Cross-Validate]
+    Validate --> Evaluate[Evaluate]
+    Evaluate --> Interpret[Interpret]
+    Interpret --> Output[Results]
+```
+
 ## Submodules
 
 ### Classification (`classification.py`)

@@ -10,16 +10,32 @@ METAINFORMANT provides a modular, extensible framework for biological data analy
 
 ### 🧬 Core (`core/`)
 Shared utilities and infrastructure used across all domains:
+
+**Configuration & Data Management:**
 - **Configuration Management** (`config`): Environment-based config loading and validation
 - **I/O Operations** (`io`): Robust file I/O with support for JSON, JSONL, CSV/TSV, and compressed formats
-- **Logging** (`logging`): Consistent, structured logging across all modules
-- **Parallel Processing** (`parallel`): Thread-based parallel execution with order preservation
 - **Caching** (`cache`): JSON-based caching with TTL support
-- **Path Management** (`paths`): Path expansion, resolution, and containment validation
 - **Database Integration** (`db`): Optional database client helpers (PostgreSQL)
-- **Text Processing** (`text`): Text normalization and manipulation utilities
+- **Disk Operations** (`disk`): Disk space and file system utilities
+
+**Path & File Management:**
+- **Path Management** (`paths`): Path expansion, resolution, and containment validation
 - **Hashing** (`hash`): Content and file hashing functions
-- **Workflow Utilities**: Config-based data processing and workflow orchestration functions
+
+**Processing & Execution:**
+- **Parallel Processing** (`parallel`): Thread-based parallel execution with order preservation
+- **Workflow Utilities** (`workflow`): Config-based data processing and workflow orchestration functions
+- **Progress Tracking** (`progress`): Progress tracking utilities
+
+**Development & Discovery:**
+- **Discovery** (`discovery`): Symbolic mapping and context discovery utilities
+- **Symbol Management** (`symbols`): Symbol indexing and cross-referencing utilities
+
+**Utilities:**
+- **Logging** (`logging`): Consistent, structured logging across all modules
+- **Text Processing** (`text`): Text normalization and manipulation utilities
+- **Error Handling** (`errors`): Error handling and resilience utilities
+- **Validation** (`validation`): Data validation utilities
 
 See [`core/README.md`](core/README.md) for detailed documentation.
 
@@ -35,6 +51,8 @@ Comprehensive DNA sequence analysis and manipulation:
 
 See [`dna/README.md`](dna/README.md) for detailed documentation.
 
+**Related Modules**: RNA (transcriptomic analysis), Protein (translation), GWAS (variant analysis), Math (population genetics)
+
 ### 🔬 RNA (`rna/`)
 Transcriptomic analysis and pipeline orchestration:
 - **Amalgkit Integration**: Modular wrapper around amalgkit CLI tools
@@ -43,6 +61,8 @@ Transcriptomic analysis and pipeline orchestration:
 - **Quantification**: Gene expression quantification and normalization
 
 See [`rna/README.md`](rna/README.md) for detailed documentation.
+
+**Related Modules**: DNA (genomic coordinates), Single-cell (scRNA-seq), Multi-omics (transcriptomic integration), Networks (regulatory networks)
 
 ### 🧫 Protein (`protein/`)
 Proteomic analysis and sequence manipulation:
@@ -54,6 +74,8 @@ Proteomic analysis and sequence manipulation:
 
 See [`protein/README.md`](protein/README.md) for detailed documentation.
 
+**Related Modules**: DNA (genomic coordinates), RNA (translation), Networks (PPI networks), Ontology (functional annotation)
+
 ### 🧬 Epigenome (`epigenome/`)
 Epigenetic modification analysis:
 - **Methylation Analysis**: DNA methylation pattern detection and analysis
@@ -61,6 +83,8 @@ Epigenetic modification analysis:
 - **Track Processing**: Genomic track file processing and visualization
 
 See [`epigenome/README.md`](epigenome/README.md) for detailed documentation.
+
+**Related Modules**: DNA (genomic coordinates), Networks (chromatin interactions), Multi-omics (epigenomic integration)
 
 ### 📊 Ontology (`ontology/`)
 Functional annotation and semantic analysis:
@@ -70,6 +94,8 @@ Functional annotation and semantic analysis:
 
 See [`ontology/README.md`](ontology/README.md) for detailed documentation.
 
+**Related Modules**: Protein (functional annotation), Networks (pathway enrichment), Information Theory (semantic similarity)
+
 ### 🐜 Phenotype (`phenotype/`)
 Phenotypic trait analysis and curation:
 - **Morphological Traits**: Shape and structural phenotype analysis
@@ -78,6 +104,8 @@ Phenotypic trait analysis and curation:
 
 See [`phenotype/README.md`](phenotype/README.md) for detailed documentation.
 
+**Related Modules**: Life Events (life course analysis), GWAS (trait association), Networks (trait networks)
+
 ### 🌿 Ecology (`ecology/`)
 Ecological metadata and community analysis:
 - **Community Composition**: Species diversity and abundance analysis
@@ -85,6 +113,8 @@ Ecological metadata and community analysis:
 - **Population Dynamics**: Community structure and interaction analysis
 
 See [`ecology/README.md`](ecology/README.md) for detailed documentation.
+
+**Related Modules**: Networks (ecological interactions), DNA (population genetics), Information Theory (diversity measures)
 
 ### 📈 Math (`math/`)
 Theoretical and quantitative biology:
@@ -96,6 +126,8 @@ Theoretical and quantitative biology:
 
 See [`math/README.md`](math/README.md) for detailed documentation.
 
+**Related Modules**: DNA (population genetics), GWAS (statistical models), Information Theory (theoretical foundations)
+
 ### 📊 Visualization (`visualization/`)
 Unified plotting and animation framework:
 - **Statistical Plots**: Line plots, heatmaps, scatter plots, pair plots
@@ -104,6 +136,8 @@ Unified plotting and animation framework:
 - **Publication Graphics**: High-quality figure generation
 
 See [`visualization/README.md`](visualization/README.md) for detailed documentation.
+
+**Related Modules**: All modules (visualization support), GWAS (statistical plots), Networks (graph visualization)
 
 ### 🔄 Simulation (`simulation/`)
 Synthetic data generation and agent-based modeling:
@@ -115,6 +149,8 @@ Synthetic data generation and agent-based modeling:
 
 See [`simulation/README.md`](simulation/README.md) for detailed documentation. Module-specific simulation scripts are documented in `scripts/simulation/README.md`.
 
+**Related Modules**: All modules (synthetic data generation for testing and validation)
+
 ### 🔬 Single Cell (`singlecell/`)
 Single-cell transcriptomic analysis:
 - **Preprocessing**: Quality control and normalization
@@ -125,6 +161,8 @@ Single-cell transcriptomic analysis:
 
 See [`singlecell/README.md`](singlecell/README.md) for detailed documentation.
 
+**Related Modules**: RNA (transcriptomic analysis), Multi-omics (quality control), ML (dimensionality reduction)
+
 ### 🧬 Quality (`quality/`)
 Data quality assessment and control:
 - **Sequence Quality**: FASTQ quality metrics and filtering
@@ -132,6 +170,8 @@ Data quality assessment and control:
 - **Expression Quality**: Transcriptome quality assessment
 
 See [`quality/README.md`](quality/README.md) for detailed documentation.
+
+**Related Modules**: All modules (quality assessment), DNA (sequence quality), RNA (expression quality)
 
 ### 🕸️ Networks (`networks/`)
 Biological network analysis:
@@ -141,6 +181,8 @@ Biological network analysis:
 - **Community Detection**: Network module identification
 
 See [`networks/README.md`](networks/README.md) for detailed documentation.
+
+**Related Modules**: Protein (PPI networks), RNA (regulatory networks), Ontology (pathway networks), Information Theory (network entropy)
 
 ### 🤖 Machine Learning (`ml/`)
 Statistical and machine learning methods:
@@ -152,6 +194,8 @@ Statistical and machine learning methods:
 
 See [`ml/README.md`](ml/README.md) for detailed documentation.
 
+**Related Modules**: All modules (feature engineering), Single-cell (dimensionality reduction), Networks (network-based features)
+
 ### 🔗 Multi-omics (`multiomics/`)
 Integrated multi-omic data analysis:
 - **Data Integration**: Cross-platform data harmonization
@@ -159,6 +203,8 @@ Integrated multi-omic data analysis:
 - **Systems Biology**: Network-based integration approaches
 
 See [`multiomics/README.md`](multiomics/README.md) for detailed documentation.
+
+**Related Modules**: DNA, RNA, Protein, Epigenome (data integration), Networks (systems biology), Visualization (integrated plots)
 
 ### 📅 Life Events (`life_events/`)
 Life course and event sequence analysis:
@@ -169,6 +215,8 @@ Life course and event sequence analysis:
 - **Population Comparison**: Compare event patterns across groups
 
 See [`life_events/README.md`](life_events/README.md) for detailed documentation.
+
+**Related Modules**: Phenotype (life course analysis), ML (sequence prediction), Information Theory (temporal patterns)
 
 ### 📊 Information Theory (`information/`)
 Information-theoretic analysis for biological data:
@@ -181,6 +229,8 @@ Information-theoretic analysis for biological data:
 
 See [`information/README.md`](information/README.md) and [`information/EXAMPLES.md`](information/EXAMPLES.md) for detailed documentation.
 
+**Related Modules**: DNA (variant analysis), Networks (information flow), Ontology (semantic information), Multi-omics (information integration)
+
 ### 🧬 GWAS (`gwas/`)
 Genome-Wide Association Studies workflow:
 - **Variant Calling**: Integration with bcftools and GATK
@@ -192,6 +242,8 @@ Genome-Wide Association Studies workflow:
 - **Data Acquisition**: SRA download and reference genome retrieval
 
 See [`gwas/README.md`](gwas/README.md) for detailed documentation.
+
+**Related Modules**: DNA (variant calling), Math (statistical models), Phenotype (trait association), Visualization (GWAS plots), Quality (QC filters)
 
 ## Architecture Principles
 
@@ -230,6 +282,48 @@ genetic_diversity = population.genetic_diversity(dna_sequences)
 expression_patterns = workflow.extract_expression_patterns(rna_data)
 protein_annotations = proteomes.annotate_sequences(protein_sequences)
 ```
+
+**Related Modules**: DNA, RNA, and Protein modules work together for multi-omic analysis. See Multi-omics module for integrated workflows.
+
+### Multi-Omic Integration
+```python
+from metainformant.dna import variants
+from metainformant.rna import workflow
+from metainformant.epigenome import methylation
+from metainformant.multiomics import integration
+
+# Integrate genomic, transcriptomic, and epigenomic data
+variants_data = variants.read_vcf("data/variants.vcf")
+expression_data = workflow.load_expression("data/expression.tsv")
+methylation_data = methylation.load_methylation("data/methylation.bed")
+
+# Joint analysis
+integrated_results = integration.joint_analysis(
+    genomics=variants_data,
+    transcriptomics=expression_data,
+    epigenomics=methylation_data
+)
+```
+
+**Related Modules**: DNA (variants), RNA (expression), Epigenome (methylation), Multi-omics (integration)
+
+### Network and Systems Biology
+```python
+from metainformant.networks import ppi, regulatory
+from metainformant.ontology import go
+from metainformant.information import mutual_information
+
+# Build regulatory network from expression data
+reg_network = regulatory.infer_regulatory_network(expression_data)
+
+# Annotate with GO terms
+annotated_network = go.annotate_network(reg_network)
+
+# Analyze information flow
+info_flow = mutual_information(expression_data, network_structure)
+```
+
+**Related Modules**: Networks (PPI, regulatory), Ontology (GO annotation), Information Theory (network analysis)
 
 ### Pipeline Orchestration
 ```python

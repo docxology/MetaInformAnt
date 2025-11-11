@@ -2,14 +2,14 @@
 
 from __future__ import annotations
 
-import logging
 from pathlib import Path
 from typing import Any
 
 from ..core.io import dump_json, ensure_directory
+from ..core.logging import get_logger
 from ..dna.ncbi import download_genome_package_best_effort
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def download_reference_genome(

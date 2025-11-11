@@ -3,6 +3,7 @@
 from .community import (
     bray_curtis_dissimilarity,
     chao1_estimator,
+    community_metrics,
     functional_diversity_metrics,
     jaccard_similarity,
     pielou_evenness,
@@ -38,6 +39,7 @@ __all__ = [
     "species_richness",
     "pielou_evenness",
     "chao1_estimator",
+    "community_metrics",
     # Beta diversity
     "bray_curtis_dissimilarity",
     "jaccard_similarity",

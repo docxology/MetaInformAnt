@@ -10,6 +10,59 @@ This module contains implementations of key mathematical frameworks in theoretic
 - **Evolutionary Dynamics**: Selection experiments and quantitative trait analysis
 - **Statistical Methods**: Epidemiological models and linkage disequilibrium
 
+### Module Architecture
+
+```mermaid
+graph TB
+    subgraph "Math Module"
+        Price[price<br/>Price Equation]
+        Selection[selection<br/>Selection Theory]
+        PopGen[popgen<br/>Population Genetics]
+        DDM[ddm<br/>Drift-Diffusion]
+        LD[ld<br/>Linkage Disequilibrium]
+        Coalescent[coalescent<br/>Coalescent Theory]
+        Demography[demography<br/>Demography]
+    end
+    
+    subgraph "Input Data"
+        Sequences[Sequences]
+        Traits[Traits]
+        TimeSeries[Time Series]
+    end
+    
+    subgraph "Other Modules"
+        DNA_Mod[dna]
+        GWAS_Mod[gwas]
+        Info_Mod[information]
+    end
+    
+    Sequences --> PopGen
+    Sequences --> LD
+    Traits --> Selection
+    TimeSeries --> DDM
+    PopGen --> Coalescent
+    Selection --> Price
+    DNA_Mod --> PopGen
+    GWAS_Mod --> LD
+    Info_Mod --> PopGen
+```
+
+### Mathematical Biology Workflow
+
+```mermaid
+flowchart LR
+    Start[Input] --> Type{Analysis Type?}
+    Type -->|Population| PopGen[Population Genetics]
+    Type -->|Selection| Selection[Selection Analysis]
+    Type -->|Coalescent| Coalescent[Coalescent Analysis]
+    Type -->|LD| LD[LD Analysis]
+    PopGen --> Calculate[Calculate Statistics]
+    Selection --> Calculate
+    Coalescent --> Calculate
+    LD --> Calculate
+    Calculate --> Output[Results]
+```
+
 ## Submodules
 
 ### Population Genetics (`price.py`, `selection.py`, `popgen.py`)

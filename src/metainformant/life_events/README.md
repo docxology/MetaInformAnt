@@ -6,6 +6,58 @@ The `life_events` module provides comprehensive tools for analyzing human life c
 
 This module treats life courses as sequences of events (similar to how NLP treats text as sequences of words), allowing the application of sequence modeling techniques to predict outcomes like early mortality, personality traits, and health outcomes. The implementation is inspired by research that represents human lives using NLP techniques to examine the evolution and predictability of life outcomes.
 
+### Module Architecture
+
+```mermaid
+graph TB
+    subgraph "Life Events Module"
+        Events[events<br/>Event Data Structures]
+        Embeddings[embeddings<br/>Event Embeddings]
+        Models[models<br/>Prediction Models]
+        Interpret[interpretability<br/>Model Interpretation]
+        Viz[visualization<br/>Visualization]
+        Workflow[workflow<br/>Workflow Functions]
+        Config[config<br/>Configuration]
+        Utils[utils<br/>Utilities]
+    end
+    
+    subgraph "Input Data"
+        EventSeqs[Event Sequences]
+        Outcomes[Outcomes]
+    end
+    
+    subgraph "Other Modules"
+        Phenotype_Mod[phenotype]
+        ML_Mod[ml]
+        Info_Mod[information]
+        Viz_Mod[visualization]
+    end
+    
+    EventSeqs --> Events
+    Outcomes --> Models
+    Events --> Embeddings
+    Embeddings --> Models
+    Models --> Interpret
+    Interpret --> Viz
+    Phenotype_Mod --> Events
+    ML_Mod --> Models
+    Info_Mod --> Embeddings
+    Viz_Mod --> Viz
+```
+
+### Life Events Analysis Workflow
+
+```mermaid
+flowchart LR
+    Start[Event Sequences] --> Load[Load Sequences]
+    Load --> Embed[Learn Embeddings]
+    Embed --> Train[Train Model]
+    Train --> Predict[Make Predictions]
+    Predict --> Interpret[Interpret Results]
+    Interpret --> Visualize[Visualize]
+    Visualize --> Output[Results]
+```
+
 ## Key Features
 
 - **Event Sequence Representation**: Structured data types for temporal event sequences with domain categorization

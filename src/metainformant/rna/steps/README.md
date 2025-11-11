@@ -6,9 +6,9 @@ This directory contains individual step implementations for the METAINFORMANT RN
 
 Each module implements a specific step in the RNA-seq analysis workflow:
 
-- **`amalgkit_step_*.py`**: Individual amalgkit workflow steps
+### Amalgkit Step Runners (11 steps)
 - **`metadata.py`**: Metadata retrieval and organization
-- **`integration.py`**: Data source integration
+- **`integrate.py`**: Data source integration
 - **`config.py`**: Configuration generation
 - **`select.py`**: Feature selection and filtering
 - **`getfastq.py`**: FASTQ file retrieval
@@ -18,6 +18,12 @@ Each module implements a specific step in the RNA-seq analysis workflow:
 - **`csca.py`**: Statistical testing (CSCA)
 - **`curate.py`**: Data curation and quality control
 - **`sanity.py`**: Sanity checking and validation
+
+### Processing Modules
+- **`process_samples.py`**: Unified download-quantify-delete workflow
+  - Supports both sequential (num_workers=1) and parallel (num_workers>1) modes
+  - Handles disk space management automatically
+- **`download_progress.py`**: Real-time progress tracking for downloads
 
 ## Architecture
 

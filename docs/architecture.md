@@ -139,6 +139,22 @@ All modules depend on `core` utilities:
 
 ### Domain Module Dependencies
 
+#### Core Module
+- **Purpose**: Shared infrastructure and utilities for all modules
+- **Depends on**: None (base module)
+- **Used by**: All modules (infrastructure layer)
+- **Key Components**:
+  - **config**: Configuration loading with environment variable overrides
+  - **io**: File I/O operations (JSON, CSV, TSV, gzip-aware)
+  - **logging**: Structured logging with consistent formatting
+  - **paths**: Path validation and containment checks
+  - **cache**: JSON-based caching for expensive operations
+  - **parallel**: Parallel processing utilities
+  - **hash**: Hashing and checksum functions
+  - **text**: Text processing utilities
+  - **db**: Database utilities
+- **Integrates with**: All domain modules as the foundation layer
+
 #### DNA Module
 - **Depends on**: `core` (all utilities)
 - **Used by**: `gwas`, `rna` (for genomic coordinates), `information` (sequence analysis)
@@ -223,6 +239,15 @@ All modules depend on `core` utilities:
 - **Depends on**: `core`
 - **Used by**: Workflow scripts
 - **Integrates with**: `math` (diversity calculations)
+
+#### Simulation Module
+- **Depends on**: `core`
+- **Used by**: All modules (for generating synthetic test data)
+- **Key Components**:
+  - **sequences**: Synthetic sequence generation (DNA, RNA, protein)
+  - **rna**: RNA expression count simulation
+  - **agents**: Agent-based modeling and ecosystem simulation
+- **Integrates with**: All modules for testing and validation purposes
 
 ### Common Integration Patterns
 

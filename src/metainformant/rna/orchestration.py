@@ -6,7 +6,6 @@ for single species, including status checking, cleanup, and step execution.
 
 from __future__ import annotations
 
-import logging
 import subprocess
 import time
 from collections.abc import Sequence
@@ -131,7 +130,67 @@ def run_workflow_for_species(
     else:
         # Run specific steps
         results = {"success": True, "completed": [], "failed": []}
-
+        
+        # Check if both getfastq and quant are requested together - use parallel download workflow
+        if "getfastq" in steps and "quant" in steps:
+            from metainformant.rna import steps as _steps_mod
+            from metainformant.core.io import read_delimited
+            
+            logger.info("🚀 Detected getfastq + quant: Using parallel download workflow")
+            
+            # Get parameters
+            getfastq_params = cfg.per_step.get("getfastq", {})
+            quant_params = cfg.per_step.get("quant", {})
+            
+            # Find metadata file
+            metadata_paths = [
+                cfg.work_dir / "metadata" / "metadata.filtered.clean.tsv",
+                cfg.work_dir / "metadata" / "metadata.filtered.tissue.tsv",
+                cfg.work_dir / "metadata" / "metadata.tsv",
+            ]
+            metadata_file = None
+            for mp in metadata_paths:
+                if mp.exists():
+                    try:
+                        rows = list(read_delimited(mp, delimiter="\t"))
+                        if rows and "run" in rows[0]:
+                            metadata_file = mp
+                            break
+                    except Exception:
+                        continue
+            
+            if not metadata_file:
+                logger.error("No metadata file with 'run' column found")
+                results["failed"].extend(["getfastq", "quant"])
+                results["success"] = False
+                return results
+            
+            # Extract num_workers
+            num_workers = getfastq_params.get("num_download_workers") or getfastq_params.get("parallel_workers") or 8
+            
+            try:
+                stats = _steps_mod.run_download_quant_workflow(
+                    metadata_path=metadata_file,
+                    getfastq_params=getfastq_params,
+                    quant_params=quant_params,
+                    work_dir=cfg.work_dir,
+                    log_dir=(cfg.log_dir or (cfg.work_dir / "logs")),
+                    num_workers=num_workers,  # Controls sequential (1) vs parallel (>1) mode
+                )
+                
+                if stats.get("failed", 0) == 0:
+                    results["completed"].extend(["getfastq", "quant"])
+                else:
+                    results["failed"].extend(["getfastq", "quant"])
+                    results["success"] = False
+            except Exception as e:
+                logger.error(f"Parallel download workflow failed: {e}", exc_info=True)
+                results["failed"].extend(["getfastq", "quant"])
+                results["success"] = False
+            
+            return results
+        
+        # Otherwise run steps individually
         for step in steps:
             if step not in VALID_STEPS:
                 logger.warning(f"Invalid step: {step}")
@@ -393,17 +452,43 @@ def cleanup_unquantified_samples(
     """
     cfg = load_workflow_config(config_path)
 
+    # Get paths first
+    fastq_dir = Path(cfg.per_step.get("getfastq", {}).get("out_dir", cfg.work_dir / "fastq"))
+    quant_dir = Path(cfg.per_step.get("quant", {}).get("out_dir", cfg.work_dir / "quant"))
+
     # Find unquantified samples
     unquantified = find_unquantified_samples(config_path)
     if not unquantified:
         logger.info("No downloaded unquantified samples")
         return 0, 0
 
-    logger.info(f"Found {len(unquantified)} downloaded but unquantified samples")
+    # Filter to only samples that actually have FASTQ files
+    # Check both getfastq subdirectory and direct structure
+    getfastq_dir = fastq_dir / "getfastq"
+    if not getfastq_dir.exists():
+        getfastq_dir = fastq_dir
+    
+    samples_with_fastq = []
+    for sample_id in unquantified:
+        # Check for FASTQ files in sample directory
+        sample_dir_getfastq = getfastq_dir / sample_id
+        sample_dir_direct = fastq_dir / sample_id
+        
+        has_fastq = False
+        if sample_dir_getfastq.exists():
+            has_fastq = any(sample_dir_getfastq.glob("*.fastq*"))
+        if not has_fastq and sample_dir_direct.exists():
+            has_fastq = any(sample_dir_direct.glob("*.fastq*"))
+        
+        if has_fastq:
+            samples_with_fastq.append(sample_id)
+    
+    if not samples_with_fastq:
+        logger.info("No unquantified samples with FASTQ files found")
+        logger.info("   (Samples may still be downloading or converting from SRA)")
+        return 0, 0
 
-    # Get paths
-    fastq_dir = Path(cfg.per_step.get("getfastq", {}).get("out_dir", cfg.work_dir / "fastq"))
-    quant_dir = Path(cfg.per_step.get("quant", {}).get("out_dir", cfg.work_dir / "quant"))
+    logger.info(f"Found {len(samples_with_fastq)} downloaded but unquantified samples with FASTQ files")
 
     # Read metadata
     metadata_file = cfg.work_dir / "metadata" / "metadata.tsv"
@@ -421,6 +506,10 @@ def cleanup_unquantified_samples(
     quant_params["out_dir"] = str(quant_dir.absolute())
     quant_params["threads"] = cfg.threads or 12
 
+    # Note: amalgkit quant finds FASTQ files based on metadata and directory structure
+    # It looks relative to work_dir (if set) or out_dir
+    # No need to pass fastq_dir parameter (amalgkit doesn't accept it)
+
     # Inject index_dir if needed
     if "index_dir" not in quant_params and "index-dir" not in quant_params:
         index_dir = quant_dir.parent / "work" / "index"
@@ -430,8 +519,8 @@ def cleanup_unquantified_samples(
     quantified_count = 0
     failed_count = 0
 
-    # Process each sample
-    for sample_id in unquantified:
+    # Process each sample (only those with FASTQ files)
+    for sample_id in samples_with_fastq:
         try:
             sample_rows = [row for row in rows if row.get("run") == sample_id]
 

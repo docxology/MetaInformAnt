@@ -12,6 +12,72 @@ This module covers the full spectrum of DNA analysis needs:
 - **Genomic Data**: NCBI integration and genome retrieval
 - **Molecular Biology**: Restriction enzymes, motifs, and translation
 
+### Module Architecture
+
+```mermaid
+graph TB
+    subgraph "DNA Module"
+        Seq[sequences<br/>Sequence I/O]
+        Align[alignment<br/>Pairwise Alignment]
+        MSA[msa<br/>Multiple Alignment]
+        Phylo[phylogeny<br/>Tree Construction]
+        Pop[population<br/>Population Genetics]
+        Variants[variants<br/>Variant Analysis]
+        Genomes[genomes<br/>Genome Retrieval]
+        NCBI[ncbi<br/>NCBI Integration]
+        Motifs[motifs<br/>Motif Discovery]
+        Restrict[restriction<br/>Restriction Enzymes]
+    end
+    
+    subgraph "External"
+        NCBI_DB[NCBI Databases]
+        Files[FASTA/FASTQ Files]
+    end
+    
+    subgraph "Other Modules"
+        RNA_Mod[rna]
+        Protein_Mod[protein]
+        GWAS_Mod[gwas]
+        Math_Mod[math]
+    end
+    
+    Files --> Seq
+    NCBI_DB --> NCBI
+    NCBI --> Genomes
+    Seq --> Align
+    Seq --> MSA
+    Seq --> Pop
+    Seq --> Variants
+    Align --> Phylo
+    MSA --> Phylo
+    Pop --> Math_Mod
+    Variants --> GWAS_Mod
+    Seq --> RNA_Mod
+    Seq --> Protein_Mod
+```
+
+### DNA Analysis Workflow
+
+```mermaid
+flowchart TD
+    Start[Input Data] --> InputType{Input Type?}
+    InputType -->|FASTA/FASTQ| ReadSeq[Read Sequences]
+    InputType -->|Accession| FetchNCBI[Fetch from NCBI]
+    FetchNCBI --> ReadSeq
+    ReadSeq --> Process{Analysis Type?}
+    Process -->|Alignment| Align[Pairwise/MSA]
+    Process -->|Phylogeny| BuildTree[Build Tree]
+    Process -->|Population| PopGen[Population Analysis]
+    Process -->|Variants| VarCall[Variant Calling]
+    Align --> BuildTree
+    BuildTree --> Visualize[Visualize Tree]
+    PopGen --> Stats[Calculate Statistics]
+    VarCall --> QC[Quality Control]
+    Stats --> Output[Results]
+    QC --> Output
+    Visualize --> Output
+```
+
 ## Submodules
 
 ### Sequence I/O (`sequences.py`)

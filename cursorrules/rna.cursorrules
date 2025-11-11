@@ -63,9 +63,150 @@ tracker.update_step("metadata", status="completed")
 ```
 
 ### Steps (`steps/`)
-- Step-specific implementations
-- Metadata, config, download, etc.
-- Each step has its own module
+- Step-specific implementations for all 11 amalgkit steps
+- Individual step runners: `run_metadata`, `run_integrate`, `run_config`, `run_select`, `run_getfastq`, `run_quant`, `run_merge`, `run_cstmm`, `run_curate`, `run_csca`, `run_sanity`
+- Processing functions: `run_download_quant_workflow`, `quantify_sample`, `convert_sra_to_fastq`, `delete_sample_fastqs`
+- `process_samples.py`: Unified download-quantify-delete workflow (supports sequential and parallel modes, automatic disk space management)
+- `download_progress.py`: Real-time progress tracking for downloads
+
+**Patterns**:
+```python
+from metainformant.rna.steps import (
+    run_metadata,
+    run_quant,
+    run_download_quant_workflow,
+    quantify_sample
+)
+
+# Individual step execution
+result = run_metadata({"species": "Homo sapiens", "threads": 4})
+
+# Unified processing workflow (download, quantify, delete FASTQs)
+run_download_quant_workflow(
+    species="Homo sapiens",
+    num_workers=4,  # Parallel mode (num_workers=1 for sequential)
+    work_dir="output/amalgkit/species/work"
+)
+
+# Quantify single sample
+quantify_sample(
+    sample_id="SRR123456",
+    work_dir="output/amalgkit/species/work",
+    genome_dir="data/genomes/species"
+)
+```
+
+### Environment (`environment`)
+- Environment validation and dependency checking
+- Check amalgkit, kallisto, SRA toolkit, R script availability
+- Virtual environment validation
+- Comprehensive environment validation
+
+**Patterns**:
+```python
+from metainformant.rna.environment import (
+    check_amalgkit,
+    check_dependencies,
+    validate_environment
+)
+
+# Check individual dependencies
+if not check_amalgkit():
+    raise RuntimeError("amalgkit not available")
+
+# Validate complete environment
+is_valid, issues = validate_environment()
+```
+
+### Monitoring (`monitoring`)
+- Workflow progress tracking
+- Species status analysis
+- Sample status checking
+- Active download monitoring
+- Quantification progress assessment
+
+**Patterns**:
+```python
+from metainformant.rna.monitoring import (
+    check_workflow_progress,
+    analyze_species_status,
+    get_sample_status,
+    count_quantified_samples
+)
+
+# Check workflow progress
+progress = check_workflow_progress(config)
+status = analyze_species_status(species_name, work_dir)
+```
+
+### Orchestration (`orchestration`)
+- Multi-species workflow orchestration
+- Species config discovery
+- Workflow monitoring
+- Cleanup of unquantified samples
+- Run workflows for specific species
+
+**Patterns**:
+```python
+from metainformant.rna.orchestration import (
+    discover_species_configs,
+    run_workflow_for_species,
+    monitor_workflows
+)
+
+# Discover available species configs
+configs = discover_species_configs("config/amalgkit/")
+
+# Run workflow for specific species
+run_workflow_for_species(species_name, config_path)
+```
+
+### Cleanup (`cleanup`)
+- Partial download cleanup
+- Abundance file naming fixes
+- Workflow cleanup utilities
+
+**Patterns**:
+```python
+from metainformant.rna.cleanup import (
+    cleanup_partial_downloads,
+    fix_abundance_naming_for_species
+)
+
+# Cleanup partial downloads
+cleanup_partial_downloads(work_dir)
+
+# Fix abundance file naming
+fix_abundance_naming_for_species(species_name, work_dir)
+```
+
+### Discovery (`discovery`)
+- Species discovery with RNA-seq data
+- Config YAML generation
+- Genome information retrieval
+
+**Patterns**:
+```python
+from metainformant.rna.discovery import (
+    search_species_with_rnaseq,
+    generate_config_yaml,
+    get_genome_info
+)
+
+# Search for species with RNA-seq data
+species_list = search_species_with_rnaseq(query="Homo sapiens")
+
+# Generate config YAML
+generate_config_yaml(species_name, output_path)
+```
+
+### Protein Integration (`protein_integration`)
+- Integration with protein module
+- Cross-domain analysis utilities
+
+### Pipeline (`pipeline`)
+- High-level pipeline orchestration
+- End-to-end pipeline execution
 
 ## Patterns
 
@@ -121,9 +262,36 @@ config = load_workflow_config("config/amalgkit/species.yaml")
 
 ### Workflow Execution
 - Use `plan_workflow()` to get step list
-- Execute steps in order
-- Track progress with `progress_tracker`
+- Execute steps in order via `execute_workflow()` (recommended for end-to-end)
+- For command-line execution, use `scripts/rna/run_workflow.py` (recommended)
+- Track progress with `progress_tracker` or `monitoring` functions
 - Handle step failures gracefully
+- Support both sequential and parallel processing modes
+
+**Workflow Execution Patterns**:
+```python
+from metainformant.rna.workflow import load_workflow_config, plan_workflow, execute_workflow
+
+# Load and plan workflow
+config = load_workflow_config("config/amalgkit/species.yaml")
+steps = plan_workflow(config)
+
+# Execute complete workflow
+results = execute_workflow(config)
+
+# Or use orchestration for multi-species
+from metainformant.rna.orchestration import run_workflow_for_species
+run_workflow_for_species("Homo sapiens", "config/amalgkit/homo_sapiens.yaml")
+```
+
+**Command-line execution** (recommended):
+```bash
+# Full end-to-end workflow
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+
+# Check status
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+```
 
 ### Long-Running Workflows
 - Use `progress_tracker` for state persistence
@@ -142,12 +310,14 @@ config = load_workflow_config("config/amalgkit/species.yaml")
 - **Sequential workflows** (`run_multi_species.py`): Uses `AK_THREADS` per species (default: 24)
 - **Distributed workflows** (`batch_download_species.py`): Uses `--total-threads` to distribute threads across all species (default: 24 total, minimum 1 per species)
 - **Immediate processing**: Each sample is downloaded, quantified, and FASTQs deleted immediately (not batched)
+- **Processing modes**: `run_download_quant_workflow` supports both sequential (`num_workers=1`) and parallel (`num_workers>1`) modes
+- **Disk space management**: Automatic disk space management in unified processing workflows
 
 ## Integration
 
-- **Uses**: `dna` (genomic coordinates)
-- **Used by**: `multiomics` (transcriptomics integration)
-- **External**: `amalgkit` CLI tool
+- **Uses**: `dna` (genomic coordinates), `protein` (protein integration utilities)
+- **Used by**: `multiomics` (transcriptomics integration), `singlecell` (expression data)
+- **External**: `amalgkit` CLI tool, `kallisto` (quantification), `SRA toolkit` (data retrieval), `R` (statistical analysis)
 
 ## Testing
 

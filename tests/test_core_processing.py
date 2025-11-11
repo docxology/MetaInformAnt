@@ -44,12 +44,12 @@ class TestConfigBasedProcessing:
             assert is_valid
             assert len(errors) == 0
             
-            # Test invalid config (missing required fields)
+            # Test invalid config (missing both downloads and processing sections)
             invalid_config = {
-                "processing": {
-                    "step1": {}
+                "metadata": {
+                    "version": "1.0"
                 }
-                # Missing downloads section
+                # Missing both downloads and processing sections
             }
             invalid_config_file = tmp_path / "invalid_config.json"
             io.dump_json(invalid_config, invalid_config_file)
@@ -57,6 +57,7 @@ class TestConfigBasedProcessing:
             is_valid, errors = validate_config_file(invalid_config_file)
             assert not is_valid
             assert len(errors) == 1
+            assert "downloads" in errors[0] or "processing" in errors[0]
 
     def test_create_sample_config(self):
         """Test sample configuration file creation."""
@@ -78,7 +79,7 @@ class TestConfigBasedProcessing:
             create_sample_config(scientific_config, "scientific")
             
             config_data = io.load_json(scientific_config)
-            assert "scientific data processing" in config_data["description"]
+            assert "Scientific data processing" in config_data["description"]
             assert "gene_expression" in config_data["downloads"]
             
             # Test advanced config

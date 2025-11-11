@@ -33,10 +33,11 @@ cd MetaInformAnt
 # Setup environment with uv
 bash scripts/package/setup_uv.sh
 
-# Or manual setup
-python3 -m venv .venv
+# Or manual setup with uv
+curl -LsSf https://astral.sh/uv/install.sh | sh  # Install uv if needed
+uv venv
 source .venv/bin/activate
-pip install -e .
+uv pip install -e .
 ```
 
 ### Quick Example
@@ -77,19 +78,19 @@ See `scripts/core/run_demo.py` for the workflow demonstration. Outputs are saved
 
 ### Core Infrastructure
 
-- **[core/](src/metainformant/core/)** - Shared utilities (I/O, logging, configuration, parallel processing)
+- **[core/](src/metainformant/core/)** - Shared utilities (I/O, logging, configuration, parallel processing, caching, path management, workflow orchestration)
 
 ### Molecular Analysis
 
 - **[dna/](src/metainformant/dna/)** - DNA sequences, alignment, phylogenetics, population genetics
 - **[rna/](src/metainformant/rna/)** - RNA-seq workflows, amalgkit integration, transcriptomics
 - **[protein/](src/metainformant/protein/)** - Protein sequences, structure, AlphaFold, proteomics
-- **[epigenome/](src/metainformant/epigenome/)** - Methylation analysis, chromatin tracks
+- **[epigenome/](src/metainformant/epigenome/)** - Methylation analysis, ChIP-seq, ATAC-seq, chromatin tracks
 
 ### Statistical & ML Methods
 
 - **[gwas/](src/metainformant/gwas/)** - Genome-wide association studies, variant calling, visualization
-- **[math/](src/metainformant/math/)** - Mathematical biology, population genetics theory, dynamics
+- **[math/](src/metainformant/math/)** - Mathematical biology, population genetics theory, coalescent models, evolutionary dynamics, quantitative genetics
 - **[ml/](src/metainformant/ml/)** - Machine learning pipelines, classification, regression
 - **[information/](src/metainformant/information/)** - Information theory methods (Shannon entropy, mutual information, semantic similarity)
 
@@ -98,7 +99,7 @@ See `scripts/core/run_demo.py` for the workflow demonstration. Outputs are saved
 - **[networks/](src/metainformant/networks/)** - Biological networks, community detection, pathways
 - **[multiomics/](src/metainformant/multiomics/)** - Multi-omic data integration
 - **[singlecell/](src/metainformant/singlecell/)** - Single-cell RNA-seq analysis
-- **[simulation/](src/metainformant/simulation/)** - Synthetic data generation, agent-based models
+- **[simulation/](src/metainformant/simulation/)** - Synthetic data generation, agent-based models, sequence simulation, ecosystem modeling
 
 ### Annotation & Metadata
 
@@ -133,7 +134,7 @@ The [`scripts/`](scripts/) directory contains production-ready workflow orchestr
 - **Package Management**: Setup, testing, quality control
 - **RNA-seq**: Multi-species workflows, amalgkit integration
 - **GWAS**: Genome-scale association studies
-- **Module Orchestrators**: ✅ Complete workflow scripts for all domains (DNA, protein, networks, multiomics, single-cell, quality, simulation, visualization, epigenome, ecology, ontology, phenotype, ML, math)
+- **Module Orchestrators**: ✅ Complete workflow scripts for all domains (core, DNA, RNA, protein, networks, multiomics, single-cell, quality, simulation, visualization, epigenome, ecology, ontology, phenotype, ML, math, gwas, information, life_events)
 
 See [`scripts/README.md`](scripts/README.md) for complete documentation.
 
@@ -145,18 +146,34 @@ All modules are accessible via the unified CLI:
 # Setup and environment
 uv run metainformant setup --with-amalgkit
 
+# Core utilities
+uv run metainformant core cache --clear
+
 # Domain workflows
 uv run metainformant dna fetch --assembly GCF_000001405.40
 uv run metainformant rna run --work-dir output/rna --threads 8
+uv run metainformant protein fetch --uniprot-id P12345
 uv run metainformant gwas run --config config/gwas/gwas_template.yaml
 
-# New module workflows
+# Epigenome and annotation
+uv run metainformant epigenome analyze --bam data/chipseq.bam --output output/epigenome
+uv run metainformant ontology run --go data/go.obo --output output/ontology
+uv run metainformant phenotype curate --input data/traits.csv --output output/phenotype
+uv run metainformant ecology analyze --community data/species.csv --output output/ecology
+
+# Analysis and modeling
+uv run metainformant math simulate --model coalescent --output output/math
+uv run metainformant information entropy --sequences data/seqs.fasta --output output/information
+uv run metainformant simulation generate --type sequences --output output/simulation
+
+# Systems biology
 uv run metainformant networks run --input data/interactions.tsv --output output/networks
 uv run metainformant multiomics run --genomics data/genomics.tsv --output output/multiomics
 uv run metainformant singlecell run --input data/counts.h5ad --output output/singlecell --qc
 uv run metainformant quality run --fastq data/reads.fq --output output/quality
-uv run metainformant ontology run --go data/go.obo --output output/ontology
 uv run metainformant ml run --features data/features.csv --output output/ml --classify
+uv run metainformant visualization plot --data data/matrix.csv --output output/visualization
+uv run metainformant life_events analyze --events data/events.jsonl --output output/life_events
 
 # See all available commands
 uv run metainformant --help
@@ -183,12 +200,40 @@ print(f"π = {diversity:.4f}")
 
 ### RNA-seq Workflow
 
-```bash
-# Multi-species RNA-seq pipeline
-python3 scripts/rna/run_multi_species.py
+```python
+from metainformant.rna import AmalgkitWorkflowConfig, plan_workflow, execute_workflow, check_cli_available
 
-# Single species
-bash scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit/config.yaml
+# Check if amalgkit is available
+available, help_text = check_cli_available()
+if not available:
+    print(f"Amalgkit not available: {help_text}")
+
+# Configure workflow
+config = AmalgkitWorkflowConfig(
+    work_dir="output/amalgkit/work",
+    threads=8,
+    species_list=["Apis_mellifera"]
+)
+
+# Plan workflow steps
+steps = plan_workflow(config)
+print(f"Planned {len(steps)} workflow steps")
+
+# Execute complete workflow
+results = execute_workflow(config)
+for step, result in results.items():
+    print(f"{step}: exit code {result.returncode}")
+```
+
+```bash
+# End-to-end workflow for a single species (recommended)
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+
+# Check status
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+
+# Alternative: Bash-based orchestrator
+bash scripts/rna/amalgkit/run_amalgkit.sh --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 ```
 
 ### GWAS Analysis
@@ -284,6 +329,166 @@ sequence = EventSequence(person_id="person_001", events=events)
 
 # Analyze life course
 results = analyze_life_course([sequence], outcomes=None)
+```
+
+### Protein Analysis
+
+```python
+from metainformant.protein import sequences, alignment, structure
+
+# Read protein sequences
+proteins = sequences.read_fasta("data/proteins.fasta")
+
+# Pairwise alignment
+align_result = alignment.global_align(proteins["seq1"], proteins["seq2"])
+
+# Structure analysis
+structure_data = structure.load_pdb("data/structure.pdb")
+contacts = structure.analyze_contacts(structure_data)
+```
+
+### Epigenome Analysis
+
+```python
+from metainformant.epigenome import methylation, chipseq
+
+# Methylation analysis
+meth_data = methylation.load_bedgraph("data/methylation.bedgraph")
+regions = methylation.find_dmr(meth_data, threshold=0.3)
+
+# ChIP-seq peak calling
+peaks = chipseq.call_peaks("data/chipseq.bam", "data/control.bam")
+```
+
+### Ontology Analysis
+
+```python
+from metainformant.ontology import go, query
+
+# Load Gene Ontology
+go_graph = go.load_obo("data/go.obo")
+
+# Query ontology
+terms = query.get_ancestors(go_graph, "GO:0008150")
+similarity = query.semantic_similarity(go_graph, "GO:0008150", "GO:0008151")
+```
+
+### Phenotype Analysis
+
+```python
+from metainformant.phenotype import life_course, antwiki
+
+# Life course analysis
+traits = life_course.load_traits("data/traits.csv")
+curated = life_course.curate_traits(traits)
+
+# AntWiki integration
+species_data = antwiki.fetch_species("Pogonomyrmex_barbatus")
+```
+
+### Ecology Analysis
+
+```python
+from metainformant.ecology import community, environmental
+
+# Community analysis
+species_matrix = community.load_matrix("data/species.csv")
+diversity = community.calculate_diversity(species_matrix)
+
+# Environmental data
+env_data = environmental.load_data("data/environment.csv")
+correlations = environmental.analyze_correlations(species_matrix, env_data)
+```
+
+### Mathematical Biology
+
+```python
+from metainformant.math import popgen, coalescent
+
+# Population genetics
+sequences = ["ATCGATCG", "ATCGTTCG", "ATCGATCG"]
+fst = popgen.fst(sequences, populations=[0, 0, 1])
+
+# Coalescent simulation
+tree = coalescent.simulate_coalescent(n_samples=10, Ne=1000)
+```
+
+### Single-Cell Analysis
+
+```python
+from metainformant.singlecell import preprocessing, clustering
+
+# Load single-cell data
+adata = preprocessing.load_h5ad("data/counts.h5ad")
+
+# Preprocessing
+adata = preprocessing.filter_cells(adata, min_genes=200)
+adata = preprocessing.normalize(adata)
+
+# Clustering
+clusters = clustering.leiden(adata, resolution=0.5)
+```
+
+### Quality Control
+
+```python
+from metainformant.quality import fastq, metrics
+
+# FASTQ quality assessment
+qc_report = fastq.assess_quality("data/reads.fastq")
+print(f"Mean quality: {qc_report['mean_quality']}")
+
+# General metrics
+quality_score = metrics.calculate_quality(data_matrix)
+```
+
+### Machine Learning
+
+```python
+from metainformant.ml import classification, features
+
+# Feature extraction
+features = features.extract_features(data, method="pca", n_components=50)
+
+# Classification
+model = classification.train_classifier(
+    X_train, y_train, method="random_forest"
+)
+predictions = model.predict(X_test)
+```
+
+### Simulation
+
+```python
+from metainformant.simulation import sequences, ecosystems
+
+# Sequence simulation
+sim_seqs = sequences.simulate_sequences(
+    n_sequences=100, length=1000, mutation_rate=0.01
+)
+
+# Ecosystem simulation
+ecosystem = ecosystems.simulate_community(
+    n_species=50, interactions="random"
+)
+```
+
+### Core Utilities
+
+```python
+from metainformant.core import io, paths, logging
+
+# I/O operations
+data = io.load_json("config/example.yaml")
+io.dump_json(results, "output/results.json")
+
+# Path handling
+resolved = paths.expand_and_resolve("~/data/input.txt")
+is_safe = paths.is_within(resolved, base_path="/safe/directory")
+
+# Logging
+logger = logging.get_logger(__name__)
+logger.info("Processing data")
 ```
 
 ## Development

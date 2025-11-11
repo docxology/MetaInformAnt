@@ -17,15 +17,29 @@ config/
 
 ### Active Species Configurations (`amalgkit/`)
 
-- **`amalgkit_pbarbatus.yaml`**: *Pogonomyrmex barbatus* (Red Harvester Ant) - Assembly GCF_000187915.1_Pbar_UMD_V03
-- **`amalgkit_cfloridanus.yaml`**: *Camponotus floridanus* (Florida Carpenter Ant) - Assembly GCF_003227725.1_Cflo_v7.5
-- **`amalgkit_mpharaonis.yaml`**: *Monomorium pharaonis* (Pharaoh Ant) - Assembly GCF_013373865.1_ASM1337386v2
-- **`amalgkit_sinvicta.yaml`**: *Solenopsis invicta* (Red Fire Ant) - Assembly GCF_016802725.1_UNIL_Sinv_3.0
+- **`amalgkit_pogonomyrmex_barbatus.yaml`**: *Pogonomyrmex barbatus* (Red Harvester Ant) - Assembly GCF_000187915.1_Pbar_UMD_V03
 - **`amalgkit_template.yaml`**: Template configuration file for creating new amalgkit workflows with customizable parameters
+- **`amalgkit_test.yaml`**: Test configuration for validation and testing workflows
 
 ### Archived Configurations (`archive/`)
 
-- **`amalgkit_amellifera.yaml`**: *Apis mellifera* (Western Honey Bee) - Inactive configuration moved to archive
+The archive contains 15 inactive configurations that have been moved from the active directory:
+
+- **`amalgkit_acromyrmex_echinatior.yaml`**: *Acromyrmex echinatior* (Leafcutter Ant)
+- **`amalgkit_amellifera.yaml`**: *Apis mellifera* (Western Honey Bee)
+- **`amalgkit_atta_cephalotes.yaml`**: *Atta cephalotes* (Leafcutter Ant)
+- **`amalgkit_camponotus_floridanus.yaml`**: *Camponotus floridanus* (Florida Carpenter Ant) - Assembly GCF_003227725.1_Cflo_v7.5
+- **`amalgkit_harpegnathos_saltator.yaml`**: *Harpegnathos saltator* (Jerdon's Jumping Ant)
+- **`amalgkit_lasius_neglectus.yaml`**: *Lasius neglectus* (Invasive Garden Ant)
+- **`amalgkit_monomorium_pharaonis.yaml`**: *Monomorium pharaonis* (Pharaoh Ant) - Assembly GCF_013373865.1_ASM1337386v2
+- **`amalgkit_myrmica_rubra.yaml`**: *Myrmica rubra* (European Fire Ant)
+- **`amalgkit_ooceraea_biroi.yaml`**: *Ooceraea biroi* (Clonal Raider Ant)
+- **`amalgkit_solenopsis_invicta.yaml`**: *Solenopsis invicta* (Red Fire Ant) - Assembly GCF_016802725.1_UNIL_Sinv_3.0
+- **`amalgkit_temnothorax_curvispinosus.yaml`**: *Temnothorax curvispinosus* (Acorn Ant)
+- **`amalgkit_temnothorax_longispinosus.yaml`**: *Temnothorax longispinosus* (Acorn Ant)
+- **`amalgkit_temnothorax_rugatulus.yaml`**: *Temnothorax rugatulus* (Acorn Ant)
+- **`amalgkit_vollenhovia_emeryi.yaml`**: *Vollenhovia emeryi* (Ant species)
+- **`amalgkit_wasmannia_auropunctata.yaml`**: *Wasmannia auropunctata* (Little Fire Ant)
 
 ## GWAS Analysis Configurations
 
@@ -70,7 +84,7 @@ from metainformant.core import config
 from metainformant.rna import AmalgkitWorkflowConfig
 
 # Load configuration from file
-cfg = config.load_config("config/amalgkit/amalgkit_pbarbatus.yaml")
+cfg = config.load_config("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
 
 # Create workflow configuration
 workflow_cfg = AmalgkitWorkflowConfig(
@@ -85,8 +99,8 @@ workflow_cfg = AmalgkitWorkflowConfig(
 ```bash
 # Run amalgkit workflow with specific configuration
 uv run python -m metainformant rna run \
-  --config config/amalgkit/amalgkit_sinvicta.yaml \
-  --work-dir output/amalgkit/sinvicta
+  --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml \
+  --work-dir output/amalgkit/pogonomyrmex_barbatus
 ```
 
 ### GWAS Workflows
@@ -157,16 +171,28 @@ uv run python -m metainformant gwas run \
 - **`correction`**: Multiple testing correction methods
 - **`output`**: Output directories and formats
 
-### Supported Ant Species
+### Supported Ant Species (Active Configurations)
 
-- **`Pogonomyrmex_barbatus`**: Red Harvester Ant (NCBI Taxonomy: 144034)
+- **`Pogonomyrmex_barbatus`**: Red Harvester Ant (NCBI Taxonomy: 144034) - Active configuration available
+
+### Archived Species Configurations
+
+The following species have configurations in the archive directory:
+- **`Acromyrmex_echinatior`**: Leafcutter Ant
+- **`Apis_mellifera`**: Western Honey Bee (NCBI Taxonomy: 7460)
+- **`Atta_cephalotes`**: Leafcutter Ant
 - **`Camponotus_floridanus`**: Florida Carpenter Ant (NCBI Taxonomy: 104421)
+- **`Harpegnathos_saltator`**: Jerdon's Jumping Ant
+- **`Lasius_neglectus`**: Invasive Garden Ant
 - **`Monomorium_pharaonis`**: Pharaoh Ant (NCBI Taxonomy: 307658)
+- **`Myrmica_rubra`**: European Fire Ant
+- **`Ooceraea_biroi`**: Clonal Raider Ant
 - **`Solenopsis_invicta`**: Red Fire Ant (NCBI Taxonomy: 13686)
-
-### Archived Species
-
-- **`Apis_mellifera`**: Western Honey Bee (NCBI Taxonomy: 7460) - Configuration archived
+- **`Temnothorax_curvispinosus`**: Acorn Ant
+- **`Temnothorax_longispinosus`**: Acorn Ant
+- **`Temnothorax_rugatulus`**: Acorn Ant
+- **`Vollenhovia_emeryi`**: Ant species
+- **`Wasmannia_auropunctata`**: Little Fire Ant
 
 ## Integration
 

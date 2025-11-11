@@ -4,9 +4,10 @@ import random
 from dataclasses import dataclass
 from typing import List, Tuple
 
-from ..core import logging, validation
+from ..core.logging import get_logger
+from ..core import validation
 
-logger = logging.get_logger(__name__)
+logger = get_logger(__name__)
 
 
 @dataclass

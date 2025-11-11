@@ -29,6 +29,38 @@ Functional annotation and ontologies: Gene Ontology operations, OBO format parsi
 - Format conversion
 - Cache management
 
+### Types (`types`)
+- Core data structures for ontology representation
+- `Term` class for individual ontology terms
+- `Ontology` class for complete ontology objects
+- Term relationships and metadata
+
+**Patterns**:
+```python
+from metainformant.ontology.types import Term, Ontology
+
+# Create a term
+term = Term(
+    term_id="GO:0008150",
+    name="biological_process",
+    namespace="biological_process",
+    definition="Any process accomplished by biological systems",
+    is_a_parents=["GO:0003674"],
+    relationships={"part_of": ["GO:001"]},
+    synonyms=["biological process", "BP"],
+    xrefs=["Wikipedia:biological_process"]
+)
+
+# Create ontology and add term
+onto = Ontology()
+onto.add_term(term)
+
+# Access term
+if onto.has_term("GO:0008150"):
+    term = onto.get_term("GO:0008150")
+    namespace = onto.get_namespace("GO:0008150")
+```
+
 ## Patterns
 
 ### Missing Ontology Files
@@ -45,6 +77,25 @@ Functional annotation and ontologies: Gene Ontology operations, OBO format parsi
 - Cache ontology files under `output/ontology/cache/`
 - Invalidate cache when ontology versions change
 - Support cache cleanup
+- In-memory caching for expensive operations (ancestors/descendants)
+
+**Patterns**:
+```python
+from metainformant.ontology import set_cache_enabled, set_cache_ttl, clear_cache
+
+# Enable/disable caching
+set_cache_enabled(True)
+
+# Set cache TTL (default: 3600 seconds)
+set_cache_ttl(7200)  # 2 hours
+
+# Clear cache
+clear_cache()
+
+# Disable caching for individual calls
+from metainformant.ontology.query import ancestors
+ancestors_set = ancestors(onto, "GO:0008150", use_cache=False)
+```
 
 ### Output Paths
 - Base: `output/ontology/<analysis>/`

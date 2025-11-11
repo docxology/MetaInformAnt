@@ -113,9 +113,11 @@ class TestWorkflowIntegration:
     def test_workflow_config_loading(self):
         """Test workflow configuration loading."""
         # Create a test config file
+        # Note: load_workflow_config resolves paths relative to repo root, not config file
+        test_dir_abs = self.test_dir.resolve()
         config_data = {
-            "work_dir": str(self.test_dir / "work"),
-            "log_dir": str(self.test_dir / "logs"),
+            "work_dir": str(test_dir_abs / "work"),
+            "log_dir": str(test_dir_abs / "logs"),
             "threads": 4,
             "species_list": ["Homo sapiens"],
             "steps": {"metadata": {}, "config": {}}  # per_step format
@@ -126,8 +128,9 @@ class TestWorkflowIntegration:
             json.dump(config_data, f)
 
         cfg = workflow.load_workflow_config(config_file)
-        # Use resolved paths for comparison (handles absolute vs relative)
-        assert cfg.work_dir.resolve() == (self.test_dir / "work").resolve()
+        # work_dir is resolved relative to repo root, so compare resolved paths
+        expected_work_dir = (test_dir_abs / "work").resolve()
+        assert cfg.work_dir.resolve() == expected_work_dir
         assert cfg.threads == 4
         assert cfg.species_list == ["Homo sapiens"]
         # per_step should be populated from steps dict
@@ -493,9 +496,9 @@ class TestAmalgkitWrapperRobustness:
         from metainformant.rna.steps import STEP_RUNNERS
 
         # Check if amalgkit is available first
+        # Ensure amalgkit is available (fixture ensures this)
         available, _ = amalgkit.check_cli_available()
-        if not available:
-            pytest.skip("amalgkit CLI not available - cannot test step runner error handling")
+        assert available, "amalgkit CLI must be available (ensured by fixture)"
 
         runner = STEP_RUNNERS["metadata"]
         params = {

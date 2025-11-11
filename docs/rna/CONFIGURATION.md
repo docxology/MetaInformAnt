@@ -6,7 +6,7 @@ Complete guide to configuring RNA-seq workflows, including species profiles, wor
 
 - **[API Reference](API.md#workflow-functions)** - Workflow configuration functions
 - **[Workflow Guide](workflow.md)** - Workflow planning and execution
-- **[Orchestration Guide](ORCHESTRATION/README.md)** - Orchestrator configuration
+- **[Orchestration Guide](ORCHESTRATION.md)** - Orchestrator configuration
 - **[Main Index](README.md)** - RNA domain master index
 
 ## Overview
@@ -52,7 +52,7 @@ params = build_step_params(spec, layout)
 ```python
 from metainformant.rna.workflow import load_workflow_config
 
-cfg = load_workflow_config("config/amalgkit/amalgkit_cfloridanus.yaml")
+cfg = load_workflow_config("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
 ```
 
 ## Configuration Components
@@ -150,40 +150,51 @@ The immediate processing system uses total thread allocation across all species.
 
 ### Quick Start
 
+**DEPRECATED**: `batch_download_species.py` has been removed. Use `run_workflow.py` with `num_download_workers` configured in each species config file.
+
 #### Default Configuration (Recommended)
+```yaml
+# Configure in each species config file:
+steps:
+  getfastq:
+    num_download_workers: 16  # Number of parallel download processes
+    threads: 24
+```
+
 ```bash
-# 24 threads TOTAL distributed across all species (minimum 1 per species)
-python3 scripts/rna/batch_download_species.py --total-threads 24
+# Run workflow for each species
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species1.yaml
 ```
 
 #### Custom Configuration
-```bash
-# 48 threads total (more throughput on high-end systems)
-python3 scripts/rna/batch_download_species.py --total-threads 48
+```yaml
+# More parallelism (high-end systems)
+steps:
+  getfastq:
+    num_download_workers: 24  # More parallel downloads
+    threads: 24
 
-# 16 threads total (conservative for limited resources)
-python3 scripts/rna/batch_download_species.py --total-threads 16
+# Less parallelism (limited resources)
+steps:
+  getfastq:
+    num_download_workers: 8   # Fewer parallel downloads
+    threads: 12
 ```
 
 ### Configuration Parameters
 
-#### `--total-threads`
+#### `num_download_workers` (in config file)
+- **Default**: 16
+- **Description**: Number of parallel download processes per species
+- **Range**: 4-32 (recommended: 16 for standard systems)
+- **Impact**: More workers = faster downloads but higher resource usage
+- **Location**: Configure in each species config file under `steps.getfastq.num_download_workers`
+
+#### `threads` (in config file)
 - **Default**: 24
-- **Description**: Total number of threads to distribute across all species
-- **Range**: 8-64 (recommended: 24 for standard systems)
-- **Impact**: Threads distributed evenly (minimum 1 per species). More threads = faster overall but higher resource usage
-- **Distribution**: For 20 species with 24 threads: 4 species get 2 threads, 16 get 1 thread
-
-#### `--max-species`
-- **Default**: None (all species)
-- **Description**: Maximum number of species to process
-- **Use case**: Testing or processing subset of species
-
-#### `--quant-threads`
-- **Default**: 10
-- **Description**: Separate thread pool for quantification operations
-- **Range**: 4-20 (recommended: 10)
-- **Impact**: Quantification runs in parallel with downloads
+- **Description**: Threads for quantification operations
+- **Range**: 8-48 (recommended: 24)
+- **Impact**: More threads = faster quantification but higher CPU usage
 
 ### Thread Count Recommendations
 
@@ -199,27 +210,33 @@ python3 scripts/rna/batch_download_species.py --total-threads 16
 ### Examples
 
 #### Standard System (Recommended)
+```yaml
+# Configure in config file:
+steps:
+  getfastq:
+    num_download_workers: 16
+    threads: 24
+```
 ```bash
-# Default: 24 threads total distributed across all species
-python3 scripts/rna/batch_download_species.py
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species1.yaml
 ```
 
 #### High-End System
-```bash
-# 48 threads total for faster processing
-python3 scripts/rna/batch_download_species.py --total-threads 48
+```yaml
+# More parallelism:
+steps:
+  getfastq:
+    num_download_workers: 24
+    threads: 32
 ```
 
 #### Limited Resources
-```bash
-# 16 threads total for conservative resource usage
-python3 scripts/rna/batch_download_species.py --total-threads 16
-```
-
-#### Testing (Limited Species)
-```bash
-# Process only first 5 species with 24 threads total
-python3 scripts/rna/batch_download_species.py --total-threads 24 --max-species 5
+```yaml
+# Conservative settings:
+steps:
+  getfastq:
+    num_download_workers: 8
+    threads: 12
 ```
 
 ### Monitoring Download Progress
@@ -235,8 +252,8 @@ ps aux | grep "amalgkit getfastq" | grep -c "amalgkit"
 
 #### Analyze Sample Status
 ```bash
-# Comprehensive status analysis (replaces analyze_sample_status.py)
-python3 scripts/rna/orchestrate_workflows.py --status --detailed
+# Comprehensive status analysis
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species1.yaml --status --detailed
 ```
 
 ### Performance Tuning
@@ -286,9 +303,9 @@ python3 scripts/rna/orchestrate_workflows.py --status --detailed
 
 ## Related Documentation
 
-- **[WORKFLOW.md](WORKFLOW.md)**: Workflow planning and execution
-- **[STEPS.md](STEPS.md)**: Individual step configuration
-- **[ORCHESTRATION/README.md](ORCHESTRATION/README.md)**: Orchestrator configuration
+- **[workflow.md](workflow.md)**: Workflow planning and execution
+- **[Step Documentation](amalgkit/steps/README.md)**: Individual step configuration
+- **[ORCHESTRATION.md](ORCHESTRATION.md)**: Orchestrator configuration
 - **[GETTING_STARTED.md](GETTING_STARTED.md)**: Setup and installation
 
 ## Disk Space Configuration
@@ -305,25 +322,20 @@ The system automatically detects drive size categories and adjusts defaults acco
 
 Batch sizes are automatically calculated based on available disk space, but can be overridden:
 
-**Auto-detection (recommended):**
+**DEPRECATED**: Batch size configuration has been removed. The workflow uses immediate per-sample processing (download → quantify → delete FASTQ) for maximum disk efficiency.
+
+**Current approach** (recommended):
 ```bash
-# Batch size automatically calculated from available space
-python3 scripts/rna/workflow_ena_integrated.py --config config/amalgkit/amalgkit_cfloridanus.yaml
+# Parallel downloads configured via num_download_workers in config file
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 ```
 
-**Manual override:**
-```bash
-# Specify batch size explicitly
-python3 scripts/rna/workflow_ena_integrated.py \
-  --config config/amalgkit/amalgkit_cfloridanus.yaml \
-  --batch-size 50 \
-  --max-batch-size 100
-```
-
-**Environment variable:**
-```bash
-export AK_BATCH_SIZE=50
-python3 scripts/rna/workflow_ena_integrated.py --config config/amalgkit/amalgkit_cfloridanus.yaml
+**Configuration**:
+```yaml
+steps:
+  getfastq:
+    num_download_workers: 16  # Number of parallel download processes
+    threads: 24
 ```
 
 ### Batch Size Recommendations by Drive Size
@@ -346,7 +358,7 @@ The system automatically selects the best temporary directory location:
 **Manual override:**
 ```bash
 export TMPDIR=/path/to/temp/directory
-python3 scripts/rna/workflow_ena_integrated.py --config ...
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 ```
 
 **Check current temp directory:**
@@ -365,16 +377,11 @@ Minimum free space and auto-cleanup thresholds adapt to drive size:
 
 **Auto-detection (recommended):**
 ```bash
-# Thresholds automatically set based on drive size
-python3 scripts/rna/batch_download_species.py
+# Workflow automatically manages disk space with immediate per-sample cleanup
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 ```
 
-**Manual override:**
-```bash
-python3 scripts/rna/batch_download_species.py \
-  --min-free-gb 50.0 \
-  --auto-cleanup-threshold 20.0
-```
+**Note**: The workflow uses immediate per-sample processing (download → quantify → delete FASTQ), so disk space is automatically managed. Only one sample's FASTQs exist at a time.
 
 **Default thresholds by drive size:**
 
@@ -386,44 +393,44 @@ python3 scripts/rna/batch_download_species.py \
 
 ### Maximum Batch Disk Usage
 
-Limit disk space usage per batch:
-
-```bash
-python3 scripts/rna/workflow_ena_integrated.py \
-  --config config/amalgkit/amalgkit_cfloridanus.yaml \
-  --max-batch-disk-gb 150.0
-```
-
-If batch size would exceed this limit, it's automatically adjusted downward.
+**Note**: The workflow uses immediate per-sample processing (download → quantify → delete FASTQ), so batch disk usage is not applicable. Only one sample's FASTQs exist at a time, ensuring maximum disk efficiency.
 
 ### Examples
 
 **Large drive (6TB):**
+```yaml
+# Configure in config file:
+steps:
+  getfastq:
+    num_download_workers: 24  # More parallelism for large drives
+    threads: 32
+```
 ```bash
-# Auto-detected settings (recommended)
-export AK_THREADS=24
-python3 scripts/rna/run_all_species_parallel.py --threads-per-species 24
-# Batch size: 50 (auto-detected)
-# Min free: 50GB (auto-detected)
-# Temp dir: output/.tmp/ (auto-detected)
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 ```
 
 **Medium drive (1TB):**
+```yaml
+# Configure in config file:
+steps:
+  getfastq:
+    num_download_workers: 16  # Standard parallelism
+    threads: 24
+```
 ```bash
-# Auto-detected settings
-python3 scripts/rna/workflow_ena_integrated.py \
-  --config config/amalgkit/amalgkit_cfloridanus.yaml
-# Batch size: 25 (auto-detected)
-# Min free: 20GB (auto-detected)
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 ```
 
 **Small drive (500GB):**
+```yaml
+# Configure in config file:
+steps:
+  getfastq:
+    num_download_workers: 8   # Conservative parallelism
+    threads: 12
+```
 ```bash
-# Conservative settings
-python3 scripts/rna/workflow_ena_integrated.py \
-  --config config/amalgkit/amalgkit_cfloridanus.yaml \
-  --batch-size 10 \
-  --min-free-gb 10
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 ```
 
 ## See Also
@@ -431,11 +438,11 @@ python3 scripts/rna/workflow_ena_integrated.py \
 ### Documentation
 - **[API Reference](API.md#workflow-functions)** - Workflow configuration functions
 - **[Workflow Guide](workflow.md)** - Workflow planning and execution
-- **[Orchestration Guide](ORCHESTRATION/README.md)** - Orchestrator configuration
+- **[Orchestration Guide](ORCHESTRATION.md)** - Orchestrator configuration
 - **[Main Index](README.md)** - RNA domain master index
 
 ### Related
-- **Scripts**: `scripts/rna/batch_download_species.py` - Main batch download script
+- **Scripts**: `scripts/rna/run_workflow.py` - Main workflow orchestrator
 - **Source Code**: `src/metainformant/rna/configs.py` - Configuration module
-- **Examples**: See `docs/rna/examples/` for real-world configurations
+- **Examples**: See [EXAMPLES.md](EXAMPLES.md) for real-world configurations
 

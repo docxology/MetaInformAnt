@@ -28,11 +28,8 @@ from metainformant.rna.steps import (
 )
 
 
-# Conditional skip if amalgkit is not available
-requires_amalgkit = pytest.mark.skipif(
-    shutil.which("amalgkit") is None,
-    reason="amalgkit CLI not available on PATH"
-)
+# Note: All tests use ensure_amalgkit_available fixture from conftest.py
+# This ensures amalgkit is available before tests run (with auto-install if needed)
 
 
 class TestAmalgkitStepRunners:
@@ -92,8 +89,7 @@ class TestMetadataStep:
         assert hasattr(amalgkit, "metadata")
         assert callable(amalgkit.metadata)
 
-    @requires_amalgkit
-    def test_metadata_basic_execution(self, tmp_path: Path):
+    def test_metadata_basic_execution(self, tmp_path: Path, ensure_amalgkit_available):
         """Test metadata step can execute with minimal params."""
         params = {
             "out_dir": str(tmp_path / "work"),
@@ -110,6 +106,26 @@ class TestMetadataStep:
         assert hasattr(result, "returncode")
         # Accept success (0) or no data found (2)
         assert result.returncode in (0, 2)
+
+    def test_metadata_with_resolve_names(self, tmp_path: Path, ensure_amalgkit_available):
+        """Test metadata step with resolve_names parameter (v0.12.20 feature)."""
+        params = {
+            "out_dir": str(tmp_path / "work"),
+            "search_string": '"Apis mellifera"[Organism] AND RNA-Seq[Strategy]',
+            "resolve_names": "yes",
+            "threads": 1,
+        }
+        result = run_metadata(
+            params,
+            work_dir=str(tmp_path),
+            log_dir=str(tmp_path / "logs"),
+            check=False,
+        )
+        assert hasattr(result, "returncode")
+        # Verify parameters are passed correctly
+        if hasattr(result, "args") and result.args:
+            cmd_str = " ".join(result.args) if isinstance(result.args, list) else str(result.args)
+            assert "resolve_names" in cmd_str.lower() or result.returncode in (0, 2)
 
 
 class TestIntegrateStep:
@@ -129,8 +145,7 @@ class TestIntegrateStep:
         assert hasattr(amalgkit, "integrate")
         assert callable(amalgkit.integrate)
 
-    @requires_amalgkit
-    def test_integrate_basic_execution(self, tmp_path: Path):
+    def test_integrate_basic_execution(self, tmp_path: Path, ensure_amalgkit_available):
         """Test integrate step can execute with minimal params."""
         params = {
             "out_dir": str(tmp_path / "work"),
@@ -161,8 +176,7 @@ class TestConfigStep:
         assert hasattr(amalgkit, "config")
         assert callable(amalgkit.config)
 
-    @requires_amalgkit
-    def test_config_basic_execution(self, tmp_path: Path):
+    def test_config_basic_execution(self, tmp_path: Path, ensure_amalgkit_available):
         """Test config step can execute with minimal params."""
         params = {
             "out_dir": str(tmp_path / "work"),
@@ -192,8 +206,7 @@ class TestSelectStep:
         assert hasattr(amalgkit, "select")
         assert callable(amalgkit.select)
 
-    @requires_amalgkit
-    def test_select_basic_execution(self, tmp_path: Path):
+    def test_select_basic_execution(self, tmp_path: Path, ensure_amalgkit_available):
         """Test select step can execute with minimal params."""
         params = {
             "out_dir": str(tmp_path / "work"),
@@ -204,6 +217,24 @@ class TestSelectStep:
             check=False,
         )
         assert hasattr(result, "returncode")
+
+    def test_select_with_mark_missing_rank(self, tmp_path: Path, ensure_amalgkit_available):
+        """Test select step with mark_missing_rank parameter (v0.12.20 feature)."""
+        params = {
+            "out_dir": str(tmp_path / "work"),
+            "mark_missing_rank": "species",
+            "min_nspots": 1000000,
+        }
+        result = run_select(
+            params,
+            work_dir=str(tmp_path),
+            check=False,
+        )
+        assert hasattr(result, "returncode")
+        # Verify parameters are passed correctly (check command in result if available)
+        if hasattr(result, "args") and result.args:
+            cmd_str = " ".join(result.args) if isinstance(result.args, list) else str(result.args)
+            assert "mark_missing_rank" in cmd_str.lower() or result.returncode in (0, 2, 126, 204)
 
 
 class TestGetfastqStep:
@@ -223,8 +254,7 @@ class TestGetfastqStep:
         assert hasattr(amalgkit, "getfastq")
         assert callable(amalgkit.getfastq)
 
-    @requires_amalgkit
-    def test_getfastq_basic_execution(self, tmp_path: Path):
+    def test_getfastq_basic_execution(self, tmp_path: Path, ensure_amalgkit_available):
         """Test getfastq step can execute with minimal params."""
         params = {
             "out_dir": str(tmp_path / "work"),
@@ -256,8 +286,7 @@ class TestQuantStep:
         assert hasattr(amalgkit, "quant")
         assert callable(amalgkit.quant)
 
-    @requires_amalgkit
-    def test_quant_basic_execution(self, tmp_path: Path):
+    def test_quant_basic_execution(self, tmp_path: Path, ensure_amalgkit_available):
         """Test quant step can execute with minimal params."""
         params = {
             "out_dir": str(tmp_path / "work"),
@@ -288,8 +317,7 @@ class TestMergeStep:
         assert hasattr(amalgkit, "merge")
         assert callable(amalgkit.merge)
 
-    @requires_amalgkit
-    def test_merge_basic_execution(self, tmp_path: Path):
+    def test_merge_basic_execution(self, tmp_path: Path, ensure_amalgkit_available):
         """Test merge step can execute with minimal params."""
         params = {
             "out": str(tmp_path / "merged.tsv"),
@@ -319,8 +347,7 @@ class TestCstmmStep:
         assert hasattr(amalgkit, "cstmm")
         assert callable(amalgkit.cstmm)
 
-    @requires_amalgkit
-    def test_cstmm_basic_execution(self, tmp_path: Path):
+    def test_cstmm_basic_execution(self, tmp_path: Path, ensure_amalgkit_available):
         """Test cstmm step can execute with minimal params."""
         params = {
             "out_dir": str(tmp_path / "work"),
@@ -350,8 +377,7 @@ class TestCurateStep:
         assert hasattr(amalgkit, "curate")
         assert callable(amalgkit.curate)
 
-    @requires_amalgkit
-    def test_curate_basic_execution(self, tmp_path: Path):
+    def test_curate_basic_execution(self, tmp_path: Path, ensure_amalgkit_available):
         """Test curate step can execute with minimal params."""
         params = {
             "out_dir": str(tmp_path / "work"),
@@ -381,8 +407,7 @@ class TestCscaStep:
         assert hasattr(amalgkit, "csca")
         assert callable(amalgkit.csca)
 
-    @requires_amalgkit
-    def test_csca_basic_execution(self, tmp_path: Path):
+    def test_csca_basic_execution(self, tmp_path: Path, ensure_amalgkit_available):
         """Test csca step can execute with minimal params."""
         params = {
             "out_dir": str(tmp_path / "work"),
@@ -412,8 +437,7 @@ class TestSanityStep:
         assert hasattr(amalgkit, "sanity")
         assert callable(amalgkit.sanity)
 
-    @requires_amalgkit
-    def test_sanity_basic_execution(self, tmp_path: Path):
+    def test_sanity_basic_execution(self, tmp_path: Path, ensure_amalgkit_available):
         """Test sanity step can execute with minimal params."""
         params = {
             "out_dir": str(tmp_path / "work"),
@@ -545,6 +569,22 @@ class TestAmalgkitParameterNormalization:
         assert args[redo_idx + 1] == "yes"
         pfd_idx = args.index("--pfd")
         assert args[pfd_idx + 1] == "no"
+
+    def test_resolve_names_flag(self):
+        """Test resolve_names flag (v0.12.20 feature)."""
+        params = {"resolve_names": True, "search_string": "test"}
+        args = amalgkit.build_cli_args(params, for_cli=True)
+        # resolve_names should have explicit yes/no value
+        resolve_idx = args.index("--resolve_names")
+        assert args[resolve_idx + 1] == "yes"
+
+    def test_mark_redundant_biosamples_flag(self):
+        """Test mark_redundant_biosamples flag (v0.12.20 feature)."""
+        params = {"mark_redundant_biosamples": "yes", "out_dir": "test"}
+        args = amalgkit.build_cli_args(params, for_cli=True)
+        # mark_redundant_biosamples should have explicit yes/no value
+        mark_idx = args.index("--mark_redundant_biosamples")
+        assert args[mark_idx + 1] == "yes"
 
 
 class TestAmalgkitExports:

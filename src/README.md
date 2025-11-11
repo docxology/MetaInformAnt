@@ -18,6 +18,9 @@ src/
     ├── phenotype/         # Phenotypic trait analysis
     ├── ecology/           # Ecological metadata and community analysis
     ├── math/              # Mathematical and theoretical biology
+    ├── gwas/              # Genome-wide association studies
+    ├── information/       # Information-theoretic analysis
+    ├── life_events/       # Life course event analysis
     ├── visualization/     # Plotting and animation utilities
     ├── simulation/        # Synthetic data and agent-based modeling
     ├── singlecell/        # Single-cell transcriptomic analysis
@@ -134,6 +137,27 @@ Integrated multi-omic analysis:
 - Cross-platform data harmonization
 - Joint statistical analysis
 - Systems biology integration
+
+#### 🧬 GWAS (`gwas/`)
+Genome-wide association studies:
+- Variant calling and quality control
+- Association testing and statistical analysis
+- Population structure analysis
+- Comprehensive visualization
+
+#### 📊 Information Theory (`information/`)
+Information-theoretic analysis:
+- Shannon entropy and mutual information
+- Semantic similarity calculations
+- Information content analysis
+- Network information measures
+
+#### 📅 Life Events (`life_events/`)
+Life course and event sequence analysis:
+- Event sequence modeling
+- Temporal pattern prediction
+- Embedding learning
+- Interpretability analysis
 
 ## Development Guidelines
 

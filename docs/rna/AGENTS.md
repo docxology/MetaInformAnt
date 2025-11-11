@@ -46,3 +46,13 @@ This document outlines AI assistance in creating METAINFORMANT's comprehensive R
 - Community contributions encouraged
 
 This documentation system provides comprehensive guidance for RNA analysis workflows while maintaining high standards of clarity and accuracy.
+
+## Output Directory Policy
+
+**CRITICAL**: All documentation created by AI agents must be placed in `docs/rna/`, never in `output/`. The `output/` directory is strictly for program-generated execution outputs. See `output/.cursorrules` for the complete policy.
+
+- Documentation files → `docs/rna/<subdirectory>/`
+- Test reports → `docs/rna/` or delete after review
+- Review documents → `docs/rna/` or delete after review
+- Planning documents → `docs/rna/` or delete after review
+- Test scripts → `tests/` or `scripts/`

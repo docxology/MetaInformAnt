@@ -71,7 +71,7 @@ def progress_bar(iterable: Iterator[Any] | None = None, total: int | None = None
 
 
 @contextlib.contextmanager
-def task_context(task_name: str, total_steps: int | None = None):
+def task_context(task_name: str, total_steps: int | None = None) -> Iterator[Any]:
     """Context manager for tracking multi-step tasks.
 
     Args:
@@ -115,7 +115,7 @@ def task_context(task_name: str, total_steps: int | None = None):
         raise
 
 
-def log_progress(current: int, total: int | None, message: str = ""):
+def log_progress(current: int, total: int | None, message: str = "") -> None:
     """Log progress for an operation.
 
     Args:

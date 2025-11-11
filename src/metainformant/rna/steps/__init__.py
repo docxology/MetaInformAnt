@@ -13,12 +13,9 @@ from .metadata import run as run_metadata
 from .quant import run as run_quant
 from .sanity import run as run_sanity
 from .select import run as run_select
-from .sequential_process import run_sequential_download_quant
-from .parallel_download import run_parallel_download_sequential_quant
-from .batched_process import run_batched_download_quant
+from .process_samples import run_download_quant_workflow
 from .getfastq import convert_sra_to_fastq, delete_sample_fastqs
 from .quant import quantify_sample
-from .sample_pipeline import process_sample_pipeline
 
 # Expose a uniform runner function per amalgkit step. Each module keeps
 # any future step-specific logic isolated from the main orchestrator.
@@ -51,12 +48,9 @@ __all__ = [
     "run_curate",
     "run_csca",
     "run_sanity",
-    "run_sequential_download_quant",
-    "run_parallel_download_sequential_quant",
-    "run_batched_download_quant",
+    "run_download_quant_workflow",
     # Sample processing functions
     "convert_sra_to_fastq",
     "delete_sample_fastqs",
     "quantify_sample",
-    "process_sample_pipeline",
 ]

@@ -46,6 +46,21 @@ embeddings_dict = embeddings.generate_embeddings(
 - Sequence plots
 - Temporal patterns
 
+### Config (`config`)
+- Configuration management
+- LifeEventsWorkflowConfig class
+- Config validation
+
+### Utils (`utils`)
+- Utility functions
+- Helper functions for life events
+- Common operations
+
+### Workflow (`workflow`)
+- End-to-end life events analysis workflows
+- Workflow orchestration
+- Configuration-based execution
+
 ## Patterns
 
 ### Configuration
@@ -79,6 +94,7 @@ model:
 - Embeddings: `output/life_events/<workflow>/embeddings/`
 - Models: `output/life_events/<workflow>/models/`
 - Visualizations: `output/life_events/<workflow>/plots/`
+- Workflows: `output/life_events/<workflow>/work/`
 
 ## Integration
 

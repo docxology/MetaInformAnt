@@ -9,12 +9,102 @@ Plotting and animation utilities for biological data visualization across all do
 
 ## Key Submodules
 
-### Domain-Specific Visualization
-- Phylogenetic trees (DNA)
-- Network plots (Networks)
-- Manhattan plots (GWAS)
-- Expression heatmaps (RNA/Single-Cell)
-- Trajectory plots (Life Events)
+### Basic (`basic`)
+- Basic plotting functions
+- Line plots, scatter plots, bar plots
+- Fundamental visualization utilities
+
+### Statistical (`statistical`)
+- Statistical plots
+- Distribution plots
+- Statistical test visualizations
+
+### Trees (`trees`)
+- Phylogenetic tree visualization
+- Tree layout and rendering
+- Tree manipulation for visualization
+
+**Patterns**:
+```python
+from metainformant.visualization import trees
+
+trees.visualize_tree(
+    tree=phylogenetic_tree,
+    output_path="output/visualization/tree.png"
+)
+```
+
+### Networks (`networks`)
+- Network graph visualization
+- Node and edge styling
+- Network layout algorithms
+
+### Expression (`expression`)
+- Expression data visualization
+- Heatmaps for RNA-seq data
+- Expression pattern plots
+
+### Genomics (`genomics`)
+- Genomic data visualization
+- Genome browser-style plots
+- Genomic track visualization
+
+### Dimensionality Reduction (`dimred`)
+- PCA, t-SNE, UMAP visualizations
+- Dimensionality reduction plots
+- Embedding visualizations
+
+### Multi-dimensional (`multidim`)
+- Multi-dimensional data visualization
+- High-dimensional plot projections
+- Complex data visualization
+
+### Time Series (`timeseries`)
+- Time series plots
+- Temporal data visualization
+- Time course plots
+
+### Animations (`animations`)
+- Animated visualizations
+- Time-lapse plots
+- Dynamic data visualization
+
+### Interactive (`interactive`)
+- Interactive plotting
+- Plotly integration
+- Interactive data exploration
+
+### Style (`style`)
+- Visualization styling
+- Color schemes and palettes
+- Publication-quality styling
+
+### Layout (`layout`)
+- Plot layout utilities
+- Multi-panel figure arrangement
+- Figure composition
+
+### Export (`export`)
+- Figure export utilities
+- Format conversion
+- High-resolution export
+
+### Domain-Specific Integration Modules
+- `gwas_integration.py`: GWAS-specific visualizations
+- `information_integration.py`: Information theory visualizations
+- `life_events_integration.py`: Life events visualizations
+- `singlecell_integration.py`: Single-cell visualizations
+- `amalgkit_visualization.py`: Amalgkit workflow visualizations
+
+### Quality (`quality`)
+- Quality control visualizations
+- QC metric plots
+- Data quality assessment plots
+
+### Plots (`plots`)
+- General plotting utilities
+- Common plot types
+- Plotting helpers
 
 ## Patterns
 

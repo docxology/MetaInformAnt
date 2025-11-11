@@ -13,11 +13,19 @@ from __future__ import annotations
 import os
 import random
 import shutil
+import sys
 import tempfile
 from pathlib import Path
 from typing import Generator, Iterator
 
 import pytest
+
+# Ensure metainformant package is importable by adding src to Python path
+# This allows tests to run whether the package is installed or not
+_REPO_ROOT = Path(__file__).resolve().parent.parent
+_SRC_DIR = _REPO_ROOT / "src"
+if _SRC_DIR.exists() and str(_SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(_SRC_DIR))
 
 # Test data directory
 TEST_DATA_DIR = Path(__file__).parent / "data"
@@ -76,7 +84,7 @@ def sample_protein_sequences() -> dict[str, str]:
 
 
 @pytest.fixture(scope="function")
-def mock_environment(monkeypatch) -> Iterator[None]:
+def clean_environment(monkeypatch) -> Iterator[None]:
     """Provide clean environment for tests by clearing relevant env vars."""
     env_vars_to_clear = [
         "NCBI_EMAIL",
@@ -99,6 +107,37 @@ def mock_environment(monkeypatch) -> Iterator[None]:
     for var, value in original_values.items():
         if value is not None:
             monkeypatch.setenv(var, value)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def ensure_amalgkit_available():
+    """Ensure amalgkit CLI is available before running RNA tests.
+    
+    This fixture runs automatically for all tests and ensures amalgkit
+    is available. If not available, it attempts auto-install.
+    If installation fails, the test session will fail.
+    """
+    import os
+    from pathlib import Path
+    from metainformant.rna.amalgkit import ensure_cli_available
+    
+    # Ensure user local bin is in PATH (common for --user installs)
+    user_bin = Path.home() / ".local" / "bin"
+    if user_bin.exists():
+        current_path = os.environ.get("PATH", "")
+        if str(user_bin) not in current_path:
+            os.environ["PATH"] = f"{user_bin}:{current_path}"
+    
+    ok, msg, install_record = ensure_cli_available(auto_install=True)
+    
+    if not ok:
+        error_msg = f"amalgkit CLI not available: {msg}"
+        if install_record and install_record.get("attempted"):
+            error_msg += f"\nInstall attempt failed with return code: {install_record.get('return_code')}"
+            error_msg += f"\nInstall stderr: {install_record.get('stderr', '')[:500]}"
+        pytest.fail(error_msg)
+    
+    return ok, msg
 
 
 class TestFileSystem:
@@ -135,6 +174,21 @@ def test_filesystem(isolated_tmp_dir) -> TestFileSystem:
     Uses real file operations via tmp_path, following NO_MOCKING_POLICY.
     """
     return TestFileSystem(isolated_tmp_dir)
+
+
+@pytest.fixture(scope="function", autouse=True)
+def cleanup_matplotlib_figures():
+    """Automatically close all matplotlib figures after each test.
+    
+    This prevents RuntimeWarnings about too many open figures and ensures
+    proper cleanup of visualization resources.
+    """
+    yield
+    try:
+        import matplotlib.pyplot as plt
+        plt.close("all")
+    except ImportError:
+        pass  # matplotlib not available, nothing to clean up
 
 
 # Pytest hooks for enhanced test reporting

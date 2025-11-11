@@ -6,7 +6,6 @@ and phylogenetic trees to visualize population relationships.
 
 from __future__ import annotations
 
-import logging
 from pathlib import Path
 from typing import Any
 
@@ -17,8 +16,9 @@ import numpy as np
 matplotlib.use("Agg", force=True)
 
 from ..core.io import ensure_directory
+from ..core.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 try:
     import pandas as pd

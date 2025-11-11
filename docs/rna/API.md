@@ -898,19 +898,33 @@ def quantify_sample(
 
 ```python
 def convert_sra_to_fastq(
+    sample_id: str,
     sra_file: Path,
     output_dir: Path,
     *,
-    threads: int = 1,
-    compress: bool = True,
-) -> tuple[bool, str, list[Path] | None]
+    threads: int = 4,
+    log_dir: Path | None = None,
+) -> tuple[bool, str, list[Path]]
 ```
 
 **Module**: `metainformant.rna.steps.getfastq`
 
-**Purpose**: Convert SRA file to FASTQ using fasterq-dump.
+**Purpose**: Convert a local SRA file to FASTQ format. Prefers `parallel-fastq-dump` (works better with local files) and falls back to `fasterq-dump` if needed. Automatically compresses output FASTQ files.
 
-**Returns**: Tuple of `(success: bool, message: str, fastq_files: list[Path] | None)`
+**Args**:
+- `sample_id`: SRA accession ID (e.g., "SRR1234567")
+- `sra_file`: Path to the SRA file
+- `output_dir`: Directory where FASTQ files should be written
+- `threads`: Number of threads for conversion (default: 4)
+- `log_dir`: Optional directory for log files
+
+**Returns**: Tuple of `(success: bool, message: str, fastq_files: list[Path])`. `fastq_files` contains paths to created FASTQ files (may be empty if failed).
+
+**Notes**:
+- Automatically detects and uses the real `fasterq-dump` binary (not wrapper scripts)
+- Passes `--size-check off` to `fasterq-dump` to prevent "disk-limit exceeded" errors
+- Automatically compresses output using `pigz` or `gzip`
+- Checks for existing FASTQ files before conversion
 
 ---
 
@@ -929,84 +943,52 @@ def delete_sample_fastqs(
 
 ---
 
-### `process_sample_pipeline`
+### `run_download_quant_workflow`
 
 ```python
-def process_sample_pipeline(
-    sample_id: str,
-    metadata_rows: list[dict[str, Any]],
-    download_params: Mapping[str, Any],
-    quant_params: Mapping[str, Any],
+def run_download_quant_workflow(
+    metadata_path: str | Path,
+    getfastq_params: Mapping[str, Any] | None = None,
+    quant_params: Mapping[str, Any] | None = None,
     *,
-    log_dir: Path | None = None,
-    delete_after_quant: bool = True,
+    work_dir: str | Path | None = None,
+    log_dir: str | Path | None = None,
+    num_workers: int = 1,
+    max_samples: int | None = None,
+    skip_completed: bool = True,
+    progress_monitor: DownloadProgressMonitor | None = None,
 ) -> dict[str, Any]
 ```
 
-**Module**: `metainformant.rna.steps.sample_pipeline`
+**Module**: `metainformant.rna.steps.process_samples`
 
-**Purpose**: Complete per-sample pipeline: download → quantify → cleanup.
+**Purpose**: Unified function for download-quantify-delete workflows. Supports both sequential and parallel processing modes.
 
-**Returns**: Dictionary with processing results
+**Parameters**:
+- `metadata_path`: Path to metadata TSV with sample list
+- `getfastq_params`: Parameters for amalgkit getfastq step
+- `quant_params`: Parameters for amalgkit quant step
+- `work_dir`: Working directory for amalgkit commands
+- `log_dir`: Directory for step logs
+- `num_workers`: Number of parallel download workers (default: 1 for sequential mode)
+  - `num_workers=1`: Sequential mode (one sample at a time, maximum disk efficiency)
+  - `num_workers>1`: Parallel mode (N downloads in parallel, sequential quantification)
+- `max_samples`: Optional limit on number of samples to process
+- `skip_completed`: If True, skip samples that are already quantified (sequential mode only)
+- `progress_monitor`: Optional progress monitor for tracking downloads
 
----
+**Returns**: Dictionary with processing statistics:
+- `total_samples`: Total number of samples
+- `processed`: Number of samples successfully processed
+- `skipped`: Number of samples skipped (already done)
+- `failed`: Number of samples that failed
+- `failed_runs`: List of run IDs that failed
 
-### `run_sequential_download_quant`
+**Processing Modes**:
+- **Sequential** (`num_workers=1`): Process one sample at a time. Maximum disk efficiency: only one sample's FASTQs exist at a time.
+- **Parallel** (`num_workers>1`): Multiple download workers fetch FASTQ files in parallel, then a single quantification worker processes them sequentially. Maximizes throughput while preventing disk exhaustion.
 
-```python
-def run_sequential_download_quant(
-    metadata_path: Path,
-    download_params: Mapping[str, Any],
-    quant_params: Mapping[str, Any],
-    *,
-    log_dir: Path | None = None,
-    delete_after_quant: bool = True,
-) -> dict[str, Any]
-```
-
-**Module**: `metainformant.rna.steps.sequential_process`
-
-**Purpose**: Process samples sequentially: download → quantify → delete.
-
----
-
-### `run_parallel_download_sequential_quant`
-
-```python
-def run_parallel_download_sequential_quant(
-    metadata_path: Path,
-    download_params: Mapping[str, Any],
-    quant_params: Mapping[str, Any],
-    *,
-    max_workers: int = 4,
-    log_dir: Path | None = None,
-    delete_after_quant: bool = True,
-) -> dict[str, Any]
-```
-
-**Module**: `metainformant.rna.steps.parallel_download`
-
-**Purpose**: Parallel downloads with sequential quantification.
-
----
-
-### `run_batched_download_quant`
-
-```python
-def run_batched_download_quant(
-    metadata_path: Path,
-    download_params: Mapping[str, Any],
-    quant_params: Mapping[str, Any],
-    *,
-    batch_size: int = 10,
-    log_dir: Path | None = None,
-    delete_after_quant: bool = True,
-) -> dict[str, Any]
-```
-
-**Module**: `metainformant.rna.steps.batched_process`
-
-**Purpose**: Process samples in batches: download batch → quantify batch → cleanup.
+**See Also**: [Architecture Documentation](ARCHITECTURE.md#processing-workflows)
 
 ---
 

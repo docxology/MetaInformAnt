@@ -6,6 +6,93 @@ The `core` module provides essential shared utilities and infrastructure used ac
 
 This module contains foundational components that are used throughout the METAINFORMANT package. Each submodule provides specific functionality while maintaining consistency and reusability across the entire codebase.
 
+### Module Architecture
+
+```mermaid
+graph TB
+    subgraph "Core Utilities"
+        Config[config<br/>Configuration Management]
+        IO[io<br/>File I/O Operations]
+        Log[logging<br/>Structured Logging]
+        Path[paths<br/>Path Management]
+        Cache[cache<br/>JSON Caching]
+        Parallel[parallel<br/>Parallel Processing]
+        Hash[hash<br/>Content Hashing]
+        Text[text<br/>Text Processing]
+        DB[db<br/>Database Integration]
+        Workflow[workflow<br/>Workflow Orchestration]
+        Discovery[discovery<br/>Symbol Discovery]
+        Symbols[symbols<br/>Symbol Indexing]
+        Errors[errors<br/>Error Handling]
+        Validation[validation<br/>Data Validation]
+        Progress[progress<br/>Progress Tracking]
+        Disk[disk<br/>Disk Operations]
+    end
+    
+    subgraph "Domain Modules"
+        DNA[dna]
+        RNA[rna]
+        Protein[protein]
+        GWAS[gwas]
+        Other[Other Modules...]
+    end
+    
+    Config -.-> DNA
+    Config -.-> RNA
+    Config -.-> Protein
+    Config -.-> GWAS
+    Config -.-> Other
+    
+    IO -.-> DNA
+    IO -.-> RNA
+    IO -.-> Protein
+    IO -.-> GWAS
+    IO -.-> Other
+    
+    Log -.-> DNA
+    Log -.-> RNA
+    Log -.-> Protein
+    Log -.-> GWAS
+    Log -.-> Other
+    
+    Path -.-> DNA
+    Path -.-> RNA
+    Path -.-> Protein
+    Path -.-> GWAS
+    Path -.-> Other
+    
+    Cache -.-> DNA
+    Cache -.-> RNA
+    Parallel -.-> RNA
+    Parallel -.-> GWAS
+    Workflow -.-> RNA
+    Workflow -.-> GWAS
+```
+
+### Core Utilities Integration Flow
+
+```mermaid
+flowchart LR
+    Start[Application Start] --> Config[Load Config]
+    Config --> Validate[Validate Config]
+    Validate --> Setup[Setup Logging]
+    Setup --> PathCheck[Path Validation]
+    PathCheck --> Process[Process Data]
+    Process --> IO[I/O Operations]
+    IO --> Cache{Cache Hit?}
+    Cache -->|Yes| Return[Return Cached]
+    Cache -->|No| Compute[Compute Result]
+    Compute --> Store[Store in Cache]
+    Store --> Return
+    Return --> Log[Log Results]
+    Log --> End[End]
+    
+    style Config fill:#e1f5ff
+    style IO fill:#e1f5ff
+    style Log fill:#e1f5ff
+    style Cache fill:#fff4e1
+```
+
 ## Submodules
 
 ### Configuration (`config.py`)

@@ -11,6 +11,7 @@ The amalgkit integration provides a complete transcriptomic analysis pipeline fr
 - **Auto-activation**: Scripts automatically activate virtual environments
 - **Immediate Processing**: Per-sample processing (download → immediately quantify → immediately delete FASTQs)
 - **Thread Allocation**: Total threads distributed across all species (default: 24 total, not per species)
+- **Zero-Read Detection**: Enhanced validation detects when getfastq produces 0 reads but reports success, preventing false positives
 
 ## Documentation Files
 
@@ -20,7 +21,7 @@ The amalgkit integration provides a complete transcriptomic analysis pipeline fr
 - **`FUNCTIONS.md`**: Quick function lookup table
 
 ### Workflow Guides
-- **`quick_start.md`**: Quick start guide for sanity and curate steps (all species)
+- **Getting Started**: See [GETTING_STARTED.md](../GETTING_STARTED.md) for complete setup and workflow guide
 - **`R_INSTALLATION.md`**: R installation and setup guide
 - **`r_packages.md`**: R package setup and troubleshooting
 
@@ -65,12 +66,12 @@ The amalgkit integration provides a complete transcriptomic analysis pipeline fr
 - **[API Reference](../API.md)** - Complete function documentation
 - **[Function Index](FUNCTIONS.md)** - Quick function lookup
 - **[Step Documentation](steps/README.md)** - All 11 step guides
-- **[Pipeline Overview](amalgkit.md)** - Complete pipeline documentation (includes advanced usage)
+- **[Pipeline Overview](amalgkit.md)** - Complete pipeline documentation
 
 ### Related Topics
 - **[Workflow Guide](../workflow.md)** - Workflow planning and execution
 - **[Configuration Guide](../CONFIGURATION.md)** - Configuration management
-- **[Orchestration Guide](../ORCHESTRATION/README.md)** - Orchestrator overview
+- **[Orchestration Guide](../ORCHESTRATION.md)** - Orchestrator overview
 - **[Getting Started](../GETTING_STARTED.md)** - Setup and installation
 
 ### Genome Setup
@@ -97,31 +98,21 @@ cfg = workflow.AmalgkitWorkflowConfig(
 results = workflow.execute_workflow(cfg)
 ```
 
-**Command-line usage** (production ENA workflow):
+**Command-line usage** (recommended for end-to-end workflows):
 ```bash
-# Production workflow with ENA direct downloads
-python3 scripts/rna/workflow_ena_integrated.py \
-  --config config/amalgkit/amalgkit_cfloridanus.yaml \
-  --batch-size 12 \
-  --threads 12
+# Full end-to-end workflow (all steps)
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+
+# Specific steps only
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --steps getfastq quant merge
+
+# Check status
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 ```
 
-**Legacy SRA-based workflow**:
-```bash
-# Prerequisites: .venv must exist with amalgkit installed
-# If not set up, run:
-#   uv venv .venv  # or /tmp/metainformant_venv on ext6 filesystems
-#   source .venv/bin/activate  # or /tmp/metainformant_venv/bin/activate
-#   uv pip install -e .
-#   uv pip install git+https://github.com/kfuku52/amalgkit
+The `run_workflow.py` script provides complete end-to-end execution via `execute_workflow()`, including automatic genome setup, per-sample processing, and all 11 amalgkit steps.
 
-# Alternative workflow using SRA Toolkit (scripts auto-discover venv location)
-python3 scripts/rna/run_multi_species.py
-
-# With configurable threads:
-export AK_THREADS=12
-python3 scripts/rna/run_multi_species.py
-```
+See [scripts/rna/README.md](../../scripts/rna/README.md) for complete usage documentation.
 
 ## Integration
 
@@ -170,22 +161,25 @@ Complete working example with *Pogonomyrmex barbatus*:
 - **Location**: `output/amalgkit/pbarbatus/`
 - **Samples**: 83 brain RNA-seq runs
 - **Status**: Complete workflow with all visualizations
-- **Documentation**: Species-specific quick reference and analysis report
+- **Results**: Quantification files, expression matrices, and QC reports
 
-See `output/amalgkit/pbarbatus/QUICK_REFERENCE.md` for immediate usage.
+**Note**: Any markdown files in `output/` are program-generated execution outputs, not documentation. See [EXAMPLES.md](../EXAMPLES.md) for documentation of this analysis.
 
 ## Quick Start for New Species
 
 1. **Setup genomes and indexes**: See [genome_setup_guide.md](genome_setup_guide.md) for complete genome setup
-   - Verify genomes: `python3 scripts/rna/verify_genomes_and_indexes.py`
-   - Download missing genomes: `python3 scripts/rna/download_missing_genomes.py`
-   - Prepare transcriptomes: `python3 scripts/rna/prepare_transcriptomes.py`
-   - Build kallisto indexes: `python3 scripts/rna/build_kallisto_indexes.py`
-2. **Review workflow guide**: `quick_start.md`
+   - Verify genomes: `python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_<species>.yaml --verify-only`
+   - Full genome setup: `python3 scripts/rna/setup_genome.py --config config/amalgkit/amalgkit_<species>.yaml`
+   - Note: Genome setup happens automatically when running workflows if genome config exists
+2. **Review workflow guide**: [GETTING_STARTED.md](../GETTING_STARTED.md)
 3. **Setup R environment**: `R_INSTALLATION.md` and `r_packages.md`
-4. **Run ENA workflow**: See `scripts/rna/workflow_ena_integrated.py`
-5. **For batch processing**: Use `scripts/rna/run_all_species_parallel.py` for parallel execution of all species
-6. **Validate outputs**: Run sanity and curate steps
+4. **Run end-to-end workflow**: `python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_<species>.yaml`
+5. **Validate outputs**: Use `--status` flag or `scripts/rna/amalgkit/verify_workflow.sh <species>`
+
+**All setup uses `uv` for package management** (required):
+- Create venv: `uv venv`
+- Install packages: `uv pip install -e . --python .venv/bin/python3`
+- Install amalgkit: `uv pip install git+https://github.com/kfuku52/amalgkit --python .venv/bin/python3`
 
 **No manual venv activation needed** - scripts automatically discover and activate virtual environments (`.venv` or `/tmp/metainformant_venv`). Setup uses `uv` for reliable package management, with automatic fallback to `/tmp/metainformant_venv` on ext6 filesystems that don't support symlinks.
 
@@ -199,7 +193,7 @@ See `output/amalgkit/pbarbatus/QUICK_REFERENCE.md` for immediate usage.
 
 - See `docs/rna/README.md` for RNA domain overview
 - See `docs/rna/workflow.md` for workflow orchestration details
-- See `docs/rna/steps.md` for individual step documentation
+- See `docs/rna/amalgkit/steps/README.md` for individual step documentation
 - See `output/amalgkit/pbarbatus/` for complete working example
 - See `scripts/rna/README.md` for production workflow scripts
 

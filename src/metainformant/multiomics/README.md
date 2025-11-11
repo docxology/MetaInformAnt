@@ -6,6 +6,68 @@ The `multiomics` module provides tools for integrating and analyzing data from m
 
 This module enables systems-level biological analysis by combining data from different molecular layers to understand complex biological processes. It handles sample alignment, data harmonization, and provides joint analysis methods for multi-omic datasets.
 
+### Module Architecture
+
+```mermaid
+graph TB
+    subgraph "Multi-omics Module"
+        Integration[integration<br/>Data Integration]
+    end
+    
+    subgraph "Input Data"
+        Genomics[Genomics Data]
+        Transcriptomics[Transcriptomics Data]
+        Proteomics[Proteomics Data]
+        Epigenomics[Epigenomics Data]
+    end
+    
+    subgraph "Analysis Methods"
+        JointPCA[Joint PCA]
+        JointNMF[Joint NMF]
+        CCA[Canonical Correlation]
+    end
+    
+    subgraph "Other Modules"
+        DNA_Mod[dna]
+        RNA_Mod[rna]
+        Protein_Mod[protein]
+        Epigenome_Mod[epigenome]
+        Networks_Mod[networks]
+        Viz_Mod[visualization]
+    end
+    
+    Genomics --> Integration
+    Transcriptomics --> Integration
+    Proteomics --> Integration
+    Epigenomics --> Integration
+    Integration --> JointPCA
+    Integration --> JointNMF
+    Integration --> CCA
+    DNA_Mod --> Genomics
+    RNA_Mod --> Transcriptomics
+    Protein_Mod --> Proteomics
+    Epigenome_Mod --> Epigenomics
+    JointPCA --> Networks_Mod
+    JointNMF --> Networks_Mod
+    CCA --> Viz_Mod
+```
+
+### Multi-omics Integration Workflow
+
+```mermaid
+flowchart LR
+    Start[Multiple Omics] --> Align[Sample Alignment]
+    Align --> Harmonize[Data Harmonization]
+    Harmonize --> Method{Analysis Method?}
+    Method -->|PCA| PCA[Joint PCA]
+    Method -->|NMF| NMF[Joint NMF]
+    Method -->|CCA| CCA[Canonical Correlation]
+    PCA --> Integrate[Integration Analysis]
+    NMF --> Integrate
+    CCA --> Integrate
+    Integrate --> Output[Results]
+```
+
 ## Key Components
 
 ### Data Integration (`integration.py`)

@@ -78,3 +78,4 @@ The life events module integrates with:
 - **[Phenotype Module](../phenotype/index.md)** - Phenotypic trait analysis
 - **[Visualization Module](../visualization/index.md)** - Plotting utilities
 
+

@@ -13,11 +13,9 @@ def test_each_step_runner_invokes_real_subcommand_or_skips(tmp_path: Path):
     from metainformant.rna import steps as step_mod
     from metainformant.rna.amalgkit import check_cli_available
 
+    # Verify amalgkit is available (fixture ensures this)
     ok, _ = check_cli_available()
-    if not ok:
-        import pytest
-
-        pytest.skip("amalgkit not available on PATH")
+    assert ok, "amalgkit CLI must be available (ensured by fixture)"
 
     called: list[str] = []
 

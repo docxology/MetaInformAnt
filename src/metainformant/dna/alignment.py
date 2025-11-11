@@ -59,10 +59,20 @@ def global_align(
     best_alignment = alignments[0]
     lines = best_alignment.format().splitlines()
 
-    # Extract aligned sequences (handle case where format might differ)
+    # Extract aligned sequences from formatted output
+    # Format: "target 0 ATCGATCG 8" -> extract "ATCGATCG"
+    import re
     if len(lines) >= 3:
-        gapped1 = lines[0].strip()
-        gapped2 = lines[2].strip()
+        # Extract sequence part (between numbers) using regex
+        match1 = re.search(r'\d+\s+([A-Za-z-]+)\s+\d+', lines[0])
+        match2 = re.search(r'\d+\s+([A-Za-z-]+)\s+\d+', lines[2])
+        if match1 and match2:
+            gapped1 = match1.group(1)
+            gapped2 = match2.group(1)
+        else:
+            # Fallback: extract just sequence characters
+            gapped1 = ''.join(c for c in lines[0] if c.isalpha() or c == '-')
+            gapped2 = ''.join(c for c in lines[2] if c.isalpha() or c == '-')
     else:
         # Fallback to original sequences
         gapped1 = seq1
@@ -89,8 +99,22 @@ def local_align(seq1: str, seq2: str) -> AlignmentResult:
     aligner.mode = "local"
     a = aligner.align(seq1, seq2)[0]
     lines = a.format().splitlines()
-    gapped1 = lines[0].strip()
-    gapped2 = lines[2].strip()
+    
+    # Extract sequence part from formatted output
+    import re
+    if len(lines) >= 3:
+        match1 = re.search(r'\d+\s+([A-Za-z-]+)\s+\d+', lines[0])
+        match2 = re.search(r'\d+\s+([A-Za-z-]+)\s+\d+', lines[2])
+        if match1 and match2:
+            gapped1 = match1.group(1)
+            gapped2 = match2.group(1)
+        else:
+            gapped1 = ''.join(c for c in lines[0] if c.isalpha() or c == '-')
+            gapped2 = ''.join(c for c in lines[2] if c.isalpha() or c == '-')
+    else:
+        gapped1 = seq1
+        gapped2 = seq2
+    
     return AlignmentResult(aligned_seq1=gapped1, aligned_seq2=gapped2, score=a.score)
 
 
@@ -101,16 +125,28 @@ def calculate_alignment_identity(alignment: AlignmentResult) -> float:
         alignment: AlignmentResult from global_align or local_align
 
     Returns:
-        Percent identity (0-100)
+        Percent identity (0-100), calculated as matches / aligned positions (excluding gaps in both sequences)
     """
-    seq1 = alignment.aligned_seq1.replace("-", "")
-    seq2 = alignment.aligned_seq2.replace("-", "")
+    seq1 = alignment.aligned_seq1
+    seq2 = alignment.aligned_seq2
 
-    if len(seq1) == 0:
+    if len(seq1) != len(seq2):
         return 0.0
 
-    matches = sum(a == b for a, b in zip(seq1, seq2))
-    return (matches / len(seq1)) * 100
+    # Count matches and aligned positions (positions where neither sequence has a gap)
+    matches = 0
+    aligned_positions = 0
+
+    for a, b in zip(seq1, seq2):
+        if a != "-" and b != "-":
+            aligned_positions += 1
+            if a == b:
+                matches += 1
+
+    if aligned_positions == 0:
+        return 0.0
+
+    return (matches / aligned_positions) * 100
 
 
 def find_conserved_regions(alignment: AlignmentResult, min_length: int = 5) -> list[tuple[str, int, int]]:

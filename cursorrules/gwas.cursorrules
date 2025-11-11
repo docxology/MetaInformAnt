@@ -58,6 +58,19 @@ corrected = correction.apply_fdr(p_values, method="bh")
 - Q-Q plots
 - Regional association plots
 - Effect size plots
+- Comprehensive visualization suite
+
+**Visualization Submodules**:
+- `visualization.py`: Core visualization functions
+- `visualization_enhanced.py`: Enhanced plotting capabilities
+- `visualization_statistical.py`: Statistical plots (Q-Q, Manhattan)
+- `visualization_regional.py`: Regional association plots
+- `visualization_genome.py`: Genome-wide visualizations
+- `visualization_population.py`: Population structure plots
+- `visualization_variants.py`: Variant-specific plots
+- `visualization_effects.py`: Effect size visualizations
+- `visualization_comparison.py`: Comparative visualizations
+- `visualization_suite.py`: Comprehensive visualization suite
 
 **Patterns**:
 ```python
@@ -74,6 +87,26 @@ visualization.plot_manhattan(
 - End-to-end GWAS workflow
 - Configuration-based execution
 - Step orchestration
+
+### Calling (`calling`)
+- Variant calling integration
+- bcftools and GATK integration
+- Variant calling workflows
+
+### Download (`download`)
+- Reference genome download
+- Data acquisition utilities
+- Genome retrieval
+
+### SRA Download (`sra_download`)
+- SRA data download utilities
+- Sequence Read Archive integration
+- Data retrieval workflows
+
+### Config (`config`)
+- Configuration management
+- GWASWorkflowConfig class
+- Config validation and loading
 
 ## Patterns
 
@@ -104,6 +137,8 @@ correction:
 - Association results: `output/gwas/<analysis>/association/`
 - Visualizations: `output/gwas/<analysis>/plots/`
 - Quality reports: `output/gwas/<analysis>/qc/`
+- Variant calling: `output/gwas/<analysis>/calling/`
+- Downloads: `output/gwas/<analysis>/downloads/`
 
 ### Statistical Models
 - Use `ml.regression` for regression models

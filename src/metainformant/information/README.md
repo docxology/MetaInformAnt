@@ -10,6 +10,68 @@ This module implements fundamental information theory concepts for biological da
 - **Network Integration**: Information flow, network entropy, information-based community detection
 - **Visualization**: Integration with visualization module for plotting information measures
 
+### Module Architecture
+
+```mermaid
+graph TB
+    subgraph "Information Module"
+        Syntactic[syntactic<br/>Syntactic Information]
+        Semantic[semantic<br/>Semantic Information]
+        Continuous[continuous<br/>Continuous Measures]
+        Estimation[estimation<br/>Estimation Methods]
+        Analysis[analysis<br/>Analysis Functions]
+        Networks[networks<br/>Network Integration]
+        Visualization[viz<br/>Visualization]
+        Workflows[workflows<br/>Workflow Functions]
+    end
+    
+    subgraph "Input Data"
+        Sequences[Sequences]
+        Networks_Data[Network Data]
+        Ontology_Data[Ontology Data]
+    end
+    
+    subgraph "Other Modules"
+        DNA_Mod[dna]
+        RNA_Mod[rna]
+        Networks_Mod[networks]
+        Ontology_Mod[ontology]
+        MultiOmics[multiomics]
+        Viz_Mod[visualization]
+    end
+    
+    Sequences --> Syntactic
+    Networks_Data --> Networks
+    Ontology_Data --> Semantic
+    Syntactic --> Analysis
+    Semantic --> Analysis
+    Continuous --> Analysis
+    Estimation --> Analysis
+    Analysis --> Workflows
+    Networks --> Networks_Mod
+    Visualization --> Viz_Mod
+    DNA_Mod --> Sequences
+    RNA_Mod --> Sequences
+    Ontology_Mod --> Ontology_Data
+    MultiOmics --> Analysis
+```
+
+### Information Theory Analysis Workflow
+
+```mermaid
+flowchart TD
+    Start[Input Data] --> Type{Data Type?}
+    Type -->|Sequences| Syntactic[Calculate Entropy/MI]
+    Type -->|Ontology| Semantic[Calculate IC/Similarity]
+    Type -->|Networks| Network[Network Entropy]
+    Syntactic --> Profile[Information Profile]
+    Semantic --> Profile
+    Network --> Profile
+    Profile --> Compare[Compare Measures]
+    Compare --> Visualize[Visualize Results]
+    Visualize --> Output[Results]
+```
+
 ## Key Components
 
 ### Syntactic Information Theory (`syntactic.py`)
@@ -671,7 +733,7 @@ seq_list = list(dna_seqs.values())
 results = information_workflow(seq_list, k_values=[1, 2, 3], output_dir="output/information")
 
 # Generate report
-information_report(results, output_path="output/information/report.md", format="markdown")
+information_report(results, output_path="docs/information/report.md", format="markdown")
 ```
 
 ### Tutorial 2: RNA Expression Analysis

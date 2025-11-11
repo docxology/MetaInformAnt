@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import logging
 import os
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -11,12 +10,14 @@ from typing import Any, Iterable, Mapping
 
 from ..core.config import apply_env_overrides, load_mapping_from_file
 from ..core.io import dump_json, ensure_directory, read_delimited, write_delimited, write_jsonl
+from ..core.errors import error_context
+from ..core.logging import get_logger, log_with_metadata
 from ..core.paths import expand_and_resolve
 from . import steps as _steps_mod
 from .amalgkit import AmalgkitParams, build_amalgkit_command, check_cli_available, ensure_cli_available
 from .deps import check_step_dependencies
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -241,13 +242,14 @@ def _write_manifest_records(path: Path, records: list[dict[str, Any]]) -> None:
 def _sanitize_params_for_subcommand(subcommand: str, params: Mapping[str, Any]) -> dict[str, Any]:
     """Drop unsupported flags for specific subcommands.
 
-    Currently, `amalgkit metadata` accepts only: out_dir, redo, search_string, entrez_email.
+    Currently, `amalgkit metadata` accepts: out_dir, redo, search_string, entrez_email, resolve_names.
+    `amalgkit select` accepts: out_dir, metadata, sample_group, config_dir, mark_missing_rank, min_nspots, max_sample, mark_redundant_biosamples.
     """
     allowed_map: dict[str, set[str]] = {
-        "metadata": {"out_dir", "redo", "search_string", "entrez_email"},
+        "metadata": {"out_dir", "redo", "search_string", "entrez_email", "resolve_names"},
         "integrate": {"out_dir", "metadata", "threads", "fastq_dir", "id", "id_list"},
         "config": {"out_dir", "config"},
-        "select": {"out_dir", "metadata", "sample_group", "config_dir"},
+        "select": {"out_dir", "metadata", "sample_group", "config_dir", "mark_missing_rank", "min_nspots", "max_sample", "mark_redundant_biosamples"},
         # getfastq: allow robust flags pass-through
         "getfastq": {
             "out_dir",
@@ -381,7 +383,17 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
 
     Returns a list of return codes per step in order.
     """
-    logger.info("execute_workflow: Starting execution")
+    # Log workflow start with metadata
+    log_with_metadata(
+        logger,
+        "Starting RNA workflow execution",
+        {
+            "work_dir": str(config.work_dir),
+            "threads": config.threads,
+            "num_species": len(config.species_list) if config.species_list else 0,
+            "has_genome_config": config.genome is not None,
+        },
+    )
     ensure_directory(config.work_dir)
     manifest_path = config.manifest_path or (config.work_dir / "amalgkit.manifest.jsonl")
     logger.info(f"execute_workflow: Manifest path: {manifest_path}")
@@ -714,18 +726,41 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
                 logger.error("=" * 80)
                 return_codes.append(1)
             else:
-                # Use immediate per-sample processing: download → quant → delete (one at a time)
-                logger.info(f"🚀 Using immediate per-sample processing")
-                logger.info(f"   Each sample: download → immediately quantify → immediately delete FASTQs → next sample")
-                logger.info(f"   This ensures maximum disk efficiency: only one sample's FASTQs exist at a time")
+                # Check if parallel processing is requested
+                num_workers = getfastq_params.get("num_download_workers") or getfastq_params.get("parallel_workers") or 8
+                
+                # Check for max_samples limit (from metadata step or config)
+                max_samples = None
+                if "metadata" in config.per_step:
+                    max_samples = config.per_step["metadata"].get("max_samples")
+                if max_samples and isinstance(max_samples, str):
+                    try:
+                        max_samples = int(max_samples)
+                    except ValueError:
+                        max_samples = None
+                
+                # Use unified processing function (handles both sequential and parallel modes)
+                if num_workers > 1:
+                    logger.info(f"🚀 Using parallel download processing with {num_workers} workers")
+                    logger.info(f"   {num_workers} samples download in parallel → quantify sequentially → delete FASTQs")
+                    logger.info(f"   This increases throughput while managing disk space")
+                else:
+                    logger.info(f"🚀 Using immediate per-sample processing")
+                    logger.info(f"   Each sample: download → immediately quantify → immediately delete FASTQs → next sample")
+                    logger.info(f"   This ensures maximum disk efficiency: only one sample's FASTQs exist at a time")
+                
+                if max_samples:
+                    logger.info(f"   Limiting to {max_samples} sample(s) for processing")
                 
                 start_ts = datetime.utcnow()
-                stats = _steps_mod.run_sequential_download_quant(
+                stats = _steps_mod.run_download_quant_workflow(
                     metadata_path=metadata_file,
-                    getfastq_params=getfastq_params,
+                    getfastq_params=getfastq_params,  # num_download_workers will be filtered out by the function
                     quant_params=quant_params,
                     work_dir=config.work_dir,
                     log_dir=(config.log_dir or (config.work_dir / "logs")),
+                    num_workers=num_workers,  # Controls sequential (1) vs parallel (>1) mode
+                    max_samples=max_samples,  # Limit number of samples to process
                 )
                 end_ts = datetime.utcnow()
                 duration_s = max(0.0, (end_ts - start_ts).total_seconds())

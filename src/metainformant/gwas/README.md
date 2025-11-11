@@ -6,6 +6,72 @@ Genome-Wide Association Studies (GWAS) module for identifying genetic variants a
 
 This module provides comprehensive GWAS functionality integrated with METAINFORMANT's bioinformatics ecosystem.
 
+### Module Architecture
+
+```mermaid
+graph TB
+    subgraph "GWAS Module"
+        Quality[quality<br/>Quality Control]
+        Structure[structure<br/>Population Structure]
+        Association[association<br/>Association Testing]
+        Correction[correction<br/>Multiple Testing]
+        Visualization[visualization<br/>Visualization]
+        Calling[calling<br/>Variant Calling]
+        Download[download<br/>Data Download]
+        Config[config<br/>Configuration]
+        Workflow[workflow<br/>Workflow Orchestration]
+    end
+    
+    subgraph "Input Data"
+        VCF[VCF Files]
+        BAM[BAM Files]
+        Phenotypes[Phenotype Data]
+        SRA[SRA Data]
+    end
+    
+    subgraph "Other Modules"
+        DNA_Mod[dna]
+        Math_Mod[math]
+        Phenotype_Mod[phenotype]
+        Viz_Mod[visualization]
+        QC_Mod[quality]
+    end
+    
+    VCF --> Quality
+    BAM --> Calling
+    Phenotypes --> Association
+    SRA --> Download
+    Quality --> Structure
+    Calling --> Quality
+    Structure --> Association
+    Association --> Correction
+    Correction --> Visualization
+    DNA_Mod --> Calling
+    Math_Mod --> Association
+    Phenotype_Mod --> Association
+    Viz_Mod --> Visualization
+    QC_Mod --> Quality
+```
+
+### GWAS Workflow Pipeline
+
+```mermaid
+flowchart TD
+    Start[Start] --> Config[Load Config]
+    Config --> Download{Download Data?}
+    Download -->|Yes| SRA[Download SRA]
+    Download -->|No| Load[Load VCF]
+    SRA --> Calling[Variant Calling]
+    Calling --> Load
+    Load --> QC[Quality Control]
+    QC --> Filter[Filter Variants]
+    Filter --> Structure[Population Structure]
+    Structure --> Assoc[Association Testing]
+    Assoc --> Correct[Multiple Testing Correction]
+    Correct --> Viz[Visualization]
+    Viz --> Results[Results]
+```
+
 ## Components
 
 - **quality.py** - Quality control filters (MAF, missingness, HWE, quality scores)

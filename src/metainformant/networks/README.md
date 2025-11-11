@@ -6,6 +6,57 @@ The `networks` module provides tools for biological network analysis, including 
 
 This module handles various types of biological networks and provides algorithms for network construction, topology analysis, community detection, and functional enrichment. Supports both directed and undirected networks with weighted edges.
 
+### Module Architecture
+
+```mermaid
+graph TB
+    subgraph "Networks Module"
+        Graph[graph<br/>Graph Operations]
+        PPI[ppi<br/>PPI Networks]
+        Regulatory[regulatory<br/>Regulatory Networks]
+        Pathway[pathway<br/>Pathway Analysis]
+        Community[community<br/>Community Detection]
+    end
+    
+    subgraph "Input Data"
+        Interactions[Interaction Data]
+        Expression[Expression Data]
+        Pathways[Pathway Data]
+    end
+    
+    subgraph "Other Modules"
+        Protein_Mod[protein]
+        RNA_Mod[rna]
+        Ontology_Mod[ontology]
+        Info_Mod[information]
+    end
+    
+    Interactions --> Graph
+    Interactions --> PPI
+    Expression --> Regulatory
+    Pathways --> Pathway
+    Graph --> Community
+    PPI --> Community
+    Regulatory --> Community
+    Pathway --> Community
+    Protein_Mod --> PPI
+    RNA_Mod --> Regulatory
+    Ontology_Mod --> Pathway
+    Info_Mod --> Graph
+```
+
+### Network Analysis Workflow
+
+```mermaid
+flowchart LR
+    Start[Input Data] --> Build[Build Network]
+    Build --> Analyze[Analyze Topology]
+    Analyze --> Communities[Detect Communities]
+    Communities --> Enrich[Functional Enrichment]
+    Enrich --> Visualize[Visualize]
+    Visualize --> Output[Results]
+```
+
 ## Key Components
 
 ### Core Graph Operations (`graph.py`)

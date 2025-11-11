@@ -23,19 +23,24 @@ bash scripts/package/setup_uv.sh
 source .venv/bin/activate
 ```
 
-### Option 2: Manual Installation
+### Option 2: Manual Installation with UV
 
 ```bash
 # Clone repository
 git clone https://github.com/q/MetaInformAnt.git
 cd MetaInformAnt
 
+# Install uv if not already installed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
 # Create virtual environment
-python3 -m venv .venv
+uv venv
+
+# Activate virtual environment
 source .venv/bin/activate
 
 # Install package
-pip install -e .
+uv pip install -e .
 ```
 
 ## Verify Installation
@@ -67,14 +72,55 @@ for name, seq in seqs.items():
     print(f"{name}: GC content = {gc:.2%}")
 ```
 
+### Protein Analysis
+
+```python
+from metainformant.protein import sequences, alignment
+
+# Read protein sequences
+proteins = sequences.read_fasta("data/proteins.fasta")
+
+# Pairwise alignment
+align_result = alignment.global_align(proteins["seq1"], proteins["seq2"])
+print(f"Alignment score: {align_result.score}")
+```
+
+### Quality Control
+
+```python
+from metainformant.quality import fastq
+
+# Assess FASTQ quality
+qc_report = fastq.assess_quality("data/reads.fastq")
+print(f"Mean quality: {qc_report['mean_quality']}")
+print(f"Total reads: {qc_report['total_reads']}")
+```
+
+### Visualization
+
+```python
+from metainformant.visualization import lineplot
+import matplotlib.pyplot as plt
+
+# Create a simple line plot
+data = [1, 2, 3, 4, 5]
+ax = lineplot(None, data)
+ax.set_ylabel("Values")
+ax.set_title("Example Plot")
+plt.savefig("output/example_plot.png", dpi=300)
+```
+
 ### RNA-seq Workflow
 
 ```bash
 # Check if amalgkit is available
 python -c "from metainformant.rna import check_cli_available; print(check_cli_available())"
 
-# Run multi-species RNA-seq workflow
-python scripts/rna/run_multi_species.py
+# Run end-to-end workflow for a single species (recommended)
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+
+# Check workflow status
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 
 # Or use CLI
 uv run metainformant rna run --work-dir output/rna --threads 8 --species Apis_mellifera
@@ -85,8 +131,47 @@ uv run metainformant rna run --work-dir output/rna --threads 8 --species Apis_me
 All modules are accessible via the unified CLI:
 
 ```bash
+# Core utilities
+uv run metainformant core cache --clear
+
 # DNA analysis
 uv run metainformant dna fetch --assembly GCF_000001405.40
+
+# RNA analysis (see RNA-seq Workflow section above for more details)
+uv run metainformant rna run --work-dir output/rna --threads 8 --species Apis_mellifera
+
+# Protein analysis
+uv run metainformant protein fetch --uniprot-id P12345
+
+# Epigenome analysis
+uv run metainformant epigenome analyze --bam data/chipseq.bam --output output/epigenome
+
+# Ontology analysis
+uv run metainformant ontology run --go data/go.obo --output output/ontology
+
+# Phenotype analysis
+uv run metainformant phenotype curate --input data/traits.csv --output output/phenotype
+
+# Ecology analysis
+uv run metainformant ecology analyze --community data/species.csv --output output/ecology
+
+# Mathematical biology
+uv run metainformant math simulate --model coalescent --output output/math
+
+# GWAS analysis
+uv run metainformant gwas run --config config/gwas/gwas_template.yaml
+
+# Information theory
+uv run metainformant information entropy --sequences data/seqs.fasta --output output/information
+
+# Life events analysis
+uv run metainformant life_events analyze --events data/events.jsonl --output output/life_events
+
+# Visualization
+uv run metainformant visualization plot --data data/matrix.csv --output output/visualization
+
+# Simulation
+uv run metainformant simulation generate --type sequences --output output/simulation
 
 # Network analysis
 uv run metainformant networks run --input data/interactions.tsv --output output/networks
@@ -178,11 +263,25 @@ echo 'export NCBI_EMAIL="your.email@example.com"' >> ~/.bashrc
 - **[Testing Guide](docs/testing.md)** - Running tests
 
 ### Module-Specific Guides
+- **[Core Utilities](docs/core/README.md)** - Shared infrastructure and utilities
 - **[DNA Analysis](docs/dna/index.md)** - Sequence analysis workflows
 - **[RNA-seq](docs/rna/index.md)** - Transcriptomics pipelines
+- **[Protein Analysis](docs/protein/index.md)** - Protein sequences and structures
+- **[Epigenome](docs/epigenome/index.md)** - Epigenetic modification analysis
+- **[Ontology](docs/ontology/index.md)** - Functional annotation and ontologies
+- **[Phenotype](docs/phenotype/index.md)** - Phenotypic trait analysis
+- **[Ecology](docs/ecology/index.md)** - Ecological metadata and community analysis
+- **[Mathematical Biology](docs/math/index.md)** - Mathematical and theoretical biology
 - **[GWAS](docs/gwas/index.md)** - Association studies
+- **[Information Theory](docs/information/index.md)** - Information-theoretic analysis
+- **[Life Events](docs/life_events/index.md)** - Life course event analysis
+- **[Visualization](docs/visualization/index.md)** - Plotting and visualization
+- **[Simulation](docs/simulation/index.md)** - Synthetic data generation
 - **[Single-Cell](docs/singlecell/index.md)** - scRNA-seq analysis
+- **[Quality Control](docs/quality/index.md)** - Data quality assessment
+- **[Network Analysis](docs/networks/index.md)** - Biological network analysis
 - **[Machine Learning](docs/ml/index.md)** - ML methods
+- **[Multi-Omics](docs/multiomics/index.md)** - Multi-omic data integration
 
 ### Workflow Scripts
 - **[Scripts README](scripts/README.md)** - All available scripts
@@ -214,14 +313,14 @@ source .venv/bin/activate
 
 ### Missing Dependencies
 ```bash
-# Reinstall all dependencies
-pip install -e .
+# Reinstall all dependencies with uv
+uv pip install -e . --python .venv/bin/python3
 ```
 
 ### Import Errors
 ```bash
-# Ensure package is installed in development mode
-pip install -e .
+# Ensure package is installed in development mode with uv
+uv pip install -e . --python .venv/bin/python3
 ```
 
 ### Permission Errors

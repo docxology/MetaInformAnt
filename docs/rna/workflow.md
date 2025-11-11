@@ -7,18 +7,18 @@ High-level planning and execution live in `metainformant.rna.workflow`.
 - **[API Reference](API.md#workflow-functions)** - Workflow function documentation
 - **[Step Documentation](amalgkit/steps/README.md)** - All 11 step guides
 - **[Configuration Guide](CONFIGURATION.md)** - Configuration management
-- **[Orchestration Guide](ORCHESTRATION/README.md)** - Choose orchestrator
+- **[Orchestration Guide](ORCHESTRATION.md)** - Orchestrator overview
 - **[Main Index](README.md)** - RNA domain master index
 
 ## Quick Start
 
-**For multi-species production workflows**, see **[Multi-Species Quick Start Guide](MULTI_SPECIES_QUICK_START.md)** for:
+**For multi-species production workflows**, see **[Getting Started Guide](GETTING_STARTED.md)** for:
 - Starting parallel workflows for multiple species
 - Monitoring progress in real-time
 - Troubleshooting common issues
 - Performance optimization
 
-**For orchestrator selection**, see **[ORCHESTRATION/README.md](ORCHESTRATION/README.md)** to choose the right orchestrator for your needs.
+**For orchestrator selection**, see **[ORCHESTRATION.md](ORCHESTRATION.md)** to choose the right orchestrator for your needs.
 
 ## End-to-End Workflow
 
@@ -37,6 +37,7 @@ The `execute_workflow()` function provides complete end-to-end functionality:
    - For each sample: download → immediately quantify → immediately delete FASTQ
    - Maximum disk efficiency: only one sample's FASTQs exist at a time
    - Automatic resume: skips already-quantified samples
+   - **Per-Sample Workflow Details**: See [Per-Sample Processing](#per-sample-processing) section below
 
 4. **Post-Processing**: Merge, curate, and analyze results
 
@@ -50,7 +51,7 @@ from metainformant.rna.workflow import AmalgkitWorkflowConfig, plan_workflow
 
 cfg = AmalgkitWorkflowConfig(
     work_dir=Path("output/amalgkit/run1"),
-    threads=24,  # Default: 24 threads (distributed across species for multi-species workflows)
+    threads=12,  # Default: 12 threads per species (for single-species workflows)
     species_list=["Apis_mellifera"]
 ) 
 for name, params in plan_workflow(cfg):
@@ -65,50 +66,30 @@ codes = execute_workflow(cfg)
 print(codes)
 ```
 
-**Command-line execution** (production ENA workflow):
+**Command-line execution** (recommended for end-to-end workflows):
 ```bash
-# Production workflow - recommended for reliability
-python3 scripts/rna/workflow_ena_integrated.py \
-  --config config/amalgkit/amalgkit_cfloridanus.yaml \
-  --batch-size 12 \
-  --threads 12
+# Full end-to-end workflow (all steps)
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+
+# Specific steps only
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --steps getfastq quant merge
+
+# Check status
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 ```
 
-See [ORCHESTRATION/ENA_WORKFLOW.md](ORCHESTRATION/ENA_WORKFLOW.md) for detailed documentation.
+The `run_workflow.py` script provides:
+- Complete end-to-end execution via `execute_workflow()`
+- Automatic genome setup (if genome config exists)
+- Per-sample processing: download → quantify → delete FASTQ
+- All 11 amalgkit steps in correct order
+- Status checking and cleanup operations
 
-**Legacy SRA-based workflow:**
-```bash
-# Prerequisites: .venv must exist with amalgkit installed
-# If not set up, run:
-#   uv venv .venv  # or /tmp/metainformant_venv on ext6 filesystems
-#   source .venv/bin/activate  # or /tmp/metainformant_venv/bin/activate
-#   uv pip install -e .
-#   uv pip install git+https://github.com/kfuku52/amalgkit
+See [scripts/rna/README.md](../../scripts/rna/README.md) for complete usage documentation.
 
-# Alternative using SRA Toolkit (scripts auto-discover venv location)
-python3 scripts/rna/run_multi_species.py
-
-# With configurable threads (per species for sequential workflows):
-export AK_THREADS=24
-python3 scripts/rna/run_multi_species.py
-
-# Or use total thread allocation (recommended for immediate processing):
-python3 scripts/rna/batch_download_species.py --total-threads 24
-```
-
-See [ORCHESTRATION/MULTI_SPECIES.md](ORCHESTRATION/MULTI_SPECIES.md) for detailed documentation.
-
-The ENA-based workflow provides:
-- Direct ENA downloads with 100% reliability (vs 0% SRA Toolkit)
-- Immediate per-sample processing (download → immediately quantify → immediately delete FASTQs)
-- Automatic resume with `wget --continue`
-- Maximum disk efficiency: only one sample's FASTQs exist at a time
-
-The immediate processing workflow provides:
-- Automatic virtual environment activation
-- Immediate per-sample processing: download → immediately quantify → immediately delete FASTQs
-- Total threads distributed across all species (default: 24 total threads)
-- Maximum disk efficiency: only one sample's FASTQs exist at a time
+**Alternative workflows** (for specialized use cases):
+- See [ORCHESTRATION.md](ORCHESTRATION.md) for orchestrator selection
+- See [scripts/rna/amalgkit/run_amalgkit.sh](../../scripts/rna/amalgkit/run_amalgkit.sh) for bash-based orchestration
 
 ### From config file
 
@@ -116,7 +97,7 @@ The immediate processing workflow provides:
 from metainformant.rna.workflow import load_workflow_config, execute_workflow
 
 # Load config (paths resolved relative to repo root)
-cfg = load_workflow_config("config/amalgkit/amalgkit_pbarbatus.yaml")
+cfg = load_workflow_config("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
 
 # Execute workflow (automatic genome setup + immediate per-sample processing)
 codes = execute_workflow(cfg, check=True)
@@ -182,18 +163,18 @@ codes = wf.execute_workflow(cfg, check=False)
 
 ## Monitoring Workflows
 
-See **[Multi-Species Quick Start Guide](MULTI_SPECIES_QUICK_START.md#monitoring-progress)** for comprehensive monitoring instructions.
+See **[Getting Started Guide](GETTING_STARTED.md#monitoring-progress)** for comprehensive monitoring instructions.
 
 **Quick monitoring:**
 ```bash
-# Real-time comprehensive monitor
-python3 scripts/rna/orchestrate_workflows.py --status
+# Check workflow status
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 
-# Continuous watch mode
-python3 scripts/rna/orchestrate_workflows.py --monitor --watch 60
+# Detailed status
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status --detailed
 
 # Check running processes
-ps aux | grep workflow_ena | grep -v grep
+ps aux | grep "run_workflow\|amalgkit" | grep -v grep
 ```
 
 ## How this supports meta-analysis
@@ -207,6 +188,91 @@ The workflow produces standardized, well-logged artifacts that map to common met
 - Curation/QC (`curate`, `csca`, `sanity`): ensures input quality and comparability
 
 **Default Processing Mode**: The workflow uses immediate per-sample processing by default. Each sample is downloaded, quantified, and its FASTQ files deleted before moving to the next sample. This ensures maximum disk efficiency - only one sample's FASTQs exist at any time.
+
+## Per-Sample Processing
+
+The workflow processes each sample individually in a three-step sequence:
+
+1. **Download**: FASTQ files are downloaded for the sample
+2. **Quantify**: The sample is immediately quantified against the kallisto index
+3. **Delete**: FASTQ files are automatically deleted after successful quantification
+
+This per-sample workflow is implemented in `metainformant.rna.steps.process_samples` and can be used manually via the `quantify_sample()` and `delete_sample_fastqs()` functions.
+
+### Manual Per-Sample Processing
+
+For processing individual samples manually (e.g., for testing or recovery):
+
+```python
+from metainformant.rna.steps.quant import quantify_sample
+from metainformant.rna.steps.getfastq import delete_sample_fastqs
+from metainformant.rna.workflow import load_workflow_config
+from metainformant.core.io import read_delimited
+from pathlib import Path
+
+# Load config
+cfg = load_workflow_config("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
+
+# Read metadata
+metadata_file = cfg.work_dir / "metadata" / "metadata.tsv"
+rows = list(read_delimited(metadata_file, delimiter="\t"))
+sample_rows = [row for row in rows if row.get("run") == "SRR14740514"]
+
+# Prepare quant params
+quant_params = dict(cfg.per_step.get("quant", {}))
+quant_params["out_dir"] = str(cfg.per_step.get("quant", {}).get("out_dir", cfg.work_dir / "quant"))
+quant_params["threads"] = cfg.threads or 12
+quant_params["work_dir"] = str(cfg.work_dir.absolute())  # Required for finding FASTQ files
+
+# Step 1: Quantify
+success, message, abundance_path = quantify_sample(
+    sample_id="SRR14740514",
+    metadata_rows=sample_rows,
+    quant_params=quant_params,
+    log_dir=cfg.log_dir,
+    step_name="quant_SRR14740514",
+)
+
+if success and abundance_path and abundance_path.exists():
+    # Step 2: Delete FASTQ files
+    fastq_dir = Path(cfg.per_step.get("getfastq", {}).get("out_dir", cfg.work_dir / "fastq"))
+    delete_sample_fastqs("SRR14740514", fastq_dir)
+    print(f"✓ Quantified and cleaned up SRR14740514")
+else:
+    print(f"✗ Quantification failed: {message}")
+```
+
+**Test Script**: A complete test script is available at `scripts/rna/test_quantify_sample.py`:
+
+```bash
+python3 scripts/rna/test_quantify_sample.py \
+    --sample SRR14740514 \
+    --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+```
+
+### Automatic Cleanup Behavior
+
+The workflow automatically deletes FASTQ files after successful quantification when:
+
+- `keep_fastq: no` is set in the quant configuration (default behavior)
+- Quantification completes successfully (abundance.tsv file is created)
+- The sample has been processed through the `run_download_quant_workflow()` function
+
+**Note**: The `cleanup_unquantified_samples()` function in `metainformant.rna.orchestration` can be used to process downloaded but unquantified samples in batch:
+
+```python
+from metainformant.rna.orchestration import cleanup_unquantified_samples
+from pathlib import Path
+
+config_path = Path("config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml")
+quantified, failed = cleanup_unquantified_samples(config_path)
+print(f"Quantified: {quantified}, Failed: {failed}")
+```
+
+This function:
+1. Finds all samples with FASTQ files but no quantification results
+2. Quantifies each sample using `quantify_sample()`
+3. Deletes FASTQ files after successful quantification using `delete_sample_fastqs()`
 
 Downstream, you can:
 
@@ -223,14 +289,50 @@ All outputs default under `output/` in keeping with repository policy; override 
 - **[Function Index](amalgkit/FUNCTIONS.md)** - Quick function lookup
 - **[Step Documentation](amalgkit/steps/README.md)** - All 11 step guides
 - **[Configuration Guide](CONFIGURATION.md)** - Configuration management
-- **[Orchestration Guide](ORCHESTRATION/README.md)** - Orchestrator overview and selection
+- **[Orchestration Guide](ORCHESTRATION.md)** - Orchestrator overview and selection
 - **[Main Index](README.md)** - RNA domain master index
 
 ### Getting Started
-- **[GETTING_STARTED.md](GETTING_STARTED.md)** - Setup and installation
-- **[MULTI_SPECIES_QUICK_START.md](MULTI_SPECIES_QUICK_START.md)** - Production workflow guide
+- **[GETTING_STARTED.md](GETTING_STARTED.md)** - Complete setup and production workflow guide
 
 ## Common Issues and Solutions
+
+### Zero-Read Detection and Validation
+
+**Issue**: `amalgkit getfastq` may return success (exit code 0) even when it produces 0 reads, leading to empty FASTQ files and failed quantification.
+
+**Solution**: The workflow includes enhanced validation that:
+1. **Immediately validates FASTQ files** after getfastq completes
+2. **Detects 0-read cases** by checking for actual FASTQ files
+3. **Distinguishes failure modes**:
+   - SRA exists but no FASTQ → conversion failure
+   - No files at all → 0-read download or early failure
+4. **Fails fast** instead of waiting indefinitely for files that will never appear
+
+**Implementation**: The download worker (`_download_worker`) validates file existence before reporting success:
+
+```python
+# Validation happens immediately after getfastq returns
+if success:
+    # Extract fastq_dir from getfastq_params
+    fastq_dir = Path(getfastq_params.get("out_dir", ""))
+    
+    # Check for FASTQ files
+    has_fastq = any(sample_dir.glob("*.fastq*"))
+    
+    if not has_fastq:
+        # Check if SRA exists (conversion may have failed)
+        has_sra = any(sample_dir.glob("*.sra"))
+        if has_sra:
+            logger.warning("SRA exists but no FASTQ (conversion may have failed)")
+        else:
+            logger.warning("getfastq succeeded but no files found (0 reads)")
+        success = False  # Mark as failed
+```
+
+**Error Messages**:
+- `⚠️ SRA exists but no FASTQ (conversion may have failed or produced 0 reads)` - SRA file downloaded but conversion failed
+- `⚠️ getfastq succeeded but no files found (may have produced 0 reads)` - No files at all, likely 0-read case
 
 ### Metadata Format Selection
 
@@ -277,10 +379,10 @@ steps:
     ncbi: yes    # Use NCBI directly
 ```
 
-**Automatic Optimizations** (handled by `run_multi_species.py`):
+**Automatic Optimizations** (handled by `run_workflow.py`):
 - SRA wrapper script: Disables conservative size checks
 - Temp directory: Uses project location instead of `/tmp`
-- Batched processing: 10 samples at a time (~20-50 GB peak)
+- Batched processing: Configurable via `num_download_workers` in config (~20-50 GB peak)
 - Auto-activation: Virtual environment detection and activation
 
 ### Disk Space Management
@@ -310,11 +412,12 @@ No manual configuration needed - all handled automatically by the workflow scrip
 
 # Just run the script - no manual activation needed
 # Scripts automatically discover venv location (.venv or /tmp/metainformant_venv)
-python3 scripts/rna/run_all_species_parallel.py
+# For single-species workflows with parallel downloads:
+# Configure num_download_workers in config file (see CONFIGURATION.md)
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 
-# With configurable threads:
-export AK_THREADS=12
-python3 scripts/rna/run_all_species_parallel.py
+# For multiple species, run run_workflow.py separately for each species config
+# Parallel downloads are controlled via num_download_workers in each config file
 ```
 
 **Note**: On ext6 filesystems (which don't support symlinks), scripts automatically use `/tmp/metainformant_venv` if `.venv` creation fails. The venv discovery handles both locations transparently.
@@ -330,12 +433,19 @@ python3 scripts/rna/run_all_species_parallel.py
 - Updates PATH automatically
 
 All handled transparently by the workflow.
+
+**Note**: SRA Toolkit workflows are legacy and have ~0% success rate for large samples. Use `run_workflow.py` for production workflows, which uses ENA-based downloads by default.
+
+### Performance Optimization
+
+**GetFASTQ Acceleration**: Enable parallel downloads and cloud sources for significant speedup:
+
+```yaml
 steps:
   getfastq:
     threads: 6           # Parallel processing
     pfd: yes             # Use parallel-fastq-dump
     accelerate: true     # Enable cloud mirrors (AWS/GCP)
-    max_size: "50GB"     # Handle large samples
 ```
 
 **Disk Space Management**: Delete FASTQ files after quantification to prevent disk exhaustion:
@@ -345,11 +455,11 @@ steps:
   quant:
     threads: 6
     keep_fastq: no       # Delete FASTQs after processing
-    redo: no             # Skip already quantified samples
+    redo: no            # Skip already quantified samples
 ```
 
-**Expected Performance** (with optimizations):
-- Download speed: 6x faster with parallel processing
-- Cloud sources: 3-5x faster than NCBI only
-- Disk usage: 90% reduction with FASTQ cleanup
-- Total runtime: ~1-2 days for 300+ samples (vs 6-13 days without optimization)
+**Expected Performance** (with ENA workflow):
+- Download speed: Fast and reliable (100% success rate)
+- Direct ENA downloads: 3-5x faster than SRA Toolkit
+- Disk usage: Minimal (immediate per-sample cleanup)
+- Total runtime: ~7.5 minutes per sample average

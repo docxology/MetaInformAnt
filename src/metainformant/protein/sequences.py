@@ -8,6 +8,14 @@ VALID_AA = set("ACDEFGHIKLMNPQRSTVWY")
 
 
 def parse_fasta(path: Path) -> Dict[str, str]:
+    """Parse FASTA file and return dictionary of sequence ID to sequence.
+    
+    Args:
+        path: Path to FASTA file
+        
+    Returns:
+        Dictionary mapping sequence IDs to sequences
+    """
     records: Dict[str, str] = {}
     current_id: str | None = None
     current_seq_parts: list[str] = []
@@ -28,12 +36,28 @@ def parse_fasta(path: Path) -> Dict[str, str]:
 
 
 def is_valid_protein_sequence(seq: str) -> bool:
+    """Check if sequence contains only valid amino acid characters.
+    
+    Args:
+        seq: Protein sequence string
+        
+    Returns:
+        True if sequence contains only valid amino acids, False otherwise
+    """
     if not seq:
         return False
     return all((c.isalpha() and c.upper() in VALID_AA) for c in seq)
 
 
 def calculate_aa_composition(seq: str) -> Dict[str, float]:
+    """Calculate amino acid composition (frequencies) of a protein sequence.
+    
+    Args:
+        seq: Protein sequence string
+        
+    Returns:
+        Dictionary mapping amino acid codes to their frequencies (0.0 to 1.0)
+    """
     seq_upper = [c for c in seq.upper() if c in VALID_AA]
     n = len(seq_upper)
     if n == 0:
@@ -43,6 +67,18 @@ def calculate_aa_composition(seq: str) -> Dict[str, float]:
 
 
 def kmer_frequencies(seq: str, *, k: int) -> Dict[str, int]:
+    """Calculate k-mer frequencies in a protein sequence.
+    
+    Args:
+        seq: Protein sequence string
+        k: K-mer length (must be positive)
+        
+    Returns:
+        Dictionary mapping k-mers to their counts
+        
+    Raises:
+        ValueError: If k is not positive
+    """
     if k <= 0:
         raise ValueError("k must be positive")
     seq = seq.upper()

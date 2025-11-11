@@ -297,15 +297,17 @@ class TestErrorHandling:
 
     def test_invalid_input_handling(self):
         """Test handling of invalid inputs."""
+        from metainformant.core.errors import ValidationError
+        
         # Invalid GC content
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             generate_random_dna(length=100, gc_content=1.5)  # > 1.0
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValidationError):
             generate_random_dna(length=100, gc_content=-0.1)  # < 0.0
 
         # Invalid length - negative length should raise error
-        with pytest.raises(ValueError):
+        with pytest.raises((ValueError, ValidationError)):
             generate_random_dna(length=-1)
 
 

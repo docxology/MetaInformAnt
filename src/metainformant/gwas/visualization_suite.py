@@ -6,13 +6,13 @@ visualization types from GWAS analysis results.
 
 from __future__ import annotations
 
-import logging
 from pathlib import Path
 from typing import Any
 
 from ..core.io import ensure_directory
+from ..core.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 def generate_all_plots(

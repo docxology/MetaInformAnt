@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 import random
-from typing import Dict, Literal, Optional
+from typing import TYPE_CHECKING, Dict, Literal, Optional
 
 from Bio import Phylo
+
+if TYPE_CHECKING:
+    from Bio.Phylo.BaseTree import Tree
 from Bio.Align import MultipleSeqAlignment
 from Bio.Phylo.TreeConstruction import DistanceCalculator, DistanceTreeConstructor
 from Bio.Seq import Seq
 from Bio.SeqRecord import SeqRecord
 
 
-def neighbor_joining_tree(id_to_seq: Dict[str, str]):
+def neighbor_joining_tree(id_to_seq: Dict[str, str]) -> Tree:
     """Build neighbor-joining phylogenetic tree from sequences.
     
     Args:
@@ -28,7 +31,7 @@ def neighbor_joining_tree(id_to_seq: Dict[str, str]):
     return tree
 
 
-def upgma_tree(id_to_seq: Dict[str, str]):
+def upgma_tree(id_to_seq: Dict[str, str]) -> Tree:
     """Build UPGMA (Unweighted Pair Group Method with Arithmetic Mean) phylogenetic tree.
     
     Args:
@@ -62,7 +65,7 @@ def to_newick(tree) -> str:
     return handle.getvalue()
 
 
-def upgma_tree(id_to_seq: Dict[str, str]):
+def upgma_tree(id_to_seq: Dict[str, str]) -> Tree:
     """Build UPGMA tree from sequences (alternative implementation).
     
     Args:
@@ -213,7 +216,7 @@ def bootstrap_support(
     return {s: counts[s] / n_replicates for s in counts}
 
 
-def nj_tree_from_kmer(id_to_seq: Dict[str, str], *, k: int = 3, metric: str = "cosine"):
+def nj_tree_from_kmer(id_to_seq: Dict[str, str], *, k: int = 3, metric: str = "cosine") -> Tree:
     """Build NJ tree from k-mer distances via `distances.kmer_distance_matrix`."""
     from Bio.Phylo.TreeConstruction import DistanceMatrix, DistanceTreeConstructor
 

@@ -6,7 +6,6 @@ and generate amalgkit YAML configurations.
 
 from __future__ import annotations
 
-import logging
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path

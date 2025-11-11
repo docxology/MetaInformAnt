@@ -6,12 +6,19 @@ pair plots, parallel coordinates, radar charts, scatter plot matrices, and 3D pl
 
 from __future__ import annotations
 
-from typing import Sequence
+from typing import TYPE_CHECKING, Sequence, Union
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+
+if TYPE_CHECKING:
+    from matplotlib.figure import Figure
+    try:
+        from seaborn import PairGrid
+    except ImportError:
+        PairGrid = None  # type: ignore
 
 # Use non-interactive backend by default for tests/headless
 matplotlib.use("Agg", force=True)
@@ -25,7 +32,7 @@ except ImportError:
     sns = None
 
 
-def pairplot_dataframe(df: pd.DataFrame, *, hue: str | None = None):
+def pairplot_dataframe(df: pd.DataFrame, *, hue: str | None = None) -> Union[Figure, "PairGrid"]:
     """Pairplot for a tidy DataFrame, returns seaborn PairGrid or matplotlib figure.
 
     Args:

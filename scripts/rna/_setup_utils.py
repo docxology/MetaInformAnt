@@ -158,8 +158,9 @@ def setup_venv_and_dependencies(auto_setup: bool = True) -> bool:
         logger.info(f"Using temporary directory: {temp_dir}")
         
         # Install metainformant
-        # Use output directory for uv cache to avoid /tmp space issues
-        uv_cache_dir = repo_root / "output" / ".uv-cache"
+        # Use /tmp/uv-cache for cache to avoid symlink issues on ext6 filesystem
+        # The output/.uv-cache location doesn't support symlinks needed by uv
+        uv_cache_dir = Path("/tmp/uv-cache")
         uv_cache_dir.mkdir(parents=True, exist_ok=True)
         logger.info("Installing metainformant...")
         env = os.environ.copy()
@@ -176,9 +177,9 @@ def setup_venv_and_dependencies(auto_setup: bool = True) -> bool:
         logger.info("✓ metainformant installed")
         
         # Install amalgkit
-        # Use output directory for uv cache to avoid /tmp space issues
+        # Use /tmp/uv-cache for cache to avoid symlink issues on ext6 filesystem
         temp_dir = get_recommended_temp_dir(repo_root)
-        uv_cache_dir = repo_root / "output" / ".uv-cache"
+        uv_cache_dir = Path("/tmp/uv-cache")
         uv_cache_dir.mkdir(parents=True, exist_ok=True)
         logger.info("Installing amalgkit...")
         env = os.environ.copy()
@@ -389,11 +390,18 @@ def check_environment_or_exit(auto_setup: bool = True) -> None:
                 success, missing, warnings = check_environment()
         
         if not success:
-            logger.error("\nSetup instructions:")
-            logger.error("  1. python3 -m venv .venv")
-            logger.error("  2. source .venv/bin/activate")
-            logger.error("  3. pip install -e .")
-            logger.error("  4. pip install git+https://github.com/kfuku52/amalgkit")
+            logger.error("\nSetup instructions (using uv):")
+            if _check_uv():
+                logger.error("  1. uv venv .venv")
+                logger.error("  2. uv pip install -e . --python .venv/bin/python3")
+                logger.error("  3. uv pip install git+https://github.com/kfuku52/amalgkit --python .venv/bin/python3")
+            else:
+                logger.error("  First install uv:")
+                logger.error("    curl -LsSf https://astral.sh/uv/install.sh | sh")
+                logger.error("  Then:")
+                logger.error("  1. uv venv .venv")
+                logger.error("  2. uv pip install -e . --python .venv/bin/python3")
+                logger.error("  3. uv pip install git+https://github.com/kfuku52/amalgkit --python .venv/bin/python3")
             sys.exit(1)
     
     if warnings:

@@ -2,6 +2,54 @@
 
 Provides custom exception hierarchy, retry decorators, and error recovery
 utilities for robust operation across all modules.
+
+## Error Handling Patterns
+
+### Recommended Patterns
+
+1. **Use Custom Exceptions**: Use domain-specific exceptions from this module:
+   - `ConfigError`: Configuration-related errors
+   - `IOError`: File I/O errors
+   - `ValidationError`: Data validation errors
+   - `NetworkError`: Network operation errors
+   - `CacheError`: Cache operation errors
+
+2. **Use error_context() for Context**: Wrap operations that might fail:
+   ```python
+   from metainformant.core.errors import error_context
+   
+   with error_context("Failed to process file"):
+       process_file(path)
+   ```
+
+3. **Log Errors with Context**: Always log errors with exc_info=True:
+   ```python
+   from metainformant.core.logging import get_logger
+   
+   logger = get_logger(__name__)
+   try:
+       operation()
+   except Exception as e:
+       logger.error(f"Operation failed: {e}", exc_info=True)
+       raise
+   ```
+
+4. **Use retry_with_backoff() for Transient Errors**: For network operations:
+   ```python
+   from metainformant.core.errors import retry_with_backoff, NetworkError
+   
+   @retry_with_backoff(max_attempts=3, exceptions=(NetworkError,))
+   def download_file(url):
+       # Network operation
+       pass
+   ```
+
+### Anti-Patterns to Avoid
+
+- Don't catch generic `Exception` without re-raising or logging
+- Don't suppress errors silently
+- Don't use bare `except:` clauses
+- Don't raise generic `Exception` - use specific exception types
 """
 
 from __future__ import annotations
@@ -9,7 +57,7 @@ from __future__ import annotations
 import functools
 import time
 from contextlib import contextmanager
-from typing import Any, Callable, TypeVar
+from typing import Any, Callable, Iterator, TypeVar
 
 T = TypeVar("T")
 
@@ -105,7 +153,7 @@ def retry_with_backoff(
 
 
 @contextmanager
-def error_context(context_msg: str, reraise: bool = True):
+def error_context(context_msg: str, reraise: bool = True) -> Iterator[None]:
     """Context manager for adding error context.
 
     Args:

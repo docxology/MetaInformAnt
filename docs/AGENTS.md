@@ -69,3 +69,13 @@ This document outlines AI assistance in creating and maintaining METAINFORMANT's
 - Development workflow documentation
 
 This documentation system provides comprehensive guidance for users and developers while maintaining high standards of clarity and accuracy.
+
+## Output Directory Policy
+
+**CRITICAL**: All documentation created by AI agents must be placed in `docs/`, never in `output/`. The `output/` directory is strictly for program-generated execution outputs. See `output/.cursorrules` for the complete policy.
+
+- Documentation files → `docs/<domain>/`
+- Test reports → `docs/` or delete after review
+- Review documents → `docs/` or delete after review
+- Planning documents → `docs/` or delete after review
+- Test scripts → `tests/` or `scripts/`

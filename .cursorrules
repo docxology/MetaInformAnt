@@ -3,7 +3,7 @@
 ## Directory Structure
 
 ### Core Directories
-- **`output/`**: All outputs from tests and real runs must go here by default. Treat as ephemeral and reproducible. Safe to delete.
+- **`output/`**: All outputs from tests and real runs must go here by default. Treat as ephemeral and reproducible. Safe to delete. **CRITICAL**: Only program-generated execution outputs belong here. Never create documentation, reports, test scripts, or planning documents in `output/`. See `output/.cursorrules` for the complete policy.
 - **`config/`**: Repository-level configuration files and options. Read via `metainformant.core.config`; allow env overrides.
 - **`data/`**: Inputs such as datasets and local databases. Read-mostly, organized by domain and version.
 - **`docs/`**: All documentation organized by domain (`docs/<domain>/<topic>.md`). NEVER create new docs in repo root.
@@ -11,18 +11,25 @@
 - **`tests/`**: Test files mirroring source structure (`tests/test_<module>_<submodule>.py`).
 
 ### Domain-Specific Output Paths
-- **RNA**: `output/amalgkit/<species>/<step>/` (e.g., `quant/`, `work/`, `logs/`)
-- **GWAS**: `output/gwas/<analysis_type>/` (e.g., `association/`, `plots/`, `qc/`)
-- **Life Events**: `output/life_events/<workflow>/` (e.g., `embeddings/`, `models/`, `plots/`)
-- **Multi-Omics**: `output/multiomics/<integration>/` (e.g., `integrated/`, `plots/`)
-- **Single-Cell**: `output/singlecell/<analysis>/` (e.g., `preprocessing/`, `clustering/`)
-- **Networks**: `output/networks/<network_type>/` (e.g., `ppi/`, `regulatory/`, `pathways/`)
-- **Information Theory**: `output/information/<analysis_type>/` (e.g., `entropy/`, `complexity/`)
+- **Core**: `output/core/<utility>/` (e.g., `cache/`, `logs/`, `workflows/`)
 - **DNA**: `output/dna/<analysis_type>/` (e.g., `phylogeny/`, `population/`, `variants/`)
+- **RNA**: `output/amalgkit/<species>/<step>/` (e.g., `quant/`, `work/`, `logs/`)
 - **Protein**: `output/protein/<analysis_type>/` (e.g., `structures/`, `alignments/`)
-- **Quality**: `output/quality/<dataset>/` (e.g., `fastq/`, `reports/`)
+- **Epigenome**: `output/epigenome/<analysis_type>/` (e.g., `methylation/`, `chipseq/`, `atac/`)
+- **Ontology**: `output/ontology/<type>/` (e.g., `go/`, `annotations/`, `queries/`)
+- **Phenotype**: `output/phenotype/<dataset>/` (e.g., `traits/`, `life_course/`, `curation/`)
+- **Ecology**: `output/ecology/<analysis>/` (e.g., `community/`, `environmental/`, `interactions/`)
 - **Math**: `output/math/<type>/` (e.g., `simulations/`, `models/`, `plots/`)
+- **GWAS**: `output/gwas/<analysis_type>/` (e.g., `association/`, `plots/`, `qc/`)
+- **Information Theory**: `output/information/<analysis_type>/` (e.g., `entropy/`, `complexity/`)
+- **Life Events**: `output/life_events/<workflow>/` (e.g., `embeddings/`, `models/`, `plots/`)
+- **Visualization**: `output/visualization/<type>/` (e.g., `plots/`, `animations/`, `trees/`)
 - **Simulation**: `output/simulation/<type>/` (e.g., `sequences/`, `ecosystems/`)
+- **Single-Cell**: `output/singlecell/<analysis>/` (e.g., `preprocessing/`, `clustering/`)
+- **Quality**: `output/quality/<dataset>/` (e.g., `fastq/`, `reports/`)
+- **Networks**: `output/networks/<network_type>/` (e.g., `ppi/`, `regulatory/`, `pathways/`)
+- **ML**: `output/ml/<task>/` (e.g., `classification/`, `regression/`, `features/`)
+- **Multi-Omics**: `output/multiomics/<integration>/` (e.g., `integrated/`, `plots/`)
 
 ## Path and I/O
 
@@ -65,10 +72,25 @@ with io.open_text_auto("data/large_file.txt.gz") as f:
 - Use type-safe config classes (dataclasses) for domain-specific configs.
 
 ### Environment Variable Patterns
+- **Core Module**: Use prefix `CORE_` (e.g., `CORE_THREADS`, `CORE_CACHE_DIR`, `CORE_LOG_LEVEL`)
+- **DNA Module**: Use prefix `DNA_` (e.g., `DNA_THREADS`, `DNA_WORK_DIR`)
 - **RNA Module**: Use prefix `AK_` (e.g., `AK_THREADS`, `AK_WORK_DIR`, `AK_LOG_DIR`)
+- **Protein Module**: Use prefix `PROT_` (e.g., `PROT_THREADS`, `PROT_WORK_DIR`)
+- **Epigenome Module**: Use prefix `EPI_` (e.g., `EPI_THREADS`, `EPI_WORK_DIR`)
+- **Ontology Module**: Use prefix `ONT_` (e.g., `ONT_CACHE_DIR`, `ONT_DB_PATH`)
+- **Phenotype Module**: Use prefix `PHEN_` (e.g., `PHEN_WORK_DIR`, `PHEN_DB_PATH`)
+- **Ecology Module**: Use prefix `ECO_` (e.g., `ECO_WORK_DIR`, `ECO_DB_PATH`)
+- **Math Module**: Use prefix `MATH_` (e.g., `MATH_THREADS`, `MATH_WORK_DIR`)
 - **GWAS Module**: Use prefix `GWAS_` (e.g., `GWAS_THREADS`, `GWAS_WORK_DIR`)
+- **Information Theory Module**: Use prefix `INFO_` (e.g., `INFO_THREADS`, `INFO_WORK_DIR`)
 - **Life Events Module**: Use prefix `LE_` (e.g., `LE_THREADS`, `LE_EMBEDDING_DIM`)
-- **General**: Use prefix matching domain name (e.g., `SC_` for single-cell, `NET_` for networks)
+- **Visualization Module**: Use prefix `VIZ_` (e.g., `VIZ_DPI`, `VIZ_FORMAT`, `VIZ_STYLE`)
+- **Simulation Module**: Use prefix `SIM_` (e.g., `SIM_THREADS`, `SIM_WORK_DIR`, `SIM_SEED`)
+- **Single-Cell Module**: Use prefix `SC_` (e.g., `SC_THREADS`, `SC_WORK_DIR`)
+- **Quality Module**: Use prefix `QC_` (e.g., `QC_THREADS`, `QC_WORK_DIR`)
+- **Networks Module**: Use prefix `NET_` (e.g., `NET_THREADS`, `NET_WORK_DIR`)
+- **ML Module**: Use prefix `ML_` (e.g., `ML_THREADS`, `ML_WORK_DIR`, `ML_MODEL_DIR`)
+- **Multi-Omics Module**: Use prefix `MULTI_` (e.g., `MULTI_THREADS`, `MULTI_WORK_DIR`)
 
 ### Configuration File Structure
 ```yaml
@@ -100,9 +122,11 @@ def load_domain_config(config_file: str | Path, prefix: str = "DOMAIN") -> Domai
 ```
 
 **Real Examples**:
+- Core: Config classes use `CORE_` prefix for core utilities
 - RNA: `AmalgkitWorkflowConfig` with prefix `"AK"`
 - GWAS: `GWASWorkflowConfig` with prefix `"GWAS"`
 - Life Events: `LifeEventsWorkflowConfig` with prefix `"LE"`
+- Other modules: Follow pattern `{MODULE}_` prefix (e.g., `DNA_`, `PROT_`, `EPI_`, `ONT_`, `PHEN_`, `ECO_`, `MATH_`, `INFO_`, `VIZ_`, `SIM_`, `SC_`, `QC_`, `NET_`, `ML_`, `MULTI_`)
 
 ## Testing Policy (STRICTLY NO MOCKS/FAKES)
 
@@ -171,22 +195,22 @@ Module-specific rules are organized in the `cursorrules/` directory. Each module
 - `cursorrules/core.cursorrules` - Core utilities and shared patterns
 - `cursorrules/dna.cursorrules` - DNA sequence analysis and genomics
 - `cursorrules/rna.cursorrules` - RNA transcriptomic analysis
-- `cursorrules/gwas.cursorrules` - Genome-wide association studies
 - `cursorrules/protein.cursorrules` - Protein sequence and structure analysis
+- `cursorrules/epigenome.cursorrules` - Epigenetic modification analysis
+- `cursorrules/ontology.cursorrules` - Functional annotation and ontologies
+- `cursorrules/phenotype.cursorrules` - Phenotypic trait analysis
+- `cursorrules/ecology.cursorrules` - Ecological metadata and community analysis
+- `cursorrules/math.cursorrules` - Mathematical and theoretical biology
+- `cursorrules/gwas.cursorrules` - Genome-wide association studies
+- `cursorrules/information.cursorrules` - Information-theoretic analysis
+- `cursorrules/life_events.cursorrules` - Life course event analysis
+- `cursorrules/visualization.cursorrules` - Plotting and visualization
+- `cursorrules/simulation.cursorrules` - Synthetic data generation
 - `cursorrules/singlecell.cursorrules` - Single-cell transcriptomic analysis
+- `cursorrules/quality.cursorrules` - Data quality assessment
 - `cursorrules/networks.cursorrules` - Biological network analysis
 - `cursorrules/ml.cursorrules` - Machine learning for biological data
 - `cursorrules/multiomics.cursorrules` - Multi-omic data integration
-- `cursorrules/information.cursorrules` - Information-theoretic analysis
-- `cursorrules/life_events.cursorrules` - Life course event analysis
-- `cursorrules/math.cursorrules` - Mathematical and theoretical biology
-- `cursorrules/visualization.cursorrules` - Plotting and visualization
-- `cursorrules/quality.cursorrules` - Data quality assessment
-- `cursorrules/ontology.cursorrules` - Functional annotation and ontologies
-- `cursorrules/phenotype.cursorrules` - Phenotypic trait analysis
-- `cursorrules/epigenome.cursorrules` - Epigenetic modification analysis
-- `cursorrules/ecology.cursorrules` - Ecological metadata and community analysis
-- `cursorrules/simulation.cursorrules` - Synthetic data generation
 
 **See `cursorrules/README.md` for detailed information about the modular structure.**
 
@@ -283,6 +307,7 @@ def function():
 - **NEVER create new documentation files in repository root**
 - All documentation belongs in `docs/` subdirectories organized by domain
 - **UPDATE existing documentation** rather than creating new files
+- **NEVER create documentation, reports, test scripts, or planning documents in `output/`** - these belong in `docs/`, `tests/`, or `scripts/` respectively. See `output/.cursorrules` for the complete policy.
 - Temporary status reports and progress logs belong in `output/` and should be deleted when no longer needed
 - Documentation structure: `docs/<domain>/<topic>.md` or `docs/<domain>/<subtopic>/<specific>.md`
 
@@ -302,22 +327,51 @@ Each module should have:
 ## Workflow Integration
 
 ### Cross-Module Integration
-- DNA → GWAS: Variant calling and population genetics
-- DNA → RNA: Genomic coordinates for transcriptomic analysis
-- RNA → Single-Cell: Expression data for single-cell analysis
-- Protein → Networks: PPI networks from protein data
-- Multi-Omics: Integration of all omics types
+- **Core → All**: Core utilities used by all modules (I/O, logging, config, paths)
+- **DNA → GWAS**: Variant calling and population genetics
+- **DNA → RNA**: Genomic coordinates for transcriptomic analysis
+- **DNA → Math**: Population genetics statistics and theoretical models
+- **DNA → Protein**: Genomic coordinates for protein structure analysis
+- **RNA → Single-Cell**: Expression data for single-cell analysis
+- **RNA → Multi-Omics**: Transcriptomic data integration
+- **RNA → Networks**: Regulatory network construction from expression data
+- **Protein → Networks**: PPI networks from protein data
+- **Protein → Ontology**: Functional annotation via protein domains
+- **Epigenome → DNA**: Epigenetic modifications mapped to genomic coordinates
+- **Epigenome → Networks**: Chromatin interaction networks
+- **Ontology → All**: Functional annotation for genes, proteins, and pathways
+- **Phenotype → GWAS**: Phenotypic traits for association studies
+- **Phenotype → Life Events**: Life course event analysis
+- **Ecology → Networks**: Ecological interaction networks
+- **Math → GWAS**: Statistical models for association analysis
+- **Math → DNA**: Population genetics theory
+- **Information → Networks**: Information-theoretic network analysis
+- **Information → Ontology**: Semantic similarity and information content
+- **Visualization → All**: Plotting and visualization for all modules
+- **Quality → All**: Quality control for all data types
+- **Simulation → All**: Synthetic data generation for testing
+- **Multi-Omics**: Integration of DNA, RNA, protein, epigenome, and other omics types
 
 ### Workflow Patterns
 ```python
 from metainformant.core.workflow import run_config_based_workflow
 
 # Domain-specific workflow
-from metainformant.rna.workflow import load_workflow_config, plan_workflow
+from metainformant.rna.workflow import load_workflow_config, plan_workflow, execute_workflow
 
 config = load_workflow_config("config/amalgkit/species.yaml")
 steps = plan_workflow(config)
 # Execute steps
+return_codes = execute_workflow(config)
+```
+
+**Command-line execution** (recommended for end-to-end workflows):
+```bash
+# Full end-to-end workflow
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+
+# Check status
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 ```
 
 ## Contributions
@@ -352,11 +406,11 @@ __all__ = [
 ## Summary
 
 ### Core Principles
-1. **Output Directory**: Always write to `output/` by default
+1. **Output Directory**: Always write program execution outputs to `output/` by default. **NEVER** create documentation, reports, test scripts, or planning documents in `output/`. See `output/.cursorrules` for the complete policy.
 2. **Configuration**: Use `config/` with env overrides
 3. **No Mocks**: Real implementations only in tests
 4. **Modular Design**: Clear interfaces, minimal dependencies
-5. **Documentation**: Update existing docs, never create root-level docs
+5. **Documentation**: Update existing docs, never create root-level docs, never create docs in `output/`
 6. **Type Safety**: Comprehensive type hints throughout
 7. **Error Handling**: Clear errors with biological context
 8. **Path Safety**: Always validate paths, prevent traversal attacks

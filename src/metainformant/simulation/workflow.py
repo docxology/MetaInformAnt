@@ -8,9 +8,10 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from ..core import io, logging, paths, validation
+from ..core import io, paths, validation
+from ..core.logging import get_logger
 
-logger = logging.get_logger(__name__)
+logger = get_logger(__name__)
 
 
 def run_sequence_simulation_workflow(
