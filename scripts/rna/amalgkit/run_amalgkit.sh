@@ -228,7 +228,7 @@ log_info "Setting up environment..."
 # Setup environment (uv, venv, project, amalgkit, dependencies)
 if [[ "$DRY_RUN" -eq 0 ]]; then
   log_info "Running environment setup..."
-  if bash scripts/setup_uv.sh --with-amalgkit --with-deps --skip-tests; then
+  if bash scripts/package/setup_uv.sh --with-amalgkit --with-deps --skip-tests; then
     log_success "Environment setup completed"
   else
     log_warn "Environment setup had issues but continuing..."
@@ -343,7 +343,7 @@ if [[ -z "${NCBI_EMAIL:-}" ]]; then
     log_info "Using NCBI email from setup: ${NCBI_EMAIL}"
   else
     log_warn "NCBI_EMAIL not set - some steps may fail"
-    log_warn "Set NCBI_EMAIL environment variable or run: bash scripts/setup_uv.sh"
+    log_warn "Set NCBI_EMAIL environment variable or run: bash scripts/package/setup_uv.sh"
   fi
 else
   log_info "Using NCBI email: ${NCBI_EMAIL}"

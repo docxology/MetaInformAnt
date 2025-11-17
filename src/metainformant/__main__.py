@@ -329,9 +329,9 @@ def main() -> None:
     args = parser.parse_args()
 
     if args.command == "setup":
-        # Execute scripts/setup_uv.sh non-interactively
+        # Execute scripts/package/setup_uv.sh non-interactively
         root = Path(__file__).resolve().parents[2]
-        script = root / "scripts" / "setup_uv.sh"
+        script = root / "scripts" / "package" / "setup_uv.sh"
         cmd = ["bash", str(script)]
         if args.with_amalgkit:
             cmd.append("--with-amalgkit")
@@ -487,17 +487,17 @@ def main() -> None:
             
             if args.format == "vcf":
                 # Read VCF file
-                vcf_data = variants.read_vcf(args.input)
+                vcf_data = variants.parse_vcf(args.input)
                 
                 result = {
                     "format": "vcf",
-                    "n_variants": len(vcf_data) if isinstance(vcf_data, list) else 0,
-                    "variants": vcf_data[:100] if isinstance(vcf_data, list) else [],  # Limit output
+                    "n_variants": vcf_data.get("num_variants", 0),
+                    "samples": vcf_data.get("samples", []),
                 }
                 
                 output_file = args.output / "variants.json"
                 io.dump_json(result, output_file)
-                print(f"Variant analysis complete. Results saved to {output_file}")
+                print(f"Variant analysis complete. Found {result['n_variants']} variants in {len(result['samples'])} samples. Results saved to {output_file}")
                 return
             else:
                 print("Error: BAM format variant calling not yet implemented", file=sys.stderr)

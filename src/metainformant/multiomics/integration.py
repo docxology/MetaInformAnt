@@ -185,20 +185,21 @@ class MultiOmicsData:
             >>> subset.n_samples
             3
         """
-        new_data = MultiOmicsData()
-
+        # Build kwargs for MultiOmicsData constructor
+        kwargs = {}
         for layer_name, data in self.omics_layers.items():
             available_samples = [s for s in sample_list if s in data.index]
             if available_samples:
-                setattr(new_data, layer_name, data.loc[available_samples])
+                kwargs[layer_name] = data.loc[available_samples]
 
+        # Handle metadata
         if self.metadata is not None:
             available_samples = [s for s in sample_list if s in self.metadata.index]
             if available_samples:
-                new_data.metadata = self.metadata.loc[available_samples]
+                kwargs["metadata"] = self.metadata.loc[available_samples]
 
-        new_data._align_samples()
-        return new_data
+        # Create new MultiOmicsData object with subset data
+        return MultiOmicsData(**kwargs)
 
     def subset_features(self, feature_dict: Dict[str, List[str]]) -> "MultiOmicsData":
         """Create a new MultiOmicsData object with subset of features.
@@ -223,21 +224,22 @@ class MultiOmicsData:
             >>> subset.get_layer("transcriptomics").shape
             (10, 3)
         """
-        new_data = MultiOmicsData()
-
+        # Build kwargs for MultiOmicsData constructor
+        kwargs = {}
         for layer_name, data in self.omics_layers.items():
             if layer_name in feature_dict:
                 available_features = [f for f in feature_dict[layer_name] if f in data.columns]
                 if available_features:
-                    setattr(new_data, layer_name, data[available_features])
+                    kwargs[layer_name] = data[available_features]
             else:
-                setattr(new_data, layer_name, data.copy())
+                kwargs[layer_name] = data.copy()
 
+        # Handle metadata
         if self.metadata is not None:
-            new_data.metadata = self.metadata.copy()
+            kwargs["metadata"] = self.metadata.copy()
 
-        new_data._align_samples()
-        return new_data
+        # Create new MultiOmicsData object with subset data
+        return MultiOmicsData(**kwargs)
 
 
 def integrate_omics_data(
@@ -281,6 +283,18 @@ def integrate_omics_data(
         50
     """
     omics_data = {}
+    metadata_df = None
+
+    # Load metadata first if provided (needed for sample mapping)
+    if metadata is not None:
+        if isinstance(metadata, (str, Path)):
+            metadata_path = Path(metadata)
+            if metadata_path.suffix.lower() == ".csv":
+                metadata_df = pd.read_csv(metadata_path, index_col=0)
+            else:
+                metadata_df = pd.read_csv(metadata_path, sep="\t", index_col=0)
+        else:
+            metadata_df = metadata.copy()
 
     # Load each omics dataset
     for omics_type, data in data_dict.items():
@@ -304,7 +318,7 @@ def integrate_omics_data(
             # Map sample IDs using the provided mapping
             df.index = df.index.map(sample_map).fillna(df.index)
             # Update sample metadata if provided
-            if metadata_df is not None and omics_type in sample_mapping:
+            if metadata_df is not None:
                 metadata_df.index = metadata_df.index.map(sample_map).fillna(metadata_df.index)
 
         # Apply feature mapping if provided
@@ -313,18 +327,6 @@ def integrate_omics_data(
             df = df.rename(columns=feature_map)
 
         omics_data[omics_type] = df
-
-    # Load metadata if provided
-    metadata_df = None
-    if metadata is not None:
-        if isinstance(metadata, (str, Path)):
-            metadata_path = Path(metadata)
-            if metadata_path.suffix.lower() == ".csv":
-                metadata_df = pd.read_csv(metadata_path, index_col=0)
-            else:
-                metadata_df = pd.read_csv(metadata_path, sep="\t", index_col=0)
-        else:
-            metadata_df = metadata.copy()
 
     # Create MultiOmicsData object
     kwargs = {
@@ -654,14 +656,16 @@ def from_dna_variants(
     except ImportError:
         raise ImportError("dna.variants module required for VCF parsing")
     
-    # Read VCF
-    vcf_data = variants.read_vcf(vcf_path)
+    # Parse VCF to get sample names and variant count
+    vcf_data = variants.parse_vcf(vcf_path)
     
-    if not vcf_data or len(vcf_data) == 0:
+    if not vcf_data or vcf_data.get("num_variants", 0) == 0:
         return pd.DataFrame()
     
-    # Convert to DataFrame format (simplified - would need full VCF parsing)
-    # For now, return empty DataFrame as placeholder
+    # Note: parse_vcf only extracts metadata (samples, variant count)
+    # Full VCF parsing with genotype data would require a more complete parser
+    # For now, return empty DataFrame as placeholder until full VCF parser is implemented
+    # This function is intended to convert VCF to sample x variant matrix format
     return pd.DataFrame()
 
 

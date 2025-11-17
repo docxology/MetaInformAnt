@@ -54,9 +54,9 @@ Each biological domain has its own subdirectory with detailed documentation:
 
 #### RNA (`rna/`)
 - `amalgkit/` - Amalgkit integration documentation
-- `configs.md` - RNA workflow configuration
+  - `steps/README.md` - Individual workflow step documentation
+- `CONFIGURATION.md` - RNA workflow configuration
 - `index.md` - RNA domain overview
-- `steps.md` - Individual workflow step documentation
 - `workflow.md` - Complete workflow orchestration
 
 #### GWAS (`gwas/`)

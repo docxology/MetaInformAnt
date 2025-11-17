@@ -71,20 +71,65 @@ def download_variant_data(
 ) -> dict[str, Any]:
     """Download variant data from public databases.
 
+    **IMPLEMENTATION STATUS**: Partial implementation with clear limitations.
+    
+    **Current Capabilities**:
+    - Custom URL downloads: Fully implemented for direct VCF file URLs
+    - dbSNP downloads: Attempts FTP access but often fails for non-model organisms
+    - SRA workflow: Returns guidance to use SRA toolkit + variant calling workflow
+    
+    **Limitations**:
+    - dbSNP VCF files are not directly available for most non-model organisms
+    - Requires external tools (SRA toolkit, bcftools) for complete workflows
+    - FTP access may fail for assemblies without public dbSNP data
+    
+    **Recommended Workflow**:
+    1. For model organisms: Use dbSNP source (may work for human, mouse, etc.)
+    2. For custom data: Use "custom" source with direct VCF URL
+    3. For SRA data: Use SRA toolkit to download, then variant calling workflow
+    
     Supported sources:
-    - dbSNP: NCBI dbSNP database (via FTP)
-    - custom: Custom VCF URL
-    - sra: Download SRA data and call variants
+    - dbSNP: NCBI dbSNP database (via FTP) - **Limited availability**
+    - custom: Custom VCF URL - **Fully functional**
+    - sra: Download SRA data and call variants - **Returns guidance only**
 
     Args:
         source: Data source (dbSNP, custom, sra)
         accession: Genome/assembly accession for dbSNP, or SRA run accession
         region: Optional genomic region filter (chr:start-end)
         dest_dir: Destination directory for variant files
-        url: Direct URL for custom downloads
+        url: Direct URL for custom downloads (required for "custom" source)
 
     Returns:
-        Dictionary with download metadata and file paths
+        Dictionary with download metadata and file paths:
+        - "status": "success", "failed", or "pending"
+        - "message": Human-readable status message
+        - "note": Additional guidance for failed/pending downloads
+        - "dest_dir": Destination directory path
+        - Other source-specific fields
+        
+    Examples:
+        >>> # Custom VCF download (fully functional)
+        >>> result = download_variant_data(
+        ...     source="custom",
+        ...     url="https://example.com/variants.vcf.gz",
+        ...     dest_dir="output/variants"
+        ... )
+        >>> result["status"] in ["success", "failed"]
+        True
+        
+        >>> # dbSNP download (may fail for non-model organisms)
+        >>> result = download_variant_data(
+        ...     source="dbSNP",
+        ...     accession="GCF_000001405.40",
+        ...     dest_dir="output/variants"
+        ... )
+        >>> "status" in result
+        True
+        
+    Note:
+        For non-model organisms, consider using SRA data download followed by
+        variant calling (see `call_variants_bcftools` or `call_variants_gatk`).
     """
     logger.info(f"download_variant_data: Downloading variants from {source}")
 

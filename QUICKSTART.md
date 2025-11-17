@@ -131,53 +131,58 @@ uv run metainformant rna run --work-dir output/rna --threads 8 --species Apis_me
 All modules are accessible via the unified CLI:
 
 ```bash
-# Core utilities
-uv run metainformant core cache --clear
-
 # DNA analysis
 uv run metainformant dna fetch --assembly GCF_000001405.40
+uv run metainformant dna align --input data/sequences.fasta --output output/dna/alignment
+uv run metainformant dna variants --input data/variants.vcf --format vcf --output output/dna/variants
 
 # RNA analysis (see RNA-seq Workflow section above for more details)
 uv run metainformant rna run --work-dir output/rna --threads 8 --species Apis_mellifera
+uv run metainformant rna run-config --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 
 # Protein analysis
-uv run metainformant protein fetch --uniprot-id P12345
+uv run metainformant protein taxon-ids --file data/taxon_ids.txt
+uv run metainformant protein comp --fasta data/proteins.fasta
+uv run metainformant protein rmsd-ca --pdb-a data/structure1.pdb --pdb-b data/structure2.pdb
 
 # Epigenome analysis
-uv run metainformant epigenome analyze --bam data/chipseq.bam --output output/epigenome
+uv run metainformant epigenome run --methylation data/methylation.tsv --output output/epigenome
 
 # Ontology analysis
 uv run metainformant ontology run --go data/go.obo --output output/ontology
 
 # Phenotype analysis
-uv run metainformant phenotype curate --input data/traits.csv --output output/phenotype
+uv run metainformant phenotype run --input data/traits.csv --output output/phenotype --analyze-statistics
 
 # Ecology analysis
-uv run metainformant ecology analyze --community data/species.csv --output output/ecology
+uv run metainformant ecology run --input data/species.csv --output output/ecology --diversity
 
 # Mathematical biology
-uv run metainformant math simulate --model coalescent --output output/math
+uv run metainformant math popgen --input data/sequences.fasta --output output/math/popgen
+uv run metainformant math coalescent --n-samples 10 --output output/math/coalescent
 
 # GWAS analysis
 uv run metainformant gwas run --config config/gwas/gwas_template.yaml
 
 # Information theory
-uv run metainformant information entropy --sequences data/seqs.fasta --output output/information
+uv run metainformant information entropy --input data/seqs.fasta --output output/information
+uv run metainformant information mutual-information --x data/x.txt --y data/y.txt --output output/information
 
 # Life events analysis
-uv run metainformant life_events analyze --events data/events.jsonl --output output/life_events
+uv run metainformant life-events embed --input data/events.json --output output/life_events/embeddings
+uv run metainformant life-events predict --events data/events.json --model output/life_events/model.json --output output/life_events/predictions
 
 # Visualization
-uv run metainformant visualization plot --data data/matrix.csv --output output/visualization
+uv run metainformant visualization run --input data/matrix.csv --plot-type heatmap --output output/visualization
 
 # Simulation
-uv run metainformant simulation generate --type sequences --output output/simulation
+uv run metainformant simulation run --model sequences --output output/simulation
 
 # Network analysis
-uv run metainformant networks run --input data/interactions.tsv --output output/networks
+uv run metainformant networks run --input data/interactions.tsv --output output/networks --analyze-metrics
 
 # Multi-omics integration
-uv run metainformant multiomics run --genomics data/genomics.tsv --transcriptomics data/rna.tsv --output output/multiomics
+uv run metainformant multiomics run --genomics data/genomics.tsv --transcriptomics data/rna.tsv --output output/multiomics --joint-pca
 
 # Single-cell analysis
 uv run metainformant singlecell run --input data/counts.h5ad --output output/singlecell --qc --normalize

@@ -27,16 +27,43 @@ def attention_weights(
 ) -> NDArray:
     """Extract attention weights from transformer models.
     
-    Note: Full implementation requires transformer models with attention.
-    This is a placeholder for future implementation.
+    **PLACEHOLDER IMPLEMENTATION**: This function currently returns uniform
+    attention weights as a placeholder. Full implementation requires transformer
+    models with attention mechanisms (e.g., BERT, GPT-style architectures).
+    
+    **Current Behavior**:
+    - Returns uniform attention weights (1/n for n positions)
+    - Does not extract actual attention from the model
+    - Suitable for testing and development only
+    
+    **Future Implementation**:
+    - Extract attention weights from transformer model layers
+    - Support multiple attention heads
+    - Return attention distributions over sequence positions
     
     Args:
-        model: Trained model with attention mechanism
+        model: Trained model with attention mechanism (currently unused)
         sequences: List of event sequences
-        event_embeddings: Event embeddings dictionary
+        event_embeddings: Event embeddings dictionary (currently unused)
         
     Returns:
-        Attention weight matrix
+        Attention weight matrix of shape (n_sequences, max_len, max_len)
+        with uniform weights as placeholder
+        
+    Examples:
+        >>> import numpy as np
+        >>> sequences = [["event1", "event2"]]
+        >>> embeddings = {"event1": np.array([0.1]), "event2": np.array([0.2])}
+        >>> attention = attention_weights(None, sequences, embeddings)
+        >>> attention.shape
+        (1, 2, 2)
+        >>> np.allclose(attention[0], 0.5)  # Uniform weights
+        True
+        
+    Note:
+        This is a placeholder implementation. For production use with
+        transformer models, implement actual attention extraction from
+        model layers.
     """
     # Placeholder implementation
     # Full implementation would extract attention from transformer model

@@ -31,8 +31,8 @@ Welcome to the METAINFORMANT docs. This site is organized by domain and core uti
 - RNA
   - [Overview](./rna/index.md)
   - [Workflow](./rna/workflow.md)
-  - [Configs](./rna/configs.md)
-  - [Steps](./rna/steps.md)
+  - [Configuration](./rna/CONFIGURATION.md)
+  - [Amalgkit Steps](./rna/amalgkit/steps/README.md)
 
 - GWAS (Genome-Wide Association Studies)
   - [Overview](./gwas/index.md)
