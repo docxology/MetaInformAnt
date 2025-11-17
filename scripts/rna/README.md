@@ -222,7 +222,8 @@ All scripts have been consolidated into 4-5 thin orchestrators that call methods
 - `metainformant.rna.discovery.search_species_with_rnaseq()` - Search for species
 - `metainformant.rna.discovery.generate_config_yaml()` - Generate config files
 - `metainformant.rna.cleanup.cleanup_partial_downloads()` - Cleanup partial downloads
-- `metainformant.rna.monitoring.check_workflow_status()` - Check workflow status
+- `metainformant.rna.monitoring.check_workflow_progress()` - Check workflow progress
+- `metainformant.rna.orchestration.check_workflow_status()` - Check workflow status (unified interface)
 
 **Consolidated Scripts:**
 

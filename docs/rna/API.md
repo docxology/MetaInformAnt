@@ -11,6 +11,10 @@ Complete function and method reference for the METAINFORMANT RNA analysis module
 - [Orchestration Functions](#orchestration-functions) - Multi-species workflow management
 - [Utility Functions](#utility-functions) - CLI helpers and checks
 - [Processing Functions](#processing-functions) - Sample processing pipelines
+- [Monitoring Functions](#monitoring-functions) - Workflow progress and sample status tracking
+- [Environment Functions](#environment-functions) - Tool availability and environment validation
+- [Cleanup Functions](#cleanup-functions) - Partial download cleanup and file naming fixes
+- [Discovery Functions](#discovery-functions) - Species discovery and configuration generation
 
 ---
 
@@ -695,18 +699,22 @@ def discover_species_configs(
 ```python
 def run_workflow_for_species(
     config_path: Path,
-    species_name: str,
+    steps: Sequence[str] | None = None,
     *,
-    steps: list[str] | None = None,
     check: bool = False,
-) -> tuple[bool, Path]
+) -> dict[str, Any]
 ```
 
 **Module**: `metainformant.rna.orchestration`
 
-**Purpose**: Execute workflow for a single species.
+**Purpose**: Execute workflow steps for a single species.
 
-**Returns**: Tuple of `(success: bool, work_dir: Path)`
+**Parameters**:
+- `config_path`: Path to species workflow config file
+- `steps`: List of steps to run (default: all steps)
+- `check`: If True, stop on first failure
+
+**Returns**: Dictionary with `success`, `completed`, `failed`, `return_codes` keys
 
 ---
 
@@ -722,9 +730,17 @@ def check_workflow_status(
 
 **Module**: `metainformant.rna.orchestration`
 
-**Purpose**: Check completion status of workflow steps.
+**Purpose**: Check workflow status for a species. Unified interface that delegates to monitoring functions.
 
-**Returns**: Dictionary with step status information
+**Parameters**:
+- `config_path`: Path to species workflow config file
+- `detailed`: If True, return detailed analysis via `analyze_species_status()`; if False, return progress summary via `check_workflow_progress()`
+
+**Returns**: Dictionary with status information (format depends on `detailed` parameter)
+
+**Note**: This is a convenience wrapper. For direct access:
+- Use `check_workflow_progress()` for progress summary
+- Use `analyze_species_status()` for detailed analysis
 
 ---
 
@@ -734,13 +750,19 @@ def check_workflow_status(
 def cleanup_unquantified_samples(
     config_path: Path,
     *,
-    execute: bool = False,
-) -> dict[str, Any]
+    log_dir: Path | None = None,
+) -> tuple[int, int]
 ```
 
 **Module**: `metainformant.rna.orchestration`
 
-**Purpose**: Find and optionally clean up FASTQ files for samples that have been quantified.
+**Purpose**: Quantify downloaded samples and cleanup FASTQs. Finds all samples with FASTQ files but no quantification results, quantifies each sample, and deletes FASTQ files after successful quantification.
+
+**Parameters**:
+- `config_path`: Path to species workflow config file
+- `log_dir`: Optional log directory
+
+**Returns**: Tuple of `(quantified_count, failed_count)`
 
 ---
 
@@ -748,16 +770,20 @@ def cleanup_unquantified_samples(
 
 ```python
 def monitor_workflows(
-    config_dir: Path = Path("config/amalgkit"),
-    *,
-    interval: int = 60,
-    max_iterations: int | None = None,
+    species_configs: dict[str, Path],
+    watch_interval: int = 60,
 ) -> None
 ```
 
 **Module**: `metainformant.rna.orchestration`
 
-**Purpose**: Monitor multiple species workflows in real-time.
+**Purpose**: Real-time monitoring of multiple species workflows.
+
+**Parameters**:
+- `species_configs`: Dictionary mapping species_id -> config_path
+- `watch_interval`: Update interval in seconds (default: 60)
+
+**Note**: This function runs continuously until interrupted (Ctrl+C). It displays a real-time dashboard showing progress for all monitored species.
 
 ---
 
@@ -1003,6 +1029,402 @@ AmalgkitParams = Mapping[str, Any]
 **Module**: `metainformant.rna.amalgkit`
 
 **Purpose**: Type alias for amalgkit parameter dictionaries.
+
+---
+
+## Monitoring Functions
+
+Functions for tracking workflow progress and sample status.
+
+### `count_quantified_samples`
+
+```python
+def count_quantified_samples(config_path: Path) -> tuple[int, int]
+```
+
+**Module**: `metainformant.rna.monitoring`
+
+**Purpose**: Count quantified and total samples for a species.
+
+**Returns**: Tuple of `(quantified_count, total_count)`
+
+---
+
+### `get_sample_status`
+
+```python
+def get_sample_status(config_path: Path, sample_id: str) -> dict[str, Any]
+```
+
+**Module**: `metainformant.rna.monitoring`
+
+**Purpose**: Get detailed status for a single sample.
+
+**Returns**: Dictionary with status information:
+- `quantified`: bool
+- `has_fastq`: bool
+- `has_sra`: bool
+- `is_downloading`: bool
+- `status`: str ("quantified", "downloading", "has_fastq", "has_sra", "undownloaded")
+
+---
+
+### `analyze_species_status`
+
+```python
+def analyze_species_status(config_path: Path) -> dict[str, Any]
+```
+
+**Module**: `metainformant.rna.monitoring`
+
+**Purpose**: Comprehensive analysis of species workflow status.
+
+**Returns**: Dictionary with comprehensive status information:
+- `total_in_metadata`: int
+- `quantified`: int
+- `quantified_and_deleted`: int
+- `quantified_not_deleted`: int
+- `downloading`: int
+- `failed_download`: int
+- `undownloaded`: int
+- `categories`: dict mapping category -> list of sample_ids
+
+---
+
+### `find_unquantified_samples`
+
+```python
+def find_unquantified_samples(config_path: Path) -> list[str]
+```
+
+**Module**: `metainformant.rna.monitoring`
+
+**Purpose**: Find all unquantified samples.
+
+**Returns**: List of sample IDs that are not quantified
+
+---
+
+### `check_active_downloads`
+
+```python
+def check_active_downloads() -> set[str]
+```
+
+**Module**: `metainformant.rna.monitoring`
+
+**Purpose**: Check for samples currently being downloaded.
+
+**Returns**: Set of sample IDs that are actively downloading
+
+---
+
+### `check_workflow_progress`
+
+```python
+def check_workflow_progress(config_path: Path) -> dict[str, Any]
+```
+
+**Module**: `metainformant.rna.monitoring`
+
+**Purpose**: Get workflow progress summary for a species.
+
+**Returns**: Dictionary with progress information:
+- `quantified`: int
+- `total`: int
+- `percentage`: float
+- `remaining`: int
+- `downloading`: int (number of samples currently downloading)
+- `has_files`: int (number of samples with downloaded files but not quantified)
+
+**Note**: This is called by `check_workflow_status()` when `detailed=False`. Use `check_workflow_status()` for the unified interface.
+
+---
+
+### `assess_all_species_progress`
+
+```python
+def assess_all_species_progress(
+    config_dir: Path,
+    *,
+    repo_root: Path | None = None,
+) -> dict[str, dict[str, Any]]
+```
+
+**Module**: `metainformant.rna.monitoring`
+
+**Purpose**: Assess progress for all species in config directory.
+
+**Returns**: Dictionary mapping species_id -> progress information
+
+---
+
+### `initialize_progress_tracking`
+
+```python
+def initialize_progress_tracking(
+    config_path: Path,
+    *,
+    tracker=None,
+) -> dict[str, Any]
+```
+
+**Module**: `metainformant.rna.monitoring`
+
+**Purpose**: Initialize progress tracking for a species.
+
+**Returns**: Dictionary with initialization results
+
+---
+
+## Environment Functions
+
+Functions for checking tool availability and environment validation.
+
+### `check_amalgkit`
+
+```python
+def check_amalgkit() -> tuple[bool, str]
+```
+
+**Module**: `metainformant.rna.environment`
+
+**Purpose**: Check if amalgkit is available and get version.
+
+**Returns**: Tuple of `(is_available: bool, message: str)`
+
+---
+
+### `check_sra_toolkit`
+
+```python
+def check_sra_toolkit() -> tuple[bool, str]
+```
+
+**Module**: `metainformant.rna.environment`
+
+**Purpose**: Check if SRA Toolkit is installed.
+
+**Returns**: Tuple of `(is_available: bool, message: str)`
+
+---
+
+### `check_kallisto`
+
+```python
+def check_kallisto() -> tuple[bool, str]
+```
+
+**Module**: `metainformant.rna.environment`
+
+**Purpose**: Check if kallisto is installed.
+
+**Returns**: Tuple of `(is_available: bool, message: str)`
+
+---
+
+### `check_metainformant`
+
+```python
+def check_metainformant() -> tuple[bool, str]
+```
+
+**Module**: `metainformant.rna.environment`
+
+**Purpose**: Check if metainformant package is installed.
+
+**Returns**: Tuple of `(is_available: bool, message: str)`
+
+---
+
+### `check_virtual_env`
+
+```python
+def check_virtual_env() -> tuple[bool, str]
+```
+
+**Module**: `metainformant.rna.environment`
+
+**Purpose**: Check if running inside a virtual environment.
+
+**Returns**: Tuple of `(is_in_venv: bool, message: str)`
+
+---
+
+### `check_rscript`
+
+```python
+def check_rscript() -> tuple[bool, str]
+```
+
+**Module**: `metainformant.rna.environment`
+
+**Purpose**: Check if Rscript is available.
+
+**Returns**: Tuple of `(is_available: bool, message: str)`
+
+---
+
+### `check_dependencies`
+
+```python
+def check_dependencies() -> dict[str, tuple[bool, str]]
+```
+
+**Module**: `metainformant.rna.environment`
+
+**Purpose**: Check all required dependencies for RNA-seq workflows.
+
+**Returns**: Dictionary mapping dependency name -> `(is_available: bool, message: str)`
+
+---
+
+### `validate_environment`
+
+```python
+def validate_environment() -> dict[str, Any]
+```
+
+**Module**: `metainformant.rna.environment`
+
+**Purpose**: Comprehensive environment validation.
+
+**Returns**: Dictionary with validation results:
+- `all_passed`: bool
+- `dependencies`: dict mapping name -> `(is_available, message)`
+- `recommendations`: list of strings with recommendations
+
+---
+
+## Cleanup Functions
+
+Functions for cleaning up partial downloads and fixing file naming issues.
+
+### `cleanup_partial_downloads`
+
+```python
+def cleanup_partial_downloads(
+    config_path: Path,
+    *,
+    dry_run: bool = False,
+) -> dict[str, Any]
+```
+
+**Module**: `metainformant.rna.cleanup`
+
+**Purpose**: Clean up partial downloads for a species.
+
+**Parameters**:
+- `config_path`: Path to species workflow config file
+- `dry_run`: If True, only report what would be deleted
+
+**Returns**: Dictionary with `deleted`, `freed_mb`, `errors` keys
+
+---
+
+### `fix_abundance_naming`
+
+```python
+def fix_abundance_naming(quant_dir: Path, sample_id: str) -> bool
+```
+
+**Module**: `metainformant.rna.cleanup`
+
+**Purpose**: Create symlink from `abundance.tsv` to `{SRR}_abundance.tsv` for amalgkit merge.
+
+**Parameters**:
+- `quant_dir`: Directory containing quantification results
+- `sample_id`: Sample ID (e.g., 'SRR1234567')
+
+**Returns**: True if symlink was created or already exists
+
+---
+
+### `fix_abundance_naming_for_species`
+
+```python
+def fix_abundance_naming_for_species(
+    config_path: Path,
+) -> tuple[int, int]
+```
+
+**Module**: `metainformant.rna.cleanup`
+
+**Purpose**: Fix abundance naming for all samples in a species.
+
+**Returns**: Tuple of `(created_count, already_exists_count)`
+
+---
+
+## Discovery Functions
+
+Functions for discovering species with RNA-seq data and generating configurations.
+
+### `search_species_with_rnaseq`
+
+```python
+def search_species_with_rnaseq(
+    search_query: str,
+    *,
+    max_records: int = 10000,
+) -> dict[str, dict[str, Any]]
+```
+
+**Module**: `metainformant.rna.discovery`
+
+**Purpose**: Search NCBI SRA for species with RNA-seq data.
+
+**Parameters**:
+- `search_query`: NCBI Entrez search query
+- `max_records`: Maximum number of records to retrieve
+
+**Returns**: Dictionary mapping species names to metadata
+
+**Raises**: `ImportError` if Biopython is not available
+
+---
+
+### `get_genome_info`
+
+```python
+def get_genome_info(taxonomy_id: str, species_name: str) -> dict[str, Any] | None
+```
+
+**Module**: `metainformant.rna.discovery`
+
+**Purpose**: Get genome assembly information for a species.
+
+**Parameters**:
+- `taxonomy_id`: NCBI taxonomy ID
+- `species_name`: Scientific name
+
+**Returns**: Genome information dictionary or None
+
+---
+
+### `generate_config_yaml`
+
+```python
+def generate_config_yaml(
+    species_name: str,
+    species_data: dict[str, Any],
+    genome_info: dict[str, Any] | None = None,
+    *,
+    repo_root: Path | None = None,
+) -> str
+```
+
+**Module**: `metainformant.rna.discovery`
+
+**Purpose**: Generate amalgkit YAML configuration for a species.
+
+**Parameters**:
+- `species_name`: Scientific name
+- `species_data`: RNA-seq metadata
+- `genome_info`: Genome assembly metadata (optional)
+- `repo_root`: Repository root directory for paths (optional)
+
+**Returns**: YAML configuration string
 
 ---
 

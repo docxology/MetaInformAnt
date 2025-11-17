@@ -1,25 +1,103 @@
 # External Drive Setup and Filesystem Considerations
 
-This document covers setup considerations, known issues, and solutions when running METAINFORMANT RNA workflows on external drives or filesystems with limitations (e.g., ext6 without symlink support).
+This document covers setup considerations, known issues, and solutions when running METAINFORMANT RNA workflows on external drives or filesystems with limitations (e.g., exFAT without symlink support).
 
 ## Overview
 
-METAINFORMANT is designed to work seamlessly on external drives, but some filesystems (particularly ext6) have limitations that require special handling. This guide documents all known issues and their solutions.
+METAINFORMANT is designed to work seamlessly on external drives, but some filesystems (particularly **exFAT**) have limitations that require special handling. This guide documents all known issues and their solutions.
 
 ## Filesystem Limitations
 
 ### Symlink Support
 
-**Issue**: Some filesystems (e.g., ext6) don't support symlinks in certain locations, which can cause failures when:
-- Creating virtual environments
+**Issue**: Some filesystems (e.g., **exFAT**, **FAT32**) don't support symlinks, which causes failures when:
+- Creating virtual environments (Python venv requires symlinks)
 - Using `uv` package manager cache
 - Building Python packages
+
+**Current Mount Example**:
+```bash
+/dev/sdb2 on /media/q/ext6 type exfat (rw,nosuid,nodev,relatime,...)
+```
+Note: The `/media/q/ext6` path name doesn't indicate the filesystem type - this drive is **exFAT**.
 
 **Symptoms**:
 ```
 Operation not permitted (os error 1)
 failed to symlink file from ... to ...
+Failed to create virtual environment
 ```
+
+### Filesystem Comparison
+
+| Filesystem | Symlinks | Linux | Windows | macOS | Best For |
+|------------|----------|-------|---------|-------|----------|
+| **ext4** | ✅ Yes | Native | ❌ No* | ❌ No* | Linux-only drives |
+| **NTFS** | ✅ Yes | ✅ Yes** | Native | Read-only*** | Cross-platform |
+| **exFAT** | ❌ No | ✅ Yes | ✅ Yes | ✅ Yes | Simple file transfer |
+| **Btrfs** | ✅ Yes | Native | ❌ No | ❌ No | Advanced Linux |
+| **APFS** | ✅ Yes | ❌ No | ❌ No | Native | macOS only |
+
+\* Requires third-party tools  
+\** Via ntfs-3g driver  
+\*** Requires third-party drivers for write access
+
+### Recommended Solutions
+
+#### Option 1: Reformat to ext4 (Best for Linux)
+
+**Advantages**:
+- Full symlink support
+- Native Linux filesystem - no drivers needed
+- Excellent performance
+- Journaling for crash protection
+
+**Disadvantages**:
+- Not readable on Windows/macOS without third-party tools
+
+**How to Format**:
+```bash
+# ⚠️ BACKUP DATA FIRST - THIS ERASES THE DRIVE! ⚠️
+
+# Unmount the drive
+sudo umount /dev/sdb2
+
+# Format to ext4
+sudo mkfs.ext4 -L "MetaInformAnt" /dev/sdb2
+
+# Remount
+sudo mount /dev/sdb2 /media/q/ext6
+```
+
+#### Option 2: Reformat to NTFS (Best for Cross-Platform)
+
+**Advantages**:
+- Full symlink support
+- Works on Windows, Linux (via ntfs-3g), macOS (read-only)
+- Good for mixed OS environments
+
+**Disadvantages**:
+- Slightly slower on Linux than ext4
+- Requires ntfs-3g on Linux
+
+**How to Format**:
+```bash
+# ⚠️ BACKUP DATA FIRST - THIS ERASES THE DRIVE! ⚠️
+
+# Install ntfs-3g if not already installed
+sudo apt-get install ntfs-3g
+
+# Unmount the drive
+sudo umount /dev/sdb2
+
+# Format to NTFS
+sudo mkfs.ntfs -f -L "MetaInformAnt" /dev/sdb2
+
+# Remount
+sudo mount -t ntfs-3g /dev/sdb2 /media/q/ext6
+```
+
+#### Option 3: Workaround - Use /tmp for Virtual Environment (No Reformatting)
 
 **Solution**: The codebase automatically handles this by:
 1. Using alternative venv location (`/tmp/metainformant_venv`) when repo `.venv` fails

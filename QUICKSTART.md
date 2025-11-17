@@ -43,6 +43,35 @@ source .venv/bin/activate
 uv pip install -e .
 ```
 
+### Option 3: External Drive Setup (exFAT/No Symlink Support)
+
+If your repository is on an external drive formatted as exFAT (which doesn't support symlinks), create the virtual environment in `/tmp` instead:
+
+```bash
+# Navigate to repository
+cd /path/to/MetaInformAnt
+
+# Create venv in /tmp where symlinks work
+python3 -m venv /tmp/metainformant-venv
+
+# Install dependencies
+/tmp/metainformant-venv/bin/pip install pytest pytest-cov
+/tmp/metainformant-venv/bin/pip install -e .
+
+# Install optional dependencies
+/tmp/metainformant-venv/bin/pip install scipy scikit-learn seaborn networkx
+
+# Run tests
+/tmp/metainformant-venv/bin/pytest
+
+# Or activate for regular use
+source /tmp/metainformant-venv/bin/activate
+```
+
+**Better Solution**: Reformat your external drive to **ext4** (Linux-only) or **NTFS** (cross-platform) to enable native symlink support. See [EXTERNAL_DRIVE_SETUP.md](docs/rna/EXTERNAL_DRIVE_SETUP.md) for details.
+
+**Note**: The `/tmp` venv will be deleted on reboot. For persistent setup on exFAT drives, recreate it after each reboot or reformat the drive.
+
 ## Verify Installation
 
 ```bash

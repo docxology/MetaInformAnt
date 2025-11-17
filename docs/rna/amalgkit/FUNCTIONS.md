@@ -102,6 +102,56 @@ Sample-level processing pipelines.
 | `delete_sample_fastqs` | `metainformant.rna.steps.getfastq` | Delete sample FASTQs | [API.md](../API.md#delete_sample_fastqs) |
 | `run_download_quant_workflow` | `metainformant.rna.steps.process_samples` | Unified download-quantify workflow (sequential/parallel) | [API.md](../API.md#run_download_quant_workflow) |
 
+## Monitoring Functions
+
+Workflow progress and sample status tracking.
+
+| Function | Module | Description | Documentation |
+|----------|--------|-------------|---------------|
+| `count_quantified_samples` | `metainformant.rna.monitoring` | Count quantified and total samples | [API.md](../API.md#count_quantified_samples) |
+| `get_sample_status` | `metainformant.rna.monitoring` | Get detailed status for a single sample | [API.md](../API.md#get_sample_status) |
+| `analyze_species_status` | `metainformant.rna.monitoring` | Comprehensive analysis of species workflow status | [API.md](../API.md#analyze_species_status) |
+| `find_unquantified_samples` | `metainformant.rna.monitoring` | Find all unquantified samples | [API.md](../API.md#find_unquantified_samples) |
+| `check_active_downloads` | `metainformant.rna.monitoring` | Check for samples currently being downloaded | [API.md](../API.md#check_active_downloads) |
+| `check_workflow_progress` | `metainformant.rna.monitoring` | Get workflow progress summary | [API.md](../API.md#check_workflow_progress) |
+| `assess_all_species_progress` | `metainformant.rna.monitoring` | Assess progress for all species | [API.md](../API.md#assess_all_species_progress) |
+| `initialize_progress_tracking` | `metainformant.rna.monitoring` | Initialize progress tracking | [API.md](../API.md#initialize_progress_tracking) |
+
+## Environment Functions
+
+Tool availability and environment validation.
+
+| Function | Module | Description | Documentation |
+|----------|--------|-------------|---------------|
+| `check_amalgkit` | `metainformant.rna.environment` | Check if amalgkit is available | [API.md](../API.md#check_amalgkit) |
+| `check_sra_toolkit` | `metainformant.rna.environment` | Check if SRA Toolkit is installed | [API.md](../API.md#check_sra_toolkit) |
+| `check_kallisto` | `metainformant.rna.environment` | Check if kallisto is installed | [API.md](../API.md#check_kallisto) |
+| `check_metainformant` | `metainformant.rna.environment` | Check if metainformant package is installed | [API.md](../API.md#check_metainformant) |
+| `check_virtual_env` | `metainformant.rna.environment` | Check if running inside a virtual environment | [API.md](../API.md#check_virtual_env) |
+| `check_rscript` | `metainformant.rna.environment` | Check if Rscript is available | [API.md](../API.md#check_rscript) |
+| `check_dependencies` | `metainformant.rna.environment` | Check all required dependencies | [API.md](../API.md#check_dependencies) |
+| `validate_environment` | `metainformant.rna.environment` | Comprehensive environment validation | [API.md](../API.md#validate_environment) |
+
+## Cleanup Functions
+
+Partial download cleanup and file naming fixes.
+
+| Function | Module | Description | Documentation |
+|----------|--------|-------------|---------------|
+| `cleanup_partial_downloads` | `metainformant.rna.cleanup` | Clean up partial downloads | [API.md](../API.md#cleanup_partial_downloads) |
+| `fix_abundance_naming` | `metainformant.rna.cleanup` | Create symlink for abundance file naming | [API.md](../API.md#fix_abundance_naming) |
+| `fix_abundance_naming_for_species` | `metainformant.rna.cleanup` | Fix abundance naming for all samples | [API.md](../API.md#fix_abundance_naming_for_species) |
+
+## Discovery Functions
+
+Species discovery and configuration generation.
+
+| Function | Module | Description | Documentation |
+|----------|--------|-------------|---------------|
+| `search_species_with_rnaseq` | `metainformant.rna.discovery` | Search NCBI SRA for species with RNA-seq data | [API.md](../API.md#search_species_with_rnaseq) |
+| `get_genome_info` | `metainformant.rna.discovery` | Get genome assembly information | [API.md](../API.md#get_genome_info) |
+| `generate_config_yaml` | `metainformant.rna.discovery` | Generate amalgkit YAML configuration | [API.md](../API.md#generate_config_yaml) |
+
 ## Quick Links
 
 - [Complete API Reference](../API.md) - Detailed function documentation with signatures
