@@ -63,6 +63,37 @@ if onto.has_term("GO:0008150"):
 
 ## Patterns
 
+### I/O Operations
+- **CRITICAL**: Always use `metainformant.core.io` for JSON/CSV/TSV operations
+- Never use direct `import json` or `import csv`
+- Use `io.load_json()`, `io.dump_json()` for ontology serialization
+
+**Pattern**:
+```python
+from metainformant.core import io
+
+# Save ontology
+io.dump_json(ontology_data, "output/ontology/cache/ontology.json")
+io.write_csv(annotations, "output/ontology/annotations/go_terms.csv")
+```
+
+### Path Handling
+- Always use `metainformant.core.paths` utilities for path operations
+- Always resolve and validate paths using `paths.expand_and_resolve()` and `paths.is_within()`
+
+**Pattern**:
+```python
+from metainformant.core import paths
+
+# Expand and resolve cache paths
+cache_dir = paths.expand_and_resolve("output/ontology/cache/")
+```
+
+### Type Hints
+- Comprehensive type hints throughout
+- Use `from __future__ import annotations` for forward references
+- Union types: `str | Path | None`
+
 ### Missing Ontology Files
 - Handle missing ontology files gracefully
 - Provide clear error messages
@@ -102,14 +133,31 @@ ancestors_set = ancestors(onto, "GO:0008150", use_cache=False)
 - Cache: `output/ontology/cache/`
 - Annotations: `output/ontology/<analysis>/annotations/`
 
+## Configuration
+
+- No module-specific config (uses core config)
+- Output paths default to `output/ontology/`
+- Environment prefix: `ONT_` (e.g., `ONT_CACHE_DIR`, `ONT_DB_PATH`)
+
 ## Integration
 
 - **Used by**: `networks` (functional enrichment), `phenotype` (trait annotation)
 
+## Reference
+
+See main `.cursorrules` for:
+- Common directory structure and path handling
+- Configuration patterns with env overrides
+- Testing policy (NO_MOCKING_POLICY)
+- Import patterns and code style
+- Documentation guidelines
+
 ## Testing
 
-- Skip tests if ontology files unavailable
+- **STRICTLY NO MOCKING**: Test real implementations only (see main `.cursorrules` NO_MOCKING_POLICY)
+- Skip tests if ontology files unavailable using `@pytest.mark.external_tool`
 - Test with real GO ontology files from `data/`
-- Write test outputs to `output/ontology/test/`
+- Write test outputs to `output/ontology/test/` using `tmp_path` fixture
+- No mocks, fakes, or stubs - use real file operations
 
 

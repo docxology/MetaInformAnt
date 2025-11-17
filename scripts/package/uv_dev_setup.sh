@@ -19,6 +19,66 @@ fi
 
 echo "✅ UV version: $(uv --version)"
 
+# Detect filesystem type and configure UV cache
+echo "🔍 Detecting filesystem type..."
+FS_DETECT=$(python3 <<'PYTHON'
+import subprocess
+import sys
+from pathlib import Path
+
+def detect_fs_type(path):
+    """Detect filesystem type using df -T."""
+    try:
+        result = subprocess.run(
+            ["df", "-T", str(path)],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0:
+            lines = result.stdout.strip().split("\n")
+            if len(lines) > 1:
+                parts = lines[1].split()
+                if len(parts) >= 2:
+                    return parts[1].lower()
+    except Exception:
+        pass
+    return "unknown"
+
+def supports_symlinks(fs_type):
+    """Check if filesystem supports symlinks."""
+    no_symlink_fs = {"exfat", "fat32", "fat", "vfat", "msdos"}
+    return fs_type not in no_symlink_fs
+
+repo_root = Path.cwd()
+fs_type = detect_fs_type(repo_root)
+has_symlinks = supports_symlinks(fs_type)
+
+print(f"Filesystem type: {fs_type}")
+print(f"Symlink support: {has_symlinks}")
+
+if not has_symlinks:
+    cache_dir = "/tmp/uv-cache"
+    print(f"FAT filesystem detected - using {cache_dir} for UV cache")
+    sys.exit(1)  # Signal to use alternative cache location
+else:
+    cache_dir = ".uv-cache"
+    print(f"Using standard cache location: {cache_dir}")
+    sys.exit(0)
+PYTHON
+)
+
+FS_EXIT_CODE=$?
+
+if [[ $FS_EXIT_CODE -eq 1 ]]; then
+  # FAT filesystem detected - use /tmp/uv-cache
+  export UV_CACHE_DIR="/tmp/uv-cache"
+  mkdir -p "$UV_CACHE_DIR"
+  echo "  → UV cache directory set to: $UV_CACHE_DIR"
+else
+  echo "  → Using standard UV cache directory: .uv-cache"
+fi
+
 # Create uv.lock if it doesn't exist and sync dependencies
 echo "📦 Syncing dependencies with UV..."
 uv sync --extra dev --extra scientific --extra all

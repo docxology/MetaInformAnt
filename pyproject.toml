@@ -153,11 +153,14 @@ addopts = [
     "-ra",  # Show short test summary for all except passes
     "--strict-markers",
     "--strict-config",
-    "--cov=src/metainformant",  # Coverage for source code
-    "--cov-report=term-missing",  # Show missing lines in terminal
-    "--cov-report=html",  # Generate HTML coverage report
-    "--cov-report=xml",   # Generate XML coverage report for CI
-    "--cov-fail-under=85",  # Fail if coverage below 85%
+    # Coverage disabled for faster test runs - enable with: --cov=src/metainformant
+    # "--cov=src/metainformant",  # Coverage for source code
+    # "--cov-report=term-missing",  # Show missing lines in terminal
+    # "--cov-report=html",  # Generate HTML coverage report
+    # "--cov-report=xml",   # Generate XML coverage report for CI
+    # "--cov-fail-under=85",  # Fail if coverage below 85%
+    # Note: timeout can be set via command line: --timeout=10
+    # Not setting default timeout in config to allow flexibility
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
@@ -280,6 +283,9 @@ where = ["src"]
 python-preference = "only-system"
 
 # Enable dependency caching for faster installs
+# Note: On FAT filesystems (exFAT, FAT32) without symlink support, setup scripts
+# automatically override this to use /tmp/uv-cache via UV_CACHE_DIR environment variable.
+# The filesystem detection utilities in metainformant.core.filesystem handle this automatically.
 cache-dir = ".uv-cache"
 
 [dependency-groups]

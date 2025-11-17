@@ -30,7 +30,7 @@ METAINFORMANT is a modular, extensible framework for biological data analysis sp
 git clone https://github.com/q/MetaInformAnt.git
 cd MetaInformAnt
 
-# Setup environment with uv
+# Setup environment with uv (automatically handles FAT filesystems)
 bash scripts/package/setup_uv.sh
 
 # Or manual setup with uv
@@ -39,6 +39,8 @@ uv venv
 source .venv/bin/activate
 uv pip install -e .
 ```
+
+**Note**: Setup scripts automatically detect FAT filesystems (exFAT, FAT32) and configure UV cache and virtual environment locations accordingly. See [UV Setup Guide](docs/UV_SETUP.md) for details.
 
 ### Quick Example
 

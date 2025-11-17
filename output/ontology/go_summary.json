@@ -1,0 +1,9 @@
+{
+  "max_depth": 2,
+  "namespaces": {
+    "biological_process": 4
+  },
+  "num_leaves": 2,
+  "num_roots": 1,
+  "num_terms": 4
+}

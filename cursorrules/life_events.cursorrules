@@ -63,10 +63,42 @@ embeddings_dict = embeddings.generate_embeddings(
 
 ## Patterns
 
+### I/O Operations
+- **CRITICAL**: Always use `metainformant.core.io` for JSON/CSV/TSV operations
+- Never use direct `import json` or `import csv`
+
+**Pattern**:
+```python
+from metainformant.core import io
+
+# Save event sequences and embeddings
+io.dump_json(sequences, "output/life_events/workflow/sequences.json")
+io.dump_json(embeddings, "output/life_events/workflow/embeddings.json")
+io.write_csv(df, "output/life_events/workflow/predictions.csv")
+```
+
+### Path Handling
+- Always use `metainformant.core.paths` utilities for path operations
+- Always resolve and validate paths using `paths.expand_and_resolve()` and `paths.is_within()`
+
+**Pattern**:
+```python
+from metainformant.core import paths
+
+# Expand and resolve paths
+work_dir = paths.expand_and_resolve(config.work_dir)
+```
+
+### Type Hints
+- Comprehensive type hints throughout
+- Use `from __future__ import annotations` for forward references
+- Union types: `str | Path | None`
+
 ### Configuration
 - Use `LifeEventsWorkflowConfig` for configuration
 - Config files in `config/life_events_template.yaml`
 - Environment prefix: `LE_` (e.g., `LE_THREADS`, `LE_EMBEDDING_DIM`)
+- Use `metainformant.core.config.load_mapping_from_file()` and `apply_env_overrides()`
 
 **Config Structure**:
 ```yaml
@@ -101,10 +133,21 @@ model:
 - **Used by**: `phenotype` (life course phenotype extraction)
 - **Integrates with**: `ml` (sequence models), `visualization` (event timeline plots)
 
+## Reference
+
+See main `.cursorrules` for:
+- Common directory structure and path handling
+- Configuration patterns with env overrides
+- Testing policy (NO_MOCKING_POLICY)
+- Import patterns and code style
+- Documentation guidelines
+
 ## Testing
 
+- **STRICTLY NO MOCKING**: Test real implementations only (see main `.cursorrules` NO_MOCKING_POLICY)
 - Test with real event sequences from `data/`
-- Write test outputs to `output/life_events/test/`
+- Write test outputs to `output/life_events/test/` using `tmp_path` fixture
 - Test embedding generation with known results
+- No mocks, fakes, or stubs - use real computations and file operations
 
 

@@ -1,0 +1,1 @@
+{"embedding_dim": 100, "embeddings": "output/life_events/embeddings.json", "n_events": 1, "n_sequences": 1}

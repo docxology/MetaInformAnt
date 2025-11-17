@@ -55,10 +55,13 @@ The main `.cursorrules` file in the repository root contains common rules applic
 All modules follow these core principles:
 - Write outputs to `output/` by default
 - Use `config/` for configuration with env overrides
-- No mocks in tests (real implementations only)
-- Use `metainformant.core` utilities for I/O, logging, paths
+- **STRICTLY NO MOCKING** in tests (real implementations only - see main `.cursorrules` NO_MOCKING_POLICY)
+- **CRITICAL**: Always use `metainformant.core.io` for JSON/CSV/TSV operations - never use direct `import json` or `import csv`
+- Use `metainformant.core.paths` utilities for all path operations
+- Use `metainformant.core` utilities for I/O, logging, paths, config
 - Comprehensive type hints (Python 3.11+)
 - Update existing docs, never create root-level docs
+- All tests use `tmp_path` fixture and write to `output/` only
 
 ## Module-Specific Details
 
@@ -66,11 +69,21 @@ Each module cursorrules file includes:
 - **Purpose**: What the module does
 - **Dependencies**: Required and optional dependencies
 - **Key Submodules**: Main components and their roles
-- **Patterns**: Code patterns with examples
-- **Configuration**: Config structure and environment variables
-- **Output Paths**: Where module writes its outputs
+- **Patterns**: Code patterns with examples (including I/O operations using `core.io`)
+- **Configuration**: Config structure and environment variables (with proper prefixes)
+- **Output Paths**: Where module writes its outputs (matching main `.cursorrules`)
 - **Integration**: How it connects with other modules
-- **Testing**: Module-specific testing patterns
+- **Testing**: Module-specific testing patterns (NO_MOCKING_POLICY enforced)
+
+**Key Improvements Made**:
+- All files now emphasize using `metainformant.core.io` instead of direct `json`/`csv` imports
+- All files include NO_MOCKING_POLICY in testing sections
+- All files document environment variable prefixes consistently
+- All files reference main `.cursorrules` for common patterns
+- I/O pattern examples added to all modules
+- Path handling patterns with `paths.expand_and_resolve()` and `paths.is_within()` added to all modules
+- Type hints guidance added to all modules (including `from __future__ import annotations`)
+- Consistent section ordering: Patterns → Configuration → Integration → Reference → Testing
 
 For example, see `rna.cursorrules` for detailed amalgkit workflow patterns or `gwas.cursorrules` for statistical analysis conventions.
 

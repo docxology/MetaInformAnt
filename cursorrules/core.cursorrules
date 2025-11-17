@@ -29,6 +29,8 @@ config = apply_env_overrides(raw, prefix="MODULE")
 - Atomic writes for data integrity
 - Automatic directory creation
 
+**CRITICAL**: All modules MUST use `metainformant.core.io` for file I/O. Never use direct `import json` or `import csv` in domain modules.
+
 **Patterns**:
 ```python
 from metainformant.core import io
@@ -36,10 +38,25 @@ from metainformant.core import io
 # Reading
 data = io.load_json("data/file.json")
 records = list(io.read_jsonl("data/records.jsonl"))
+df = io.load_csv("data/table.csv")
 
 # Writing (creates parent dirs automatically)
 io.dump_json(data, "output/result.json")
 io.write_csv(df, "output/table.csv")
+io.write_jsonl(records, "output/records.jsonl")
+
+# Gzip-aware operations
+with io.open_text_auto("data/large_file.txt.gz") as f:
+    content = f.read()
+```
+
+**❌ PROHIBITED**:
+```python
+import json  # ❌ WRONG - use metainformant.core.io instead
+import csv   # ❌ WRONG - use metainformant.core.io instead
+
+data = json.load(f)  # ❌ WRONG
+json.dump(data, f)   # ❌ WRONG
 ```
 
 ### Paths (`paths`)
@@ -161,9 +178,11 @@ def function():
 ## Testing
 
 - Core utilities must have comprehensive tests
-- No mocks: test real implementations
+- **STRICTLY NO MOCKING**: Test real implementations only (see main `.cursorrules` NO_MOCKING_POLICY)
 - Use `tmp_path` fixture for test outputs
 - Write test artifacts to `output/` only
+- No `unittest.mock`, `@patch`, `MagicMock`, or function replacement
+- Use real implementations with graceful skipping for unavailable dependencies
 
 ## Documentation
 
@@ -178,4 +197,15 @@ All other modules depend on `core` utilities:
 - Import core utilities: `from metainformant.core import io, paths, logging, config`
 - Use core utilities for all I/O, logging, and path operations
 - Do not reimplement core functionality in domain modules
+- **NEVER** use direct `json` or `csv` imports - always use `metainformant.core.io`
+- **NEVER** use direct `Path()` manipulation without `metainformant.core.paths` utilities
+
+## Reference
+
+See main `.cursorrules` for:
+- Common directory structure and path handling
+- Configuration patterns with env overrides
+- Testing policy (NO_MOCKING_POLICY)
+- Import patterns and code style
+- Documentation guidelines
 

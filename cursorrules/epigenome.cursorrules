@@ -47,6 +47,36 @@ methylation_data = methylation.analyze_methylation(
 
 ## Patterns
 
+### I/O Operations
+- **CRITICAL**: Always use `metainformant.core.io` for JSON/CSV/TSV operations
+- Never use direct `import json` or `import csv`
+
+**Pattern**:
+```python
+from metainformant.core import io
+
+# Save results
+io.dump_json(results, "output/epigenome/methylation/results.json")
+io.write_csv(df, "output/epigenome/chipseq/peaks.csv")
+```
+
+### Path Handling
+- Always use `metainformant.core.paths` utilities for path operations
+- Always resolve and validate paths using `paths.expand_and_resolve()` and `paths.is_within()`
+
+**Pattern**:
+```python
+from metainformant.core import paths
+
+# Expand and resolve paths
+output_path = paths.expand_and_resolve("output/epigenome/methylation/")
+```
+
+### Type Hints
+- Comprehensive type hints throughout
+- Use `from __future__ import annotations` for forward references
+- Union types: `str | Path | None`
+
 ### Genomic Coordinates
 - Use genomic coordinates from `dna` module
 - Support BED, BigWig, and other track formats
@@ -59,15 +89,32 @@ methylation_data = methylation.analyze_methylation(
 - ATAC-seq: `output/epigenome/atac/`
 - ChIP-seq: `output/epigenome/chipseq/`
 
+## Configuration
+
+- No module-specific config (uses core config)
+- Output paths default to `output/epigenome/`
+- Environment prefix: `EPI_` (e.g., `EPI_THREADS`, `EPI_WORK_DIR`)
+
 ## Integration
 
 - **Uses**: `dna` (for genomic coordinates)
 - **Used by**: `multiomics` (epigenomics integration)
 - **Integrates with**: `visualization` (methylation plots)
 
+## Reference
+
+See main `.cursorrules` for:
+- Common directory structure and path handling
+- Configuration patterns with env overrides
+- Testing policy (NO_MOCKING_POLICY)
+- Import patterns and code style
+- Documentation guidelines
+
 ## Testing
 
+- **STRICTLY NO MOCKING**: Test real implementations only (see main `.cursorrules` NO_MOCKING_POLICY)
 - Test with real methylation data from `data/`
-- Write test outputs to `output/epigenome/test/`
+- Write test outputs to `output/epigenome/test/` using `tmp_path` fixture
+- No mocks, fakes, or stubs - use real file operations
 
 

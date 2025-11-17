@@ -160,6 +160,36 @@ python3 scripts/simulation/simulate_gwas.py --type variants --n-variants 1000 --
 
 ## Patterns
 
+### I/O Operations
+- **CRITICAL**: Always use `metainformant.core.io` for JSON/CSV/TSV operations
+- Never use direct `import json` or `import csv`
+
+**Pattern**:
+```python
+from metainformant.core import io
+
+# Save simulation results
+io.dump_json(results, "output/simulation/sequences/results.json")
+io.write_csv(df, "output/simulation/popgen/genotypes.csv")
+```
+
+### Path Handling
+- Always use `metainformant.core.paths` utilities for path operations
+- Always resolve and validate paths using `paths.expand_and_resolve()` and `paths.is_within()`
+
+**Pattern**:
+```python
+from metainformant.core import paths
+
+# Expand and resolve simulation output paths
+output_dir = paths.expand_and_resolve("output/simulation/sequences/")
+```
+
+### Type Hints
+- Comprehensive type hints throughout
+- Use `from __future__ import annotations` for forward references
+- Union types: `str | Path | None`
+
 ### Reproducibility
 - Use deterministic seeds for reproducibility
 - Document random number generation
@@ -173,15 +203,32 @@ python3 scripts/simulation/simulate_gwas.py --type variants --n-variants 1000 --
 - Population Genetics: `output/simulation/popgen/`
 - Module-specific: `output/simulation/<module>/` (for module-specific scripts)
 
+## Configuration
+
+- No module-specific config (uses core config)
+- Output paths default to `output/simulation/`
+- Environment prefix: `SIM_` (e.g., `SIM_THREADS`, `SIM_WORK_DIR`, `SIM_SEED`)
+
 ## Integration
 
 - **Used by**: Testing and validation workflows
 - **Integrates with**: All modules (for generating test data)
 
+## Reference
+
+See main `.cursorrules` for:
+- Common directory structure and path handling
+- Configuration patterns with env overrides
+- Testing policy (NO_MOCKING_POLICY)
+- Import patterns and code style
+- Documentation guidelines
+
 ## Testing
 
+- **STRICTLY NO MOCKING**: Test real implementations only (see main `.cursorrules` NO_MOCKING_POLICY)
 - Test with deterministic seeds
 - Verify simulated data properties
-- Write test outputs to `output/simulation/test/`
+- Write test outputs to `output/simulation/test/` using `tmp_path` fixture
+- No mocks, fakes, or stubs - use real simulation operations
 
 

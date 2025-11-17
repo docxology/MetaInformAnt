@@ -29,6 +29,7 @@ from . import (  # noqa: F401
     discovery,
     disk,
     errors,
+    filesystem,
     hash,
     io,
     logging,

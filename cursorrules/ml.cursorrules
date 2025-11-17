@@ -73,6 +73,37 @@ scores = validation.cross_validate(
 
 ## Patterns
 
+### I/O Operations
+- **CRITICAL**: Always use `metainformant.core.io` for JSON/CSV/TSV operations
+- Never use direct `import json` or `import csv`
+
+**Pattern**:
+```python
+from metainformant.core import io
+
+# Save model results
+io.dump_json(results, "output/ml/models/model_results.json")
+io.write_csv(df, "output/ml/predictions/predictions.csv")
+io.dump_json(feature_importance, "output/ml/features/importance.json")
+```
+
+### Path Handling
+- Always use `metainformant.core.paths` utilities for path operations
+- Always resolve and validate paths using `paths.expand_and_resolve()` and `paths.is_within()`
+
+**Pattern**:
+```python
+from metainformant.core import paths
+
+# Expand and resolve paths
+model_dir = paths.expand_and_resolve("output/ml/models/")
+```
+
+### Type Hints
+- Comprehensive type hints throughout
+- Use `from __future__ import annotations` for forward references
+- Union types: `str | Path | None`
+
 ### scikit-learn API
 - Follow scikit-learn API conventions
 - Models support `fit()`, `predict()`, `predict_proba()` methods
@@ -93,14 +124,31 @@ scores = validation.cross_validate(
 - Predictions: `output/ml/predictions/`
 - Feature importance: `output/ml/features/`
 
+## Configuration
+
+- No module-specific config (uses core config)
+- Output paths default to `output/ml/`
+- Environment prefix: `ML_` (e.g., `ML_THREADS`, `ML_WORK_DIR`, `ML_MODEL_DIR`)
+
 ## Integration
 
 - **Used by**: `gwas` (regression models), `singlecell` (dimensionality reduction), `life_events` (sequence models)
 
+## Reference
+
+See main `.cursorrules` for:
+- Common directory structure and path handling
+- Configuration patterns with env overrides
+- Testing policy (NO_MOCKING_POLICY)
+- Import patterns and code style
+- Documentation guidelines
+
 ## Testing
 
+- **STRICTLY NO MOCKING**: Test real implementations only (see main `.cursorrules` NO_MOCKING_POLICY)
 - Test with real biological datasets from `data/`
-- Write test outputs to `output/ml/test/`
+- Write test outputs to `output/ml/test/` using `tmp_path` fixture
 - Test model serialization/deserialization
+- No mocks, fakes, or stubs - use real ML operations
 
 

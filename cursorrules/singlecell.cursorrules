@@ -96,6 +96,36 @@ fig = plot_clusters(data, cluster_key="cluster")
 
 ## Patterns
 
+### I/O Operations
+- **CRITICAL**: Always use `metainformant.core.io` for JSON/CSV/TSV operations
+- Never use direct `import json` or `import csv`
+
+**Pattern**:
+```python
+from metainformant.core import io
+
+# Save analysis results
+io.dump_json(results, "output/singlecell/analysis/clustering.json")
+io.write_csv(df, "output/singlecell/analysis/markers.csv")
+```
+
+### Path Handling
+- Always use `metainformant.core.paths` utilities for path operations
+- Always resolve and validate paths using `paths.expand_and_resolve()` and `paths.is_within()`
+
+**Pattern**:
+```python
+from metainformant.core import paths
+
+# Expand and resolve paths
+output_path = paths.expand_and_resolve("output/singlecell/analysis/")
+```
+
+### Type Hints
+- Comprehensive type hints throughout
+- Use `from __future__ import annotations` for forward references
+- Union types: `str | Path | None`
+
 ### scanpy Integration
 - Use `scanpy` when available
 - Fallback to scikit-learn implementations
@@ -135,16 +165,33 @@ def normalize_data(data):
 - Support both scanpy and scikit-learn APIs
 - Return consistent data structures
 
+## Configuration
+
+- No module-specific config (uses core config)
+- Output paths default to `output/singlecell/`
+- Environment prefix: `SC_` (e.g., `SC_THREADS`, `SC_WORK_DIR`)
+
 ## Integration
 
 - **Uses**: `rna` (expression data), `ml.dimensionality`
 - **Used by**: `multiomics` (single-cell omics integration), `information` (single-cell information analysis)
 - **External**: `scanpy`, `anndata` when available
 
+## Reference
+
+See main `.cursorrules` for:
+- Common directory structure and path handling
+- Configuration patterns with env overrides
+- Testing policy (NO_MOCKING_POLICY)
+- Import patterns and code style
+- Documentation guidelines
+
 ## Testing
 
-- Skip tests if scanpy/anndata unavailable
+- **STRICTLY NO MOCKING**: Test real implementations only (see main `.cursorrules` NO_MOCKING_POLICY)
+- Skip tests if scanpy/anndata unavailable using `@pytest.mark.external_tool`
 - Test with real expression matrices from `data/`
-- Write test outputs to `output/singlecell/test/`
+- Write test outputs to `output/singlecell/test/` using `tmp_path` fixture
+- No mocks, fakes, or stubs - use real computations
 
 

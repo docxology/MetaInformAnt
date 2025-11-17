@@ -167,6 +167,19 @@ genome_data = ncbi.download_genome(
 
 ## Patterns
 
+### I/O Operations
+- **CRITICAL**: Always use `metainformant.core.io` for JSON/CSV/TSV operations
+- Never use direct `import json` or `import csv`
+
+**Pattern**:
+```python
+from metainformant.core import io
+
+# Save results
+io.dump_json(results, "output/dna/population/stats.json")
+io.write_csv(df, "output/dna/variants/variants.csv")
+```
+
 ### Lazy Imports
 - Use lazy imports for optional dependencies
 - Avoid import failures during unrelated commands
@@ -183,8 +196,28 @@ def _lazy_import_biopython():
 
 ### File Path Handling
 - Functions accept `Path` or `str` for file paths
-- Always resolve and validate paths
+- Always use `metainformant.core.paths` utilities for path operations
+- Always resolve and validate paths using `paths.expand_and_resolve()` and `paths.is_within()`
 - Default outputs to `output/dna/<analysis_type>/`
+
+**Pattern**:
+```python
+from metainformant.core import paths
+from pathlib import Path
+
+# Expand and resolve user paths
+path = paths.expand_and_resolve("~/data/file.txt")
+
+# Security check before using user-provided paths
+if paths.is_within(user_path, base_dir):
+    # Safe to use
+    pass
+```
+
+### Type Hints
+- Comprehensive type hints throughout
+- Use `from __future__ import annotations` for forward references
+- Union types: `str | Path | None`
 
 ### Return Formats
 - Population genetics stats: dictionaries with named keys
@@ -201,6 +234,7 @@ def _lazy_import_biopython():
 - No module-specific config (uses core config)
 - Genome data paths can be specified via config
 - Output paths default to `output/dna/`
+- Environment prefix: `DNA_` (e.g., `DNA_THREADS`, `DNA_WORK_DIR`)
 
 ## Output Directories
 
@@ -220,10 +254,21 @@ def _lazy_import_biopython():
 - **Used by**: `gwas` (variants, population genetics), `rna` (genomic coordinates), `information` (sequence analysis)
 - **Integrates with**: `visualization` (phylogenetic trees), `math.popgen` (theoretical models)
 
+## Reference
+
+See main `.cursorrules` for:
+- Common directory structure and path handling
+- Configuration patterns with env overrides
+- Testing policy (NO_MOCKING_POLICY)
+- Import patterns and code style
+- Documentation guidelines
+
 ## Testing
 
+- **STRICTLY NO MOCKING**: Test real implementations only (see main `.cursorrules` NO_MOCKING_POLICY)
 - Test with real FASTA/FASTQ files from `data/`
-- Optional dependency tests should skip gracefully
-- Write test outputs to `output/dna/test/`
+- Optional dependency tests should skip gracefully with `@pytest.mark.external_tool`
+- Write test outputs to `output/dna/test/` using `tmp_path` fixture
+- No mocks, fakes, or stubs - use real file operations
 
 

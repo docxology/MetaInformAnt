@@ -21,6 +21,36 @@ Phenotypic trait analysis: life course phenotype extraction and AntWiki integrat
 
 ## Patterns
 
+### I/O Operations
+- **CRITICAL**: Always use `metainformant.core.io` for JSON/CSV/TSV operations
+- Never use direct `import json` or `import csv`
+
+**Pattern**:
+```python
+from metainformant.core import io
+
+# Save phenotype data
+io.dump_json(phenotype_data, "output/phenotype/traits/traits.json")
+io.write_csv(df, "output/phenotype/life_course/events.csv")
+```
+
+### Path Handling
+- Always use `metainformant.core.paths` utilities for path operations
+- Always resolve and validate paths using `paths.expand_and_resolve()` and `paths.is_within()`
+
+**Pattern**:
+```python
+from metainformant.core import paths
+
+# Expand and resolve paths
+output_path = paths.expand_and_resolve("output/phenotype/traits/")
+```
+
+### Type Hints
+- Comprehensive type hints throughout
+- Use `from __future__ import annotations` for forward references
+- Union types: `str | Path | None`
+
 ### Phenotype Data Structure
 - Phenotype data should be structured as trait dictionaries
 - Include trait names, values, and metadata
@@ -36,15 +66,32 @@ Phenotypic trait analysis: life course phenotype extraction and AntWiki integrat
 - Life course: `output/phenotype/life_course/`
 - Traits: `output/phenotype/traits/`
 
+## Configuration
+
+- No module-specific config (uses core config)
+- Output paths default to `output/phenotype/`
+- Environment prefix: `PHEN_` (e.g., `PHEN_WORK_DIR`, `PHEN_DB_PATH`)
+
 ## Integration
 
 - **Uses**: `life_events` (optional, for life course integration)
 - **Used by**: `gwas` (phenotype-genotype associations)
 - **Integrates with**: `ontology` (trait functional annotation)
 
+## Reference
+
+See main `.cursorrules` for:
+- Common directory structure and path handling
+- Configuration patterns with env overrides
+- Testing policy (NO_MOCKING_POLICY)
+- Import patterns and code style
+- Documentation guidelines
+
 ## Testing
 
+- **STRICTLY NO MOCKING**: Test real implementations only (see main `.cursorrules` NO_MOCKING_POLICY)
 - Test with real phenotype data from `data/`
-- Write test outputs to `output/phenotype/test/`
+- Write test outputs to `output/phenotype/test/` using `tmp_path` fixture
+- No mocks, fakes, or stubs - use real file operations
 
 

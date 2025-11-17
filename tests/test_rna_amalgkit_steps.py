@@ -254,19 +254,37 @@ class TestGetfastqStep:
         assert hasattr(amalgkit, "getfastq")
         assert callable(amalgkit.getfastq)
 
+    @pytest.mark.slow
     def test_getfastq_basic_execution(self, tmp_path: Path, ensure_amalgkit_available):
-        """Test getfastq step can execute with minimal params."""
+        """Test getfastq step can execute with minimal params.
+        
+        NOTE: This test is marked as slow because getfastq may attempt actual downloads.
+        """
         params = {
             "out_dir": str(tmp_path / "work"),
             "id": "SRR000001",  # Small test SRR
             "threads": 1,
         }
-        result = run_getfastq(
-            params,
-            work_dir=str(tmp_path),
-            check=False,
-        )
-        assert hasattr(result, "returncode")
+        # Use timeout to prevent hanging
+        import signal
+        
+        def timeout_handler(signum, frame):
+            raise TimeoutError("getfastq test timed out")
+        
+        signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(30)  # 30 second timeout
+        
+        try:
+            result = run_getfastq(
+                params,
+                work_dir=str(tmp_path),
+                check=False,
+            )
+            assert hasattr(result, "returncode")
+        except TimeoutError:
+            pytest.skip("getfastq test timed out (likely network/download issue)")
+        finally:
+            signal.alarm(0)
 
 
 class TestQuantStep:

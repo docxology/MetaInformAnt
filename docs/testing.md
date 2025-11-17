@@ -37,26 +37,33 @@ uv run pytest --cov=src/metainformant --cov-report=html
 uv run pytest tests/test_core_text.py -v
 ```
 
+**Note**: Test scripts automatically detect FAT filesystems and configure UV cache and virtual environment locations accordingly. On FAT filesystems, tests use `/tmp/metainformant_venv` if available. The setup script (`scripts/package/setup_uv.sh`) shows real-time test progress with verbose output, making it easy to see which tests are running. See [UV Setup Guide](UV_SETUP.md) for details.
+
 ### Professional Test Runner
 
 Use the comprehensive test runner script:
 
 ```bash
-# Standard test run
-./scripts/run_tests.sh
+# Standard test run (automatically handles FAT filesystems)
+bash scripts/package/uv_test.sh
 
 # Fast tests only (skip slow/network/external dependencies)
-./scripts/run_tests.sh --fast
+bash scripts/package/uv_test.sh fast
+
+# Optimized test runner
+bash scripts/package/uv_test_optimized.sh fast
 
 # Include network tests
-./scripts/run_tests.sh --network
+bash scripts/package/uv_test.sh network
 
-# Generate coverage reports without running tests
-./scripts/run_tests.sh --report-only
+# Generate coverage reports
+bash scripts/package/uv_test.sh coverage
 
 # Run tests matching a pattern
-./scripts/run_tests.sh --pattern "core_*"
+bash scripts/package/uv_test.sh all
 ```
+
+**FAT Filesystem Support**: All test scripts automatically detect FAT filesystems and use appropriate venv locations (`/tmp/metainformant_venv` on FAT, `.venv` on standard filesystems).
 
 ### Test Categories
 

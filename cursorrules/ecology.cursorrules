@@ -31,6 +31,36 @@ Ecological metadata and community analysis: community structure analysis and div
 
 ## Patterns
 
+### I/O Operations
+- **CRITICAL**: Always use `metainformant.core.io` for JSON/CSV/TSV operations
+- Never use direct `import json` or `import csv`
+
+**Pattern**:
+```python
+from metainformant.core import io
+
+# Save community data
+io.dump_json(community_data, "output/ecology/communities/community.json")
+io.write_csv(df, "output/ecology/diversity/diversity.csv")
+```
+
+### Path Handling
+- Always use `metainformant.core.paths` utilities for path operations
+- Always resolve and validate paths using `paths.expand_and_resolve()` and `paths.is_within()`
+
+**Pattern**:
+```python
+from metainformant.core import paths
+
+# Expand and resolve paths
+output_path = paths.expand_and_resolve("output/ecology/communities/")
+```
+
+### Type Hints
+- Comprehensive type hints throughout
+- Use `from __future__ import annotations` for forward references
+- Union types: `str | Path | None`
+
 ### Community Data Formats
 - Community data should use standard ecological formats
 - Support species abundance matrices
@@ -43,14 +73,31 @@ Ecological metadata and community analysis: community structure analysis and div
 - Environmental: `output/ecology/environmental/`
 - Interactions: `output/ecology/interactions/`
 
+## Configuration
+
+- No module-specific config (uses core config)
+- Output paths default to `output/ecology/`
+- Environment prefix: `ECO_` (e.g., `ECO_WORK_DIR`, `ECO_DB_PATH`)
+
 ## Integration
 
 - **Used by**: Workflow scripts
 - **Integrates with**: `math` (diversity calculations)
 
+## Reference
+
+See main `.cursorrules` for:
+- Common directory structure and path handling
+- Configuration patterns with env overrides
+- Testing policy (NO_MOCKING_POLICY)
+- Import patterns and code style
+- Documentation guidelines
+
 ## Testing
 
+- **STRICTLY NO MOCKING**: Test real implementations only (see main `.cursorrules` NO_MOCKING_POLICY)
 - Test with real ecological data from `data/`
-- Write test outputs to `output/ecology/test/`
+- Write test outputs to `output/ecology/test/` using `tmp_path` fixture
+- No mocks, fakes, or stubs - use real file operations
 
 

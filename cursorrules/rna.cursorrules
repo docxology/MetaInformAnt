@@ -51,7 +51,7 @@ result = run_amalgkit_step(
 
 ### Progress Tracker (`progress_tracker`)
 - Progress tracking across workflow steps
-- State persistence (JSON)
+- State persistence (JSON via `metainformant.core.io`)
 - Dashboard generation
 
 **Patterns**:
@@ -61,6 +61,8 @@ from metainformant.rna.progress_tracker import ProgressTracker
 tracker = ProgressTracker(state_file="output/amalgkit/progress_state.json")
 tracker.update_step("metadata", status="completed")
 ```
+
+**Note**: Progress tracker uses `metainformant.core.io` for JSON operations internally.
 
 ### Steps (`steps/`)
 - Step-specific implementations for all 11 amalgkit steps
@@ -210,6 +212,42 @@ generate_config_yaml(species_name, output_path)
 
 ## Patterns
 
+### I/O Operations
+- **CRITICAL**: Always use `metainformant.core.io` for JSON/CSV/TSV operations
+- Never use direct `import json` or `import csv`
+- Use `io.load_json()`, `io.dump_json()`, `io.read_jsonl()`, `io.write_jsonl()` for all JSON operations
+
+**Pattern**:
+```python
+from metainformant.core import io
+
+# Load config or state
+state = io.load_json("output/amalgkit/progress_state.json")
+io.dump_json(results, "output/amalgkit/results.json")
+```
+
+### Path Handling
+- Always use `metainformant.core.paths` utilities for path operations
+- Always resolve and validate paths using `paths.expand_and_resolve()` and `paths.is_within()`
+
+**Pattern**:
+```python
+from metainformant.core import paths
+
+# Expand and resolve paths
+work_dir = paths.expand_and_resolve(config.work_dir)
+
+# Security check
+if paths.is_within(user_path, base_dir):
+    # Safe to use
+    pass
+```
+
+### Type Hints
+- Comprehensive type hints throughout
+- Use `from __future__ import annotations` for forward references
+- Union types: `str | Path | None`
+
 ### Amalgkit Availability
 - Always check for `amalgkit` availability before use
 - Skip tests gracefully if not available
@@ -321,19 +359,23 @@ python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrm
 
 ## Testing
 
-- Skip tests if `amalgkit` not available
+- **STRICTLY NO MOCKING**: Test real implementations only (see main `.cursorrules` NO_MOCKING_POLICY)
+- Skip tests if `amalgkit` not available using `@pytest.mark.external_tool`
 - Use real config files from `config/amalgkit/`
-- Write test outputs to `output/amalgkit/test/`
+- Write test outputs to `output/amalgkit/test/` using `tmp_path` fixture
 - Test workflow planning (not full execution in unit tests)
+- No mocks, fakes, or stubs - use real CLI calls and file operations
 
 **Test Pattern**:
 ```python
 @pytest.mark.external_tool
-def test_amalgkit_integration():
+def test_amalgkit_integration(tmp_path: Path):
     import shutil
     if not shutil.which("amalgkit"):
         pytest.skip("amalgkit not available")
-    # Test real integration
+    # Test real integration with tmp_path for outputs
+    output_file = tmp_path / "result.json"
+    # ... real implementation test
 ```
 
 ## Documentation
@@ -341,4 +383,13 @@ def test_amalgkit_integration():
 - Document amalgkit requirements
 - Provide examples with real config files
 - Document workflow restart/resume procedures
+
+## Reference
+
+See main `.cursorrules` for:
+- Common directory structure and path handling
+- Configuration patterns with env overrides
+- Testing policy (NO_MOCKING_POLICY)
+- Import patterns and code style
+- Documentation guidelines
 

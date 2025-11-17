@@ -16,11 +16,14 @@ Get started with MetaInformAnt in minutes.
 git clone https://github.com/q/MetaInformAnt.git
 cd MetaInformAnt
 
-# Run automated setup script
+# Run automated setup script (installs dev + scientific deps + amalgkit by default)
 bash scripts/package/setup_uv.sh
 
 # Activate virtual environment
+# Standard filesystem:
 source .venv/bin/activate
+# FAT filesystem (auto-detected):
+source /tmp/metainformant_venv/bin/activate
 ```
 
 ### Option 2: Manual Installation with UV
@@ -43,34 +46,36 @@ source .venv/bin/activate
 uv pip install -e .
 ```
 
-### Option 3: External Drive Setup (exFAT/No Symlink Support)
+### Option 3: External Drive Setup (exFAT/FAT32 - Automatic)
 
-If your repository is on an external drive formatted as exFAT (which doesn't support symlinks), create the virtual environment in `/tmp` instead:
+**Setup scripts automatically handle FAT filesystems** - no manual configuration needed:
 
+```bash
+# Same setup command works on FAT filesystems
+bash scripts/package/setup_uv.sh
+
+# The script automatically:
+# - Detects FAT filesystem (exFAT, FAT32)
+# - Sets UV_CACHE_DIR=/tmp/uv-cache
+# - Creates venv at /tmp/metainformant_venv
+```
+
+**Manual Setup** (if needed):
 ```bash
 # Navigate to repository
 cd /path/to/MetaInformAnt
 
 # Create venv in /tmp where symlinks work
-python3 -m venv /tmp/metainformant-venv
+export UV_CACHE_DIR="/tmp/uv-cache"
+uv venv /tmp/metainformant_venv
 
 # Install dependencies
-/tmp/metainformant-venv/bin/pip install pytest pytest-cov
-/tmp/metainformant-venv/bin/pip install -e .
-
-# Install optional dependencies
-/tmp/metainformant-venv/bin/pip install scipy scikit-learn seaborn networkx
-
-# Run tests
-/tmp/metainformant-venv/bin/pytest
-
-# Or activate for regular use
-source /tmp/metainformant-venv/bin/activate
+uv pip install -e . --python /tmp/metainformant_venv/bin/python3
 ```
 
-**Better Solution**: Reformat your external drive to **ext4** (Linux-only) or **NTFS** (cross-platform) to enable native symlink support. See [EXTERNAL_DRIVE_SETUP.md](docs/rna/EXTERNAL_DRIVE_SETUP.md) for details.
+**Note**: The `/tmp` venv will be deleted on reboot. Recreate it with `bash scripts/package/setup_uv.sh` after reboot.
 
-**Note**: The `/tmp` venv will be deleted on reboot. For persistent setup on exFAT drives, recreate it after each reboot or reformat the drive.
+**Better Solution**: Reformat your external drive to **ext4** (Linux-only) or **NTFS** (cross-platform) to enable native symlink support. See [UV Setup Guide](docs/UV_SETUP.md) and [External Drive Setup](docs/rna/EXTERNAL_DRIVE_SETUP.md) for details.
 
 ## Verify Installation
 

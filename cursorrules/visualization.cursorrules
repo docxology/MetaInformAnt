@@ -108,6 +108,36 @@ trees.visualize_tree(
 
 ## Patterns
 
+### I/O Operations
+- **CRITICAL**: Always use `metainformant.core.io` for JSON/CSV/TSV operations (if saving data)
+- Never use direct `import json` or `import csv`
+- Visualization functions primarily save plots (PNG/SVG/PDF), but may save data via `core.io`
+
+**Pattern**:
+```python
+from metainformant.core import io
+
+# Save plot data if needed
+io.dump_json(plot_data, "output/visualization/plots/data.json")
+```
+
+### Path Handling
+- Always use `metainformant.core.paths` utilities for path operations
+- Always resolve and validate paths using `paths.expand_and_resolve()` and `paths.is_within()`
+
+**Pattern**:
+```python
+from metainformant.core import paths
+
+# Expand and resolve plot output paths
+output_path = paths.expand_and_resolve("output/visualization/plots/")
+```
+
+### Type Hints
+- Comprehensive type hints throughout
+- Use `from __future__ import annotations` for forward references
+- Union types: `str | Path | None`
+
 ### Output Path Parameter
 - All visualization functions accept `output_path` parameter
 - Default output format: PNG for static plots
@@ -142,15 +172,32 @@ trees.visualize_tree(
 - Base: `output/visualization/<domain>/`
 - Domain-specific: `output/visualization/<domain>/<plot_type>/`
 
+## Configuration
+
+- No module-specific config (uses core config)
+- Output paths default to `output/visualization/`
+- Environment prefix: `VIZ_` (e.g., `VIZ_DPI`, `VIZ_FORMAT`, `VIZ_STYLE`)
+
 ## Integration
 
 - **Used by**: All modules (plotting support)
 - **Integrates with**: Domain-specific visualization (phylogenetic trees, network graphs)
 
+## Reference
+
+See main `.cursorrules` for:
+- Common directory structure and path handling
+- Configuration patterns with env overrides
+- Testing policy (NO_MOCKING_POLICY)
+- Import patterns and code style
+- Documentation guidelines
+
 ## Testing
 
+- **STRICTLY NO MOCKING**: Test real implementations only (see main `.cursorrules` NO_MOCKING_POLICY)
 - Test that output files are created
 - Verify plot dimensions and format
-- Write test outputs to `output/visualization/test/`
+- Write test outputs to `output/visualization/test/` using `tmp_path` fixture
+- No mocks, fakes, or stubs - use real plotting operations
 
 

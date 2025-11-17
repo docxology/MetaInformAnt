@@ -2,21 +2,46 @@
 
 Environment management uses `uv` with Python 3.11+.
 
+## Quick Setup
+
 ```bash
 git clone https://github.com/q/MetaInformAnt.git
 cd MetaInformAnt
-bash scripts/package/setup_uv.sh --with-amalgkit --ncbi-email "you@example.com"
+bash scripts/package/setup_uv.sh --ncbi-email "you@example.com"
+# Default setup installs dev + scientific dependencies + amalgkit
 # You can either use uv run directly, or activate the venv for the shell:
 # uv run python -V
-source .venv/bin/activate
+source .venv/bin/activate  # or /tmp/metainformant_venv/bin/activate on FAT filesystems
 ```
 
-Verify:
+**Note**: Setup scripts automatically detect FAT filesystems (exFAT, FAT32) and configure UV cache and virtual environment locations accordingly. See [UV Setup Guide](UV_SETUP.md) for details.
+
+## FAT Filesystem Support
+
+On FAT-formatted external drives, setup is **automatic**:
 
 ```bash
+# Same command works on FAT filesystems
+bash scripts/package/setup_uv.sh
+
+# The script automatically:
+# - Detects FAT filesystem
+# - Sets UV_CACHE_DIR=/tmp/uv-cache
+# - Creates venv at /tmp/metainformant_venv (if needed)
+```
+
+See [UV Setup Guide](UV_SETUP.md) for complete FAT filesystem documentation.
+
+## Verify Setup
+
+```bash
+# Standard verification
 uv run python -V
 uv run pytest -q
 uv run metainformant --help
+
+# Comprehensive verification (includes FAT filesystem checks)
+bash scripts/package/verify_uv_setup.sh
 ```
 
 Directories policy
@@ -30,8 +55,8 @@ Examples respect this policy by defaulting to `output/` when writing files.
 
 External tools
 
-- RNA: `amalgkit` (installed automatically by setup when `--with-amalgkit` is provided, via uv)
-- Optional MSA: `muscle` or `clustalo` in PATH
+- RNA: `amalgkit` (installed automatically by default setup script, via uv)
+- Optional MSA: `muscle` or `clustalo` in PATH (MUSCLE shim installed automatically if not found)
 - Optional NCBI Datasets: `ncbi-datasets-pylib` is a dependency; verify availability in runtime
 
 Next steps
