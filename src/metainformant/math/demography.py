@@ -43,18 +43,31 @@ def exponential_growth_effective_size(
     if generations <= 0 or growth_rate == 0.0:
         return float(current_size)
     
-    # Calculate harmonic mean of population sizes
+    # Calculate harmonic mean of population sizes over the specified period
     # For exponential growth: N(t) = N_0 * e^(r*t)
-    # We need N_0 from current_size and growth_rate
-    # N_t = N_0 * e^(r * generations)
+    # If growth_rate > 0: population grows from N_0 to current_size
+    # If growth_rate < 0: population declines from N_0 to current_size
+    # We calculate N_0 from current_size: N_t = N_0 * e^(r * generations)
     # So N_0 = N_t / e^(r * generations)
     
-    n_0 = current_size / math.exp(growth_rate * generations)
+    # For negative growth, we want to look forward from current_size
+    # So we use current_size as N_0 and calculate future sizes
+    if growth_rate < 0:
+        # Declining population: start at current_size and decline
+        n_0 = float(current_size)
+    else:
+        # Growing population: calculate N_0 from current_size
+        n_0 = current_size / math.exp(growth_rate * generations)
     
-    # Harmonic mean: Ne = t / Σ(1/N_i)
+    # Harmonic mean: Ne = (generations + 1) / Σ(1/N_i)
     harmonic_sum = 0.0
     for t in range(generations + 1):
-        n_t = n_0 * math.exp(growth_rate * t)
+        if growth_rate < 0:
+            # For decline, calculate forward from current_size
+            n_t = n_0 * math.exp(growth_rate * t)
+        else:
+            # For growth, calculate from N_0
+            n_t = n_0 * math.exp(growth_rate * t)
         if n_t > 0:
             harmonic_sum += 1.0 / n_t
     

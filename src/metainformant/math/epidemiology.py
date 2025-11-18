@@ -22,7 +22,7 @@ def sir_step(S: float, I: float, R: float, beta: float, gamma: float, dt: float 
         
     Returns:
         Tuple of (next_S, next_I, next_R) after one time step.
-        Values are clamped to non-negative.
+        Values are clamped to non-negative, and total is preserved.
         
     Examples:
         >>> S, I, R = sir_step(S=990.0, I=10.0, R=0.0, beta=0.3, gamma=0.1, dt=0.01)
@@ -37,12 +37,21 @@ def sir_step(S: float, I: float, R: float, beta: float, gamma: float, dt: float 
     S = max(0.0, S)
     I = max(0.0, I)
     R = max(0.0, R)
+    total = S + I + R
     dS = -beta * S * I
     dI = beta * S * I - gamma * I
     dR = gamma * I
     Sn = max(0.0, S + dt * dS)
     In = max(0.0, I + dt * dI)
     Rn = max(0.0, R + dt * dR)
+    # Preserve total population (normalize if needed due to clamping)
+    new_total = Sn + In + Rn
+    if new_total > 0 and abs(new_total - total) > 1e-10:
+        # Normalize to preserve total
+        scale = total / new_total
+        Sn *= scale
+        In *= scale
+        Rn *= scale
     return Sn, In, Rn
 
 

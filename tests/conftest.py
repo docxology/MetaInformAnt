@@ -110,6 +110,61 @@ def clean_environment(monkeypatch) -> Iterator[None]:
 
 
 @pytest.fixture(scope="session", autouse=True)
+def setup_test_environment():
+    """Set up test environment including PYTHONPATH and dependency checks.
+    
+    This fixture runs automatically for all tests and ensures:
+    - PYTHONPATH includes src/ so metainformant can be imported
+    - User local bin is in PATH for CLI tools
+    - Environment variables are set appropriately
+    """
+    # Ensure src/ is in PYTHONPATH for module imports
+    repo_root = Path(__file__).parent.parent
+    src_dir = repo_root / "src"
+    if src_dir.exists() and str(src_dir) not in sys.path:
+        sys.path.insert(0, str(src_dir))
+    
+    # Ensure user local bin is in PATH (common for --user installs)
+    user_bin = Path.home() / ".local" / "bin"
+    if user_bin.exists():
+        current_path = os.environ.get("PATH", "")
+        if str(user_bin) not in current_path:
+            os.environ["PATH"] = f"{user_bin}:{current_path}"
+    
+    # Set PYTHONPATH if not already set
+    pythonpath = os.environ.get("PYTHONPATH", "")
+    if str(src_dir) not in pythonpath:
+        if pythonpath:
+            os.environ["PYTHONPATH"] = f"{src_dir}:{pythonpath}"
+        else:
+            os.environ["PYTHONPATH"] = str(src_dir)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def load_ncbi_config():
+    """Load NCBI configuration from config file if NCBI_EMAIL not in environment.
+    
+    This fixture runs automatically for all tests and ensures NCBI_EMAIL
+    is set from config/ncbi.yaml if not already set in environment.
+    """
+    if "NCBI_EMAIL" not in os.environ:
+        try:
+            from pathlib import Path
+            from metainformant.core.config import load_mapping_from_file
+            
+            config_path = Path(__file__).parent.parent / "config" / "ncbi.yaml"
+            if config_path.exists():
+                config = load_mapping_from_file(config_path)
+                email = config.get("email", "").strip()
+                if email:
+                    os.environ["NCBI_EMAIL"] = email
+        except Exception:
+            # If config loading fails, continue without setting NCBI_EMAIL
+            # Tests will skip if they require it
+            pass
+
+
+@pytest.fixture(scope="session", autouse=True)
 def ensure_amalgkit_available():
     """Ensure amalgkit CLI is available before running RNA tests.
     

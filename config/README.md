@@ -9,6 +9,7 @@ config/
 ├── amalgkit/          # RNA-seq workflow configurations for ant species
 ├── gwas/             # GWAS workflow configurations
 ├── archive/          # Archived/inactive configurations
+├── ncbi.yaml         # NCBI API configuration (email, rate limiting)
 ├── README.md         # This file
 └── AGENTS.md        # AI agent contribution documentation
 ```
@@ -210,13 +211,23 @@ The following species have configurations in the archive directory:
 - PBS cluster integration (planned)
 - Cloud execution (AWS/GCP for data downloads)
 
+### NCBI Configuration (`ncbi.yaml`)
+
+NCBI API configuration for Entrez access:
+- **`email`**: Email address for NCBI API (required for API access)
+- **`rate_limit_delay`**: Delay between requests in seconds (default: 0.34)
+- **`max_retries`**: Maximum retry attempts (default: 3)
+- **`retry_delay`**: Delay between retries in seconds (default: 1.0)
+
+The email can be set in `config/ncbi.yaml` or via the `NCBI_EMAIL` environment variable. Environment variable takes precedence. Tests automatically load from config if `NCBI_EMAIL` is not set in the environment.
+
 ### Environment Variable Overrides
 
 All configuration parameters can be overridden via environment variables:
 ```bash
 export METAINFORMANT_THREADS=16
 export METAINFORMANT_WORK_DIR=/scratch/user/amalgkit
-export NCBI_EMAIL=user@example.com
+export NCBI_EMAIL=user@example.com  # Overrides config/ncbi.yaml
 ```
 
 ## Modifying Configurations

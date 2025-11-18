@@ -473,8 +473,8 @@ def linkage_disequilibrium_decay_distance(r_squared: float, recombination_rate: 
         
     Returns:
         Estimated genetic distance in Morgans. Returns:
-        - 0.0 if inputs invalid (r² <= 0 or r² >= 1)
-        - float('inf') if recombination_rate = 0 (no recombination, infinite distance)
+        - 0.0 if r² <= 0 (invalid input)
+        - float('inf') if r² >= 1 (perfect LD, infinite distance to decay) or recombination_rate = 0
         - Otherwise: -ln(r²) / (2 × recombination_rate)
         
     Examples:
@@ -489,13 +489,17 @@ def linkage_disequilibrium_decay_distance(r_squared: float, recombination_rate: 
         to infinity because there is no recombination to break down LD, so the
         effective distance is infinite.
     """
-    if r_squared <= 0 or r_squared >= 1:
-        raise ValueError("r² must be between 0 and 1")
+    if r_squared <= 0:
+        return 0.0
+    if r_squared >= 1:
+        return float('inf')  # Perfect LD, infinite distance to decay
 
     # LD decay: r² = e^(-2 * recombination_rate * distance)
     # So distance = -ln(r²) / (2 * recombination_rate)
     import math
-    return -math.log(r_squared) / (2 * recombination_rate) if recombination_rate > 0 else float('inf')
+    if recombination_rate <= 0:
+        return float('inf')
+    return -math.log(r_squared) / (2 * recombination_rate)
 
 
 def coalescent_time_to_mrca(sample_size: int, effective_size: float) -> float:

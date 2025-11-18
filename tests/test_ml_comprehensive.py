@@ -440,10 +440,12 @@ class TestValidation:
         assert X_train.shape[1] == self.n_features
         assert X_test.shape[1] == self.n_features
 
-        # Check no overlap
-        train_set = set(range(len(X_train)))
-        test_set = set(range(len(X_test)))
-        assert len(train_set.intersection(test_set)) == 0
+        # Check no overlap - verify total samples match and data rows are distinct
+        assert len(X_train) + len(X_test) == self.n_samples
+        # Check that no row in X_train appears in X_test (using first few features for efficiency)
+        train_rows = {tuple(row[:5]) for row in X_train}
+        test_rows = {tuple(row[:5]) for row in X_test}
+        assert len(train_rows.intersection(test_rows)) == 0
 
     def test_k_fold_split(self):
         """Test k-fold cross-validation splitting."""

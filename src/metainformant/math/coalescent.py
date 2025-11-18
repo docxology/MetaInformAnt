@@ -18,12 +18,13 @@ def expected_time_to_mrca(sample_size: int, effective_population_size: float) ->
     Returns:
         Expected time to MRCA. Formula: T_MRCA = 4N \sum_{k=2}^n 1/(k(k-1))
         Uses diploid scaling (4N). Returns 0.0 for invalid inputs.
+        For n=2: sum = 1/2, so T_MRCA = 2N.
         
     Examples:
         >>> expected_time_to_mrca(sample_size=10, effective_population_size=1000)
         7366.6...
         >>> expected_time_to_mrca(sample_size=2, effective_population_size=1000)
-        4000.0
+        2000.0
         
     References:
         Kingman, J. F. C. (1982). On the genealogy of large populations.
@@ -33,6 +34,8 @@ def expected_time_to_mrca(sample_size: int, effective_population_size: float) ->
     N = float(effective_population_size)
     if n < 2 or N <= 0:
         return 0.0
+    # Formula: T_MRCA = 4N * sum_{k=2}^n 1/(k(k-1))
+    # For n=2: sum = 1/(2*1) = 1/2, so T_MRCA = 4N * 1/2 = 2N
     harmonic_like = sum(1.0 / (k * (k - 1)) for k in range(2, n + 1))
     return 4.0 * N * harmonic_like
 

@@ -1,0 +1,15 @@
+# NCBI Configuration
+# This file contains NCBI-related configuration settings.
+# Values can be overridden via environment variables.
+
+# NCBI Entrez API email (required for NCBI API access)
+# Set via NCBI_EMAIL environment variable or this config file
+email: ""  # Set your email here, or use NCBI_EMAIL environment variable
+
+# NCBI API rate limiting settings
+rate_limit_delay: 0.34  # Seconds between requests (NCBI recommends 3 requests/second max)
+
+# NCBI retry settings
+max_retries: 3
+retry_delay: 1.0  # Seconds
+

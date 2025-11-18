@@ -62,6 +62,8 @@ class MultiOmicsData:
             if data is not None:
                 if not isinstance(data, pd.DataFrame):
                     raise TypeError(f"{name} must be pandas DataFrame")
+                if data.shape[1] == 0:
+                    raise ValueError(f"{name} has no features (empty columns)")
                 self.omics_layers[name] = data
 
         if not self.omics_layers:
@@ -622,8 +624,22 @@ def canonical_correlation(
         X_canonical = X @ X_weights
         Y_canonical = Y @ Y_weights
 
-        # Compute correlations
-        correlations = np.sqrt(eigenvalues[:n_components])
+        # Compute actual correlations between canonical variates
+        # This ensures correlations are in [0, 1] range
+        correlations = np.array([
+            np.corrcoef(X_canonical[:, i], Y_canonical[:, i])[0, 1]
+            for i in range(n_components)
+        ])
+        # Ensure correlations are non-negative (take absolute value)
+        correlations = np.abs(correlations)
+
+        # Sort by correlations in descending order
+        sort_idx = np.argsort(correlations)[::-1]
+        correlations = correlations[sort_idx]
+        X_weights = X_weights[:, sort_idx]
+        Y_weights = Y_weights[:, sort_idx]
+        X_canonical = X_canonical[:, sort_idx]
+        Y_canonical = Y_canonical[:, sort_idx]
 
         return X_canonical, Y_canonical, X_weights, Y_weights, correlations
 
@@ -641,7 +657,22 @@ def canonical_correlation(
         X_canonical = X @ X_weights
         Y_canonical = Y @ Y_weights
 
-        correlations = s[:n_components]
+        # Compute actual correlations between canonical variates
+        # This ensures correlations are in [0, 1] range
+        correlations = np.array([
+            np.corrcoef(X_canonical[:, i], Y_canonical[:, i])[0, 1]
+            for i in range(n_components)
+        ])
+        # Ensure correlations are non-negative (take absolute value)
+        correlations = np.abs(correlations)
+
+        # Sort by correlations in descending order
+        sort_idx = np.argsort(correlations)[::-1]
+        correlations = correlations[sort_idx]
+        X_weights = X_weights[:, sort_idx]
+        Y_weights = Y_weights[:, sort_idx]
+        X_canonical = X_canonical[:, sort_idx]
+        Y_canonical = Y_canonical[:, sort_idx]
 
         return X_canonical, Y_canonical, X_weights, Y_weights, correlations
 

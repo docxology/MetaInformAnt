@@ -681,22 +681,33 @@ def generate_realistic_life_events(
         # Generate timestamps with potential seasonal patterns
         if seasonal_patterns:
             # Create seasonal variation (more events in certain months)
-            for _ in range(n_events):
-                # Bias towards summer months (June-September)
-                month = np.random.choice(range(1, 13), p=[
-                    0.06, 0.06, 0.06, 0.08, 0.08, 0.12,  # Jan-Jun
-                    0.12, 0.12, 0.12, 0.08, 0.06, 0.06  # Jul-Dec
-                ])
+            # Bias towards summer months (June-September)
+            month_probs = np.array([
+                0.06, 0.06, 0.06, 0.08, 0.08, 0.12,  # Jan-Jun
+                0.12, 0.12, 0.12, 0.08, 0.06, 0.06  # Jul-Dec
+            ])
+            # Normalize to ensure exact sum of 1.0 (handles floating point precision)
+            month_probs = month_probs / month_probs.sum()
+            # Keep generating until we have enough events within the date range
+            max_attempts = n_events * 10  # Safety limit
+            attempts = 0
+            while len(event_timestamps) < n_events and attempts < max_attempts:
+                month = np.random.choice(range(1, 13), p=month_probs)
                 # Random day in month
                 day = np.random.randint(1, 29)
                 year = np.random.randint(start_date.year, end_date.year + 1)
                 try:
                     event_time = datetime(year, month, day)
-                    if start_timestamp <= event_time.timestamp() <= end_timestamp:
-                        event_timestamps.append(event_time.timestamp())
+                    timestamp = event_time.timestamp()
+                    if start_timestamp <= timestamp <= end_timestamp:
+                        event_timestamps.append(timestamp)
                 except ValueError:
                     # Invalid date, use uniform distribution as fallback
                     event_timestamps.append(np.random.uniform(start_timestamp, end_timestamp))
+                attempts += 1
+            # If we still don't have enough, fill with uniform distribution
+            while len(event_timestamps) < n_events:
+                event_timestamps.append(np.random.uniform(start_timestamp, end_timestamp))
         else:
             # Uniform distribution
             event_timestamps = sorted(np.random.uniform(start_timestamp, end_timestamp, n_events))

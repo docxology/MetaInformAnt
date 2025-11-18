@@ -178,9 +178,9 @@ class TestCoalescent:
         t_mrca = expected_time_to_mrca(n, Ne)
 
         assert t_mrca > 0.0
-        # For n=2, should be 4Ne
+        # For n=2: T_MRCA = 4N * sum_{k=2}^2 1/(k(k-1)) = 4N * 1/2 = 2N
         t2 = expected_time_to_mrca(2, Ne)
-        assert abs(t2 - (4 * Ne)) < 1e-10
+        assert abs(t2 - (2 * Ne)) < 1e-10
 
     def test_expected_pairwise_diversity(self):
         """Test expected pairwise diversity calculation."""

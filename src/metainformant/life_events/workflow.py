@@ -425,13 +425,24 @@ def intervention_analysis(
         }
         
         # Statistical test (simple t-test)
-        try:
-            from scipy import stats
-            t_stat, p_value = stats.ttest_rel(pre_intervention_outcomes, post_intervention_outcomes)
-            results["outcome_change"]["t_statistic"] = float(t_stat)
-            results["outcome_change"]["p_value"] = float(p_value)
-        except ImportError:
-            # scipy not available, skip statistical test
+        # Requires at least 2 samples for paired t-test
+        if len(pre_intervention_outcomes) >= 2 and len(post_intervention_outcomes) >= 2:
+            try:
+                from scipy import stats
+                t_stat, p_value = stats.ttest_rel(pre_intervention_outcomes, post_intervention_outcomes)
+                results["outcome_change"]["t_statistic"] = float(t_stat)
+                results["outcome_change"]["p_value"] = float(p_value)
+            except ImportError:
+                # scipy not available, skip statistical test
+                results["outcome_change"]["t_statistic"] = None
+                results["outcome_change"]["p_value"] = None
+            except Exception as e:
+                # Handle cases where statistical test fails (e.g., insufficient variance)
+                logger.warning(f"Statistical test failed: {e}")
+                results["outcome_change"]["t_statistic"] = None
+                results["outcome_change"]["p_value"] = None
+        else:
+            # Insufficient samples for statistical test
             results["outcome_change"]["t_statistic"] = None
             results["outcome_change"]["p_value"] = None
     

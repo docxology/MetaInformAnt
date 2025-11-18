@@ -456,7 +456,7 @@ def shannon_entropy(values: list[float]) -> float:
     
     Args:
         values: List of probability values (should sum to 1, but function
-            handles non-normalized inputs by only considering positive values)
+            handles non-normalized inputs by normalizing them)
         
     Returns:
         Shannon entropy in bits (using log base 2). Formula:
@@ -469,6 +469,8 @@ def shannon_entropy(values: list[float]) -> float:
         0.0
         >>> shannon_entropy([0.25, 0.25, 0.25, 0.25])  # Maximum for 4 outcomes
         2.0
+        >>> shannon_entropy([1.0, 1.0])  # Non-normalized input (normalized to [0.5, 0.5])
+        1.0
         
     References:
         Shannon, C. E. (1948). A mathematical theory of communication.
@@ -476,10 +478,19 @@ def shannon_entropy(values: list[float]) -> float:
     """
     import math
     
+    if not values:
+        return 0.0
+    
+    # Normalize probabilities
+    total = sum(p for p in values if p > 0)
+    if total == 0:
+        return 0.0
+    
     entropy = 0.0
     for p in values:
         if p > 0:
-            entropy -= p * math.log2(p)
+            p_norm = p / total
+            entropy -= p_norm * math.log2(p_norm)
     
     return entropy
 

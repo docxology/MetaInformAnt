@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -169,12 +170,18 @@ def test_analyze_life_course_with_config_obj(tmp_path):
         Event("degree", datetime(2010, 6, 1), "education"),
         Event("job_change", datetime(2015, 3, 1), "occupation"),
     ]
+    events2 = [
+        Event("certification", datetime(2012, 1, 1), "education"),
+        Event("promotion", datetime(2018, 5, 1), "occupation"),
+    ]
     
     sequences = [
         EventSequence(person_id="person_001", events=events1),
+        EventSequence(person_id="person_002", events=events2),
     ]
     
-    outcomes = np.array([0])
+    # Need at least 2 classes for classification
+    outcomes = np.array([0, 1])
     
     config = LifeEventsWorkflowConfig(
         work_dir=tmp_path / "work",
@@ -190,7 +197,7 @@ def test_analyze_life_course_with_config_obj(tmp_path):
         output_dir=tmp_path / "output"
     )
     
-    assert results["n_sequences"] == 1
+    assert results["n_sequences"] == 2
     assert "model" in results
     assert results["embedding_dim"] == 50
 
@@ -200,12 +207,17 @@ def test_analyze_life_course_with_config_path(tmp_path):
     events1 = [
         Event("degree", datetime(2010, 6, 1), "education"),
     ]
+    events2 = [
+        Event("certification", datetime(2012, 1, 1), "education"),
+    ]
     
     sequences = [
         EventSequence(person_id="person_001", events=events1),
+        EventSequence(person_id="person_002", events=events2),
     ]
     
-    outcomes = np.array([0])
+    # Need at least 2 classes for classification
+    outcomes = np.array([0, 1])
     
     # Create config file
     config_file = tmp_path / "config.yaml"
@@ -229,7 +241,7 @@ model:
         output_dir=tmp_path / "output"
     )
     
-    assert results["n_sequences"] == 1
+    assert results["n_sequences"] == 2
     assert "model" in results
     assert results["embedding_dim"] == 50
 
@@ -239,12 +251,17 @@ def test_analyze_life_course_with_dict_config(tmp_path):
     events1 = [
         Event("degree", datetime(2010, 6, 1), "education"),
     ]
+    events2 = [
+        Event("certification", datetime(2012, 1, 1), "education"),
+    ]
     
     sequences = [
         EventSequence(person_id="person_001", events=events1),
+        EventSequence(person_id="person_002", events=events2),
     ]
     
-    outcomes = np.array([0])
+    # Need at least 2 classes for classification
+    outcomes = np.array([0, 1])
     
     config_dict = {
         "embedding_dim": 50,
@@ -261,7 +278,7 @@ def test_analyze_life_course_with_dict_config(tmp_path):
         output_dir=tmp_path / "output"
     )
     
-    assert results["n_sequences"] == 1
+    assert results["n_sequences"] == 2
     assert "model" in results
     assert results["embedding_dim"] == 50
 
@@ -327,12 +344,17 @@ def test_analyze_life_course_config_model_params(tmp_path):
     events1 = [
         Event("degree", datetime(2010, 6, 1), "education"),
     ]
+    events2 = [
+        Event("certification", datetime(2012, 1, 1), "education"),
+    ]
     
     sequences = [
         EventSequence(person_id="person_001", events=events1),
+        EventSequence(person_id="person_002", events=events2),
     ]
     
-    outcomes = np.array([0])
+    # Need at least 2 classes for classification
+    outcomes = np.array([0, 1])
     
     config = LifeEventsWorkflowConfig(
         work_dir=tmp_path / "work",
@@ -359,12 +381,17 @@ def test_analyze_life_course_saves_model(tmp_path):
     events1 = [
         Event("degree", datetime(2010, 6, 1), "education"),
     ]
+    events2 = [
+        Event("certification", datetime(2012, 1, 1), "education"),
+    ]
     
     sequences = [
         EventSequence(person_id="person_001", events=events1),
+        EventSequence(person_id="person_002", events=events2),
     ]
     
-    outcomes = np.array([0])
+    # Need at least 2 classes for classification
+    outcomes = np.array([0, 1])
     
     output_dir = tmp_path / "output"
     results = analyze_life_course(

@@ -148,8 +148,9 @@ def test_feature_attribution_not_fitted():
 def test_feature_attribution_empty_sequences():
     """Test feature attribution with empty sequences."""
     predictor = EventSequencePredictor(random_state=42)
-    sequences = [["health:diagnosis"]]
-    y = np.array([0])
+    # Need at least 2 samples with 2 different classes for classification
+    sequences = [["health:diagnosis"], ["education:degree"]]
+    y = np.array([0, 1])
     embeddings = learn_event_embeddings(sequences, random_state=42)
     predictor.fit(sequences, y, event_embeddings=embeddings)
 

@@ -8,5 +8,6 @@ def test_expected_segregating_sites():
     n = 5
     # a1 = 1 + 1/2 + 1/3 + 1/4
     a1 = 1 + 0.5 + 1.0 / 3.0 + 0.25
-    E_S = expected_segregating_sites(theta, n)
+    # Function signature is expected_segregating_sites(sample_size, theta, ...)
+    E_S = expected_segregating_sites(n, theta)
     assert abs(E_S - theta * a1) < 1e-12
