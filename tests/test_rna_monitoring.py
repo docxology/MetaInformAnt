@@ -39,18 +39,18 @@ class TestCountQuantifiedSamples:
     def test_count_quantified_samples_with_quantified(self, tmp_path: Path):
         """Test count_quantified_samples counts quantified samples."""
         config_file = tmp_path / "config.yaml"
+        # Use absolute work_dir since load_workflow_config resolves relative paths w.r.t. repo root.
+        # Monitoring functions default quant_dir to work_dir / "quant" when not configured.
+        work_dir_abs = (tmp_path / "work").resolve()
         config_data = {
-            "work_dir": str(tmp_path / "work"),
+            "work_dir": str(work_dir_abs),
             "threads": 4,
             "species_list": ["Test_species"],
-            "per_step": {
-                "quant": {"out_dir": str(tmp_path / "quant")},
-            },
         }
         dump_json(config_data, config_file)
         
         # Create metadata
-        metadata_dir = tmp_path / "work" / "metadata"
+        metadata_dir = work_dir_abs / "metadata"
         metadata_dir.mkdir(parents=True)
         metadata_file = metadata_dir / "metadata.tsv"
         write_delimited(
@@ -58,9 +58,9 @@ class TestCountQuantifiedSamples:
             metadata_file,
             delimiter="\t",
         )
-        
-        # Create quantified samples
-        quant_dir = tmp_path / "quant"
+
+        # Create quantified samples under the default quant_dir (work_dir / "quant")
+        quant_dir = work_dir_abs / "quant"
         quant_dir.mkdir(parents=True)
         (quant_dir / "SRR123").mkdir()
         (quant_dir / "SRR123" / "abundance.tsv").write_text("test")
@@ -74,18 +74,17 @@ class TestCountQuantifiedSamples:
     def test_count_quantified_samples_partial(self, tmp_path: Path):
         """Test count_quantified_samples with partial quantification."""
         config_file = tmp_path / "config.yaml"
+        # Use absolute work_dir; quant_dir defaults to work_dir / "quant"
+        work_dir_abs = (tmp_path / "work").resolve()
         config_data = {
-            "work_dir": str(tmp_path / "work"),
+            "work_dir": str(work_dir_abs),
             "threads": 4,
             "species_list": ["Test_species"],
-            "per_step": {
-                "quant": {"out_dir": str(tmp_path / "quant")},
-            },
         }
         dump_json(config_data, config_file)
         
         # Create metadata with 3 samples
-        metadata_dir = tmp_path / "work" / "metadata"
+        metadata_dir = work_dir_abs / "metadata"
         metadata_dir.mkdir(parents=True)
         metadata_file = metadata_dir / "metadata.tsv"
         write_delimited(
@@ -93,9 +92,9 @@ class TestCountQuantifiedSamples:
             metadata_file,
             delimiter="\t",
         )
-        
-        # Only quantify 2 samples
-        quant_dir = tmp_path / "quant"
+
+        # Only quantify 2 samples under work_dir / "quant"
+        quant_dir = work_dir_abs / "quant"
         quant_dir.mkdir(parents=True)
         (quant_dir / "SRR123").mkdir()
         (quant_dir / "SRR123" / "abundance.tsv").write_text("test")
@@ -134,21 +133,20 @@ class TestGetSampleStatus:
     def test_get_sample_status_has_fastq(self, tmp_path: Path):
         """Test get_sample_status for sample with FASTQ files."""
         config_file = tmp_path / "config.yaml"
+        # Use absolute work_dir; fastq_dir defaults to work_dir / "fastq"
+        work_dir_abs = (tmp_path / "work").resolve()
         config_data = {
-            "work_dir": str(tmp_path / "work"),
+            "work_dir": str(work_dir_abs),
             "threads": 4,
             "species_list": ["Test_species"],
-            "per_step": {
-                "getfastq": {"out_dir": str(tmp_path / "fastq")},
-                "quant": {"out_dir": str(tmp_path / "quant")},
-            },
         }
         dump_json(config_data, config_file)
-        
-        # Create FASTQ file
-        fastq_dir = tmp_path / "fastq" / "getfastq" / "SRR123"
-        fastq_dir.mkdir(parents=True)
-        (fastq_dir / "SRR123_1.fastq.gz").write_text("test")
+
+        # Create FASTQ file under default fastq_dir (work_dir / "fastq")
+        fastq_dir = work_dir_abs / "fastq"
+        fastq_sample_dir = fastq_dir / "getfastq" / "SRR123"
+        fastq_sample_dir.mkdir(parents=True)
+        (fastq_sample_dir / "SRR123_1.fastq.gz").write_text("test")
         
         status = monitoring.get_sample_status(config_file, "SRR123")
         assert status["has_fastq"] is True
@@ -157,21 +155,19 @@ class TestGetSampleStatus:
     def test_get_sample_status_quantified(self, tmp_path: Path):
         """Test get_sample_status for quantified sample."""
         config_file = tmp_path / "config.yaml"
+        # Use absolute work_dir; quant_dir defaults to work_dir / "quant"
+        work_dir_abs = (tmp_path / "work").resolve()
         config_data = {
-            "work_dir": str(tmp_path / "work"),
+            "work_dir": str(work_dir_abs),
             "threads": 4,
             "species_list": ["Test_species"],
-            "per_step": {
-                "getfastq": {"out_dir": str(tmp_path / "fastq")},
-                "quant": {"out_dir": str(tmp_path / "quant")},
-            },
         }
         dump_json(config_data, config_file)
-        
-        # Create quantified sample
-        quant_dir = tmp_path / "quant" / "SRR123"
-        quant_dir.mkdir(parents=True)
-        (quant_dir / "abundance.tsv").write_text("test")
+
+        # Create quantified sample under default quant_dir (work_dir / "quant")
+        quant_sample_dir = (work_dir_abs / "quant") / "SRR123"
+        quant_sample_dir.mkdir(parents=True)
+        (quant_sample_dir / "abundance.tsv").write_text("test")
         
         status = monitoring.get_sample_status(config_file, "SRR123")
         assert status["quantified"] is True
@@ -204,19 +200,17 @@ class TestAnalyzeSpeciesStatus:
     def test_analyze_species_status_with_samples(self, tmp_path: Path):
         """Test analyze_species_status with samples."""
         config_file = tmp_path / "config.yaml"
+        # Use absolute work_dir; fastq_dir/quant_dir default under work_dir
+        work_dir_abs = (tmp_path / "work").resolve()
         config_data = {
-            "work_dir": str(tmp_path / "work"),
+            "work_dir": str(work_dir_abs),
             "threads": 4,
             "species_list": ["Test_species"],
-            "per_step": {
-                "getfastq": {"out_dir": str(tmp_path / "fastq")},
-                "quant": {"out_dir": str(tmp_path / "quant")},
-            },
         }
         dump_json(config_data, config_file)
         
         # Create metadata
-        metadata_dir = tmp_path / "work" / "metadata"
+        metadata_dir = work_dir_abs / "metadata"
         metadata_dir.mkdir(parents=True)
         metadata_file = metadata_dir / "metadata.tsv"
         write_delimited(
@@ -224,11 +218,11 @@ class TestAnalyzeSpeciesStatus:
             metadata_file,
             delimiter="\t",
         )
-        
-        # Create quantified sample
-        quant_dir = tmp_path / "quant" / "SRR123"
-        quant_dir.mkdir(parents=True)
-        (quant_dir / "abundance.tsv").write_text("test")
+
+        # Create quantified sample under work_dir / "quant"
+        quant_sample_dir = (work_dir_abs / "quant") / "SRR123"
+        quant_sample_dir.mkdir(parents=True)
+        (quant_sample_dir / "abundance.tsv").write_text("test")
         
         status = monitoring.analyze_species_status(config_file)
         assert status["total_in_metadata"] == 2
@@ -261,18 +255,17 @@ class TestFindUnquantifiedSamples:
     def test_find_unquantified_samples_finds_unquantified(self, tmp_path: Path):
         """Test find_unquantified_samples finds unquantified samples."""
         config_file = tmp_path / "config.yaml"
+        # Use absolute work_dir; quant_dir defaults under work_dir
+        work_dir_abs = (tmp_path / "work").resolve()
         config_data = {
-            "work_dir": str(tmp_path / "work"),
+            "work_dir": str(work_dir_abs),
             "threads": 4,
             "species_list": ["Test_species"],
-            "per_step": {
-                "quant": {"out_dir": str(tmp_path / "quant")},
-            },
         }
         dump_json(config_data, config_file)
         
         # Create metadata
-        metadata_dir = tmp_path / "work" / "metadata"
+        metadata_dir = work_dir_abs / "metadata"
         metadata_dir.mkdir(parents=True)
         metadata_file = metadata_dir / "metadata.tsv"
         write_delimited(
@@ -280,11 +273,11 @@ class TestFindUnquantifiedSamples:
             metadata_file,
             delimiter="\t",
         )
-        
-        # Only quantify one sample
-        quant_dir = tmp_path / "quant" / "SRR123"
-        quant_dir.mkdir(parents=True)
-        (quant_dir / "abundance.tsv").write_text("test")
+
+        # Only quantify one sample under work_dir / "quant"
+        quant_sample_dir = (work_dir_abs / "quant") / "SRR123"
+        quant_sample_dir.mkdir(parents=True)
+        (quant_sample_dir / "abundance.tsv").write_text("test")
         
         unquantified = monitoring.find_unquantified_samples(config_file)
         assert len(unquantified) == 1
@@ -352,19 +345,17 @@ class TestCheckWorkflowProgress:
     def test_check_workflow_progress_with_samples(self, tmp_path: Path):
         """Test check_workflow_progress with samples."""
         config_file = tmp_path / "config.yaml"
+        # Use absolute work_dir; fastq_dir/quant_dir default under work_dir
+        work_dir_abs = (tmp_path / "work").resolve()
         config_data = {
-            "work_dir": str(tmp_path / "work"),
+            "work_dir": str(work_dir_abs),
             "threads": 4,
             "species_list": ["Test_species"],
-            "per_step": {
-                "getfastq": {"out_dir": str(tmp_path / "fastq")},
-                "quant": {"out_dir": str(tmp_path / "quant")},
-            },
         }
         dump_json(config_data, config_file)
         
         # Create metadata
-        metadata_dir = tmp_path / "work" / "metadata"
+        metadata_dir = work_dir_abs / "metadata"
         metadata_dir.mkdir(parents=True)
         metadata_file = metadata_dir / "metadata.tsv"
         write_delimited(
@@ -372,11 +363,11 @@ class TestCheckWorkflowProgress:
             metadata_file,
             delimiter="\t",
         )
-        
-        # Quantify one sample
-        quant_dir = tmp_path / "quant" / "SRR123"
-        quant_dir.mkdir(parents=True)
-        (quant_dir / "abundance.tsv").write_text("test")
+
+        # Quantify one sample under work_dir / "quant"
+        quant_sample_dir = (work_dir_abs / "quant") / "SRR123"
+        quant_sample_dir.mkdir(parents=True)
+        (quant_sample_dir / "abundance.tsv").write_text("test")
         
         progress = monitoring.check_workflow_progress(config_file)
         assert progress["quantified"] == 1
@@ -402,21 +393,19 @@ class TestAssessAllSpeciesProgress:
         config_dir = tmp_path / "configs"
         config_dir.mkdir(parents=True)
         
-        # Create test config
-        config_file = config_dir / "amalgkit_test_species.yaml"
+        # Create config with absolute work_dir; filename must not contain 'test' to be included
+        config_file = config_dir / "amalgkit_example_species.yaml"
+        work_dir_abs = (tmp_path / "work").resolve()
         config_data = {
-            "work_dir": str(tmp_path / "work"),
+            "work_dir": str(work_dir_abs),
             "threads": 4,
             "species_list": ["Test_species"],
-            "per_step": {
-                "quant": {"out_dir": str(tmp_path / "quant")},
-            },
         }
         dump_json(config_data, config_file)
         
         results = monitoring.assess_all_species_progress(config_dir)
         assert isinstance(results, dict)
-        assert "test_species" in results
+        assert "example_species" in results
 
 
 class TestInitializeProgressTracking:
@@ -440,15 +429,17 @@ class TestInitializeProgressTracking:
     def test_initialize_progress_tracking_with_metadata(self, tmp_path: Path):
         """Test initialize_progress_tracking with metadata."""
         config_file = tmp_path / "config.yaml"
+        # Use absolute paths
+        work_dir_abs = (tmp_path / "work").resolve()
         config_data = {
-            "work_dir": str(tmp_path / "work"),
+            "work_dir": str(work_dir_abs),
             "threads": 4,
             "species_list": ["Test_species"],
         }
         dump_json(config_data, config_file)
         
         # Create metadata
-        metadata_dir = tmp_path / "work" / "metadata"
+        metadata_dir = work_dir_abs / "metadata"
         metadata_dir.mkdir(parents=True)
         metadata_file = metadata_dir / "metadata.tsv"
         write_delimited(

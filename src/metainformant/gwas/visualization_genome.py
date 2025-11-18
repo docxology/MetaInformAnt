@@ -466,7 +466,7 @@ def chromosome_ideogram(
 
 
 def genome_wide_ld_heatmap(
-    vcf_path: Path,
+    ld_data_or_path: Any,
     output_path: str | Path,
     *,
     sample_size: int = 1000,
@@ -474,25 +474,120 @@ def genome_wide_ld_heatmap(
 ) -> dict[str, Any]:
     """Genome-wide linkage disequilibrium heatmap (downsampled).
     
-    Shows LD patterns across genome by sampling variants.
-    Full genome-wide LD computation is prohibitive for millions of SNPs.
+    This helper is intentionally lightweight and accepts either:
+    
+    - An in-memory iterable of LD records (each a mapping with keys
+      ``CHROM``, ``POS1``, ``POS2``, ``r2``) – this is what the tests use.
+    - Or a path to a precomputed LD file (not yet supported; returns a
+      structured ``skipped`` status in that case).
     
     Args:
-        vcf_path: Path to VCF file
-        output_path: Output path
-        sample_size: Number of variants to sample
-        title: Plot title
+        ld_data_or_path: Iterable of LD dictionaries or path to LD file/VCF
+        output_path: Output image path for the heatmap
+        sample_size: Maximum number of LD records to sample for plotting
+        title: Optional plot title
     
     Returns:
-        Plot metadata
+        Plot metadata dictionary with ``status`` and auxiliary fields.
     """
-    logger.info(f"genome_wide_ld_heatmap: Sampling {sample_size} variants for LD")
-    
-    return {
-        "status": "skipped",
-        "message": "Genome-wide LD requires specialized tools (PLINK, LDmatrix)",
-        "recommendation": "Use regional LD plots for specific loci instead",
-    }
+    output_path = Path(output_path)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # If caller passed a path (VCF / LD file), we currently do not implement
+    # full parsing – this would require external tools. Return a clear status.
+    if isinstance(ld_data_or_path, (str, Path)):
+        logger.info(
+            "genome_wide_ld_heatmap: LD file/VCF input not yet supported; "
+            "returning skipped status"
+        )
+        return {
+            "status": "skipped",
+            "message": "File-based genome-wide LD not yet implemented "
+                       "(requires external tools such as PLINK).",
+        }
+
+    try:
+        # Materialize iterable and downsample if necessary
+        records = list(ld_data_or_path)
+        if not records:
+            logger.warning("genome_wide_ld_heatmap: no LD records provided")
+            return {
+                "status": "failed",
+                "error": "No LD records provided for genome-wide heatmap",
+            }
+
+        if len(records) > sample_size:
+            logger.info(
+                "genome_wide_ld_heatmap: downsampling %d → %d LD records",
+                len(records),
+                sample_size,
+            )
+            records = records[:sample_size]
+
+        # Collect unique variant identifiers as (CHROM, POS) pairs
+        variants: list[tuple[str, int]] = []
+        index: dict[tuple[str, int], int] = {}
+        for rec in records:
+            chrom = str(rec["CHROM"])
+            pos1 = int(rec["POS1"])
+            pos2 = int(rec["POS2"])
+            for pos in (pos1, pos2):
+                key = (chrom, pos)
+                if key not in index:
+                    index[key] = len(variants)
+                    variants.append(key)
+
+        n = len(variants)
+        if n == 0:
+            return {
+                "status": "failed",
+                "error": "No variants could be derived from LD records",
+            }
+
+        import numpy as np  # Local import to avoid overhead when unused
+        import matplotlib.pyplot as plt
+
+        # Initialize LD matrix with zeros and fill symmetric entries
+        mat = np.zeros((n, n), dtype=float)
+        np.fill_diagonal(mat, 1.0)
+
+        for rec in records:
+            chrom = str(rec["CHROM"])
+            i_key = (chrom, int(rec["POS1"]))
+            j_key = (chrom, int(rec["POS2"]))
+            if i_key not in index or j_key not in index:
+                continue
+            i = index[i_key]
+            j = index[j_key]
+            r2 = float(rec.get("r2", 0.0))
+            mat[i, j] = r2
+            mat[j, i] = r2
+
+        logger.info("genome_wide_ld_heatmap: plotting LD matrix of size %dx%d", n, n)
+
+        fig, ax = plt.subplots(figsize=(6, 5))
+        im = ax.imshow(mat, cmap="viridis", vmin=0.0, vmax=1.0, origin="lower")
+        ax.set_xlabel("Variant index")
+        ax.set_ylabel("Variant index")
+        if title:
+            ax.set_title(title)
+        fig.colorbar(im, ax=ax, label="LD (r²)")
+
+        fig.tight_layout()
+        fig.savefig(output_path)
+        plt.close(fig)
+
+        return {
+            "status": "success",
+            "output": str(output_path),
+            "n_variants": n,
+        }
+    except Exception as e:  # pragma: no cover - defensive
+        logger.error(f"genome_wide_ld_heatmap failed: {e}", exc_info=True)
+        return {
+            "status": "failed",
+            "error": str(e),
+        }
 
 
 

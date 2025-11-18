@@ -242,7 +242,12 @@ def calculate_sequence_entropy(seq: str, k: int = 1) -> float:
             p = count / total
             entropy -= p * math.log2(p)
 
-    return entropy
+    # Normalize by the maximum possible entropy for the observed k-mers so that
+    # the value is in [0, 1] regardless of k. This makes entropy values
+    # comparable across different k and ensures that more complex k-mers do not
+    # trivially appear to have lower entropy due to fewer observations.
+    max_entropy = math.log2(len(kmers)) if kmers else 0.0
+    return entropy / max_entropy if max_entropy > 0 else 0.0
 
 
 def detect_sequence_bias(seq: str) -> Dict[str, float]:
@@ -275,7 +280,7 @@ def detect_sequence_bias(seq: str) -> Dict[str, float]:
 
 
 def calculate_gc_skew(seq: str) -> float:
-    """Calculate GC skew: (G - C) / (G + C).
+    """Calculate GC vs AT skew: (GC - AT) / (GC + AT).
     
     Args:
         seq: DNA sequence to analyze
@@ -285,15 +290,15 @@ def calculate_gc_skew(seq: str) -> float:
     """
     if not seq:
         return 0.0
-        
+
     upper_seq = seq.upper()
-    g_count = upper_seq.count('G')
-    c_count = upper_seq.count('C')
-    
-    if g_count + c_count == 0:
+    gc_count = upper_seq.count("G") + upper_seq.count("C")
+    at_count = upper_seq.count("A") + upper_seq.count("T")
+
+    if gc_count + at_count == 0:
         return 0.0
-        
-    return (g_count - c_count) / (g_count + c_count)
+
+    return (gc_count - at_count) / (gc_count + at_count)
 
 
 def calculate_at_skew(seq: str) -> float:
@@ -389,11 +394,19 @@ def calculate_codon_usage(seq: str) -> dict[str, float]:
     
     if len(seq) % 3 != 0:
         raise ValueError("Sequence length must be divisible by 3")
-        
-    codons = [seq[i:i+3] for i in range(0, len(seq), 3)]
-    codon_counts = Counter(codons)
-    total_codons = len(codons)
-    
+
+    codons = [seq[i:i+3].upper() for i in range(0, len(seq), 3)]
+    # Exclude stop codons from usage statistics so that codon usage focuses on
+    # sense codons only.
+    stop_codons = {"TAA", "TAG", "TGA"}
+    sense_codons = [c for c in codons if c not in stop_codons]
+
+    if not sense_codons:
+        return {}
+
+    codon_counts = Counter(sense_codons)
+    total_codons = len(sense_codons)
+
     return {codon: count / total_codons for codon, count in codon_counts.items()}
 
 

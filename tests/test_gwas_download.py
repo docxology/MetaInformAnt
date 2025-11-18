@@ -9,6 +9,7 @@ import pytest
 from metainformant.gwas import download_reference_genome, download_variant_data, extract_variant_regions
 
 
+@pytest.mark.slow
 @pytest.mark.network
 def test_download_reference_genome_skip_if_offline(tmp_path: Path, pytestconfig) -> None:
     """Test genome download (skips if network unavailable)."""

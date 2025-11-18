@@ -40,6 +40,7 @@ class TestCheckSRAToolsAvailable:
 class TestDownloadSRARun:
     """Test SRA run download functionality."""
 
+    @pytest.mark.slow
     @pytest.mark.skipif(
         not shutil.which("fasterq-dump") and not shutil.which("fastq-dump"),
         reason="SRA Toolkit not available - real implementation requires fasterq-dump or fastq-dump"

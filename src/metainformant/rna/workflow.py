@@ -1106,7 +1106,8 @@ def load_workflow_config(config_file: str | Path) -> AmalgkitWorkflowConfig:
         species_list = [str(x) for x in species_raw]
     else:
         species_list = []
-    steps_map = raw.get("steps", {}) or {}
+    # Accept both "steps" and "per_step" for backward compatibility
+    steps_map = raw.get("steps") or raw.get("per_step") or {}
     if not isinstance(steps_map, dict):
         steps_map = {}
     # Keep only known step names if provided

@@ -17,6 +17,7 @@ from metainformant.rna.progress_tracker import ProgressTracker, get_tracker
 class TestProgressTracker:
     """Test ProgressTracker class."""
 
+    @pytest.mark.slow
     def test_progress_tracker_initialization(self, tmp_path: Path):
         """Test ProgressTracker initialization."""
         state_file = tmp_path / "progress_state.json"
@@ -31,6 +32,7 @@ class TestProgressTracker:
         assert tracker.dashboard_file == dashboard_file
         assert isinstance(tracker.state, dict)
 
+    @pytest.mark.slow
     def test_initialize_species(self, tmp_path: Path):
         """Test initialize_species method."""
         state_file = tmp_path / "progress_state.json"
@@ -43,6 +45,7 @@ class TestProgressTracker:
         assert tracker.state["test_species"]["need_download"] == set(sample_ids)
         assert len(tracker.state["test_species"]["need_download"]) == 3
 
+    @pytest.mark.slow
     def test_on_download_start(self, tmp_path: Path):
         """Test on_download_start method."""
         state_file = tmp_path / "progress_state.json"
@@ -54,6 +57,7 @@ class TestProgressTracker:
         assert "SRR123" in tracker.state["test_species"]["ongoing_download"]
         assert "SRR123" not in tracker.state["test_species"]["need_download"]
 
+    @pytest.mark.slow
     def test_on_download_complete(self, tmp_path: Path):
         """Test on_download_complete method."""
         state_file = tmp_path / "progress_state.json"
@@ -66,6 +70,7 @@ class TestProgressTracker:
         assert "SRR123" in tracker.state["test_species"]["needs_quant"]
         assert "SRR123" not in tracker.state["test_species"]["ongoing_download"]
 
+    @pytest.mark.slow
     def test_on_quantification_complete(self, tmp_path: Path):
         """Test on_quantification_complete method."""
         state_file = tmp_path / "progress_state.json"
@@ -79,6 +84,7 @@ class TestProgressTracker:
         assert "SRR123" in tracker.state["test_species"]["needs_delete"]
         assert "SRR123" not in tracker.state["test_species"]["needs_quant"]
 
+    @pytest.mark.slow
     def test_on_deletion_complete(self, tmp_path: Path):
         """Test on_deletion_complete method."""
         state_file = tmp_path / "progress_state.json"
@@ -93,6 +99,7 @@ class TestProgressTracker:
         assert "SRR123" in tracker.state["test_species"]["completed"]
         assert "SRR123" not in tracker.state["test_species"]["needs_delete"]
 
+    @pytest.mark.slow
     def test_state_persistence(self, tmp_path: Path):
         """Test that state is persisted to disk."""
         state_file = tmp_path / "progress_state.json"
@@ -108,6 +115,7 @@ class TestProgressTracker:
         assert "SRR123" in tracker2.state["test_species"]["ongoing_download"]
         assert "SRR456" in tracker2.state["test_species"]["need_download"]
 
+    @pytest.mark.slow
     def test_get_species_summary(self, tmp_path: Path):
         """Test get_species_summary method."""
         state_file = tmp_path / "progress_state.json"
@@ -129,11 +137,13 @@ class TestProgressTracker:
 class TestGetTracker:
     """Test get_tracker function."""
 
+    @pytest.mark.slow
     def test_get_tracker_default(self):
         """Test get_tracker with default parameters."""
         tracker = get_tracker()
         assert isinstance(tracker, ProgressTracker)
 
+    @pytest.mark.slow
     def test_get_tracker_custom_paths(self, tmp_path: Path):
         """Test get_tracker with custom paths."""
         state_file = tmp_path / "custom_state.json"

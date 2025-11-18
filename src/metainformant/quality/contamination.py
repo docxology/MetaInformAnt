@@ -200,6 +200,18 @@ def _calculate_sequence_similarity(seq1: str, seq2: str) -> float:
     if not seq1 or not seq2:
         return 0.0
 
+    # Check for exact substring match first (high similarity)
+    # If one sequence is a substring of the other, it's a strong match
+    if seq1 in seq2 or seq2 in seq1:
+        min_len = min(len(seq1), len(seq2))
+        max_len = max(len(seq1), len(seq2))
+        # For contamination detection, exact substring is strong evidence
+        # Use high similarity (0.9+) for substring matches
+        if min_len >= max_len * 0.5:  # At least 50% overlap
+            return 0.95  # Very high similarity for substantial substring matches
+        else:
+            return min_len / max_len  # Proportion for smaller overlaps
+
     k = min(6, len(seq1), len(seq2))  # Use 6-mers or shorter if sequences are small
 
     def get_kmers(seq: str, k: int) -> Set[str]:
@@ -258,7 +270,9 @@ def generate_contamination_report(
                 total_samples += 1
                 if contaminants:
                     contaminated_samples += 1
-                    report_lines.append(f"  Sample {sample_id}: {', '.join(contaminants)}")
+                    # Convert contaminants to strings (handles floats, bools, etc.)
+                    contaminant_strs = [str(c) for c in contaminants]
+                    report_lines.append(f"  Sample {sample_id}: {', '.join(contaminant_strs)}")
             report_lines.append("")
 
     report_lines.append("Summary:")

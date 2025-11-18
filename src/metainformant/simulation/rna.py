@@ -40,7 +40,12 @@ def _sample_negative_binomial(rng: random.Random, mean: float, dispersion: float
     d = gamma_shape - 1.0 / 3.0
     c = 1.0 / math.sqrt(9 * d)
     while True:
-        x = rng.normal(0, 1)
+        # Use gaussian/normal deviate from the RNG. random.Random provides
+        # .gauss, while NumPy RNGs provide .normal.
+        if hasattr(rng, "normal"):
+            x = rng.normal(0, 1)
+        else:
+            x = rng.gauss(0, 1)
         v = (1 + c * x) ** 3
         if v <= 0:
             continue

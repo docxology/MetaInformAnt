@@ -131,27 +131,29 @@ class TestCleanupPartialDownloads:
 
     def test_cleanup_partial_downloads_actual_cleanup(self, tmp_path: Path):
         """Test cleanup_partial_downloads actually deletes files."""
-        # Create config file
+        # Create config file with absolute paths
         config_file = tmp_path / "config.yaml"
+        # Use absolute paths since load_workflow_config resolves relative to repo root
+        work_dir_abs = (tmp_path / "work").resolve()
+        fastq_dir_abs = (tmp_path / "fastq").resolve()
+        quant_dir_abs = (tmp_path / "quant").resolve()
         config_data = {
-            "work_dir": str(tmp_path / "work"),
+            "work_dir": str(work_dir_abs),
             "threads": 4,
             "species_list": ["Test_species"],
             "per_step": {
-                "getfastq": {"out_dir": str(tmp_path / "fastq")},
-                "quant": {"out_dir": str(tmp_path / "quant")},
+                "getfastq": {"out_dir": str(fastq_dir_abs)},
+                "quant": {"out_dir": str(quant_dir_abs)},
             },
         }
         from metainformant.core.io import dump_json
         dump_json(config_data, config_file)
         
         # Create partial download
-        fastq_dir = tmp_path / "fastq"
-        quant_dir = tmp_path / "quant"
-        fastq_dir.mkdir(parents=True)
-        quant_dir.mkdir(parents=True)
+        fastq_dir_abs.mkdir(parents=True)
+        quant_dir_abs.mkdir(parents=True)
         
-        sample_dir = fastq_dir / "getfastq" / "SRR123"
+        sample_dir = fastq_dir_abs / "getfastq" / "SRR123"
         sample_dir.mkdir(parents=True)
         test_file = sample_dir / "SRR123_1.fastq.gz"
         test_file.write_text("test")

@@ -159,8 +159,9 @@ addopts = [
     # "--cov-report=html",  # Generate HTML coverage report
     # "--cov-report=xml",   # Generate XML coverage report for CI
     # "--cov-fail-under=85",  # Fail if coverage below 85%
-    # Note: timeout can be set via command line: --timeout=10
-    # Not setting default timeout in config to allow flexibility
+    # Note: timeout can be set via command line: --timeout=300
+    # Default timeout of 5 minutes for slow tests (can be overridden)
+    # For faster runs, exclude slow tests: -m "not slow"
 ]
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",

@@ -315,11 +315,23 @@ def integrate_omics_data(
         # Apply sample mapping if provided
         if sample_mapping and omics_type in sample_mapping:
             sample_map = sample_mapping[omics_type]
-            # Map sample IDs using the provided mapping
-            df.index = df.index.map(sample_map).fillna(df.index)
+            # Map sample IDs, keeping original if not in mapping
+            mapped_index = df.index.map(sample_map)
+            # Fill missing values with original index values
+            original_values = df.index.values
+            mapped_values = mapped_index.values
+            filled_values = [mapped_val if pd.notna(mapped_val) else orig_val 
+                             for mapped_val, orig_val in zip(mapped_values, original_values)]
+            df.index = pd.Index(filled_values)
             # Update sample metadata if provided
             if metadata_df is not None:
-                metadata_df.index = metadata_df.index.map(sample_map).fillna(metadata_df.index)
+                # Same fix for metadata_df
+                mapped_meta_index = metadata_df.index.map(sample_map)
+                meta_original_values = metadata_df.index.values
+                meta_mapped_values = mapped_meta_index.values
+                meta_filled_values = [mapped_val if pd.notna(mapped_val) else orig_val 
+                                      for mapped_val, orig_val in zip(meta_mapped_values, meta_original_values)]
+                metadata_df.index = pd.Index(meta_filled_values)
 
         # Apply feature mapping if provided
         if feature_mapping and omics_type in feature_mapping:

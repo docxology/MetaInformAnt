@@ -62,6 +62,7 @@ class TestSkipQuantifiedSamples:
 class TestProcessDownloadedFastq:
     """Test that already-downloaded FASTQ files are processed (quantified and deleted)."""
 
+    @pytest.mark.slow
     def test_skip_completed_skips_quantified(self, tmp_path: Path):
         """Test that skip_completed=True skips already-quantified samples."""
         from metainformant.rna.steps.process_samples import run_download_quant_workflow
@@ -99,6 +100,7 @@ class TestProcessDownloadedFastq:
         assert stats["skipped"] >= 1
         assert stats["total_samples"] == 2
 
+    @pytest.mark.slow
     def test_skip_completed_false_processes_all(self, tmp_path: Path):
         """Test that skip_completed=False processes all samples even if quantified."""
         from metainformant.rna.steps.process_samples import run_download_quant_workflow
@@ -139,6 +141,7 @@ class TestProcessDownloadedFastq:
 class TestDownloadedFastqProcessing:
     """Test that already-downloaded FASTQ files are processed rather than re-downloaded."""
 
+    @pytest.mark.slow
     def test_downloaded_fastq_processed(self, tmp_path: Path):
         """Test that if FASTQ exists, it's quantified and deleted (not re-downloaded).
         

@@ -95,3 +95,4 @@ coverage.xml
 *.idx
 *.1
 *.2
+/output/tmp

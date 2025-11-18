@@ -13,6 +13,8 @@ from pathlib import Path
 
 import pytest
 
+from metainformant.core.errors import ValidationError
+
 # Import gc_content from core functionality tests since it's working there
 from metainformant.dna.composition import gc_skew  # We'll use a different approach for gc_content
 from metainformant.dna.composition import cumulative_gc_skew, melting_temperature
@@ -273,18 +275,16 @@ class TestSequenceGeneration:
         # Zero length
         assert generate_random_dna(0) == ""
 
-        # Negative length should be handled gracefully
-        try:
-            seq = generate_random_dna(-1)
-            assert seq == ""  # Should return empty string
-        except ValueError:
-            pass  # Or raise appropriate error
+        # Negative length should raise a clear validation error
+        with pytest.raises((ValueError, ValidationError)):
+            generate_random_dna(-1)
 
-        # Invalid GC content
-        with pytest.raises(ValueError):
+        # Invalid GC content (below range)
+        with pytest.raises((ValueError, ValidationError)):
             generate_random_dna(100, gc_content=-0.1)
 
-        with pytest.raises(ValueError):
+        # Invalid GC content (above range)
+        with pytest.raises((ValueError, ValidationError)):
             generate_random_dna(100, gc_content=1.1)
 
 

@@ -26,6 +26,8 @@ def generate_random_dna(length: int, *, gc_content: float = 0.5, rng: random.Ran
     Raises:
         ValidationError: If gc_content is not in [0, 1] or length is negative
     """
+    # Validate parameters using core validation utilities so that callers see
+    # consistent `ValidationError` exceptions for bad inputs.
     validation.validate_type(length, int, "length")
     validation.validate_range(length, min_val=0, name="length")
     validation.validate_range(gc_content, min_val=0.0, max_val=1.0, name="gc_content")
@@ -116,7 +118,8 @@ def generate_random_protein(length: int, *, rng: random.Random | None = None) ->
         ValidationError: If length is negative
     """
     validation.validate_type(length, int, "length")
-    validation.validate_range(length, min_val=0, name="length")
+    if length < 0:
+        raise ValueError("length must be >= 0")
     
     logger.debug(f"Generating protein sequence: length={length}")
     r = rng or random

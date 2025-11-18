@@ -147,6 +147,7 @@ association:
         pytest.skip("metainformant CLI not available in test environment")
 
 
+@pytest.mark.slow
 @pytest.mark.network
 def test_gwas_workflow_genome_download(tmp_path: Path, pytestconfig) -> None:
     """Test GWAS workflow with genome download (requires network)."""

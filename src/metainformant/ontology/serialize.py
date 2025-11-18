@@ -118,7 +118,7 @@ def load_ontology(path: str | Path) -> Ontology:
     logger.info(f"Loading ontology from {path}")
     
     try:
-        data = core_io.read_json(path)
+        data = core_io.load_json(path)
     except Exception as e:
         raise ValidationError(f"Failed to read JSON from {path}: {e}") from e
     

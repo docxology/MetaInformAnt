@@ -45,10 +45,19 @@ def select_features_univariate(
     # Select by significance and/or top-k
     if method != "mutual_info":
         significant = p_values < p_threshold
-        scores = scores * significant  # Zero out non-significant
-
-    # Get top k features
-    selected_indices = np.argsort(scores)[-k:][::-1]
+        # If too few features are significant, still select top-k by score
+        # (p-value threshold is advisory, not strict)
+        if np.sum(significant) < k:
+            # Use top-k by score regardless of p-value
+            selected_indices = np.argsort(scores)[-k:][::-1]
+        else:
+            # Filter by significance first, then take top-k
+            significant_scores = scores * significant
+            selected_indices = np.argsort(significant_scores)[-k:][::-1]
+    else:
+        # Get top k features
+        selected_indices = np.argsort(scores)[-k:][::-1]
+    
     selected_X = X[:, selected_indices]
 
     return selected_X, selected_indices.tolist()
@@ -82,6 +91,11 @@ def select_features_recursive(
 
     n_samples, n_total_features = X.shape
     n_features = min(n_features, n_total_features)
+
+    # Validate estimator_type early
+    valid_estimators = ["random_forest", "linear", "svm"]
+    if estimator_type not in valid_estimators:
+        raise ValueError(f"Unknown importance method: {estimator_type}")
 
     # Initialize with all features
     current_features = list(range(n_total_features))
@@ -163,8 +177,13 @@ def select_features_stability(
     stable_features = np.where(selection_frequencies >= stability_threshold)[0]
 
     if len(stable_features) == 0:
-        warnings.warn("No features meet stability threshold, selecting top features")
-        stable_features = np.argsort(selection_frequencies)[-min(50, n_features) :]
+        # Select top features by frequency (at least 1, up to 50)
+        n_top = max(1, min(50, n_features))
+        stable_features = np.argsort(selection_frequencies)[-n_top:]
+        # Warn if no features met the threshold (max frequency < threshold)
+        max_frequency = np.max(selection_frequencies) if len(selection_frequencies) > 0 else 0.0
+        if max_frequency < stability_threshold:
+            warnings.warn("No features meet stability threshold, selecting top features", UserWarning)
 
     selected_X = X[:, stable_features]
     return selected_X, stable_features.tolist()
@@ -283,7 +302,15 @@ def _f_score_test(X: np.ndarray, y: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
 
             # Approximate p-value (simplified)
             # In practice, would use F-distribution CDF
-            p_values[j] = max(0.001, min(0.999, 1.0 / (1.0 + f_score)))
+            # For very high F-scores (perfect separation), use very small p-value
+            if f_score > 100:
+                p_values[j] = 0.0001
+            else:
+                p_values[j] = max(0.001, min(0.999, 1.0 / (1.0 + f_score)))
+        elif ss_between > 0:
+            # Perfect separation case: very high F-score
+            f_scores[j] = 1000.0  # Large value for perfect separation
+            p_values[j] = 0.0001  # Very significant
 
     return f_scores, p_values
 

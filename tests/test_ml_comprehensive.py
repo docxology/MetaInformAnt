@@ -379,6 +379,7 @@ class TestDimensionalityReduction:
         # Check method
         assert embedding["method"] == "pca"
 
+    @pytest.mark.slow
     def test_manifold_learning_methods(self):
         """Test different manifold learning methods."""
         methods = ["tsne", "umap"]

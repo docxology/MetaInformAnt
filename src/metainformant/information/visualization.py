@@ -13,8 +13,10 @@ import numpy as np
 
 try:
     from metainformant.visualization import plots
+    from metainformant.visualization.export import save_figure
 except ImportError:
     plots = None
+    save_figure = None
 
 
 def plot_entropy_distribution(
@@ -45,14 +47,17 @@ def plot_entropy_distribution(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     
     # Create histogram
-    fig, ax = plots.create_figure()
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots(figsize=(8, 6))
     ax.hist(entropies, bins=30, edgecolor="black", alpha=0.7)
     ax.set_xlabel("Entropy (bits)")
     ax.set_ylabel("Frequency")
     ax.set_title(title)
     ax.grid(True, alpha=0.3)
     
-    plots.save_figure(fig, output_path)
+    if save_figure is None:
+        raise ImportError("visualization.export module not available")
+    save_figure(fig, output_path)
     
     return {
         "output_path": str(output_path),
@@ -92,7 +97,8 @@ def plot_mutual_information_matrix(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     
     # Create heatmap
-    fig, ax = plots.create_figure()
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots(figsize=(8, 6))
     im = ax.imshow(mi_matrix, cmap="viridis", aspect="auto")
     ax.set_title(title)
     
@@ -104,7 +110,9 @@ def plot_mutual_information_matrix(
     
     fig.colorbar(im, ax=ax, label="Mutual Information (bits)")
     
-    plots.save_figure(fig, output_path)
+    if save_figure is None:
+        raise ImportError("visualization.export module not available")
+    save_figure(fig, output_path)
     
     return {
         "output_path": str(output_path),
@@ -180,7 +188,9 @@ def plot_information_profile(
     axes[1, 1].text(0.1, 0.5, stats_text, fontsize=12, verticalalignment="center")
     
     fig.suptitle(title, fontsize=14)
-    plots.save_figure(fig, output_path)
+    if save_figure is None:
+        raise ImportError("visualization.export module not available")
+    save_figure(fig, output_path)
     
     return {
         "output_path": str(output_path),
@@ -232,7 +242,8 @@ def plot_renyi_spectrum(
             entropies.append(0.0)
     
     # Create plot
-    fig, ax = plots.create_figure()
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots(figsize=(8, 6))
     ax.plot(alpha_range, entropies, marker="o", linewidth=2, markersize=6)
     ax.set_xlabel("Order α")
     ax.set_ylabel("Rényi Entropy (bits)")
@@ -241,7 +252,9 @@ def plot_renyi_spectrum(
     ax.axvline(x=1.0, color="r", linestyle="--", alpha=0.5, label="α=1 (Shannon)")
     ax.legend()
     
-    plots.save_figure(fig, output_path)
+    if save_figure is None:
+        raise ImportError("visualization.export module not available")
+    save_figure(fig, output_path)
     
     return {
         "output_path": str(output_path),
@@ -331,7 +344,9 @@ def plot_information_network(
         nx.draw_networkx_labels(G, pos, labels, ax=ax, font_size=8)
     
     ax.set_title(title)
-    plots.save_figure(fig, output_path)
+    if save_figure is None:
+        raise ImportError("visualization.export module not available")
+    save_figure(fig, output_path)
     
     return {
         "output_path": str(output_path),
@@ -387,7 +402,9 @@ def plot_entropy_landscape(
     ax.set_title(title)
     fig.colorbar(im, ax=ax, label="Entropy (bits)")
     
-    plots.save_figure(fig, output_path)
+    if save_figure is None:
+        raise ImportError("visualization.export module not available")
+    save_figure(fig, output_path)
     
     return {
         "output_path": str(output_path),
@@ -475,7 +492,9 @@ def plot_mi_network(
     ax.set_title(title)
     ax.axis("off")
     
-    plots.save_figure(fig, output_path)
+    if save_figure is None:
+        raise ImportError("visualization.export module not available")
+    save_figure(fig, output_path)
     
     return {
         "output_path": str(output_path),
@@ -547,7 +566,9 @@ def plot_semantic_similarity_network(
     ax.set_title(title)
     ax.axis("off")
     
-    plots.save_figure(fig, output_path)
+    if save_figure is None:
+        raise ImportError("visualization.export module not available")
+    save_figure(fig, output_path)
     
     return {
         "output_path": str(output_path),

@@ -242,11 +242,12 @@ class TestDNASequencesAdvanced:
         
         # Test with sequence not divisible by 3
         with pytest.raises(ValueError):
-            sequences.calculate_codon_usage("ATCGAT")  # 6 bases
+            sequences.calculate_codon_usage("ATCGA")  # 5 bases
 
     def test_start_codon_finding(self):
         """Test start codon finding."""
-        seq = "ATGAAATTTAAATAG"
+        # Sequence with two ATG start codons at positions 0 and 6
+        seq = "ATGAAAATGAAATAA"
         
         starts = sequences.find_start_codons(seq)
         assert 0 in starts  # ATG at position 0
@@ -254,7 +255,7 @@ class TestDNASequencesAdvanced:
 
     def test_stop_codon_finding(self):
         """Test stop codon finding."""
-        seq = "ATGAAATTTAAATAG"
+        seq = "ATGAAAATGAAATAA"
         
         stops = sequences.find_stop_codons(seq)
         assert 12 in stops  # TAA at position 12

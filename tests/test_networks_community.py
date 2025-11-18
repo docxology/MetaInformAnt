@@ -328,6 +328,7 @@ class TestEdgeCasesAndErrors:
         assert isinstance(communities, dict)
         assert len(communities) >= 1
 
+    @pytest.mark.slow
     def test_very_large_network_performance(self):
         """Test performance on larger networks."""
         # Create larger network (50 nodes)

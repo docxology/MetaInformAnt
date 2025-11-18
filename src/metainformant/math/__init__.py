@@ -153,7 +153,7 @@ from .popgen_stats import (
     detect_outliers,
     permutation_test,
     tajimas_d_outliers,
-    test_population_difference,
+    compare_population_statistic,
 )
 from .selection import kin_selection_response, multilevel_selection_decomposition
 
@@ -252,7 +252,7 @@ __all__ = [
     "detect_outliers",
     "tajimas_d_outliers",
     "compare_statistics",
-    "test_population_difference",
+    "compare_population_statistic",
     "calculate_confidence_intervals",
     # utility functions
     "correlation_coefficient",

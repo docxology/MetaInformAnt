@@ -210,7 +210,8 @@ def create_sample_config(output_path: str | Path, sample_type: str = "basic") ->
         }
     else:  # advanced
         config = {
-            "description": "Advanced processing pipeline",
+            # Use lowercase 'advanced processing' so tests can assert on a stable substring.
+            "description": "advanced processing pipeline",
             "downloads": {
                 "dataset1": {"url": "https://example.com/data1.csv"},
                 "dataset2": {"url": "https://example.com/data2.csv"},

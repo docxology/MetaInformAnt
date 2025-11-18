@@ -53,6 +53,16 @@ def bootstrap_confidence_interval(
     data_array = np.array(data)
     n = len(data_array)
     
+    if n == 0:
+        # Handle empty data gracefully
+        return {
+            "statistic": np.nan,
+            "ci_lower": np.nan,
+            "ci_upper": np.nan,
+            "confidence_level": confidence_level,
+            "n_bootstrap": 0,
+        }
+    
     if n < 2:
         stat = statistic_func(data)
         return {
@@ -391,7 +401,7 @@ def compare_statistics(
     }
 
 
-def test_population_difference(
+def compare_population_statistic(
     population1_stats: dict[str, float],
     population2_stats: dict[str, float],
     statistic_name: str,
@@ -412,7 +422,7 @@ def test_population_difference(
     Examples:
         >>> pop1 = {"pi": 0.01, "theta": 0.01}
         >>> pop2 = {"pi": 0.02, "theta": 0.02}
-        >>> result = test_population_difference(pop1, pop2, "pi")
+        >>> result = compare_population_statistic(pop1, pop2, "pi")
         >>> "p_value" in result
         True
     """

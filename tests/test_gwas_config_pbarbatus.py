@@ -11,7 +11,7 @@ from metainformant.gwas import execute_gwas_workflow, load_gwas_config
 
 def test_load_pbarbatus_config() -> None:
     """Test loading P. barbatus GWAS configuration."""
-    config_path = Path("config/gwas_pbarbatus.yaml")
+    config_path = Path("config/gwas/gwas_pbarbatus.yaml")
     
     if not config_path.exists():
         pytest.skip(f"Configuration file not found: {config_path}")
@@ -48,7 +48,7 @@ def test_load_pbarbatus_config() -> None:
 
 def test_pbarbatus_config_validation() -> None:
     """Test configuration validation for P. barbatus."""
-    config_path = Path("config/gwas_pbarbatus.yaml")
+    config_path = Path("config/gwas/gwas_pbarbatus.yaml")
     
     if not config_path.exists():
         pytest.skip(f"Configuration file not found: {config_path}")
@@ -64,7 +64,7 @@ def test_pbarbatus_config_validation() -> None:
 
 def test_pbarbatus_config_parameters() -> None:
     """Test that P. barbatus config has all required parameters."""
-    config_path = Path("config/gwas_pbarbatus.yaml")
+    config_path = Path("config/gwas/gwas_pbarbatus.yaml")
     
     if not config_path.exists():
         pytest.skip(f"Configuration file not found: {config_path}")

@@ -72,8 +72,9 @@ class TestSyntacticInformation:
 
     def test_conditional_entropy(self):
         """Test conditional entropy calculation."""
+        # For perfect correlation, X = Y
         x = [0, 1, 0, 1]
-        y = [0, 0, 1, 1]  # X = Y
+        y = [0, 1, 0, 1]  # X = Y (perfect correlation)
         h_x_given_y = conditional_entropy(x, y)
         assert abs(h_x_given_y) < 1e-10  # No uncertainty given Y
 

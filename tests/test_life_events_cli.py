@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 from datetime import datetime
@@ -19,6 +20,22 @@ from metainformant.life_events import (
     analyze_life_course,
     load_sequences_from_json,
 )
+
+# Get the repository root directory
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SRC_DIR = REPO_ROOT / "src"
+
+
+def _get_cli_env() -> dict[str, str]:
+    """Get environment variables for CLI invocation."""
+    env = os.environ.copy()
+    # Add src directory to PYTHONPATH
+    pythonpath = env.get("PYTHONPATH", "")
+    if pythonpath:
+        env["PYTHONPATH"] = f"{SRC_DIR}:{pythonpath}"
+    else:
+        env["PYTHONPATH"] = str(SRC_DIR)
+    return env
 
 
 def create_test_sequences_file(tmp_path: Path) -> Path:
@@ -85,7 +102,7 @@ def test_cli_predict_basic(tmp_path: Path) -> None:
         f"--output={output_dir}",
     ]
     
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=_get_cli_env())
     
     # Should succeed
     assert result.returncode == 0
@@ -119,7 +136,7 @@ def test_cli_predict_missing_model(tmp_path: Path) -> None:
         f"--output={output_dir}",
     ]
     
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=_get_cli_env())
     
     # Should fail with error
     assert result.returncode != 0
@@ -143,7 +160,7 @@ def test_cli_predict_missing_events(tmp_path: Path) -> None:
         f"--output={output_dir}",
     ]
     
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=_get_cli_env())
     
     # Should fail with error
     assert result.returncode != 0
@@ -168,7 +185,7 @@ def test_cli_predict_invalid_model(tmp_path: Path) -> None:
         f"--output={output_dir}",
     ]
     
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=_get_cli_env())
     
     # Should fail with error
     assert result.returncode != 0
@@ -192,7 +209,7 @@ def test_cli_predict_output_format(tmp_path: Path) -> None:
         f"--output={output_dir}",
     ]
     
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=_get_cli_env())
     assert result.returncode == 0
     
     predictions_file = output_dir / "predictions.json"
@@ -228,7 +245,7 @@ def test_cli_predict_classification_probs(tmp_path: Path) -> None:
         f"--output={output_dir}",
     ]
     
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=_get_cli_env())
     assert result.returncode == 0
     
     predictions_file = output_dir / "predictions.json"
@@ -279,7 +296,7 @@ def test_cli_predict_regression_stats(tmp_path: Path) -> None:
         f"--output={output_dir}",
     ]
     
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=_get_cli_env())
     assert result.returncode == 0
     
     # Check for statistics in output
@@ -303,7 +320,7 @@ def test_cli_interpret_basic(tmp_path: Path) -> None:
         f"--output={output_dir}",
     ]
     
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60, env=_get_cli_env())
     
     # Should succeed
     assert result.returncode == 0
@@ -338,7 +355,7 @@ def test_cli_interpret_missing_model(tmp_path: Path) -> None:
         f"--output={output_dir}",
     ]
     
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=_get_cli_env())
     
     # Should fail with error
     assert result.returncode != 0
@@ -362,7 +379,7 @@ def test_cli_interpret_missing_sequences(tmp_path: Path) -> None:
         f"--output={output_dir}",
     ]
     
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=_get_cli_env())
     
     # Should fail with error
     assert result.returncode != 0
@@ -372,11 +389,13 @@ def test_cli_interpret_missing_sequences(tmp_path: Path) -> None:
 def test_cli_interpret_no_embeddings_error(tmp_path: Path) -> None:
     """Test interpret command with model without embeddings."""
     # Create a simple model that might not have embeddings
+    # Need at least 2 classes for classification
     sequences = [
         ["health:diagnosis", "occupation:job_change"],
+        ["education:degree", "occupation:job_change"],
     ]
     
-    y = np.array([0])
+    y = np.array([0, 1])  # Two classes required
     
     predictor = EventSequencePredictor(
         model_type="simple",
@@ -404,7 +423,7 @@ def test_cli_interpret_no_embeddings_error(tmp_path: Path) -> None:
         f"--output={output_dir}",
     ]
     
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30, env=_get_cli_env())
     
     # May fail if model doesn't have embeddings, or succeed if it handles gracefully
     # The important thing is it doesn't crash
@@ -428,7 +447,7 @@ def test_cli_interpret_output_format(tmp_path: Path) -> None:
         f"--output={output_dir}",
     ]
     
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60, env=_get_cli_env())
     assert result.returncode == 0
     
     report_file = output_dir / "interpretation_report.json"
@@ -468,7 +487,7 @@ def test_cli_interpret_visualization(tmp_path: Path) -> None:
         f"--output={output_dir}",
     ]
     
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60, env=_get_cli_env())
     assert result.returncode == 0
     
     # Visualization may or may not be created depending on matplotlib availability

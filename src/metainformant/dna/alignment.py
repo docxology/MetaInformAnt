@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from Bio.Align import PairwiseAligner
 
 
-@dataclass
+@dataclass(frozen=True)
 class AlignmentResult:
     """Result of pairwise sequence alignment.
     
@@ -41,6 +41,10 @@ def global_align(
     Returns:
         AlignmentResult with aligned sequences and score
     """
+    # Handle empty sequences explicitly to avoid Biopython errors
+    if not seq1 and not seq2:
+        return AlignmentResult(aligned_seq1="", aligned_seq2="", score=0.0)
+
     aligner = PairwiseAligner()
     aligner.mode = "global"
     aligner.match_score = match_score

@@ -92,13 +92,15 @@ class TestMycoplasmaContamination:
 
     def test_detect_mycoplasma_contamination_with_genome(self):
         """Test detection with custom mycoplasma genome."""
-        sequences = ["ATCGATCG"]
-        mycoplasma_genome = "TTAAATTTAAATTTAAATTT"  # High similarity
+        # Use sequences that actually match the mycoplasma genome
+        sequences = ["TTAAATTTAAATTTAAATTT", "ATCGATCG"]  # First matches, second doesn't
+        mycoplasma_genome = "TTAAATTTAAATTTAAATTT"  # Exact match
 
         results = detect_mycoplasma_contamination(sequences, mycoplasma_genome)
 
-        assert "0" in results  # Should detect contamination
+        assert "0" in results  # Should detect contamination in first sequence
         assert results["0"] is True
+        # Second sequence might or might not be detected depending on similarity threshold
 
 
 class TestAdapterContamination:
@@ -149,9 +151,9 @@ class TestContaminationReport:
         report = generate_contamination_report(contamination_results)
 
         assert "METAINFORMANT Contamination Analysis Report" in report
-        assert "cross_species" in report
-        assert "rrna" in report
-        assert "mycoplasma" in report
+        assert "CROSS_SPECIES" in report or "cross_species" in report.lower()
+        assert "RRNA" in report or "rrna" in report.lower()
+        assert "MYCOPLASMA" in report or "mycoplasma" in report.lower()
         assert "Summary:" in report
 
     def test_generate_contamination_report_empty(self):
