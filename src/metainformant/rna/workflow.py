@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import subprocess
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -381,7 +382,25 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
     Genome setup is automatic: if genome config exists but genome/index is missing,
     the workflow will automatically download and prepare everything before proceeding.
 
-    Returns a list of return codes per step in order.
+    Args:
+        config: Workflow configuration
+        check: If True, raise CalledProcessError on first step failure and stop workflow.
+               If False (default), continue execution after failures and return all return codes.
+
+    Returns:
+        List of return codes per step in order. Length matches plan_workflow(config).
+        Each return code is an integer: 0=success, non-zero=failure/skip.
+        
+    Raises:
+        subprocess.CalledProcessError: If check=True and any step fails.
+        
+    Note:
+        - When batched processing is used (getfastq+quant), both steps are recorded
+          separately to match planned steps, even though they execute together.
+        - The integrate step is automatically included in post-steps when batched
+          processing is used, as it runs between getfastq and quant.
+        - All steps are always attempted and recorded, even if dependencies are missing
+          (those steps return code 126 for skip).
     """
     # Log workflow start with metadata
     log_with_metadata(
@@ -622,8 +641,18 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
         
         # Run all steps before getfastq normally
         pre_steps = steps[:getfastq_idx] if getfastq_idx is not None else []
-        # Steps after quant (merge, curate, etc.)
+        # Steps after quant (integrate, merge, curate, etc.)
+        # Note: integrate is between getfastq and quant, so include it in post_steps
+        # to run after batched getfastq+quant completes
         post_steps = steps[quant_idx + 1:] if quant_idx is not None else []
+        # Track if integrate is between getfastq and quant (will be recorded as placeholder)
+        integrate_in_batch = False
+        if getfastq_idx is not None and quant_idx is not None:
+            for idx in range(getfastq_idx + 1, quant_idx):
+                if steps[idx][0] == "integrate":
+                    integrate_in_batch = True
+                    post_steps.insert(0, steps[idx])  # Add integrate at the start of post_steps
+                    break
         
         logger.info(f"execute_workflow: Pre-steps: {[s[0] for s in pre_steps]}, Post-steps: {[s[0] for s in post_steps]}")
         
@@ -658,21 +687,36 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
             
             # Execute pre-step
             start_ts = datetime.utcnow()
-            result = runner(
-                filtered,
-                work_dir=config.work_dir,
-                log_dir=(config.log_dir or (config.work_dir / "logs")),
-                check=check,
-            )
-            end_ts = datetime.utcnow()
-            duration_s = max(0.0, (end_ts - start_ts).total_seconds())
-            return_codes.append(result.returncode)
+            try:
+                result = runner(
+                    filtered,
+                    work_dir=config.work_dir,
+                    log_dir=(config.log_dir or (config.work_dir / "logs")),
+                    check=check,
+                )
+                end_ts = datetime.utcnow()
+                duration_s = max(0.0, (end_ts - start_ts).total_seconds())
+                return_code = result.returncode
+                stdout_bytes = len(result.stdout or "")
+                stderr_bytes = len(result.stderr or "")
+            except subprocess.CalledProcessError as e:
+                # When check=True, subprocess raises CalledProcessError on failure
+                # Capture the error and continue if check=False, or re-raise if check=True
+                end_ts = datetime.utcnow()
+                duration_s = max(0.0, (end_ts - start_ts).total_seconds())
+                return_code = e.returncode
+                stdout_bytes = len(e.stdout or "") if hasattr(e, 'stdout') else 0
+                stderr_bytes = len(e.stderr or "") if hasattr(e, 'stderr') else 0
+                if check:
+                    # Re-raise if check=True to stop workflow
+                    raise
+            return_codes.append(return_code)
             manifest_records.append(
                 {
                     "step": subcommand,
-                    "return_code": result.returncode,
-                    "stdout_bytes": len(result.stdout or ""),
-                    "stderr_bytes": len(result.stderr or ""),
+                    "return_code": return_code,
+                    "stdout_bytes": stdout_bytes,
+                    "stderr_bytes": stderr_bytes,
                     "started_utc": start_ts.isoformat() + "Z",
                     "finished_utc": end_ts.isoformat() + "Z",
                     "duration_seconds": duration_s,
@@ -682,7 +726,7 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
                     "command": " ".join(build_amalgkit_command(subcommand, filtered)),
                 }
             )
-            logger.info(f"execute_workflow: Pre-step {subcommand} completed with code {result.returncode}")
+            logger.info(f"execute_workflow: Pre-step {subcommand} completed with code {return_code}")
         
         logger.info(f"execute_workflow: All {len(pre_steps)} pre-steps completed")
         
@@ -724,7 +768,78 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
                 for p in metadata_paths:
                     logger.error(f"  - {p} (exists: {p.exists()})")
                 logger.error("=" * 80)
+                # Record failure for getfastq and quant separately to match planned steps
+                # If integrate is between getfastq and quant in planned order, record it between them
+                start_ts = datetime.utcnow()
+                
+                # Check if integrate is between getfastq and quant in planned order
+                integrate_step = None
+                if getfastq_idx is not None and quant_idx is not None:
+                    for idx in range(getfastq_idx + 1, quant_idx):
+                        if steps[idx][0] == "integrate":
+                            integrate_step = steps[idx]
+                            break
+                
+                # Record getfastq failure
                 return_codes.append(1)
+                manifest_records.append(
+                    {
+                        "step": "getfastq",
+                        "return_code": 1,
+                        "stdout_bytes": 0,
+                        "stderr_bytes": 0,
+                        "started_utc": start_ts.isoformat() + "Z",
+                        "finished_utc": datetime.utcnow().isoformat() + "Z",
+                        "duration_seconds": 0.0,
+                        "work_dir": str(config.work_dir),
+                        "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                        "params": dict(getfastq_params),
+                        "command": " ".join(build_amalgkit_command("getfastq", getfastq_params)),
+                        "note": "Skipped: No metadata file with 'run' column found for batched processing",
+                    }
+                )
+                
+                # Record integrate failure if it's between getfastq and quant in planned order
+                if integrate_step is not None:
+                    integrate_subcommand, integrate_params = integrate_step
+                    filtered_integrate = _sanitize_params_for_subcommand(integrate_subcommand, integrate_params)
+                    return_codes.append(1)
+                    manifest_records.append(
+                        {
+                            "step": "integrate",
+                            "return_code": 1,
+                            "stdout_bytes": 0,
+                            "stderr_bytes": 0,
+                            "started_utc": start_ts.isoformat() + "Z",
+                            "finished_utc": datetime.utcnow().isoformat() + "Z",
+                            "duration_seconds": 0.0,
+                            "work_dir": str(config.work_dir),
+                            "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                            "params": dict(filtered_integrate),
+                            "command": " ".join(build_amalgkit_command("integrate", filtered_integrate)),
+                            "note": "Skipped: No metadata file with 'run' column found for batched processing",
+                        }
+                    )
+                
+                # Record quant failure
+                start_ts = datetime.utcnow()
+                return_codes.append(1)
+                manifest_records.append(
+                    {
+                        "step": "quant",
+                        "return_code": 1,
+                        "stdout_bytes": 0,
+                        "stderr_bytes": 0,
+                        "started_utc": start_ts.isoformat() + "Z",
+                        "finished_utc": datetime.utcnow().isoformat() + "Z",
+                        "duration_seconds": 0.0,
+                        "work_dir": str(config.work_dir),
+                        "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                        "params": dict(quant_params),
+                        "command": " ".join(build_amalgkit_command("quant", quant_params)),
+                        "note": "Skipped: No metadata file with 'run' column found for batched processing",
+                    }
+                )
             else:
                 # Check if parallel processing is requested
                 num_workers = getfastq_params.get("num_download_workers") or getfastq_params.get("parallel_workers") or 8
@@ -765,14 +880,26 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
                 end_ts = datetime.utcnow()
                 duration_s = max(0.0, (end_ts - start_ts).total_seconds())
                 
-                # Record combined getfastq+quant step
+                # Record getfastq and quant separately to match planned steps
+                # Even though they're executed together in batched processing,
+                # we record them separately for consistency with plan_workflow
+                # If integrate is between getfastq and quant in planned order, record it between them
                 success_rate = (stats["processed"] + stats["skipped"]) / max(1, stats["total_samples"])
                 result_code = 0 if success_rate > 0.5 else 1  # Consider successful if >50% completed
                 
+                # Check if integrate is between getfastq and quant in planned order
+                integrate_step = None
+                if getfastq_idx is not None and quant_idx is not None:
+                    for idx in range(getfastq_idx + 1, quant_idx):
+                        if steps[idx][0] == "integrate":
+                            integrate_step = steps[idx]
+                            break
+                
+                # Record getfastq step
                 return_codes.append(result_code)
                 manifest_records.append(
                     {
-                        "step": "getfastq+quant (immediate)",
+                        "step": "getfastq",
                         "return_code": result_code,
                         "stdout_bytes": 0,
                         "stderr_bytes": 0,
@@ -781,17 +908,61 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
                         "duration_seconds": duration_s,
                         "work_dir": str(config.work_dir),
                         "log_dir": str(config.log_dir or (config.work_dir / "logs")),
-                        "params": {
-                            "getfastq": dict(getfastq_params),
-                            "quant": dict(quant_params),
-                            "statistics": stats,
-                        },
-                        "command": f"sequential_download_quant (immediate per-sample processing)",
-                        "note": f"Processed {stats['processed']}, skipped {stats['skipped']}, failed {stats['failed']}/{stats['total_samples']} (immediate: download→quant→delete per sample)",
+                        "params": dict(getfastq_params),
+                        "command": " ".join(build_amalgkit_command("getfastq", getfastq_params)),
+                        "note": f"Batched processing: {stats['processed']} processed, {stats['skipped']} skipped, {stats['failed']} failed/{stats['total_samples']} total",
+                    }
+                )
+                
+                # Record integrate step if it's between getfastq and quant in planned order
+                # (It will execute later in post_steps, but we record it here to maintain planned order)
+                if integrate_step is not None:
+                    # Don't execute it yet, just record a placeholder that will be updated when it actually runs
+                    # For now, record it with a note that it executes after batched processing
+                    integrate_subcommand, integrate_params = integrate_step
+                    filtered_integrate = _sanitize_params_for_subcommand(integrate_subcommand, integrate_params)
+                    return_codes.append(None)  # Placeholder, will be updated when integrate actually runs
+                    manifest_records.append(
+                        {
+                            "step": "integrate",
+                            "return_code": None,  # Placeholder
+                            "stdout_bytes": 0,
+                            "stderr_bytes": 0,
+                            "started_utc": start_ts.isoformat() + "Z",  # Placeholder
+                            "finished_utc": end_ts.isoformat() + "Z",  # Placeholder
+                            "duration_seconds": 0.0,  # Placeholder
+                            "work_dir": str(config.work_dir),
+                            "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                            "params": dict(filtered_integrate),
+                            "command": " ".join(build_amalgkit_command("integrate", filtered_integrate)),
+                            "note": "Planned order: executes after batched getfastq+quant completes",
+                        }
+                    )
+                
+                # Record quant step
+                return_codes.append(result_code)
+                manifest_records.append(
+                    {
+                        "step": "quant",
+                        "return_code": result_code,
+                        "stdout_bytes": 0,
+                        "stderr_bytes": 0,
+                        "started_utc": start_ts.isoformat() + "Z",
+                        "finished_utc": end_ts.isoformat() + "Z",
+                        "duration_seconds": duration_s,
+                        "work_dir": str(config.work_dir),
+                        "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                        "params": dict(quant_params),
+                        "command": " ".join(build_amalgkit_command("quant", quant_params)),
+                        "note": f"Batched processing: {stats['processed']} processed, {stats['skipped']} skipped, {stats['failed']} failed/{stats['total_samples']} total",
                     }
                 )
         
         # Run post-steps (merge, curate, sanity, etc.)
+        # Remove integrate from post_steps if it was already recorded as a placeholder/failure
+        # (it will be updated when it actually runs, or already recorded if batched processing failed)
+        if integrate_in_batch:
+            post_steps = [s for s in post_steps if s[0] != "integrate"]
         steps = post_steps  # Continue with post-steps in the main loop
     
     for subcommand, params in steps:
@@ -1000,31 +1171,95 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
             continue
 
         start_ts = datetime.utcnow()
-        result = runner(
-            filtered,
-            work_dir=config.work_dir,
-            log_dir=(config.log_dir or (config.work_dir / "logs")),
-            check=check,
-        )
-        end_ts = datetime.utcnow()
-        duration_s = max(0.0, (end_ts - start_ts).total_seconds())
-        return_codes.append(result.returncode)
-        manifest_records.append(
-            {
-                "step": subcommand,
-                "return_code": result.returncode,
-                "stdout_bytes": len(result.stdout or ""),
-                "stderr_bytes": len(result.stderr or ""),
-                "started_utc": start_ts.isoformat() + "Z",
-                "finished_utc": end_ts.isoformat() + "Z",
-                "duration_seconds": duration_s,
-                "work_dir": str(config.work_dir),
-                "log_dir": str(config.log_dir or (config.work_dir / "logs")),
-                "params": dict(filtered),
-                "command": " ".join(build_amalgkit_command(subcommand, filtered)),
-            }
-        )
-        if check and result.returncode != 0:
+        try:
+            result = runner(
+                filtered,
+                work_dir=config.work_dir,
+                log_dir=(config.log_dir or (config.work_dir / "logs")),
+                check=check,
+            )
+            end_ts = datetime.utcnow()
+            duration_s = max(0.0, (end_ts - start_ts).total_seconds())
+            return_code = result.returncode
+            stdout_bytes = len(result.stdout or "")
+            stderr_bytes = len(result.stderr or "")
+        except subprocess.CalledProcessError as e:
+            # When check=True, subprocess raises CalledProcessError on failure
+            # Capture the error and continue if check=False, or re-raise if check=True
+            end_ts = datetime.utcnow()
+            duration_s = max(0.0, (end_ts - start_ts).total_seconds())
+            return_code = e.returncode
+            stdout_bytes = len(e.stdout or "") if hasattr(e, 'stdout') else 0
+            stderr_bytes = len(e.stderr or "") if hasattr(e, 'stderr') else 0
+            if check:
+                # Re-raise if check=True to stop workflow
+                raise
+        
+        # If this is integrate and we already recorded it as a placeholder (for batched processing order),
+        # update the placeholder record instead of creating a new one
+        if subcommand == "integrate":
+            # Find placeholder record (has return_code=None)
+            placeholder_idx = None
+            for idx, record in enumerate(manifest_records):
+                if record.get("step") == "integrate" and record.get("return_code") is None:
+                    placeholder_idx = idx
+                    break
+            
+            if placeholder_idx is not None:
+                # Update the placeholder record
+                manifest_records[placeholder_idx].update({
+                    "return_code": return_code,
+                    "stdout_bytes": stdout_bytes,
+                    "stderr_bytes": stderr_bytes,
+                    "started_utc": start_ts.isoformat() + "Z",
+                    "finished_utc": end_ts.isoformat() + "Z",
+                    "duration_seconds": duration_s,
+                    "params": dict(filtered),
+                    "command": " ".join(build_amalgkit_command(subcommand, filtered)),
+                })
+                # Also update the corresponding return_code placeholder
+                # Find the index in return_codes that corresponds to this placeholder
+                # (it should be the same index since they're appended together)
+                if placeholder_idx < len(return_codes):
+                    return_codes[placeholder_idx] = return_code
+                # Don't append return_code again since we updated the placeholder
+            else:
+                # No placeholder found, append normally
+                return_codes.append(return_code)
+                manifest_records.append(
+                    {
+                        "step": subcommand,
+                        "return_code": return_code,
+                        "stdout_bytes": stdout_bytes,
+                        "stderr_bytes": stderr_bytes,
+                        "started_utc": start_ts.isoformat() + "Z",
+                        "finished_utc": end_ts.isoformat() + "Z",
+                        "duration_seconds": duration_s,
+                        "work_dir": str(config.work_dir),
+                        "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                        "params": dict(filtered),
+                        "command": " ".join(build_amalgkit_command(subcommand, filtered)),
+                    }
+                )
+        else:
+            # Normal append for other steps
+            return_codes.append(return_code)
+            manifest_records.append(
+                {
+                    "step": subcommand,
+                    "return_code": return_code,
+                    "stdout_bytes": stdout_bytes,
+                    "stderr_bytes": stderr_bytes,
+                    "started_utc": start_ts.isoformat() + "Z",
+                    "finished_utc": end_ts.isoformat() + "Z",
+                    "duration_seconds": duration_s,
+                    "work_dir": str(config.work_dir),
+                    "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                    "params": dict(filtered),
+                    "command": " ".join(build_amalgkit_command(subcommand, filtered)),
+                }
+            )
+        if check and return_code != 0:
             break
 
     _write_manifest_records(manifest_path, manifest_records)

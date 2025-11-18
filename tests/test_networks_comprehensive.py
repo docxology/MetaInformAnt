@@ -208,7 +208,7 @@ class TestPathwayNetwork:
 
         query_genes = ["GENE1", "GENE2", "GENE5"]
 
-        enrichment = pathway_enrichment(query_genes, pn)
+        enrichment = pathway_enrichment(query_genes, pn, return_dict=False)
 
         assert len(enrichment) > 0
         # path1 should be enriched (2 out of 3 query genes)
@@ -309,7 +309,7 @@ class TestGeneRegulatoryNetwork:
         grn.add_regulation("B", "C", regulation_type="activation")
         grn.add_regulation("A", "C", regulation_type="activation")
 
-        motifs = regulatory_motifs(grn, motif_types=["feed_forward_loop"])
+        motifs = regulatory_motifs(grn, motif_types=["feed_forward_loop"], return_list=False)
 
         assert "feed_forward_loop" in motifs
         assert len(motifs["feed_forward_loop"]) > 0

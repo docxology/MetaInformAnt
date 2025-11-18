@@ -214,18 +214,16 @@ class TestEdgeCases:
     """Tests for edge cases and error handling."""
 
     def test_ancestors_missing_term(self):
-        """Test ancestors for non-existent term."""
+        """Test ancestors for non-existent term raises ValueError."""
         onto = Ontology()
-        ancestors_set = ancestors(onto, "GO:9999999")
-
-        assert ancestors_set == set()
+        with pytest.raises(ValueError, match="not found in ontology"):
+            ancestors(onto, "GO:9999999")
 
     def test_descendants_missing_term(self):
-        """Test descendants for non-existent term."""
+        """Test descendants for non-existent term raises ValueError."""
         onto = Ontology()
-        descendants_set = descendants(onto, "GO:9999999")
-
-        assert descendants_set == set()
+        with pytest.raises(ValueError, match="not found in ontology"):
+            descendants(onto, "GO:9999999")
 
     def test_empty_ontology(self):
         """Test operations on empty ontology."""
@@ -234,8 +232,8 @@ class TestEdgeCases:
         assert onto.num_terms() == 0
         assert not onto.has_term("GO:0008150")
 
-        ancestors_set = ancestors(onto, "GO:0008150")
-        assert ancestors_set == set()
+        with pytest.raises(ValueError, match="not found in ontology"):
+            ancestors(onto, "GO:0008150")
 
 
 

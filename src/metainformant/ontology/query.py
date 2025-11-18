@@ -88,7 +88,7 @@ def ancestors(onto: Ontology, term_id: str, use_cache: bool = True) -> Set[str]:
         use_cache: If True, use cached result if available
         
     Returns:
-        Set of ancestor term IDs. Returns empty set if term not found or has no parents.
+        Set of ancestor term IDs. Returns empty set if term has no parents.
         
     Raises:
         ValueError: If term_id is empty or not found in ontology
@@ -143,7 +143,7 @@ def descendants(onto: Ontology, term_id: str, use_cache: bool = True) -> Set[str
         use_cache: If True, use cached result if available
         
     Returns:
-        Set of descendant term IDs. Returns empty set if term not found or has no children.
+        Set of descendant term IDs. Returns empty set if term has no children.
         
     Raises:
         ValueError: If term_id is empty or not found in ontology
@@ -253,6 +253,7 @@ def common_ancestors(onto: Ontology, term1: str, term2: str) -> Set[str]:
     """Get common ancestor terms of two terms.
     
     Finds all terms that are ancestors of both term1 and term2.
+    The terms themselves are always included in the result.
     
     Args:
         onto: Ontology object containing terms
@@ -260,7 +261,7 @@ def common_ancestors(onto: Ontology, term1: str, term2: str) -> Set[str]:
         term2: Second term identifier
         
     Returns:
-        Set of common ancestor term IDs
+        Set of common ancestor term IDs, including both input terms
         
     Raises:
         ValueError: If either term_id is empty or not found
@@ -276,7 +277,11 @@ def common_ancestors(onto: Ontology, term1: str, term2: str) -> Set[str]:
     # Also include the terms themselves as potential common ancestors
     anc1.add(term1)
     anc2.add(term2)
-    return anc1 & anc2
+    result = anc1 & anc2
+    # Always include both input terms in the result
+    result.add(term1)
+    result.add(term2)
+    return result
 
 
 def path_to_root(onto: Ontology, term_id: str) -> List[str]:
@@ -367,18 +372,33 @@ def distance(onto: Ontology, term1: str, term2: str) -> int | None:
         return None
     
     # Find lowest common ancestor (LCA) - term with maximum depth
+    # Exclude the input terms themselves when finding LCA
     # We approximate by finding the common ancestor with the longest path from root
     lca = None
     max_depth = -1
     
     for ca in common:
+        # Skip the input terms themselves when finding LCA
+        if ca == term1 or ca == term2:
+            continue
         path = path_to_root(onto, ca)
         depth = len(path) - 1
         if depth > max_depth:
             max_depth = depth
             lca = ca
     
+    # If no LCA found (terms are directly related), calculate direct distance
     if lca is None:
+        # Check if term1 is ancestor of term2
+        if term1 in ancestors(onto, term2):
+            path2 = path_to_root(onto, term2)
+            if term1 in path2:
+                return path2.index(term1)
+        # Check if term2 is ancestor of term1
+        if term2 in ancestors(onto, term1):
+            path1 = path_to_root(onto, term1)
+            if term2 in path1:
+                return path1.index(term2)
         return None
     
     # Calculate distance: path from term1 to LCA + path from term2 to LCA

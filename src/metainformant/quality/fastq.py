@@ -461,7 +461,17 @@ def quality_score_distribution(reads: List[FastqRecord]) -> Dict[str, Any]:
         reads: List of FASTQ records
 
     Returns:
-        Dictionary with quality score distribution
+        Dictionary with quality score distribution containing:
+        - quality_scores: List of all quality scores
+        - histogram_counts: Histogram counts for quality bins
+        - histogram_bins: Bin edges for histogram
+        - quality_score_min: Minimum quality score (int)
+        - quality_score_max: Maximum quality score (int)
+        - mean_quality: Mean quality score (float)
+        - median_quality: Median quality score (float)
+        - quality_distribution: Dict mapping quality scores to counts
+        
+    Returns empty dict if reads list is empty or has no quality scores.
     """
     all_quality_scores = []
 
@@ -480,6 +490,8 @@ def quality_score_distribution(reads: List[FastqRecord]) -> Dict[str, Any]:
         "quality_scores": all_quality_scores,
         "histogram_counts": hist.tolist(),
         "histogram_bins": bin_edges.tolist(),
+        "quality_score_min": int(np.min(all_quality_scores)),
+        "quality_score_max": int(np.max(all_quality_scores)),
         "mean_quality": np.mean(all_quality_scores),
         "median_quality": np.median(all_quality_scores),
         "quality_distribution": dict(zip([int(edge) for edge in bin_edges[:-1]], hist.tolist())),

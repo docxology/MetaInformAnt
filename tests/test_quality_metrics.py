@@ -93,7 +93,7 @@ class TestLengthMetrics:
         assert "pct_long_reads" in metrics
         assert metrics["mean_length"] == 143.75
         assert metrics["pct_short_reads"] == 0.0  # All lengths >= 50
-        assert metrics["pct_long_reads"] == 25.0  # 200 > 1000? Wait, 200 is not > 1000
+        assert metrics["pct_long_reads"] == 0.0  # None of [100, 150, 200, 125] are > 1000
 
     def test_calculate_length_metrics_empty(self):
         """Test handling of empty lengths."""

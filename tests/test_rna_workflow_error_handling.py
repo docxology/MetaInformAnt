@@ -7,6 +7,7 @@ when appropriate, and can resume from manifests.
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -67,13 +68,9 @@ class TestWorkflowErrorHandling:
         
         cfg = load_workflow_config(config_file)
         
-        # Execute with check=True
-        # Note: This may not actually stop if amalgkit handles errors gracefully
-        # But the structure supports it
-        return_codes = execute_workflow(cfg, check=True)
-        
-        # Should have at least attempted some steps
-        assert len(return_codes) > 0
+        # Execute with check=True - should raise CalledProcessError on first failure
+        with pytest.raises(subprocess.CalledProcessError):
+            execute_workflow(cfg, check=True)
 
     def test_workflow_skips_steps_with_missing_dependencies(self, tmp_path: Path):
         """Test that workflow skips steps when dependencies are missing."""
@@ -138,13 +135,17 @@ class TestManifestTracking:
             # (allowing for some steps to be skipped)
             if manifest_steps:
                 # Verify order is maintained (steps appear in planned order)
-                for i, step_name in enumerate(manifest_steps):
-                    if i > 0:
-                        prev_step = manifest_steps[i - 1]
-                        prev_idx = expected_step_names.index(prev_step)
-                        curr_idx = expected_step_names.index(step_name)
-                        # Current step should come after previous step in planned order
-                        assert curr_idx >= prev_idx
+                # Build a list of indices in the order they appear in manifest
+                step_indices = [expected_step_names.index(step) for step in manifest_steps]
+                # Check that indices are non-decreasing (allowing for equal indices if same step appears twice)
+                for i in range(1, len(step_indices)):
+                    # Current step's index should be >= previous step's index
+                    # This ensures steps appear in the same relative order as planned
+                    assert step_indices[i] >= step_indices[i - 1], (
+                        f"Step order violation: {manifest_steps[i-1]} (index {step_indices[i-1]}) "
+                        f"appears before {manifest_steps[i]} (index {step_indices[i]}) in manifest, "
+                        f"but should come after in planned order"
+                    )
 
     def test_manifest_includes_all_step_info(self, tmp_path: Path):
         """Test that manifest records include all required information."""

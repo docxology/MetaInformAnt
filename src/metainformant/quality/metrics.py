@@ -94,7 +94,19 @@ def calculate_length_metrics(sequence_lengths: List[int]) -> Dict[str, float]:
         sequence_lengths: List of sequence lengths
 
     Returns:
-        Dict containing length-related quality metrics
+        Dict containing length-related quality metrics:
+        - mean_length: Mean sequence length (float)
+        - median_length: Median sequence length (float)
+        - std_length: Standard deviation of lengths (float)
+        - min_length: Minimum sequence length (float)
+        - max_length: Maximum sequence length (float)
+        - length_25th_percentile: 25th percentile length (float)
+        - length_75th_percentile: 75th percentile length (float)
+        - length_coefficient_variation: Coefficient of variation (float)
+        - pct_short_reads: Percentage of reads < 50bp (float)
+        - pct_long_reads: Percentage of reads > 1000bp (float)
+        
+    Returns empty dict if sequence_lengths is empty.
     """
     if not sequence_lengths:
         return {}

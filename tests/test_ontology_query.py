@@ -114,7 +114,7 @@ class TestSubgraph:
     """Test subgraph extraction function."""
 
     def test_subgraph_single_term(self):
-        """Test extracting subgraph with single term."""
+        """Test extracting subgraph with single term includes descendants."""
         term_a = Term("A", "Term A", namespace="test")
         term_b = Term("B", "Term B", namespace="test", is_a_parents=["A"])
         
@@ -126,10 +126,11 @@ class TestSubgraph:
         
         sub = subgraph(onto, ["A"])
         assert "A" in sub.terms
-        assert len(sub.terms) == 1
+        assert "B" in sub.terms  # Descendants are included
+        assert len(sub.terms) == 2
 
     def test_subgraph_multiple_terms(self):
-        """Test extracting subgraph with multiple terms."""
+        """Test extracting subgraph with multiple terms includes descendants."""
         term_a = Term("A", "Term A", namespace="test")
         term_b = Term("B", "Term B", namespace="test", is_a_parents=["A"])
         term_c = Term("C", "Term C", namespace="test", is_a_parents=["B"])
@@ -143,7 +144,9 @@ class TestSubgraph:
         sub = subgraph(onto, ["A", "C"])
         assert "A" in sub.terms
         assert "C" in sub.terms
-        assert len(sub.terms) == 2
+        # A's descendants include B, C's descendants are empty
+        assert "B" in sub.terms  # B is descendant of A
+        assert len(sub.terms) == 3
 
     def test_subgraph_empty_seed(self):
         """Test subgraph with empty seed set."""

@@ -1,10 +1,1 @@
-[
-  {
-    "species": "Camponotus pennsylvanicus",
-    "measurements": {
-      "worker_length_mm": [6.0, 13.0],
-      "head_width_mm": [1.8, 3.2]
-    },
-    "traits": ["arboreal", "carnivorous", "polygynous"]
-  }
-]
+[{"species": "Camponotus pennsylvanicus", "measurements": {"worker_length_mm": [6.0, 13.0], "head_width_mm": [1.8, 3.2]}, "traits": ["arboreal", "carnivorous", "polygynous"]}]

@@ -175,6 +175,7 @@ filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
     "ignore::UserWarning",
+    "ignore::ImportWarning:umap.*",  # Ignore umap tensorflow import warning
     # Warn about any mock usage as it violates our policy
     "error::pytest.PytestUnraisableExceptionWarning:.*mock.*",
 ]

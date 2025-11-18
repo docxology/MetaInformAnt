@@ -84,8 +84,10 @@ class MultiOmicsData:
         if len(common_samples) == 0:
             raise ValueError("No common samples found across omics layers")
 
-        if len(common_samples) < min(len(s) for s in sample_sets):
-            warnings.warn(f"Only {len(common_samples)} samples are common across all omics layers")
+        # Warn if some layers have more samples than the common set
+        max_samples = max(len(s) for s in sample_sets)
+        if len(common_samples) < max_samples:
+            warnings.warn(f"Only {len(common_samples)} samples are common across all omics layers", UserWarning)
 
         # Reorder all datasets to common samples
         common_samples = sorted(common_samples)

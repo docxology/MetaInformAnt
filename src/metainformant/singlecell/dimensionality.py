@@ -172,6 +172,9 @@ def compute_pca(
 
     Returns:
         SingleCellData with PCA results in obsm and varm
+        
+    Raises:
+        ImportError: If sklearn is not available (SKLEARN_AVAILABLE is False)
     """
     data = data.copy()
     X = data.X
@@ -194,7 +197,18 @@ def compute_pca(
         X_pca = X_pca.toarray()
 
     # Compute PCA
-    n_components = min(n_components, X_pca.shape[0] - 1, X_pca.shape[1])
+    # Limit components based on data dimensions
+    max_components = min(X_pca.shape[0] - 1, X_pca.shape[1])
+    # For arpack solver, must be strictly less than min(n_samples, n_features)
+    if svd_solver == "arpack":
+        max_components = min(max_components, min(X_pca.shape[0], X_pca.shape[1]) - 1)
+    n_components = min(n_components, max_components)
+
+    if not SKLEARN_AVAILABLE or PCA is None:
+        raise ImportError(
+            "sklearn is required for PCA computation. "
+            "Install with: pip install scikit-learn"
+        )
 
     pca = PCA(n_components=n_components, svd_solver=svd_solver)
     X_pca_transformed = pca.fit_transform(X_pca)
@@ -289,7 +303,8 @@ def compute_neighbors(
             if X_use.shape[0] > 5000:
                 warnings.warn("Large dataset detected, consider using 'sklearn' method for better memory efficiency")
 
-            dist_matrix = pairwise_distances(X_use, metric=metric)
+            # Use cdist for pairwise distance computation
+            dist_matrix = cdist(X_use, X_use, metric=metric)
 
             # Get k-nearest neighbors
             indices = np.argsort(dist_matrix, axis=1)[:, 1 : n_neighbors + 1]  # Exclude self
@@ -468,6 +483,11 @@ def compute_tsne(
         if perplexity > max_perplexity:
             perplexity = max_perplexity
             warnings.warn(f"Perplexity too large, reduced to {perplexity:.1f}")
+
+        # Adjust n_iter if necessary (sklearn requires max_iter >= 250)
+        if n_iter < 250:
+            warnings.warn(f"n_iter={n_iter} too small, increased to 250 (sklearn minimum)")
+            n_iter = 250
 
         tsne = TSNE(
             n_components=n_components,
