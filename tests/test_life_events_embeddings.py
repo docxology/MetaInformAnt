@@ -41,14 +41,12 @@ def test_learn_event_embeddings_empty_sequences():
     """Test embedding learning with empty sequences."""
     sequences = [[]]
     
-    embeddings = learn_event_embeddings(
-        sequences,
-        embedding_dim=50,
-        random_state=42
-    )
-    
-    # Should handle empty sequences gracefully
-    assert isinstance(embeddings, dict)
+    with pytest.raises(ValueError, match="No events found in sequences"):
+        learn_event_embeddings(
+            sequences,
+            embedding_dim=50,
+            random_state=42
+        )
 
 
 def test_learn_event_embeddings_methods():
@@ -367,6 +365,8 @@ def test_predict_with_missing_events_in_vocab():
 
 def test_workflow_config_priority(tmp_path):
     """Test that config_obj takes priority over config_path."""
+    from datetime import datetime
+    
     from metainformant.life_events import (
         Event,
         EventSequence,

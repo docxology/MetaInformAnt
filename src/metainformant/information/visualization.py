@@ -9,6 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 try:
@@ -150,7 +151,7 @@ def plot_information_profile(
     output_path.parent.mkdir(parents=True, exist_ok=True)
     
     # Create multi-panel plot
-    fig, axes = plots.create_figure(nrows=2, ncols=2, figsize=(12, 10))
+    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(12, 10))
     
     # Plot 1: K-mer frequencies (top 20)
     kmer_freqs = profile.get("kmer_frequencies", {})

@@ -49,8 +49,8 @@ def test_event_importance_not_fitted():
 def test_event_importance_empty_sequences():
     """Test event importance with empty sequences."""
     predictor = EventSequencePredictor(random_state=42)
-    sequences = [["health:diagnosis"]]
-    y = np.array([0])
+    sequences = [["health:diagnosis"], ["education:degree"]]
+    y = np.array([0, 1])
     embeddings = learn_event_embeddings(sequences, random_state=42)
     predictor.fit(sequences, y, event_embeddings=embeddings)
 
@@ -60,8 +60,8 @@ def test_event_importance_empty_sequences():
 
 def test_event_importance_invalid_method():
     """Test event importance with invalid method."""
-    sequences = [["health:diagnosis"]]
-    y = np.array([0])
+    sequences = [["health:diagnosis"], ["education:degree"]]
+    y = np.array([0, 1])
     predictor = EventSequencePredictor(random_state=42)
     embeddings = learn_event_embeddings(sequences, random_state=42)
     predictor.fit(sequences, y, event_embeddings=embeddings)
@@ -120,8 +120,9 @@ def test_feature_attribution():
     """Test feature attribution computation."""
     sequences = [
         ["health:diagnosis", "occupation:job_change"],
+        ["education:degree", "income:raise"],
     ]
-    y = np.array([0])
+    y = np.array([0, 1])
 
     predictor = EventSequencePredictor(random_state=42)
     embeddings = learn_event_embeddings(sequences, embedding_dim=50, random_state=42)
