@@ -198,10 +198,13 @@ def compute_pca(
 
     # Compute PCA
     # Limit components based on data dimensions
-    max_components = min(X_pca.shape[0] - 1, X_pca.shape[1])
     # For arpack solver, must be strictly less than min(n_samples, n_features)
     if svd_solver == "arpack":
-        max_components = min(max_components, min(X_pca.shape[0], X_pca.shape[1]) - 1)
+        # Arpack requires strict inequality: n_components < min(n_samples, n_features)
+        max_components = min(X_pca.shape[0], X_pca.shape[1]) - 1
+    else:
+        # Other solvers can use min(n_samples-1, n_features)
+        max_components = min(X_pca.shape[0] - 1, X_pca.shape[1])
     n_components = min(n_components, max_components)
 
     if not SKLEARN_AVAILABLE or PCA is None:
@@ -485,8 +488,15 @@ def compute_tsne(
             warnings.warn(f"Perplexity too large, reduced to {perplexity:.1f}")
 
         # Adjust n_iter if necessary (sklearn requires max_iter >= 250)
+        # Ensure n_iter is at least 250 to satisfy sklearn's parameter validation
         if n_iter < 250:
             warnings.warn(f"n_iter={n_iter} too small, increased to 250 (sklearn minimum)")
+            n_iter = 250
+        
+        # Ensure n_iter is an integer (sklearn validation requirement)
+        n_iter = int(n_iter)
+        # Double-check minimum after type conversion
+        if n_iter < 250:
             n_iter = 250
 
         tsne = TSNE(

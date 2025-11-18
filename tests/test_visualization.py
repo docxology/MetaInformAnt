@@ -39,8 +39,11 @@ def test_heatmap_basic():
     from metainformant.visualization import heatmap
 
     ax = heatmap([[1, 0], [0, 1]])
-    # Heatmap draws a QuadMesh
-    assert any(hasattr(coll, "get_array") for coll in ax.collections)
+    # Heatmap draws a QuadMesh (seaborn) or AxesImage (matplotlib fallback)
+    # Check both collections (seaborn) and images (matplotlib fallback)
+    has_collection = any(hasattr(coll, "get_array") for coll in ax.collections)
+    has_image = any(hasattr(img, "get_array") for img in ax.images)
+    assert has_collection or has_image, "Expected heatmap to create collection or image with get_array"
 
 
 def test_animation_builds():

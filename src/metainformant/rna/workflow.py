@@ -778,6 +778,7 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
                     for idx in range(getfastq_idx + 1, quant_idx):
                         if steps[idx][0] == "integrate":
                             integrate_step = steps[idx]
+                            integrate_in_batch = True  # Mark that integrate was recorded here
                             break
                 
                 # Record getfastq failure
