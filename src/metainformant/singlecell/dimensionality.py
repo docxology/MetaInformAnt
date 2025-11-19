@@ -286,7 +286,6 @@ def compute_neighbors(
     elif method == "umap":
         # UMAP-style neighbor calculation with better handling of local connectivity
         try:
-            from scipy.sparse import csr_matrix
             from sklearn.neighbors import NearestNeighbors
 
             # Standard k-NN

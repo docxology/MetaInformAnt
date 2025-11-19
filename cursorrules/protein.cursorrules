@@ -7,6 +7,12 @@ Protein sequence and structure analysis, database integration, and 3D structure 
 - **Required**: `core`
 - **Optional**: `biopython`, external databases (UniProt, InterPro, AlphaFold, PDB)
 
+## Package Management
+- **ALWAYS use `uv`** for all Python package management and environment operations
+- Install optional dependencies: `uv add biopython`
+- Use `uv run` to execute commands: `uv run pytest`, `uv run metainformant protein --help`
+- **NEVER use `pip` directly**
+
 ## Key Submodules
 
 ### Sequences (`sequences`)

@@ -180,8 +180,11 @@ bash scripts/package/setup_uv.sh
 # Skip amalgkit installation
 bash scripts/package/setup_uv.sh --skip-amalgkit
 
-# With all optional dependencies (database, networks, etc.)
+# With all optional dependencies (database, networks, scraping, etc.)
 bash scripts/package/setup_uv.sh --with-all
+
+# With scraping dependencies (cloudscraper) for web scraping
+bash scripts/package/setup_uv.sh --with-scraping
 
 # With external CLI dependencies (seqkit, sra-tools, etc.)
 bash scripts/package/setup_uv.sh --with-deps

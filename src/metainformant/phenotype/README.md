@@ -83,6 +83,76 @@ except Exception as e:
 **Error Handling:**
 The function raises `FileNotFoundError` for missing files, `IOError` from `core.errors` for file read issues, and `ValidationError` for invalid data structures.
 
+### AntWiki Web Scraping (`scraper.py`)
+Comprehensive web scraping of AntWiki species pages to extract all sections including measurements, traits, taxonomy, distribution, and descriptions.
+
+**Cloudflare Protection:** The scraper automatically uses `cloudscraper` if available to bypass Cloudflare protection. Install with:
+```bash
+pip install cloudscraper
+# Or install optional dependencies:
+pip install metainformant[scraping]
+```
+
+If `cloudscraper` is not available, the scraper falls back to `requests` but may fail on Cloudflare-protected sites.
+
+**Usage:**
+```python
+from metainformant.phenotype.scraper import AntWikiScraper, load_scraper_config
+from pathlib import Path
+
+# Load configuration (with environment variable overrides)
+config = load_scraper_config()
+
+# Initialize scraper (automatically uses cloudscraper if available)
+scraper = AntWikiScraper(config)
+
+# Scrape single species
+data = scraper.scrape_species_page("Camponotus_pennsylvanicus")
+print(f"Found {len(data['traits'])} traits, {len(data['measurements'])} measurements")
+
+# Scrape all species (with limit for testing)
+stats = scraper.scrape_all_species(output_dir=Path("output/phenotype/antwiki/"), limit=10)
+print(f"Completed: {stats['completed']}, Failed: {stats['failed']}")
+```
+
+**Command-line Usage:**
+```bash
+# Scrape single species
+python3 scripts/phenotype/scrape_antwiki.py --species Camponotus_pennsylvanicus
+
+# Scrape all species with limit
+python3 scripts/phenotype/scrape_antwiki.py --all --limit 10 --delay 2.0
+
+# Resume interrupted scraping
+python3 scripts/phenotype/scrape_antwiki.py --all --resume
+```
+
+**Configuration:**
+Scraper configuration is loaded from `config/phenotype/antwiki_scraper.yaml` with environment variable overrides:
+- `PHEN_SCRAPE_DELAY`: Override delay between requests (seconds)
+- `PHEN_WORK_DIR`: Override output directory
+
+**Features:**
+- **Cloudflare bypass**: Automatically uses `cloudscraper` if available to handle Cloudflare protection
+- Rate limiting with randomized delays (50-150% of base delay) to mimic human behavior
+- Robots.txt compliance checking
+- Retry logic with exponential backoff
+- Progress tracking and checkpoint/resume support
+- Comprehensive data extraction from all page sections
+- Browser-like headers including Referer for legitimate-looking requests
+- Organized output structure (individual species files + combined dataset)
+
+**Output Structure:**
+```
+output/phenotype/antwiki/
+├── species/
+│   ├── Camponotus_pennsylvanicus.json
+│   └── ...
+├── all_species.json
+├── scraping_log.jsonl
+└── checkpoint.json
+```
+
 ### Life Course Integration (`life_course.py`)
 Extract and analyze temporal phenotypes from life event sequences.
 

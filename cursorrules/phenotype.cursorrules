@@ -7,6 +7,11 @@ Phenotypic trait analysis: life course phenotype extraction and AntWiki integrat
 - **Required**: `core`
 - **Optional**: `life_events` (for life course integration)
 
+## Package Management
+- **ALWAYS use `uv`** for all Python package management and environment operations
+- Use `uv run` to execute commands: `uv run pytest`, `uv run metainformant phenotype --help`
+- **NEVER use `pip` directly**
+
 ## Key Submodules
 
 ### Life Course (`life_course`)

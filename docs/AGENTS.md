@@ -2,6 +2,8 @@
 
 This document outlines AI assistance in creating and maintaining METAINFORMANT's comprehensive documentation system.
 
+**⚠️ Package Management**: All AI agents and development workflows use `uv` for Python package management. Always use `uv venv`, `uv pip install`, `uv run`, `uv sync`, `uv add`, and `uv remove` - never use `pip` directly. See **[UV Setup Guide](UV_SETUP.md)** for details.
+
 ## AI Contributions
 
 ### Documentation Architecture

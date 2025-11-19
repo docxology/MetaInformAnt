@@ -7,6 +7,12 @@ Plotting and animation utilities for biological data visualization across all do
 - **Required**: `core`
 - **Optional**: `matplotlib`, `seaborn`, `plotly`
 
+## Package Management
+- **ALWAYS use `uv`** for all Python package management and environment operations
+- Install optional dependencies: `uv add matplotlib seaborn plotly`
+- Use `uv run` to execute commands: `uv run pytest`, `uv run metainformant visualization --help`
+- **NEVER use `pip` directly**
+
 ## Key Submodules
 
 ### Basic (`basic`)

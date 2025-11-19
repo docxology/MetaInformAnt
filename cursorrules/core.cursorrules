@@ -7,6 +7,16 @@ Shared utilities across all domains. Foundation for all other modules.
 - **Required**: Standard library only
 - **Optional**: Handled defensively (try/except imports)
 
+## Package Management
+- **ALWAYS use `uv`** for all Python package management and environment operations
+- Use `uv venv` to create virtual environments
+- Use `uv pip install` for installing packages
+- Use `uv run` to execute commands in the project environment
+- Use `uv sync` to sync dependencies from `pyproject.toml` and `uv.lock`
+- Use `uv add <package>` to add new dependencies
+- Use `uv remove <package>` to remove dependencies
+- **NEVER use `pip`, `pip3`, `python -m pip`, or `python3 -m pip` directly**
+
 ## Key Submodules
 
 ### Configuration (`config`)
@@ -94,6 +104,12 @@ logger.error("Error occurred", exc_info=True)
 ### Cache (`cache`)
 - JSON-based caching with TTL
 - Cache under `output/` directory
+
+## Output Paths
+
+- Core outputs: `output/core/`
+- Cache: `output/core/cache/`
+- Logs: `output/core/logs/`
 
 ### Parallel (`parallel`)
 - Thread-based parallel processing

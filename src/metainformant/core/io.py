@@ -125,8 +125,12 @@ def read_parquet(path: str | Path, **kwargs) -> Any:
     try:
         import pandas as pd
         return pd.read_parquet(path, **kwargs)
-    except ImportError:
-        raise ImportError("pandas is required for Parquet reading. Install with: uv add pandas")
+    except ImportError as e:
+        # Preserve original error message if it mentions pyarrow/fastparquet
+        error_msg = str(e).lower()
+        if "pyarrow" in error_msg or "fastparquet" in error_msg:
+            raise ImportError("Parquet support requires pyarrow or fastparquet. Install with: uv add pyarrow") from e
+        raise ImportError(f"pandas is required for Parquet reading: {e}. Install with: uv add pandas") from e
 
 
 def write_parquet(df: Any, path: str | Path, **kwargs) -> None:
@@ -135,8 +139,12 @@ def write_parquet(df: Any, path: str | Path, **kwargs) -> None:
         import pandas as pd
         ensure_directory(Path(path).parent)
         df.to_parquet(path, **kwargs)
-    except ImportError:
-        raise ImportError("pandas is required for Parquet writing. Install with: uv add pandas")
+    except ImportError as e:
+        # Preserve original error message if it mentions pyarrow/fastparquet
+        error_msg = str(e).lower()
+        if "pyarrow" in error_msg or "fastparquet" in error_msg:
+            raise ImportError("Parquet support requires pyarrow or fastparquet. Install with: uv add pyarrow") from e
+        raise ImportError(f"pandas is required for Parquet writing: {e}. Install with: uv add pandas") from e
 
 
 # JSON Lines utilities

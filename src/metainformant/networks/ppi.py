@@ -10,6 +10,11 @@ from typing import Any, Dict, List, Optional, Set, Tuple
 import numpy as np
 import pandas as pd
 
+try:
+    from ..core.io import write_delimited
+except ImportError:
+    from metainformant.core.io import write_delimited
+
 from .graph import BiologicalNetwork, create_network
 
 
@@ -942,15 +947,18 @@ def export_to_string_format(ppi_network: ProteinNetwork, filepath: str, score_th
         >>> ppi.add_interaction("P1", "P2", confidence=0.8)
         >>> export_to_string_format(ppi, "output.tsv", score_threshold=400)
     """
-    import csv
-    
-    with open(filepath, "w", newline="") as f:
-        writer = csv.writer(f, delimiter="\t")
-        writer.writerow(["protein1", "protein2", "combined_score"])
+    # Prepare rows as dictionaries for write_delimited
+    rows = []
+    for p1, p2, data in ppi_network.interactions:
+        confidence = data.get("confidence", 0.0)
+        combined_score = int(confidence * 1000)  # Convert to 0-1000 scale
         
-        for p1, p2, data in ppi_network.interactions:
-            confidence = data.get("confidence", 0.0)
-            combined_score = int(confidence * 1000)  # Convert to 0-1000 scale
-            
-            if combined_score >= score_threshold:
-                writer.writerow([p1, p2, combined_score])
+        if combined_score >= score_threshold:
+            rows.append({
+                "protein1": p1,
+                "protein2": p2,
+                "combined_score": combined_score
+            })
+    
+    # Use core.io write_delimited with tab delimiter for TSV
+    write_delimited(rows, filepath, delimiter="\t")

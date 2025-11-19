@@ -7,6 +7,12 @@ Machine learning for biological data: classification, regression, dimensionality
 - **Required**: `core`
 - **Optional**: `scikit-learn`, `xgboost`, `lightgbm`
 
+## Package Management
+- **ALWAYS use `uv`** for all Python package management and environment operations
+- Install optional dependencies: `uv add scikit-learn xgboost lightgbm`
+- Use `uv run` to execute commands: `uv run pytest`, `uv run metainformant ml --help`
+- **NEVER use `pip` directly**
+
 ## Key Submodules
 
 ### Classification (`classification`)

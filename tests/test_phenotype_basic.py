@@ -12,54 +12,53 @@ from metainformant.core.errors import IOError as CoreIOError, ValidationError
 class TestAntWiki:
     """Test AntWiki phenotype data loading."""
 
-    def setup_method(self):
-        """Setup test environment."""
-        self.test_data_dir = Path("tests/data/phenotype")
-        self.test_json_file = self.test_data_dir / "antwiki_dataset_sorted_final_01.json"
-
-    def test_load_antwiki_json_with_list(self):
+    def test_load_antwiki_json_with_list(self, tmp_path: Path):
         """Test loading AntWiki JSON with list format."""
         test_data = [
             {"species": "Camponotus pennsylvanicus", "trait": "body_length", "value": 12.5},
             {"species": "Formica rufa", "trait": "head_width", "value": 2.1}
         ]
 
-        self.test_json_file.write_text(json.dumps(test_data))
+        test_json_file = tmp_path / "antwiki_test.json"
+        test_json_file.write_text(json.dumps(test_data))
 
-        result = load_antwiki_json(self.test_json_file)
+        result = load_antwiki_json(test_json_file)
 
         assert len(result) == 2
         assert result[0]["species"] == "Camponotus pennsylvanicus"
         assert result[1]["species"] == "Formica rufa"
 
-    def test_load_antwiki_json_with_dict(self):
+    def test_load_antwiki_json_with_dict(self, tmp_path: Path):
         """Test loading AntWiki JSON with dict format."""
         test_data = {"species": "Lasius niger", "trait": "worker_number", "value": 5000}
 
-        self.test_json_file.write_text(json.dumps(test_data))
+        test_json_file = tmp_path / "antwiki_test.json"
+        test_json_file.write_text(json.dumps(test_data))
 
-        result = load_antwiki_json(self.test_json_file)
+        result = load_antwiki_json(test_json_file)
 
         assert len(result) == 1
         assert result[0]["species"] == "Lasius niger"
 
-    def test_load_antwiki_json_empty(self):
+    def test_load_antwiki_json_empty(self, tmp_path: Path):
         """Test loading empty AntWiki JSON."""
         test_data = []
 
-        self.test_json_file.write_text(json.dumps(test_data))
+        test_json_file = tmp_path / "antwiki_test.json"
+        test_json_file.write_text(json.dumps(test_data))
 
-        result = load_antwiki_json(self.test_json_file)
+        result = load_antwiki_json(test_json_file)
 
         assert len(result) == 0
 
-    def test_load_antwiki_json_invalid_format(self):
+    def test_load_antwiki_json_invalid_format(self, tmp_path: Path):
         """Test loading AntWiki JSON with invalid format."""
-        self.test_json_file.write_text("invalid json")
+        test_json_file = tmp_path / "invalid.json"
+        test_json_file.write_text("invalid json")
 
         # Should raise IOError for invalid JSON
         with pytest.raises((CoreIOError, json.JSONDecodeError, ValueError)):
-            load_antwiki_json(self.test_json_file)
+            load_antwiki_json(test_json_file)
 
     def test_load_antwiki_json_nonexistent_file(self):
         """Test loading from nonexistent file."""

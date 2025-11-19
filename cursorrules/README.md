@@ -53,6 +53,7 @@ The main `.cursorrules` file in the repository root contains common rules applic
 ## Common Rules
 
 All modules follow these core principles:
+- **Package Management**: **ALWAYS use `uv`** for all Python package management - `uv venv`, `uv pip install`, `uv run`, `uv sync`, `uv add`, `uv remove`. Never use `pip` directly.
 - Write outputs to `output/` by default
 - Use `config/` for configuration with env overrides
 - **STRICTLY NO MOCKING** in tests (real implementations only - see main `.cursorrules` NO_MOCKING_POLICY)

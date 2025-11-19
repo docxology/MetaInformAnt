@@ -43,6 +43,82 @@
 - Expand user paths (`~`) and resolve to absolute paths using `paths.expand_and_resolve()`.
 - Validate paths with `paths.is_within()` to prevent directory traversal attacks.
 
+### Temporary Files and Disk Space Management
+
+**CRITICAL**: On external drives, system `/tmp` may be full. Always use repository-local temp directories.
+
+#### Temp Directory Strategy
+- **Primary**: Use `.tmp/` directory in repository root (on external drive with 5.5TB space)
+- **Python temp**: Set `TMPDIR` environment variable to `.tmp/python/`
+- **Bash heredocs**: Set `TMPDIR` environment variable to `.tmp/bash/`
+- **Cache files**: Use `.cache/` directory in repository root
+- **Never rely on system `/tmp`**: It may be a small tmpfs (RAM) filesystem
+
+#### Implementation Pattern
+
+```python
+import os
+import tempfile
+from pathlib import Path
+
+# Set temp directory to repository root
+REPO_ROOT = Path(__file__).resolve().parent.parent
+TEMP_DIR = REPO_ROOT / ".tmp" / "python"
+TEMP_DIR.mkdir(parents=True, exist_ok=True)
+
+# Override Python temp directory
+os.environ["TMPDIR"] = str(TEMP_DIR)
+os.environ["TEMP"] = str(TEMP_DIR)
+os.environ["TMP"] = str(TEMP_DIR)
+tempfile.tempdir = str(TEMP_DIR)
+
+# Now all temp operations use external drive
+with tempfile.NamedTemporaryFile() as tmp:
+    # tmp.name is in .tmp/python/
+    pass
+```
+
+#### Environment Variables (set before running)
+
+```bash
+# Export these in shell or .bashrc (replace with your repo path):
+export TMPDIR="$(pwd)/.tmp/bash"  # Or use absolute path to repo
+export TEMP=$TMPDIR
+export TMP=$TMPDIR
+
+# Verify:
+echo $TMPDIR
+# Should show repository .tmp directory
+```
+
+#### Shell Script Pattern
+
+```bash
+#!/bin/bash
+# At start of every shell script:
+
+# Set temp directory to external drive
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+export TMPDIR="$REPO_ROOT/.tmp/bash"
+mkdir -p "$TMPDIR"
+
+# Now all bash operations use external drive temp
+```
+
+#### Git Ignore
+
+Ensure `.tmp/` and `.cache/` are in `.gitignore`:
+```gitignore
+# Temporary files (external drive)
+.tmp/
+.cache/
+*.tmp
+*.temp
+```
+
+**See Also**: `docs/DISK_SPACE_MANAGEMENT.md` for complete disk space strategy and troubleshooting.
+
 ### File I/O Patterns
 ```python
 from metainformant.core import io, paths
@@ -301,6 +377,51 @@ def function():
         raise
 ```
 
+## Package Management and Environment Setup
+
+### UV Toolchain (REQUIRED)
+- **ALWAYS use `uv` for all Python package management and environment operations**
+- **NEVER use `pip`, `pip3`, `python -m pip`, or `python3 -m pip` directly**
+- Use `uv venv` to create virtual environments
+- Use `uv pip install` for installing packages
+- Use `uv run` to execute commands in the project environment
+- Use `uv sync` to sync dependencies from `pyproject.toml` and `uv.lock`
+- Use `uv add <package>` to add new dependencies
+- Use `uv remove <package>` to remove dependencies
+
+### Environment Setup Pattern
+```bash
+# Create virtual environment
+uv venv
+
+# Install package in editable mode
+uv pip install -e .
+
+# Install with extras
+uv pip install -e ".[dev,scientific]"
+
+# Run commands in environment
+uv run pytest
+uv run python scripts/example.py
+uv run metainformant --help
+
+# Sync all dependencies
+uv sync --extra dev --extra scientific
+```
+
+### Dependency Management
+- All dependencies are managed via `pyproject.toml`
+- Lock file `uv.lock` ensures reproducible installs
+- Use `uv add <package>` to add dependencies (updates both `pyproject.toml` and `uv.lock`)
+- Use `uv remove <package>` to remove dependencies
+- Use `uv sync` to install exact versions from lock file
+
+### Setup Scripts
+- Use `bash scripts/package/setup_uv.sh` for automated setup
+- Scripts automatically detect filesystem type (FAT vs ext4/NTFS)
+- Scripts configure UV cache and venv locations appropriately
+- See `docs/UV_SETUP.md` for complete uv setup guide
+
 ## Documentation
 
 ### Documentation Structure
@@ -317,6 +438,7 @@ def function():
 - Include code examples with real usage patterns
 - Document environment variable overrides
 - Document optional dependencies and their availability
+- **Use `uv` tooling (e.g., `uv venv`, `uv pip`, `uv run`) for all environment creation and dependency installation.** 
 
 ### Module Documentation
 Each module should have:
@@ -406,16 +528,18 @@ __all__ = [
 ## Summary
 
 ### Core Principles
-1. **Output Directory**: Always write program execution outputs to `output/` by default. **NEVER** create documentation, reports, test scripts, or planning documents in `output/`. See `output/.cursorrules` for the complete policy.
-2. **Configuration**: Use `config/` with env overrides
-3. **No Mocks**: Real implementations only in tests
-4. **Modular Design**: Clear interfaces, minimal dependencies
-5. **Documentation**: Update existing docs, never create root-level docs, never create docs in `output/`
-6. **Type Safety**: Comprehensive type hints throughout
-7. **Error Handling**: Clear errors with biological context
-8. **Path Safety**: Always validate paths, prevent traversal attacks
+1. **Package Management**: **ALWAYS use `uv`** for all Python package management - `uv venv`, `uv pip install`, `uv run`, `uv sync`, `uv add`, `uv remove`. Never use `pip` directly.
+2. **Output Directory**: Always write program execution outputs to `output/` by default. **NEVER** create documentation, reports, test scripts, or planning documents in `output/`. See `output/.cursorrules` for the complete policy.
+3. **Configuration**: Use `config/` with env overrides
+4. **No Mocks**: Real implementations only in tests
+5. **Modular Design**: Clear interfaces, minimal dependencies
+6. **Documentation**: Update existing docs, never create root-level docs, never create docs in `output/`
+7. **Type Safety**: Comprehensive type hints throughout
+8. **Error Handling**: Clear errors with biological context
+9. **Path Safety**: Always validate paths, prevent traversal attacks
 
 ### Quick Reference
+- **Package Management**: Always use `uv` - `uv venv`, `uv pip install`, `uv run`, `uv sync`, `uv add`, `uv remove`
 - **Config**: `metainformant.core.config.load_mapping_from_file()`
 - **I/O**: `metainformant.core.io.load_json()`, `dump_json()`, etc.
 - **Paths**: `metainformant.core.paths.expand_and_resolve()`, `is_within()`

@@ -6,6 +6,11 @@ Multi-omic data integration: cross-platform data harmonization, joint statistica
 ## Dependencies
 - **Required**: `core`, `dna`, `rna`, `protein`, `singlecell`, `ml.dimensionality`
 
+## Package Management
+- **ALWAYS use `uv`** for all Python package management and environment operations
+- Use `uv run` to execute commands: `uv run pytest`, `uv run metainformant multiomics --help`
+- **NEVER use `pip` directly**
+
 ## Key Submodules
 
 ### Integration (`integration`)

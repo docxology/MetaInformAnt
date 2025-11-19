@@ -7,6 +7,12 @@ Mathematical and theoretical biology: population genetics theory, selection mode
 - **Required**: `core`, `numpy`
 - **Optional**: `scipy` (for advanced statistical functions)
 
+## Package Management
+- **ALWAYS use `uv`** for all Python package management and environment operations
+- Install optional dependencies: `uv add scipy`
+- Use `uv run` to execute commands: `uv run pytest`, `uv run metainformant math --help`
+- **NEVER use `pip` directly**
+
 ## Key Submodules
 
 ### Population Genetics (`popgen`)

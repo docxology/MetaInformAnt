@@ -15,10 +15,10 @@ from pathlib import Path
 from typing import Any
 
 try:
-    from ...core.io import read_delimited
+    from ...core.io import read_delimited, load_json, dump_json
     from ...core.logging import get_logger
 except ImportError:
-    from metainformant.core.io import read_delimited
+    from metainformant.core.io import read_delimited, load_json, dump_json
     from metainformant.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -76,8 +76,7 @@ class ProgressTracker:
         """Load state from disk if available."""
         if self.state_file.exists():
             try:
-                with open(self.state_file) as f:
-                    data = json.load(f)
+                data = load_json(self.state_file)
                 
                 # Convert list sets back to sets and handle datetime strings
                 for species, species_data in data.items():
@@ -119,8 +118,7 @@ class ProgressTracker:
             # Ensure directory exists
             self.state_file.parent.mkdir(parents=True, exist_ok=True)
             
-            with open(self.state_file, 'w') as f:
-                json.dump(data, f, indent=2)
+            dump_json(data, self.state_file, indent=2)
         except Exception as e:
             logger.warning(f"Failed to save progress state: {e}")
     

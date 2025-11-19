@@ -19,8 +19,10 @@ matplotlib.use("Agg", force=True)
 
 try:
     from ..core.logging import get_logger
+    from ..core.io import load_json
 except ImportError:
     from metainformant.core.logging import get_logger
+    from metainformant.core.io import load_json
 
 from .basic import bar_plot
 from .export import save_figure
@@ -77,10 +79,7 @@ def load_progress_state(state_file: Path | str) -> dict[str, Any]:
     if not state_file.exists():
         raise FileNotFoundError(f"Progress state file not found: {state_file}")
     
-    with open(state_file) as f:
-        data = json.load(f)
-    
-    return data
+    return load_json(state_file)
 
 
 def plot_progress_dashboard(

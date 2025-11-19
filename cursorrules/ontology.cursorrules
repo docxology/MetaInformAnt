@@ -7,6 +7,11 @@ Functional annotation and ontologies: Gene Ontology operations, OBO format parsi
 - **Required**: `core`
 - **Optional**: External databases (Gene Ontology)
 
+## Package Management
+- **ALWAYS use `uv`** for all Python package management and environment operations
+- Use `uv run` to execute commands: `uv run pytest`, `uv run metainformant ontology --help`
+- **NEVER use `pip` directly**
+
 ## Key Submodules
 
 ### GO (`go`)

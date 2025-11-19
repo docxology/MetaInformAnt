@@ -23,22 +23,39 @@ METAINFORMANT is a modular, extensible framework for biological data analysis sp
 
 ## Quick Start
 
+### Prerequisites
+
+- **Python 3.11+**
+- **`uv`** - Fast Python package manager (**REQUIRED**)
+  - Install: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+  - Verify: `uv --version`
+
 ### Installation
+
+**METAINFORMANT uses `uv` for all package management. Never use `pip` directly.**
 
 ```bash
 # Clone repository
 git clone https://github.com/q/MetaInformAnt.git
 cd MetaInformAnt
 
-# Setup environment with uv (automatically handles FAT filesystems)
+# Automated setup with uv (recommended - handles FAT filesystems automatically)
 bash scripts/package/setup_uv.sh
 
 # Or manual setup with uv
 curl -LsSf https://astral.sh/uv/install.sh | sh  # Install uv if needed
 uv venv
-source .venv/bin/activate
+source .venv/bin/activate  # or /tmp/metainformant_venv/bin/activate on FAT filesystems
 uv pip install -e .
 ```
+
+**Package Management**: All Python dependencies are managed via `uv`:
+- Create venv: `uv venv`
+- Install packages: `uv pip install -e .`
+- Run commands: `uv run pytest`, `uv run metainformant --help`
+- Sync dependencies: `uv sync --extra dev --extra scientific`
+- Add dependencies: `uv add <package>`
+- Remove dependencies: `uv remove <package>`
 
 **Note**: Setup scripts automatically detect FAT filesystems (exFAT, FAT32) and configure UV cache and virtual environment locations accordingly. See [UV Setup Guide](docs/UV_SETUP.md) for details.
 

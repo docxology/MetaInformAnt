@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Any
 from urllib.request import urlopen
 
-from ..core.io import ensure_directory
+from ..core.io import ensure_directory, load_json
 from ..core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -724,7 +724,6 @@ def verify_genome_status(
     Returns:
         Dictionary with verification results
     """
-    import json
     import yaml
 
     from ..core.config import load_mapping_from_file
@@ -793,10 +792,9 @@ def verify_genome_status(
     download_record = dest_dir / "download_record.json"
     if download_record.exists():
         try:
-            with open(download_record, "r") as f:
-                record = json.load(f)
-                if record.get("return_code") == 0:
-                    result["genome_downloaded"] = True
+            record = load_json(download_record)
+            if record.get("return_code") == 0:
+                result["genome_downloaded"] = True
         except Exception:
             pass
 

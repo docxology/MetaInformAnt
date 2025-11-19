@@ -2,6 +2,8 @@
 
 This directory contains comprehensive documentation for METAINFORMANT's phenotypic trait analysis and curation capabilities.
 
+**⚠️ Package Management**: All setup and dependency installation uses `uv`. Use `uv venv`, `uv pip install`, `uv run`, `uv sync`, `uv add`, and `uv remove` - never use `pip` directly. See **[UV Setup Guide](../UV_SETUP.md)** for details.
+
 ## Overview
 
 The phenotype domain provides tools for morphological and behavioral phenotype data analysis, including automated curation from web sources like AntWiki.
@@ -24,10 +26,15 @@ The phenotype domain supports trait analysis:
 
 ```python
 from metainformant.phenotype import antwiki
+from metainformant.phenotype.scraper import AntWikiScraper, load_scraper_config
 
-# Retrieve phenotype data from AntWiki
-species_traits = antwiki.get_species_traits("Camponotus pennsylvanicus")
-morphological_data = antwiki.extract_morphological_measurements(species_traits)
+# Load existing AntWiki JSON data
+entries = antwiki.load_antwiki_json(Path("data/antwiki_species.json"))
+
+# Or scrape AntWiki directly
+config = load_scraper_config()
+scraper = AntWikiScraper(config)
+data = scraper.scrape_species_page("Camponotus_pennsylvanicus")
 ```
 
 ## Integration

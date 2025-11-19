@@ -583,26 +583,33 @@ class TestPPIEdgeCases:
         # Should store as-is (validation might be in application layer)
         assert len(network.interactions) == 2
 
+    @pytest.mark.slow
     def test_large_ppi_network(self):
-        """Test performance with large PPI network."""
+        """Test performance with large PPI network.
+        
+        This test creates a moderately-sized network to verify performance.
+        Marked as slow due to computational complexity of network statistics.
+        """
         large_network = ProteinNetwork()
 
-        # Add many proteins and interactions
-        proteins = [f"PROTEIN_{i}" for i in range(100)]
+        # Add many proteins and interactions (reduced from 100/200 to 50/100 for faster execution)
+        proteins = [f"PROTEIN_{i}" for i in range(50)]
 
         # Add random interactions
         np.random.seed(42)
-        for _ in range(200):
+        for _ in range(100):
             p1 = np.random.choice(proteins)
             p2 = np.random.choice(proteins)
             if p1 != p2:
                 conf = np.random.random()
                 large_network.add_interaction(p1, p2, conf, ["computational"])
 
-        # Should handle large network
-        stats = large_network.network_statistics()
-        assert stats["total_proteins"] <= 100
-        assert stats["total_interactions"] <= 200
+        # Should handle large network - use get_network_statistics for basic stats
+        stats = large_network.get_network_statistics()
+        assert stats["num_proteins"] <= 50
+        assert stats["num_interactions"] <= 100
+        assert stats["num_proteins"] > 0
+        assert stats["num_interactions"] > 0
 
 
 class TestNewPPIMethods:

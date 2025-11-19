@@ -19,11 +19,13 @@ classifiers = [
 dependencies = [
     "numpy>=1.21.0",
     "pandas>=1.3.0",
+    "pyarrow>=10.0.0",  # Parquet file format support
     "matplotlib>=3.5.0",
     "biopython>=1.79",
     "requests>=2.25.0",
     "pyyaml>=6.0",
     "pytest-timeout>=2.4.0",
+    "beautifulsoup4>=4.12.0",
 ]
 
 [project.optional-dependencies]
@@ -112,6 +114,11 @@ external-tools = [
     "dendropy>=4.5.0",  # Phylogenetic analysis
 ]
 
+# Web scraping and data collection
+scraping = [
+    "cloudscraper>=1.2.71",  # Cloudflare bypass for web scraping
+]
+
 # Performance and parallel computing
 performance = [
     "numba>=0.56.0",  # JIT compilation
@@ -140,6 +147,7 @@ all = [
     "numba>=0.56.0",
     "dask>=2022.8.0",
     "joblib>=1.2.0",
+    "cloudscraper>=1.2.71",  # Web scraping with Cloudflare bypass
 ]
 
 [project.scripts]

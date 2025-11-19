@@ -21,6 +21,27 @@ This document outlines AI assistance in developing METAINFORMANT's phenotypic tr
 - Proper error handling with core.errors (IOError, ValidationError)
 - Logging integration with core.logging
 
+#### AntWiki Web Scraping (`scraper.py`)
+- `AntWikiScraper`: Comprehensive web scraper for AntWiki species pages
+- `load_scraper_config()`: Configuration loading with environment variable overrides
+- `scrape_species_page()`: Scrape single species page with all sections
+- `scrape_all_species()`: Batch scraping with progress tracking and checkpoint/resume
+- `get_species_list()`: Discover all species pages from AntWiki
+- Data extraction methods:
+  - `extract_measurements()`: Parse morphological measurements from tables/infoboxes
+  - `extract_traits()`: Extract behavioral/ecological traits from multiple sections
+  - `extract_taxonomy()`: Extract taxonomic information
+  - `extract_distribution()`: Extract geographic distribution data
+  - `extract_description()`: Extract species description
+  - `extract_images()`: Extract image URLs
+- Rate limiting with configurable delay (default: 2 seconds)
+- Robots.txt compliance checking
+- Retry logic with exponential backoff using core.errors.retry_with_backoff
+- Progress tracking and checkpoint/resume support
+- Organized output structure (individual species files + combined dataset)
+- Uses BeautifulSoup4 for HTML parsing
+- Real HTTP requests with requests library (no mocks)
+
 #### Life Course Analysis (`life_course.py`)
 - `extract_phenotypes_from_events()`: Extracts phenotypes from single EventSequence
 - `aggregate_temporal_phenotypes()`: Aggregates phenotypes across multiple sequences in time windows
@@ -59,6 +80,16 @@ This document outlines AI assistance in developing METAINFORMANT's phenotypic tr
 - Validate data structure (species/taxon, measurements, traits)
 - Handle errors gracefully (FileNotFoundError, IOError, ValidationError)
 - Support gzip-compressed files via core.io
+
+### AntWiki Web Scraping
+- Comprehensive scraping of all species pages and all sections
+- Extract measurements, traits, taxonomy, distribution, descriptions, and images
+- Rate limiting with configurable delay (respects robots.txt)
+- Retry logic with exponential backoff for network failures
+- Progress tracking with checkpoint/resume support
+- Organized output structure (individual species files + combined dataset)
+- Command-line interface for easy usage
+- Configuration via YAML with environment variable overrides
 
 ### Life Course Phenotype Extraction
 - Extract phenotypes from event sequences (requires life_events module)

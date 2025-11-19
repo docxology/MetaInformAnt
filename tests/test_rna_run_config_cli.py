@@ -42,7 +42,7 @@ def test_cli_run_config_smoke_real_amalgkit(tmp_path: Path):
         from metainformant.__main__ import main
     except ModuleNotFoundError as e:
         if "pandas" in str(e):
-            pytest.skip("pandas not available (required by __main__)")
+            pytest.skip(f"pandas not available (required by __main__): {e}. Install with: uv add pandas")
         raise
 
     original_argv = sys.argv.copy()
@@ -102,7 +102,7 @@ def test_cli_run_config_offline_behavior(tmp_path: Path):
         from metainformant.__main__ import main
     except ModuleNotFoundError as e:
         if "pandas" in str(e):
-            pytest.skip("pandas not available (required by __main__)")
+            pytest.skip(f"pandas not available (required by __main__): {e}. Install with: uv add pandas")
         raise
 
     original_argv = sys.argv.copy()

@@ -65,7 +65,7 @@ class TestDatabaseUtilities:
 
 
 class TestDatabaseConnection:
-    """Test database connection functionality (requires PostgreSQL)."""
+    """Test database connection functionality (requires PostgreSQL and real credentials)."""
 
     @pytest.mark.skipif(
         os.environ.get("TEST_DATABASE_AVAILABLE") != "1",

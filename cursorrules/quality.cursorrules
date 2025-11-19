@@ -6,6 +6,11 @@ Data quality assessment and control: FASTQ quality metrics, general quality metr
 ## Dependencies
 - **Required**: `core`, `dna.fastq`
 
+## Package Management
+- **ALWAYS use `uv`** for all Python package management and environment operations
+- Use `uv run` to execute commands: `uv run pytest`, `uv run metainformant quality --help`
+- **NEVER use `pip` directly**
+
 ## Key Submodules
 
 ### FASTQ (`fastq`)

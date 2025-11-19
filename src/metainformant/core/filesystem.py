@@ -220,7 +220,12 @@ def get_venv_location(repo_root: Path | str | None = None) -> Path:
     Returns:
         Path to virtual environment directory
     """
-    # Check if METAINFORMANT_VENV is explicitly set
+    # Check if UV_PROJECT_ENVIRONMENT is explicitly set (UV's preferred env var)
+    uv_venv_env = os.environ.get("UV_PROJECT_ENVIRONMENT")
+    if uv_venv_env:
+        return Path(uv_venv_env)
+    
+    # Check if METAINFORMANT_VENV is explicitly set (for compatibility)
     venv_env = os.environ.get("METAINFORMANT_VENV")
     if venv_env:
         return Path(venv_env)

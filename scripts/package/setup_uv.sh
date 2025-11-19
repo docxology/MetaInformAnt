@@ -10,12 +10,13 @@ set -euo pipefail
 
 usage() {
   cat <<EOF
-Usage: bash scripts/setup_uv.sh [--skip-amalgkit] [--with-deps] [--with-all] [--ncbi-email EMAIL] [--skip-tests]
+Usage: bash scripts/setup_uv.sh [--skip-amalgkit] [--with-deps] [--with-all] [--with-scraping] [--ncbi-email EMAIL] [--skip-tests]
 
 Options:
   --skip-amalgkit       Skip AMALGKIT installation (installed by default for RNA workflows)
   --with-deps           Install external CLI deps (seqkit, sra-tools, kallisto, R); pip install parallel-fastq-dump
-  --with-all            Install all optional dependencies (database, networks, etc.) - scientific deps installed by default
+  --with-all            Install all optional dependencies (database, networks, scraping, etc.) - scientific deps installed by default
+  --with-scraping       Install scraping dependencies (cloudscraper) for web scraping functionality
   --ncbi-email EMAIL    Export NCBI_EMAIL for this session and write to output/setup/ncbi_email.txt
   --skip-tests          Do not run repository tests during setup
 
@@ -32,6 +33,7 @@ SKIP_TESTS=0
 WITH_DEPS=0
 WITH_SCIENTIFIC=0
 WITH_ALL=0
+WITH_SCRAPING=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -55,6 +57,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --with-all)
       WITH_ALL=1
+      shift
+      ;;
+    --with-scraping)
+      WITH_SCRAPING=1
       shift
       ;;
     --ncbi-email)
@@ -198,6 +204,8 @@ echo "[3/5] Installing project and dependencies"
 DEPS="dev,scientific"
 if [[ "$WITH_ALL" -eq 1 ]]; then
   DEPS="${DEPS},all"
+elif [[ "$WITH_SCRAPING" -eq 1 ]]; then
+  DEPS="${DEPS},scraping"
 fi
 
 # Use venv Python explicitly if using alternative location
@@ -208,10 +216,15 @@ else
 fi
 
 if [[ "$WITH_ALL" -eq 1 ]]; then
-  echo "  → Installed all optional dependencies (scientific, database, networks, etc.)"
+  echo "  → Installed all optional dependencies (scientific, database, networks, scraping, etc.)"
+elif [[ "$WITH_SCRAPING" -eq 1 ]]; then
+  echo "  → Installed scientific dependencies (scipy, scikit-learn, etc.)"
+  echo "  → Installed scraping dependencies (cloudscraper)"
+  echo "  → Use --with-all to install additional optional dependencies (database, networks, etc.)"
 else
   echo "  → Installed scientific dependencies (scipy, scikit-learn, etc.)"
-  echo "  → Use --with-all to install additional optional dependencies (database, networks, etc.)"
+  echo "  → Use --with-scraping to install scraping dependencies (cloudscraper)"
+  echo "  → Use --with-all to install all optional dependencies (database, networks, scraping, etc.)"
 fi
 
 if [[ "$WITH_AMALGKIT" -eq 1 ]]; then
@@ -440,6 +453,9 @@ fi
 
 if [[ "$WITH_ALL" -eq 0 ]]; then
   echo ""
-  echo "💡 Tip: Install all optional dependencies (database, networks, etc.) for complete coverage:"
-  echo "  bash scripts/package/setup_uv.sh --with-all"
+  echo "💡 Tip: Install optional dependencies for extended functionality:"
+  if [[ "$WITH_SCRAPING" -eq 0 ]]; then
+    echo "  - Scraping (cloudscraper): bash scripts/package/setup_uv.sh --with-scraping"
+  fi
+  echo "  - All dependencies: bash scripts/package/setup_uv.sh --with-all"
 fi

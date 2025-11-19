@@ -1,0 +1,25 @@
+# AntWiki Scraper Configuration
+# Configuration for web scraping AntWiki species pages
+
+# Base URL for AntWiki
+base_url: "https://www.antwiki.org/wiki/"
+
+# Rate limiting delay between requests (seconds)
+# Can be overridden via PHEN_SCRAPE_DELAY environment variable
+delay_seconds: 2.0
+
+# User agent string for HTTP requests (browser-like to avoid blocking)
+user_agent: "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 METAINFORMANT/0.2.0"
+
+# Request timeout in seconds
+timeout_seconds: 30
+
+# Maximum retries for failed requests
+max_retries: 3
+
+# Check robots.txt before scraping
+check_robots: true
+
+# Default output directory (relative to repo root)
+output_dir: "output/phenotype/antwiki/"
+

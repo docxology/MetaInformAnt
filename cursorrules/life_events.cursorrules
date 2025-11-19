@@ -7,6 +7,11 @@ Life course event analysis and prediction: event extraction, embedding generatio
 - **Required**: `core`
 - **Optional**: `ml` (sequence models)
 
+## Package Management
+- **ALWAYS use `uv`** for all Python package management and environment operations
+- Use `uv run` to execute commands: `uv run pytest`, `uv run metainformant life-events --help`
+- **NEVER use `pip` directly**
+
 ## Key Submodules
 
 ### Events (`events`)

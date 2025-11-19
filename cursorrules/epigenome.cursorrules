@@ -6,6 +6,11 @@ Epigenetic modification analysis: DNA methylation analysis and epigenomic track 
 ## Dependencies
 - **Required**: `core`, `dna` (for genomic coordinates)
 
+## Package Management
+- **ALWAYS use `uv`** for all Python package management and environment operations
+- Use `uv run` to execute commands: `uv run pytest`, `uv run metainformant epigenome --help`
+- **NEVER use `pip` directly**
+
 ## Key Submodules
 
 ### Methylation (`methylation`)

@@ -7,6 +7,12 @@ DNA sequence analysis, genomics, population genetics, and variant calling.
 - **Required**: `core`
 - **Optional**: `biopython`, `ncbi-datasets-pylib`, `pysam`
 
+## Package Management
+- **ALWAYS use `uv`** for all Python package management and environment operations
+- Install optional dependencies: `uv add biopython`, `uv add ncbi-datasets-pylib`, `uv add pysam`
+- Use `uv run` to execute commands: `uv run pytest`, `uv run python scripts/dna/example.py`
+- **NEVER use `pip` directly**
+
 ## Key Submodules
 
 ### Sequences (`sequences`)
@@ -236,7 +242,7 @@ if paths.is_within(user_path, base_dir):
 - Output paths default to `output/dna/`
 - Environment prefix: `DNA_` (e.g., `DNA_THREADS`, `DNA_WORK_DIR`)
 
-## Output Directories
+## Output Paths
 
 - Phylogenetic trees: `output/dna/phylogeny/`
 - Population genetics: `output/dna/population/`

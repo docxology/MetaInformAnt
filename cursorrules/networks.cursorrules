@@ -7,6 +7,12 @@ Biological network analysis: protein-protein interactions, regulatory networks, 
 - **Required**: `core`, `protein` (PPI networks), `ontology` (functional annotation)
 - **Optional**: `networkx`, `python-louvain`
 
+## Package Management
+- **ALWAYS use `uv`** for all Python package management and environment operations
+- Install optional dependencies: `uv add networkx python-louvain`
+- Use `uv run` to execute commands: `uv run pytest`, `uv run metainformant networks --help`
+- **NEVER use `pip` directly**
+
 ## Key Submodules
 
 ### Graph (`graph`)

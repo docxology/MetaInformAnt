@@ -4,8 +4,13 @@ Get started with MetaInformAnt in minutes.
 
 ## Prerequisites
 
-- Python 3.11 or higher
+- **Python 3.11+**
+- **`uv`** - Fast Python package manager (**REQUIRED**)
+  - Install: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+  - Verify: `uv --version`
 - Git
+
+**Note**: METAINFORMANT uses `uv` for all package management. Never use `pip` directly.
 
 ## Installation
 

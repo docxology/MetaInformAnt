@@ -8,6 +8,11 @@ from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import numpy as np
 
+try:
+    from ..core.io import write_delimited, read_delimited
+except ImportError:
+    from metainformant.core.io import write_delimited, read_delimited
+
 
 class BiologicalNetwork:
     """Biological network representation with nodes and weighted edges.
@@ -645,12 +650,14 @@ def export_network(network: BiologicalNetwork, filepath: str, format: str = "jso
         
     elif format.lower() == "csv":
         # Export as CSV edge list
-        import csv
-        with open(filepath, "w", newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow(["source", "target", "weight"])
-            for edge, weight in network.edges.items():
-                writer.writerow([edge[0], edge[1], weight])
+        rows = []
+        for edge, weight in network.edges.items():
+            rows.append({
+                "source": edge[0],
+                "target": edge[1],
+                "weight": weight
+            })
+        write_delimited(rows, filepath, delimiter=",")
                 
     elif format.lower() == "graphml":
         # Export as GraphML (XML format)
@@ -728,16 +735,13 @@ def import_network(filepath: str, format: str = "json") -> BiologicalNetwork:
         return network
         
     elif format.lower() == "csv":
-        import csv
         network = BiologicalNetwork(directed=False)
         
-        with open(filepath, "r") as f:
-            reader = csv.DictReader(f)
-            for row in reader:
-                source = row["source"]
-                target = row["target"]
-                weight = float(row.get("weight", 1.0))
-                network.add_edge(source, target, weight=weight)
+        for row in read_delimited(filepath, delimiter=","):
+            source = row["source"]
+            target = row["target"]
+            weight = float(row.get("weight", 1.0))
+            network.add_edge(source, target, weight=weight)
         
         return network
         

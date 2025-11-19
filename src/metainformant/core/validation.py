@@ -12,6 +12,7 @@ from typing import Any, Callable
 
 from .errors import ValidationError
 from .paths import expand_and_resolve, is_within
+from .io import load_json
 
 
 def validate_type(value: Any, expected_type: type | tuple[type, ...], name: str = "value") -> None:
@@ -228,8 +229,7 @@ def validate_json_schema(data: dict[str, Any], schema_path: str | Path) -> None:
     try:
         import jsonschema
 
-        with open(schema_path) as f:
-            schema = json.load(f)
+        schema = load_json(schema_path)
         jsonschema.validate(instance=data, schema=schema)
     except ImportError:
         raise ValidationError("jsonschema package required for JSON Schema validation. Install with: uv add jsonschema")

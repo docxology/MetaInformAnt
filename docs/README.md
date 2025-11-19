@@ -4,11 +4,14 @@ This directory contains comprehensive documentation for all METAINFORMANT module
 
 **📖 New to METAINFORMANT documentation?** Start with the **[Documentation Guide](DOCUMENTATION_GUIDE.md)** for complete navigation and best practices.
 
+**⚠️ Package Management**: METAINFORMANT uses `uv` for all Python package management. See **[UV Setup Guide](UV_SETUP.md)** for complete setup instructions. Always use `uv venv`, `uv pip install`, `uv run`, `uv sync`, `uv add`, and `uv remove` - never use `pip` directly.
+
 ## Quick Links
 
 - **[Documentation Guide](DOCUMENTATION_GUIDE.md)** - Complete guide to navigating all documentation
 - **[Documentation Index](index.md)** - Hierarchical navigation to all docs
 - **[Setup Guide](setup.md)** - Installation and environment configuration
+- **[Disk Space Management](DISK_SPACE_MANAGEMENT.md)** - ⚠️ **CRITICAL**: External drive temp directory setup
 - **[Testing Guide](testing.md)** - Comprehensive testing documentation
 - **[Architecture](architecture.md)** - System design and diagrams
 - **[CLI Reference](cli.md)** - Command-line interface

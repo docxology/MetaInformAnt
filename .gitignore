@@ -85,6 +85,12 @@ build/
 *.download
 *.log
 
+# Temporary directories (external drive)
+.tmp/
+.cache/
+*.swp
+*~
+
 # Test and coverage files
 .coverage
 coverage.xml

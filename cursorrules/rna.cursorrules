@@ -6,6 +6,13 @@ RNA transcriptomic analysis via amalgkit integration and workflow orchestration.
 ## Dependencies
 - **Required**: `core`, `dna` (for genomic coordinates)
 - **External**: `amalgkit` CLI tool (must be on PATH)
+- Install amalgkit: `uv pip install git+https://github.com/kfuku52/amalgkit`
+
+## Package Management
+- **ALWAYS use `uv`** for all Python package management and environment operations
+- Install amalgkit: `uv pip install git+https://github.com/kfuku52/amalgkit`
+- Use `uv run` to execute commands: `uv run pytest`, `uv run python scripts/rna/run_workflow.py`
+- **NEVER use `pip` directly**
 
 ## Key Submodules
 
