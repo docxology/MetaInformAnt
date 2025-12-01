@@ -13,4 +13,4 @@ graph TD
   E[GridWorld] --> F[Agents Step]
 ```
 
-See: [Sequences](./sequences.md), [RNA Counts](./rna_counts.md), [Agents](./agents.md).
+See: [Sequences](./sequences.md), [RNA Counts](./rna_counts.md), [Agents](../../src/metainformant/simulation/README.md#agent-based-models-agentspy).

@@ -188,7 +188,7 @@ Note: The `output/` directory is **strictly ephemeral** and contains **only prog
 - **Information Theory Documentation**: [`docs/information/AGENTS.md`](docs/information/AGENTS.md) - Information-theoretic analysis documentation development
 - **Life Events Documentation**: [`docs/life_events/AGENTS.md`](docs/life_events/AGENTS.md) - Life course event analysis documentation development
 - **Visualization Documentation**: [`docs/visualization/AGENTS.md`](docs/visualization/AGENTS.md) - Visualization documentation development
-- **Simulation Documentation**: [`docs/simulation/agents.md`](docs/simulation/agents.md) - Simulation documentation development
+- **Simulation Documentation**: [`docs/simulation/AGENTS.md`](docs/simulation/AGENTS.md) - Simulation documentation development
 - **Single-Cell Documentation**: [`docs/singlecell/AGENTS.md`](docs/singlecell/AGENTS.md) - Single-cell documentation development
 - **Quality Control Documentation**: [`docs/quality/AGENTS.md`](docs/quality/AGENTS.md) - Quality control documentation development
 - **Network Analysis Documentation**: [`docs/networks/AGENTS.md`](docs/networks/AGENTS.md) - Network analysis documentation development

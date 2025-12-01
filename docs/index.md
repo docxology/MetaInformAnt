@@ -59,7 +59,7 @@ Welcome to the METAINFORMANT docs. This site is organized by domain and core uti
   - [Overview](./simulation/index.md)
   - [Sequence Generators](./simulation/sequences.md)
   - [RNA Counts](./simulation/rna_counts.md)
-  - [Agents & GridWorld](./simulation/agents.md)
+  - [Agents & GridWorld](../src/metainformant/simulation/README.md#agent-based-models-agentspy)
 
 - Math
   - [Overview](./math/index.md)
