@@ -22,9 +22,37 @@
 
 **Clear Documentation**: When external dependencies are unavailable, tests must clearly document what is being skipped and why.
 
-## Running Tests
+## UV-Based Testing Workflow
 
-### Basic Execution
+### Environment Setup
+
+Before running tests, ensure your test environment is properly set up:
+
+```bash
+# Setup test environment (recommended first step)
+bash scripts/package/verify.sh --mode deps
+
+# Setup for specific test types
+bash scripts/package/verify.sh --mode deps --test-type fast    # Core tests only
+bash scripts/package/verify.sh --mode deps --test-type network # Include network tests
+bash scripts/package/verify.sh --mode deps --test-type all     # Full test suite
+
+# Verify setup without installing
+bash scripts/package/verify.sh --mode deps --verify-only
+```
+
+### Test Dependency Groups
+
+METAINFORMANT uses UV dependency groups for different test scenarios:
+
+- **`test-fast`**: Core functionality tests (minimal dependencies)
+- **`test-network`**: Include network-dependent tests
+- **`test-external`**: Include external CLI tool tests
+- **`test-all`**: Full test suite with all optional dependencies
+
+### Running Tests
+
+#### Basic Execution
 
 ```bash
 # Run all tests with minimal output
@@ -37,7 +65,7 @@ uv run pytest --cov=src/metainformant --cov-report=html
 uv run pytest tests/test_core_text.py -v
 ```
 
-**Note**: Test scripts automatically detect FAT filesystems and configure UV cache and virtual environment locations accordingly. On FAT filesystems, tests use `/tmp/metainformant_venv` if available. The setup script (`scripts/package/setup_uv.sh`) shows real-time test progress with verbose output, making it easy to see which tests are running. See [UV Setup Guide](UV_SETUP.md) for details.
+**Note**: Test scripts automatically detect FAT filesystems and configure UV cache and virtual environment locations accordingly. On FAT filesystems, tests use `/tmp/metainformant_venv` if available. The setup script (`scripts/package/setup.sh`) shows real-time test progress with verbose output, making it easy to see which tests are running. See [UV Setup Guide](UV_SETUP.md) for details.
 
 ### Professional Test Runner
 
@@ -45,22 +73,22 @@ Use the comprehensive test runner script:
 
 ```bash
 # Standard test run (automatically handles FAT filesystems)
-bash scripts/package/uv_test.sh
+bash scripts/package/test.sh
 
 # Fast tests only (skip slow/network/external dependencies)
-bash scripts/package/uv_test.sh fast
+bash scripts/package/test.sh fast
 
 # Optimized test runner
-bash scripts/package/uv_test_optimized.sh fast
+bash scripts/package/test.sh --mode fast
 
 # Include network tests
-bash scripts/package/uv_test.sh network
+bash scripts/package/test.sh network
 
 # Generate coverage reports
-bash scripts/package/uv_test.sh coverage
+bash scripts/package/test.sh coverage
 
 # Run tests matching a pattern
-bash scripts/package/uv_test.sh all
+bash scripts/package/test.sh all
 ```
 
 **FAT Filesystem Support**: All test scripts automatically detect FAT filesystems and use appropriate venv locations (`/tmp/metainformant_venv` on FAT, `.venv` on standard filesystems).
@@ -80,6 +108,7 @@ Test configuration is managed in `pyproject.toml`:
 
 ```toml
 [tool.pytest.ini_options]
+timeout = 10  # Default 10-second timeout for all tests
 addopts = ["--cov=src/metainformant"]
 markers = [
     "slow: marks tests as slow",
@@ -99,6 +128,30 @@ exclude_lines = [
     "raise AssertionError",
     "raise NotImplementedError",
 ]
+```
+
+### Timeout Configuration
+
+Tests have a default 10-second timeout to prevent hanging. Slow tests can be marked with `@pytest.mark.slow` and run separately:
+
+```bash
+# Run fast tests only (default)
+uv run pytest tests/
+
+# Run all tests including slow ones
+uv run pytest tests/ --runslow
+
+# Run only slow tests
+uv run pytest tests/ -m slow
+
+# Skip network tests
+uv run pytest tests/ -m "not network"
+
+# Skip external tool tests
+uv run pytest tests/ -m "not external_tool"
+
+# Custom timeout for specific runs
+uv run pytest tests/ --timeout=30
 ```
 
 ## Test Structure and Organization
@@ -350,6 +403,100 @@ ptw tests/test_core_text.py
 
 # Run with immediate failure reporting
 uv run pytest -x tests/test_core_text.py
+```
+
+## Troubleshooting
+
+### UV-Related Issues
+
+#### UV Not Found
+```bash
+❌ uv is not installed or not in PATH
+   Please install uv first:
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   Or visit: https://github.com/astral.sh/uv
+```
+
+**Solution**: Install uv and ensure it's in your PATH:
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+export PATH="$HOME/.cargo/bin:$PATH"
+```
+
+#### Dependency Sync Issues
+```bash
+❌ Failed to sync dependencies
+```
+
+**Solution**: Clear UV cache and retry:
+```bash
+rm -rf .uv-cache/
+bash scripts/package/verify.sh --mode deps
+```
+
+#### FAT Filesystem Issues
+```bash
+📁 FAT filesystem detected - using /tmp locations
+```
+
+**Note**: This is normal on FAT filesystems (exFAT, FAT32). The system automatically uses `/tmp` for virtual environments and caches.
+
+#### Test Environment Not Ready
+```bash
+❌ pytest not available
+```
+
+**Solution**: Setup test environment:
+```bash
+bash scripts/package/verify.sh --mode deps --test-type fast
+```
+
+#### Network Tests Failing
+```bash
+⚠️  Network connectivity check failed
+```
+
+**Note**: Network tests require internet access. They will be skipped gracefully if offline.
+
+#### External Tool Tests Failing
+```bash
+⚠️  amalgkit not available - some tests may be skipped
+```
+
+**Note**: External tool tests require specific CLI tools. Install them or tests will be skipped.
+
+### Common Test Failures
+
+#### Import Errors
+```
+ModuleNotFoundError: No module named 'metainformant'
+```
+
+**Solution**: Ensure you're running tests from the repository root and PYTHONPATH is set:
+```bash
+cd /path/to/metainformant
+export PYTHONPATH="$PWD/src:$PYTHONPATH"
+uv run pytest tests/
+```
+
+#### Permission Errors
+```
+PermissionError: [Errno 13] Permission denied
+```
+
+**Solution**: Ensure output directories are writable:
+```bash
+chmod -R u+w output/
+```
+
+#### Memory Issues
+```
+MemoryError: Out of memory
+```
+
+**Solution**: Run fewer tests in parallel or increase system memory:
+```bash
+uv run pytest tests/test_core_*.py  # Run smaller test sets
 ```
 
 Related: [CLI](./cli.md), [Core](./core/README.md)

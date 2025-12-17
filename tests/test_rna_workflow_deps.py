@@ -14,9 +14,10 @@ def test_workflow_skips_steps_when_missing_deps(tmp_path: Path):
     from metainformant.rna.deps import check_step_dependencies
     from metainformant.rna.workflow import AmalgkitWorkflowConfig, execute_workflow
 
-    # Verify amalgkit is available (fixture ensures this)
     ok, _ = check_cli_available()
-    assert ok, "amalgkit CLI must be available (ensured by fixture)"
+    if not ok:
+        import pytest
+        pytest.skip("amalgkit CLI not available; skipping dependency-skip workflow test")
 
     cfg = AmalgkitWorkflowConfig(work_dir=tmp_path / "work", threads=1)
     (cfg.work_dir / "metadata").mkdir(parents=True, exist_ok=True)

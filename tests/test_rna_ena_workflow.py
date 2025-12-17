@@ -44,7 +44,7 @@ class TestENADownloader:
             timeout=10
         )
         # Help should work
-        assert result.returncode == 0 or "--config" in result.stdout or "--config" in result.stderr, "Help command failed"
+        assert result.returncode == 0, "Help command failed"
 
 
 class TestIntegratedWorkflow:
@@ -66,10 +66,11 @@ class TestIntegratedWorkflow:
             timeout=10
         )
         assert result.returncode == 0, "Help command failed"
-        assert "--config" in result.stdout, "Missing --config option"
+        # Both positional config and --config are supported
+        assert "config" in result.stdout.lower(), "Help output should mention config usage"
     
-    def test_workflow_requires_config(self):
-        """Verify workflow requires --config argument."""
+    def test_workflow_no_args_is_helpful(self):
+        """Verify workflow with no args prints available configs and exits successfully."""
         script = Path("scripts/rna/run_workflow.py")
         result = subprocess.run(
             [sys.executable, str(script)],
@@ -77,7 +78,10 @@ class TestIntegratedWorkflow:
             text=True,
             timeout=10
         )
-        assert result.returncode != 0, "Should fail without config"
+        # No-args is a helpful default (lists configs and suggests next commands)
+        assert result.returncode == 0
+        combined = (result.stdout + "\n" + result.stderr).lower()
+        assert "no config provided" in combined or "available configs" in combined
         assert "required" in result.stderr.lower() or "config" in result.stderr.lower() or "usage" in result.stderr.lower()
 
 

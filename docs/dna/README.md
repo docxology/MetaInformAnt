@@ -1,6 +1,6 @@
 # DNA Domain Documentation
 
-This directory contains comprehensive documentation for METAINFORMANT's DNA analysis capabilities.
+This directory contains documentation for METAINFORMANT's DNA analysis capabilities.
 
 ## Overview
 

@@ -45,10 +45,10 @@ export NCBI_EMAIL="your.email@example.com"
 
 ```bash
 # Full end-to-end workflow (all steps)
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 
 # Check status at any time
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 ```
 
 **End-to-End Workflow** (executed automatically):
@@ -158,10 +158,10 @@ export METAINFORMANT_DATA="/path/to/MetaInformAnt/data"
 **Use `run_workflow.py` for complete end-to-end execution**:
 ```bash
 # Full workflow (all 11 steps)
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 
 # Specific steps only
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --steps getfastq quant merge
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --steps getfastq quant merge
 ```
 
 **Features:**
@@ -178,15 +178,15 @@ python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrm
 
 ```bash
 # Process each species separately with parallel downloads
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species1.yaml
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species2.yaml
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species3.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species1.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species2.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species3.yaml
 ```
 
 **Or run in parallel (background):**
 ```bash
-nohup python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species1.yaml > logs/species1.log 2>&1 &
-nohup python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species2.yaml > logs/species2.log 2>&1 &
+nohup python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species1.yaml > logs/species1.log 2>&1 &
+nohup python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species2.yaml > logs/species2.log 2>&1 &
 ```
 
 **Parallel downloads** are controlled via `num_download_workers` in each config file:
@@ -219,10 +219,10 @@ steps:
 
 ```bash
 # Check workflow status
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 
 # Detailed status
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status --detailed
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status --detailed
 ```
 
 ### Check Running Processes
@@ -509,7 +509,7 @@ uv pip install -e . --python .venv/bin/python3
 ### Downloads Failing
 - Check network connectivity: `ping -c 4 8.8.8.8`
 - Verify NCBI_EMAIL is set: `echo $NCBI_EMAIL`
-- Try reducing threads: `--threads 8`
+- Try reducing threads: set `threads: 8` in the species config, or `export AK_THREADS=8`
 - Check disk space: `df -h /`
 - Test ENA connectivity: `wget --spider https://www.ebi.ac.uk/ena/`
 
@@ -555,7 +555,7 @@ kill <PID>
 pkill -f run_workflow
 
 # Restart (will resume from last completed sample)
-nohup python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml > logs/species.log 2>&1 &
+nohup python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml > logs/species.log 2>&1 &
 ```
 
 ### Quantification Failing

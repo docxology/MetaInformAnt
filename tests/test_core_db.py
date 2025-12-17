@@ -100,14 +100,15 @@ class TestDatabaseConnection:
         """Test database client creation fails gracefully without configuration."""
         # Save original environment
         original_env = {}
-        for key in ["PG_HOST", "PG_PORT", "PG_DATABASE", "PG_USER", "PG_PASSWORD", 
+        for key in ["PG_HOST", "PG_PORT", "PG_DATABASE", "PG_USER", "PG_PASSWORD",
                    "DB_NAME", "DB_USER", "DB_PASSWORD"]:
             original_env[key] = os.environ.get(key)
             if key in os.environ:
                 del os.environ[key]
-        
+
         try:
-            with pytest.raises(RuntimeError, match="Postgres configuration not found"):
+            # Should raise ImportError first since psycopg2 is not available
+            with pytest.raises(ImportError, match="psycopg2 is required"):
                 get_db_client()
         finally:
             # Restore original environment

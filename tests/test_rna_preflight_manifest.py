@@ -13,11 +13,10 @@ def test_preflight_manifest_when_amalgkit_missing(tmp_path: Path):
     from metainformant.rna.amalgkit import check_cli_available
     from metainformant.rna.workflow import AmalgkitWorkflowConfig, execute_workflow
 
-    # This test expects amalgkit to be available (ensured by fixture)
-    # The test verifies that workflow handles missing CLI gracefully
-    # but since we ensure amalgkit is available, we verify it works correctly
     ok, _ = check_cli_available()
-    assert ok, "amalgkit CLI must be available (ensured by fixture)"
+    if not ok:
+        import pytest
+        pytest.skip("amalgkit CLI not available; skipping real preflight/manifest smoke test")
 
     cfg = AmalgkitWorkflowConfig(work_dir=tmp_path / "work", threads=1)
     codes = execute_workflow(cfg, check=False)

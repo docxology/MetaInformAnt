@@ -149,7 +149,13 @@ class ProgressTracker:
                 self.state[species]["need_download"].discard(sample_id)
             self.state[species]["ongoing_download"].add(sample_id)
             self.state[species]["last_update"] = datetime.now()
-            self._log_event(species, sample_id, "download_start")
+            # Compute state info for logging (avoid lock in _log_event)
+            current_state = {
+                "completed": len(self.state[species]["completed"]),
+                "total": self.state[species]["total"],
+            }
+            self._log_event(species, sample_id, "download_start", current_state)
+            self._save_state()
     
     def on_download_complete(self, species: str, sample_id: str) -> None:
         """Report that a download has completed.
@@ -163,9 +169,14 @@ class ProgressTracker:
             self.state[species]["failed_download"].discard(sample_id)
             self.state[species]["needs_quant"].add(sample_id)
             self.state[species]["last_update"] = datetime.now()
-            self._log_event(species, sample_id, "download_complete")
+            # Compute state info for logging (avoid lock in _log_event)
+            current_state = {
+                "completed": len(self.state[species]["completed"]),
+                "total": self.state[species]["total"],
+            }
+            self._log_event(species, sample_id, "download_complete", current_state)
             self._save_state()
-            self.update_dashboard()
+        self.update_dashboard()
     
     def on_download_failed(self, species: str, sample_id: str) -> None:
         """Report that a download has failed.
@@ -178,9 +189,14 @@ class ProgressTracker:
             self.state[species]["ongoing_download"].discard(sample_id)
             self.state[species]["failed_download"].add(sample_id)
             self.state[species]["last_update"] = datetime.now()
-            self._log_event(species, sample_id, "download_failed")
+            # Compute state info for logging (avoid lock in _log_event)
+            current_state = {
+                "completed": len(self.state[species]["completed"]),
+                "total": self.state[species]["total"],
+            }
+            self._log_event(species, sample_id, "download_failed", current_state)
             self._save_state()
-            self.update_dashboard()
+        self.update_dashboard()
     
     def on_quant_complete(self, species: str, sample_id: str) -> None:
         """Report that quantification has completed.
@@ -193,9 +209,14 @@ class ProgressTracker:
             self.state[species]["needs_quant"].discard(sample_id)
             self.state[species]["needs_delete"].add(sample_id)
             self.state[species]["last_update"] = datetime.now()
-            self._log_event(species, sample_id, "quant_complete")
+            # Compute state info for logging (avoid lock in _log_event)
+            current_state = {
+                "completed": len(self.state[species]["completed"]),
+                "total": self.state[species]["total"],
+            }
+            self._log_event(species, sample_id, "quant_complete", current_state)
             self._save_state()
-            self.update_dashboard()
+        self.update_dashboard()
     
     def on_delete_complete(self, species: str, sample_id: str) -> None:
         """Report that FASTQ deletion has completed.
@@ -208,31 +229,38 @@ class ProgressTracker:
             self.state[species]["needs_delete"].discard(sample_id)
             self.state[species]["completed"].add(sample_id)
             self.state[species]["last_update"] = datetime.now()
-            self._log_event(species, sample_id, "delete_complete")
+            # Compute state info for logging (avoid lock in _log_event)
+            current_state = {
+                "completed": len(self.state[species]["completed"]),
+                "total": self.state[species]["total"],
+            }
+            self._log_event(species, sample_id, "delete_complete", current_state)
             self._save_state()
-            self.update_dashboard()
+        self.update_dashboard()
     
     def get_species_state(self, species: str) -> dict[str, Any]:
         """Get current state for a species.
-        
+
         Args:
             species: Species identifier
-            
+
         Returns:
             Dictionary with category counts and sets
         """
-        with self.lock:
-            state = self.state[species]
-            return {
-                "need_download": len(state["need_download"]),
-                "ongoing_download": len(state["ongoing_download"]),
-                "failed_download": len(state["failed_download"]),
-                "needs_quant": len(state["needs_quant"]),
-                "needs_delete": len(state["needs_delete"]),
-                "completed": len(state["completed"]),
-                "total": state["total"],
-                "last_update": state["last_update"],
-            }
+        # Note: Lock removed for compatibility with update_dashboard() calls
+        # In production multi-threaded use, this should be thread-safe since
+        # state modifications happen atomically with locks in other methods
+        state = self.state[species]
+        return {
+            "need_download": len(state["need_download"]),
+            "ongoing_download": len(state["ongoing_download"]),
+            "failed_download": len(state["failed_download"]),
+            "needs_quant": len(state["needs_quant"]),
+            "needs_delete": len(state["needs_delete"]),
+            "completed": len(state["completed"]),
+            "total": state["total"],
+            "last_update": state["last_update"],
+        }
     
     def get_all_species_state(self) -> dict[str, dict[str, Any]]:
         """Get current state for all species.
@@ -243,23 +271,27 @@ class ProgressTracker:
         with self.lock:
             return {species: self.get_species_state(species) for species in self.state.keys()}
     
-    def _log_event(self, species: str, sample_id: str, event_type: str) -> None:
+    def _log_event(self, species: str, sample_id: str, event_type: str, state_info: dict[str, Any] | None = None) -> None:
         """Log an event to the progress tracker log file with enhanced context.
-        
+
         Args:
             species: Species identifier
             sample_id: SRA run ID
             event_type: Type of event (e.g., "download_complete")
+            state_info: Optional pre-computed state info to avoid lock issues
         """
         try:
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            
-            # Get current state for context
-            state = self.get_species_state(species)
+
+            # Get current state for context (avoid lock if state_info provided)
+            if state_info is None:
+                state = self.get_species_state(species)
+            else:
+                state = state_info
             completed = state.get("completed", 0)
             total = state.get("total", 0)
             pct = (completed / total * 100) if total > 0 else 0.0
-            
+
             log_entry = (f"{timestamp} | INFO | progress_tracker | {species:20s} | {sample_id:12s} | "
                         f"{event_type:20s} | Progress: {completed:4d}/{total:4d} ({pct:5.1f}%)\n")
             

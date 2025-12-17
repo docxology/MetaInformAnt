@@ -38,7 +38,7 @@ Run these commands to verify everything is working:
 cd /media/q/ext6/github/MetaInformAnt
 
 # 1. Check workflow status
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 
 # 2. Check active processes
 ps aux | grep -E "amalgkit|fasterq-dump|run_workflow" | grep -v grep

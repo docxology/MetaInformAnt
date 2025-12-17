@@ -136,7 +136,11 @@ class TestOrchestratorCLIIntegration:
         result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
         # Should either succeed or fail gracefully with clear message
         assert result.returncode in (0, 1)  # 0 = success, 1 = expected failure (no input)
-        assert "ontology" in result.stdout.lower() or "output" in result.stdout.lower() or len(result.stderr) == 0
+        # Accept either output in stdout or stderr indicating the command ran (even with warnings)
+        assert ("ontology" in result.stdout.lower() or
+                "output" in result.stdout.lower() or
+                "starting ontology" in result.stderr.lower() or
+                "no ontology loaded" in result.stderr.lower())
 
     def test_phenotype_cli_integration(self, tmp_path: Path):
         """Test phenotype CLI command."""

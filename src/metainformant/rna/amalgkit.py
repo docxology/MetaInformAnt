@@ -174,14 +174,23 @@ def ensure_cli_available(*, auto_install: bool = False) -> tuple[bool, str, dict
     if ok or not auto_install:
         return ok, msg, None
 
-    # Attempt installation via pip
+    # Attempt installation via uv (repo policy: never invoke pip directly)
+    uv = shutil.which("uv")
+    if uv is None:
+        return (
+            False,
+            "auto-install requested but `uv` was not found on PATH (install uv, then retry)",
+            {"attempted": True, "return_code": 127, "stdout": "", "stderr": "uv not found", "command": "uv pip install ..."},
+        )
+
     cmd = [
-        sys.executable,
-        "-m",
+        uv,
         "pip",
         "install",
         "--no-input",
         "--no-warn-script-location",
+        "--python",
+        sys.executable,
         "git+https://github.com/kfuku52/amalgkit",
     ]
     try:

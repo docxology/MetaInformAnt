@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from typing import Tuple
 
-import psycopg2
+try:
+    import psycopg2
+    HAS_PSYCOPG2 = True
+except ImportError:
+    psycopg2 = None  # type: ignore
+    HAS_PSYCOPG2 = False
 
 from .config import load_postgres_config_from_env
 from .logging import get_logger
@@ -12,15 +17,19 @@ logger = get_logger(__name__)
 
 def get_db_client() -> Tuple["psycopg2.extensions.connection", "psycopg2.extensions.cursor"]:
     """Get PostgreSQL database client connection and cursor.
-    
+
     Loads configuration from environment variables and establishes connection.
-    
+
     Returns:
         Tuple of (connection, cursor) objects
-        
+
     Raises:
         RuntimeError: If PostgreSQL configuration not found in environment
+        ImportError: If psycopg2 is not available
     """
+    if not HAS_PSYCOPG2:
+        raise ImportError("psycopg2 is required for PostgreSQL database operations. Install with: uv add psycopg2-binary")
+
     config = load_postgres_config_from_env()
     if config is None:
         raise RuntimeError("Postgres configuration not found in environment variables")

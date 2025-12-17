@@ -1,30 +1,44 @@
 #!/bin/bash
 # UV-based code quality checks
 set -euo pipefail
-cd "$(dirname "$0")/.."
 
-echo "🔍 Running code quality checks with UV..."
+# Source common utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/_common.sh"
+
+# Setup environment
+setup_environment
+
+print_status "INFO" "Running code quality checks with UV..."
 case "${1:-all}" in
     "format")
-        echo "🎨 Formatting code..."
+        print_status "INFO" "Formatting code..."
         uv run black src/ tests/
         uv run isort src/ tests/
+        print_status "OK" "Code formatting completed"
         ;;
     "lint")
-        echo "🔎 Linting code..."
+        print_status "INFO" "Linting code..."
         uv run flake8 src/ tests/
+        print_status "OK" "Code linting completed"
         ;;
     "typecheck")
-        echo "🔍 Type checking..."
+        print_status "INFO" "Type checking..."
         uv run mypy src/
+        print_status "OK" "Type checking completed"
         ;;
     "all"|*)
-        echo "🎨 Formatting code..."
+        print_status "INFO" "Formatting code..."
         uv run black src/ tests/
         uv run isort src/ tests/
-        echo "🔎 Linting code..."
+        print_status "OK" "Code formatting completed"
+
+        print_status "INFO" "Linting code..."
         uv run flake8 src/ tests/
-        echo "🔍 Type checking..."
+        print_status "OK" "Code linting completed"
+
+        print_status "INFO" "Type checking..."
         uv run mypy src/
+        print_status "OK" "Type checking completed"
         ;;
 esac

@@ -27,22 +27,22 @@ Organized test fixtures and sample data by domain.
 ### All Tests
 ```bash
 # Run complete test suite
-python -m pytest tests/ -v
+uv run pytest tests/ -v
 
 # With coverage reporting
-python -m pytest tests/ --cov=src/metainformant --cov-report=html
+uv run pytest tests/ --cov=src/metainformant --cov-report=html
 ```
 
 ### Module-Specific Tests
 ```bash
 # Core infrastructure
-python -m pytest tests/test_core_*.py
+uv run pytest tests/test_core_*.py
 
 # DNA analysis
-python -m pytest tests/test_dna_*.py
+uv run pytest tests/test_dna_*.py
 
 # RNA workflows
-python -m pytest tests/test_rna_*.py
+uv run pytest tests/test_rna_*.py
 ```
 
 ## Test Development Guidelines

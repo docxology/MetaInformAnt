@@ -5,8 +5,8 @@ Environment management uses `uv` with Python 3.11+.
 ## Quick Setup
 
 ```bash
-git clone https://github.com/q/MetaInformAnt.git
-cd MetaInformAnt
+git clone https://github.com/q/metainformant.git
+cd metainformant
 bash scripts/package/setup_uv.sh --ncbi-email "you@example.com"
 # Default setup installs dev + scientific dependencies + amalgkit
 # You can either use uv run directly, or activate the venv for the shell:

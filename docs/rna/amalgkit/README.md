@@ -101,13 +101,16 @@ results = workflow.execute_workflow(cfg)
 **Command-line usage** (recommended for end-to-end workflows):
 ```bash
 # Full end-to-end workflow (all steps)
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 
 # Specific steps only
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --steps getfastq quant merge
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --steps getfastq quant merge
 
 # Check status
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+
+# Print planned steps + exact amalgkit commands (does not execute)
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --plan
 ```
 
 The `run_workflow.py` script provides complete end-to-end execution via `execute_workflow()`, including automatic genome setup, per-sample processing, and all 11 amalgkit steps.
@@ -125,13 +128,16 @@ Amalgkit integration connects with:
 
 ## Testing
 
-Comprehensive tests ensure workflow reliability:
-- CLI tool availability validation
-- Workflow execution testing
-- Error handling and recovery verification
-- Integration testing with real data
+Tests cover:
+- CLI availability checks
+- Step runner execution (real `amalgkit` when available)
+- Error handling paths and manifest/report generation
 
-**Disk Space Management:**
+External-tool tests are skipped when `amalgkit` is not on `PATH`.
+To attempt an install during a test run, set:
+`METAINFORMANT_AK_AUTO_INSTALL=1`.
+
+**Disk space management:**
 - Direct ENA downloads with automatic retry and resume
 - Immediate per-sample processing: only one sample's FASTQs exist at a time
 - Automatic FASTQ deletion immediately after quantification (maximum disk efficiency)
@@ -173,7 +179,7 @@ Complete working example with *Pogonomyrmex barbatus*:
    - Note: Genome setup happens automatically when running workflows if genome config exists
 2. **Review workflow guide**: [GETTING_STARTED.md](../GETTING_STARTED.md)
 3. **Setup R environment**: `R_INSTALLATION.md` and `r_packages.md`
-4. **Run end-to-end workflow**: `python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_<species>.yaml`
+4. **Run end-to-end workflow**: `python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_<species>.yaml`
 5. **Validate outputs**: Use `--status` flag or `scripts/rna/amalgkit/verify_workflow.sh <species>`
 
 **All setup uses `uv` for package management** (required):

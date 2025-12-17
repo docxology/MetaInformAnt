@@ -13,6 +13,7 @@ from __future__ import annotations
 import os
 import random
 import shutil
+import subprocess
 import sys
 import tempfile
 from pathlib import Path
@@ -235,17 +236,20 @@ def load_ncbi_config():
             pass
 
 
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="session")
 def ensure_amalgkit_available():
-    """Ensure amalgkit CLI is available before running RNA tests.
-    
-    This fixture runs automatically for all tests and ensures amalgkit
-    is available. If not available, it attempts auto-install.
-    If installation fails, the test session will fail.
+    """Ensure `amalgkit` CLI is available for tests that require it.
+
+    Policy:
+    - Tests must use the real external tool (NO_MOCKING_POLICY).
+    - If `amalgkit` is not available, we SKIP tests that request this fixture
+      (rather than failing the entire suite or attempting network installs unexpectedly).
+    - Optional: set `METAINFORMANT_AK_AUTO_INSTALL=1` to attempt installation via `uv`.
     """
     import os
     from pathlib import Path
-    from metainformant.rna.amalgkit import ensure_cli_available
+    import pytest
+    from metainformant.rna.amalgkit import check_cli_available, ensure_cli_available
     
     # Ensure user local bin is in PATH (common for --user installs)
     user_bin = Path.home() / ".local" / "bin"
@@ -253,17 +257,28 @@ def ensure_amalgkit_available():
         current_path = os.environ.get("PATH", "")
         if str(user_bin) not in current_path:
             os.environ["PATH"] = f"{user_bin}:{current_path}"
-    
-    ok, msg, install_record = ensure_cli_available(auto_install=True)
-    
-    if not ok:
-        error_msg = f"amalgkit CLI not available: {msg}"
+
+    ok, msg = check_cli_available()
+    if ok:
+        return ok, msg
+
+    auto_install = os.environ.get("METAINFORMANT_AK_AUTO_INSTALL", "").strip().lower() in {"1", "true", "yes"}
+    if auto_install:
+        ok2, msg2, install_record = ensure_cli_available(auto_install=True)
+        if ok2:
+            return ok2, msg2
+        extra = ""
         if install_record and install_record.get("attempted"):
-            error_msg += f"\nInstall attempt failed with return code: {install_record.get('return_code')}"
-            error_msg += f"\nInstall stderr: {install_record.get('stderr', '')[:500]}"
-        pytest.fail(error_msg)
-    
-    return ok, msg
+            extra = (
+                f"\nInstall attempt failed with return code: {install_record.get('return_code')}"
+                f"\nInstall stderr (first 500 chars): {str(install_record.get('stderr', ''))[:500]}"
+            )
+        pytest.skip(f"amalgkit not available and auto-install failed: {msg2}{extra}")
+
+    pytest.skip(
+        "amalgkit CLI not available on PATH. Install it (recommended: `uv pip install git+https://github.com/kfuku52/amalgkit`) "
+        "or set `METAINFORMANT_AK_AUTO_INSTALL=1` to attempt installation for this test run."
+    )
 
 
 class TestFileSystem:
@@ -323,15 +338,23 @@ def pytest_configure(config):
     config.addinivalue_line("markers", "slow: mark test as slow running")
     config.addinivalue_line("markers", "network: mark test as requiring network access")
     config.addinivalue_line("markers", "external_tool: mark test as requiring external tools")
+    config.addinivalue_line("markers", "integration: mark test as integration test")
+    config.addinivalue_line("markers", "no_mock: enforces NO mocking/faking policy")
+    config.addinivalue_line("markers", "requires_uv: mark test as requiring uv availability")
+    config.addinivalue_line("markers", "requires_network_deps: mark test as requiring network dependencies")
+    config.addinivalue_line("markers", "requires_external_deps: mark test as requiring external tool dependencies")
 
 
 def pytest_collection_modifyitems(config, items):
     """Modify test collection to add automatic markers."""
     # Add 'network' marker to tests that contain network-related keywords
-    network_keywords = ["http", "api", "fetch", "download", "request"]
+    network_keywords = ["http", "api", "fetch", "download", "request", "uniprot", "ncbi", "entrez"]
 
     # Add 'external_tool' marker to tests that require external tools
-    external_tool_keywords = ["muscle", "amalgkit", "blast", "ncbi"]
+    external_tool_keywords = ["muscle", "amalgkit", "blast", "ncbi", "seqkit", "sra"]
+
+    # Add 'integration' marker to integration tests
+    integration_keywords = ["integration", "workflow", "pipeline", "end_to_end"]
 
     for item in items:
         # Check if test name contains network-related keywords
@@ -342,9 +365,16 @@ def pytest_collection_modifyitems(config, items):
         if any(keyword in item.name.lower() for keyword in external_tool_keywords):
             item.add_marker(pytest.mark.external_tool)
 
+        # Check if test name contains integration keywords
+        if any(keyword in item.name.lower() for keyword in integration_keywords):
+            item.add_marker(pytest.mark.integration)
+
         # Mark long-running tests
         if "integration" in item.name.lower() or "slow" in item.name.lower():
             item.add_marker(pytest.mark.slow)
+
+        # All tests follow no_mock policy
+        item.add_marker(pytest.mark.no_mock)
 
 
 # Skip conditions for various test scenarios
@@ -451,6 +481,171 @@ class PerformanceTracker:
 def performance_tracker() -> PerformanceTracker:
     """Provide performance tracking for tests."""
     return PerformanceTracker()
+
+
+# UV integration fixtures and utilities
+def _check_uv_availability() -> bool:
+    """Check if uv is available and working."""
+    try:
+        result = subprocess.run(
+            ["uv", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        return result.returncode == 0
+    except (subprocess.TimeoutExpired, FileNotFoundError):
+        return False
+
+
+def _check_test_dependencies(test_type: str = "fast") -> dict[str, bool]:
+    """Check if required test dependencies are available."""
+    results = {}
+
+    # Check basic Python imports
+    basic_imports = ["pytest", "pathlib", "tempfile"]
+    for module in basic_imports:
+        try:
+            __import__(module)
+            results[f"import_{module}"] = True
+        except ImportError:
+            results[f"import_{module}"] = False
+
+    # Check uv-managed dependencies
+    uv_deps = {
+        "fast": ["pytest", "pytest_cov"],
+        "network": ["pytest", "pytest_cov", "requests"],
+        "external": ["pytest", "pytest_cov"],
+        "all": ["pytest", "pytest_cov", "pytest_xdist", "pytest_benchmark"]
+    }
+
+    for dep in uv_deps.get(test_type, uv_deps["fast"]):
+        try:
+            # Try to import the module (some have different import names)
+            import_map = {
+                "pytest_cov": "pytest_cov",
+                "pytest_xdist": "pytest_xdist",
+                "pytest_benchmark": "pytest_benchmark",
+            }
+            module_name = import_map.get(dep, dep)
+            __import__(module_name)
+            results[f"uv_{dep}"] = True
+        except ImportError:
+            results[f"uv_{dep}"] = False
+
+    return results
+
+
+@pytest.fixture(scope="session", autouse=True)
+def verify_uv_setup():
+    """Verify UV is available and properly configured."""
+    if not _check_uv_availability():
+        pytest.skip("uv is not available - install uv first: curl -LsSf https://astral.sh/uv/install.sh | sh")
+
+    # Check if we're in a uv-managed environment
+    uv_env = os.environ.get("UV_PROJECT_ENVIRONMENT") or os.environ.get("VIRTUAL_ENV")
+    if not uv_env:
+        pytest.skip("Not running in a uv-managed virtual environment")
+
+
+@pytest.fixture(scope="session")
+def test_dependency_checker():
+    """Provide a function to check test dependencies."""
+    return _check_test_dependencies
+
+
+@pytest.fixture(scope="session")
+def uv_environment_info():
+    """Provide information about the UV environment."""
+    info = {
+        "uv_available": _check_uv_availability(),
+        "uv_cache_dir": os.environ.get("UV_CACHE_DIR"),
+        "uv_project_env": os.environ.get("UV_PROJECT_ENVIRONMENT"),
+        "virtual_env": os.environ.get("VIRTUAL_ENV"),
+        "metainformant_venv": os.environ.get("METAINFORMANT_VENV"),
+        "python_path": sys.executable,
+        "test_data_dir": TEST_DATA_DIR.exists(),
+        "output_dir": Path("output").exists(),
+    }
+    return info
+
+
+@pytest.fixture(scope="session", autouse=True)
+def validate_test_environment(uv_environment_info):
+    """Validate the test environment meets minimum requirements."""
+    issues = []
+
+    if not uv_environment_info["uv_available"]:
+        issues.append("uv is not available")
+
+    if not uv_environment_info["test_data_dir"]:
+        issues.append("test data directory (tests/data/) not found")
+
+    if not uv_environment_info["output_dir"]:
+        # Create output directory if it doesn't exist
+        Path("output").mkdir(exist_ok=True)
+
+    if issues:
+        pytest.skip(f"Test environment issues: {', '.join(issues)}")
+
+
+# Enhanced filesystem detection with UV integration
+def _detect_filesystem_type(repo_root: Path) -> tuple[str, bool]:
+    """Detect filesystem type and symlink support for UV configuration."""
+    try:
+        result = subprocess.run(
+            ["df", "-T", str(repo_root)],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0:
+            lines = result.stdout.strip().split("\n")
+            if len(lines) > 1:
+                parts = lines[1].split()
+                if len(parts) >= 2:
+                    fs_type = parts[1].lower()
+                    # Check if filesystem supports symlinks
+                    no_symlink_fs = {"exfat", "fat32", "fat", "vfat", "msdos"}
+                    supports_symlinks = fs_type not in no_symlink_fs
+                    return fs_type, supports_symlinks
+    except Exception:
+        pass
+    return "unknown", True
+
+
+@pytest.fixture(scope="session", autouse=True)
+def configure_uv_environment():
+    """Configure UV environment variables based on filesystem."""
+    repo_root = Path(__file__).resolve().parent.parent
+
+    fs_type, supports_symlinks = _detect_filesystem_type(repo_root)
+
+    if not supports_symlinks:
+        # FAT filesystem - use /tmp locations
+        if "UV_CACHE_DIR" not in os.environ:
+            cache_dir = Path("/tmp/uv-cache")
+            cache_dir.mkdir(parents=True, exist_ok=True)
+            os.environ["UV_CACHE_DIR"] = str(cache_dir)
+
+        if "UV_PROJECT_ENVIRONMENT" not in os.environ:
+            venv_dir = Path("/tmp/metainformant_venv")
+            os.environ["UV_PROJECT_ENVIRONMENT"] = str(venv_dir)
+
+        if "METAINFORMANT_VENV" not in os.environ:
+            os.environ["METAINFORMANT_VENV"] = str(venv_dir)
+    else:
+        # Standard filesystem - use repo locations
+        if "UV_CACHE_DIR" not in os.environ:
+            cache_dir = repo_root / ".uv-cache"
+            cache_dir.mkdir(parents=True, exist_ok=True)
+            os.environ["UV_CACHE_DIR"] = str(cache_dir)
+
+        if "UV_PROJECT_ENVIRONMENT" not in os.environ:
+            os.environ["UV_PROJECT_ENVIRONMENT"] = str(repo_root / ".venv")
+
+        if "METAINFORMANT_VENV" not in os.environ:
+            os.environ["METAINFORMANT_VENV"] = str(repo_root / ".venv")
 
 
 # Test result reporting

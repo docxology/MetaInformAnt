@@ -79,7 +79,7 @@ class TestProgressTracker:
         tracker.initialize_species("test_species", 1, ["SRR123"])
         tracker.on_download_start("test_species", "SRR123")
         tracker.on_download_complete("test_species", "SRR123")
-        tracker.on_quantification_complete("test_species", "SRR123")
+        tracker.on_quant_complete("test_species", "SRR123")
         
         assert "SRR123" in tracker.state["test_species"]["needs_delete"]
         assert "SRR123" not in tracker.state["test_species"]["needs_quant"]
@@ -93,8 +93,8 @@ class TestProgressTracker:
         tracker.initialize_species("test_species", 1, ["SRR123"])
         tracker.on_download_start("test_species", "SRR123")
         tracker.on_download_complete("test_species", "SRR123")
-        tracker.on_quantification_complete("test_species", "SRR123")
-        tracker.on_deletion_complete("test_species", "SRR123")
+        tracker.on_quant_complete("test_species", "SRR123")
+        tracker.on_delete_complete("test_species", "SRR123")
         
         assert "SRR123" in tracker.state["test_species"]["completed"]
         assert "SRR123" not in tracker.state["test_species"]["needs_delete"]
@@ -124,10 +124,10 @@ class TestProgressTracker:
         tracker.initialize_species("test_species", 3, ["SRR123", "SRR456", "SRR789"])
         tracker.on_download_start("test_species", "SRR123")
         tracker.on_download_complete("test_species", "SRR123")
-        tracker.on_quantification_complete("test_species", "SRR123")
-        tracker.on_deletion_complete("test_species", "SRR123")
+        tracker.on_quant_complete("test_species", "SRR123")
+        tracker.on_delete_complete("test_species", "SRR123")
         
-        summary = tracker.get_species_summary("test_species")
+        summary = tracker.get_species_state("test_species")
         assert isinstance(summary, dict)
         assert summary["total"] == 3
         assert summary["completed"] == 1
@@ -146,9 +146,13 @@ class TestGetTracker:
     @pytest.mark.slow
     def test_get_tracker_custom_paths(self, tmp_path: Path):
         """Test get_tracker with custom paths."""
+        # Reset global tracker instance to test custom paths
+        import metainformant.rna.progress_tracker as pt_module
+        pt_module._tracker_instance = None
+
         state_file = tmp_path / "custom_state.json"
         dashboard_file = tmp_path / "custom_dashboard.txt"
-        
+
         tracker = get_tracker(state_file=state_file, dashboard_file=dashboard_file)
         assert tracker.state_file == state_file
         assert tracker.dashboard_file == dashboard_file

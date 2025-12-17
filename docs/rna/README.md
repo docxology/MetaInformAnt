@@ -141,13 +141,13 @@ Automated genome download, transcriptome extraction, and kallisto index building
 
 ```bash
 # Full end-to-end workflow (all steps)
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 
 # Check status
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 
 # Specific steps only
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --steps getfastq quant merge
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --steps getfastq quant merge
 ```
 
 The `run_workflow.py` script provides complete end-to-end execution via `execute_workflow()`, including automatic genome setup, per-sample processing, and all 11 amalgkit steps.
@@ -158,8 +158,8 @@ The `run_workflow.py` script provides complete end-to-end execution via `execute
 
 ```bash
 # Process each species with parallel downloads (configured in each config file)
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species1.yaml
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species2.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species1.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species2.yaml
 ```
 
 **Parallel downloads** are controlled via `num_download_workers` in each config file. For multiple species, run workflows in parallel (using `nohup` or `screen`) or sequentially.

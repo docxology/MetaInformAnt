@@ -1,6 +1,6 @@
-# MetaInformAnt Quick Start
+# metainformant Quick Start
 
-Get started with MetaInformAnt in minutes.
+Get started with metainformant in minutes.
 
 ## Prerequisites
 
@@ -18,11 +18,11 @@ Get started with MetaInformAnt in minutes.
 
 ```bash
 # Clone repository
-git clone https://github.com/q/MetaInformAnt.git
-cd MetaInformAnt
+git clone https://github.com/q/metainformant.git
+cd metainformant
 
 # Run automated setup script (installs dev + scientific deps + amalgkit by default)
-bash scripts/package/setup_uv.sh
+bash scripts/package/setup.sh
 
 # Activate virtual environment
 # Standard filesystem:
@@ -35,8 +35,8 @@ source /tmp/metainformant_venv/bin/activate
 
 ```bash
 # Clone repository
-git clone https://github.com/q/MetaInformAnt.git
-cd MetaInformAnt
+git clone https://github.com/q/metainformant.git
+cd metainformant
 
 # Install uv if not already installed
 curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -57,7 +57,7 @@ uv pip install -e .
 
 ```bash
 # Same setup command works on FAT filesystems
-bash scripts/package/setup_uv.sh
+bash scripts/package/setup.sh
 
 # The script automatically:
 # - Detects FAT filesystem (exFAT, FAT32)
@@ -68,7 +68,7 @@ bash scripts/package/setup_uv.sh
 **Manual Setup** (if needed):
 ```bash
 # Navigate to repository
-cd /path/to/MetaInformAnt
+cd /path/to/metainformant
 
 # Create venv in /tmp where symlinks work
 export UV_CACHE_DIR="/tmp/uv-cache"
@@ -78,7 +78,7 @@ uv venv /tmp/metainformant_venv
 uv pip install -e . --python /tmp/metainformant_venv/bin/python3
 ```
 
-**Note**: The `/tmp` venv will be deleted on reboot. Recreate it with `bash scripts/package/setup_uv.sh` after reboot.
+**Note**: The `/tmp` venv will be deleted on reboot. Recreate it with `bash scripts/package/setup.sh` after reboot.
 
 **Better Solution**: Reformat your external drive to **ext4** (Linux-only) or **NTFS** (cross-platform) to enable native symlink support. See [UV Setup Guide](docs/UV_SETUP.md) and [External Drive Setup](docs/rna/EXTERNAL_DRIVE_SETUP.md) for details.
 
@@ -336,10 +336,10 @@ echo 'export NCBI_EMAIL="your.email@example.com"' >> ~/.bashrc
 
 ```bash
 # Run all tests
-bash scripts/package/run_tests.sh
+bash scripts/package/test.sh --mode fast
 
 # Run fast tests only
-bash scripts/package/run_tests.sh --fast
+bash scripts/package/test.sh --mode fast --fast
 
 # Check code quality
 bash scripts/package/uv_quality.sh
@@ -377,7 +377,7 @@ chmod +x scripts/**/*.sh
 
 - **Documentation**: See [docs/](docs/) directory for comprehensive guides
 - **Examples**: Check [scripts/](scripts/) for working examples
-- **Issues**: Report issues at https://github.com/q/MetaInformAnt/issues
+- **Issues**: Report issues at https://github.com/q/metainformant/issues
 
 ---
 

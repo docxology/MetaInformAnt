@@ -22,10 +22,10 @@ METAINFORMANT uses `uv` for fast, reliable dependency management. This guide cov
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Run automated setup
-bash scripts/package/setup_uv.sh
+bash scripts/package/setup.sh
 
 # Verify setup
-bash scripts/package/verify_uv_setup.sh
+bash scripts/package/verify.sh --mode setup
 ```
 
 ### FAT Filesystem Setup (exFAT, FAT32)
@@ -34,7 +34,7 @@ On FAT filesystems, setup is **automatic** - the scripts detect the filesystem a
 
 ```bash
 # Same command works on FAT filesystems
-bash scripts/package/setup_uv.sh
+bash scripts/package/setup.sh
 
 # The script automatically:
 # - Detects FAT filesystem
@@ -82,7 +82,7 @@ All setup scripts automatically detect filesystem type:
 
 ```bash
 # Filesystem detection happens automatically
-bash scripts/package/setup_uv.sh
+bash scripts/package/setup.sh
 
 # Output shows detection:
 # [1.5/5] Detecting filesystem type and configuring UV cache...
@@ -159,7 +159,7 @@ Scripts automatically detect and use the correct venv location:
 
 ```bash
 # Test scripts automatically find venv
-bash scripts/package/uv_test.sh
+bash scripts/package/test.sh --mode fast
 
 # Output shows detection:
 #   → Filesystem: exfat
@@ -171,26 +171,26 @@ bash scripts/package/uv_test.sh
 
 ### Main Setup Script
 
-**`scripts/package/setup_uv.sh`** - Complete environment setup:
+**`scripts/package/setup.sh`** - Complete environment setup:
 
 ```bash
 # Basic setup (installs dev + scientific deps + amalgkit by default)
-bash scripts/package/setup_uv.sh
+bash scripts/package/setup.sh
 
 # Skip amalgkit installation
-bash scripts/package/setup_uv.sh --skip-amalgkit
+bash scripts/package/setup.sh --skip-amalgkit
 
 # With all optional dependencies (database, networks, scraping, etc.)
-bash scripts/package/setup_uv.sh --with-all
+bash scripts/package/setup.sh --with-all
 
 # With scraping dependencies (cloudscraper) for web scraping
-bash scripts/package/setup_uv.sh --with-scraping
+bash scripts/package/setup.sh --with-scraping
 
 # With external CLI dependencies (seqkit, sra-tools, etc.)
-bash scripts/package/setup_uv.sh --with-deps
+bash scripts/package/setup.sh --with-deps
 
 # Skip tests during setup
-bash scripts/package/setup_uv.sh --skip-tests
+bash scripts/package/setup.sh --skip-tests
 ```
 
 **Features**:
@@ -223,15 +223,15 @@ All test scripts handle FAT filesystems automatically:
 
 ```bash
 # Standard test runner
-bash scripts/package/uv_test.sh
+bash scripts/package/test.sh --mode fast
 
 # Optimized test runner
 bash scripts/package/uv_test_optimized.sh fast
 
 # Test modes
-bash scripts/package/uv_test.sh coverage
-bash scripts/package/uv_test.sh parallel
-bash scripts/package/uv_test.sh integration
+bash scripts/package/test.sh --mode fast coverage
+bash scripts/package/test.sh --mode fast parallel
+bash scripts/package/test.sh --mode fast integration
 ```
 
 **Automatic Handling**:
@@ -245,7 +245,7 @@ bash scripts/package/uv_test.sh integration
 **`scripts/package/verify_uv_setup.sh`** - Verify setup:
 
 ```bash
-bash scripts/package/verify_uv_setup.sh
+bash scripts/package/verify.sh --mode setup
 ```
 
 **Checks**:
@@ -343,7 +343,7 @@ uv pip install <package> --python /tmp/metainformant_venv/bin/python3
 **All Filesystems** (automatic detection):
 ```bash
 # Test scripts handle everything automatically
-bash scripts/package/uv_test.sh
+bash scripts/package/test.sh --mode fast
 bash scripts/package/uv_test_optimized.sh fast
 ```
 
@@ -384,7 +384,7 @@ ls -la .venv/bin/python3
 ls -la /tmp/metainformant_venv/bin/python3
 
 # Or run verification script
-bash scripts/package/verify_uv_setup.sh
+bash scripts/package/verify.sh --mode setup
 ```
 
 ### Problem: Packages not installing
@@ -427,7 +427,7 @@ uv pip install -e . --python /tmp/metainformant_venv/bin/python3
 Or use setup script:
 
 ```bash
-bash scripts/package/setup_uv.sh
+bash scripts/package/setup.sh
 ```
 
 ## Filesystem Detection API
@@ -472,7 +472,7 @@ Setup scripts handle all filesystem detection automatically:
 
 ```bash
 # Recommended
-bash scripts/package/setup_uv.sh
+bash scripts/package/setup.sh
 ```
 
 ### 2. Verify Setup
@@ -480,7 +480,7 @@ bash scripts/package/setup_uv.sh
 Always verify setup after installation:
 
 ```bash
-bash scripts/package/verify_uv_setup.sh
+bash scripts/package/verify.sh --mode setup
 ```
 
 ### 3. Check Filesystem Type
@@ -496,7 +496,7 @@ df -T .
 When troubleshooting, run verification script:
 
 ```bash
-bash scripts/package/verify_uv_setup.sh
+bash scripts/package/verify.sh --mode setup
 ```
 
 ### 5. FAT Filesystem Considerations

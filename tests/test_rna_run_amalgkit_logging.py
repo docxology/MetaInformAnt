@@ -12,9 +12,10 @@ def test_run_amalgkit_writes_logs(tmp_path: Path):
     """Test that run_amalgkit writes log files for stdout and stderr."""
     from metainformant.rna.amalgkit import check_cli_available, run_amalgkit
 
-    # Verify amalgkit is available (fixture ensures this)
     ok, _ = check_cli_available()
-    assert ok, "amalgkit CLI must be available (ensured by fixture)"
+    if not ok:
+        import pytest
+        pytest.skip("amalgkit CLI not available; skipping run_amalgkit logging test")
 
     logs = tmp_path / "logs"
     res = run_amalgkit(

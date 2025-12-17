@@ -102,3 +102,7 @@ coverage.xml
 *.1
 *.2
 /output/tmp
+
+# Timelock
+.timelock/
+*.timelock.*

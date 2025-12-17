@@ -1,23 +1,29 @@
 #!/bin/bash
 # UV-based performance profiling
 set -euo pipefail
-cd "$(dirname "$0")/.."
 
-echo "⚡ Performance profiling with UV..."
+# Source common utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/_common.sh"
+
+# Setup environment
+setup_environment
+
+print_status "INFO" "Performance profiling with UV..."
 case "${1:-help}" in
     "cpu")
         shift
-        echo "🔥 CPU profiling: ${*:-python -c 'import metainformant; print(metainformant.__version__)'}"
+        print_status "INFO" "CPU profiling: ${*:-python -c 'import metainformant; print(metainformant.__version__)'}"
         uv run python -m cProfile -o output/profiles/cpu_profile.stats "${@:-python -c 'import metainformant; print(metainformant.__version__)'}"
-        echo "📊 CPU profile saved to output/profiles/cpu_profile.stats"
+        print_status "OK" "CPU profile saved to output/profiles/cpu_profile.stats"
         ;;
     "memory")
         shift
-        echo "💾 Memory profiling: ${*}"
+        print_status "INFO" "Memory profiling: ${*}"
         uv run python -m memory_profiler "${@}"
         ;;
     "benchmark")
-        echo "🏁 Running performance benchmarks..."
+        print_status "INFO" "Running performance benchmarks..."
         uv run pytest tests/ -m benchmark --benchmark-json=output/benchmarks/results.json
         ;;
     *)

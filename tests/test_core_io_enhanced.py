@@ -49,7 +49,7 @@ class TestIOEnhanced:
             if success:
                 assert dest_file.exists()
                 content = dest_file.read_text()
-                assert "httpbin" in content
+                assert "slideshow" in content  # httpbin.org/json returns a slideshow JSON
 
     @pytest.mark.network
     def test_download_json(self):
@@ -64,7 +64,7 @@ class TestIOEnhanced:
         data = io.download_json(url)
         if data:
             assert isinstance(data, dict)
-            assert "httpbin" in str(data)
+            assert "slideshow" in str(data)  # httpbin.org/json returns a slideshow JSON
 
     @pytest.mark.network
     def test_download_text(self):

@@ -61,9 +61,14 @@ def expression_heatmap(
         _, ax = plt.subplots()
 
     if SEABORN_AVAILABLE:
-        g = sns.clustermap(data, row_cluster=row_cluster, col_cluster=col_cluster,
-                          cmap=cmap, **kwargs)
-        return g.ax_heatmap
+        # seaborn clustermap always creates its own figure, so we can't use the provided ax
+        # Fall back to regular heatmap when ax is provided
+        if ax is not None:
+            return heatmap(data, cmap=cmap, ax=ax)
+        else:
+            g = sns.clustermap(data, row_cluster=row_cluster, col_cluster=col_cluster,
+                              cmap=cmap, **kwargs)
+            return g.ax_heatmap
     else:
         # Fallback to basic heatmap
         return heatmap(data, cmap=cmap, ax=ax)

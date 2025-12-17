@@ -154,9 +154,13 @@ Source code documentation mirrors the `src/metainformant/` structure:
 - **Documentation Issues**: Check for broken links or outdated content
 - **Code Questions**: Reference source code READMEs and docstrings
 - **Workflow Help**: See domain-specific workflow documentation
-- **Bug Reports**: https://github.com/q/MetaInformAnt/issues
+- **Bug Reports**: https://github.com/q/metainformant/issues
 
 ---
 
 *This guide provides navigation for 70+ documentation files organized across 20+ domains, ensuring comprehensive coverage of METAINFORMANT's bioinformatics capabilities.*
+
+
+
+
 

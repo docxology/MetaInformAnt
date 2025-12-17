@@ -22,6 +22,7 @@ def _check_online(url: str) -> bool:
 @pytest.mark.skipif(
     not os.environ.get("NCBI_EMAIL"), reason="NCBI email not provided - set NCBI_EMAIL environment variable"
 )
+@pytest.mark.network
 def test_entrez_fetch_phix_fasta_real_network():
     """Test real NCBI Entrez API with actual network requests."""
     email = os.environ["NCBI_EMAIL"]
@@ -55,6 +56,7 @@ def test_entrez_no_email_behavior():
         assert True  # This documents real API requirements
 
 
+@pytest.mark.network
 def test_entrez_invalid_accession_real():
     """Test real behavior with invalid accession numbers."""
     if not os.environ.get("NCBI_EMAIL"):
@@ -75,6 +77,7 @@ def test_entrez_invalid_accession_real():
         assert True  # This is acceptable real-world behavior
 
 
+@pytest.mark.network
 def test_entrez_different_accession_types_real():
     """Test with different types of valid accession numbers."""
     if not os.environ.get("NCBI_EMAIL"):
@@ -101,6 +104,7 @@ def test_entrez_different_accession_types_real():
             pytest.skip(f"NCBI accession {accession} unavailable - real API behavior: {e}")
 
 
+@pytest.mark.network
 def test_entrez_offline_behavior():
     """Document real offline behavior for NCBI queries."""
     if not os.environ.get("NCBI_EMAIL"):
@@ -119,6 +123,7 @@ def test_entrez_offline_behavior():
         assert True  # This is acceptable real-world behavior
 
 
+@pytest.mark.network
 def test_entrez_rate_limiting_behavior():
     """Test how real API handles rapid successive requests."""
     if not os.environ.get("NCBI_EMAIL"):
@@ -145,6 +150,7 @@ def test_entrez_rate_limiting_behavior():
     assert len(results) == 3
 
 
+@pytest.mark.network
 def test_entrez_email_parameter_validation():
     """Test email parameter handling without network calls."""
     # Test that the function accepts email parameter correctly

@@ -16,12 +16,19 @@ class TestIndexFunctions:
     """Tests for index_functions function."""
 
     def test_index_functions_repo_root(self):
-        """Test indexing functions in repository."""
-        repo_root = Path(__file__).parent.parent
-        index = symbols.index_functions(repo_root, use_cache=False)
+        """Test indexing functions in core module."""
+        # Index only the core module to avoid timeout
+        core_dir = Path(__file__).parent.parent / "src" / "metainformant" / "core"
+        index = symbols.index_functions(core_dir, use_cache=False)
         assert isinstance(index, dict)
         # Should have indexed some functions
-        assert len(index) >= 0
+        assert len(index) > 0
+        # Should contain common core functions
+        function_names = []
+        for func_list in index.values():
+            for func_info in func_list:
+                function_names.append(func_info.name)
+        assert "get_logger" in function_names
 
     def test_index_functions_with_cache(self):
         """Test indexing functions with cache enabled."""
@@ -34,12 +41,13 @@ class TestIndexClasses:
     """Tests for index_classes function."""
 
     def test_index_classes_repo_root(self):
-        """Test indexing classes in repository."""
-        repo_root = Path(__file__).parent.parent
-        index = symbols.index_classes(repo_root, use_cache=False)
+        """Test indexing classes in core module."""
+        # Index only the core module to avoid timeout
+        core_dir = Path(__file__).parent.parent / "src" / "metainformant" / "core"
+        index = symbols.index_classes(core_dir, use_cache=False)
         assert isinstance(index, dict)
         # Should have indexed some classes
-        assert len(index) >= 0
+        assert len(index) > 0
 
 
 class TestFindSymbol:
@@ -95,9 +103,10 @@ class TestFindSymbolReferences:
     """Tests for find_symbol_references function."""
 
     def test_find_symbol_references_common(self):
-        """Test finding references to a common symbol."""
-        repo_root = Path(__file__).parent.parent
-        references = symbols.find_symbol_references("get_logger", repo_root)
+        """Test finding references to a common symbol in core module."""
+        # Search only in core module to avoid timeout
+        core_dir = Path(__file__).parent.parent / "src" / "metainformant" / "core"
+        references = symbols.find_symbol_references("get_logger", core_dir)
         assert isinstance(references, list)
         # Should find some references
         assert len(references) > 0
@@ -105,6 +114,8 @@ class TestFindSymbolReferences:
             assert hasattr(ref, "symbol_name")
             assert hasattr(ref, "file_path")
             assert hasattr(ref, "line_number")
+            # All references should be in core module
+            assert str(core_dir) in str(ref.file_path)
 
 
 class TestGetSymbolMetadata:

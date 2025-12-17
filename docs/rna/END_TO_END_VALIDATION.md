@@ -10,9 +10,10 @@ Validate workflow configuration and planning:
 # Check specific species workflow planning
 python3 -c "
 from pathlib import Path
-from metainformant.rna.workflow import load_workflow_config, plan_workflow
+from metainformant.rna.workflow import apply_step_defaults, load_workflow_config, plan_workflow
 
 cfg = load_workflow_config('config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml')
+apply_step_defaults(cfg)
 steps = plan_workflow(cfg)
 print(f'✅ {len(steps)} steps planned for cfloridanus')
 "
@@ -56,23 +57,22 @@ print(f'✅ {len(configs)} species configs discovered')
 ```bash
 # Prerequisites: venv must exist with amalgkit installed
 # If not set up:
-uv venv .venv  # or /tmp/metainformant_venv on ext6 filesystems
-source .venv/bin/activate  # or /tmp/metainformant_venv/bin/activate
-uv pip install -e .
-uv pip install git+https://github.com/kfuku52/amalgkit
+uv venv .venv
+uv pip install -e . --python .venv/bin/python3
+uv pip install git+https://github.com/kfuku52/amalgkit --python .venv/bin/python3
 
 # Run separately for each species (recommended)
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species1.yaml
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species2.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species1.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species2.yaml
 
 # Or run in parallel (background)
-nohup python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species1.yaml > logs/species1.log 2>&1 &
-nohup python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species2.yaml > logs/species2.log 2>&1 &
+nohup python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species1.yaml > logs/species1.log 2>&1 &
+nohup python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species2.yaml > logs/species2.log 2>&1 &
 ```
 
 **What happens (immediate processing):**
 1. Each species workflow runs independently
-2. Parallel downloads configured via `num_download_workers` in each config file
+2. Parallel downloads configured via `steps.getfastq.num_download_workers` in each config file (metainformant orchestration param)
 3. Immediate per-sample processing: download → immediately quantify → immediately delete FASTQs
 4. Processes: metadata → select → getfastq → quant → merge → curate → sanity
 5. Cross-species analysis (CSTMM, CSCA) can be run after all species complete
@@ -89,7 +89,7 @@ for config in config/amalgkit/amalgkit_*.yaml; do
   
   species=$(basename "$config" .yaml | sed 's/amalgkit_//')
   nohup python3 scripts/rna/run_workflow.py \
-    --config "$config" \
+    "$config" \
     > output/workflow_${species}_$(date +%Y%m%d_%H%M%S).log 2>&1 &
 done
 
@@ -98,7 +98,7 @@ for config in config/amalgkit/amalgkit_*.yaml; do
   [[ "$config" == *template* ]] && continue
   [[ "$config" == *test* ]] && continue
   
-  python3 scripts/rna/run_workflow.py --config "$config"
+  python3 scripts/rna/run_workflow.py "$config"
 done
 ```
 
@@ -106,7 +106,30 @@ done
 1. Uses ENA direct downloads (100% reliability)
 2. Immediate per-sample processing (download → immediately quantify → immediately delete FASTQs)
 3. Maximum disk efficiency: only one sample's FASTQs exist at a time
-4. Configurable threads via `--threads` argument
+4. Configurable threads via config file or `export AK_THREADS=...`
+5. Workflow writes a manifest and summaries under the species work directory:
+   - `amalgkit.manifest.jsonl`
+   - `amalgkit.report.json`
+   - `amalgkit.report.md`
+
+### Inspect and Run Step-by-Step
+
+```bash
+# List configs
+python3 scripts/rna/run_workflow.py --list-configs
+
+# Show exact step order + the exact amalgkit commands that will run
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --plan
+
+# Run with per-step stage progress bars
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --check
+
+# Walk through each stage (press Enter before each stage)
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --walk
+
+# Show exact command before each stage runs
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --show-commands --check
+```
 
 ## Validated Species (24 total)
 

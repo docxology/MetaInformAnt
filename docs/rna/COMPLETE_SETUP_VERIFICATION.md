@@ -176,7 +176,7 @@ This document provides a comprehensive verification checklist for the complete e
 
 ### Check Overall Status
 ```bash
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status --detailed
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status --detailed
 ```
 
 ### Monitor Downloads
@@ -217,7 +217,7 @@ Once workflow completes, verify:
 
 ```bash
 # Final status check
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status --detailed
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status --detailed
 
 # Verify all outputs
 ls -lh output/amalgkit/pogonomyrmex_barbatus/merged/merged_abundance.tsv

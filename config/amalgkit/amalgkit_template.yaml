@@ -123,6 +123,10 @@ steps:
     # Uses NCBI_EMAIL environment variable if not specified
     # entrez_email: your.email@example.com
 
+    # Resolve scientific names from taxids (amalgkit v0.12.20+)
+    # Translates taxids to scientific names, preserves originals in scientific_name_original column
+    resolve_names: yes
+
     # Force re-download of metadata even if files exist
     redo: yes
 
@@ -157,6 +161,10 @@ steps:
 
     # Custom config directory (uses work_dir/config if not specified)
     # config_dir: path/to/custom/config
+
+    # Mark samples lacking taxid information at specified rank (amalgkit v0.12.20+)
+    # Marks samples as 'missing_rank' in the exclusion column
+    mark_missing_rank: species
 
   # -------------------------------------------------------------------------
   # GETFASTQ: Download FASTQ files from SRA

@@ -1,26 +1,32 @@
 #!/bin/bash
 # UV-based documentation builder
 set -euo pipefail
-cd "$(dirname "$0")/.."
+
+# Source common utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/_common.sh"
+
+# Setup environment
+setup_environment
 
 echo "📚 Building documentation with UV..."
 case "${1:-build}" in
     "build")
         uv run sphinx-build -b html docs/ docs/_build/html
-        echo "📖 Documentation built in docs/_build/html/"
+        print_status "OK" "Documentation built in docs/_build/html/"
         ;;
     "serve")
         if [ -d "docs/_build/html" ]; then
-            echo "🌐 Serving documentation at http://localhost:8000"
+            print_status "INFO" "Serving documentation at http://localhost:8000"
             uv run python -m http.server 8000 -d docs/_build/html
         else
-            echo "❌ Documentation not built yet. Run: ./scripts/uv_docs.sh build"
+            print_status "ERROR" "Documentation not built yet. Run: ./scripts/uv_docs.sh build"
             exit 1
         fi
         ;;
     "clean")
         rm -rf docs/_build/
-        echo "🧹 Documentation build directory cleaned"
+        print_status "OK" "Documentation build directory cleaned"
         ;;
     *)
         echo "Usage: $0 [build|serve|clean]"

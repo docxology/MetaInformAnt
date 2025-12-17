@@ -112,15 +112,17 @@ class TestFindSymbolUsage:
 
     def test_find_symbol_usage_common_function(self):
         """Test finding usage of a common function."""
-        repo_root = Path(__file__).parent.parent
-        # Search for a common function like "get_logger"
-        usages = discovery.find_symbol_usage("get_logger", repo_root)
+        # Search for a common function like "get_logger" in just the core module
+        core_dir = Path(__file__).parent.parent / "src" / "metainformant" / "core"
+        usages = discovery.find_symbol_usage("get_logger", core_dir)
         assert isinstance(usages, list)
         # Should find at least some usages
         assert len(usages) > 0
         for usage in usages:
             assert hasattr(usage, "file")
             assert hasattr(usage, "line")
+            # All usages should be in core module
+            assert str(core_dir) in str(usage.file)
 
 
 class TestGetModuleDependencies:

@@ -45,6 +45,61 @@ from metainformant.core.logging import get_logger
 
 logger = get_logger("run_workflow")
 
+REPO_ROOT = Path(__file__).parent.parent.parent.resolve()
+
+
+def _invocation_hint() -> str:
+    """Return a short command prefix users can copy/paste based on how this script is invoked."""
+    argv0 = Path(sys.argv[0]).name
+    if argv0 == "run_workflow.py":
+        return "python run_workflow.py"
+    return "python3 scripts/rna/run_workflow.py"
+
+
+def _discover_species_config_files() -> list[Path]:
+    config_dir = REPO_ROOT / "config" / "amalgkit"
+    if not config_dir.exists():
+        return []
+    out: list[Path] = []
+    for p in sorted(config_dir.glob("amalgkit_*.yaml")):
+        stem = p.stem.lower()
+        if "template" in stem or "test" in stem:
+            continue
+        out.append(p)
+    return out
+
+
+def _resolve_config_path(raw: Path) -> Path:
+    """Resolve a config path provided on CLI.
+
+    Supports:
+    - absolute paths
+    - paths relative to current working directory
+    - paths relative to repo root
+    - bare filenames resolved under repo_root/config/amalgkit/
+    """
+    p = Path(raw).expanduser()
+    if p.is_absolute() and p.exists():
+        return p.resolve()
+
+    cwd_candidate = (Path.cwd() / p).expanduser()
+    if cwd_candidate.exists():
+        return cwd_candidate.resolve()
+
+    repo_candidate = (REPO_ROOT / p).expanduser()
+    if repo_candidate.exists():
+        return repo_candidate.resolve()
+
+    if p.parent == Path("."):
+        config_candidate = (REPO_ROOT / "config" / "amalgkit" / p.name).expanduser()
+        if config_candidate.exists():
+            return config_candidate.resolve()
+
+    try:
+        return p.resolve()
+    except Exception:
+        return p
+
 
 def main() -> int:
     """Main entry point."""
@@ -52,10 +107,10 @@ def main() -> int:
         description="Run amalgkit workflow for a single species",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
+    parser.add_argument("config_pos", nargs="?", type=Path, help="Path to species workflow config file")
     parser.add_argument(
         "--config",
         type=Path,
-        required=True,
         help="Path to species workflow config file",
     )
     parser.add_argument(
@@ -93,13 +148,80 @@ def main() -> int:
         action="store_true",
         help="Stop on first failure",
     )
+    parser.add_argument(
+        "--list-configs",
+        action="store_true",
+        help="List available amalgkit species configs and exit",
+    )
+    parser.add_argument(
+        "--plan",
+        action="store_true",
+        help="Print planned step order and the exact amalgkit commands that would run, then exit",
+    )
+    parser.add_argument(
+        "--walk",
+        action="store_true",
+        help="Pause before each stage and wait for Enter (TTY only)",
+    )
+    parser.add_argument(
+        "--no-progress",
+        action="store_true",
+        help="Disable progress bars (falls back to plain logs)",
+    )
+    parser.add_argument(
+        "--show-commands",
+        action="store_true",
+        help="Log the exact amalgkit command for each stage before running it",
+    )
 
     args = parser.parse_args()
 
-    config_path = args.config.resolve()
+    if args.list_configs:
+        files = _discover_species_config_files()
+        if not files:
+            logger.error(f"No configs found under: {REPO_ROOT / 'config' / 'amalgkit'}")
+            return 2
+        logger.info("Available configs:")
+        for p in files:
+            logger.info(f"  - {p.relative_to(REPO_ROOT)}")
+        logger.info("Example:")
+        logger.info(f"  {_invocation_hint()} config/amalgkit/<file>.yaml --plan")
+        return 0
+
+    raw_config = args.config or args.config_pos
+    if raw_config is None:
+        # Default no-args behavior: show available configs and how to run them.
+        # This keeps the command useful without accidentally starting a long workflow.
+        files = _discover_species_config_files()
+        if not files:
+            logger.error("No config provided, and no configs were found under `config/amalgkit/`.")
+            logger.info(f"Tip: create one under `config/amalgkit/` or pass `--config <path>`.")
+            return 2
+        logger.info("No config provided. Available configs:")
+        for p in files:
+            logger.info(f"  - {p.relative_to(REPO_ROOT)}")
+        logger.info("Next:")
+        logger.info(f"  {_invocation_hint()} config/amalgkit/<file>.yaml --plan")
+        logger.info(f"  {_invocation_hint()} config/amalgkit/<file>.yaml --check")
+        return 0
+
+    config_path = _resolve_config_path(raw_config)
     if not config_path.exists():
         logger.error(f"Config file not found: {config_path}")
         return 1
+
+    if args.plan:
+        from metainformant.rna.amalgkit import build_amalgkit_command
+        from metainformant.rna.workflow import apply_step_defaults, load_workflow_config, plan_workflow, sanitize_params_for_cli
+
+        cfg = load_workflow_config(config_path)
+        apply_step_defaults(cfg)
+        planned = plan_workflow(cfg)
+        logger.info(f"Planned {len(planned)} steps for {config_path.name}:")
+        for idx, (step, params) in enumerate(planned, start=1):
+            cmd = build_amalgkit_command(step, sanitize_params_for_cli(step, params))
+            logger.info(f"  {idx:02d}. {step}: {' '.join(cmd)}")
+        return 0
 
     # Status check
     if args.status:
@@ -135,6 +257,9 @@ def main() -> int:
         config_path,
         steps=args.steps,
         check=args.check,
+        walk=args.walk,
+        progress=not args.no_progress,
+        show_commands=args.show_commands,
     )
 
     if results["success"]:

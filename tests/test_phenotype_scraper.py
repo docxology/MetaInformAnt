@@ -270,6 +270,16 @@ def test_scrape_single_species_saves_file(antwiki_scraper_config: AntWikiScraper
 @pytest.mark.slow
 def test_get_species_list(antwiki_scraper_config: AntWikiScraperConfig) -> None:
     """Test discovering species list from AntWiki."""
+    # First check if we can access AntWiki at all
+    import requests
+    try:
+        response = requests.get("https://www.antwiki.org/wiki/Category:Ants", timeout=5)
+        if response.status_code == 403:
+            pytest.skip("AntWiki blocked request (403 Forbidden). Site blocks automated requests.")
+    except (requests.RequestException, requests.Timeout):
+        pytest.skip("AntWiki not accessible. Network may be unavailable.")
+
+    from metainformant.core.errors import NetworkError
     try:
         scraper = AntWikiScraper(antwiki_scraper_config)
 
@@ -281,6 +291,12 @@ def test_get_species_list(antwiki_scraper_config: AntWikiScraperConfig) -> None:
         for species in species_list[:10]:  # Check first 10
             assert isinstance(species, str)
             assert len(species) > 0
+    except NetworkError as e:
+        # Skip if AntWiki blocks requests (403 Forbidden due to Cloudflare)
+        if "403" in str(e) or "Forbidden" in str(e):
+            pytest.skip(f"AntWiki blocked request: {e}")
+        else:
+            raise
 
     except (NetworkError, requests.HTTPError) as e:
         _handle_antwiki_403(e)
@@ -292,6 +308,15 @@ def test_get_species_list(antwiki_scraper_config: AntWikiScraperConfig) -> None:
 @pytest.mark.slow
 def test_scrape_all_species_with_limit(antwiki_scraper_config: AntWikiScraperConfig) -> None:
     """Test scraping multiple species with limit."""
+    # First check if we can access AntWiki at all
+    import requests
+    try:
+        response = requests.get("https://www.antwiki.org/wiki/Category:Ants", timeout=5)
+        if response.status_code == 403:
+            pytest.skip("AntWiki blocked request (403 Forbidden). Site blocks automated requests.")
+    except (requests.RequestException, requests.Timeout):
+        pytest.skip("AntWiki not accessible. Network may be unavailable.")
+
     try:
         # Override config for faster testing
         config = AntWikiScraperConfig(

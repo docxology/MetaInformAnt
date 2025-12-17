@@ -53,7 +53,7 @@ cp output/ant_discovery/configs/*.yaml config/amalgkit/
 cp output/ant_discovery/configs/amalgkit_camponotus_floridanus.yaml config/amalgkit/
 
 # Run workflow for discovered species
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_SPECIES.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_SPECIES.yaml
 ```
 
 ### Prerequisites
@@ -238,12 +238,12 @@ cp output/ant_discovery/configs/amalgkit_camponotus_floridanus.yaml config/amalg
 
 ```bash
 # Single species
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_camponotus_floridanus.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_camponotus_floridanus.yaml
 
 # Multiple species in parallel
 for species in camponotus_floridanus solenopsis_invicta pogonomyrmex_barbatus; do
     nohup python3 scripts/rna/run_workflow.py \
-        --config config/amalgkit/amalgkit_${species}.yaml \
+        config/amalgkit/amalgkit_${species}.yaml \
         > output/${species}_workflow.log 2>&1 &
 done
 ```
@@ -298,12 +298,12 @@ Processing 20 ant species with immediate per-sample processing (download → imm
 ```bash
 # Immediate processing with 24 threads TOTAL distributed across all species (recommended)
 # Run separately for each species (recommended)
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species1.yaml
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species2.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species1.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species2.yaml
 
 # Or run in parallel (background)
-nohup python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species1.yaml > logs/species1.log 2>&1 &
-nohup python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species2.yaml > logs/species2.log 2>&1 &
+nohup python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species1.yaml > logs/species1.log 2>&1 &
+nohup python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species2.yaml > logs/species2.log 2>&1 &
 ```
 
 ### Monitoring

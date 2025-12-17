@@ -6,7 +6,9 @@ This directory contains utility scripts for METAINFORMANT development, testing, 
 
 ```
 scripts/
+├── _template_working.py          # Reference template for script development
 ├── package/        # Package management and testing scripts
+├── core/          # Core utility and infrastructure scripts
 ├── rna/           # RNA-seq processing scripts
 │   └── amalgkit/  # Amalgkit-specific workflow scripts
 ├── gwas/          # GWAS analysis scripts (genome-scale workflows)
@@ -36,29 +38,52 @@ scripts/
 
 ## Package Scripts (`scripts/package/`)
 
-### Environment Setup
-- **`setup_uv.sh`**: One-shot uv environment setup script
-  - Installs uv package manager
-  - Creates virtual environment
+### Core Scripts (NEW CONSOLIDATED)
+- **`setup.sh`**: Unified environment setup script
+  - Installs uv package manager and creates virtual environment
   - Installs all dependencies from `pyproject.toml`
-  - Use: `bash scripts/package/setup_uv.sh`
+  - Use `--dev` flag for development environment (pre-commit, docs, output dirs)
+  - Use: `bash scripts/package/setup.sh [--dev] [--with-all]`
 
-- **`uv_dev_setup.sh`**: Development environment setup
-  - Extended setup for development workflows
-  - Includes additional development tools
+- **`test.sh`**: Unified test runner (consolidates 3 scripts)
+  - All test execution modes: fast, coverage, parallel, network, external, integration, smoke, etc.
+  - Comprehensive coverage reporting and performance tracking
+  - Supports FAT filesystem detection and UV cache configuration
+  - Use: `bash scripts/package/test.sh --mode [mode] [--coverage] [--parallel]`
 
-### Testing Scripts
-- **`run_tests.sh`**: Comprehensive test execution
-  - Multiple execution modes (fast, network, pattern matching)
-  - Coverage reporting and performance tracking
-  - Use: `scripts/package/run_tests.sh --help` for options
+- **`verify.sh`**: Unified verification script (merges 2 scripts)
+  - Verifies UV setup, test dependencies, and environment configuration
+  - Modes: setup, deps, all
+  - Use `--fix` flag to automatically fix issues
+  - Use: `bash scripts/package/verify.sh [--mode MODE] [--fix]`
 
-- **`uv_test.sh`**: uv-based testing
-  - Optimized test execution with uv
-  - Parallel test execution
+### Utility Scripts
+- **`uv_docs.sh`**: Documentation generation
+  - Build and serve documentation
+  - Use: `bash scripts/package/uv_docs.sh [build|serve|clean]`
 
-- **`uv_test_optimized.sh`**: Optimized testing workflow
-  - Fastest test execution configuration
+- **`uv_profile.sh`**: Performance profiling
+  - CPU and memory profiling utilities
+  - Use: `bash scripts/package/uv_profile.sh [cpu|memory|benchmark]`
+
+- **`uv_quality.sh`**: Code quality checks
+  - Linting, formatting, and type checking
+  - Use: `bash scripts/package/uv_quality.sh [format|lint|typecheck|all]`
+
+### Shared Utilities
+- **`_common.sh`**: Shared utilities library
+  - Filesystem detection and UV cache configuration
+  - Color output functions and status reporting
+  - Virtual environment management
+  - Common environment setup functions
+
+### Backward Compatibility (DEPRECATED)
+- **`run_tests.sh`**: → `test.sh` (deprecated, shows migration message)
+- **`uv_test.sh`**: → `test.sh` (deprecated, shows migration message)
+- **`uv_test_optimized.sh`**: → `test.sh --mode fast` (deprecated, shows migration message)
+- **`setup_uv.sh`**: → `setup.sh` (deprecated, shows migration message)
+- **`verify_test_deps.sh`**: → `verify.sh --mode deps` (deprecated, shows migration message)
+- **`verify_uv_setup.sh`**: → `verify.sh --mode setup` (deprecated, shows migration message)
 
 ### Profiling and Quality
 - **`uv_profile.sh`**: Performance profiling script
@@ -70,6 +95,28 @@ scripts/
 ### Documentation
 - **`uv_docs.sh`**: Documentation generation
   - Build and update documentation
+
+## Core Utility Scripts (`scripts/core/`)
+
+### Infrastructure Scripts
+- **`run_demo.py`**: Complete workflow demonstration
+  - Configuration loading and saving
+  - Data processing with statistics
+  - Visualization generation with informative filenames
+  - Comprehensive output organization
+  - Usage: `python3 scripts/core/run_demo.py`
+
+- **`fix_disk_space.sh`**: External drive temp directory setup
+  - Creates repository-local temp directories (`.tmp/`)
+  - Sets up separate temp spaces for bash, python, git, and downloads
+  - Works on external drives and limited filesystems
+  - Usage: `bash scripts/core/fix_disk_space.sh`
+
+- **`setup_temp_dirs.sh`**: Repository-local temp directory management
+  - Generalized temp directory setup for any repository location
+  - Automatic filesystem detection and configuration
+  - Handles filesystem limitations transparently
+  - Usage: `bash scripts/core/setup_temp_dirs.sh`
 
 ## RNA Processing Scripts (`scripts/rna/`)
 
@@ -84,6 +131,7 @@ scripts/
 - **`setup_genome.py`**: Genome setup and preparation utilities
 - **`discover_species.py`**: Species discovery and configuration generation
 - **`convert_existing_sra.py`**: Convert existing SRA data to workflow format
+- **`run_all_species_validation.sh`**: Comprehensive end-to-end workflow validation for all species
 
 ### Amalgkit Workflows (`scripts/rna/amalgkit/`)
 - **`run_amalgkit.sh`**: Comprehensive RNA-seq pipeline orchestrator
@@ -92,13 +140,19 @@ scripts/
 
 ### Environment and Utilities
 - **`check_environment.py`**: Environment validation
-- **`fix_tmp_space.sh`**: Temporary space management utilities
+- **`fix_tmp_space.sh`**: Temporary space management utilities (in `scripts/package/`)
 
 ### Testing and Development
 - **`test_enhanced_heartbeat.py`**: Heartbeat monitoring tests
 - **`test_genome_prep.py`**: Genome preparation tests
 - **`test_getfastq_fix.py`**: FASTQ download fix tests
 - **`test_heartbeat.py`**: Basic heartbeat tests
+- **`test_end_to_end_startup.py`**: End-to-end workflow startup validation
+- **`run_rna_tests.sh`**: RNA test suite execution with coverage
+- **`triple_check_rna.py`**: Comprehensive RNA documentation and code verification
+- **`validate_all_species_workflow.py`**: Workflow validation for all species
+- **`verify_rna_docs.py`**: RNA documentation verification
+- **`verify_rna.py`**: RNA code and documentation verification
 
 ### Examples
 - **`examples/discover_and_deploy_ant_species.sh`**: Example script for species discovery and deployment
@@ -340,17 +394,28 @@ See `scripts/core/run_demo.py` for the workflow demonstration. Outputs are saved
 
 ### Development Workflow
 ```bash
-# Setup environment
-bash scripts/package/setup_uv.sh
+# Setup environment (basic or development)
+bash scripts/package/setup.sh                    # Basic setup
+bash scripts/package/setup.sh --dev             # Development setup (includes pre-commit, docs, etc.)
 
-# Run tests
-bash scripts/package/run_tests.sh
+# Verify environment
+bash scripts/package/verify.sh                  # Full verification
+bash scripts/package/verify.sh --mode setup     # Check UV setup only
+bash scripts/package/verify.sh --mode deps      # Check dependencies only
+
+# Run tests (various modes)
+bash scripts/package/test.sh --mode fast        # Fast tests (~15s)
+bash scripts/package/test.sh --mode coverage    # Full coverage analysis
+bash scripts/package/test.sh --mode network     # Network-dependent tests
+bash scripts/package/test.sh --parallel         # Parallel execution
 
 # Check code quality
-bash scripts/package/uv_quality.sh
+bash scripts/package/uv_quality.sh              # All quality checks
+bash scripts/package/uv_quality.sh format       # Format code only
 
 # Generate documentation
-bash scripts/package/uv_docs.sh
+bash scripts/package/uv_docs.sh build           # Build docs
+bash scripts/package/uv_docs.sh serve           # Serve docs locally
 ```
 
 ### Production Usage

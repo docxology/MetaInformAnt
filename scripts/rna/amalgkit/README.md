@@ -14,6 +14,7 @@ This directory contains centralized scripts and utilities for amalgkit workflows
 - Robust FASTQ downloading with multiple fallback sources
 - Comprehensive logging and monitoring
 - Progress tracking and resource monitoring
+- **Amalgkit v0.12.20 compatibility** with automatic `resolve_names` and `mark_missing_rank` options
 
 **Usage Options**:
 ```bash

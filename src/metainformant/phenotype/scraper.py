@@ -238,8 +238,8 @@ class AntWikiScraper:
 
         # Try to find species from category pages
         category_urls = [
-            urllib.parse.urljoin(self.config.base_url, "Category:Ants_by_Genus"),
-            urllib.parse.urljoin(self.config.base_url, "Category:Ants_by_Species"),
+            self.config.base_url.rstrip("/") + "/Category:Ants_by_Genus",
+            self.config.base_url.rstrip("/") + "/Category:Ants_by_Species",
         ]
 
         for category_url in category_urls:
@@ -269,7 +269,7 @@ class AntWikiScraper:
                 logger.warning(f"Failed to scrape category {category_url}: {e}")
 
         # Also try the main species index if available
-        index_url = urllib.parse.urljoin(self.config.base_url, "Category:Ants")
+        index_url = self.config.base_url.rstrip("/") + "/Category:Ants"
         try:
             html = self._fetch_page(index_url)
             soup = BeautifulSoup(html, "html.parser")

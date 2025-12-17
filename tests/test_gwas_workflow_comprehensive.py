@@ -154,6 +154,21 @@ def test_gwas_workflow_genome_download(tmp_path: Path, pytestconfig) -> None:
     if pytestconfig.getoption("--no-network", False):
         pytest.skip("Network tests disabled")
 
+    # Check network connectivity and NCBI datasets API availability
+    import requests
+    try:
+        # Check basic connectivity
+        response = requests.get("https://www.ncbi.nlm.nih.gov", timeout=5)
+        if response.status_code != 200:
+            pytest.skip("NCBI website not accessible")
+
+        # Check if NCBI datasets API is responsive
+        response = requests.head("https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/GCF_000001405.40/download", timeout=10)
+        if response.status_code not in (200, 302, 404):  # 404 is OK, means accession exists but needs different params
+            pytest.skip(f"NCBI datasets API not accessible (status: {response.status_code})")
+    except (requests.RequestException, requests.Timeout):
+        pytest.skip("Network not available for genome download test")
+
     work_dir = tmp_path / "gwas_genome"
     ensure_directory(work_dir)
 

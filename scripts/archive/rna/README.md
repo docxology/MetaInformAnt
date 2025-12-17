@@ -43,7 +43,7 @@ This directory contains shell scripts and Python scripts that have been archived
 
 The following scripts remain in `scripts/rna/` because they provide unique functionality:
 
-- **fix_tmp_space.sh**: Utility for cleaning up /tmp space (not provided by Python code)
+- **fix_tmp_space.sh**: Utility for cleaning up /tmp space (moved to `scripts/package/`)
 - **setup_genome.py**: Genome setup utility (unique functionality)
 - **discover_species.py**: Species discovery utility (unique functionality)
 - **check_environment.py**: Environment checking utility (unique functionality)

@@ -86,6 +86,11 @@ dev = [
     "pytest-cov>=4.0.0",
     "pytest-xdist>=3.0.0",  # For parallel test execution
     "pytest-benchmark>=4.0.0",  # Performance benchmarking
+    "pytest-asyncio>=0.21.0",  # Async test support
+    "pytest-mock>=3.11.0",  # Mock detection for NO_MOCKING_POLICY enforcement
+    "pytest-repeat>=0.9.1",  # For flaky test detection
+    "pytest-rerunfailures>=11.1.0",  # For retrying failed tests
+    "pytest-clarity>=1.0.1",  # Better assertion output
     "black>=22.0.0",
     "isort>=5.10.0",
     "flake8>=4.0.0",
@@ -168,9 +173,10 @@ addopts = [
     # "--cov-report=xml",   # Generate XML coverage report for CI
     # "--cov-fail-under=85",  # Fail if coverage below 85%
     # Note: timeout can be set via command line: --timeout=300
-    # Default timeout of 5 minutes for slow tests (can be overridden)
+    # Default timeout of 10 seconds for fast tests (can be overridden for slow tests)
     # For faster runs, exclude slow tests: -m "not slow"
 ]
+timeout = 10  # Default 10-second timeout for all tests
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "network: marks tests requiring network access - REAL API CALLS ONLY",
@@ -301,6 +307,35 @@ cache-dir = ".uv-cache"
 [dependency-groups]
 dev = [
     "pre-commit>=4.3.0",
+]
+
+# Test dependency groups for different test scenarios
+test-fast = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+
+test-network = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "requests>=2.25.0",
+]
+
+test-external = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+
+test-all = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "pytest-xdist>=3.0.0",  # For parallel test execution
+    "pytest-benchmark>=4.0.0",  # Performance benchmarking
+    "pytest-asyncio>=0.21.0",  # Async test support
+    "pytest-mock>=3.11.0",  # Mock detection for NO_MOCKING_POLICY enforcement
+    "pytest-repeat>=0.9.1",  # For flaky test detection
+    "pytest-rerunfailures>=11.1.0",  # For retrying failed tests
+    "pytest-clarity>=1.0.1",  # Better assertion output
 ]
 
 # Note: UV task runner scripts would go here when supported in future versions

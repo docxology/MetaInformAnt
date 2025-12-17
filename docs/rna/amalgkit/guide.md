@@ -46,19 +46,25 @@ See existing configurations for examples.
 **Full end-to-end workflow** (recommended):
 
 ```bash
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 ```
 
 **Check status**:
 
 ```bash
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 ```
 
 **Specific steps only**:
 
 ```bash
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --steps getfastq quant merge
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --steps getfastq quant merge
+```
+
+**Inspect step order and commands**:
+
+```bash
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --plan
 ```
 
 ### 4. Validate Results
@@ -151,4 +157,8 @@ See [R_INSTALLATION.md](R_INSTALLATION.md) and [r_packages.md](r_packages.md).
 ---
 
 *For complete documentation, see [README.md](README.md) and the step-specific guides in `steps/`.*
+
+
+
+
 

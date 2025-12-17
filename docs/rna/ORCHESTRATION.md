@@ -59,19 +59,19 @@ METAINFORMANT provides a unified orchestrator script for RNA-seq workflows:
 **Usage**:
 ```bash
 # Full end-to-end workflow (all steps)
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 
 # Specific steps only
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --steps getfastq quant merge
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --steps getfastq quant merge
 
 # Check status
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 
 # Detailed status
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status --detailed
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status --detailed
 
 # Cleanup unquantified samples
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --cleanup-unquantified
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --cleanup-unquantified
 ```
 
 **Configuration for parallel downloads**:
@@ -99,7 +99,7 @@ python3 scripts/rna/workflow_ena_integrated.py --config config.yaml
 
 **New approach** (recommended):
 ```bash
-python3 scripts/rna/run_workflow.py --config config.yaml
+python3 scripts/rna/run_workflow.py config.yaml
 ```
 
 ### Features
@@ -151,17 +151,17 @@ python3 scripts/rna/run_multi_species.py
 **New approach** (recommended):
 ```bash
 # Run separately for each species
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species1.yaml
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species2.yaml
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species3.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species1.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species2.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species3.yaml
 ```
 
 **For parallel execution** (multiple species at once):
 ```bash
 # Run in background for each species
-nohup python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species1.yaml > logs/species1.log 2>&1 &
-nohup python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species2.yaml > logs/species2.log 2>&1 &
-nohup python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species3.yaml > logs/species3.log 2>&1 &
+nohup python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species1.yaml > logs/species1.log 2>&1 &
+nohup python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species2.yaml > logs/species2.log 2>&1 &
+nohup python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species3.yaml > logs/species3.log 2>&1 &
 ```
 
 ### Features
@@ -191,8 +191,8 @@ For cross-species analysis (CSTMM, CSCA), run the workflow for all species first
 
 ```bash
 # Process all species
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species1.yaml
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species2.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species1.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species2.yaml
 
 # Run cross-species analysis (if needed)
 # The workflow automatically handles cross-species steps when multiple species are complete
@@ -222,15 +222,15 @@ steps:
 
 Then run `run_workflow.py` separately for each species:
 ```bash
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species1.yaml
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species2.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species1.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species2.yaml
 ```
 
 For multiple species, run workflows in parallel using `nohup` or `screen`:
 ```bash
 # Run in background for each species
-nohup python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species1.yaml > logs/species1.log 2>&1 &
-nohup python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species2.yaml > logs/species2.log 2>&1 &
+nohup python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species1.yaml > logs/species1.log 2>&1 &
+nohup python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species2.yaml > logs/species2.log 2>&1 &
 ```
 
 ### Features
@@ -422,7 +422,7 @@ Use `run_workflow.py` for:
 
 **Performance issues**:
 - Adjust `num_download_workers` in config file based on bandwidth and CPU
-- Monitor resource usage: `python3 scripts/rna/run_workflow.py --config ... --status`
+- Monitor resource usage: `python3 scripts/rna/run_workflow.py <config> --status`
 - Check active processes: `ps aux | grep "run_workflow\|amalgkit" | grep -v grep`
 
 ## Related Documentation

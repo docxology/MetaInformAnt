@@ -41,6 +41,7 @@ def download_sra_run(
     *,
     use_fasterq: bool = True,
     threads: int = 4,
+    timeout: int | None = None,
 ) -> dict[str, Any]:
     """Download SRA run and convert to FASTQ.
     
@@ -92,7 +93,7 @@ def download_sra_run(
             cmd,
             capture_output=True,
             text=True,
-            timeout=3600,  # 1 hour timeout
+            timeout=timeout if timeout is not None else 3600,  # Use provided timeout or default to 1 hour
             check=True,
         )
         

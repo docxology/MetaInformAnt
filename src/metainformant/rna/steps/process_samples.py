@@ -281,8 +281,10 @@ def _download_worker(
                     if (repo_root / ".cursorrules").exists() and "output" not in str(repo_root):
                         break
                     if repo_root == repo_root.parent:
-                        # Reached filesystem root, use work_dir's parent as fallback
-                        repo_root = work_dir_path.parent.parent.parent.parent
+                        # Reached filesystem root, use system temp directory as fallback
+                        # This handles test environments where repo detection fails
+                        import tempfile
+                        repo_root = Path(tempfile.gettempdir()) / "metainformant_repo"
                         break
                     repo_root = repo_root.parent
                 
@@ -597,7 +599,7 @@ def run_download_quant_workflow(
         # Find repo root using same logic as workflow.py
         # Prefer .git and pyproject.toml over .cursorrules (which might exist in output/)
         repo_root = work_dir_path
-        max_levels = 8  # Allow more levels for deep work_dir structures
+        max_levels = 20  # Allow more levels to reach filesystem root
         for _ in range(max_levels):
             # Check for .git or pyproject.toml first (more reliable markers)
             if (repo_root / ".git").exists() or (repo_root / "pyproject.toml").exists():
@@ -606,11 +608,17 @@ def run_download_quant_workflow(
             if (repo_root / ".cursorrules").exists() and "output" not in str(repo_root):
                 break
             if repo_root == repo_root.parent:
-                # Reached filesystem root, use work_dir's parent as fallback
-                repo_root = work_dir_path.parent.parent.parent.parent
+                # Reached filesystem root, use system temp directory as fallback
+                # This handles test environments where repo detection fails
+                import tempfile
+                repo_root = Path(tempfile.gettempdir()) / "metainformant_repo"
                 break
             repo_root = repo_root.parent
-        
+        else:
+            # If we exhausted max_levels without finding markers or reaching root
+            import tempfile
+            repo_root = Path(tempfile.gettempdir()) / "metainformant_repo"
+
         general_temp_dir = repo_root / "output" / ".tmp"
         fastq_dir = Path(getfastq_params.get("out_dir", work_dir_path / "fastq") if getfastq_params else work_dir_path / "fastq")
         if not fastq_dir.is_absolute():

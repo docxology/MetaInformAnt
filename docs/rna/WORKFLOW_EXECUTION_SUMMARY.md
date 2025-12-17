@@ -54,7 +54,7 @@ python3 scripts/rna/check_environment.py
 ### Execution Command
 
 ```bash
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 ```
 
 ### Automatic Steps Executed
@@ -155,7 +155,7 @@ The workflow automatically executes all steps in the correct order:
 
 ### Check Status
 ```bash
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status --detailed
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status --detailed
 ```
 
 ### Monitor Manifest
@@ -250,7 +250,7 @@ Once the workflow completes, verify:
 
 ```bash
 # Check final status
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status --detailed
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status --detailed
 
 # Verify all outputs exist
 ls -lh output/amalgkit/pogonomyrmex_barbatus/merged/merged_abundance.tsv

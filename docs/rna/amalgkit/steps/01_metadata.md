@@ -451,7 +451,11 @@ from metainformant.rna.workflow import load_workflow_config, execute_workflow
 cfg = load_workflow_config("config/amalgkit_amellifera.yaml")
 
 # Execute metadata step (automatic in workflow)
-result = execute_workflow(cfg, steps_to_run=["metadata"])
+# Run just the metadata stage via the CLI orchestrator:
+# (This runs the real `amalgkit metadata` command.)
+#
+# If you want to run only metadata, invoke the workflow runner with a single step:
+#   python3 scripts/rna/run_workflow.py <config> --steps metadata
 
 # Metadata automatically available for downstream steps
 ```

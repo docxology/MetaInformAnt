@@ -47,13 +47,14 @@ The `execute_workflow()` function provides complete end-to-end functionality:
 
 ```python
 from pathlib import Path
-from metainformant.rna.workflow import AmalgkitWorkflowConfig, plan_workflow
+from metainformant.rna.workflow import AmalgkitWorkflowConfig, apply_step_defaults, plan_workflow
 
 cfg = AmalgkitWorkflowConfig(
     work_dir=Path("output/amalgkit/run1"),
     threads=12,  # Default: 12 threads per species (for single-species workflows)
     species_list=["Apis_mellifera"]
 ) 
+apply_step_defaults(cfg)
 for name, params in plan_workflow(cfg):
     print(name, params)
 ```
@@ -69,13 +70,22 @@ print(codes)
 **Command-line execution** (recommended for end-to-end workflows):
 ```bash
 # Full end-to-end workflow (all steps)
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 
 # Specific steps only
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --steps getfastq quant merge
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --steps getfastq quant merge
 
 # Check status
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+
+# Print planned steps + exact amalgkit commands (does not execute)
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --plan
+
+# Walk through each stage (press Enter before each stage)
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --walk
+
+# Show exact command before each stage runs
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --show-commands --check
 ```
 
 The `run_workflow.py` script provides:
@@ -168,10 +178,10 @@ See **[Getting Started Guide](GETTING_STARTED.md#monitoring-progress)** for comp
 **Quick monitoring:**
 ```bash
 # Check workflow status
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 
 # Detailed status
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status --detailed
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status --detailed
 
 # Check running processes
 ps aux | grep "run_workflow\|amalgkit" | grep -v grep
@@ -414,7 +424,7 @@ No manual configuration needed - all handled automatically by the workflow scrip
 # Scripts automatically discover venv location (.venv or /tmp/metainformant_venv)
 # For single-species workflows with parallel downloads:
 # Configure num_download_workers in config file (see CONFIGURATION.md)
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 
 # For multiple species, run run_workflow.py separately for each species config
 # Parallel downloads are controlled via num_download_workers in each config file

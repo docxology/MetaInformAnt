@@ -1,0 +1,121 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Pogonomyrmex barbatus (5-sample test)
+# NCBI Taxonomy ID: 144034
+# Assembly: GCF_000187915.1 (Pbar_UMD_V03)
+# Assembly Level: Scaffold
+# Sequencing: 454 pyrosequencing
+# Annotation Release: 101
+# Notes: High-quality scaffold assembly - LIMITED TO 5 SAMPLES FOR TESTING
+# RNA-seq Samples Available: 120 (limited to 5 for quick validation)
+# Generated: 2025-11-03
+
+
+# Paths are resolved relative to repository root
+# Works whether repo is on /home/q/... or /media/q/ext6/...
+work_dir: output/amalgkit/pbarbatus_test5/work
+log_dir: output/amalgkit/pbarbatus_test5/logs
+threads: 12
+
+
+auto_install_amalgkit: true
+
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: false  # Set to true to filter by tissue metadata
+
+
+# Species configuration
+species_list:
+  - Pogonomyrmex_barbatus
+
+
+# Alternative taxonomy specification
+taxon_id: 144034
+
+
+# Reference genome configuration
+# Based on NCBI assembly: GCF_000187915.1
+genome:
+  accession: GCF_000187915.1
+  assembly_name: Pbar_UMD_V03
+  annotation_release: 101
+  dest_dir: output/amalgkit/pbarbatus_test5/genome
+
+
+  # Files to download (based on available NCBI FTP resources)
+  include:
+    - genome           # Genomic sequences (FASTA)
+    - gff3            # Gene annotations (GFF3)
+    - rna             # RNA sequences (FASTA)
+    - cds             # CDS sequences (FASTA)
+    - protein         # Protein sequences (FASTA)
+    - seq-report      # Sequence report
+    - feature-table   # Feature table
+    - gene-ontology   # Gene Ontology annotations (if available)
+
+
+  # Direct FTP URL for all genome files
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/187/915/GCF_000187915.1_Pbar_UMD_V03/
+
+
+  # Specific important files for transcriptome analysis
+  files:
+    genomic_fasta: GCF_000187915.1_Pbar_UMD_V03_genomic.fna.gz
+    transcriptome_fasta: GCF_000187915.1_Pbar_UMD_V03_rna_from_genomic.fna.gz
+    cds_fasta: GCF_000187915.1_Pbar_UMD_V03_cds_from_genomic.fna.gz
+    protein_fasta: GCF_000187915.1_Pbar_UMD_V03_protein.faa.gz
+    annotation_gff: GCF_000187915.1_Pbar_UMD_V03_genomic.gff.gz
+    annotation_gtf: GCF_000187915.1_Pbar_UMD_V03_genomic.gtf.gz
+
+
+# Per-step parameters (merged on top of common params)
+steps:
+  metadata:
+    # Required by amalgkit metadata
+    out_dir: output/amalgkit/pbarbatus_test5/work
+    # Uses NCBI_EMAIL from environment; override here if needed
+    # entrez_email: you@example.com
+    search_string: '"Pogonomyrmex barbatus"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
+    resolve_names: yes  # amalgkit v0.12.20+ - translates taxids to scientific names
+    redo: yes
+    max_samples: 5  # LIMIT TO 5 SAMPLES FOR TESTING
+  integrate:
+    fastq_dir: output/amalgkit/pbarbatus_test5/fastq
+  config: {}
+  select:
+    mark_missing_rank: species  # amalgkit v0.12.20+ - marks samples lacking species-level taxid
+  getfastq:
+    out_dir: output/amalgkit/pbarbatus_test5/fastq
+    threads: 12
+    num_download_workers: 5  # Reduced for 5 samples
+    # Cloud acceleration: AWS only (full SRA files)
+    # NOTE: NCBI and GCP have LITE files (metadata-only, no sequence data) for this species
+    # AWS has full SRA files with actual sequence data
+    aws: yes
+    gcp: no            # DISABLED: GCP has lite files (no sequence data)
+    ncbi: no           # DISABLED: NCBI has lite files (no sequence data)
+    pfd: no           # DISABLED: parallel-fastq-dump usually not needed
+    fastp: yes        # ENABLED: fastp QC tool
+    # IMPORTANT: vdb-config must be set to use a location with sufficient disk space
+    # Run: vdb-config -i and set repository root to a location with >50GB free space
+    # Or set via: vdb-config -s /repository/user/main/public/root=/path/to/large/disk
+  quant:
+    # If a Salmon/Kallisto index is available, set it; otherwise genome_dir is injected from genome step
+    out_dir: output/amalgkit/pbarbatus_test5/quant
+    threads: 12
+    redo: no
+    # Delete SRA/FASTQ files after quantification to save space
+    keep_fastq: no
+    # Build kallisto index if not present
+    build_index: yes
+  merge:
+    out: output/amalgkit/pbarbatus_test5/merged/merged_abundance.tsv
+    out_dir: output/amalgkit/pbarbatus_test5/merged
+  cstmm:
+    out_dir: output/amalgkit/pbarbatus_test5/cstmm
+  curate:
+    out_dir: output/amalgkit/pbarbatus_test5/curate
+  csca:
+    out_dir: output/amalgkit/pbarbatus_test5/csca
+  sanity: {}

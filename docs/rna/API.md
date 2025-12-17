@@ -440,7 +440,10 @@ def plan_workflow_with_params(
 def execute_workflow(
     config: AmalgkitWorkflowConfig,
     *,
-    check: bool = False
+    check: bool = False,
+    walk: bool = False,
+    progress: bool = True,
+    show_commands: bool = False,
 ) -> list[int]
 ```
 
@@ -451,6 +454,9 @@ def execute_workflow(
 **Parameters**:
 - `config`: Workflow configuration
 - `check`: If True, raise exception on step failure
+- `walk`: If True (and running in a TTY), pause before each stage and wait for Enter
+- `progress`: If True, show a stage-level progress bar (uses tqdm if available)
+- `show_commands`: If True, log the exact `amalgkit ...` command for each stage before running it
 
 **Returns**: List of return codes (one per step)
 

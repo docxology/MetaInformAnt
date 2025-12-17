@@ -30,10 +30,10 @@ logger = get_logger(__name__)
 # Valid amalgkit steps in execution order
 VALID_STEPS = [
     "metadata",
-    "integrate",
     "config",
     "select",
     "getfastq",
+    "integrate",
     "quant",
     "merge",
     "cstmm",
@@ -41,6 +41,41 @@ VALID_STEPS = [
     "csca",
     "sanity",
 ]
+
+
+def _summarize_manifest(manifest_path: Path) -> tuple[list[str], list[str], dict[str, int | None]]:
+    """Summarize a workflow run using the JSONL manifest written by execute_workflow()."""
+    from ..core.io import read_jsonl
+
+    completed: list[str] = []
+    failed: list[str] = []
+    step_to_code: dict[str, int | None] = {}
+
+    if not manifest_path.exists():
+        return completed, failed, step_to_code
+
+    for rec in read_jsonl(manifest_path):
+        step = str(rec.get("step", "")).strip() or "unknown"
+        code = rec.get("return_code")
+        if isinstance(code, bool):  # defensive: JSON true/false is not a return code
+            code = 0 if code else 1
+        if code is not None and not isinstance(code, int):
+            try:
+                code = int(code)
+            except Exception:
+                code = None
+
+        step_to_code[step] = code
+
+        # 0 = success; 204 = "skipped: no metadata rows" (not a failure)
+        if code == 0:
+            completed.append(step)
+        elif code == 204:
+            pass
+        else:
+            failed.append(step)
+
+    return completed, failed, step_to_code
 
 
 def discover_species_configs(config_dir: Path) -> dict[str, dict[str, Any]]:
@@ -96,6 +131,9 @@ def run_workflow_for_species(
     steps: Sequence[str] | None = None,
     *,
     check: bool = False,
+    walk: bool = False,
+    progress: bool = True,
+    show_commands: bool = False,
 ) -> dict[str, Any]:
     """Run workflow steps for a single species.
 
@@ -115,21 +153,36 @@ def run_workflow_for_species(
     # Determine steps to run
     if steps is None:
         # Run all steps via execute_workflow
-        return_codes = execute_workflow(cfg, check=check)
-        steps_run = VALID_STEPS[: len(return_codes)]
-        success = all(rc == 0 or rc == 204 for rc in return_codes)  # 204 = skipped
-        completed = [step for step, rc in zip(steps_run, return_codes) if rc == 0]
-        failed = [step for step, rc in zip(steps_run, return_codes) if rc != 0 and rc != 204]
+        return_codes = execute_workflow(cfg, check=check, walk=walk, progress=progress, show_commands=show_commands)
+        manifest_path = cfg.manifest_path or (cfg.work_dir / "amalgkit.manifest.jsonl")
+        completed, failed, step_to_code = _summarize_manifest(manifest_path)
+
+        # If manifest is missing (unexpected), fall back to a conservative interpretation
+        # of return codes only (do not attempt to map codes to step names).
+        if not step_to_code:
+            success = all(rc == 0 or rc == 204 for rc in return_codes)
+            return {
+                "success": success,
+                "completed": [],
+                "failed": [] if success else ["unknown"],
+                "return_codes": return_codes,
+                "manifest_path": str(manifest_path),
+            }
 
         return {
-            "success": success,
+            "success": len(failed) == 0,
             "completed": completed,
             "failed": failed,
             "return_codes": return_codes,
+            "step_return_codes": step_to_code,
+            "manifest_path": str(manifest_path),
         }
     else:
         # Run specific steps
         results = {"success": True, "completed": [], "failed": []}
+        from ..core.progress import progress_bar as _progress_bar
+        import sys as _sys
+        walk_enabled = bool(walk) and _sys.stdin is not None and _sys.stdin.isatty()
         
         # Check if both getfastq and quant are requested together - use parallel download workflow
         if "getfastq" in steps and "quant" in steps:
@@ -191,19 +244,50 @@ def run_workflow_for_species(
             return results
         
         # Otherwise run steps individually
-        for step in steps:
-            if step not in VALID_STEPS:
-                logger.warning(f"Invalid step: {step}")
-                continue
+        total = len(list(steps))
+        with (_progress_bar(total=total, desc="RNA workflow steps") if progress else _progress_bar(total=None, desc=None)) as pbar:
+            for idx, step in enumerate(steps, start=1):
+                if step not in VALID_STEPS:
+                    logger.warning(f"Invalid step: {step}")
+                    try:
+                        pbar.update(1)
+                    except Exception:
+                        pass
+                    continue
 
-            success = _run_single_step(cfg, step)
-            if success:
-                results["completed"].append(step)
-            else:
-                results["failed"].append(step)
-                results["success"] = False
-                if check:
-                    break
+                stage_label = f"[{idx}/{total}] {step}"
+                logger.info(f"Stage: {stage_label}")
+                try:
+                    pbar.set_description(stage_label)
+                except Exception:
+                    pass
+                if show_commands:
+                    from .amalgkit import build_amalgkit_command
+                    from .workflow import sanitize_params_for_cli
+                    params = cfg.per_step.get(step, {})
+                    logger.info(f"Command: {' '.join(build_amalgkit_command(step, sanitize_params_for_cli(step, params)))}")
+                if walk_enabled:
+                    try:
+                        input(f"\nPress Enter to run: {stage_label}\n")
+                    except (EOFError, KeyboardInterrupt):
+                        pass
+
+                success = _run_single_step(cfg, step)
+                if success:
+                    results["completed"].append(step)
+                else:
+                    results["failed"].append(step)
+                    results["success"] = False
+                    if check:
+                        try:
+                            pbar.update(1)
+                        except Exception:
+                            pass
+                        break
+                try:
+                    pbar.update(1)
+                except Exception:
+                    pass
 
         return results
 

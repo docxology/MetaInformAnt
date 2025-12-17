@@ -1,6 +1,6 @@
 # DNA Analysis Module
 
-The `dna` module provides comprehensive tools for DNA sequence analysis, from basic sequence manipulation to advanced population genetics and phylogenetics. This module handles DNA sequences in various formats and provides both basic operations and complex analytical pipelines.
+The `dna` module provides tools for DNA sequence analysis, from basic sequence manipulation to advanced population genetics and phylogenetics. This module handles DNA sequences in various formats and provides both basic operations and complex analytical pipelines.
 
 ## Overview
 

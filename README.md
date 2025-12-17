@@ -1,6 +1,6 @@
 # METAINFORMANT
 
-A comprehensive bioinformatics and systems biology toolkit for integrated multi-omic analysis, developed with AI assistance for enhanced code quality and documentation.
+A bioinformatics and systems biology toolkit for integrated multi-omic analysis, developed with AI assistance for code quality and documentation.
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
@@ -8,18 +8,18 @@ A comprehensive bioinformatics and systems biology toolkit for integrated multi-
 
 ## Overview
 
-METAINFORMANT is a modular, extensible framework for biological data analysis spanning multiple domains: genomics, transcriptomics, proteomics, epigenomics, and systems biology. Built with modern Python practices and comprehensive documentation, it provides professional-grade tools for bioinformatics research.
+METAINFORMANT is a modular, extensible framework for biological data analysis spanning multiple domains: genomics, transcriptomics, proteomics, epigenomics, and systems biology. Built with modern Python practices and documentation, it provides tools for bioinformatics research.
 
 ### Key Features
 
-- 🧬 **Comprehensive Multi-Omic Analysis**: DNA, RNA, protein, and epigenome analysis
-- 📊 **Statistical & ML Methods**: GWAS, population genetics, machine learning pipelines
-- 🔬 **Single-Cell Genomics**: Complete scRNA-seq analysis workflows
-- 🌐 **Network Analysis**: Biological networks, pathways, and community detection
-- 📈 **Publication-Quality Visualizations**: High-resolution plots and interactive animations
-- 🔧 **Modular Architecture**: Use individual modules or compose complete workflows
-- 📝 **Extensive Documentation**: 70+ README files, comprehensive guides
-- ✅ **Real Implementation Testing**: No mocks - all tests use real methods
+- **Multi-Omic Analysis**: DNA, RNA, protein, and epigenome analysis
+- **Statistical & ML Methods**: GWAS, population genetics, machine learning pipelines
+- **Single-Cell Genomics**: Complete scRNA-seq analysis workflows
+- **Network Analysis**: Biological networks, pathways, and community detection
+- **Publication-Quality Visualizations**: High-resolution plots and interactive animations
+- **Modular Architecture**: Use individual modules or compose complete workflows
+- **Documentation**: 70+ README files, guides
+- **Real Implementation Testing**: No mocks - all tests use real methods
 
 ## Quick Start
 
@@ -36,8 +36,8 @@ METAINFORMANT is a modular, extensible framework for biological data analysis sp
 
 ```bash
 # Clone repository
-git clone https://github.com/q/MetaInformAnt.git
-cd MetaInformAnt
+git clone https://github.com/q/metainformant.git
+cd metainformant
 
 # Automated setup with uv (recommended - handles FAT filesystems automatically)
 bash scripts/package/setup_uv.sh
@@ -69,7 +69,7 @@ from metainformant.visualization import lineplot
 seqs = sequences.read_fasta("data/sequences.fasta")
 
 # Analyze GC content
-gc_values = [composition.gc_content(seq) for seq in seqs.values()]
+gc_values = [sequences.gc_content(seq) for seq in seqs.values()]
 
 # Visualize
 ax = lineplot(None, gc_values)

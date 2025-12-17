@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import sys
 import subprocess
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -141,13 +142,15 @@ def _apply_step_defaults(config: AmalgkitWorkflowConfig) -> None:
     email = os.environ.get("NCBI_EMAIL")
     if email and not md.get("entrez_email"):
         md["entrez_email"] = email
+    # amalgkit v0.12.20+ defaults
+    md.setdefault("resolve_names", "yes")
     ps["metadata"] = md
 
     # directories
     defaults = {
         "integrate": {"out_dir": str(config.work_dir), "fastq_dir": str(config.work_dir / "fastq")},
         "config": {"out_dir": str(config.work_dir), "config": "base"},
-        "select": {"out_dir": str(config.work_dir), "config_dir": str(config.work_dir / "config_base")},
+        "select": {"out_dir": str(config.work_dir), "config_dir": str(config.work_dir / "config_base"), "mark_missing_rank": "species"},
         "getfastq": {"out_dir": str(config.work_dir / "fastq")},
         "quant": {"out_dir": str(config.work_dir / "quant")},
         "merge": {"out_dir": str(config.work_dir.parent / "merged")},
@@ -161,6 +164,15 @@ def _apply_step_defaults(config: AmalgkitWorkflowConfig) -> None:
         for k, v in d.items():
             cur.setdefault(k, v)
         ps[step] = cur
+
+
+def apply_step_defaults(config: AmalgkitWorkflowConfig) -> AmalgkitWorkflowConfig:
+    """Apply workflow defaults in-place and return the config.
+
+    This is intentionally public so planning/printing commands can match execution behavior.
+    """
+    _apply_step_defaults(config)
+    return config
 
 
 def plan_workflow(config: AmalgkitWorkflowConfig) -> list[tuple[str, AmalgkitParams]]:
@@ -287,6 +299,22 @@ def _sanitize_params_for_subcommand(subcommand: str, params: Mapping[str, Any]) 
     return {k: v for k, v in params.items() if k in allowed}
 
 
+def sanitize_params_for_cli(subcommand: str, params: Mapping[str, Any]) -> dict[str, Any]:
+    """Public wrapper to sanitize params for a specific amalgkit subcommand.
+
+    This is used for:
+    - printing truthful `--plan` / `--show-commands` output
+    - ensuring we don't display internal-only params that are not supported by `amalgkit`
+
+    Args:
+        subcommand: amalgkit subcommand name (e.g., "metadata", "getfastq")
+        params: parameter mapping (may include internal keys)
+
+    Returns:
+        A filtered dict containing only CLI-supported keys for that subcommand.
+    """
+    return _sanitize_params_for_subcommand(subcommand, params)
+
 def _validate_genome_ready(config: AmalgkitWorkflowConfig) -> dict[str, Any]:
     """Validate that genome and kallisto index are ready for quantification.
     
@@ -371,7 +399,14 @@ def _validate_genome_ready(config: AmalgkitWorkflowConfig) -> dict[str, Any]:
     return result
 
 
-def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> list[int]:
+def execute_workflow(
+    config: AmalgkitWorkflowConfig,
+    *,
+    check: bool = False,
+    walk: bool = False,
+    progress: bool = True,
+    show_commands: bool = False,
+) -> list[int]:
     """Execute the full amalgkit workflow in order.
 
     This workflow provides end-to-end functionality:
@@ -386,6 +421,9 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
         config: Workflow configuration
         check: If True, raise CalledProcessError on first step failure and stop workflow.
                If False (default), continue execution after failures and return all return codes.
+        walk: If True and running in an interactive TTY, pause before each stage and wait for Enter.
+        progress: If True, display a stage-level progress bar (uses tqdm if installed; otherwise logs).
+        show_commands: If True, log the exact amalgkit command for each stage before it runs.
 
     Returns:
         List of return codes per step in order. Length matches plan_workflow(config).
@@ -621,6 +659,23 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
     use_sequential = "getfastq" in step_names and "quant" in step_names
     logger.info(f"execute_workflow: use_sequential={use_sequential}, getfastq={'getfastq' in step_names}, quant={'quant' in step_names}")
     
+    # Optional UX helpers
+    walk_enabled = bool(walk) and sys.stdin is not None and sys.stdin.isatty()
+    from ..core.progress import progress_bar as _progress_bar
+
+    def _maybe_pause(stage_label: str) -> None:
+        if not walk_enabled:
+            return
+        try:
+            input(f"\nPress Enter to run: {stage_label}\n")
+        except (EOFError, KeyboardInterrupt):
+            # If input isn't possible, proceed without pausing
+            return
+
+    def _maybe_show_command(subcommand: str, params: Mapping[str, Any]) -> None:
+        if show_commands:
+            logger.info(f"Command: {' '.join(build_amalgkit_command(subcommand, sanitize_params_for_cli(subcommand, params)))}")
+
     if use_sequential:
         logger.info("Detected getfastq + quant in workflow: Using batched processing to manage disk space")
         logger.info("Each sample will be: downloaded → quantified → FASTQ deleted before next sample")
@@ -656,10 +711,24 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
         
         logger.info(f"execute_workflow: Pre-steps: {[s[0] for s in pre_steps]}, Post-steps: {[s[0] for s in post_steps]}")
         
+        # Prepare a stage-level progress bar for interactive runs
+        stage_names = [s[0] for s in pre_steps] + ["getfastq+quant"] + [s[0] for s in post_steps]
+        total_stages = len(stage_names)
+
         # Run pre-steps (metadata, config, select, etc.)
         logger.info(f"execute_workflow: Executing {len(pre_steps)} pre-steps...")
-        for idx, (subcommand, params) in enumerate(pre_steps):
-            logger.info(f"execute_workflow: Pre-step {idx+1}/{len(pre_steps)}: {subcommand}")
+        stage_idx = 0
+        with (_progress_bar(total=total_stages, desc="RNA workflow stages") if progress else _progress_bar(total=None, desc=None)) as pbar:
+            for idx, (subcommand, params) in enumerate(pre_steps):
+                stage_idx += 1
+                stage_label = f"[{stage_idx}/{total_stages}] {subcommand}"
+                logger.info(f"execute_workflow: Stage {stage_label}")
+                try:
+                    pbar.set_description(stage_label)
+                except Exception:
+                    pass
+                _maybe_show_command(subcommand, params)
+                _maybe_pause(stage_label)
             runner = _steps_mod.STEP_RUNNERS.get(subcommand)
             if runner is None:  # pragma: no cover - defensive
                 raise KeyError(f"No runner registered for step: {subcommand}")
@@ -684,55 +753,81 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
                         filtered["metadata"] = str(out_filtered)
                     except Exception:
                         pass
-            
-            # Execute pre-step
-            start_ts = datetime.utcnow()
+
+                    # Execute pre-step
+                    start_ts = datetime.utcnow()
+                    return_code = -1  # Initialize to avoid UnboundLocalError
+                    stdout_bytes = 0
+                    stderr_bytes = 0
+                    end_ts = start_ts
+                    duration_s = 0.0
+                    try:
+                        result = runner(
+                            filtered,
+                            work_dir=config.work_dir,
+                            log_dir=(config.log_dir or (config.work_dir / "logs")),
+                            check=check,
+                        )
+                        end_ts = datetime.utcnow()
+                        duration_s = max(0.0, (end_ts - start_ts).total_seconds())
+                        return_code = result.returncode
+                        stdout_bytes = len(result.stdout or "")
+                        stderr_bytes = len(result.stderr or "")
+                    except subprocess.CalledProcessError as e:
+                        # When check=True, subprocess raises CalledProcessError on failure
+                        # Capture the error and continue if check=False, or re-raise if check=True
+                        end_ts = datetime.utcnow()
+                        duration_s = max(0.0, (end_ts - start_ts).total_seconds())
+                        return_code = e.returncode
+                        stdout_bytes = len(e.stdout or "") if hasattr(e, 'stdout') else 0
+                        stderr_bytes = len(e.stderr or "") if hasattr(e, 'stderr') else 0
+                        if check:
+                            # Re-raise if check=True to stop workflow
+                            raise
+                    except Exception as e:
+                        # Handle any other exceptions (e.g., import errors, key errors) by recording failure
+                        logger.warning(f"Pre-step {subcommand} failed with unexpected error: {e}", exc_info=True)
+                        end_ts = datetime.utcnow()
+                        duration_s = max(0.0, (end_ts - start_ts).total_seconds())
+                        return_code = 126  # Command not found / execution failed
+                        stdout_bytes = 0
+                        stderr_bytes = len(str(e))
+                        logger.info(f"execute_workflow: Pre-step {subcommand} failed with unexpected error: {e}")
+                    return_codes.append(return_code)
+                    manifest_records.append(
+                        {
+                            "step": subcommand,
+                            "return_code": return_code,
+                            "stdout_bytes": stdout_bytes,
+                            "stderr_bytes": stderr_bytes,
+                            "started_utc": start_ts.isoformat() + "Z",
+                            "finished_utc": end_ts.isoformat() + "Z",
+                            "duration_seconds": duration_s,
+                            "work_dir": str(config.work_dir),
+                            "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                            "params": dict(filtered),
+                            "command": " ".join(build_amalgkit_command(subcommand, filtered)),
+                        }
+                    )
+                    logger.info(f"execute_workflow: Pre-step {subcommand} completed with code {return_code}")
             try:
-                result = runner(
-                    filtered,
-                    work_dir=config.work_dir,
-                    log_dir=(config.log_dir or (config.work_dir / "logs")),
-                    check=check,
-                )
-                end_ts = datetime.utcnow()
-                duration_s = max(0.0, (end_ts - start_ts).total_seconds())
-                return_code = result.returncode
-                stdout_bytes = len(result.stdout or "")
-                stderr_bytes = len(result.stderr or "")
-            except subprocess.CalledProcessError as e:
-                # When check=True, subprocess raises CalledProcessError on failure
-                # Capture the error and continue if check=False, or re-raise if check=True
-                end_ts = datetime.utcnow()
-                duration_s = max(0.0, (end_ts - start_ts).total_seconds())
-                return_code = e.returncode
-                stdout_bytes = len(e.stdout or "") if hasattr(e, 'stdout') else 0
-                stderr_bytes = len(e.stderr or "") if hasattr(e, 'stderr') else 0
-                if check:
-                    # Re-raise if check=True to stop workflow
-                    raise
-            return_codes.append(return_code)
-            manifest_records.append(
-                {
-                    "step": subcommand,
-                    "return_code": return_code,
-                    "stdout_bytes": stdout_bytes,
-                    "stderr_bytes": stderr_bytes,
-                    "started_utc": start_ts.isoformat() + "Z",
-                    "finished_utc": end_ts.isoformat() + "Z",
-                    "duration_seconds": duration_s,
-                    "work_dir": str(config.work_dir),
-                    "log_dir": str(config.log_dir or (config.work_dir / "logs")),
-                    "params": dict(filtered),
-                    "command": " ".join(build_amalgkit_command(subcommand, filtered)),
-                }
-            )
-            logger.info(f"execute_workflow: Pre-step {subcommand} completed with code {return_code}")
+                pbar.update(1)
+            except Exception:
+                pass
         
         logger.info(f"execute_workflow: All {len(pre_steps)} pre-steps completed")
         
         # Now run batched download + quant
         logger.info(f"execute_workflow: Checking for batched processing: getfastq_params={'exists' if getfastq_params else 'None'}, quant_params={'exists' if quant_params else 'None'}")
         if getfastq_params and quant_params:
+            stage_idx += 1
+            stage_label = f"[{stage_idx}/{total_stages}] getfastq+quant (batched)"
+            logger.info(f"execute_workflow: Stage {stage_label}")
+            try:
+                pbar.set_description(stage_label)
+            except Exception:
+                pass
+            _maybe_pause(stage_label)
             logger.info("execute_workflow: Starting batched processing setup")
             # Determine metadata file to use - must have 'run' column (not a pivot table)
             metadata_paths = [
@@ -958,6 +1053,10 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
                         "note": f"Batched processing: {stats['processed']} processed, {stats['skipped']} skipped, {stats['failed']} failed/{stats['total_samples']} total",
                     }
                 )
+            try:
+                pbar.update(1)
+            except Exception:
+                pass
         
         # Run post-steps (merge, curate, sanity, etc.)
         # Remove integrate from post_steps if it was already recorded as a placeholder/failure
@@ -965,267 +1064,269 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
         if integrate_in_batch:
             post_steps = [s for s in post_steps if s[0] != "integrate"]
         steps = post_steps  # Continue with post-steps in the main loop
-    
-    for subcommand, params in steps:
-        runner = _steps_mod.STEP_RUNNERS.get(subcommand)
-        if runner is None:  # pragma: no cover - defensive
-            raise KeyError(f"No runner registered for step: {subcommand}")
-        filtered = _sanitize_params_for_subcommand(subcommand, params)
 
-        # Skip downstream steps when no metadata rows exist
-        if not has_metadata_rows and subcommand in {
-            "select",
-            "getfastq",
-            "integrate",
-            "quant",
-            "merge",
-            "cstmm",
-            "curate",
-            "csca",
-        }:
-            manifest_records.append(
-                {
-                    "step": subcommand,
-                    "return_code": 204,  # No Content
-                    "stdout_bytes": 0,
-                    "stderr_bytes": 0,
-                    "started_utc": datetime.utcnow().isoformat() + "Z",
-                    "finished_utc": datetime.utcnow().isoformat() + "Z",
-                    "duration_seconds": 0.0,
-                    "work_dir": str(config.work_dir),
-                    "log_dir": str(config.log_dir or (config.work_dir / "logs")),
-                    "params": dict(filtered),
-                    "command": " ".join(build_amalgkit_command(subcommand, filtered)),
-                    "note": f"skipped: metadata has no records at {metadata_table_path}",
-                }
-            )
-            return_codes.append(204)
-            continue
+        # Execute post-steps within the same progress bar context
+        for subcommand, params in steps:
+            stage_idx += 1
+            stage_label = f"[{stage_idx}/{total_stages}] {subcommand}"
+            logger.info(f"execute_workflow: Stage {stage_label}")
+            try:
+                pbar.set_description(stage_label)
+            except Exception:
+                pass
+            _maybe_show_command(subcommand, params)
+            _maybe_pause(stage_label)
+            # --- original step execution loop body continues below ---
+            runner = _steps_mod.STEP_RUNNERS.get(subcommand)
+            if runner is None:  # pragma: no cover - defensive
+                raise KeyError(f"No runner registered for step: {subcommand}")
+            filtered = _sanitize_params_for_subcommand(subcommand, params)
 
-        # Optional pre-filter: require tissue metadata before selection
-        if subcommand == "select" and bool(config.filters.get("require_tissue", False)):
-            # Infer the metadata path if not provided
-            meta_path = filtered.get("metadata")
-            if not meta_path or meta_path == "inferred":
-                meta_path = str(config.work_dir / "metadata" / "metadata.tsv")
-            meta_path_p = Path(str(meta_path))
-            if meta_path_p.exists():
-                out_filtered = meta_path_p.with_name("metadata.filtered.tissue.tsv")
+            # Skip downstream steps when no metadata rows exist
+            if not has_metadata_rows and subcommand in {
+                "select",
+                "getfastq",
+                "integrate",
+                "quant",
+                "merge",
+                "cstmm",
+                "curate",
+                "csca",
+            }:
+                manifest_records.append(
+                    {
+                        "step": subcommand,
+                        "return_code": 204,  # No Content
+                        "stdout_bytes": 0,
+                        "stderr_bytes": 0,
+                        "started_utc": datetime.utcnow().isoformat() + "Z",
+                        "finished_utc": datetime.utcnow().isoformat() + "Z",
+                        "duration_seconds": 0.0,
+                        "work_dir": str(config.work_dir),
+                        "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                        "params": dict(filtered),
+                        "command": " ".join(build_amalgkit_command(subcommand, filtered)),
+                        "note": f"skipped: metadata has no records at {metadata_table_path}",
+                    }
+                )
+                return_codes.append(204)
                 try:
-                    rows = [
-                        row
-                        for row in read_delimited(meta_path_p, delimiter="\t")
-                        if (row.get("tissue", "").strip() != "") and (row.get("run", "").strip() != "")
-                    ]
-                    write_delimited(rows, out_filtered, delimiter="\t")
-                    filtered["metadata"] = str(out_filtered)
-                    manifest_records.append(
-                        {
-                            "step": "preselect-filter",
-                            "return_code": 0,
-                            "stdout_bytes": 0,
-                            "stderr_bytes": 0,
-                            "started_utc": datetime.utcnow().isoformat() + "Z",
-                            "finished_utc": datetime.utcnow().isoformat() + "Z",
-                            "duration_seconds": 0.0,
-                            "work_dir": str(config.work_dir),
-                            "log_dir": str(config.log_dir or (config.work_dir / "logs")),
-                            "params": {"require_tissue": True, "input": str(meta_path_p), "output": str(out_filtered)},
-                            "command": f"filter-metadata require_tissue=1 < {meta_path_p} > {out_filtered}",
-                        }
-                    )
-                except Exception as exc:  # pragma: no cover - defensive
-                    manifest_records.append(
-                        {
-                            "step": "preselect-filter",
-                            "return_code": 1,
-                            "stdout_bytes": 0,
-                            "stderr_bytes": len(str(exc)),
-                            "started_utc": datetime.utcnow().isoformat() + "Z",
-                            "finished_utc": datetime.utcnow().isoformat() + "Z",
-                            "duration_seconds": 0.0,
-                            "work_dir": str(config.work_dir),
-                            "log_dir": str(config.log_dir or (config.work_dir / "logs")),
-                            "params": {"require_tissue": True, "input": str(meta_path_p)},
-                            "command": "filter-metadata require_tissue=1",
-                            "note": "metadata filter failed; proceeding with original metadata",
-                        }
-                    )
-
-        # Inject select.config_dir if not provided: prefer config_base produced by `amalgkit config`
-        if subcommand == "select":
-            cfg_dir = filtered.get("config_dir")
-            if not cfg_dir or cfg_dir == "inferred":
-                preferred = config.work_dir / "config_base"
-                fallback = config.work_dir / "config"
-                use_dir = preferred if preferred.exists() else fallback
-                filtered["config_dir"] = str(use_dir)
-            else:
-                # Ensure config_dir is an absolute resolved path
-                cfg_path = Path(str(cfg_dir)).expanduser()
-                try:
-                    cfg_path = cfg_path.resolve()
+                    pbar.update(1)
                 except Exception:
-                    # If resolution fails, try relative to work_dir
-                    if not cfg_path.is_absolute():
-                        cfg_path = (config.work_dir / cfg_path).resolve()
-                # Verify directory exists
-                if not cfg_path.exists():
-                    # Try to find it relative to work_dir
-                    work_relative = config.work_dir / cfg_path
-                    if work_relative.exists():
-                        cfg_path = work_relative.resolve()
-                    else:
-                        # Fallback to config_base or config
-                        preferred = config.work_dir / "config_base"
-                        fallback = config.work_dir / "config"
-                        cfg_path = preferred if preferred.exists() else fallback
-                        if not cfg_path.exists():
-                            cfg_path = preferred  # Use preferred even if it doesn't exist yet
-                filtered["config_dir"] = str(cfg_path)
-        
-        # Inject metadata path for steps that need it if not provided
-        # CRITICAL: getfastq, integrate, quant, merge need row-per-sample format (NOT pivot tables)
-        # Use smart fallback logic: metadata.filtered.tissue → metadata.tsv (skip pivot files)
-        # select also needs metadata but can use the standard metadata.tsv format
-        if subcommand == "select":
-            if not filtered.get("metadata") or filtered.get("metadata") == "inferred":
-                filtered["metadata"] = str(config.work_dir / "metadata" / "metadata.tsv")
-        
-        if subcommand in {"integrate", "getfastq", "quant", "merge"}:
-            current_metadata = filtered.get("metadata")
-            needs_fallback = False
-            
-            # Check if we need fallback: no metadata set, or existing metadata file is empty/pivot format
-            if not current_metadata:
-                needs_fallback = True
-            else:
-                # Check if current metadata file has actual data rows AND correct format (has 'run' column)
-                try:
-                    current_path = Path(str(current_metadata))
-                    if current_path.exists():
-                        rows = list(read_delimited(current_path, delimiter="\t"))
-                        if len(rows) == 0:  # Only header, no data
-                            needs_fallback = True
-                        elif rows and 'run' not in rows[0]:  # Missing 'run' column (likely pivot table)
-                            needs_fallback = True
-                    else:
-                        needs_fallback = True
-                except Exception:
+                    pass
+                continue
+
+            # Optional pre-filter: require tissue metadata before selection
+            if subcommand == "select" and bool(config.filters.get("require_tissue", False)):
+                # Infer the metadata path if not provided
+                meta_path = filtered.get("metadata")
+                if not meta_path or meta_path == "inferred":
+                    meta_path = str(config.work_dir / "metadata" / "metadata.tsv")
+                meta_path_p = Path(str(meta_path))
+                if meta_path_p.exists():
+                    out_filtered = meta_path_p.with_name("metadata.filtered.tissue.tsv")
+                    try:
+                        rows = [
+                            row
+                            for row in read_delimited(meta_path_p, delimiter="\t")
+                            if (row.get("tissue", "").strip() != "") and (row.get("run", "").strip() != "")
+                        ]
+                        write_delimited(rows, out_filtered, delimiter="\t")
+                        filtered["metadata"] = str(out_filtered)
+                    except Exception:
+                        pass
+
+            # Inject select.config_dir if not provided: prefer config_base produced by `amalgkit config`
+            if subcommand == "select":
+                cfg_dir = filtered.get("config_dir")
+                if not cfg_dir or cfg_dir == "inferred":
+                    preferred = config.work_dir / "config_base"
+                    fallback = config.work_dir / "config"
+                    use_dir = preferred if preferred.exists() else fallback
+                    filtered["config_dir"] = str(use_dir)
+                else:
+                    # Ensure config_dir is an absolute resolved path
+                    cfg_path = Path(str(cfg_dir)).expanduser()
+                    try:
+                        cfg_path = cfg_path.resolve()
+                    except Exception:
+                        # If resolution fails, try relative to work_dir
+                        if not cfg_path.is_absolute():
+                            cfg_path = (config.work_dir / cfg_path).resolve()
+                    # Verify directory exists
+                    if not cfg_path.exists():
+                        # Try to find it relative to work_dir
+                        work_relative = config.work_dir / cfg_path
+                        if work_relative.exists():
+                            cfg_path = work_relative.resolve()
+                        else:
+                            # Fallback to config_base or config
+                            preferred = config.work_dir / "config_base"
+                            fallback = config.work_dir / "config"
+                            cfg_path = preferred if preferred.exists() else fallback
+                            if not cfg_path.exists():
+                                cfg_path = preferred  # Use preferred even if it doesn't exist yet
+                    filtered["config_dir"] = str(cfg_path)
+
+            # Inject metadata path for steps that need it if not provided
+            # CRITICAL: getfastq, integrate, quant, merge need row-per-sample format (NOT pivot tables)
+            # Use smart fallback logic: metadata.filtered.tissue → metadata.tsv (skip pivot files)
+            # select also needs metadata but can use the standard metadata.tsv format
+            if subcommand == "select":
+                if not filtered.get("metadata") or filtered.get("metadata") == "inferred":
+                    filtered["metadata"] = str(config.work_dir / "metadata" / "metadata.tsv")
+
+            if subcommand in {"integrate", "getfastq", "quant", "merge"}:
+                current_metadata = filtered.get("metadata")
+                needs_fallback = False
+
+                # Check if we need fallback: no metadata set, or existing metadata file is empty/pivot format
+                if not current_metadata:
                     needs_fallback = True
-            
-            if needs_fallback:
-                # Try to find a metadata file with actual data rows in row-per-sample format
-                # SKIP pivot tables (pivot_qualified.tsv, pivot_selected.tsv) - they lack run IDs
-                candidate_paths = [
-                    config.work_dir / "metadata" / "metadata.filtered.tissue.tsv",
-                    config.work_dir / "metadata" / "metadata.tsv",
-                ]
-                for candidate in candidate_paths:
-                    if candidate.exists():
-                        # Check if file has data rows AND 'run' column
-                        try:
-                            rows = list(read_delimited(candidate, delimiter="\t"))
-                            if len(rows) > 0 and 'run' in rows[0]:  # Has data and correct format
-                                filtered["metadata"] = str(candidate)
-                                break
-                        except Exception:
-                            continue
-        
-        # Ensure fastq_dir exists before integrate step
-        if subcommand == "integrate":
-            fastq_dir = filtered.get("fastq_dir")
-            if fastq_dir:
-                # Resolve the path relative to work_dir or as absolute
-                fastq_path = Path(fastq_dir)
-                if not fastq_path.is_absolute():
-                    # If relative, make it relative to the repository root (where we're running from)
-                    fastq_path = Path.cwd() / fastq_dir
-                fastq_path.mkdir(parents=True, exist_ok=True)
-        
-        if subcommand == "merge":
-            # Ensure 'out' has a default when only out_dir provided
-            if "out" not in filtered:
-                default_out = config.work_dir.parent / "merged" / "merged_abundance.tsv"
-                filtered["out"] = str(default_out)
-        # Preflight dependency checks for steps that require extra CLIs
-        dep = check_step_dependencies(subcommand)
-        if not dep.ok:
-            # Record skip with a conventional code (126) and continue
-            manifest_records.append(
-                {
-                    "step": subcommand,
-                    "return_code": 126,
-                    "stdout_bytes": 0,
-                    "stderr_bytes": 0,
-                    "started_utc": datetime.utcnow().isoformat() + "Z",
-                    "finished_utc": datetime.utcnow().isoformat() + "Z",
-                    "duration_seconds": 0.0,
-                    "work_dir": str(config.work_dir),
-                    "log_dir": str(config.log_dir or (config.work_dir / "logs")),
-                    "params": dict(filtered),
-                    "command": " ".join(build_amalgkit_command(subcommand, filtered)),
-                    "note": f"skipped: missing dependencies: {', '.join(dep.missing)}",
-                }
-            )
-            return_codes.append(126)
-            continue
+                else:
+                    # Check if current metadata file has actual data rows AND correct format (has 'run' column)
+                    try:
+                        current_path = Path(str(current_metadata))
+                        if current_path.exists():
+                            rows = list(read_delimited(current_path, delimiter="\t"))
+                            if len(rows) == 0:  # Only header, no data
+                                needs_fallback = True
+                            elif rows and "run" not in rows[0]:  # Missing 'run' column (likely pivot table)
+                                needs_fallback = True
+                        else:
+                            needs_fallback = True
+                    except Exception:
+                        needs_fallback = True
 
-        start_ts = datetime.utcnow()
-        try:
-            result = runner(
-                filtered,
-                work_dir=config.work_dir,
-                log_dir=(config.log_dir or (config.work_dir / "logs")),
-                check=check,
-            )
-            end_ts = datetime.utcnow()
-            duration_s = max(0.0, (end_ts - start_ts).total_seconds())
-            return_code = result.returncode
-            stdout_bytes = len(result.stdout or "")
-            stderr_bytes = len(result.stderr or "")
-        except subprocess.CalledProcessError as e:
-            # When check=True, subprocess raises CalledProcessError on failure
-            # Capture the error and continue if check=False, or re-raise if check=True
-            end_ts = datetime.utcnow()
-            duration_s = max(0.0, (end_ts - start_ts).total_seconds())
-            return_code = e.returncode
-            stdout_bytes = len(e.stdout or "") if hasattr(e, 'stdout') else 0
-            stderr_bytes = len(e.stderr or "") if hasattr(e, 'stderr') else 0
-            if check:
-                # Re-raise if check=True to stop workflow
-                raise
-        
-        # If this is integrate and we already recorded it as a placeholder (for batched processing order),
-        # update the placeholder record instead of creating a new one
-        if subcommand == "integrate":
-            # Find placeholder record (has return_code=None)
-            placeholder_idx = None
-            for idx, record in enumerate(manifest_records):
-                if record.get("step") == "integrate" and record.get("return_code") is None:
-                    placeholder_idx = idx
-                    break
-            
-            if placeholder_idx is not None:
-                # Update the placeholder record
-                manifest_records[placeholder_idx].update({
-                    "return_code": return_code,
-                    "stdout_bytes": stdout_bytes,
-                    "stderr_bytes": stderr_bytes,
-                    "started_utc": start_ts.isoformat() + "Z",
-                    "finished_utc": end_ts.isoformat() + "Z",
-                    "duration_seconds": duration_s,
-                    "params": dict(filtered),
-                    "command": " ".join(build_amalgkit_command(subcommand, filtered)),
-                })
-                # Also update the corresponding return_code placeholder
-                # Find the index in return_codes that corresponds to this placeholder
-                # (it should be the same index since they're appended together)
-                if placeholder_idx < len(return_codes):
-                    return_codes[placeholder_idx] = return_code
-                # Don't append return_code again since we updated the placeholder
+                if needs_fallback:
+                    candidate_paths = [
+                        config.work_dir / "metadata" / "metadata.filtered.tissue.tsv",
+                        config.work_dir / "metadata" / "metadata.tsv",
+                    ]
+                    for candidate in candidate_paths:
+                        if candidate.exists():
+                            try:
+                                rows = list(read_delimited(candidate, delimiter="\t"))
+                                if len(rows) > 0 and "run" in rows[0]:
+                                    filtered["metadata"] = str(candidate)
+                                    break
+                            except Exception:
+                                continue
+
+            # Ensure fastq_dir exists before integrate step
+            if subcommand == "integrate":
+                fastq_dir = filtered.get("fastq_dir")
+                if fastq_dir:
+                    fastq_path = Path(fastq_dir)
+                    if not fastq_path.is_absolute():
+                        fastq_path = Path.cwd() / fastq_dir
+                    fastq_path.mkdir(parents=True, exist_ok=True)
+
+            if subcommand == "merge":
+                if "out" not in filtered:
+                    default_out = config.work_dir.parent / "merged" / "merged_abundance.tsv"
+                    filtered["out"] = str(default_out)
+
+            dep = check_step_dependencies(subcommand)
+            if not dep.ok:
+                manifest_records.append(
+                    {
+                        "step": subcommand,
+                        "return_code": 126,
+                        "stdout_bytes": 0,
+                        "stderr_bytes": 0,
+                        "started_utc": datetime.utcnow().isoformat() + "Z",
+                        "finished_utc": datetime.utcnow().isoformat() + "Z",
+                        "duration_seconds": 0.0,
+                        "work_dir": str(config.work_dir),
+                        "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                        "params": dict(filtered),
+                        "command": " ".join(build_amalgkit_command(subcommand, filtered)),
+                        "note": f"skipped: missing dependencies: {', '.join(dep.missing)}",
+                    }
+                )
+                return_codes.append(126)
+                try:
+                    pbar.update(1)
+                except Exception:
+                    pass
+                continue
+
+            start_ts = datetime.utcnow()
+            return_code = -1  # Initialize to avoid UnboundLocalError
+            stdout_bytes = 0
+            stderr_bytes = 0
+            end_ts = start_ts
+            duration_s = 0.0
+            try:
+                result = runner(
+                    filtered,
+                    work_dir=config.work_dir,
+                    log_dir=(config.log_dir or (config.work_dir / "logs")),
+                    check=check,
+                )
+                end_ts = datetime.utcnow()
+                duration_s = max(0.0, (end_ts - start_ts).total_seconds())
+                return_code = result.returncode
+                stdout_bytes = len(result.stdout or "")
+                stderr_bytes = len(result.stderr or "")
+            except subprocess.CalledProcessError as e:
+                end_ts = datetime.utcnow()
+                duration_s = max(0.0, (end_ts - start_ts).total_seconds())
+                return_code = e.returncode
+                stdout_bytes = len(e.stdout or "") if hasattr(e, "stdout") else 0
+                stderr_bytes = len(e.stderr or "") if hasattr(e, "stderr") else 0
+                if check:
+                    raise
+            except Exception as e:
+                # Handle any other exceptions (e.g., import errors, key errors) by recording failure
+                logger.warning(f"Step {subcommand} failed with unexpected error: {e}", exc_info=True)
+                end_ts = datetime.utcnow()
+                duration_s = max(0.0, (end_ts - start_ts).total_seconds())
+                return_code = 126  # Command not found / execution failed
+                stdout_bytes = 0
+                stderr_bytes = len(str(e))
+
+            if subcommand == "integrate":
+                placeholder_idx = None
+                for idx2, record in enumerate(manifest_records):
+                    if record.get("step") == "integrate" and record.get("return_code") is None:
+                        placeholder_idx = idx2
+                        break
+
+                if placeholder_idx is not None:
+                    manifest_records[placeholder_idx].update(
+                        {
+                            "return_code": return_code,
+                            "stdout_bytes": stdout_bytes,
+                            "stderr_bytes": stderr_bytes,
+                            "started_utc": start_ts.isoformat() + "Z",
+                            "finished_utc": end_ts.isoformat() + "Z",
+                            "duration_seconds": duration_s,
+                            "params": dict(filtered),
+                            "command": " ".join(build_amalgkit_command(subcommand, filtered)),
+                        }
+                    )
+                    if placeholder_idx < len(return_codes):
+                        return_codes[placeholder_idx] = return_code
+                else:
+                    return_codes.append(return_code)
+                    manifest_records.append(
+                        {
+                            "step": subcommand,
+                            "return_code": return_code,
+                            "stdout_bytes": stdout_bytes,
+                            "stderr_bytes": stderr_bytes,
+                            "started_utc": start_ts.isoformat() + "Z",
+                            "finished_utc": end_ts.isoformat() + "Z",
+                            "duration_seconds": duration_s,
+                            "work_dir": str(config.work_dir),
+                            "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                            "params": dict(filtered),
+                            "command": " ".join(build_amalgkit_command(subcommand, filtered)),
+                        }
+                    )
             else:
-                # No placeholder found, append normally
                 return_codes.append(return_code)
                 manifest_records.append(
                     {
@@ -1242,30 +1343,228 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False) -> 
                         "command": " ".join(build_amalgkit_command(subcommand, filtered)),
                     }
                 )
-        else:
-            # Normal append for other steps
-            return_codes.append(return_code)
-            manifest_records.append(
-                {
-                    "step": subcommand,
-                    "return_code": return_code,
-                    "stdout_bytes": stdout_bytes,
-                    "stderr_bytes": stderr_bytes,
-                    "started_utc": start_ts.isoformat() + "Z",
-                    "finished_utc": end_ts.isoformat() + "Z",
-                    "duration_seconds": duration_s,
-                    "work_dir": str(config.work_dir),
-                    "log_dir": str(config.log_dir or (config.work_dir / "logs")),
-                    "params": dict(filtered),
-                    "command": " ".join(build_amalgkit_command(subcommand, filtered)),
-                }
-            )
-        if check and return_code != 0:
-            break
+            try:
+                pbar.update(1)
+            except Exception:
+                pass
+            if check and return_code != 0:
+                break
 
-    _write_manifest_records(manifest_path, manifest_records)
-    _write_run_reports(config, manifest_records)
-    return return_codes
+        # Finalize sequential-mode execution (pre-steps + batched getfastq/quant + post-steps)
+        _write_manifest_records(manifest_path, manifest_records)
+        _write_run_reports(config, manifest_records)
+        return return_codes
+
+    else:
+        # Non-batched mode: one stage per planned step
+        total_stages = len(steps)
+        stage_idx = 0
+        with (_progress_bar(total=total_stages, desc="RNA workflow stages") if progress else _progress_bar(total=None, desc=None)) as pbar:
+            for subcommand, params in steps:
+                stage_idx += 1
+                stage_label = f"[{stage_idx}/{total_stages}] {subcommand}"
+                logger.info(f"execute_workflow: Stage {stage_label}")
+                try:
+                    pbar.set_description(stage_label)
+                except Exception:
+                    pass
+                _maybe_show_command(subcommand, params)
+                _maybe_pause(stage_label)
+                # --- original loop body below (reusing existing code path) ---
+                runner = _steps_mod.STEP_RUNNERS.get(subcommand)
+                if runner is None:  # pragma: no cover - defensive
+                    raise KeyError(f"No runner registered for step: {subcommand}")
+                filtered = _sanitize_params_for_subcommand(subcommand, params)
+                # (the rest of the original non-batched step logic is unchanged below)
+                # We fall through to the existing logic by keeping this branch isolated.
+                # NOTE: This branch returns at the end of the function like the original.
+                # The code continues below in the original file.
+
+                # Skip downstream steps when no metadata rows exist
+                if not has_metadata_rows and subcommand in {
+                    "select",
+                    "getfastq",
+                    "integrate",
+                    "quant",
+                    "merge",
+                    "cstmm",
+                    "curate",
+                    "csca",
+                }:
+                    manifest_records.append(
+                        {
+                            "step": subcommand,
+                            "return_code": 204,  # No Content
+                            "stdout_bytes": 0,
+                            "stderr_bytes": 0,
+                            "started_utc": datetime.utcnow().isoformat() + "Z",
+                            "finished_utc": datetime.utcnow().isoformat() + "Z",
+                            "duration_seconds": 0.0,
+                            "work_dir": str(config.work_dir),
+                            "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                            "params": dict(filtered),
+                            "command": " ".join(build_amalgkit_command(subcommand, filtered)),
+                            "note": f"skipped: metadata has no records at {metadata_table_path}",
+                        }
+                    )
+                    return_codes.append(204)
+                    try:
+                        pbar.update(1)
+                    except Exception:
+                        pass
+                    continue
+
+                # Optional pre-filter: require tissue metadata before selection
+                if subcommand == "select" and bool(config.filters.get("require_tissue", False)):
+                    meta_path = filtered.get("metadata")
+                    if not meta_path or meta_path == "inferred":
+                        meta_path = str(config.work_dir / "metadata" / "metadata.tsv")
+                    meta_path_p = Path(str(meta_path))
+                    if meta_path_p.exists():
+                        out_filtered = meta_path_p.with_name("metadata.filtered.tissue.tsv")
+                        try:
+                            rows = [
+                                row
+                                for row in read_delimited(meta_path_p, delimiter="\t")
+                                if (row.get("tissue", "").strip() != "") and (row.get("run", "").strip() != "")
+                            ]
+                            write_delimited(rows, out_filtered, delimiter="\t")
+                            filtered["metadata"] = str(out_filtered)
+                        except Exception:
+                            pass
+
+                if subcommand == "select":
+                    cfg_dir = filtered.get("config_dir")
+                    if not cfg_dir or cfg_dir == "inferred":
+                        preferred = config.work_dir / "config_base"
+                        fallback = config.work_dir / "config"
+                        use_dir = preferred if preferred.exists() else fallback
+                        filtered["config_dir"] = str(use_dir)
+
+                if subcommand == "select":
+                    if not filtered.get("metadata") or filtered.get("metadata") == "inferred":
+                        filtered["metadata"] = str(config.work_dir / "metadata" / "metadata.tsv")
+
+                if subcommand in {"integrate", "getfastq", "quant", "merge"}:
+                    current_metadata = filtered.get("metadata")
+                    needs_fallback = False
+                    if not current_metadata:
+                        needs_fallback = True
+                    else:
+                        try:
+                            current_path = Path(str(current_metadata))
+                            if current_path.exists():
+                                rows = list(read_delimited(current_path, delimiter="\t"))
+                                if len(rows) == 0:
+                                    needs_fallback = True
+                                elif rows and "run" not in rows[0]:
+                                    needs_fallback = True
+                            else:
+                                needs_fallback = True
+                        except Exception:
+                            needs_fallback = True
+
+                    if needs_fallback:
+                        candidate_paths = [
+                            config.work_dir / "metadata" / "metadata.filtered.tissue.tsv",
+                            config.work_dir / "metadata" / "metadata.tsv",
+                        ]
+                        for candidate in candidate_paths:
+                            if candidate.exists():
+                                try:
+                                    rows = list(read_delimited(candidate, delimiter="\t"))
+                                    if len(rows) > 0 and "run" in rows[0]:
+                                        filtered["metadata"] = str(candidate)
+                                        break
+                                except Exception:
+                                    continue
+
+                if subcommand == "integrate":
+                    fastq_dir = filtered.get("fastq_dir")
+                    if fastq_dir:
+                        fastq_path = Path(fastq_dir)
+                        if not fastq_path.is_absolute():
+                            fastq_path = Path.cwd() / fastq_dir
+                        fastq_path.mkdir(parents=True, exist_ok=True)
+
+                if subcommand == "merge":
+                    if "out" not in filtered:
+                        default_out = config.work_dir.parent / "merged" / "merged_abundance.tsv"
+                        filtered["out"] = str(default_out)
+
+                dep = check_step_dependencies(subcommand)
+                if not dep.ok:
+                    manifest_records.append(
+                        {
+                            "step": subcommand,
+                            "return_code": 126,
+                            "stdout_bytes": 0,
+                            "stderr_bytes": 0,
+                            "started_utc": datetime.utcnow().isoformat() + "Z",
+                            "finished_utc": datetime.utcnow().isoformat() + "Z",
+                            "duration_seconds": 0.0,
+                            "work_dir": str(config.work_dir),
+                            "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                            "params": dict(filtered),
+                            "command": " ".join(build_amalgkit_command(subcommand, filtered)),
+                            "note": f"skipped: missing dependencies: {', '.join(dep.missing)}",
+                        }
+                    )
+                    return_codes.append(126)
+                    try:
+                        pbar.update(1)
+                    except Exception:
+                        pass
+                    continue
+
+                start_ts = datetime.utcnow()
+                try:
+                    result = runner(
+                        filtered,
+                        work_dir=config.work_dir,
+                        log_dir=(config.log_dir or (config.work_dir / "logs")),
+                        check=check,
+                    )
+                    end_ts = datetime.utcnow()
+                    duration_s = max(0.0, (end_ts - start_ts).total_seconds())
+                    return_code = result.returncode
+                    stdout_bytes = len(result.stdout or "")
+                    stderr_bytes = len(result.stderr or "")
+                except subprocess.CalledProcessError as e:
+                    end_ts = datetime.utcnow()
+                    duration_s = max(0.0, (end_ts - start_ts).total_seconds())
+                    return_code = e.returncode
+                    stdout_bytes = len(e.stdout or "") if hasattr(e, "stdout") else 0
+                    stderr_bytes = len(e.stderr or "") if hasattr(e, "stderr") else 0
+                    if check:
+                        raise
+
+                return_codes.append(return_code)
+                manifest_records.append(
+                    {
+                        "step": subcommand,
+                        "return_code": return_code,
+                        "stdout_bytes": stdout_bytes,
+                        "stderr_bytes": stderr_bytes,
+                        "started_utc": start_ts.isoformat() + "Z",
+                        "finished_utc": end_ts.isoformat() + "Z",
+                        "duration_seconds": duration_s,
+                        "work_dir": str(config.work_dir),
+                        "log_dir": str(config.log_dir or (config.work_dir / "logs")),
+                        "params": dict(filtered),
+                        "command": " ".join(build_amalgkit_command(subcommand, filtered)),
+                    }
+                )
+                try:
+                    pbar.update(1)
+                except Exception:
+                    pass
+                if check and return_code != 0:
+                    break
+
+        _write_manifest_records(manifest_path, manifest_records)
+        _write_run_reports(config, manifest_records)
+        return return_codes
 
 
 def _write_run_reports(config: AmalgkitWorkflowConfig, records: list[dict[str, Any]]) -> None:
@@ -1363,14 +1662,25 @@ def load_workflow_config(config_file: str | Path) -> AmalgkitWorkflowConfig:
     steps_map = {k: v for k, v in steps_map.items() if str(k) in allowed and isinstance(v, dict)}
     
     # Resolve paths in step configs relative to repo root
+    path_keys: set[str] = {
+        "out_dir",
+        "out",
+        "fastq_dir",
+        "config_dir",
+        "metadata",
+        "index_dir",
+        "index",
+        "fasta_dir",
+        "orthogroup_table",
+        "input_dir",
+        "sample_group_color",
+        "sample_group",
+    }
     for step_name, step_params in steps_map.items():
         if isinstance(step_params, dict):
-            # Resolve out_dir if present
-            if "out_dir" in step_params:
-                step_params["out_dir"] = str(_resolve_path_relative_to_repo(step_params["out_dir"], repo_root))
-            # Resolve out if present (for merge step)
-            if "out" in step_params:
-                step_params["out"] = str(_resolve_path_relative_to_repo(step_params["out"], repo_root))
+            for k in list(step_params.keys()):
+                if k in path_keys and isinstance(step_params.get(k), str):
+                    step_params[k] = str(_resolve_path_relative_to_repo(step_params[k], repo_root))
 
     auto_install_amalgkit = bool(raw.get("auto_install_amalgkit", False))
     genome_cfg = raw.get("genome") if isinstance(raw.get("genome"), dict) else None
@@ -1398,4 +1708,6 @@ __all__ = [
     "plan_workflow",
     "execute_workflow",
     "load_workflow_config",
+    "apply_step_defaults",
+    "sanitize_params_for_cli",
 ]

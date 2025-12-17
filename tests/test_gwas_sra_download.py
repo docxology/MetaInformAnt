@@ -41,24 +41,36 @@ class TestDownloadSRARun:
     """Test SRA run download functionality."""
 
     @pytest.mark.slow
+    @pytest.mark.network
+    @pytest.mark.external_tool
     @pytest.mark.skipif(
         not shutil.which("fasterq-dump") and not shutil.which("fastq-dump"),
         reason="SRA Toolkit not available - real implementation requires fasterq-dump or fastq-dump"
     )
     def test_download_sra_run_requires_tools(self, tmp_path: Path):
         """Test that download requires SRA tools to be available.
-        
+
         This test verifies the function structure but will skip if
         SRA tools are not available on the system.
         """
+        # Check if SRA tools are available
+        import shutil
+        sra_tools = ["fasterq-dump", "prefetch", "fastq-dump"]
+        available_tools = [tool for tool in sra_tools if shutil.which(tool)]
+
+        if not available_tools:
+            pytest.skip("SRA toolkit not available (none of fasterq-dump, prefetch, fastq-dump found)")
+
         # Small test accession - may or may not exist
         # This tests the function interface, not actual download
+        # Use a very short timeout to avoid hanging on real downloads
         try:
             result = download_sra_run(
                 "SRR000001",  # Example accession
                 tmp_path,
                 use_fasterq=True,
-                threads=1
+                threads=1,
+                timeout=5  # Very short timeout for testing
             )
             # If it succeeds, verify structure
             assert isinstance(result, dict)
@@ -67,9 +79,11 @@ class TestDownloadSRARun:
             # This documents real behavior
             pass
 
+    @pytest.mark.network
+    @pytest.mark.external_tool
     def test_download_sra_run_invalid_accession(self, tmp_path: Path):
         """Test behavior with invalid accession.
-        
+
         Uses real implementation - may fail or skip depending on tool availability.
         """
         if not check_sra_tools_available():
@@ -92,9 +106,11 @@ class TestDownloadSRAProject:
         not shutil.which("fasterq-dump") and not shutil.which("fastq-dump"),
         reason="SRA Toolkit not available - real implementation requires tools"
     )
+    @pytest.mark.network
+    @pytest.mark.external_tool
     def test_download_sra_project_requires_tools(self, tmp_path: Path):
         """Test project download interface.
-        
+
         Verifies function structure without requiring actual download.
         """
         try:
@@ -112,9 +128,11 @@ class TestDownloadSRAProject:
 class TestSearchSRAForOrganism:
     """Test SRA search functionality."""
 
+    @pytest.mark.network
+    @pytest.mark.external_tool
     def test_search_sra_for_organism_interface(self):
         """Test search function interface.
-        
+
         Tests function structure - actual search requires network access.
         """
         # Test with a real organism name
@@ -130,6 +148,8 @@ class TestSearchSRAForOrganism:
             # This documents real failure modes
             pass
 
+    @pytest.mark.network
+    @pytest.mark.external_tool
     def test_search_sra_empty_results(self):
         """Test search with organism that may have no results."""
         try:

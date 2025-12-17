@@ -322,6 +322,7 @@ class TestUMAP:
         # Compute neighbors
         self.test_data = compute_neighbors(self.test_data, n_neighbors=15)
 
+    @pytest.mark.slow
     def test_compute_umap_basic(self):
         """Test basic UMAP computation."""
         try:
@@ -392,6 +393,7 @@ class TestTSNE:
         self.test_data = SingleCellData(full_data)
         self.test_data.obsm["X_pca"] = pca_coords
 
+    @pytest.mark.slow
     def test_compute_tsne_basic(self):
         """Test basic t-SNE computation."""
         data = compute_tsne(self.test_data, n_components=2, n_iter=250)
@@ -406,6 +408,7 @@ class TestTSNE:
         assert tsne_params["n_components"] == 2
         assert tsne_params["n_iter"] == 250
 
+    @pytest.mark.slow
     def test_compute_tsne_different_perplexity(self):
         """Test t-SNE with different perplexity values."""
         # Test with different perplexity
@@ -413,6 +416,7 @@ class TestTSNE:
         assert "X_tsne" in data.obsm
         assert data.uns["tsne"]["params"]["perplexity"] == 15.0
 
+    @pytest.mark.slow
     def test_compute_tsne_perplexity_adjustment(self):
         """Test that perplexity is adjusted for small datasets."""
         # Create very small dataset
@@ -577,12 +581,17 @@ class TestEdgeCases:
 
     def test_zero_variance_genes(self):
         """Test handling of zero-variance genes."""
+        import warnings
         X = np.random.normal(0, 1, (50, 20))
         # Make some genes have zero variance
         X[:, :5] = 1.0  # Constant expression
 
         data = SingleCellData(X)
-        data = scale_data(data)  # This should handle zero variance
+
+        # Suppress the precision loss warning from scipy for zero variance data
+        with warnings.catch_warnings():
+            warnings.filterwarnings("ignore", message="Precision loss occurred", category=RuntimeWarning)
+            data = scale_data(data)  # This should handle zero variance
 
         # Should not contain NaN or infinite values
         assert not np.any(np.isnan(data.X))

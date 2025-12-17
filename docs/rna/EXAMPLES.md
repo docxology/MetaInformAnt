@@ -86,10 +86,10 @@ Top 3 genes:
 
 ```bash
 # Full end-to-end workflow (all steps)
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 
 # Check status at any time
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 ```
 
 The workflow automatically:
@@ -261,7 +261,7 @@ output/amalgkit/pbarbatus/work/merge/Pogonomyrmex_barbatus/Pogonomyrmex_barbatus
 
 ```bash
 # Complete workflow for one species
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 ```
 
 **Use Case**: Focused analysis on a single species with all samples.
@@ -271,7 +271,7 @@ python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrm
 ```bash
 # Process each species separately
 for species in pbarbatus cfloridanus amellifera; do
-    python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_${species}.yaml
+    python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_${species}.yaml
 done
 
 # Then run cross-species analysis

@@ -8,6 +8,7 @@ import pytest
 from metainformant.dna import msa, sequences
 
 
+@pytest.mark.external_tool
 @pytest.mark.skipif(shutil.which("muscle") is None, reason="MUSCLE not installed")
 def test_muscle_cli_alignment_roundtrip(tmp_path: Path) -> None:
     fasta_path = Path(__file__).parent / "data" / "dna" / "toy.fasta"

@@ -163,7 +163,7 @@ steps:
 
 ```bash
 # Run workflow for each species
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species1.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species1.yaml
 ```
 
 #### Custom Configuration
@@ -218,7 +218,7 @@ steps:
     threads: 24
 ```
 ```bash
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species1.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species1.yaml
 ```
 
 #### High-End System
@@ -253,7 +253,7 @@ ps aux | grep "amalgkit getfastq" | grep -c "amalgkit"
 #### Analyze Sample Status
 ```bash
 # Comprehensive status analysis
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_species1.yaml --status --detailed
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_species1.yaml --status --detailed
 ```
 
 ### Performance Tuning
@@ -327,7 +327,7 @@ Batch sizes are automatically calculated based on available disk space, but can 
 **Current approach** (recommended):
 ```bash
 # Parallel downloads configured via num_download_workers in config file
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 ```
 
 **Configuration**:
@@ -358,7 +358,7 @@ The system automatically selects the best temporary directory location:
 **Manual override:**
 ```bash
 export TMPDIR=/path/to/temp/directory
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 ```
 
 **Check current temp directory:**
@@ -378,7 +378,7 @@ Minimum free space and auto-cleanup thresholds adapt to drive size:
 **Auto-detection (recommended):**
 ```bash
 # Workflow automatically manages disk space with immediate per-sample cleanup
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 ```
 
 **Note**: The workflow uses immediate per-sample processing (download → quantify → delete FASTQ), so disk space is automatically managed. Only one sample's FASTQs exist at a time.
@@ -406,7 +406,7 @@ steps:
     threads: 32
 ```
 ```bash
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 ```
 
 **Medium drive (1TB):**
@@ -418,7 +418,7 @@ steps:
     threads: 24
 ```
 ```bash
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 ```
 
 **Small drive (500GB):**
@@ -430,7 +430,7 @@ steps:
     threads: 12
 ```
 ```bash
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
 ```
 
 ## See Also

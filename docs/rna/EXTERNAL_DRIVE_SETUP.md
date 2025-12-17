@@ -233,7 +233,7 @@ Always use the provided setup utilities which handle filesystem limitations auto
 python3 scripts/rna/check_environment.py
 
 # Run workflow (auto-handles all setup)
-python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_<species>.yaml
+python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_<species>.yaml
 ```
 
 ### 2. Manual Package Installation

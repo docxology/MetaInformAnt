@@ -1,0 +1,235 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Test type to run'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - fast
+          - network
+          - external
+
+env:
+  PYTHONUNBUFFERED: 1
+  UV_CACHE_DIR: ~/.cache/uv
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.11", "3.12"]
+        test-type: [fast]
+        include:
+          # Add network tests on Ubuntu only
+          - os: ubuntu-latest
+            python-version: "3.12"
+            test-type: network
+          # Add external tool tests on Ubuntu only
+          - os: ubuntu-latest
+            python-version: "3.12"
+            test-type: external
+          # Full test suite on Ubuntu with latest Python
+          - os: ubuntu-latest
+            python-version: "3.12"
+            test-type: all
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
+
+    - name: Set up Python ${{ matrix.python-version }}
+      run: uv python install ${{ matrix.python-version }}
+
+    - name: Install system dependencies (Ubuntu)
+      if: runner.os == 'Linux'
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          muscle \
+          seqkit \
+          sra-toolkit \
+          build-essential \
+          zlib1g-dev
+
+    - name: Install system dependencies (macOS)
+      if: runner.os == 'macOS'
+      run: |
+        brew update
+        brew install \
+          muscle \
+          seqkit \
+          sratoolkit
+
+    - name: Setup test environment
+      run: |
+        echo "Setting up test environment for type: ${{ matrix.test-type }}"
+        bash scripts/package/uv_test_setup.sh --test-type ${{ matrix.test-type }}
+
+    - name: Verify test setup
+      run: |
+        bash scripts/package/uv_test_setup.sh --verify-only
+
+    - name: Run tests
+      run: |
+        case "${{ matrix.test-type }}" in
+          "fast")
+            bash scripts/package/uv_test_optimized.sh fast
+            ;;
+          "network")
+            bash scripts/package/uv_test.sh network
+            ;;
+          "external")
+            bash scripts/package/uv_test.sh external
+            ;;
+          "all")
+            bash scripts/package/uv_test.sh coverage
+            ;;
+          *)
+            bash scripts/package/uv_test.sh all
+            ;;
+        esac
+
+    - name: Upload coverage reports
+      if: matrix.test-type == 'all' && matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+      uses: codecov/codecov-action@v4
+      with:
+        file: ./output/coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+    - name: Upload test artifacts
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results-${{ matrix.os }}-${{ matrix.python-version }}-${{ matrix.test-type }}
+        path: |
+          output/
+          !output/**/.git/
+        retention-days: 7
+
+  test-infrastructure:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+
+    - name: Set up Python 3.12
+      run: uv python install 3.12
+
+    - name: Setup test environment
+      run: bash scripts/package/uv_test_setup.sh --test-type fast
+
+    - name: Test test infrastructure
+      run: uv run pytest tests/test_test_infrastructure.py -v
+
+  quality-checks:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+
+    - name: Set up Python 3.12
+      run: uv python install 3.12
+
+    - name: Setup development environment
+      run: bash scripts/package/uv_dev_setup.sh
+
+    - name: Run code quality checks
+      run: |
+        uv run black --check --diff src/ tests/
+        uv run isort --check-only --diff src/ tests/
+        uv run flake8 src/ tests/
+        uv run mypy src/
+
+    - name: Run security checks
+      run: |
+        uv run bandit -r src/ -f json -o output/security_report.json || true
+        uv run safety check --output json > output/safety_report.json || true
+
+  fat-filesystem-test:
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:latest
+      options: --tmpfs /tmp:rw,noexec,nosuid,size=100m
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: actions/checkout@v4
+      with:
+        repository: astral-sh/uv
+        path: uv-install
+
+    - name: Set up uv
+      run: |
+        cd uv-install
+        cargo build --release
+        sudo cp target/release/uv /usr/local/bin/
+
+    - name: Create FAT-like filesystem simulation
+      run: |
+        # Simulate FAT filesystem limitations
+        sudo mkdir -p /tmp/fat_test
+        sudo mount -t tmpfs -o size=1g,nr_inodes=1000 tmpfs /tmp/fat_test
+        cd /tmp/fat_test
+        git clone ${{ github.server_url }}/${{ github.repository }} .
+
+    - name: Test on simulated FAT filesystem
+      run: |
+        cd /tmp/fat_test
+        bash scripts/package/uv_test_setup.sh --test-type fast
+        bash scripts/package/uv_test_optimized.sh fast
+
+  summary:
+    runs-on: ubuntu-latest
+    needs: [test, test-infrastructure, quality-checks]
+    if: always()
+    steps:
+    - name: Test Summary
+      run: |
+        echo "Test Results Summary:"
+        echo "- Test jobs: ${{ needs.test.result }}"
+        echo "- Infrastructure tests: ${{ needs.test-infrastructure.result }}"
+        echo "- Quality checks: ${{ needs.quality-checks.result }}"
+
+        if [[ "${{ needs.test.result }}" != "success" ]] || \
+           [[ "${{ needs.test-infrastructure.result }}" != "success" ]] || \
+           [[ "${{ needs.quality-checks.result }}" != "success" ]]; then
+          echo "❌ Some checks failed"
+          exit 1
+        else
+          echo "✅ All checks passed"
+        fi
+
+

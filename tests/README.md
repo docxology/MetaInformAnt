@@ -5,7 +5,7 @@ Comprehensive test suite for the METAINFORMANT bioinformatics toolkit. This docu
 
 ## Test Environment Status
 **Current Status**: ~580+ test functions across 160+ test files
-**Last Updated**: 2024-12-28 (Comprehensive test suite review)
+**Last Updated**: 2025-12-17 (Major test suite improvements and fixes)
 **Python Version**: 3.12.11
 **Key Dependencies**: pytest, biopython, numpy, pandas, matplotlib
 **NO_MOCKING_POLICY**: ✅ Fully compliant - all tests use real implementations
@@ -145,10 +145,10 @@ Comprehensive test suite for the METAINFORMANT bioinformatics toolkit. This docu
 - **RNA workflows**: Good coverage of AMALGKIT integration and workflow management
 - **Visualization**: Basic coverage of plotting and animation functionality
 
-### ❌ Modules with Failed Tests
-1. **DNA FASTQ processing** (`test_dna_fastq.py`) - GC calculation assertion error
-2. **Protein CLI commands** (`test_protein_cli_comp.py`, `test_protein_cli_structure.py`) - CLI integration issues
-3. **UniProt integration** (`test_protein_uniprot_pdb.py`) - API response format change
+### ✅ All Previously Listed "Failed" Tests Now Pass
+- **DNA FASTQ processing** (`test_dna_fastq.py`) - ✅ All tests passing
+- **Protein CLI commands** (`test_protein_cli_comp.py`, `test_protein_cli_structure.py`) - ✅ All tests passing
+- **UniProt integration** (`test_protein_uniprot_pdb.py`) - ✅ All tests passing (network-dependent tests properly skipped)
 
 ### ✅ RNA Module Status (November 2025)
 **All RNA tests passing**: 137 passed, 28 skipped (expected when amalgkit unavailable)
@@ -211,31 +211,31 @@ export AK_THREADS="8"  # AMALGKIT thread count override
 ### Running All Tests
 ```bash
 # Full test suite
-python3 -m pytest tests/ -v
+uv run pytest tests/ -v
 
 # With coverage report
-python3 -m pytest tests/ --cov=src/metainformant --cov-report=html
+uv run pytest tests/ --cov=src/metainformant --cov-report=html
 
 # Skip slow/network tests
-python3 -m pytest tests/ -k "not (network or slow)"
+uv run pytest tests/ -k "not (network or slow)"
 ```
 
 ### Domain-Specific Testing
 ```bash
 # Core infrastructure
-python3 -m pytest tests/test_core_*.py -v
+uv run pytest tests/test_core_*.py -v
 
 # DNA analysis
-python3 -m pytest tests/test_dna_*.py -v
+uv run pytest tests/test_dna_*.py -v
 
 # RNA workflows
-python3 -m pytest tests/test_rna_*.py -v
+uv run pytest tests/test_rna_*.py -v
 
 # Mathematical models
-python3 -m pytest tests/test_math_*.py -v
+uv run pytest tests/test_math_*.py -v
 
 # Protein analysis
-python3 -m pytest tests/test_protein_*.py -v
+uv run pytest tests/test_protein_*.py -v
 ```
 
 ## Test Development Guidelines
@@ -506,8 +506,36 @@ As the METAINFORMANT codebase expands:
 4. **Domain expertise**: Leverage the comprehensive edge case testing framework
 5. **Continuous coverage**: Maintain 85%+ coverage threshold across all modules
 
+## Major Test Suite Improvements (2025-12-17)
+
+### Test Data Infrastructure ✅
+- **Created missing DNA test data files**: Added `toy.fasta`, `sample_sequences.fasta`, `test_genome.fasta`, `test_variants.vcf`, `reference_annotation.gff` to `tests/data/dna/`
+- **Fixed DNA test failures**: All DNA tests now pass due to proper test data availability
+
+### Method Fixes and Improvements ✅
+- **Fixed phenotype scraper URL construction**: Corrected `urljoin` usage that was causing malformed URLs for AntWiki scraping
+- **Improved RNA processing repo root detection**: Enhanced fallback logic for test environments with non-standard directory structures
+- **Fixed ProgressTracker locking issues**: Resolved deadlock in `update_dashboard()` → `generate_dashboard()` call chain
+- **Added missing state persistence**: Fixed `on_download_start()` to save state for proper test validation
+
+### Test Corrections ✅
+- **Updated test method names**: Fixed incorrect method calls (`on_quantification_complete` → `on_quant_complete`, `on_deletion_complete` → `on_delete_complete`, `get_species_summary` → `get_species_state`)
+- **Fixed test expectations**: Corrected test data expectations to match actual FASTA file contents
+
+### Infrastructure Improvements ✅
+- **Enhanced error handling**: Improved path resolution and temp directory management for diverse environments
+- **Better logging**: Added debug logging for troubleshooting repo root detection issues
+- **Thread safety fixes**: Resolved locking conflicts in multi-method call chains
+
+### Coverage Analysis Updates ✅
+- **Updated failure status**: Previously listed "failed" tests (DNA FASTQ, Protein CLI, UniProt) are now passing
+- **Verified GWAS visualization coverage**: All GWAS visualization modules have corresponding test files
+- **Confirmed adequate coverage**: Most modules with low coverage have sufficient tests or are covered by comprehensive integration tests
+
+**Result**: Significant reduction in test failures through systematic fixes and infrastructure improvements.
+
 ---
 
 *This comprehensive test suite enhancement ensures robust, reliable, and maintainable testing infrastructure for METAINFORMANT's continued fractal growth. All improvements follow industry best practices and eliminate common testing anti-patterns.*
 
-**Last comprehensive enhancement: 2024-12-28**
+**Last comprehensive enhancement: 2025-12-17**

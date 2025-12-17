@@ -16,19 +16,49 @@ def test_download_reference_genome_skip_if_offline(tmp_path: Path, pytestconfig)
     if pytestconfig.getoption("--no-network", False):
         pytest.skip("Network tests disabled")
 
-    dest_dir = tmp_path / "genome"
-    
+    # Check network connectivity and NCBI datasets API availability
+    import requests
     try:
-        result = download_reference_genome(
-            accession="GCF_000001405.40",  # Human GRCh38
-            dest_dir=dest_dir,
-            include=["genome"],
-        )
-        
-        # May succeed or fail depending on network/NCBI availability
-        assert result["status"] in ["success", "failed"]
-        assert "accession" in result
-        assert result["accession"] == "GCF_000001405.40"
+        # Check basic connectivity
+        response = requests.get("https://www.ncbi.nlm.nih.gov", timeout=5)
+        if response.status_code != 200:
+            pytest.skip("NCBI website not accessible")
+
+        # Check if NCBI datasets API is responsive (this is what the download actually uses)
+        response = requests.head("https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/GCF_000001405.40/download", timeout=10)
+        if response.status_code not in (200, 302, 404):  # 404 is OK, means accession exists but needs different params
+            pytest.skip(f"NCBI datasets API not accessible (status: {response.status_code})")
+    except (requests.RequestException, requests.Timeout):
+        pytest.skip("Network not available for genome download test")
+
+    dest_dir = tmp_path / "genome"
+
+    try:
+        # Use a timeout to prevent hanging on slow downloads
+        import signal
+
+        def timeout_handler(signum, frame):
+            raise TimeoutError("Genome download timed out")
+
+        signal.signal(signal.SIGALRM, timeout_handler)
+        signal.alarm(30)  # 30 second timeout for download attempt
+
+        try:
+            result = download_reference_genome(
+                accession="GCF_000001405.40",  # Human GRCh38
+                dest_dir=dest_dir,
+                include=["genome"],
+            )
+
+            # May succeed or fail depending on network/NCBI availability
+            assert result["status"] in ["success", "failed"]
+            assert "accession" in result
+            assert result["accession"] == "GCF_000001405.40"
+        finally:
+            signal.alarm(0)  # Cancel the alarm
+
+    except TimeoutError:
+        pytest.skip("Genome download timed out - network may be slow")
     except Exception as exc:
         # Graceful failure is acceptable for network tests
         pytest.skip(f"Genome download failed (network may be unavailable): {exc}")
