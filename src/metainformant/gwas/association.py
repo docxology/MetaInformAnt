@@ -306,11 +306,17 @@ def run_gwas(
     Args:
         vcf_path: Path to VCF file
         phenotype_path: Path to phenotype file (TSV with sample_id, trait columns)
-        config: Association configuration
-        output_dir: Optional directory for results
+        config: Association configuration dict with keys like 'model' ('linear' or 'logistic'),
+                'correction' method, etc.
+        output_dir: Optional directory for results (defaults to output/gwas)
 
     Returns:
-        Dictionary with association test results
+        Dictionary with association test results including p-values, effect sizes,
+        and corrected significance thresholds
+
+    Raises:
+        ValueError: If VCF or phenotype files are malformed
+        FileNotFoundError: If input files don't exist
     """
     logger.info(f"run_gwas: Running association tests for {vcf_path}")
 

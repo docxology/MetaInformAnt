@@ -77,14 +77,11 @@ steps:
     # Uses NCBI_EMAIL from environment; override here if needed
     # entrez_email: you@example.com
     search_string: '"Pogonomyrmex barbatus"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
-    resolve_names: yes  # amalgkit v0.12.20+ - translates taxids to scientific names
     redo: yes
-    max_samples: 5  # LIMIT TO 5 SAMPLES FOR TESTING
   integrate:
     fastq_dir: output/amalgkit/pbarbatus_test5/fastq
   config: {}
-  select:
-    mark_missing_rank: species  # amalgkit v0.12.20+ - marks samples lacking species-level taxid
+  select: {}
   getfastq:
     out_dir: output/amalgkit/pbarbatus_test5/fastq
     threads: 12

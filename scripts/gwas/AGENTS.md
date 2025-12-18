@@ -95,3 +95,4 @@ Scripts integrate with:
 - Validation with known GWAS datasets
 
 This GWAS analysis suite provides comprehensive genome-wide association study capabilities for METAINFORMANT workflows.
+

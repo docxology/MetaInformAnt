@@ -60,3 +60,4 @@ Scripts integrate with:
 - Performance optimization for large community datasets
 
 This ecology analysis suite provides comprehensive community ecology analysis capabilities for METAINFORMANT workflows.
+

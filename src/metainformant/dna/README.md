@@ -1,6 +1,6 @@
 # DNA Analysis Module
 
-The `dna` module provides tools for DNA sequence analysis, from basic sequence manipulation to advanced population genetics and phylogenetics. This module handles DNA sequences in various formats and provides both basic operations and complex analytical pipelines.
+The `dna` module provides tools for DNA sequence analysis, from sequence manipulation to population genetics and phylogenetics. This module handles DNA sequences in various formats and provides operations and analytical pipelines.
 
 ## Overview
 
@@ -661,4 +661,4 @@ pop2 = ["TTTT", "TTTA"]
 fst = population.hudson_fst(pop1, pop2)
 ```
 
-This module provides a complete toolkit for DNA sequence analysis, from basic manipulation to advanced evolutionary and population genetic analysis.
+This module provides a toolkit for DNA sequence analysis, from manipulation to evolutionary and population genetic analysis.

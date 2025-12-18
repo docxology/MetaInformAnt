@@ -439,4 +439,4 @@ Comprehensive tests ensure:
   - scipy (statistical functions)
   - scikit-learn (machine learning plots)
 
-This module provides a complete visualization toolkit for biological data analysis and publication-quality figure generation.
+This module provides a visualization toolkit for biological data analysis and figure generation.

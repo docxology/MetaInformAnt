@@ -202,7 +202,7 @@ FAT filesystems don't support symlinks, which affects `uv` virtual environments.
 
 **Solution**: Use the automated setup script:
 ```bash
-bash scripts/package/setup_uv.sh
+bash scripts/package/setup.sh
 ```
 
 This automatically:

@@ -22,6 +22,38 @@ from .deps import check_step_dependencies
 logger = get_logger(__name__)
 
 
+def _amalgkit_supports_resolve_names() -> bool:
+    """Check if the installed amalgkit version supports the resolve_names parameter.
+
+    The resolve_names parameter was added in amalgkit v0.12.20.
+    """
+    try:
+        result = subprocess.run(
+            ["amalgkit", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        if result.returncode == 0:
+            output = result.stdout or result.stderr
+            # Look for version string like "amalgkit version 0.12.19"
+            for line in output.split("\n"):
+                if "version" in line.lower():
+                    # Extract version number
+                    parts = line.split()
+                    for part in parts:
+                        if part.replace(".", "").isdigit() and "." in part:
+                            try:
+                                version = tuple(map(int, part.split(".")))
+                                # resolve_names was added in v0.12.20
+                                return version >= (0, 12, 20)
+                            except ValueError:
+                                continue
+        return False
+    except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.SubprocessError):
+        return False
+
+
 @dataclass
 class AmalgkitWorkflowConfig:
     """Configuration for amalgkit RNA-seq workflow execution.
@@ -142,15 +174,20 @@ def _apply_step_defaults(config: AmalgkitWorkflowConfig) -> None:
     email = os.environ.get("NCBI_EMAIL")
     if email and not md.get("entrez_email"):
         md["entrez_email"] = email
-    # amalgkit v0.12.20+ defaults
-    md.setdefault("resolve_names", "yes")
+    # amalgkit v0.12.20+ defaults - only if version supports it
+    if _amalgkit_supports_resolve_names():
+        md.setdefault("resolve_names", "yes")
     ps["metadata"] = md
 
     # directories
+    select_defaults = {"out_dir": str(config.work_dir), "config_dir": str(config.work_dir / "config_base")}
+    if _amalgkit_supports_resolve_names():  # Also checks for v0.12.20+ features
+        select_defaults["mark_missing_rank"] = "species"
+
     defaults = {
         "integrate": {"out_dir": str(config.work_dir), "fastq_dir": str(config.work_dir / "fastq")},
         "config": {"out_dir": str(config.work_dir), "config": "base"},
-        "select": {"out_dir": str(config.work_dir), "config_dir": str(config.work_dir / "config_base"), "mark_missing_rank": "species"},
+        "select": select_defaults,
         "getfastq": {"out_dir": str(config.work_dir / "fastq")},
         "quant": {"out_dir": str(config.work_dir / "quant")},
         "merge": {"out_dir": str(config.work_dir.parent / "merged")},

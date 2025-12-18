@@ -11,6 +11,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+from ...core.errors import ValidationError
 from ...core.io import read_delimited
 from ...core.logging import get_logger
 from ..amalgkit import getfastq as _getfastq
@@ -206,7 +207,7 @@ def run(
                             meta_path = str(fallback)
                             logger.info(f"   ✓ Using fallback metadata file: {fallback}")
                         else:
-                            raise ValueError(
+                            raise ValidationError(
                                 f"Metadata file {meta_path} lacks 'run' column and no fallback available"
                             )
                     elif rows:

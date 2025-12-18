@@ -1,6 +1,6 @@
 """DNA domain functionality.
 
-This module provides comprehensive DNA sequence analysis tools including:
+This module provides DNA sequence analysis tools including:
 - Sequence I/O (FASTA/FASTQ)
 - Alignment and phylogenetics
 - Population genetics statistics

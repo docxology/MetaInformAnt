@@ -1,6 +1,6 @@
 # RNA Workflow Steps
 
-This directory contains individual step implementations for the METAINFORMANT RNA analysis workflow, providing modular components that can be composed into complete analysis pipelines.
+This directory contains individual step implementations for the METAINFORMANT RNA analysis workflow, providing modular components that can be composed into analysis pipelines.
 
 ## Step Modules
 
@@ -67,7 +67,7 @@ results = execute_workflow(config)
 
 ## Testing
 
-Each step module includes comprehensive tests:
+Each step module includes tests:
 - Input validation and parameter checking
 - Output format verification
 - Error handling and edge cases
@@ -77,7 +77,7 @@ Each step module includes comprehensive tests:
 
 ### Adding New Steps
 1. Follow the established parameter interface
-2. Include comprehensive error handling
+2. Include error handling
 3. Add unit and integration tests
 4. Update workflow planning logic
 
@@ -89,6 +89,6 @@ Each step module includes comprehensive tests:
 
 ## Related Documentation
 
-- See `src/metainformant/rna/README.md` for complete workflow documentation
+- See `src/metainformant/rna/README.md` for workflow documentation
 - See `src/metainformant/rna/workflow.py` for orchestration details
-- See `docs/rna/steps.md` for detailed step-by-step documentation
+- See `docs/rna/steps.md` for step-by-step documentation

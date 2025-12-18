@@ -4,7 +4,7 @@ This directory contains test implementations for METAINFORMANT's internal functi
 
 ## Overview
 
-The tests module provides comprehensive testing for core functionality, module integration, and system validation.
+The tests module provides testing for core functionality, module integration, and system validation.
 
 ## Files
 
@@ -40,7 +40,7 @@ Follows METAINFORMANT's NO_MOCKING_POLICY:
 
 When adding new test functionality:
 1. Follow established testing patterns
-2. Include comprehensive edge case testing
+2. Include edge case testing
 3. Ensure compatibility with CI/CD workflows
 4. Update test documentation and coverage
 

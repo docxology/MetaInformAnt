@@ -1,6 +1,6 @@
 # METAINFORMANT
 
-A bioinformatics and systems biology toolkit for integrated multi-omic analysis, developed with AI assistance for code quality and documentation.
+Bioinformatics toolkit for multi-omic analysis, developed with AI assistance.
 
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
@@ -8,18 +8,18 @@ A bioinformatics and systems biology toolkit for integrated multi-omic analysis,
 
 ## Overview
 
-METAINFORMANT is a modular, extensible framework for biological data analysis spanning multiple domains: genomics, transcriptomics, proteomics, epigenomics, and systems biology. Built with modern Python practices and documentation, it provides tools for bioinformatics research.
+METAINFORMANT analyzes biological data across genomics, transcriptomics, proteomics, epigenomics, and systems biology. Built with Python, it provides bioinformatics research tools.
 
 ### Key Features
 
-- **Multi-Omic Analysis**: DNA, RNA, protein, and epigenome analysis
-- **Statistical & ML Methods**: GWAS, population genetics, machine learning pipelines
-- **Single-Cell Genomics**: Complete scRNA-seq analysis workflows
-- **Network Analysis**: Biological networks, pathways, and community detection
-- **Publication-Quality Visualizations**: High-resolution plots and interactive animations
-- **Modular Architecture**: Use individual modules or compose complete workflows
-- **Documentation**: 70+ README files, guides
-- **Real Implementation Testing**: No mocks - all tests use real methods
+- **Multi-Omic Analysis**: DNA, RNA, protein, and epigenome data
+- **Statistical & ML Methods**: GWAS, population genetics, machine learning
+- **Single-Cell Genomics**: scRNA-seq workflows
+- **Network Analysis**: Biological networks, pathways, community detection
+- **Visualizations**: Plots and animations
+- **Modular Architecture**: Individual modules or complete workflows
+- **Documentation**: 70+ README files
+- **Real Implementation Testing**: No mocks - real methods in tests
 
 ## Quick Start
 
@@ -40,7 +40,7 @@ git clone https://github.com/q/metainformant.git
 cd metainformant
 
 # Automated setup with uv (recommended - handles FAT filesystems automatically)
-bash scripts/package/setup_uv.sh
+bash scripts/package/setup.sh
 
 # Or manual setup with uv
 curl -LsSf https://astral.sh/uv/install.sh | sh  # Install uv if needed
@@ -144,7 +144,7 @@ See `scripts/core/run_demo.py` for the workflow demonstration. Outputs are saved
 
 ### Module Documentation
 
-Each module has comprehensive documentation in `src/metainformant/<module>/README.md` and `docs/<module>/`.
+Each module has documentation in `src/metainformant/<module>/README.md` and `docs/<module>/`.
 
 ## Scripts & Workflows
 
@@ -155,7 +155,7 @@ The [`scripts/`](scripts/) directory contains production-ready workflow orchestr
 - **GWAS**: Genome-scale association studies
 - **Module Orchestrators**: ✅ Complete workflow scripts for all domains (core, DNA, RNA, protein, networks, multiomics, single-cell, quality, simulation, visualization, epigenome, ecology, ontology, phenotype, ML, math, gwas, information, life_events)
 
-See [`scripts/README.md`](scripts/README.md) for complete documentation.
+See [`scripts/README.md`](scripts/README.md) for documentation.
 
 ### CLI Interface
 
@@ -200,7 +200,7 @@ uv run metainformant life-events embed --input data/events.json --output output/
 uv run metainformant --help
 ```
 
-See [`docs/cli.md`](docs/cli.md) for complete CLI documentation.
+See [`docs/cli.md`](docs/cli.md) for CLI documentation.
 
 ## Usage Examples
 

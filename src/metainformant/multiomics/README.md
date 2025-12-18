@@ -320,4 +320,4 @@ uv run pytest tests/test_multiomics_*.py -v
 
 All outputs should be written to `output/multiomics/` directory by default. Use the `save()` method which automatically handles path creation and uses core.io for file operations.
 
-This module enables comprehensive systems biology analysis through multi-omic data integration.
+This module enables systems biology analysis through multi-omic data integration.

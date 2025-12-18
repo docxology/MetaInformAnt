@@ -6,8 +6,19 @@ from typing import Dict
 from Bio import SeqIO
 
 
-def read_fasta(path: str) -> Dict[str, str]:
-    """Read a FASTA file into a dictionary of id -> sequence string."""
+def read_fasta(path: str | Path) -> Dict[str, str]:
+    """Read a FASTA file into a dictionary of sequence IDs to sequences.
+
+    Args:
+        path: Path to FASTA file
+
+    Returns:
+        Dictionary mapping sequence IDs to sequence strings
+
+    Raises:
+        IOError: If file cannot be read or parsed
+        FileNotFoundError: If file does not exist
+    """
     records = SeqIO.parse(path, "fasta")
     seqs: Dict[str, str] = {}
     for rec in records:
@@ -29,7 +40,17 @@ def reverse_complement(seq: str) -> str:
 
 
 def gc_content(seq: str) -> float:
-    """Calculate GC content of a DNA sequence."""
+    """Calculate GC content of a DNA sequence.
+
+    Args:
+        seq: DNA sequence string
+
+    Returns:
+        GC content as a fraction (0.0 to 1.0)
+
+    Raises:
+        ValueError: If sequence contains invalid characters
+    """
     if not seq:
         return 0.0
 
@@ -106,7 +127,8 @@ def dna_complementarity_score(seq1: str, seq2: str) -> float:
         Complementarity score (0-1, where 1 is perfectly complementary)
     """
     if len(seq1) != len(seq2):
-        raise ValueError("Sequences must be of equal length")
+        from ..core.errors import ValidationError
+        raise ValidationError("Sequences must be of equal length")
 
     complement_map = {"A": "T", "T": "A", "C": "G", "G": "C", "N": "N", "a": "t", "t": "a", "c": "g", "g": "c", "n": "n"}
 
@@ -378,7 +400,8 @@ def calculate_melting_temperature(seq: str, method: str = "wallace") -> float:
         else:
             return 64.9 + 41 * (g_count + c_count - 16.4) / total
     else:
-        raise ValueError(f"Unknown method: {method}")
+        from ..core.errors import ValidationError
+        raise ValidationError(f"Unknown method: {method}")
 
 
 def calculate_codon_usage(seq: str) -> dict[str, float]:
@@ -393,7 +416,8 @@ def calculate_codon_usage(seq: str) -> dict[str, float]:
     from collections import Counter
     
     if len(seq) % 3 != 0:
-        raise ValueError("Sequence length must be divisible by 3")
+        from ..core.errors import ValidationError
+        raise ValidationError("Sequence length must be divisible by 3")
 
     codons = [seq[i:i+3].upper() for i in range(0, len(seq), 3)]
     # Exclude stop codons from usage statistics so that codon usage focuses on

@@ -1,6 +1,6 @@
 """GWAS (Genome-Wide Association Studies) functionality.
 
-This module provides a comprehensive end-to-end GWAS pipeline including
+This module provides an end-to-end GWAS pipeline including
 variant data acquisition, quality control, population structure analysis,
 association testing, and visualization.
 """

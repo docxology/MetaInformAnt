@@ -267,7 +267,7 @@ Some workflows require external tools:
 ### RNA Analysis
 - **amalgkit**: RNA-seq workflow orchestration
   ```bash
-  # Install via UV (automatic with setup_uv.sh --with-amalgkit)
+  # Install via UV (automatic with setup.sh --with-amalgkit)
   uv pip install amalgkit
   ```
 

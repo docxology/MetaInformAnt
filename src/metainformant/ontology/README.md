@@ -77,7 +77,7 @@ is_valid, errors = validate_go_ontology(onto)
 if not is_valid:
     print(f"Validation errors: {errors}")
 
-# Write summary with detailed statistics
+# Write summary with statistics
 summary_path = write_go_summary(onto)
 print(f"Summary written to: {summary_path}")
 ```
@@ -287,7 +287,7 @@ ancestors_set = ancestors(onto, "GO:0008150", use_cache=False)
 
 ## Error Handling
 
-All functions include comprehensive error handling:
+All functions include error handling:
 
 ```python
 from metainformant.ontology import load_go_obo, ancestors

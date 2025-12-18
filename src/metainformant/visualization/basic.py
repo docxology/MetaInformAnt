@@ -119,14 +119,17 @@ def heatmap(
     ax: plt.Axes | None = None,
     annot: bool = False,
 ) -> plt.Axes:
-    """Heatmap using seaborn; accepts 2D sequences or DataFrame.
+    """Create a heatmap using seaborn.
 
     Args:
-        data: 2D array or DataFrame
-        cmap: Colormap name
-        cbar: Whether to show colorbar
-        ax: Matplotlib axes (creates new if None)
-        annot: Whether to annotate cells with values
+        data: 2D array or DataFrame to visualize
+        cmap: Colormap name (default: 'viridis')
+        cbar: Whether to show colorbar (default: True)
+        ax: Matplotlib axes to plot on (creates new if None)
+        annot: Whether to annotate cells with values (default: False)
+
+    Returns:
+        Matplotlib axes object containing the heatmap
 
     Returns:
         Matplotlib axes object

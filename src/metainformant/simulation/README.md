@@ -261,7 +261,7 @@ aln = alignment.global_pairwise([seq1, seq2])
 
 ## Parameter Control
 
-All simulations support extensive parameter control:
+All simulations support parameter control:
 
 ```python
 from metainformant.simulation import generate_random_dna, mutate_sequence
@@ -299,7 +299,7 @@ from metainformant.simulation import generate_random_dna, mutate_sequence
 from metainformant.dna.sequences import write_fasta
 import random
 
-# Generate comprehensive sequence dataset
+# Generate sequence dataset
 rng = random.Random(42)
 sequences_list = []
 for _ in range(10000):
@@ -338,7 +338,7 @@ for year in range(10):
 
 ### End-to-End Simulation Pipelines
 
-The module now includes workflow functions for complete simulation pipelines:
+The module now includes workflow functions for simulation pipelines:
 
 ```python
 from metainformant.simulation.workflow import (
@@ -378,7 +378,7 @@ results = run_popgen_simulation_workflow(
 
 ## Validation and Reproducibility
 
-All simulation functions now include comprehensive parameter validation:
+All simulation functions now include parameter validation:
 
 - **Type validation**: Ensures parameters are of correct types
 - **Range validation**: Validates parameter ranges (e.g., Fst in [0,1])
@@ -396,7 +396,7 @@ The simulation module now uses core utilities consistently:
 
 ## Module-Specific Simulation Scripts
 
-The simulation module includes dedicated scripts for each domain module, providing comprehensive synthetic data generation capabilities across all biological domains. These scripts are located in `scripts/simulation/` and can be run standalone or integrated into workflows.
+The simulation module includes dedicated scripts for each domain module, providing synthetic data generation capabilities across all biological domains. These scripts are located in `scripts/simulation/` and can be run standalone or integrated into workflows.
 
 ### Available Simulation Scripts
 
@@ -469,4 +469,4 @@ aln = alignment.global_pairwise(list(seqs.values())[:2])
 
 See `scripts/simulation/README.md` for detailed documentation and usage examples for each script.
 
-This module provides powerful tools for synthetic data generation and hypothesis testing, enabling researchers to explore biological systems in controlled computational environments.
+This module provides tools for synthetic data generation and hypothesis testing, enabling researchers to explore biological systems in controlled computational environments.

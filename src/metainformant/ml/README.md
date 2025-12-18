@@ -4,7 +4,7 @@ The `ml` module provides statistical and machine learning methods for biological
 
 ## Overview
 
-This module offers a comprehensive toolkit for applying machine learning techniques to biological datasets, with emphasis on biological interpretation and robust validation.
+This module offers a toolkit for applying machine learning techniques to biological datasets, with emphasis on biological interpretation and validation.
 
 ### Module Architecture
 
@@ -469,4 +469,4 @@ print(f"Bootstrap 95% CI: {bootstrap_results['ci_95']}")
 - **Optional**: xgboost, lightgbm for gradient boosting
 - **Deep Learning**: tensorflow/pytorch for neural networks (optional)
 
-This module provides a complete machine learning toolkit tailored for biological data analysis and interpretation.
+This module provides a machine learning toolkit tailored for biological data analysis and interpretation.

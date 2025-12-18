@@ -1,6 +1,6 @@
 # Source Code Directory
 
-This directory contains the complete METAINFORMANT source code organized into a modular, domain-specific structure.
+This directory contains the METAINFORMANT source code organized into a modular, domain-specific structure.
 
 ## Structure Overview
 
@@ -188,14 +188,14 @@ trees.visualize_tree(tree, "output/tree.png")
 ## Documentation
 
 Each module includes:
-- **Comprehensive README.md** with usage examples
+- **README.md** with usage examples
 - **API documentation** for all public functions
 - **Integration examples** showing cross-module usage
 - **Performance notes** and best practices
 
 ## Testing
 
-The source code includes extensive tests:
+The source code includes tests:
 - Unit tests for individual functions
 - Integration tests for cross-module functionality
 - Performance benchmarks for scalability
@@ -206,7 +206,7 @@ The source code includes extensive tests:
 ### Adding New Modules
 1. Create new subdirectory in `src/metainformant/`
 2. Follow established patterns for `__init__.py` and module structure
-3. Add comprehensive tests in `tests/` directory
+3. Add tests in `tests/` directory
 4. Update main package `__init__.py` exports
 5. Create detailed README.md documentation
 
@@ -217,4 +217,4 @@ The source code includes extensive tests:
 - Maintain backward compatibility when possible
 - Add type hints for better IDE support
 
-This source code organization provides a solid foundation for comprehensive biological data analysis while maintaining modularity and extensibility.
+This source code organization provides a foundation for biological data analysis while maintaining modularity and extensibility.

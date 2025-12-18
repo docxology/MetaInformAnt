@@ -28,6 +28,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+from ...core.errors import ValidationError
 from ...core.io import read_delimited, write_delimited
 from ...core.logging import get_logger
 from ..amalgkit import run_amalgkit
@@ -52,11 +53,11 @@ def _get_sample_list(metadata_path: Path) -> list[str]:
         rows = list(read_delimited(metadata_path, delimiter="\t"))
         
         if not rows:
-            raise ValueError(f"Metadata file {metadata_path} is empty")
+            raise ValidationError(f"Metadata file {metadata_path} is empty")
         
         if "run" not in rows[0]:
             available_cols = list(rows[0].keys()) if rows else []
-            raise ValueError(
+            raise ValidationError(
                 f"Metadata file {metadata_path} missing 'run' column. "
                 f"Available columns: {available_cols}"
             )
@@ -671,7 +672,7 @@ def run_download_quant_workflow(
     # Get sample list
     rows = list(read_delimited(metadata_path, delimiter="\t"))
     if not rows or "run" not in rows[0]:
-        raise ValueError(f"Metadata file missing 'run' column: {metadata_path}")
+        raise ValidationError(f"Metadata file missing 'run' column: {metadata_path}")
     
     run_ids = [row.get("run", "").strip() for row in rows]
     run_ids = [r for r in run_ids if r]

@@ -1,10 +1,10 @@
 # Single Cell Analysis Module
 
-The `singlecell` module provides comprehensive tools for single-cell transcriptomic analysis, including preprocessing, dimensionality reduction, clustering, and trajectory inference.
+The `singlecell` module provides tools for single-cell transcriptomic analysis, including preprocessing, dimensionality reduction, clustering, and trajectory inference.
 
 ## Overview
 
-This module handles the complete single-cell RNA sequencing analysis pipeline from raw count matrices to biological interpretation.
+This module handles the single-cell RNA sequencing analysis pipeline from raw count matrices to biological interpretation.
 
 ### Module Architecture
 
@@ -437,4 +437,4 @@ Comprehensive tests cover:
 - Scanpy for core single-cell algorithms
 - Optional: scVelo for trajectory analysis, scikit-learn for additional ML methods
 
-This module provides a complete toolkit for single-cell transcriptomic analysis.
+This module provides a toolkit for single-cell transcriptomic analysis.

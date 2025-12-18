@@ -1,6 +1,6 @@
 # Protein Analysis Module
 
-The `protein` module provides comprehensive tools for proteomic analysis, including sequence manipulation, structure integration, and functional annotation.
+The `protein` module provides tools for proteomic analysis, including sequence manipulation, structure integration, and functional annotation.
 
 ## Overview
 

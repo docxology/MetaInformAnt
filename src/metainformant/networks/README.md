@@ -483,4 +483,4 @@ Comprehensive tests cover:
 - **Resolution optimization**: Use fewer points (n_points=10) for faster optimization
 - **Stability assessment**: Reduce n_runs for faster assessment on large networks
 
-This module provides comprehensive tools for biological network analysis and interpretation.
+This module provides tools for biological network analysis and interpretation.

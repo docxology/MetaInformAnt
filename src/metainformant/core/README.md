@@ -301,7 +301,7 @@ Utilities are designed to be easily extended with new formats, algorithms, or in
 
 ## Error Handling
 
-All core utilities implement comprehensive error handling:
+All core utilities implement error handling:
 - Clear error messages with context
 - Appropriate exception types
 - Graceful degradation for optional features
@@ -309,7 +309,7 @@ All core utilities implement comprehensive error handling:
 
 ## Testing
 
-Each submodule includes comprehensive tests covering:
+Each submodule includes tests covering:
 - Normal operation scenarios
 - Error conditions and edge cases
 - Performance characteristics
@@ -323,7 +323,7 @@ Each submodule includes comprehensive tests covering:
 
 ## Usage in Other Modules
 
-Core utilities are designed to be imported and used throughout the METAINFORMANT package. Here are comprehensive examples showing how core utilities are used across different modules:
+Core utilities are designed to be imported and used throughout the METAINFORMANT package. Here are examples showing how core utilities are used across different modules:
 
 ### Configuration Management Across Workflows
 

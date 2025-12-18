@@ -422,3 +422,4 @@ class TestPerformanceTracker:
         assert avg_time == 1.5
 
 
+

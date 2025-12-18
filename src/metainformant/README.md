@@ -1,10 +1,10 @@
 # METAINFORMANT Package Documentation
 
-This directory contains the core METAINFORMANT package, a comprehensive bioinformatics and systems biology toolkit for integrated multi-omic analysis.
+This directory contains the core METAINFORMANT package, a bioinformatics and systems biology toolkit for integrated multi-omic analysis.
 
 ## Package Overview
 
-METAINFORMANT provides a modular, extensible framework for biological data analysis across multiple domains, from molecular sequences to complex biological systems. The package is organized into specialized modules that can be used independently or composed together for comprehensive analyses.
+METAINFORMANT provides a framework for biological data analysis across multiple domains, from molecular sequences to complex biological systems. The package is organized into specialized modules that can be used independently or composed together for analyses.
 
 ## Core Modules
 
@@ -238,7 +238,7 @@ Genome-Wide Association Studies workflow:
 - **Population Structure**: PCA and kinship matrix computation
 - **Association Testing**: Linear and logistic regression models
 - **Multiple Testing**: Bonferroni, FDR, and genomic control correction
-- **Visualization**: Manhattan plots, Q-Q plots, regional plots, and comprehensive visualizations
+- **Visualization**: Manhattan plots, Q-Q plots, regional plots, and visualizations
 - **Data Acquisition**: SRA download and reference genome retrieval
 
 See [`gwas/README.md`](gwas/README.md) for detailed documentation.
@@ -257,7 +257,7 @@ New organisms, assays, and analysis methods can be added incrementally without d
 Efficient implementations with parallel processing capabilities and memory-conscious data structures.
 
 ### Reproducibility
-Consistent random seeds, deterministic algorithms, and comprehensive configuration management.
+Consistent random seeds, deterministic algorithms, and configuration management.
 
 ## Usage Patterns
 
@@ -354,7 +354,7 @@ results = analyze_life_course([sequence], outcomes=None)
 
 ## Testing
 
-The package includes comprehensive tests for all modules:
+The package includes tests for all modules:
 - Unit tests for individual functions
 - Integration tests for cross-module functionality
 - Performance benchmarks for critical operations
@@ -370,7 +370,7 @@ pytest tests/
 ### Adding New Modules
 1. Create new subdirectory in `src/metainformant/`
 2. Implement core functionality in module files
-3. Add comprehensive tests in `tests/`
+3. Add tests in `tests/`
 4. Update documentation in `docs/`
 5. Add module to main `__init__.py`
 

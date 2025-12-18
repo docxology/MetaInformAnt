@@ -1,6 +1,6 @@
 # Information Theory Module
 
-The `information` module provides comprehensive information-theoretic methods for analyzing biological data, including both syntactic (Shannon entropy, mutual information) and semantic (information content, semantic similarity) information measures.
+The `information` module provides information-theoretic methods for analyzing biological data, including both syntactic (Shannon entropy, mutual information) and semantic (information content, semantic similarity) information measures.
 
 ## Overview
 
@@ -729,7 +729,7 @@ from metainformant.information import information_workflow, information_report
 dna_seqs = sequences.read_fasta("data/sequences.fasta")
 seq_list = list(dna_seqs.values())
 
-# Run complete workflow
+# Run workflow
 results = information_workflow(seq_list, k_values=[1, 2, 3], output_dir="output/information")
 
 # Generate report
@@ -927,5 +927,5 @@ real_profile = information_profile(real_sequences, k=3)
 - Tsallis, C. (1988). Possible generalization of Boltzmann-Gibbs statistics. Journal of Statistical Physics, 52(1-2), 479-487.
 - Lin, J. (1991). Divergence measures based on the Shannon entropy. IEEE Transactions on Information Theory, 37(1), 145-151.
 
-This module provides comprehensive information-theoretic tools for analyzing biological data across multiple scales and domains.
+This module provides information-theoretic tools for analyzing biological data across multiple scales and domains.
 

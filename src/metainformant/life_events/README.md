@@ -1,6 +1,6 @@
 # Life Events Module
 
-The `life_events` module provides comprehensive tools for analyzing human life courses as temporal event sequences, enabling prediction of life outcomes from event data using NLP-inspired methods.
+The `life_events` module provides tools for analyzing human life courses as temporal event sequences, enabling prediction of life outcomes from event data using NLP-inspired methods.
 
 ## Overview
 
@@ -68,7 +68,7 @@ flowchart LR
 - **Prediction Models**: Classification and regression models for predicting life outcomes
 - **Visualization**: Timeline plots, embedding visualizations, attention heatmaps, importance plots
 - **Model Interpretation**: Event importance, temporal patterns, feature attribution
-- **Workflow Integration**: End-to-end pipelines for complete analysis
+- **Workflow Integration**: End-to-end pipelines for analysis
 - **Utility Functions**: Data loading, validation, and statistics computation
 - **Integration**: Seamless integration with ML, phenotype, visualization, and multi-omics modules
 
@@ -862,7 +862,7 @@ python3 scripts/life_events/validate_data.py \
 
 ## Complete End-to-End Workflow
 
-Here's a complete example showing the full workflow from synthetic data generation through visualization:
+Here's an example showing the full workflow from synthetic data generation through visualization:
 
 ```python
 from metainformant.life_events import (
@@ -890,7 +890,7 @@ sequences, outcomes = generate_synthetic_life_events(
 # Step 2: Load configuration (optional)
 config = load_life_events_config("config/life_events_template.yaml")
 
-# Step 3: Run complete analysis workflow
+# Step 3: Run analysis workflow
 results = analyze_life_course(
     sequences,
     outcomes=outcomes,
@@ -1326,7 +1326,7 @@ results = analyze_life_course(
 
 ### Configuration Template
 
-A complete configuration template is available at `config/life_events_template.yaml`. This template includes all configurable sections with comments explaining each parameter.
+A configuration template is available at `config/life_events_template.yaml`. This template includes all configurable sections with comments explaining each parameter.
 
 ### Example Configuration File (YAML)
 
@@ -1551,7 +1551,7 @@ If configuration loading fails:
 - Check that required fields are present
 - Ensure environment variable names use correct prefix (LE_)
 - Check file paths in configuration are absolute or relative to working directory
-- See `config/life_events_template.yaml` for a complete example configuration
+- See `config/life_events_template.yaml` for an example configuration
 
 ### Missing Optional Dependencies
 

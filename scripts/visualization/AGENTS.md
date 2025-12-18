@@ -61,3 +61,4 @@ Scripts integrate with:
 - Performance optimization for large data visualization
 
 This visualization suite provides comprehensive plotting capabilities for METAINFORMANT workflows.
+

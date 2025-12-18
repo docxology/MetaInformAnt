@@ -59,3 +59,4 @@ Scripts integrate with:
 - Performance optimization for large proteomes
 
 This protein analysis suite provides comprehensive protein characterization capabilities for METAINFORMANT workflows.
+

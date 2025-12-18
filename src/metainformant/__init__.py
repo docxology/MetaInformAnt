@@ -1,6 +1,6 @@
-"""METAINFORMANT: Comprehensive Bioinformatics and Systems Biology Toolkit.
+"""METAINFORMANT: Bioinformatics and Systems Biology Toolkit.
 
-A modular, extensible Python package for biological data analysis, from molecular
+A Python package for biological data analysis, from molecular
 sequences to complex biological systems. Designed for researchers, computational
 biologists, and bioinformaticians working with multi-scale biological data.
 

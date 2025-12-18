@@ -102,3 +102,4 @@ Scripts integrate with:
 - Validation with known life course analysis methods
 
 This life events analysis suite provides comprehensive life course trajectory analysis capabilities for METAINFORMANT workflows.
+

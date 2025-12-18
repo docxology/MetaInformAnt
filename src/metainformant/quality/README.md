@@ -142,7 +142,7 @@ gc_metrics = calculate_gc_metrics(gc_values)
 lengths = [100, 150, 120, 140]
 length_metrics = calculate_length_metrics(lengths)
 
-# Generate comprehensive quality report
+# Generate quality report
 report = generate_quality_report({
     "quality": metrics,
     "gc": gc_metrics,
@@ -230,7 +230,7 @@ qc_variants = apply_qc_filters(vcf_data, maf_threshold=0.05, missing_threshold=0
 
 ## Testing
 
-Quality assessment tools are thoroughly tested with:
+Quality assessment tools are tested with:
 - Known good and bad datasets
 - Performance benchmarking
 - Edge case handling

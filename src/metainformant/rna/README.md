@@ -1,6 +1,6 @@
 # RNA Analysis Module
 
-The `rna` module provides comprehensive tools for transcriptomic analysis, focusing on RNA sequencing data processing, quantification, and workflow orchestration. This module integrates with external tools like amalgkit while providing a consistent Python interface.
+The `rna` module provides tools for transcriptomic analysis, focusing on RNA sequencing data processing, quantification, and workflow orchestration. This module integrates with external tools like amalgkit while providing a consistent Python interface.
 
 ## Overview
 
@@ -76,7 +76,7 @@ flowchart LR
 ## Key Components
 
 ### Amalgkit Integration (`amalgkit.py`)
-Thin, modular wrapper around the external amalgkit CLI toolkit for transcriptomic meta-analysis.
+Thin wrapper around the external amalgkit CLI toolkit for transcriptomic meta-analysis.
 
 **Key Features:**
 - CLI availability checking and validation
@@ -124,7 +124,7 @@ config = AmalgkitWorkflowConfig(
 # Plan workflow steps
 steps = plan_workflow(config)
 
-# Execute complete workflow
+# Execute workflow
 results = execute_workflow(config)
 for step, result in results.items():
     print(f"{step}: {result.returncode}")

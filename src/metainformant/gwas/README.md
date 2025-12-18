@@ -4,7 +4,7 @@ Genome-Wide Association Studies (GWAS) module for identifying genetic variants a
 
 ## Overview
 
-This module provides comprehensive GWAS functionality integrated with METAINFORMANT's bioinformatics ecosystem.
+This module provides GWAS functionality integrated with METAINFORMANT's bioinformatics ecosystem.
 
 ### Module Architecture
 

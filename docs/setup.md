@@ -7,7 +7,7 @@ Environment management uses `uv` with Python 3.11+.
 ```bash
 git clone https://github.com/q/metainformant.git
 cd metainformant
-bash scripts/package/setup_uv.sh --ncbi-email "you@example.com"
+bash scripts/package/setup.sh --ncbi-email "you@example.com"
 # Default setup installs dev + scientific dependencies + amalgkit
 # You can either use uv run directly, or activate the venv for the shell:
 # uv run python -V
@@ -22,7 +22,7 @@ On FAT-formatted external drives, setup is **automatic**:
 
 ```bash
 # Same command works on FAT filesystems
-bash scripts/package/setup_uv.sh
+bash scripts/package/setup.sh
 
 # The script automatically:
 # - Detects FAT filesystem

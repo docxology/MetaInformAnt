@@ -138,9 +138,11 @@ def build_amalgkit_command(subcommand: str, params: AmalgkitParams | None = None
 
 
 def check_cli_available() -> tuple[bool, str]:
-    """Check if `amalgkit` is available on PATH.
+    """Check if amalgkit CLI is available on PATH.
 
-    Returns a tuple: (is_available, help_or_version_text_or_error_message)
+    Returns:
+        Tuple of (is_available, help_text_or_error). If available, returns
+        (True, version_string). If not available, returns (False, error_message).
     """
     # Check standard PATH first
     amalgkit_path = shutil.which("amalgkit")

@@ -1,6 +1,6 @@
 # Natural Selection Experiments
 
-This package contains a comprehensive simulation of natural selection dynamics with signal processing constraints, implementing the mathematical framework from quantitative genetics and evolutionary theory.
+This package contains a simulation of natural selection dynamics with signal processing constraints, implementing the mathematical framework from quantitative genetics and evolutionary theory.
 
 ## Overview
 

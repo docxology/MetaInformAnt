@@ -60,3 +60,4 @@ Scripts integrate with:
 - Performance optimization for genome-wide datasets
 
 This epigenome analysis suite provides comprehensive epigenetic analysis capabilities for METAINFORMANT workflows.
+

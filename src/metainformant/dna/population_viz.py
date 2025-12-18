@@ -214,8 +214,9 @@ def plot_pca_results(
     Returns:
         matplotlib Figure object
     """
+    from ..core.errors import ValidationError
     if pca_result.get("status") != "success":
-        raise ValueError("PCA result status is not 'success'")
+        raise ValidationError("PCA result status is not 'success'")
     
     pcs = np.array(pca_result["pcs"])
     explained_variance_ratio = pca_result.get("explained_variance_ratio", [])
@@ -283,8 +284,9 @@ def plot_kinship_matrix(
     Returns:
         matplotlib Figure object
     """
+    from ..core.errors import ValidationError
     if kinship_result.get("status") != "success":
-        raise ValueError("Kinship result status is not 'success'")
+        raise ValidationError("Kinship result status is not 'success'")
     
     kinship_matrix = np.array(kinship_result["kinship_matrix"])
     
