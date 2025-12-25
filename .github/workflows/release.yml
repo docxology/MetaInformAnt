@@ -1,0 +1,242 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      release_type:
+        description: 'Release type'
+        required: true
+        default: 'test'
+        type: choice
+        options:
+          - test
+          - production
+
+env:
+  PYTHONUNBUFFERED: 1
+
+jobs:
+  release-validation:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.get_version.outputs.version }}
+      is_prerelease: ${{ steps.get_version.outputs.is_prerelease }}
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+
+    - name: Set up Python 3.12
+      run: uv python install 3.12
+
+    - name: Get version info
+      id: get_version
+      run: |
+        # Extract version from pyproject.toml
+        VERSION=$(grep '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+        # Check if prerelease (contains alpha, beta, rc)
+        if [[ "$VERSION" =~ (alpha|beta|rc) ]]; then
+          echo "is_prerelease=true" >> $GITHUB_OUTPUT
+        else
+          echo "is_prerelease=false" >> $GITHUB_OUTPUT
+        fi
+
+        echo "Version: $VERSION, Prerelease: ${{ steps.get_version.outputs.is_prerelease }}"
+
+  build-release:
+    runs-on: ubuntu-latest
+    needs: release-validation
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
+
+    - name: Set up Python 3.12
+      run: uv python install 3.12
+
+    - name: Install build dependencies
+      run: uv add --dev build twine
+
+    - name: Build distribution packages
+      run: bash scripts/package/build.sh --check
+
+    - name: Validate packages
+      run: |
+        # List built packages
+        echo "Built packages:"
+        ls -la dist/
+
+        # Validate with twine
+        twine check dist/*.whl dist/*.tar.gz
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: release-artifacts
+        path: |
+          dist/
+          !dist/**/.git/
+        retention-days: 30
+
+  build-docs:
+    runs-on: ubuntu-latest
+    needs: release-validation
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+
+    - name: Set up Python 3.12
+      run: uv python install 3.12
+
+    - name: Install documentation dependencies
+      run: |
+        uv add --dev sphinx sphinx-autodoc-typehints myst-parser nbsphinx
+
+    - name: Build documentation
+      run: bash scripts/package/uv_docs.sh build
+
+    - name: Build PDF documentation (optional)
+      run: |
+        # Try to build PDF if LaTeX is available
+        if command -v pdflatex &> /dev/null; then
+          bash scripts/package/uv_docs.sh build --format pdf
+        else
+          echo "LaTeX not available, skipping PDF build"
+        fi
+
+    - name: Upload documentation
+      uses: actions/upload-artifact@v4
+      with:
+        name: documentation
+        path: |
+          docs/_build/
+          !docs/_build/**/.git/
+        retention-days: 30
+
+  publish-test:
+    runs-on: ubuntu-latest
+    needs: [release-validation, build-release]
+    if: github.event.inputs.release_type == 'test' || needs.release-validation.outputs.is_prerelease == 'true'
+
+    steps:
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: release-artifacts
+        path: dist/
+
+    - name: Publish to TestPyPI
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.TEST_PYPI_API_TOKEN }}
+      run: |
+        twine upload --repository testpypi dist/*
+
+  publish-production:
+    runs-on: ubuntu-latest
+    needs: [release-validation, build-release, build-docs]
+    if: github.event_name == 'release' && needs.release-validation.outputs.is_prerelease == 'false' && github.event.inputs.release_type != 'test'
+
+    steps:
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: release-artifacts
+        path: dist/
+
+    - name: Download documentation
+      uses: actions/download-artifact@v4
+      with:
+        name: documentation
+        path: docs-build/
+
+    - name: Publish to PyPI
+      env:
+        TWINE_USERNAME: __token__
+        TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+      run: |
+        twine upload dist/*
+
+    - name: Create GitHub release assets
+      if: github.event_name == 'release'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          dist/*.whl
+          dist/*.tar.gz
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  deploy-docs:
+    runs-on: ubuntu-latest
+    needs: [release-validation, build-docs]
+    if: github.event_name == 'release' && needs.release-validation.outputs.is_prerelease == 'false'
+
+    steps:
+    - name: Download documentation
+      uses: actions/download-artifact@v4
+      with:
+        name: documentation
+        path: docs-build/
+
+    - name: Deploy to GitHub Pages
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: docs-build/html
+        cname: docs.metainformant.org  # Optional: if you have a custom domain
+
+  summary:
+    runs-on: ubuntu-latest
+    needs: [release-validation, build-release, build-docs, publish-test, publish-production, deploy-docs]
+    if: always()
+
+    steps:
+    - name: Release Summary
+      run: |
+        echo "Release Summary for version ${{ needs.release-validation.outputs.version }}:"
+        echo "- Release validation: ${{ needs.release-validation.result }}"
+        echo "- Build release: ${{ needs.build-release.result }}"
+        echo "- Build docs: ${{ needs.build-docs.result }}"
+        echo "- TestPyPI publish: ${{ needs.publish-test.result }}"
+        echo "- PyPI publish: ${{ needs.publish-production.result }}"
+        echo "- Docs deploy: ${{ needs.deploy-docs.result }}"
+
+        if [[ "${{ needs.release-validation.result }}" == "success" ]] && \
+           [[ "${{ needs.build-release.result }}" == "success" ]]; then
+          echo "✅ Release build successful"
+          if [[ "${{ needs.publish-production.result }}" == "success" ]]; then
+            echo "✅ Production release completed"
+          elif [[ "${{ needs.publish-test.result }}" == "success" ]]; then
+            echo "✅ Test release completed"
+          fi
+        else
+          echo "❌ Release failed"
+          exit 1
+        fi
