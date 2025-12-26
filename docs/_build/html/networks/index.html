@@ -1,0 +1,422 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Networks: Biological Network Analysis &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Single-Cell Genomics" href="../singlecell/index.html" />
+    <link rel="prev" title="Machine Learning: Biological Data Analysis" href="../ml/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Networks: Biological Network Analysis</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#core-components">Core Components</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#graph-analysis"><span class="xref myst">Graph Analysis</span></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#community-detection"><span class="xref myst">Community Detection</span></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#protein-protein-interaction-networks"><span class="xref myst">Protein-Protein Interaction Networks</span></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#gene-regulatory-networks"><span class="xref myst">Gene Regulatory Networks</span></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pathway-analysis"><span class="xref myst">Pathway Analysis</span></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#architecture">Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#key-features">Key Features</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#comprehensive-network-types">Comprehensive Network Types</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#multiple-analysis-methods">Multiple Analysis Methods</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#integration-capabilities">Integration Capabilities</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#quick-start">Quick Start</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#basic-network-analysis">Basic Network Analysis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id1">Community Detection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pathway-enrichment">Pathway Enrichment</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#integration-with-other-modules">Integration with Other Modules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#with-expression-data">With Expression Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#with-protein-data">With Protein Data</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#performance-features">Performance Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#testing">Testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#related-documentation">Related Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Networks: Biological Network Analysis</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/networks/index.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="networks-biological-network-analysis">
+<h1>Networks: Biological Network Analysis<a class="headerlink" href="#networks-biological-network-analysis" title="Link to this heading"></a></h1>
+<p>The networks module provides comprehensive tools for analyzing biological networks including protein interaction networks, regulatory networks, pathway analysis, and community detection.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>This module handles various types of biological networks and provides algorithms for network construction, analysis, and visualization. It supports multiple network types and provides both basic graph operations and advanced biological network analysis.</p>
+</section>
+<section id="core-components">
+<h2>Core Components<a class="headerlink" href="#core-components" title="Link to this heading"></a></h2>
+<section id="graph-analysis">
+<h3><a class="reference internal" href="graph.html"><span class="std std-doc">Graph Analysis</span></a><a class="headerlink" href="#graph-analysis" title="Link to this heading"></a></h3>
+<p>Fundamental graph operations, metrics, and utilities:</p>
+<ul class="simple">
+<li><p>Network creation from various data sources</p></li>
+<li><p>Centrality measures (degree, betweenness, closeness)</p></li>
+<li><p>Shortest path analysis</p></li>
+<li><p>Network filtering and manipulation</p></li>
+<li><p>Performance optimization for large networks</p></li>
+</ul>
+</section>
+<section id="community-detection">
+<h3><a class="reference internal" href="community.html"><span class="std std-doc">Community Detection</span></a><a class="headerlink" href="#community-detection" title="Link to this heading"></a></h3>
+<p>Algorithms for identifying functional modules and communities:</p>
+<ul class="simple">
+<li><p>Louvain and Leiden clustering algorithms</p></li>
+<li><p>Modularity optimization</p></li>
+<li><p>Community functional analysis</p></li>
+<li><p>Hierarchical community detection</p></li>
+<li><p>Community stability assessment</p></li>
+</ul>
+</section>
+<section id="protein-protein-interaction-networks">
+<h3><a class="reference internal" href="ppi.html"><span class="std std-doc">Protein-Protein Interaction Networks</span></a><a class="headerlink" href="#protein-protein-interaction-networks" title="Link to this heading"></a></h3>
+<p>Analysis of protein interaction networks:</p>
+<ul class="simple">
+<li><p>STRING database integration</p></li>
+<li><p>Interaction prediction methods</p></li>
+<li><p>Network topology analysis</p></li>
+<li><p>Functional enrichment of modules</p></li>
+<li><p>Interaction confidence filtering</p></li>
+</ul>
+</section>
+<section id="gene-regulatory-networks">
+<h3><a class="reference internal" href="regulatory.html"><span class="std std-doc">Gene Regulatory Networks</span></a><a class="headerlink" href="#gene-regulatory-networks" title="Link to this heading"></a></h3>
+<p>Regulatory network inference and analysis:</p>
+<ul class="simple">
+<li><p>Network inference from expression data</p></li>
+<li><p>Transcription factor metadata</p></li>
+<li><p>Regulatory motif detection</p></li>
+<li><p>Regulation strength analysis</p></li>
+<li><p>Feed-forward and feedback loop identification</p></li>
+</ul>
+</section>
+<section id="pathway-analysis">
+<h3><a class="reference internal" href="pathway.html"><span class="std std-doc">Pathway Analysis</span></a><a class="headerlink" href="#pathway-analysis" title="Link to this heading"></a></h3>
+<p>Biological pathway enrichment and analysis:</p>
+<ul class="simple">
+<li><p>KEGG, Reactome, and GO pathway integration</p></li>
+<li><p>Enrichment analysis algorithms</p></li>
+<li><p>Pathway activity inference</p></li>
+<li><p>Multi-omics pathway analysis</p></li>
+<li><p>Pathway network construction</p></li>
+</ul>
+</section>
+</section>
+<section id="architecture">
+<h2>Architecture<a class="headerlink" href="#architecture" title="Link to this heading"></a></h2>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart TD
+    A[Input Data] --&gt; B[Network Construction]
+    B --&gt; C[Graph Analysis]
+    C --&gt; D[Community Detection]
+    C --&gt; E[Pathway Enrichment]
+    C --&gt; F[Regulatory Analysis]
+    D --&gt; G[Functional Analysis]
+    E --&gt; G
+    F --&gt; G
+    G --&gt; H[Visualization]
+    H --&gt; I[Biological Insights]
+</pre></div>
+</div>
+</section>
+<section id="key-features">
+<h2>Key Features<a class="headerlink" href="#key-features" title="Link to this heading"></a></h2>
+<section id="comprehensive-network-types">
+<h3>Comprehensive Network Types<a class="headerlink" href="#comprehensive-network-types" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Protein-Protein Interactions</strong>: Physical and functional protein associations</p></li>
+<li><p><strong>Regulatory Networks</strong>: Transcriptional regulation and signaling</p></li>
+<li><p><strong>Pathway Networks</strong>: Metabolic and signaling pathways</p></li>
+<li><p><strong>Correlation Networks</strong>: Gene co-expression and correlation patterns</p></li>
+<li><p><strong>Community Networks</strong>: Functional modules and complexes</p></li>
+</ul>
+</section>
+<section id="multiple-analysis-methods">
+<h3>Multiple Analysis Methods<a class="headerlink" href="#multiple-analysis-methods" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Community Detection</strong>: Louvain, Leiden, hierarchical, spectral clustering</p></li>
+<li><p><strong>Centrality Analysis</strong>: Degree, betweenness, closeness, eigenvector centrality</p></li>
+<li><p><strong>Enrichment Analysis</strong>: Hypergeometric, Fisher’s exact, binomial tests</p></li>
+<li><p><strong>Network Inference</strong>: Correlation, regression, mutual information, Granger causality</p></li>
+</ul>
+</section>
+<section id="integration-capabilities">
+<h3>Integration Capabilities<a class="headerlink" href="#integration-capabilities" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Multi-omics Integration</strong>: Combine networks across different data types</p></li>
+<li><p><strong>Functional Annotation</strong>: Gene Ontology and pathway enrichment</p></li>
+<li><p><strong>Expression Correlation</strong>: Link networks to expression patterns</p></li>
+<li><p><strong>Database Integration</strong>: STRING, KEGG, Reactome, GO databases</p></li>
+</ul>
+</section>
+</section>
+<section id="quick-start">
+<h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h2>
+<section id="basic-network-analysis">
+<h3>Basic Network Analysis<a class="headerlink" href="#basic-network-analysis" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.networks</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_network</span><span class="p">,</span> <span class="n">add_edges_from_interactions</span><span class="p">,</span> <span class="n">network_metrics</span><span class="p">,</span> <span class="n">centrality_measures</span>
+
+<span class="c1"># Create network from interactions</span>
+<span class="n">nodes</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;gene1&quot;</span><span class="p">,</span> <span class="s2">&quot;gene2&quot;</span><span class="p">,</span> <span class="s2">&quot;gene3&quot;</span><span class="p">]</span>
+<span class="n">network</span> <span class="o">=</span> <span class="n">create_network</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">directed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="c1"># Add edges from interaction list</span>
+<span class="n">interactions</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s2">&quot;gene1&quot;</span><span class="p">,</span> <span class="s2">&quot;gene2&quot;</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;gene2&quot;</span><span class="p">,</span> <span class="s2">&quot;gene3&quot;</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;gene3&quot;</span><span class="p">,</span> <span class="s2">&quot;gene1&quot;</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">)</span>
+<span class="p">]</span>
+
+<span class="n">add_edges_from_interactions</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">interactions</span><span class="p">)</span>
+
+<span class="c1"># Analyze network properties</span>
+<span class="n">metrics</span> <span class="o">=</span> <span class="n">network_metrics</span><span class="p">(</span><span class="n">network</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Network has </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;num_nodes&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> nodes and </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;num_edges&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> edges&quot;</span><span class="p">)</span>
+
+<span class="c1"># Calculate centrality measures</span>
+<span class="n">centrality</span> <span class="o">=</span> <span class="n">centrality_measures</span><span class="p">(</span><span class="n">network</span><span class="p">)</span>
+<span class="n">hub_genes</span> <span class="o">=</span> <span class="p">[</span><span class="n">node</span> <span class="k">for</span> <span class="n">node</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">centrality</span><span class="p">[</span><span class="s1">&#39;degree&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+             <span class="k">if</span> <span class="n">score</span> <span class="o">&gt;</span> <span class="n">centrality</span><span class="p">[</span><span class="s1">&#39;degree&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">+</span> <span class="n">centrality</span><span class="p">[</span><span class="s1">&#39;degree&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">std</span><span class="p">()]</span>
+</pre></div>
+</div>
+</section>
+<section id="id1">
+<h3>Community Detection<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.networks</span><span class="w"> </span><span class="kn">import</span> <span class="n">detect_communities</span><span class="p">,</span> <span class="n">modularity</span>
+
+<span class="c1"># Detect communities</span>
+<span class="n">communities</span> <span class="o">=</span> <span class="n">detect_communities</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;leiden&#39;</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+
+<span class="c1"># Evaluate community quality</span>
+<span class="n">mod_score</span> <span class="o">=</span> <span class="n">modularity</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">communities</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Modularity: </span><span class="si">{</span><span class="n">mod_score</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Analyze community properties</span>
+<span class="k">for</span> <span class="n">community_id</span> <span class="ow">in</span> <span class="nb">set</span><span class="p">(</span><span class="n">communities</span><span class="o">.</span><span class="n">values</span><span class="p">()):</span>
+    <span class="n">community_nodes</span> <span class="o">=</span> <span class="p">[</span><span class="n">node</span> <span class="k">for</span> <span class="n">node</span><span class="p">,</span> <span class="n">comm</span> <span class="ow">in</span> <span class="n">communities</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">comm</span> <span class="o">==</span> <span class="n">community_id</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Community </span><span class="si">{</span><span class="n">community_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">community_nodes</span><span class="p">)</span><span class="si">}</span><span class="s2"> nodes&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="pathway-enrichment">
+<h3>Pathway Enrichment<a class="headerlink" href="#pathway-enrichment" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.networks</span><span class="w"> </span><span class="kn">import</span> <span class="n">pathway_enrichment</span>
+
+<span class="c1"># Gene list of interest</span>
+<span class="n">gene_list</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;HK1&quot;</span><span class="p">,</span> <span class="s2">&quot;PFKL&quot;</span><span class="p">,</span> <span class="s2">&quot;FBA&quot;</span><span class="p">,</span> <span class="s2">&quot;PGK1&quot;</span><span class="p">,</span> <span class="s2">&quot;CS&quot;</span><span class="p">,</span> <span class="s2">&quot;ACO1&quot;</span><span class="p">]</span>
+
+<span class="c1"># Pathway enrichment analysis</span>
+<span class="n">enriched_pathways</span> <span class="o">=</span> <span class="n">pathway_enrichment</span><span class="p">(</span>
+    <span class="n">gene_list</span><span class="p">,</span>
+    <span class="n">pathway_network</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;hypergeometric&quot;</span><span class="p">,</span>
+    <span class="n">correction</span><span class="o">=</span><span class="s2">&quot;fdr&quot;</span>
+<span class="p">)</span>
+
+<span class="c1"># Display top enriched pathways</span>
+<span class="k">for</span> <span class="n">pathway</span> <span class="ow">in</span> <span class="n">enriched_pathways</span><span class="p">[:</span><span class="mi">5</span><span class="p">]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">pathway</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">: p=</span><span class="si">{</span><span class="n">pathway</span><span class="p">[</span><span class="s1">&#39;p_value&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Overlap: </span><span class="si">{</span><span class="n">pathway</span><span class="p">[</span><span class="s1">&#39;overlap_genes&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="integration-with-other-modules">
+<h2>Integration with Other Modules<a class="headerlink" href="#integration-with-other-modules" title="Link to this heading"></a></h2>
+<section id="with-expression-data">
+<h3>With Expression Data<a class="headerlink" href="#with-expression-data" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna</span><span class="w"> </span><span class="kn">import</span> <span class="n">workflow</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.networks</span><span class="w"> </span><span class="kn">import</span> <span class="n">infer_grn</span>
+
+<span class="c1"># Load expression data</span>
+<span class="n">expression_data</span> <span class="o">=</span> <span class="n">workflow</span><span class="o">.</span><span class="n">extract_expression_patterns</span><span class="p">(</span><span class="n">rna_data</span><span class="p">)</span>
+
+<span class="c1"># Infer regulatory network</span>
+<span class="n">regulatory_network</span> <span class="o">=</span> <span class="n">infer_grn</span><span class="p">(</span>
+    <span class="n">expression_data</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;correlation&quot;</span><span class="p">,</span>
+    <span class="n">threshold</span><span class="o">=</span><span class="mf">0.7</span>
+<span class="p">)</span>
+
+<span class="c1"># Analyze network modules</span>
+<span class="n">modules</span> <span class="o">=</span> <span class="n">detect_communities</span><span class="p">(</span><span class="n">regulatory_network</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="with-protein-data">
+<h3>With Protein Data<a class="headerlink" href="#with-protein-data" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.networks</span><span class="w"> </span><span class="kn">import</span> <span class="n">ppi</span><span class="p">,</span> <span class="n">community</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.ontology</span><span class="w"> </span><span class="kn">import</span> <span class="n">go</span>
+
+<span class="c1"># Load PPI network</span>
+<span class="n">protein_network</span> <span class="o">=</span> <span class="n">ppi</span><span class="o">.</span><span class="n">load_string_network</span><span class="p">()</span>
+
+<span class="c1"># Find functional modules</span>
+<span class="n">modules</span> <span class="o">=</span> <span class="n">community</span><span class="o">.</span><span class="n">detect_communities</span><span class="p">(</span><span class="n">protein_network</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;leiden&#39;</span><span class="p">)</span>
+
+<span class="c1"># Functional enrichment</span>
+<span class="k">for</span> <span class="n">module_id</span><span class="p">,</span> <span class="n">proteins</span> <span class="ow">in</span> <span class="n">modules</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="n">enriched_terms</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">enrich_proteins</span><span class="p">(</span><span class="n">proteins</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Module </span><span class="si">{</span><span class="n">module_id</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">enriched_terms</span><span class="p">[:</span><span class="mi">3</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="performance-features">
+<h2>Performance Features<a class="headerlink" href="#performance-features" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Scalable Algorithms</strong>: Efficient implementations for large networks</p></li>
+<li><p><strong>Parallel Processing</strong>: Multi-core support for computationally intensive operations</p></li>
+<li><p><strong>Memory Optimization</strong>: Streaming processing for very large networks</p></li>
+<li><p><strong>Sparse Representations</strong>: Memory-efficient storage for sparse networks</p></li>
+</ul>
+</section>
+<section id="testing">
+<h2>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h2>
+<p>Comprehensive tests cover all network functionality:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run all network tests</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_networks_*.py<span class="w"> </span>-v
+
+<span class="c1"># Test specific components</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_networks_graph.py::test_centrality_measures<span class="w"> </span>-v
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_networks_community.py::test_detect_communities_louvain<span class="w"> </span>-v
+</pre></div>
+</div>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="graph.html"><span class="std std-doc">Core Graph Operations</span></a>: Basic network operations and metrics</p></li>
+<li><p><a class="reference internal" href="community.html"><span class="std std-doc">Community Detection</span></a>: Network module identification</p></li>
+<li><p><a class="reference internal" href="ppi.html"><span class="std std-doc">Protein Interaction Networks</span></a>: PPI network analysis</p></li>
+<li><p><a class="reference internal" href="regulatory.html"><span class="std std-doc">Regulatory Networks</span></a>: Gene regulation analysis</p></li>
+<li><p><a class="reference internal" href="pathway.html"><span class="std std-doc">Pathway Analysis</span></a>: Biological pathway enrichment</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../ml/index.html" class="btn btn-neutral float-left" title="Machine Learning: Biological Data Analysis" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../singlecell/index.html" class="btn btn-neutral float-right" title="Single-Cell Genomics" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

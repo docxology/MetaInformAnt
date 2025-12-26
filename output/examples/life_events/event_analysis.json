@@ -1,0 +1,46 @@
+{
+  "life_events_analysis": {
+    "results": {
+      "individual_1": {
+        "events": [
+          "birth",
+          "school",
+          "work",
+          "marriage",
+          "retirement"
+        ],
+        "life_stage": "early",
+        "sequence_length": 5,
+        "transition_points": 4,
+        "unique_events": 5
+      },
+      "individual_2": {
+        "events": [
+          "birth",
+          "school",
+          "education",
+          "work",
+          "promotion"
+        ],
+        "life_stage": "early",
+        "sequence_length": 5,
+        "transition_points": 4,
+        "unique_events": 5
+      },
+      "individual_3": {
+        "events": [
+          "birth",
+          "school",
+          "work",
+          "divorce",
+          "remarriage"
+        ],
+        "life_stage": "early",
+        "sequence_length": 5,
+        "transition_points": 4,
+        "unique_events": 5
+      }
+    },
+    "sequences_analyzed": 3
+  }
+}

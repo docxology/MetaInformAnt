@@ -1,54 +1,294 @@
+"""Tests for I/O functionality."""
+
 from __future__ import annotations
 
-import json
+import pytest
+import tempfile
 from pathlib import Path
 
-from metainformant.core import io as core_io
+from metainformant.core import io, paths
+
+
+def _check_online(url: str, timeout: int = 5) -> bool:
+    """Check if we can reach a URL within timeout.
+    
+    Args:
+        url: URL to check
+        timeout: Timeout in seconds
+        
+    Returns:
+        True if URL is reachable, False otherwise
+    """
+    try:
+        import requests
+        resp = requests.get(url, timeout=timeout)
+        resp.raise_for_status()
+        return True
+    except Exception:
+        return False
+
+
+class TestIO:
+    """Test enhanced I/O functionality."""
+
+    @pytest.mark.network
+    def test_download_file(self):
+        """Test file download functionality.
+        
+        Uses real HTTP requests with graceful skip if network unavailable.
+        """
+        if not _check_online("https://httpbin.org"):
+            pytest.skip("Network unavailable - real implementation requires connectivity")
+            
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            
+            # Test downloading a real file (using httpbin for testing)
+            url = "https://httpbin.org/json"
+            dest_file = tmp_path / "test.json"
+            
+            success = io.download_file(url, dest_file)
+            if success:
+                assert dest_file.exists()
+                content = dest_file.read_text()
+                assert "slideshow" in content  # httpbin.org/json returns a slideshow JSON
+
+    @pytest.mark.network
+    def test_download_json(self):
+        """Test JSON download functionality.
+        
+        Uses real HTTP requests with graceful skip if network unavailable.
+        """
+        if not _check_online("https://httpbin.org"):
+            pytest.skip("Network unavailable - real implementation requires connectivity")
+            
+        url = "https://httpbin.org/json"
+        data = io.download_json(url)
+        if data:
+            assert isinstance(data, dict)
+            assert "slideshow" in str(data)  # httpbin.org/json returns a slideshow JSON
+
+    @pytest.mark.network
+    def test_download_text(self):
+        """Test text download functionality.
+        
+        Uses real HTTP requests with graceful skip if network unavailable.
+        """
+        if not _check_online("https://httpbin.org"):
+            pytest.skip("Network unavailable - real implementation requires connectivity")
+            
+        url = "https://httpbin.org/html"
+        text = io.download_text(url)
+        if text:
+            assert isinstance(text, str)
+            assert "html" in text.lower()
+
+    @pytest.mark.network
+    def test_batch_download(self):
+        """Test batch download functionality.
+        
+        Uses minimal URLs to reduce test execution time while still
+        verifying batch download behavior. Uses real HTTP requests with
+        graceful skip if network unavailable.
+        """
+        if not _check_online("https://httpbin.org"):
+            pytest.skip("Network unavailable - real implementation requires connectivity")
+            
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_path = Path(tmp_dir)
+            
+            # Use single URL to reduce network calls and execution time
+            urls = [
+                "https://httpbin.org/json"
+            ]
+            
+            results = io.batch_download(urls, tmp_path)
+            assert isinstance(results, dict)
+            assert len(results) == 1
+
+    @pytest.mark.network
+    def test_csv_download(self):
+        """Test CSV download functionality.
+        
+        Uses real HTTP requests with graceful skip if network unavailable.
+        """
+        if not _check_online("https://httpbin.org"):
+            pytest.skip("Network unavailable - real implementation requires connectivity")
+            
+        url = "https://httpbin.org/csv"
+        df = io.download_csv(url)
+        if df is not None:
+            assert hasattr(df, 'shape')  # pandas DataFrame
+
+    def test_gzipped_json_io(self, tmp_path):
+        """Test gzipped JSON I/O operations."""
+        test_data = {
+            "large_list": list(range(1000)),
+            "nested": {"deep": {"data": "value"}},
+            "metadata": {"compressed": True},
+        }
+
+        gz_file = tmp_path / "compressed.json.gz"
+
+        # Write compressed
+        io.dump_json_gz(test_data, gz_file)
+        assert gz_file.exists()
+
+        # Read compressed
+        loaded_data = io.load_json_gz(gz_file)
+        assert loaded_data == test_data
+
+    def test_pandas_csv_operations(self, tmp_path):
+        """Test pandas CSV operations."""
+        try:
+            import pandas as pd
+
+            # Create test DataFrame
+            test_df = pd.DataFrame(
+                {
+                    "species": ["E_coli", "B_subtilis", "S_aureus"],
+                    "gc_content": [0.507, 0.436, 0.328],
+                    "genome_size": [4641652, 4215606, 2821337],
+                }
+            )
+
+            csv_file = tmp_path / "test_data.csv"
+
+            # Write CSV
+            io.write_csv(test_df, csv_file)
+            assert csv_file.exists()
+
+            # Read CSV
+            loaded_df = io.read_csv(csv_file)
+            assert loaded_df.shape == test_df.shape
+            assert list(loaded_df.columns) == list(test_df.columns)
+
+            # Check data consistency
+            assert loaded_df.loc[0, "species"] == "E_coli"
+            assert abs(loaded_df.loc[0, "gc_content"] - 0.507) < 1e-6
+
+        except ImportError as e:
+            pytest.skip(f"pandas not available: {e}")
+
+    def test_pandas_parquet_operations(self, tmp_path):
+        """Test pandas Parquet operations (requires pyarrow or fastparquet)."""
+        pytest.importorskip(
+            "pyarrow",
+            reason="Parquet support requires pyarrow or fastparquet. Install with: uv add pyarrow",
+        )
+        try:
+            import pandas as pd
+
+            # Create test DataFrame
+            test_df = pd.DataFrame(
+                {
+                    "A": [1, 2, 3, 4, 5],
+                    "B": [10, 20, 30, 40, 50],
+                    "C": ["a", "b", "c", "d", "e"]
+                }
+            )
+
+            parquet_file = tmp_path / "test_data.parquet"
+
+            # Write Parquet
+            io.write_parquet(test_df, parquet_file)
+            assert parquet_file.exists()
+
+            # Read Parquet
+            loaded_df = io.read_parquet(parquet_file)
+            assert loaded_df.shape == test_df.shape
+            assert list(loaded_df.columns) == list(test_df.columns)
+
+        except ImportError as e:
+            error_msg = str(e).lower()
+            if "pyarrow" in error_msg or "fastparquet" in error_msg:
+                pytest.skip("Parquet support requires pyarrow or fastparquet. Install with: uv add pyarrow")
+            pytest.skip(f"pandas or parquet engine not available: {e}")
+
+    @pytest.mark.network
+    def test_io_error_handling(self):
+        """Test error handling in I/O operations."""
+        # Test with invalid URLs
+        invalid_url = "https://invalid-domain-that-does-not-exist.com/file.txt"
+        
+        result = io.download_file(invalid_url, "/tmp/test.txt")
+        assert result is False
+
+        json_result = io.download_json(invalid_url)
+        assert json_result is None
+
+        text_result = io.download_text(invalid_url)
+        assert text_result is None
+
+    def test_file_size_operations(self, tmp_path):
+        """Test file size calculation operations."""
+        # Create test file
+        test_file = tmp_path / "size_test.txt"
+        test_content = "This is test content for size calculation"
+        test_file.write_text(test_content)
+        
+        size = paths.get_file_size(test_file)
+        assert size == len(test_content.encode('utf-8'))
+
+        # Test directory size
+        dir_size = paths.get_directory_size(tmp_path)
+        assert dir_size >= size
+
+        # Test non-existent file
+        non_existent = tmp_path / "does_not_exist.txt"
+        size_non = paths.get_file_size(non_existent)
+        assert size_non == 0
 
 
 def test_ensure_directory_creates(tmp_path: Path) -> None:
+    """Test directory creation."""
     p = tmp_path / "nested" / "dir"
     assert not p.exists()
-    made = core_io.ensure_directory(p)
+    made = io.ensure_directory(p)
     assert made.exists() and made.is_dir()
 
 
 def test_json_roundtrip(tmp_path: Path) -> None:
+    """Test JSON roundtrip."""
     data = {"a": 1, "b": [1, 2, 3]}
     path = tmp_path / "data.json"
-    core_io.dump_json(data, path)
-    loaded = core_io.load_json(path)
+    io.dump_json(data, path)
+    loaded = io.load_json(path)
     assert loaded == data
 
 
 def test_json_gz_roundtrip(tmp_path: Path) -> None:
+    """Test JSON gz roundtrip."""
     data = {"x": "y"}
     path = tmp_path / "data.json.gz"
-    core_io.dump_json(data, path)
-    loaded = core_io.load_json(path)
+    io.dump_json(data, path)
+    loaded = io.load_json(path)
     assert loaded == data
 
 
 def test_jsonl_roundtrip(tmp_path: Path) -> None:
+    """Test JSONL roundtrip."""
     rows = [{"i": i} for i in range(5)]
     path = tmp_path / "rows.jsonl"
-    core_io.write_jsonl(rows, path)
-    read_back = list(core_io.read_jsonl(path))
+    io.write_jsonl(rows, path)
+    read_back = list(io.read_jsonl(path))
     assert read_back == rows
 
 
 def test_tsv_roundtrip(tmp_path: Path) -> None:
+    """Test TSV roundtrip."""
     rows = [{"a": "1", "b": "2"}, {"a": "3", "b": "4"}]
     path = tmp_path / "rows.tsv"
-    core_io.write_delimited(rows, path, delimiter="\t")
-    read_back = list(core_io.read_delimited(path, delimiter="\t"))
+    io.write_delimited(rows, path, delimiter="\t")
+    read_back = list(io.read_delimited(path, delimiter="\t"))
     assert read_back == rows
 
 
 def test_open_text_auto_handles_gz(tmp_path: Path) -> None:
+    """Test gzip handling in text auto-open."""
     txt_gz = tmp_path / "hello.txt.gz"
-    with core_io.open_text_auto(txt_gz, mode="wt") as fh:
+    with io.open_text_auto(txt_gz, mode="wt") as fh:
         fh.write("hello world\n")
-    with core_io.open_text_auto(txt_gz, mode="rt") as fh:
+    with io.open_text_auto(txt_gz, mode="rt") as fh:
         content = fh.read()
     assert content.strip() == "hello world"

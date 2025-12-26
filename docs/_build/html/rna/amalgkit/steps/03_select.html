@@ -1,0 +1,833 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>amalgkit select: Sample Selection and Quality Filtering &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">amalgkit select: Sample Selection and Quality Filtering</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/rna/amalgkit/steps/03_select.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="amalgkit-select-sample-selection-and-quality-filtering">
+<h1>amalgkit select: Sample Selection and Quality Filtering<a class="headerlink" href="#amalgkit-select-sample-selection-and-quality-filtering" title="Link to this heading"></a></h1>
+<section id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Link to this heading"></a></h2>
+<p>Selects high-quality SRA entries from metadata tables based on configurable quality thresholds and tissue mappings. This step <strong>filters</strong> samples to identify qualified datasets for downstream quantification.</p>
+</section>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">select</span></code> step:</p>
+<ul class="simple">
+<li><p>Applies quality filters (read count, base count, read length)</p></li>
+<li><p>Maps tissue names to standardized sample groups</p></li>
+<li><p>Marks redundant BioSamples (optional)</p></li>
+<li><p>Generates pivot tables with qualified and selected samples</p></li>
+<li><p>Creates sample-group-specific metadata subsets</p></li>
+</ul>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
+<section id="basic-usage">
+<h3>Basic Usage<a class="headerlink" href="#basic-usage" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>amalgkit<span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--metadata<span class="w"> </span>output/amalgkit/work/metadata/metadata.tsv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--config_dir<span class="w"> </span>output/amalgkit/work/config/base<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--min_nspots<span class="w"> </span><span class="m">5000000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--max_sample<span class="w"> </span><span class="m">99999</span>
+</pre></div>
+</div>
+</section>
+<section id="python-api">
+<h3>Python API<a class="headerlink" href="#python-api" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna</span><span class="w"> </span><span class="kn">import</span> <span class="n">amalgkit</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">amalgkit</span><span class="o">.</span><span class="n">select</span><span class="p">(</span>
+    <span class="n">out_dir</span><span class="o">=</span><span class="s2">&quot;output/amalgkit/work&quot;</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="s2">&quot;output/amalgkit/work/metadata/metadata.tsv&quot;</span><span class="p">,</span>
+    <span class="n">config_dir</span><span class="o">=</span><span class="s2">&quot;output/amalgkit/work/config/base&quot;</span><span class="p">,</span>
+    <span class="n">min_nspots</span><span class="o">=</span><span class="mi">5000000</span><span class="p">,</span>
+    <span class="n">max_sample</span><span class="o">=</span><span class="mi">99999</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="configuration-file">
+<h3>Configuration File<a class="headerlink" href="#configuration-file" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">select</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/amellifera/work</span>
+<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/amellifera/work/metadata/metadata.tsv</span>
+<span class="w">    </span><span class="nt">config_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/amellifera/work/config/base</span>
+<span class="w">    </span><span class="nt">min_nspots</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10000000</span>
+<span class="w">    </span><span class="nt">max_sample</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="w">    </span><span class="nt">sample_group</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">brain,antenna,mandibular_gland</span>
+<span class="w">    </span><span class="nt">mark_redundant_biosamples</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">no</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Link to this heading"></a></h2>
+<section id="optional-parameters">
+<h3>Optional Parameters<a class="headerlink" href="#optional-parameters" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--out_dir</span></code></p></td>
+<td><p>PATH</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">./</span></code></p></td>
+<td><p>Directory for intermediate and output files.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--metadata</span></code></p></td>
+<td><p>PATH</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">inferred</span></code></p></td>
+<td><p>Path to metadata.tsv. Default: <code class="docutils literal notranslate"><span class="pre">out_dir/metadata/metadata.tsv</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--sample_group</span></code></p></td>
+<td><p>STR</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>Comma-separated list of sample groups (tissues) to include. Default: all groups in metadata.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--config_dir</span></code></p></td>
+<td><p>PATH</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">inferred</span></code></p></td>
+<td><p>Path to config directory. Default: <code class="docutils literal notranslate"><span class="pre">out_dir/config</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--min_nspots</span></code></p></td>
+<td><p>INT</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">5000000</span></code></p></td>
+<td><p>Minimum number of RNA-seq reads (spots) per sample.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--max_sample</span></code></p></td>
+<td><p>INT</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">99999</span></code></p></td>
+<td><p>Maximum number of samples to retain per sample group per species.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--mark_redundant_biosamples</span></code></p></td>
+<td><p>yes/no</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">no</span></code></p></td>
+<td><p>Label SRAs with same BioSample ID as unqualified (removes technical replicates).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--mark_missing_rank</span></code></p></td>
+<td><p>species|genus|family|order|class|phylum|kingdom|domain|none</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">species</span></code></p></td>
+<td><p>Mark samples lacking taxid information at the specified rank as <code class="docutils literal notranslate"><span class="pre">missing_rank</span></code> in the exclusion column.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="input-requirements">
+<h2>Input Requirements<a class="headerlink" href="#input-requirements" title="Link to this heading"></a></h2>
+<section id="prerequisites">
+<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Metadata Table</strong>: Output from <code class="docutils literal notranslate"><span class="pre">amalgkit</span> <span class="pre">metadata</span></code> (<code class="docutils literal notranslate"><span class="pre">metadata.tsv</span></code>)</p></li>
+<li><p><strong>Config Files</strong>: Output from <code class="docutils literal notranslate"><span class="pre">amalgkit</span> <span class="pre">config</span></code> (<code class="docutils literal notranslate"><span class="pre">.config</span></code> files in config directory)</p></li>
+</ul>
+</section>
+<section id="config-files-used">
+<h3>Config Files Used<a class="headerlink" href="#config-files-used" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>File</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tissue.config</span></code></p></td>
+<td><p>Maps original tissue names to standardized sample groups</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">sample_group.config</span></code></p></td>
+<td><p>Defines which sample groups to include</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">quality.config</span></code></p></td>
+<td><p>Quality thresholds for filtering</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">platform.config</span></code></p></td>
+<td><p>Platform filtering (Illumina, etc.)</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">layout.config</span></code></p></td>
+<td><p>Library layout filtering (PAIRED/SINGLE)</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="system-dependencies">
+<h3>System Dependencies<a class="headerlink" href="#system-dependencies" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Python (via amalgkit)</p></li>
+<li><p>pandas (for data manipulation)</p></li>
+</ul>
+</section>
+</section>
+<section id="output-files">
+<h2>Output Files<a class="headerlink" href="#output-files" title="Link to this heading"></a></h2>
+<section id="primary-outputs">
+<h3>Primary Outputs<a class="headerlink" href="#primary-outputs" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>out_dir/metadata/
+├── pivot_qualified.tsv          # ⭐ Samples passing quality filters
+├── pivot_selected.tsv            # ⭐ Final selected samples (after max_sample limit)
+├── metadata.filtered.tsv         # All filtered metadata
+├── metadata.filtered.tissue.tsv  # Tissue-annotated metadata
+└── selection_summary.txt         # Selection statistics
+</pre></div>
+</div>
+</section>
+<section id="pivot-table-structure">
+<h3>Pivot Table Structure<a class="headerlink" href="#pivot-table-structure" title="Link to this heading"></a></h3>
+<p><strong><code class="docutils literal notranslate"><span class="pre">pivot_qualified.tsv</span></code></strong> contains samples that meet quality criteria:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Run</span></code></p></td>
+<td><p>SRA run accession</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">scientific_name</span></code></p></td>
+<td><p>Species name</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">sample_group</span></code></p></td>
+<td><p>Standardized tissue/sample group</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">spots</span></code></p></td>
+<td><p>Number of reads</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">bases</span></code></p></td>
+<td><p>Total base count</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">avgLength</span></code></p></td>
+<td><p>Average read length</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">LibraryLayout</span></code></p></td>
+<td><p>SINGLE or PAIRED</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BioSample</span></code></p></td>
+<td><p>BioSample ID</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">qualified</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">yes</span></code> or <code class="docutils literal notranslate"><span class="pre">no</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">selection_reason</span></code></p></td>
+<td><p>Why included/excluded</p></td>
+</tr>
+</tbody>
+</table>
+<p><strong><code class="docutils literal notranslate"><span class="pre">pivot_selected.tsv</span></code></strong> is subset of qualified samples after applying <code class="docutils literal notranslate"><span class="pre">max_sample</span></code> limit.</p>
+</section>
+</section>
+<section id="workflow-integration">
+<h2>Workflow Integration<a class="headerlink" href="#workflow-integration" title="Link to this heading"></a></h2>
+<section id="position-in-pipeline">
+<h3>Position in Pipeline<a class="headerlink" href="#position-in-pipeline" title="Link to this heading"></a></h3>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart LR
+    A[metadata] --&gt; B[config]
+    A --&gt; C[select]
+    B --&gt; C
+    C --&gt; D[getfastq]
+</pre></div>
+</div>
+<p><strong>select</strong> runs <strong>after metadata and config</strong>, <strong>before getfastq</strong>.</p>
+</section>
+<section id="downstream-dependencies">
+<h3>Downstream Dependencies<a class="headerlink" href="#downstream-dependencies" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Step</p></th>
+<th class="head"><p>Uses</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">getfastq</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">pivot_qualified.tsv</span></code> or <code class="docutils literal notranslate"><span class="pre">pivot_selected.tsv</span></code></p></td>
+<td><p>Downloads only selected samples</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">quant</span></code></p></td>
+<td><p>Selected samples</p></td>
+<td><p>Quantifies only qualified samples</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="quality-filtering-logic">
+<h2>Quality Filtering Logic<a class="headerlink" href="#quality-filtering-logic" title="Link to this heading"></a></h2>
+<section id="default-filters">
+<h3>Default Filters<a class="headerlink" href="#default-filters" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Minimum quality thresholds</span>
+<span class="n">min_nspots</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span><span class="mi">000</span><span class="p">,</span><span class="mi">000</span>           <span class="c1"># At least 5M reads</span>
+<span class="n">min_bases</span> <span class="o">=</span> <span class="n">implied</span> <span class="n">via</span> <span class="n">spots</span>    <span class="c1"># Calculated from spots × avgLength</span>
+<span class="n">avgLength</span> <span class="o">&gt;=</span> <span class="mi">25</span>                  <span class="c1"># At least 25bp reads (from getfastq default)</span>
+</pre></div>
+</div>
+</section>
+<section id="tissue-mapping">
+<h3>Tissue Mapping<a class="headerlink" href="#tissue-mapping" title="Link to this heading"></a></h3>
+<p>Samples are assigned to <code class="docutils literal notranslate"><span class="pre">sample_group</span></code> based on <code class="docutils literal notranslate"><span class="pre">tissue.config</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># tissue.config example</span>
+<span class="n">original_name</span>    <span class="n">standard_name</span>    <span class="n">include</span>
+<span class="n">brain</span>            <span class="n">brain</span>            <span class="n">yes</span>
+<span class="n">whole</span> <span class="n">brain</span>      <span class="n">brain</span>            <span class="n">yes</span>
+<span class="n">Brain</span> <span class="n">tissue</span>     <span class="n">brain</span>            <span class="n">yes</span>
+<span class="n">liver</span>            <span class="n">liver</span>            <span class="n">yes</span>
+<span class="n">unknown</span>          <span class="n">NA</span>               <span class="n">no</span>
+</pre></div>
+</div>
+<p><strong>Mapping Process</strong>:</p>
+<ol class="arabic simple">
+<li><p>Read <code class="docutils literal notranslate"><span class="pre">Body_Site</span></code> or <code class="docutils literal notranslate"><span class="pre">tissue</span></code> column from metadata</p></li>
+<li><p>Lookup in <code class="docutils literal notranslate"><span class="pre">tissue.config</span></code> → <code class="docutils literal notranslate"><span class="pre">original_name</span></code></p></li>
+<li><p>Map to <code class="docutils literal notranslate"><span class="pre">standard_name</span></code> (e.g., “brain”)</p></li>
+<li><p>Check <code class="docutils literal notranslate"><span class="pre">include</span></code> column (yes/no)</p></li>
+<li><p>Assign to <code class="docutils literal notranslate"><span class="pre">sample_group</span></code></p></li>
+</ol>
+</section>
+<section id="sample-group-filtering">
+<h3>Sample Group Filtering<a class="headerlink" href="#sample-group-filtering" title="Link to this heading"></a></h3>
+<p>If <code class="docutils literal notranslate"><span class="pre">--sample_group</span></code> specified:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--sample_group<span class="w"> </span>brain,liver,heart
+</pre></div>
+</div>
+<p><strong>Effect</strong>: Only samples with these sample groups are selected.</p>
+</section>
+<section id="max-sample-limit">
+<h3>Max Sample Limit<a class="headerlink" href="#max-sample-limit" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--max_sample<span class="w"> </span><span class="m">100</span>
+</pre></div>
+</div>
+<p><strong>Effect</strong>: If &gt;100 samples per sample_group, randomly select 100.<br />
+<strong>Purpose</strong>: Prevent imbalanced datasets, control download size.</p>
+</section>
+<section id="redundant-biosample-handling">
+<h3>Redundant BioSample Handling<a class="headerlink" href="#redundant-biosample-handling" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--mark_redundant_biosamples<span class="w"> </span>yes
+</pre></div>
+</div>
+<p><strong>Effect</strong>: If multiple SRA runs share same BioSample ID, mark extras as unqualified.<br />
+<strong>Purpose</strong>: Remove technical replicates, keep biological replicates only.</p>
+</section>
+<section id="missing-taxonomy-rank-marking-mark-missing-rank">
+<h3>Missing Taxonomy Rank Marking (<code class="docutils literal notranslate"><span class="pre">--mark_missing_rank</span></code>)<a class="headerlink" href="#missing-taxonomy-rank-marking-mark-missing-rank" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">--mark_missing_rank</span></code> option (default: <code class="docutils literal notranslate"><span class="pre">species</span></code>) marks samples that lack taxonomy ID information at the specified rank as unqualified by adding <code class="docutils literal notranslate"><span class="pre">missing_rank</span></code> to the <code class="docutils literal notranslate"><span class="pre">exclusion</span></code> column.</p>
+<p><strong>Available ranks</strong>: <code class="docutils literal notranslate"><span class="pre">species</span></code>, <code class="docutils literal notranslate"><span class="pre">genus</span></code>, <code class="docutils literal notranslate"><span class="pre">family</span></code>, <code class="docutils literal notranslate"><span class="pre">order</span></code>, <code class="docutils literal notranslate"><span class="pre">class</span></code>, <code class="docutils literal notranslate"><span class="pre">phylum</span></code>, <code class="docutils literal notranslate"><span class="pre">kingdom</span></code>, <code class="docutils literal notranslate"><span class="pre">domain</span></code>, <code class="docutils literal notranslate"><span class="pre">none</span></code></p>
+<p><strong>Example</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Mark samples missing species-level taxid (default)</span>
+amalgkit<span class="w"> </span><span class="k">select</span><span class="w"> </span>--mark_missing_rank<span class="w"> </span>species
+
+<span class="c1"># Mark samples missing genus-level taxid</span>
+amalgkit<span class="w"> </span><span class="k">select</span><span class="w"> </span>--mark_missing_rank<span class="w"> </span>genus
+
+<span class="c1"># Disable missing rank marking</span>
+amalgkit<span class="w"> </span><span class="k">select</span><span class="w"> </span>--mark_missing_rank<span class="w"> </span>none
+</pre></div>
+</div>
+<p><strong>Effect</strong>: Samples without taxonomy information at the specified rank are marked with <code class="docutils literal notranslate"><span class="pre">missing_rank</span></code> in the <code class="docutils literal notranslate"><span class="pre">exclusion</span></code> column and excluded from downstream analysis.</p>
+<p><strong>Use Case</strong>: Ensures all selected samples have complete taxonomy information for cross-species comparisons or taxonomic filtering.</p>
+</section>
+</section>
+<section id="common-use-cases">
+<h2>Common Use Cases<a class="headerlink" href="#common-use-cases" title="Link to this heading"></a></h2>
+<section id="basic-quality-filtering">
+<h3>1. Basic Quality Filtering<a class="headerlink" href="#basic-quality-filtering" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Filter with default thresholds</span>
+amalgkit<span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/amellifera/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--min_nspots<span class="w"> </span><span class="m">5000000</span>
+</pre></div>
+</div>
+<p><strong>Result</strong>: Selects all samples with ≥5M reads</p>
+</section>
+<section id="high-quality-samples-only">
+<h3>2. High-Quality Samples Only<a class="headerlink" href="#high-quality-samples-only" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Strict quality requirements</span>
+amalgkit<span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--min_nspots<span class="w"> </span><span class="m">20000000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--max_sample<span class="w"> </span><span class="m">50</span>
+</pre></div>
+</div>
+<p><strong>Result</strong>:</p>
+<ul class="simple">
+<li><p>Minimum 20M reads per sample</p></li>
+<li><p>Maximum 50 samples per tissue type</p></li>
+</ul>
+</section>
+<section id="tissue-specific-selection">
+<h3>3. Tissue-Specific Selection<a class="headerlink" href="#tissue-specific-selection" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Brain samples only</span>
+amalgkit<span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--sample_group<span class="w"> </span>brain<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--min_nspots<span class="w"> </span><span class="m">10000000</span>
+</pre></div>
+</div>
+<p><strong>Result</strong>: Only brain samples with ≥10M reads</p>
+</section>
+<section id="multi-tissue-comparative-study">
+<h3>4. Multi-Tissue Comparative Study<a class="headerlink" href="#multi-tissue-comparative-study" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Three tissue types, balanced</span>
+amalgkit<span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--sample_group<span class="w"> </span>brain,liver,heart<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--max_sample<span class="w"> </span><span class="m">30</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--min_nspots<span class="w"> </span><span class="m">15000000</span>
+</pre></div>
+</div>
+<p><strong>Result</strong>: Up to 30 samples per tissue, all with ≥15M reads</p>
+</section>
+<section id="remove-technical-replicates">
+<h3>5. Remove Technical Replicates<a class="headerlink" href="#remove-technical-replicates" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Keep biological replicates only</span>
+amalgkit<span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--mark_redundant_biosamples<span class="w"> </span>yes<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--min_nspots<span class="w"> </span><span class="m">10000000</span>
+</pre></div>
+</div>
+<p><strong>Result</strong>: One SRA run per BioSample (removes re-sequencing of same library)</p>
+</section>
+</section>
+<section id="performance-considerations">
+<h2>Performance Considerations<a class="headerlink" href="#performance-considerations" title="Link to this heading"></a></h2>
+<section id="runtime">
+<h3>Runtime<a class="headerlink" href="#runtime" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Small datasets</strong> (&lt;100 samples): &lt;1 second</p></li>
+<li><p><strong>Medium datasets</strong> (100-1000 samples): 1-5 seconds</p></li>
+<li><p><strong>Large datasets</strong> (1000-10000 samples): 5-30 seconds</p></li>
+<li><p><strong>Very large datasets</strong> (&gt;10000 samples): 30-60 seconds</p></li>
+</ul>
+</section>
+<section id="memory-usage">
+<h3>Memory Usage<a class="headerlink" href="#memory-usage" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Minimal: &lt;100MB for most datasets</p></li>
+<li><p>Scales linearly with metadata size</p></li>
+</ul>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="issue-no-samples-pass-quality-filters">
+<h3>Issue: No samples pass quality filters<a class="headerlink" href="#issue-no-samples-pass-quality-filters" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check pivot_qualified.tsv</span>
+wc<span class="w"> </span>-l<span class="w"> </span>output/amalgkit/work/metadata/pivot_qualified.tsv
+<span class="c1"># Shows: 1 (header only, no data)</span>
+</pre></div>
+</div>
+<p><strong>Diagnosis</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check metadata statistics</span>
+amalgkit<span class="w"> </span><span class="k">select</span><span class="w"> </span>--out_dir<span class="w"> </span>output/work<span class="w"> </span>--min_nspots<span class="w"> </span><span class="m">1</span>
+<span class="c1"># Inspect selection_summary.txt</span>
+cat<span class="w"> </span>output/work/metadata/selection_summary.txt
+</pre></div>
+</div>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic">
+<li><p>Lower <code class="docutils literal notranslate"><span class="pre">--min_nspots</span></code> threshold:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--min_nspots<span class="w"> </span><span class="m">1000000</span><span class="w">  </span><span class="c1"># 1M instead of 5M</span>
+</pre></div>
+</div>
+</li>
+<li><p>Check tissue mappings in <code class="docutils literal notranslate"><span class="pre">tissue.config</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Verify tissues are mapped correctly</span>
+cat<span class="w"> </span>output/work/config/base/tissue.config
+</pre></div>
+</div>
+</li>
+<li><p>Inspect original metadata quality:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check spots distribution</span>
+cut<span class="w"> </span>-f7<span class="w"> </span>output/work/metadata/metadata.tsv<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-n<span class="w"> </span><span class="p">|</span><span class="w"> </span>tail<span class="w"> </span>-20
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="issue-wrong-tissues-selected">
+<h3>Issue: Wrong tissues selected<a class="headerlink" href="#issue-wrong-tissues-selected" title="Link to this heading"></a></h3>
+<p><strong>Diagnosis</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check what sample_groups were assigned</span>
+cut<span class="w"> </span>-f3<span class="w"> </span>output/work/metadata/pivot_qualified.tsv<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span>-c
+</pre></div>
+</div>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic">
+<li><p>Edit <code class="docutils literal notranslate"><span class="pre">tissue.config</span></code> to fix mappings:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nano<span class="w"> </span>output/work/config/base/tissue.config
+</pre></div>
+</div>
+</li>
+<li><p>Re-run config step:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>amalgkit<span class="w"> </span>config<span class="w"> </span>--out_dir<span class="w"> </span>output/work<span class="w"> </span>--overwrite<span class="w"> </span>yes
+amalgkit<span class="w"> </span><span class="k">select</span><span class="w"> </span>--out_dir<span class="w"> </span>output/work
+</pre></div>
+</div>
+</li>
+<li><p>Specify explicit sample_group list:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>amalgkit<span class="w"> </span><span class="k">select</span><span class="w"> </span>--sample_group<span class="w"> </span>brain,antenna
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="issue-too-few-samples-selected">
+<h3>Issue: Too few samples selected<a class="headerlink" href="#issue-too-few-samples-selected" title="Link to this heading"></a></h3>
+<p><strong>Diagnosis</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check pivot files</span>
+wc<span class="w"> </span>-l<span class="w"> </span>output/work/metadata/pivot_*.tsv
+<span class="c1"># pivot_qualified.tsv: 150 lines (149 samples)</span>
+<span class="c1"># pivot_selected.tsv: 31 lines (30 samples)</span>
+</pre></div>
+</div>
+<p><strong>Cause</strong>: <code class="docutils literal notranslate"><span class="pre">--max_sample</span></code> limit is too restrictive</p>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic">
+<li><p>Increase <code class="docutils literal notranslate"><span class="pre">--max_sample</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--max_sample<span class="w"> </span><span class="m">500</span>
+</pre></div>
+</div>
+</li>
+<li><p>Remove limit entirely:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--max_sample<span class="w"> </span><span class="m">99999</span>
+</pre></div>
+</div>
+</li>
+<li><p>Use qualified samples instead of selected:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># In getfastq step</span>
+--metadata<span class="w"> </span>output/work/metadata/pivot_qualified.tsv
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="issue-config-directory-not-found">
+<h3>Issue: Config directory not found<a class="headerlink" href="#issue-config-directory-not-found" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Error</span><span class="p">:</span> <span class="n">Config</span> <span class="n">directory</span> <span class="n">does</span> <span class="ow">not</span> <span class="n">exist</span><span class="p">:</span> <span class="n">output</span><span class="o">/</span><span class="n">work</span><span class="o">/</span><span class="n">config</span>
+</pre></div>
+</div>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic">
+<li><p>Run config step first:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>amalgkit<span class="w"> </span>config<span class="w"> </span>--out_dir<span class="w"> </span>output/work
+amalgkit<span class="w"> </span><span class="k">select</span><span class="w"> </span>--out_dir<span class="w"> </span>output/work
+</pre></div>
+</div>
+</li>
+<li><p>Specify config directory explicitly:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>amalgkit<span class="w"> </span><span class="k">select</span><span class="w"> </span>--config_dir<span class="w"> </span>/path/to/config/base
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<section id="balance-quality-vs-sample-size">
+<h3>1. Balance Quality vs. Sample Size<a class="headerlink" href="#balance-quality-vs-sample-size" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Good: Reasonable quality, enough samples</span>
+--min_nspots<span class="w"> </span><span class="m">10000000</span><span class="w"> </span>--max_sample<span class="w"> </span><span class="m">100</span>
+
+<span class="c1"># Too strict: May get too few samples</span>
+--min_nspots<span class="w"> </span><span class="m">50000000</span><span class="w"> </span>--max_sample<span class="w"> </span><span class="m">10</span>
+
+<span class="c1"># Too lenient: May include low-quality data</span>
+--min_nspots<span class="w"> </span><span class="m">1000000</span><span class="w"> </span>--max_sample<span class="w"> </span><span class="m">999</span>
+</pre></div>
+</div>
+</section>
+<section id="validate-selection-results">
+<h3>2. Validate Selection Results<a class="headerlink" href="#validate-selection-results" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Always check what was selected</span>
+head<span class="w"> </span>-20<span class="w"> </span>output/work/metadata/pivot_selected.tsv
+
+<span class="c1"># Check sample counts per tissue</span>
+cut<span class="w"> </span>-f3<span class="w"> </span>output/work/metadata/pivot_selected.tsv<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span><span class="p">|</span><span class="w"> </span>uniq<span class="w"> </span>-c
+
+<span class="c1"># Verify quality distribution</span>
+cut<span class="w"> </span>-f7<span class="w"> </span>output/work/metadata/pivot_selected.tsv<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-n
+</pre></div>
+</div>
+</section>
+<section id="use-appropriate-max-sample-limits">
+<h3>3. Use Appropriate Max Sample Limits<a class="headerlink" href="#use-appropriate-max-sample-limits" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># For quick testing: small limit</span>
+--max_sample<span class="w"> </span><span class="m">5</span>
+
+<span class="c1"># For pilot studies: moderate limit  </span>
+--max_sample<span class="w"> </span><span class="m">30</span>
+
+<span class="c1"># For full analysis: large limit</span>
+--max_sample<span class="w"> </span><span class="m">200</span>
+
+<span class="c1"># For comprehensive meta-analysis: no limit</span>
+--max_sample<span class="w"> </span><span class="m">99999</span>
+</pre></div>
+</div>
+</section>
+<section id="document-selection-criteria">
+<h3>4. Document Selection Criteria<a class="headerlink" href="#document-selection-criteria" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Save selection command</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;amalgkit select --min_nspots 10000000 --max_sample 50&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>selection_params.txt
+
+<span class="c1"># Save selection summary</span>
+cp<span class="w"> </span>output/work/metadata/selection_summary.txt<span class="w"> </span>output/selection_summary_<span class="k">$(</span>date<span class="w"> </span>+%Y%m%d<span class="k">)</span>.txt
+</pre></div>
+</div>
+</section>
+</section>
+<section id="real-world-examples">
+<h2>Real-World Examples<a class="headerlink" href="#real-world-examples" title="Link to this heading"></a></h2>
+<section id="example-1-apis-mellifera-brain-study">
+<h3>Example 1: Apis mellifera Brain Study<a class="headerlink" href="#example-1-apis-mellifera-brain-study" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>amalgkit<span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/amellifera/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--sample_group<span class="w"> </span>brain<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--min_nspots<span class="w"> </span><span class="m">10000000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--max_sample<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--mark_redundant_biosamples<span class="w"> </span>yes
+</pre></div>
+</div>
+<p><strong>Result</strong>: Selected 83 unique brain samples (from 6,606 total metadata entries)</p>
+</section>
+<section id="example-2-multi-tissue-pogonomyrmex-study">
+<h3>Example 2: Multi-Tissue Pogonomyrmex Study<a class="headerlink" href="#example-2-multi-tissue-pogonomyrmex-study" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>amalgkit<span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/pbarbatus/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--sample_group<span class="w"> </span>brain,antenna,leg,abdomen<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--min_nspots<span class="w"> </span><span class="m">5000000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--max_sample<span class="w"> </span><span class="m">30</span>
+</pre></div>
+</div>
+<p><strong>Result</strong>: Up to 30 samples per tissue type, 120 samples total</p>
+</section>
+<section id="example-3-drosophila-developmental-series">
+<h3>Example 3: Drosophila Developmental Series<a class="headerlink" href="#example-3-drosophila-developmental-series" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>amalgkit<span class="w"> </span><span class="k">select</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/dmelanogaster/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--sample_group<span class="w"> </span>embryo,larva,pupa,adult<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--min_nspots<span class="w"> </span><span class="m">15000000</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--max_sample<span class="w"> </span><span class="m">20</span>
+</pre></div>
+</div>
+<p><strong>Result</strong>: 20 samples per developmental stage, 80 samples total</p>
+</section>
+</section>
+<section id="integration-with-metainformant-workflow">
+<h2>Integration with METAINFORMANT Workflow<a class="headerlink" href="#integration-with-metainformant-workflow" title="Link to this heading"></a></h2>
+<section id="automatic-selection">
+<h3>Automatic Selection<a class="headerlink" href="#automatic-selection" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">execute_workflow</span><span class="p">,</span> <span class="n">load_workflow_config</span>
+
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">load_workflow_config</span><span class="p">(</span><span class="s2">&quot;config/amalgkit_amellifera.yaml&quot;</span><span class="p">)</span>
+<span class="n">execute_workflow</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>  <span class="c1"># select runs automatically after config</span>
+</pre></div>
+</div>
+</section>
+<section id="workflow-configuration">
+<h3>Workflow Configuration<a class="headerlink" href="#workflow-configuration" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># config/amalgkit_amellifera.yaml</span>
+<span class="nt">filters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">require_tissue</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">min_spots</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10000000</span>
+<span class="w">  </span><span class="nt">max_spots</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">999999999</span>
+<span class="w">  </span><span class="nt">library_layout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PAIRED</span>
+<span class="w">  </span><span class="nt">platform</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Illumina</span>
+
+<span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">select</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">min_nspots</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10000000</span>
+<span class="w">    </span><span class="nt">max_sample</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="w">    </span><span class="nt">sample_group</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">brain</span>
+<span class="w">    </span><span class="nt">mark_redundant_biosamples</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">no</span>
+</pre></div>
+</div>
+</section>
+<section id="accessing-selected-samples">
+<h3>Accessing Selected Samples<a class="headerlink" href="#accessing-selected-samples" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core.io</span><span class="w"> </span><span class="kn">import</span> <span class="n">read_delimited</span>
+
+<span class="c1"># Read selected samples</span>
+<span class="n">selected_file</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;output/amalgkit/work/metadata/pivot_selected.tsv&quot;</span><span class="p">)</span>
+<span class="n">samples</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">read_delimited</span><span class="p">(</span><span class="n">selected_file</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">))</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Selected </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">samples</span><span class="p">)</span><span class="si">}</span><span class="s2"> samples&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">samples</span><span class="p">[:</span><span class="mi">5</span><span class="p">]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">sample</span><span class="p">[</span><span class="s1">&#39;Run&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">sample</span><span class="p">[</span><span class="s1">&#39;sample_group&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">sample</span><span class="p">[</span><span class="s1">&#39;spots&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> reads&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Quality Filtering Best Practices</strong>: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4728800/</p></li>
+<li><p><strong>Sample Size Considerations</strong>: https://www.rna-seqblog.com/</p></li>
+<li><p><strong>METAINFORMANT Workflow</strong>: <code class="docutils literal notranslate"><span class="pre">docs/rna/workflow.md</span></code></p></li>
+</ul>
+</section>
+<section id="see-also">
+<h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Previous Step</strong>: <a class="reference internal" href="#config.md"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">config.md</span></code></span></a> - Generating configuration files</p></li>
+<li><p><strong>Next Step</strong>: <a class="reference internal" href="#getfastq.md"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">getfastq.md</span></code></span></a> - Downloading selected samples</p></li>
+<li><p><strong>Workflow Overview</strong>: <a class="reference internal" href="../amalgkit.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">../amalgkit.md</span></code></span></a></p></li>
+<li><p><strong>Testing</strong>: <code class="docutils literal notranslate"><span class="pre">tests/test_rna_amalgkit_steps.py::test_select_basic_execution</span></code></p></li>
+</ul>
+<hr class="docutils" />
+<p><strong>Last Updated</strong>: November 11, 2025<br />
+<strong>AMALGKIT Version</strong>: 0.12.20<br />
+<strong>Status</strong>: ✅ Production-ready, comprehensively tested</p>
+</section>
+<section id="new-features-in-v0-12-20">
+<h2>New Features in v0.12.20<a class="headerlink" href="#new-features-in-v0-12-20" title="Link to this heading"></a></h2>
+<section id="id1">
+<h3>Missing Taxonomy Rank Marking (<code class="docutils literal notranslate"><span class="pre">--mark_missing_rank</span></code>)<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">--mark_missing_rank</span></code> option (default: <code class="docutils literal notranslate"><span class="pre">species</span></code>) automatically identifies and marks samples that lack taxonomy ID information at the specified taxonomic rank. This ensures data quality for cross-species analyses and taxonomic filtering.</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Mark samples missing species-level taxid (default)</span>
+amalgkit<span class="w"> </span><span class="k">select</span><span class="w"> </span>--mark_missing_rank<span class="w"> </span>species
+
+<span class="c1"># Mark samples missing genus-level taxid</span>
+amalgkit<span class="w"> </span><span class="k">select</span><span class="w"> </span>--mark_missing_rank<span class="w"> </span>genus
+
+<span class="c1"># Disable missing rank marking</span>
+amalgkit<span class="w"> </span><span class="k">select</span><span class="w"> </span>--mark_missing_rank<span class="w"> </span>none
+</pre></div>
+</div>
+<p><strong>Effect</strong>: Samples without the required taxonomy information are marked with <code class="docutils literal notranslate"><span class="pre">missing_rank</span></code> in the <code class="docutils literal notranslate"><span class="pre">exclusion</span></code> column and excluded from qualified samples.</p>
+<p><strong>Reference</strong>: <a class="reference external" href="https://github.com/kfuku52/amalgkit/pull/162">GitHub PR #162</a></p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

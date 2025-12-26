@@ -1,0 +1,125 @@
+{
+  "rna_amalgkit_workflow_demo": {
+    "amalgkit_integration": {
+      "cli_availability": {
+        "available": true,
+        "status": "available",
+        "version": "AMALGKIT version: 0.12.19\nAMALGKIT command: /Users/4d/miniforge3/bin/amalgkit -h\nAMALGKIT bug report: https://github.com/kfuku52/amalgkit/issues\nusage: amalgkit [-h] [--version]\n                {metadata,select,getfastq,quant,merge,cstmm,csca,curate,sanity,integrate,config,help}\n                ...\n\nA toolkit for cross-species transcriptome amalgamation\n\npositional arguments:\n  {metadata,select,getfastq,quant,merge,cstmm,csca,curate,sanity,integrate,config,help}\n    metadata            NCBI SRA metadata retrieval and curation. See\n                        `amalgkit metadata -h`\n    select              Selecting SRA entries for analysis. See `amalgkit\n                        select -h`\n    getfastq            Retrieving fastq files. See `amalgkit getfastq -h`\n    quant               Estimating transcript abundance with kallisto. See\n                        `amalgkit quant -h`\n    merge               Generating transcript abundance tables. See `amalgkit\n                        merge -h`\n    cstmm               Applying cross-species TMM normalization using single-\n                        copy genes. See `amalgkit cstmm -h`\n    csca                Generating plots with cross-species correlation\n                        analysis. See `amalgkit csca -h`\n    curate              Automatic removal of outlier samples and SVA-based\n                        unwanted biases. See `amalgkit curate -h`\n    sanity              Checking the integrity of AMALGKIT input and output\n                        files. See `amalgkit sanity -h`\n    integrate           Appending local fastq info to a metadata table. See\n                        `amalgkit integrate -h`\n    config              Creating a series of config files for the metadata\n                        search. See `amalgkit config -h`\n    help                Printing help messages\n\noptions:\n  -h, --help            show this help message and exit\n  --version             show program's version number and exit\n"
+      },
+      "data_sources": [
+        "NCBI SRA",
+        "ENA",
+        "DDBJ"
+      ],
+      "integration_method": "Subprocess execution with progress monitoring",
+      "supported_species": "All species with reference genomes in NCBI"
+    },
+    "configuration_validation": {
+      "overall_valid": true,
+      "species_list_valid": true,
+      "threads_valid": true,
+      "work_dir_exists": "Would be created during execution"
+    },
+    "integration_notes": [
+      "Amalgkit must be installed and available in PATH",
+      "Requires internet connection for data downloads",
+      "Large datasets may require significant disk space",
+      "Multi-threading improves performance on large datasets"
+    ],
+    "key_features_demonstrated": [
+      "Workflow configuration and validation",
+      "Step-by-step pipeline planning",
+      "Integration with external tools",
+      "Progress monitoring and error handling",
+      "Species-specific workflow management"
+    ],
+    "pipeline_steps": {
+      "available_steps": [
+        "metadata",
+        "select",
+        "getfastq",
+        "quant",
+        "merge",
+        "cstmm",
+        "curate",
+        "csca",
+        "sanity"
+      ],
+      "note": "Each step can be run individually or as part of complete pipeline",
+      "step_descriptions": {
+        "csca": "Perform statistical analysis",
+        "cstmm": "Normalize expression data",
+        "curate": "Apply quality filters and curation",
+        "getfastq": "Download FASTQ files from selected samples",
+        "merge": "Merge quantification results across samples",
+        "metadata": "Download and process sample metadata from SRA",
+        "quant": "Quantify gene expression from RNA-seq reads",
+        "sanity": "Final quality checks and validation",
+        "select": "Select appropriate samples based on criteria"
+      },
+      "typical_workflow_order": [
+        "metadata",
+        "select",
+        "getfastq",
+        "quant",
+        "merge",
+        "cstmm",
+        "curate",
+        "csca",
+        "sanity"
+      ]
+    },
+    "timestamp": "2024-12-26T10:00:00Z",
+    "typical_use_cases": [
+      "Differential expression analysis",
+      "Transcriptome assembly",
+      "Gene expression quantification",
+      "RNA-seq quality assessment",
+      "Cross-species comparative analysis"
+    ],
+    "workflow_configuration": {
+      "other_defaults": "See AmalgkitWorkflowConfig for all options",
+      "species_list": [
+        "test_species"
+      ],
+      "threads": 2,
+      "work_dir": "output/examples/rna/amalgkit_work"
+    },
+    "workflow_planning": {
+      "planning_status": "successful",
+      "step_details": [
+        {
+          "description": "Step 1 in amalgkit pipeline",
+          "parameters": {
+            "species-list": [
+              "test_species"
+            ],
+            "threads": 2
+          },
+          "step_name": "metadata"
+        },
+        {
+          "description": "Step 2 in amalgkit pipeline",
+          "parameters": {
+            "species-list": [
+              "test_species"
+            ],
+            "threads": 2
+          },
+          "step_name": "config"
+        },
+        {
+          "description": "Step 3 in amalgkit pipeline",
+          "parameters": {
+            "species-list": [
+              "test_species"
+            ],
+            "threads": 2
+          },
+          "step_name": "select"
+        }
+      ],
+      "steps_planned": 11
+    }
+  }
+}

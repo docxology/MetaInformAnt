@@ -11,11 +11,11 @@ scripts/gwas/
 ├── run_pbarbatus_analysis.py      # P. barbatus complete workflow
 ├── run_analysis.py                # General GWAS analysis orchestrator
 ├── download_genome_scale_data.sh  # Real A. mellifera data acquisition
-├── download_real_honeybee_variants.py # Honeybee variants guide
+├── download_honeybee_variants.py # Honeybee variants guide
 ├── query_bioproject_metadata.py   # NCBI BioProject metadata queries
 ├── generate_phenotypes.py         # Phenotype data generation
 ├── generate_synthetic_variants.py # Synthetic variant data generation
-├── enhanced_visualizations.py     # Advanced plotting utilities
+├── visualizations.py     # Plotting utilities
 ├── generate_missing_plots.py      # Plot regeneration utility
 └── README.md                      # This file
 ```
@@ -68,7 +68,7 @@ bash scripts/gwas/download_genome_scale_data.sh
 
 **Output:** `data/raw/sra/` with FASTQ files
 
-### Honeybee Variants Guide (`download_real_honeybee_variants.py`)
+### Honeybee Variants Guide (`download_honeybee_variants.py`)
 
 Comprehensive guide for acquiring real honeybee variant datasets.
 
@@ -81,7 +81,7 @@ Comprehensive guide for acquiring real honeybee variant datasets.
 **Usage:**
 ```bash
 # Show available honeybee datasets
-python3 scripts/gwas/download_real_honeybee_variants.py
+python3 scripts/gwas/download_honeybee_variants.py
 ```
 
 ## Species-Specific Analysis
@@ -136,7 +136,7 @@ python3 scripts/gwas/query_bioproject_metadata.py --bioproject PRJNA292680
 
 ## Visualization and Analysis
 
-### Enhanced Visualizations (`enhanced_visualizations.py`)
+### Visualizations (`visualizations.py`)
 
 Advanced plotting utilities for GWAS results.
 

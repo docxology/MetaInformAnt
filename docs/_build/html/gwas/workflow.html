@@ -1,0 +1,547 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GWAS Workflow Orchestration &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">GWAS Workflow Orchestration</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/gwas/workflow.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="gwas-workflow-orchestration">
+<h1>GWAS Workflow Orchestration<a class="headerlink" href="#gwas-workflow-orchestration" title="Link to this heading"></a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>The GWAS module provides comprehensive workflow orchestration for genome-wide association studies, from variant data acquisition to statistical analysis and visualization. Workflows are built on the <code class="docutils literal notranslate"><span class="pre">BaseWorkflowOrchestrator</span></code> foundation with standardized configuration and error handling.</p>
+</section>
+<section id="architecture">
+<h2>Architecture<a class="headerlink" href="#architecture" title="Link to this heading"></a></h2>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart TB
+    subgraph &quot;GWAS Orchestration&quot;
+        CLI[CLI Interface&lt;br/&gt;metainformant gwas] --&gt; Scripts[Script Orchestrators&lt;br/&gt;scripts/gwas/run_*.py]
+        Scripts --&gt; Workflow[execute_gwas_workflow&lt;br/&gt;gwas.workflow]
+        Workflow --&gt; Steps[Step Functions&lt;br/&gt;gwas.*]
+    end
+
+    subgraph &quot;Workflow Components&quot;
+        Config[GWASWorkflowConfig&lt;br/&gt;Configuration]
+        Download[Data Acquisition&lt;br/&gt;gwas.download]
+        Quality[Quality Control&lt;br/&gt;gwas.quality]
+        Assoc[Association Testing&lt;br/&gt;gwas.association]
+        Viz[Visualization&lt;br/&gt;gwas.visualization]
+    end
+
+    Workflow --&gt; Config
+    Workflow --&gt; Download
+    Workflow --&gt; Quality
+    Workflow --&gt; Assoc
+    Workflow --&gt; Viz
+</pre></div>
+</div>
+</section>
+<section id="workflow-types">
+<h2>Workflow Types<a class="headerlink" href="#workflow-types" title="Link to this heading"></a></h2>
+<section id="complete-gwas-workflow">
+<h3>Complete GWAS Workflow<a class="headerlink" href="#complete-gwas-workflow" title="Link to this heading"></a></h3>
+<p>The main workflow orchestrates all GWAS steps from data acquisition to results:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.gwas.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">execute_gwas_workflow</span><span class="p">,</span> <span class="n">GWASWorkflowConfig</span>
+
+<span class="c1"># Configure workflow</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">GWASWorkflowConfig</span><span class="p">(</span>
+    <span class="n">work_dir</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;output/gwas/study&quot;</span><span class="p">),</span>
+    <span class="n">variants</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;vcf_files&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;data/variants/cohort.vcf.gz&quot;</span><span class="p">]},</span>
+    <span class="n">phenotypes</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;file&quot;</span><span class="p">:</span> <span class="s2">&quot;data/phenotypes/traits.tsv&quot;</span><span class="p">},</span>
+    <span class="n">threads</span><span class="o">=</span><span class="mi">8</span>
+<span class="p">)</span>
+
+<span class="c1"># Execute complete workflow</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">execute_gwas_workflow</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;status&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;completed&quot;</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;GWAS completed in </span><span class="si">{</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;duration_seconds&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">s&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Analyzed </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;steps&#39;</span><span class="p">])</span><span class="si">}</span><span class="s2"> steps&quot;</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;GWAS failed: </span><span class="si">{</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;errors&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="convenience-functions">
+<h3>Convenience Functions<a class="headerlink" href="#convenience-functions" title="Link to this heading"></a></h3>
+<p>Simple function-based workflows for common operations:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.gwas.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_gwas_analysis</span>
+
+<span class="c1"># Simple GWAS analysis</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">run_gwas_analysis</span><span class="p">(</span>
+    <span class="n">vcf_path</span><span class="o">=</span><span class="s2">&quot;data/variants/cohort.vcf.gz&quot;</span><span class="p">,</span>
+    <span class="n">phenotype_path</span><span class="o">=</span><span class="s2">&quot;data/phenotypes/traits.tsv&quot;</span><span class="p">,</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;output/gwas/simple&quot;</span><span class="p">,</span>
+    <span class="n">threads</span><span class="o">=</span><span class="mi">4</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading"></a></h2>
+<section id="gwasworkflowconfig">
+<h3>GWASWorkflowConfig<a class="headerlink" href="#gwasworkflowconfig" title="Link to this heading"></a></h3>
+<p>Complete configuration for GWAS workflows:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">GWASWorkflowConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Configuration for GWAS workflow execution.&quot;&quot;&quot;</span>
+
+    <span class="n">work_dir</span><span class="p">:</span> <span class="n">Path</span>                          <span class="c1"># Base working directory</span>
+    <span class="n">threads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span>                        <span class="c1"># Number of threads</span>
+    <span class="n">log_dir</span><span class="p">:</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>            <span class="c1"># Optional log directory</span>
+
+    <span class="c1"># Data sources</span>
+    <span class="n">genome</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>    <span class="c1"># Reference genome config</span>
+    <span class="n">variants</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">samples</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">phenotypes</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+    <span class="c1"># Analysis parameters</span>
+    <span class="n">qc</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">structure</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">association</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">correction</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+    <span class="c1"># Output configuration</span>
+    <span class="n">output</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="config-loading">
+<h3>Config Loading<a class="headerlink" href="#config-loading" title="Link to this heading"></a></h3>
+<p>Load configuration from YAML files with environment variable overrides:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.gwas.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_gwas_config</span>
+
+<span class="c1"># Load from YAML with GWAS_ environment overrides</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">load_gwas_config</span><span class="p">(</span><span class="s2">&quot;config/gwas/gwas_study.yaml&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="workflow-steps">
+<h2>Workflow Steps<a class="headerlink" href="#workflow-steps" title="Link to this heading"></a></h2>
+<p>The complete GWAS workflow consists of 10 orchestrated steps:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Step</p></th>
+<th class="head"><p>Function</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>config_validation</strong></p></td>
+<td><p>Validate configuration</p></td>
+<td><p>Check all required parameters</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>genome_prep</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">download_reference_genome</span></code></p></td>
+<td><p>Download/setup reference genome</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>variant_acquisition</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">download_variant_data</span></code></p></td>
+<td><p>Acquire variant data (VCF/download/calling)</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>quality_control</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">apply_qc_filters</span></code></p></td>
+<td><p>Apply QC filters (MAF, missingness, HWE)</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>population_structure</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">estimate_population_structure</span></code></p></td>
+<td><p>Compute PCA and kinship matrix</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>phenotype_loading</strong></p></td>
+<td><p>Load phenotype data</p></td>
+<td><p>Parse and validate phenotype files</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>association_testing</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">run_gwas</span></code></p></td>
+<td><p>Execute association tests</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>multiple_testing</strong></p></td>
+<td><p>Apply corrections</p></td>
+<td><p>Bonferroni, FDR, genomic control</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>visualization</strong></p></td>
+<td><p>Generate plots</p></td>
+<td><p>Manhattan, Q-Q, regional plots</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>results_export</strong></p></td>
+<td><p>Export results</p></td>
+<td><p>Write tables and summary reports</p></td>
+</tr>
+</tbody>
+</table>
+<section id="step-execution-pattern">
+<h3>Step Execution Pattern<a class="headerlink" href="#step-execution-pattern" title="Link to this heading"></a></h3>
+<p>Each step follows the standardized pattern:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">run_quality_control</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Execute quality control step.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        config: Step configuration</span>
+<span class="sd">        **kwargs: Additional parameters</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Standardized result dictionary</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Step logic here</span>
+        <span class="n">qc_results</span> <span class="o">=</span> <span class="n">apply_qc_filters</span><span class="p">(</span><span class="n">variants</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;output&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;filtered_variants&quot;</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">qc_results</span><span class="p">)},</span>
+            <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;filters_applied&quot;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">keys</span><span class="p">())}</span>
+        <span class="p">}</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;failed&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;errors&quot;</span><span class="p">:</span> <span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)],</span>
+            <span class="s2">&quot;output&quot;</span><span class="p">:</span> <span class="p">{}</span>
+        <span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="prerequisites">
+<h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Python 3.11+</p></li>
+<li><p>NumPy</p></li>
+<li><p>Matplotlib (for visualization)</p></li>
+<li><p>Optional: scipy (for advanced statistics)</p></li>
+<li><p>Optional: pandas (for data handling)</p></li>
+<li><p>Optional: bcftools (for variant calling/extraction)</p></li>
+<li><p>Optional: GATK (for variant calling)</p></li>
+</ul>
+</section>
+<section id="step-by-step-workflow">
+<h2>Step-by-Step Workflow<a class="headerlink" href="#step-by-step-workflow" title="Link to this heading"></a></h2>
+<section id="step-1-prepare-configuration">
+<h3>Step 1: Prepare Configuration<a class="headerlink" href="#step-1-prepare-configuration" title="Link to this heading"></a></h3>
+<p>Create a configuration file (YAML recommended):</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">work_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/gwas/my_study</span>
+<span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
+
+<span class="nt">genome</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">accession</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GCF_000001405.40</span>
+<span class="w">  </span><span class="nt">dest_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/gwas/genome</span>
+
+<span class="nt">variants</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">vcf_files</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/variants/my_cohort.vcf.gz</span>
+
+<span class="nt">qc</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">min_maf</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.01</span>
+<span class="w">  </span><span class="nt">max_missing</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.05</span>
+
+<span class="nt">samples</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">phenotype_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/phenotypes.tsv</span>
+
+<span class="nt">association</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">linear</span>
+<span class="w">  </span><span class="nt">trait</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">height</span>
+<span class="w">  </span><span class="nt">covariates</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">age</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">sex</span><span class="p p-Indicator">]</span>
+</pre></div>
+</div>
+</section>
+<section id="step-2-prepare-input-files">
+<h3>Step 2: Prepare Input Files<a class="headerlink" href="#step-2-prepare-input-files" title="Link to this heading"></a></h3>
+<section id="phenotype-file-format">
+<h4>Phenotype File Format<a class="headerlink" href="#phenotype-file-format" title="Link to this heading"></a></h4>
+<p>Create a TSV file with sample IDs and trait values:</p>
+<div class="highlight-tsv notranslate"><div class="highlight"><pre><span></span>sample_id    height    weight
+sample1      175.5     70.2
+sample2      168.3     65.1
+sample3      180.1     75.8
+</pre></div>
+</div>
+</section>
+<section id="covariates-file-format-optional">
+<h4>Covariates File Format (Optional)<a class="headerlink" href="#covariates-file-format-optional" title="Link to this heading"></a></h4>
+<div class="highlight-tsv notranslate"><div class="highlight"><pre><span></span>sample_id    age    sex
+sample1      45     1
+sample2      38     2
+sample3      52     1
+</pre></div>
+</div>
+</section>
+</section>
+<section id="step-3-run-workflow">
+<h3>Step 3: Run Workflow<a class="headerlink" href="#step-3-run-workflow" title="Link to this heading"></a></h3>
+<section id="command-line">
+<h4>Command Line<a class="headerlink" href="#command-line" title="Link to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>metainformant<span class="w"> </span>gwas<span class="w"> </span>run<span class="w"> </span>--config<span class="w"> </span>config/my_gwas_config.yaml
+</pre></div>
+</div>
+</section>
+<section id="python-api">
+<h4>Python API<a class="headerlink" href="#python-api" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.gwas</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_gwas_config</span><span class="p">,</span> <span class="n">execute_gwas_workflow</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">load_gwas_config</span><span class="p">(</span><span class="s2">&quot;config/my_gwas_config.yaml&quot;</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">execute_gwas_workflow</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="step-4-review-results">
+<h3>Step 4: Review Results<a class="headerlink" href="#step-4-review-results" title="Link to this heading"></a></h3>
+<p>Results are written to <code class="docutils literal notranslate"><span class="pre">output/gwas/my_study/</span></code>:</p>
+<ul class="simple">
+<li><p><strong>Results</strong>: <code class="docutils literal notranslate"><span class="pre">results/association_results.tsv</span></code> - Association test results</p></li>
+<li><p><strong>Plots</strong>: <code class="docutils literal notranslate"><span class="pre">plots/manhattan.png</span></code>, <code class="docutils literal notranslate"><span class="pre">plots/qq_plot.png</span></code> - Visualizations</p></li>
+<li><p><strong>Structure</strong>: <code class="docutils literal notranslate"><span class="pre">structure/pca_components.tsv</span></code>, <code class="docutils literal notranslate"><span class="pre">structure/kinship_matrix.tsv</span></code> - Population structure</p></li>
+</ul>
+</section>
+</section>
+<section id="workflow-steps-explained">
+<h2>Workflow Steps Explained<a class="headerlink" href="#workflow-steps-explained" title="Link to this heading"></a></h2>
+<section id="genome-preparation">
+<h3>Genome Preparation<a class="headerlink" href="#genome-preparation" title="Link to this heading"></a></h3>
+<p>If genome configuration is provided, the reference genome is downloaded using NCBI infrastructure (reusing <code class="docutils literal notranslate"><span class="pre">dna.ncbi</span></code> module).</p>
+</section>
+<section id="variant-acquisition">
+<h3>Variant Acquisition<a class="headerlink" href="#variant-acquisition" title="Link to this heading"></a></h3>
+<p>Three options available:</p>
+<ol class="arabic simple">
+<li><p><strong>Pre-existing VCF</strong>: Specify paths to existing VCF files ✅ Fully supported</p></li>
+<li><p><strong>Download</strong>: Download from public databases (dbSNP, 1000 Genomes) ⚠️ Placeholder (requires external tools)</p></li>
+<li><p><strong>Calling</strong>: Call variants from BAM/CRAM files using bcftools or GATK ✅ Fully supported</p></li>
+</ol>
+</section>
+<section id="quality-control">
+<h3>Quality Control<a class="headerlink" href="#quality-control" title="Link to this heading"></a></h3>
+<p>Applied filters:</p>
+<ul class="simple">
+<li><p><strong>MAF</strong>: Remove variants with minor allele frequency &lt; threshold</p></li>
+<li><p><strong>Missing Data</strong>: Remove variants with &gt; max_missing missing genotypes</p></li>
+<li><p><strong>Hardy-Weinberg</strong>: Remove variants deviating from HWE (p &lt; threshold)</p></li>
+<li><p><strong>Quality</strong>: Remove variants with quality score &lt; min_qual</p></li>
+<li><p><strong>Indels</strong>: Optionally exclude insertion/deletion variants</p></li>
+</ul>
+</section>
+<section id="population-structure">
+<h3>Population Structure<a class="headerlink" href="#population-structure" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>PCA</strong>: Principal component analysis on genotype matrix</p></li>
+<li><p><strong>Kinship</strong>: Compute kinship/relatedness matrix (VanRaden, Astle-Balding, or Yang method)</p></li>
+</ul>
+<p>Principal components can be included as covariates in association testing to control for population stratification.</p>
+</section>
+<section id="association-testing">
+<h3>Association Testing<a class="headerlink" href="#association-testing" title="Link to this heading"></a></h3>
+<p>Per-variant association tests:</p>
+<ul class="simple">
+<li><p><strong>Linear Regression</strong>: For continuous traits</p></li>
+<li><p><strong>Logistic Regression</strong>: For binary traits (case/control)</p></li>
+</ul>
+<p>Model: <code class="docutils literal notranslate"><span class="pre">phenotype</span> <span class="pre">~</span> <span class="pre">genotype</span> <span class="pre">+</span> <span class="pre">covariates</span></code></p>
+<p>Outputs: beta (effect size), standard error, p-value, R² (for linear models), odds ratio (for logistic models)</p>
+</section>
+<section id="multiple-testing-correction">
+<h3>Multiple Testing Correction<a class="headerlink" href="#multiple-testing-correction" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Bonferroni</strong>: Conservative correction (alpha / n_tests)</p></li>
+<li><p><strong>FDR (Benjamini-Hochberg)</strong>: False discovery rate control</p></li>
+<li><p><strong>Genomic Control</strong>: Calculate genomic inflation factor (lambda_GC)</p></li>
+</ul>
+</section>
+<section id="visualization">
+<h3>Visualization<a class="headerlink" href="#visualization" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Manhattan Plot</strong>: -log10(p-value) vs. genomic position, colored by chromosome</p></li>
+<li><p><strong>Q-Q Plot</strong>: Observed vs. expected p-values under null, shows genomic inflation</p></li>
+<li><p><strong>Regional Plot</strong>: Zoomed view of specific genomic regions</p></li>
+</ul>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="common-issues">
+<h3>Common Issues<a class="headerlink" href="#common-issues" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>VCF file not found</strong>: Ensure VCF paths in configuration are correct</p></li>
+<li><p><strong>Phenotype file missing samples</strong>: Check that sample IDs match between VCF and phenotype files</p></li>
+<li><p><strong>Memory errors</strong>: Reduce number of variants or samples, or use subset</p></li>
+<li><p><strong>bcftools/GATK not found</strong>: Install required tools or use pre-existing VCF files</p></li>
+</ol>
+</section>
+<section id="performance-tips">
+<h3>Performance Tips<a class="headerlink" href="#performance-tips" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Use pre-filtered VCF files when possible</p></li>
+<li><p>Limit variant set to region of interest</p></li>
+<li><p>Use subset of samples for initial testing</p></li>
+<li><p>Run QC filters before association testing to reduce computation</p></li>
+</ul>
+</section>
+</section>
+<section id="advanced-usage">
+<h2>Advanced Usage<a class="headerlink" href="#advanced-usage" title="Link to this heading"></a></h2>
+<section id="custom-association-models">
+<h3>Custom Association Models<a class="headerlink" href="#custom-association-models" title="Link to this heading"></a></h3>
+<p>You can use the low-level API to run custom association tests:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.gwas</span><span class="w"> </span><span class="kn">import</span> <span class="n">association_test_linear</span><span class="p">,</span> <span class="n">parse_vcf_full</span>
+
+<span class="n">vcf_data</span> <span class="o">=</span> <span class="n">parse_vcf_full</span><span class="p">(</span><span class="s2">&quot;variants.vcf&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">variant_idx</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vcf_data</span><span class="p">[</span><span class="s2">&quot;variants&quot;</span><span class="p">])):</span>
+    <span class="n">genotypes</span> <span class="o">=</span> <span class="p">[</span><span class="n">vcf_data</span><span class="p">[</span><span class="s2">&quot;genotypes&quot;</span><span class="p">][</span><span class="n">s</span><span class="p">][</span><span class="n">variant_idx</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">vcf_data</span><span class="p">[</span><span class="s2">&quot;samples&quot;</span><span class="p">]))]</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">association_test_linear</span><span class="p">(</span><span class="n">genotypes</span><span class="p">,</span> <span class="n">phenotypes</span><span class="p">,</span> <span class="n">covariates</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="population-structure-analysis">
+<h3>Population Structure Analysis<a class="headerlink" href="#population-structure-analysis" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.gwas</span><span class="w"> </span><span class="kn">import</span> <span class="n">estimate_population_structure</span>
+
+<span class="n">structure</span> <span class="o">=</span> <span class="n">estimate_population_structure</span><span class="p">(</span>
+    <span class="n">vcf_path</span><span class="o">=</span><span class="s2">&quot;variants.vcf&quot;</span><span class="p">,</span>
+    <span class="n">config</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;compute_pca&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;n_components&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">},</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;output/structure&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id1">
+<h3>Visualization<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.gwas</span><span class="w"> </span><span class="kn">import</span> <span class="n">manhattan_plot</span><span class="p">,</span> <span class="n">qq_plot</span>
+
+<span class="n">manhattan_plot</span><span class="p">(</span>
+    <span class="n">results</span><span class="o">=</span><span class="s2">&quot;results/association_results.tsv&quot;</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;plots/manhattan.png&quot;</span><span class="p">,</span>
+    <span class="n">significance_threshold</span><span class="o">=</span><span class="mf">5e-8</span>
+<span class="p">)</span>
+
+<span class="n">qq_plot</span><span class="p">(</span>
+    <span class="n">pvalues</span><span class="o">=</span><span class="s2">&quot;results/association_results.tsv&quot;</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;plots/qq.png&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,39 @@
+{
+  "logging_demo": {
+    "features_demonstrated": [
+      "File and console logging",
+      "Multiple log levels",
+      "Structured metadata logging",
+      "Environment-based configuration",
+      "Multiple component loggers",
+      "Performance timing",
+      "Workflow step tracking"
+    ],
+    "log_file": "logging_example.log",
+    "log_levels_used": [
+      "DEBUG",
+      "INFO",
+      "WARNING",
+      "ERROR",
+      "CRITICAL"
+    ],
+    "sample_log_entries": [
+      "2025-12-26 14:20:03 | INFO | example_logger | Operation completed in 0.000 seconds\n",
+      "2025-12-26 14:20:03 | INFO | example_logger | Operation completed in 0.000 seconds\n",
+      "2025-12-26 14:20:03 | INFO | example_logger | Operation completed in 0.000 seconds\n",
+      "2025-12-26 14:20:03 | INFO | example_logger | .2f\n",
+      "2025-12-26 14:20:03 | INFO | example_logger | Found 2500 motif occurrences\n"
+    ],
+    "timestamp": "2024-12-26T10:00:00Z",
+    "total_log_lines": 943,
+    "workflow_simulation": {
+      "performance_operations": {
+        "gc_content_calculation": 2.193450927734375e-05,
+        "motif_finding": 1.1205673217773438e-05,
+        "sequence_loading": 7.152557373046875e-07
+      },
+      "steps_completed": 5,
+      "total_workflow_time": 0.6199395656585693
+    }
+  }
+}

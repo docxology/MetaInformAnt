@@ -634,6 +634,42 @@ create_sample_config("sample_config.json", "scientific")
 ### Symbolic Mapping and Discovery (`discovery.py`)
 Symbolic mapping and context discovery utilities for repo-wide navigation and sensemaking.
 
+#### Discovery Workflow Architecture
+
+```mermaid
+graph TD
+    A[Repository Scan] --> B{Scan Type}
+    B -->|Functions| C[AST Parse Files]
+    B -->|Configs| D[Config Discovery]
+    B -->|Output Patterns| E[Pattern Analysis]
+    B -->|Dependencies| F[Import Analysis]
+    B -->|Workflows| G[Workflow Discovery]
+
+    C --> H[Extract Signatures]
+    D --> I[Extract Metadata]
+    E --> J[Pattern Matching]
+    F --> K[Dependency Graph]
+    G --> L[Entry Points]
+
+    H --> M[FunctionInfo Objects]
+    I --> N[ConfigInfo Objects]
+    J --> O[OutputPattern Objects]
+    K --> P[ModuleDependency Objects]
+    L --> Q[Workflow Objects]
+
+    M --> R[Search/Filter Results]
+    N --> R
+    O --> R
+    P --> R
+    Q --> R
+
+    R --> S[Return Structured Data]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style B fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+```
+
 **Key Features:**
 - Function discovery with signature extraction
 - Config file discovery and metadata
@@ -682,6 +718,41 @@ for wf in workflows:
 
 ### Symbol Indexing (`symbols.py`)
 Symbol indexing and cross-referencing for functions, classes, and other symbols.
+
+#### Symbol Indexing Workflow
+
+```mermaid
+graph TD
+    A[Repository Input] --> B[Index Type Selection]
+    B -->|Functions| C[AST Parse Python Files]
+    B -->|Classes| D[AST Parse Class Definitions]
+
+    C --> E[Extract Function Info]
+    D --> F[Extract Class Info]
+
+    E --> G[Build Function Index]
+    F --> H[Build Class Index]
+
+    G --> I[Cache Index]
+    H --> I
+
+    I --> J[Search Operations]
+    J -->|Find Symbol| K[Lookup Definition]
+    J -->|Find References| L[Cross-Reference Search]
+    J -->|Get Signature| M[Signature Extraction]
+    J -->|Get Metadata| N[Metadata Retrieval]
+    J -->|Fuzzy Match| O[Fuzzy Search]
+
+    K --> P[Return SymbolDefinition]
+    L --> Q[Return SymbolReference List]
+    M --> R[Return Signature String]
+    N --> S[Return Metadata Dict]
+    O --> T[Return Match Tuples]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style I fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style J fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+```
 
 **Key Features:**
 - Function and class indexing across repository
@@ -798,3 +869,164 @@ print(f"Total size: {structure['total_size']} bytes")
 ```
 
 This ensures consistency and reduces code duplication across the entire codebase.
+
+## Workflow Orchestration Framework
+
+### Config-Driven Workflow Execution
+
+```mermaid
+graph TD
+    A[YAML/JSON Config] --> B[Config Validation]
+    B --> C[Environment Override]
+
+    C --> D[Step Resolution]
+    D --> E[Dependency Analysis]
+
+    E --> F[Execution Planning]
+    F --> G[Parallel Scheduling]
+
+    G --> H[Step Execution]
+    H --> I[Result Collection]
+
+    I --> J[Output Processing]
+    J --> K[Quality Assurance]
+
+    K --> L{Success?}
+    L -->|Yes| M[Workflow Complete]
+    L -->|No| N[Error Handling]
+
+    N --> O[Retry/Fallback]
+    O --> P{Re-attempt?}
+    P -->|Yes| H
+    P -->|No| Q[Workflow Failure]
+
+    M --> R[Results Summary]
+    Q --> R
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style H fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Configuration Features"
+        S[Schema Validation] -.-> B
+        T[Parameter Types] -.-> B
+        U[Default Values] -.-> C
+        V[Env Overrides] -.-> C
+    end
+
+    subgraph "Execution Control"
+        W[Thread Pool] -.-> G
+        X[Resource Limits] -.-> G
+        Y[Timeout Handling] -.-> H
+        Z[Progress Monitoring] -.-> H
+    end
+```
+
+### Multi-Module Data Flow Architecture
+
+```mermaid
+graph TD
+    A[Raw Data Sources] --> B[Domain-specific Processing]
+
+    B --> C{Domain Module}
+    C -->|DNA| D[Sequence Analysis]
+    C -->|RNA| E[Expression Analysis]
+    C -->|Protein| F[Structure Analysis]
+    C -->|GWAS| G[Association Testing]
+
+    D --> H[Quality Control]
+    E --> H
+    F --> H
+    G --> H
+
+    H --> I[Core Integration]
+    I --> J[Data Harmonization]
+    J --> K[Cross-domain Analysis]
+
+    K --> L[Results Generation]
+    L --> M[Output Formatting]
+
+    M --> N{Output Type}
+    N -->|Files| O[Structured Files]
+    N -->|Database| P[Database Storage]
+    N -->|API| Q[Programmatic Access]
+
+    O --> R[Workflow Complete]
+    P --> R
+    Q --> R
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style I fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Core Utilities Integration"
+        S[Configuration] -.-> I
+        T[Logging] -.-> I
+        U[Parallel Processing] -.-> I
+        V[Path Management] -.-> I
+    end
+
+    subgraph "Quality Assurance"
+        W[Validation] -.-> H
+        X[Error Handling] -.-> H
+        Y[Progress Tracking] -.-> H
+        Z[Caching] -.-> H
+    end
+```
+
+### Symbolic Discovery and Workflow Analysis
+
+```mermaid
+graph TD
+    A[Repository Analysis] --> B[Discovery Engine]
+    B --> C{Target Type}
+
+    C -->|Functions| D[Function Discovery]
+    C -->|Classes| E[Class Discovery]
+    C -->|Configs| F[Config Discovery]
+    C -->|Workflows| G[Workflow Discovery]
+
+    D --> H[AST Parsing]
+    E --> H
+    F --> I[File Scanning]
+    G --> I
+
+    H --> J[Symbol Extraction]
+    I --> K[Metadata Collection]
+
+    J --> L[Indexing System]
+    K --> L
+
+    L --> M[Query Interface]
+    M --> N{Query Type}
+
+    N -->|Signature| O[Function Signatures]
+    N -->|References| P[Symbol References]
+    N -->|Dependencies| Q[Module Dependencies]
+    N -->|Call Graph| R[Workflow Call Graph]
+
+    O --> S[Documentation]
+    P --> S
+    Q --> S
+    R --> S
+
+    S --> T[Repository Intelligence]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style L fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style T fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Discovery Methods"
+        U[AST Analysis] -.-> H
+        V[Regex Patterns] -.-> I
+        W[Import Analysis] -.-> K
+        X[File Structure] -.-> K
+    end
+
+    subgraph "Indexing Features"
+        Y[Fuzzy Matching] -.-> L
+        Z[Caching] -.-> L
+        AA[Cross-references] -.-> L
+        BB[Metadata Storage] -.-> L
+    end
+```

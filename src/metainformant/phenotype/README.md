@@ -34,19 +34,302 @@ graph TB
     LifeCourse --> Networks_Mod
 ```
 
-### Phenotype Analysis Workflow
+### AntWiki Data Processing Pipeline
 
 ```mermaid
-flowchart LR
-    Start[Input Data] --> Source{Data Source?}
-    Source -->|AntWiki| LoadAntWiki[Load AntWiki JSON]
-    Source -->|Events| LoadEvents[Load Event Sequences]
-    LoadAntWiki --> Extract[Extract Phenotypes]
-    LoadEvents --> Extract
-    Extract --> Aggregate[Aggregate Traits]
-    Aggregate --> Analyze[Analysis]
-    Analyze --> Associate[GWAS Association]
-    Associate --> Output[Results]
+graph TD
+    A[AntWiki Data Sources] --> B{Data Type}
+    B -->|JSON Files| C[Load JSON Files]
+    B -->|Web Scraping| D[Scrape AntWiki]
+
+    C --> E[Parse JSON Structure]
+    D --> F[HTML Parsing]
+
+    E --> G[Extract Fields]
+    F --> G
+
+    G --> H[Validate Data]
+    H --> I{Clean Data?}
+
+    I -->|Yes| J[Data Cleaning]
+    I -->|No| K[Raw Data]
+
+    J --> L[Standardized Format]
+    K --> L
+
+    L --> M[Phenotype Categories]
+    M --> N[Morphological Traits]
+    M --> O[Behavioral Traits]
+    M --> P[Ecological Traits]
+
+    N --> Q[Measurements DB]
+    O --> Q
+    P --> Q
+
+    Q --> R[Analysis Ready]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style L fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Data Fields"
+        S[Species Info] -.-> G
+        T[Measurements] -.-> G
+        U[Traits] -.-> G
+        V[Taxonomy] -.-> G
+        W[Distribution] -.-> G
+    end
+
+    subgraph "Quality Control"
+        X[Missing Values] -.-> H
+        Y[Outliers] -.-> H
+        Z[Data Types] -.-> H
+        AA[Consistency] -.-> H
+    end
+
+    subgraph "Trait Types"
+        BB[Morphometric] -.-> N
+        CC[Coloration] -.-> N
+        DD[Behavior] -.-> O
+        EE[Ecology] -.-> P
+    end
+```
+
+### Life Course Phenotype Analysis
+
+```mermaid
+graph TD
+    A[Event Sequences] --> B[Event Parsing]
+    B --> C[Extract Phenotypes]
+
+    C --> D[Temporal Windows]
+    D --> E[Window Aggregation]
+
+    E --> F[Trait Categories]
+    F --> G[Morphological Changes]
+    F --> H[Behavioral Patterns]
+    F --> I[Developmental Stages]
+
+    G --> J[Growth Trajectories]
+    H --> K[Activity Patterns]
+    I --> L[Life Stage Transitions]
+
+    J --> M[Statistical Analysis]
+    K --> M
+    L --> M
+
+    M --> N[Phenotype Networks]
+    N --> O[Association Mining]
+
+    O --> P[Key Phenotypes]
+    P --> Q[Biological Insights]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style E fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style Q fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Event Types"
+        R[Developmental] -.-> B
+        S[Morphological] -.-> B
+        T[Behavioral] -.-> B
+        U[Environmental] -.-> B
+    end
+
+    subgraph "Time Windows"
+        V[Early Development] -.-> D
+        W[Juvenile] -.-> D
+        X[Adult] -.-> D
+        Y[Senescence] -.-> D
+    end
+
+    subgraph "Analysis Methods"
+        Z[Trajectory Modeling] -.-> M
+        AA[Pattern Recognition] -.-> M
+        BB[Network Analysis] -.-> N
+        CC[Association Rules] -.-> O
+    end
+```
+
+### Phenotype-Genotype Association Analysis
+
+```mermaid
+graph TD
+    A[Phenotype Data] --> B[Genotype Data]
+    B --> C[Sample Matching]
+
+    A --> D[Phenotype Processing]
+    D --> E[Normalize Traits]
+    E --> F[Quality Control]
+
+    C --> G[Association Testing]
+    F --> G
+
+    G --> H{Association Method}
+    H -->|Linear Regression| I[Quantitative Traits]
+    H -->|Logistic Regression| J[Binary Traits]
+    H -->|ANOVA| K[Categorical Traits]
+    H -->|Correlation| L[Continuous Traits]
+
+    I --> M[Statistical Results]
+    J --> M
+    K --> M
+    L --> M
+
+    M --> N[Multiple Testing Correction]
+    N --> O[Significant Associations]
+
+    O --> P[Manhattan Plot]
+    O --> Q[QQ Plot]
+    O --> R[Regional Plot]
+
+    P --> S[Genome-wide View]
+    Q --> S
+    R --> S
+
+    S --> T[Candidate Genes]
+    T --> U[Functional Validation]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style G fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style U fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Phenotype Types"
+        V[Morphometric] -.-> D
+        W[Behavioral] -.-> D
+        X[Physiological] -.-> D
+        Y[Developmental] -.-> D
+    end
+
+    subgraph "Genotype Data"
+        Z[VCF Files] -.-> B
+        AA[PLINK Format] -.-> B
+        BB[Genotype Matrix] -.-> B
+    end
+
+    subgraph "Correction Methods"
+        CC[Bonferroni] -.-> N
+        DD[FDR] -.-> N
+        EE[Permutation] -.-> N
+    end
+```
+
+### Web Scraping and Data Collection
+
+```mermaid
+graph TD
+    A[AntWiki Website] --> B[Discover Species]
+    B --> C[Species List]
+
+    C --> D{Scraping Strategy}
+    D -->|Single Species| E[Scrape One Page]
+    D -->|Batch Scraping| F[Scrape Multiple]
+
+    E --> G[Parse HTML]
+    F --> H[Queue Management]
+
+    G --> I[Extract Content]
+    H --> I
+
+    I --> J[Data Sections]
+    J --> K[Morphological Data]
+    J --> L[Behavioral Data]
+    J --> M[Ecological Data]
+    J --> N[Taxonomic Data]
+
+    K --> O[Structured Format]
+    L --> O
+    M --> O
+    N --> O
+
+    O --> P[Quality Validation]
+    P --> Q{Save Results}
+    Q -->|Individual Files| R[Per Species File]
+    Q -->|Combined| S[Master Dataset]
+
+    R --> T[Storage]
+    S --> T
+
+    T --> U[Analysis Pipeline]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style I fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style U fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Scraping Controls"
+        V[Rate Limiting] -.-> D
+        W[Error Handling] -.-> D
+        X[Progress Tracking] -.-> F
+        Y[Checkpoint/Resume] -.-> F
+    end
+
+    subgraph "Content Sections"
+        Z[Measurements Table] -.-> K
+        AA[Trait Descriptions] -.-> L
+        BB[Distribution Maps] -.-> M
+        CC[Taxonomy Info] -.-> N
+    end
+
+    subgraph "Output Formats"
+        DD[JSON] -.-> R
+        EE[CSV] -.-> S
+        FF[Database] -.-> T
+    end
+```
+
+### Phenotype Data Integration Framework
+
+```mermaid
+graph TD
+    A[Multiple Phenotype Sources] --> B[Data Harmonization]
+    B --> C[Standard Schema]
+
+    A --> D[Source-specific Processing]
+    D --> E[Format Conversion]
+    E --> F[Unit Standardization]
+
+    C --> G[Integrated Dataset]
+    F --> G
+
+    G --> H[Quality Assessment]
+    H --> I[Completeness Check]
+    I --> J[Consistency Check]
+    J --> K[Outlier Detection]
+
+    K --> L{Clean Data?}
+    L -->|Yes| M[Data Cleaning]
+    L -->|No| N[Flag Issues]
+
+    M --> O[Final Dataset]
+    N --> O
+
+    O --> P[Cross-source Validation]
+    P --> Q[Integrated Phenotypes]
+
+    Q --> R[Downstream Analysis]
+    R --> S[Biological Insights]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style G fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style S fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Data Sources"
+        T[AntWiki] -.-> A
+        U[Field Observations] -.-> A
+        V[Literature] -.-> A
+        W[Databases] -.-> A
+    end
+
+    subgraph "Harmonization Steps"
+        X[Term Mapping] -.-> B
+        Y[Unit Conversion] -.-> F
+        Z[Scale Normalization] -.-> F
+    end
+
+    subgraph "Quality Metrics"
+        AA[Missing Rate] -.-> H
+        BB[Measurement Error] -.-> H
+        CC[Biological Plausibility] -.-> H
+    end
 ```
 
 ## Key Components

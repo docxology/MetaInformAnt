@@ -1,0 +1,382 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>R Installation Guide for Amalgkit Workflows &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">R Installation Guide for Amalgkit Workflows</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/rna/amalgkit/R_INSTALLATION.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="r-installation-guide-for-amalgkit-workflows">
+<h1>R Installation Guide for Amalgkit Workflows<a class="headerlink" href="#r-installation-guide-for-amalgkit-workflows" title="Link to this heading"></a></h1>
+<section id="quick-install-commands">
+<h2>Quick Install Commands<a class="headerlink" href="#quick-install-commands" title="Link to this heading"></a></h2>
+<section id="debian-ubuntu-recommended">
+<h3>Debian/Ubuntu (Recommended)<a class="headerlink" href="#debian-ubuntu-recommended" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt-get<span class="w"> </span>update
+sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>r-base<span class="w"> </span>r-base-dev
+</pre></div>
+</div>
+</section>
+<section id="verify-installation">
+<h3>Verify Installation<a class="headerlink" href="#verify-installation" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>Rscript<span class="w"> </span>--version
+which<span class="w"> </span>Rscript
+</pre></div>
+</div>
+</section>
+<section id="test-r-functionality">
+<h3>Test R Functionality<a class="headerlink" href="#test-r-functionality" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Test basic R execution</span>
+Rscript<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;print(&#39;R is working&#39;)&quot;</span>
+
+<span class="c1"># Test required capabilities</span>
+Rscript<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;capabilities()&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="alternative-installation-methods">
+<h2>Alternative Installation Methods<a class="headerlink" href="#alternative-installation-methods" title="Link to this heading"></a></h2>
+<section id="using-apt-get-with-specific-version">
+<h3>Using apt-get (with specific version)<a class="headerlink" href="#using-apt-get-with-specific-version" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Add CRAN repository for latest R version</span>
+sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>software-properties-common<span class="w"> </span>dirmngr
+wget<span class="w"> </span>-qO-<span class="w"> </span>https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc<span class="w"> </span><span class="p">|</span><span class="w"> </span>sudo<span class="w"> </span>tee<span class="w"> </span>-a<span class="w"> </span>/etc/apt/trusted.gpg.d/cran_ubuntu_key.asc
+sudo<span class="w"> </span>add-apt-repository<span class="w"> </span><span class="s2">&quot;deb https://cloud.r-project.org/bin/linux/ubuntu </span><span class="k">$(</span>lsb_release<span class="w"> </span>-cs<span class="k">)</span><span class="s2">-cran40/&quot;</span>
+sudo<span class="w"> </span>apt-get<span class="w"> </span>update
+sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>r-base<span class="w"> </span>r-base-dev
+</pre></div>
+</div>
+</section>
+<section id="fedora-rhel-centos">
+<h3>Fedora/RHEL/CentOS<a class="headerlink" href="#fedora-rhel-centos" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>dnf<span class="w"> </span>install<span class="w"> </span>R
+<span class="c1"># or on older systems</span>
+sudo<span class="w"> </span>yum<span class="w"> </span>install<span class="w"> </span>R
+</pre></div>
+</div>
+</section>
+<section id="macos-with-homebrew">
+<h3>macOS (with Homebrew)<a class="headerlink" href="#macos-with-homebrew" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>brew<span class="w"> </span>install<span class="w"> </span>r
+</pre></div>
+</div>
+</section>
+<section id="from-source-advanced">
+<h3>From Source (Advanced)<a class="headerlink" href="#from-source-advanced" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install build dependencies</span>
+sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>build-essential<span class="w"> </span>gfortran<span class="w"> </span>libreadline-dev<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>libx11-dev<span class="w"> </span>libxt-dev<span class="w"> </span>libpng-dev<span class="w"> </span>libjpeg-dev<span class="w"> </span>libcairo2-dev<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>xvfb<span class="w"> </span>libbz2-dev<span class="w"> </span>libzstd-dev<span class="w"> </span>liblzma-dev<span class="w"> </span>libcurl4-openssl-dev
+
+<span class="c1"># Download and compile R</span>
+<span class="nb">cd</span><span class="w"> </span>/tmp
+wget<span class="w"> </span>https://cran.r-project.org/src/base/R-4/R-4.3.2.tar.gz
+tar<span class="w"> </span>-xzf<span class="w"> </span>R-4.3.2.tar.gz
+<span class="nb">cd</span><span class="w"> </span>R-4.3.2
+./configure<span class="w"> </span>--enable-R-shlib<span class="w"> </span>--with-blas<span class="w"> </span>--with-lapack
+make
+sudo<span class="w"> </span>make<span class="w"> </span>install
+</pre></div>
+</div>
+</section>
+</section>
+<section id="what-r-is-used-for-in-amalgkit">
+<h2>What R is Used For in Amalgkit<a class="headerlink" href="#what-r-is-used-for-in-amalgkit" title="Link to this heading"></a></h2>
+<section id="merge-step">
+<h3>Merge Step<a class="headerlink" href="#merge-step" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Optional</strong>: Visualization plots (PCA, correlation heatmaps)</p></li>
+<li><p><strong>Core functionality</strong>: Still works without R (expression matrices created)</p></li>
+<li><p><strong>Impact if missing</strong>: Plots not generated, but data analysis proceeds</p></li>
+</ul>
+</section>
+<section id="curate-step">
+<h3>Curate Step<a class="headerlink" href="#curate-step" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Required</strong>: Statistical analysis and batch effect correction</p></li>
+<li><p><strong>Functions</strong>: Outlier detection, normalization, QC metrics</p></li>
+<li><p><strong>Impact if missing</strong>: Curate step fails completely</p></li>
+</ul>
+</section>
+</section>
+<section id="post-installation-verification">
+<h2>Post-Installation Verification<a class="headerlink" href="#post-installation-verification" title="Link to this heading"></a></h2>
+<p>Run the automated check:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/rna/check_r_dependencies.py
+</pre></div>
+</div>
+<p>Expected output when R is installed:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>================================================================================
+CHECKING R DEPENDENCIES
+================================================================================
+✅ Rscript found: /usr/bin/Rscript
+   Version: R scripting front-end version 4.x.x
+================================================================================
+✅ R DEPENDENCIES: SATISFIED
+================================================================================
+</pre></div>
+</div>
+</section>
+<section id="testing-end-to-end-with-r">
+<h2>Testing End-to-End with R<a class="headerlink" href="#testing-end-to-end-with-r" title="Link to this heading"></a></h2>
+<p>Once R is installed, test the complete workflow:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run merge + curate + sanity for a species</span>
+bash<span class="w"> </span>scripts/rna/amalgkit/run_amalgkit.sh<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--config<span class="w"> </span>config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--steps<span class="w"> </span>merge,curate,sanity
+</pre></div>
+</div>
+<section id="expected-behavior">
+<h3>Expected Behavior<a class="headerlink" href="#expected-behavior" title="Link to this heading"></a></h3>
+<section id="with-r-installed">
+<h4>With R Installed ✅<a class="headerlink" href="#with-r-installed" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Merge</strong>: Creates expression matrices + generates plots</p></li>
+<li><p><strong>Curate</strong>: Performs statistical QC and batch correction</p></li>
+<li><p><strong>Sanity</strong>: Validates all outputs</p></li>
+</ul>
+</section>
+<section id="without-r">
+<h4>Without R ⚠️<a class="headerlink" href="#without-r" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Merge</strong>: Creates expression matrices, skips plots (warning)</p></li>
+<li><p><strong>Curate</strong>: Fails with error about missing Rscript</p></li>
+<li><p><strong>Sanity</strong>: Still validates core outputs</p></li>
+</ul>
+</section>
+</section>
+</section>
+<section id="current-workflow-status-november-2025">
+<h2>Current Workflow Status (November 2025)<a class="headerlink" href="#current-workflow-status-november-2025" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Batch 1</strong>: Processing 3,820 samples across 10 ant species</p></li>
+<li><p><strong>Batch 2</strong>: Queued - 728 samples across 10 ant species</p></li>
+<li><p><strong>R-dependent steps</strong>: Required for <code class="docutils literal notranslate"><span class="pre">curate</span></code> and <code class="docutils literal notranslate"><span class="pre">merge</span></code> plotting</p></li>
+<li><p><strong>R installation</strong>: See installation methods above</p></li>
+</ul>
+</section>
+<section id="workaround-skip-r-dependent-steps">
+<h2>Workaround: Skip R-Dependent Steps<a class="headerlink" href="#workaround-skip-r-dependent-steps" title="Link to this heading"></a></h2>
+<p>If R cannot be installed, you can:</p>
+<ol class="arabic">
+<li><p><strong>Skip curate entirely</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run only merge and sanity</span>
+bash<span class="w"> </span>scripts/rna/amalgkit/run_amalgkit.sh<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--config<span class="w"> </span>config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--steps<span class="w"> </span>merge,sanity
+</pre></div>
+</div>
+</li>
+<li><p><strong>Use Python-based QC</strong> (alternative to curate):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Use scikit-learn or pandas for basic QC</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="n">tpm</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;output/.../Solenopsis_invicta_tpm.tsv&quot;</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="c1"># Apply log transformation, normalization, etc.</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Export data for R analysis elsewhere</strong>:</p>
+<ul class="simple">
+<li><p>Expression matrices are standard TSV format</p></li>
+<li><p>Can be analyzed in R Studio or other environments</p></li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="installation-troubleshooting">
+<h2>Installation Troubleshooting<a class="headerlink" href="#installation-troubleshooting" title="Link to this heading"></a></h2>
+<section id="issue-sudo-not-available">
+<h3>Issue: sudo not available<a class="headerlink" href="#issue-sudo-not-available" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check if you&#39;re in a restricted environment</span>
+sudo<span class="w"> </span>-l
+
+<span class="c1"># If no sudo access, contact system administrator</span>
+<span class="c1"># Or use conda/mamba for user-level R installation (system tool):</span>
+conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>r-base
+
+<span class="c1"># Note: For Python packages, use uv pip install (primary method)</span>
+</pre></div>
+</div>
+</section>
+<section id="issue-package-conflicts">
+<h3>Issue: Package conflicts<a class="headerlink" href="#issue-package-conflicts" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Remove existing R installations</span>
+sudo<span class="w"> </span>apt-get<span class="w"> </span>remove<span class="w"> </span>r-base<span class="w"> </span>r-base-core
+sudo<span class="w"> </span>apt-get<span class="w"> </span>autoremove
+sudo<span class="w"> </span>apt-get<span class="w"> </span>autoclean
+
+<span class="c1"># Reinstall</span>
+sudo<span class="w"> </span>apt-get<span class="w"> </span>update
+sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>r-base
+</pre></div>
+</div>
+</section>
+<section id="issue-r-installed-but-rscript-not-in-path">
+<h3>Issue: R installed but Rscript not in PATH<a class="headerlink" href="#issue-r-installed-but-rscript-not-in-path" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Find Rscript location</span>
+find<span class="w"> </span>/usr<span class="w"> </span>-name<span class="w"> </span>Rscript<span class="w"> </span><span class="m">2</span>&gt;/dev/null
+
+<span class="c1"># Add to PATH (add to ~/.bashrc for persistence)</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="s2">&quot;/usr/bin:</span><span class="nv">$PATH</span><span class="s2">&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="conda-mamba-alternative-no-sudo-required">
+<h2>Conda/Mamba Alternative (No sudo required)<a class="headerlink" href="#conda-mamba-alternative-no-sudo-required" title="Link to this heading"></a></h2>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install conda/mamba if not available</span>
+wget<span class="w"> </span>https://github.com/conda-forge/miniforge/releases/latest/download/Mambaforge-Linux-x86_64.sh
+bash<span class="w"> </span>Mambaforge-Linux-x86_64.sh<span class="w"> </span>-b<span class="w"> </span>-p<span class="w"> </span><span class="nv">$HOME</span>/mambaforge
+<span class="nb">source</span><span class="w"> </span><span class="nv">$HOME</span>/mambaforge/bin/activate
+
+<span class="c1"># Install R</span>
+mamba<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span>r-base
+
+<span class="c1"># Verify</span>
+Rscript<span class="w"> </span>--version
+</pre></div>
+</div>
+</section>
+<section id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Link to this heading"></a></h2>
+<p><strong>Recommended command for most users</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt-get<span class="w"> </span>update<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>r-base<span class="w"> </span>r-base-dev
+</pre></div>
+</div>
+<p><strong>Verify</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/rna/check_r_dependencies.py
+</pre></div>
+</div>
+<p><strong>Test end-to-end</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run complete workflow with R steps</span>
+bash<span class="w"> </span>scripts/rna/amalgkit/run_amalgkit.sh<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--config<span class="w"> </span>config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--steps<span class="w"> </span>merge,curate,sanity
+</pre></div>
+</div>
+<hr class="docutils" />
+<p><strong>Note</strong>: The core quantification and merge functionality works without R. Only advanced QC (curate) and optional visualizations require R.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

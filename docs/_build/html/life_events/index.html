@@ -1,0 +1,250 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Life Events Module &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Testing" href="../testing.html" />
+    <link rel="prev" title="Simulation: Overview" href="../simulation/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Life Events Module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#key-features">Key Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#core-components">Core Components</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#event-data-structures">Event Data Structures</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#event-embeddings">Event Embeddings</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#prediction-models">Prediction Models</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#visualization">Visualization</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#integration">Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#related-documentation">Related Documentation</a></li>
+</ul>
+</li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Life Events Module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/life_events/index.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="life-events-module">
+<h1>Life Events Module<a class="headerlink" href="#life-events-module" title="Link to this heading"></a></h1>
+<p>The life events module provides comprehensive tools for analyzing human life courses as temporal event sequences, enabling prediction of life outcomes from event data using NLP-inspired methods.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>This module treats life courses as sequences of events (similar to how NLP treats text as sequences of words), allowing the application of sequence modeling techniques to predict outcomes like early mortality, personality traits, and health outcomes.</p>
+</section>
+<section id="key-features">
+<h2>Key Features<a class="headerlink" href="#key-features" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Event Sequence Representation</strong>: Structured data types for temporal event sequences with domain categorization</p></li>
+<li><p><strong>Event Embeddings</strong>: Learn dense vector representations of events using Word2Vec-style methods</p></li>
+<li><p><strong>Sequence Embeddings</strong>: Aggregate event sequences into fixed-size vectors for ML models</p></li>
+<li><p><strong>Domain-Specific Embeddings</strong>: Separate embedding spaces for different life domains</p></li>
+<li><p><strong>Prediction Models</strong>: Classification and regression models for predicting life outcomes</p></li>
+<li><p><strong>Visualization</strong>: Timeline plots, embedding visualizations, attention heatmaps</p></li>
+<li><p><strong>Model Interpretation</strong>: Event importance, temporal patterns, feature attribution</p></li>
+<li><p><strong>Workflow Integration</strong>: End-to-end pipelines for complete analysis</p></li>
+</ul>
+</section>
+<section id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong><a class="reference internal" href="README.html"><span class="std std-doc">Complete Module Documentation</span></a></strong> - Comprehensive guide with examples and API reference</p></li>
+<li><p><strong><a class="reference internal" href="AGENTS.html"><span class="std std-doc">AI Contributions</span></a></strong> - AI assistance in module development</p></li>
+</ul>
+</section>
+<section id="quick-start">
+<h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">Event</span><span class="p">,</span> <span class="n">EventSequence</span><span class="p">,</span> <span class="n">analyze_life_course</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+
+<span class="c1"># Create event sequences</span>
+<span class="n">events</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">Event</span><span class="p">(</span><span class="s2">&quot;degree&quot;</span><span class="p">,</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2010</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">&quot;education&quot;</span><span class="p">),</span>
+    <span class="n">Event</span><span class="p">(</span><span class="s2">&quot;job_change&quot;</span><span class="p">,</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2015</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">&quot;occupation&quot;</span><span class="p">),</span>
+<span class="p">]</span>
+<span class="n">sequence</span> <span class="o">=</span> <span class="n">EventSequence</span><span class="p">(</span><span class="n">person_id</span><span class="o">=</span><span class="s2">&quot;person_001&quot;</span><span class="p">,</span> <span class="n">events</span><span class="o">=</span><span class="n">events</span><span class="p">)</span>
+
+<span class="c1"># Analyze life course</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">analyze_life_course</span><span class="p">([</span><span class="n">sequence</span><span class="p">],</span> <span class="n">outcomes</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="core-components">
+<h2>Core Components<a class="headerlink" href="#core-components" title="Link to this heading"></a></h2>
+<section id="event-data-structures">
+<h3>Event Data Structures<a class="headerlink" href="#event-data-structures" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Event</span></code>: Individual life event with temporal and domain information</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">EventSequence</span></code>: Container for temporal event sequence of a single person</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">EventDatabase</span></code>: Collection of multiple event sequences</p></li>
+</ul>
+</section>
+<section id="event-embeddings">
+<h3>Event Embeddings<a class="headerlink" href="#event-embeddings" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Word2Vec-style embedding learning (Skip-gram, CBOW)</p></li>
+<li><p>Domain-specific embedding spaces</p></li>
+<li><p>Sequence embedding aggregation methods</p></li>
+</ul>
+</section>
+<section id="prediction-models">
+<h3>Prediction Models<a class="headerlink" href="#prediction-models" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Classification and regression models</p></li>
+<li><p>LSTM and GRU sequence models</p></li>
+<li><p>Ensemble and multi-task predictors</p></li>
+<li><p>Survival analysis models</p></li>
+</ul>
+</section>
+<section id="visualization">
+<h3>Visualization<a class="headerlink" href="#visualization" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Timeline plots</p></li>
+<li><p>Embedding visualizations</p></li>
+<li><p>Attention heatmaps</p></li>
+<li><p>Importance plots</p></li>
+</ul>
+</section>
+</section>
+<section id="integration">
+<h2>Integration<a class="headerlink" href="#integration" title="Link to this heading"></a></h2>
+<p>The life events module integrates with:</p>
+<ul class="simple">
+<li><p><strong>ML</strong>: Classification and regression infrastructure</p></li>
+<li><p><strong>Phenotype</strong>: Life course phenotype extraction</p></li>
+<li><p><strong>Visualization</strong>: Plotting infrastructure</p></li>
+<li><p><strong>Multi-Omics</strong>: Event sequences as one data layer</p></li>
+</ul>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong><a class="reference internal" href="#../src/metainformant/life_events/README.md"><span class="xref myst">Source Module Documentation</span></a></strong> - Detailed implementation</p></li>
+<li><p><strong><a class="reference internal" href="../ml/index.html"><span class="std std-doc">ML Module</span></a></strong> - Machine learning methods</p></li>
+<li><p><strong><a class="reference internal" href="../phenotype/index.html"><span class="std std-doc">Phenotype Module</span></a></strong> - Phenotypic trait analysis</p></li>
+<li><p><strong><a class="reference internal" href="../visualization/index.html"><span class="std std-doc">Visualization Module</span></a></strong> - Plotting utilities</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../simulation/index.html" class="btn btn-neutral float-left" title="Simulation: Overview" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../testing.html" class="btn btn-neutral float-right" title="Testing" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

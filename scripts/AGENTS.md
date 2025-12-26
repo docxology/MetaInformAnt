@@ -51,7 +51,7 @@ This document outlines AI assistance in developing METAINFORMANT's utility scrip
 - `run_genome_scale_gwas.py`: Complete SRA→variants→GWAS pipeline
 - `run_pbarbatus_gwas.py`: Species-specific GWAS analysis
 - `download_genome_scale_data.sh`: Real data acquisition
-- `download_real_honeybee_variants.py`: Variant data integration
+- `download_honeybee_variants.py`: Variant data integration
 - `query_bioproject_metadata.py`: NCBI metadata queries
 - Enhanced visualization scripts with 32 plot types
 
@@ -80,7 +80,7 @@ This document outlines AI assistance in developing METAINFORMANT's utility scrip
 - `learn_embeddings.py`: Neural language model training
 - `train_model.py`: Predictive model training
 - `predict_outcomes.py`: Outcome prediction and interpretation
-- `generate_all_visualizations.py`: Comprehensive visualization suite
+- `generate_visualizations.py`: Visualization suite
 
 #### Mathematical Biology (`scripts/math/`)
 - `run_math_modeling.py`: Population dynamics and epidemiological models

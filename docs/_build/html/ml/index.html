@@ -1,0 +1,572 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Machine Learning: Biological Data Analysis &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Networks: Biological Network Analysis" href="../networks/index.html" />
+    <link rel="prev" title="Math: Overview" href="../math/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Machine Learning: Biological Data Analysis</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#core-components">Core Components</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#classification"><span class="xref myst">Classification</span></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#regression"><span class="xref myst">Regression</span></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#feature-selection"><span class="xref myst">Feature Selection</span></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#model-validation"><span class="xref myst">Model Validation</span></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#dimensionality-reduction"><span class="xref myst">Dimensionality Reduction</span></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#architecture">Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#key-features">Key Features</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#biological-applications">Biological Applications</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#robust-validation">Robust Validation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#interpretability">Interpretability</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#quick-start">Quick Start</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#basic-classification">Basic Classification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id1">Feature Selection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id2">Model Validation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#integration-with-other-modules">Integration with Other Modules</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#with-dna-sequences">With DNA Sequences</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#with-expression-data">With Expression Data</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#with-network-data">With Network Data</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#performance-features">Performance Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#model-interpretability">Model Interpretability</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#feature-importance-analysis">Feature Importance Analysis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#model-explanation">Model Explanation</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#advanced-workflows">Advanced Workflows</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#multi-omics-prediction">Multi-omics Prediction</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#time-series-analysis">Time Series Analysis</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#testing">Testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#related-documentation">Related Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Machine Learning: Biological Data Analysis</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/ml/index.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="machine-learning-biological-data-analysis">
+<h1>Machine Learning: Biological Data Analysis<a class="headerlink" href="#machine-learning-biological-data-analysis" title="Link to this heading"></a></h1>
+<p>The machine learning module provides statistical and machine learning methods for biological data analysis, including classification, regression, feature selection, and model validation tailored for biological applications.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>This module offers a comprehensive toolkit for applying machine learning techniques to biological datasets, with emphasis on biological interpretation, robust validation, and integration with other METAINFORMANT modules.</p>
+</section>
+<section id="core-components">
+<h2>Core Components<a class="headerlink" href="#core-components" title="Link to this heading"></a></h2>
+<section id="classification">
+<h3><a class="reference internal" href="#./classification.md"><span class="xref myst">Classification</span></a><a class="headerlink" href="#classification" title="Link to this heading"></a></h3>
+<p>Supervised learning methods for biological prediction tasks:</p>
+<ul class="simple">
+<li><p>Binary and multi-class classification</p></li>
+<li><p>Biological sequence classification</p></li>
+<li><p>Expression-based phenotype prediction</p></li>
+<li><p>Model interpretability tools</p></li>
+<li><p>Cross-validation and ensemble methods</p></li>
+</ul>
+</section>
+<section id="regression">
+<h3><a class="reference internal" href="#./regression.md"><span class="xref myst">Regression</span></a><a class="headerlink" href="#regression" title="Link to this heading"></a></h3>
+<p>Continuous trait prediction and modeling:</p>
+<ul class="simple">
+<li><p>Linear and non-linear regression</p></li>
+<li><p>Regularization methods (Lasso, Ridge, Elastic Net)</p></li>
+<li><p>Survival analysis and time-series prediction</p></li>
+<li><p>Feature importance analysis</p></li>
+<li><p>Model comparison and selection</p></li>
+</ul>
+</section>
+<section id="feature-selection">
+<h3><a class="reference internal" href="#./features.md"><span class="xref myst">Feature Selection</span></a><a class="headerlink" href="#feature-selection" title="Link to this heading"></a></h3>
+<p>Dimensionality reduction and feature importance analysis:</p>
+<ul class="simple">
+<li><p>Univariate statistical tests</p></li>
+<li><p>Recursive feature elimination</p></li>
+<li><p>L1-based selection (Lasso)</p></li>
+<li><p>Biological feature ranking</p></li>
+<li><p>Stability-based selection methods</p></li>
+</ul>
+</section>
+<section id="model-validation">
+<h3><a class="reference internal" href="#./validation.md"><span class="xref myst">Model Validation</span></a><a class="headerlink" href="#model-validation" title="Link to this heading"></a></h3>
+<p>Comprehensive model assessment and validation:</p>
+<ul class="simple">
+<li><p>Cross-validation strategies</p></li>
+<li><p>Bootstrap resampling and confidence intervals</p></li>
+<li><p>Permutation testing</p></li>
+<li><p>Learning curves and validation curves</p></li>
+<li><p>Model comparison and statistical testing</p></li>
+</ul>
+</section>
+<section id="dimensionality-reduction">
+<h3><a class="reference internal" href="#./dimensionality.md"><span class="xref myst">Dimensionality Reduction</span></a><a class="headerlink" href="#dimensionality-reduction" title="Link to this heading"></a></h3>
+<p>Manifold learning and dimensionality reduction:</p>
+<ul class="simple">
+<li><p>Principal Component Analysis (PCA)</p></li>
+<li><p>t-SNE and UMAP</p></li>
+<li><p>Non-negative Matrix Factorization (NMF)</p></li>
+<li><p>Independent Component Analysis (ICA)</p></li>
+<li><p>Biological data-specific methods</p></li>
+</ul>
+</section>
+</section>
+<section id="architecture">
+<h2>Architecture<a class="headerlink" href="#architecture" title="Link to this heading"></a></h2>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart TD
+    A[Biological Data] --&gt; B[Preprocessing]
+    B --&gt; C[Feature Engineering]
+    C --&gt; D[Model Training]
+    D --&gt; E[Validation]
+    E --&gt; F[Interpretation]
+    F --&gt; G[Biological Insights]
+
+    subgraph Methods[ML Methods]
+        H[Classification]
+        I[Regression]
+        J[Feature Selection]
+        K[Dimensionality Reduction]
+        L[Validation]
+    end
+
+    C --&gt; H
+    C --&gt; I
+    C --&gt; J
+    C --&gt; K
+    H --&gt; L
+    I --&gt; L
+    J --&gt; L
+    K --&gt; L
+</pre></div>
+</div>
+</section>
+<section id="key-features">
+<h2>Key Features<a class="headerlink" href="#key-features" title="Link to this heading"></a></h2>
+<section id="biological-applications">
+<h3>Biological Applications<a class="headerlink" href="#biological-applications" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Sequence-Based Prediction</strong>: Classify sequences by function or structure</p></li>
+<li><p><strong>Expression-Based Phenotyping</strong>: Predict phenotypes from gene expression</p></li>
+<li><p><strong>Network-Based Learning</strong>: Use network features for prediction</p></li>
+<li><p><strong>Multi-omics Integration</strong>: Combine multiple data types for prediction</p></li>
+</ul>
+</section>
+<section id="robust-validation">
+<h3>Robust Validation<a class="headerlink" href="#robust-validation" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Cross-Validation</strong>: Multiple CV strategies for reliable performance estimates</p></li>
+<li><p><strong>Bootstrap Methods</strong>: Confidence intervals and statistical testing</p></li>
+<li><p><strong>Permutation Tests</strong>: Assess significance of model performance</p></li>
+<li><p><strong>Learning Curves</strong>: Diagnose overfitting and sample size requirements</p></li>
+</ul>
+</section>
+<section id="interpretability">
+<h3>Interpretability<a class="headerlink" href="#interpretability" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Feature Importance</strong>: Identify most predictive biological features</p></li>
+<li><p><strong>Model Explanation</strong>: Understand individual predictions</p></li>
+<li><p><strong>Biological Annotation</strong>: Link features to biological knowledge</p></li>
+<li><p><strong>Pathway Analysis</strong>: Connect predictions to biological pathways</p></li>
+</ul>
+</section>
+</section>
+<section id="quick-start">
+<h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h2>
+<section id="basic-classification">
+<h3>Basic Classification<a class="headerlink" href="#basic-classification" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.ml</span><span class="w"> </span><span class="kn">import</span> <span class="n">classification</span>
+
+<span class="c1"># Prepare biological data</span>
+<span class="n">features</span> <span class="o">=</span> <span class="n">load_expression_data</span><span class="p">()</span>  <span class="c1"># Gene expression matrix</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="n">load_phenotype_labels</span><span class="p">()</span>   <span class="c1"># Binary phenotype labels</span>
+
+<span class="c1"># Train classifier</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">classification</span><span class="o">.</span><span class="n">train_classifier</span><span class="p">(</span>
+    <span class="n">features</span><span class="p">,</span>
+    <span class="n">labels</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;random_forest&quot;</span><span class="p">,</span>
+    <span class="n">test_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span>
+<span class="p">)</span>
+
+<span class="c1"># Make predictions</span>
+<span class="n">predictions</span> <span class="o">=</span> <span class="n">classification</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">test_features</span><span class="p">)</span>
+<span class="n">probabilities</span> <span class="o">=</span> <span class="n">classification</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">test_features</span><span class="p">)</span>
+
+<span class="c1"># Evaluate performance</span>
+<span class="n">metrics</span> <span class="o">=</span> <span class="n">classification</span><span class="o">.</span><span class="n">evaluate_classification</span><span class="p">(</span><span class="n">predictions</span><span class="p">,</span> <span class="n">test_labels</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Accuracy: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;accuracy&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;AUC: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;auc&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id1">
+<h3>Feature Selection<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.ml</span><span class="w"> </span><span class="kn">import</span> <span class="n">features</span>
+
+<span class="c1"># Select important biological features</span>
+<span class="n">selected_features</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">select_features</span><span class="p">(</span>
+    <span class="n">features</span><span class="p">,</span>
+    <span class="n">labels</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;univariate&quot;</span><span class="p">,</span>
+    <span class="n">k</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>                    <span class="c1"># Select top 1000 features</span>
+    <span class="n">scoring</span><span class="o">=</span><span class="s2">&quot;f_classif&quot;</span>        <span class="c1"># Statistical test</span>
+<span class="p">)</span>
+
+<span class="c1"># Get feature importance scores</span>
+<span class="n">importance_scores</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">feature_importance</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">,</span>
+    <span class="n">selected_features</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;permutation&quot;</span>       <span class="c1"># Permutation importance</span>
+<span class="p">)</span>
+
+<span class="c1"># Biological interpretation</span>
+<span class="n">biological_features</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">interpret_features</span><span class="p">(</span>
+    <span class="n">importance_scores</span><span class="p">,</span>
+    <span class="n">annotation_database</span>       <span class="c1"># Gene annotations</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h3>Model Validation<a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.ml</span><span class="w"> </span><span class="kn">import</span> <span class="n">validation</span>
+
+<span class="c1"># Comprehensive model validation</span>
+<span class="n">validation_results</span> <span class="o">=</span> <span class="n">validation</span><span class="o">.</span><span class="n">cross_validate</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">,</span>
+    <span class="n">features</span><span class="p">,</span>
+    <span class="n">labels</span><span class="p">,</span>
+    <span class="n">cv</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>                      <span class="c1"># 5-fold cross-validation</span>
+    <span class="n">scoring</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;accuracy&quot;</span><span class="p">,</span> <span class="s2">&quot;precision&quot;</span><span class="p">,</span> <span class="s2">&quot;recall&quot;</span><span class="p">,</span> <span class="s2">&quot;f1&quot;</span><span class="p">,</span> <span class="s2">&quot;auc&quot;</span><span class="p">],</span>
+    <span class="n">return_train_score</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+
+<span class="c1"># Bootstrap confidence intervals</span>
+<span class="n">bootstrap_results</span> <span class="o">=</span> <span class="n">validation</span><span class="o">.</span><span class="n">bootstrap_validation</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">,</span>
+    <span class="n">features</span><span class="p">,</span>
+    <span class="n">labels</span><span class="p">,</span>
+    <span class="n">n_bootstrap</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">confidence_level</span><span class="o">=</span><span class="mf">0.95</span>
+<span class="p">)</span>
+
+<span class="c1"># Statistical significance testing</span>
+<span class="n">p_value</span> <span class="o">=</span> <span class="n">validation</span><span class="o">.</span><span class="n">permutation_test</span><span class="p">(</span>
+    <span class="n">validation_results</span><span class="p">[</span><span class="s1">&#39;test_accuracy&#39;</span><span class="p">],</span>
+    <span class="n">n_permutations</span><span class="o">=</span><span class="mi">1000</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="integration-with-other-modules">
+<h2>Integration with Other Modules<a class="headerlink" href="#integration-with-other-modules" title="Link to this heading"></a></h2>
+<section id="with-dna-sequences">
+<h3>With DNA Sequences<a class="headerlink" href="#with-dna-sequences" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.dna</span><span class="w"> </span><span class="kn">import</span> <span class="n">sequences</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.ml</span><span class="w"> </span><span class="kn">import</span> <span class="n">classification</span>
+
+<span class="c1"># Extract features from DNA sequences</span>
+<span class="n">sequences</span> <span class="o">=</span> <span class="n">sequences</span><span class="o">.</span><span class="n">read_fasta</span><span class="p">(</span><span class="s2">&quot;sequences.fasta&quot;</span><span class="p">)</span>
+<span class="n">sequence_features</span> <span class="o">=</span> <span class="n">sequences</span><span class="o">.</span><span class="n">extract_kmer_features</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="c1"># Classify sequences by function</span>
+<span class="n">functional_labels</span> <span class="o">=</span> <span class="n">sequences</span><span class="o">.</span><span class="n">get_functional_labels</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">classification</span><span class="o">.</span><span class="n">train_classifier</span><span class="p">(</span><span class="n">sequence_features</span><span class="p">,</span> <span class="n">functional_labels</span><span class="p">)</span>
+
+<span class="c1"># Predict function for new sequences</span>
+<span class="n">new_features</span> <span class="o">=</span> <span class="n">sequences</span><span class="o">.</span><span class="n">extract_kmer_features</span><span class="p">(</span><span class="n">new_sequences</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">predictions</span> <span class="o">=</span> <span class="n">classification</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">new_features</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="with-expression-data">
+<h3>With Expression Data<a class="headerlink" href="#with-expression-data" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna</span><span class="w"> </span><span class="kn">import</span> <span class="n">workflow</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.ml</span><span class="w"> </span><span class="kn">import</span> <span class="n">regression</span>
+
+<span class="c1"># Load expression data</span>
+<span class="n">expression_data</span> <span class="o">=</span> <span class="n">workflow</span><span class="o">.</span><span class="n">extract_expression_patterns</span><span class="p">(</span><span class="n">rna_data</span><span class="p">)</span>
+
+<span class="c1"># Predict continuous phenotypes</span>
+<span class="n">phenotype_values</span> <span class="o">=</span> <span class="n">load_continuous_phenotypes</span><span class="p">()</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">regression</span><span class="o">.</span><span class="n">train_regressor</span><span class="p">(</span>
+    <span class="n">expression_data</span><span class="p">,</span>
+    <span class="n">phenotype_values</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;xgboost&quot;</span><span class="p">,</span>
+    <span class="n">validation</span><span class="o">=</span><span class="s2">&quot;cross_validation&quot;</span>
+<span class="p">)</span>
+
+<span class="c1"># Feature importance analysis</span>
+<span class="n">importance</span> <span class="o">=</span> <span class="n">regression</span><span class="o">.</span><span class="n">feature_importance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">expression_data</span><span class="p">)</span>
+<span class="n">top_genes</span> <span class="o">=</span> <span class="n">importance</span><span class="o">.</span><span class="n">nlargest</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span>  <span class="c1"># Top 50 predictive genes</span>
+</pre></div>
+</div>
+</section>
+<section id="with-network-data">
+<h3>With Network Data<a class="headerlink" href="#with-network-data" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.networks</span><span class="w"> </span><span class="kn">import</span> <span class="n">ppi</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.ml</span><span class="w"> </span><span class="kn">import</span> <span class="n">classification</span>
+
+<span class="c1"># Use network features for prediction</span>
+<span class="n">network_features</span> <span class="o">=</span> <span class="n">ppi</span><span class="o">.</span><span class="n">extract_network_features</span><span class="p">(</span><span class="n">interaction_network</span><span class="p">)</span>
+
+<span class="c1"># Combine with expression features</span>
+<span class="n">combined_features</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">expression_features</span><span class="p">,</span> <span class="n">network_features</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># Train integrated model</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">classification</span><span class="o">.</span><span class="n">train_classifier</span><span class="p">(</span>
+    <span class="n">combined_features</span><span class="p">,</span>
+    <span class="n">labels</span><span class="p">,</span>
+    <span class="n">feature_selection</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="performance-features">
+<h2>Performance Features<a class="headerlink" href="#performance-features" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Scalable Algorithms</strong>: Efficient implementations for large biological datasets</p></li>
+<li><p><strong>Parallel Processing</strong>: Multi-core support for computationally intensive operations</p></li>
+<li><p><strong>Memory Optimization</strong>: Streaming processing for large feature matrices</p></li>
+<li><p><strong>GPU Support</strong>: CUDA acceleration for deep learning methods</p></li>
+</ul>
+</section>
+<section id="model-interpretability">
+<h2>Model Interpretability<a class="headerlink" href="#model-interpretability" title="Link to this heading"></a></h2>
+<section id="feature-importance-analysis">
+<h3>Feature Importance Analysis<a class="headerlink" href="#feature-importance-analysis" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.ml</span><span class="w"> </span><span class="kn">import</span> <span class="n">features</span>
+
+<span class="c1"># Analyze feature contributions</span>
+<span class="n">importance</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">permutation_importance</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">features</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+
+<span class="c1"># Biological interpretation</span>
+<span class="n">gene_importance</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">map_to_genes</span><span class="p">(</span><span class="n">importance</span><span class="p">,</span> <span class="n">gene_mapping</span><span class="p">)</span>
+<span class="n">pathway_importance</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">map_to_pathways</span><span class="p">(</span><span class="n">gene_importance</span><span class="p">,</span> <span class="n">pathway_database</span><span class="p">)</span>
+
+<span class="c1"># Visualize importance</span>
+<span class="n">features</span><span class="o">.</span><span class="n">plot_feature_importance</span><span class="p">(</span><span class="n">importance</span><span class="p">,</span> <span class="n">top_n</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="model-explanation">
+<h3>Model Explanation<a class="headerlink" href="#model-explanation" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.ml</span><span class="w"> </span><span class="kn">import</span> <span class="n">explain</span>
+
+<span class="c1"># Explain individual predictions</span>
+<span class="n">explanation</span> <span class="o">=</span> <span class="n">explain</span><span class="o">.</span><span class="n">explain_prediction</span><span class="p">(</span>
+    <span class="n">model</span><span class="p">,</span>
+    <span class="n">instance</span><span class="p">,</span>
+    <span class="n">features</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;shap&quot;</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Prediction: </span><span class="si">{</span><span class="n">explanation</span><span class="p">[</span><span class="s1">&#39;prediction&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Top positive features: </span><span class="si">{</span><span class="n">explanation</span><span class="p">[</span><span class="s1">&#39;top_positive&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Top negative features: </span><span class="si">{</span><span class="n">explanation</span><span class="p">[</span><span class="s1">&#39;top_negative&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="advanced-workflows">
+<h2>Advanced Workflows<a class="headerlink" href="#advanced-workflows" title="Link to this heading"></a></h2>
+<section id="multi-omics-prediction">
+<h3>Multi-omics Prediction<a class="headerlink" href="#multi-omics-prediction" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.multiomics</span><span class="w"> </span><span class="kn">import</span> <span class="n">integration</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.ml</span><span class="w"> </span><span class="kn">import</span> <span class="n">classification</span>
+
+<span class="c1"># Load multi-omics data</span>
+<span class="n">multiomics_data</span> <span class="o">=</span> <span class="n">integration</span><span class="o">.</span><span class="n">load_multiomics_data</span><span class="p">([</span>
+    <span class="s2">&quot;genomics.csv&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;transcriptomics.csv&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;proteomics.csv&quot;</span>
+<span class="p">])</span>
+
+<span class="c1"># Feature engineering</span>
+<span class="n">combined_features</span> <span class="o">=</span> <span class="n">integration</span><span class="o">.</span><span class="n">extract_multiomic_features</span><span class="p">(</span><span class="n">multiomics_data</span><span class="p">)</span>
+
+<span class="c1"># Multi-omics classification</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">classification</span><span class="o">.</span><span class="n">train_classifier</span><span class="p">(</span>
+    <span class="n">combined_features</span><span class="p">,</span>
+    <span class="n">labels</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;ensemble&quot;</span><span class="p">,</span>        <span class="c1"># Use ensemble of methods</span>
+    <span class="n">feature_selection</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">cross_validation</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="time-series-analysis">
+<h3>Time Series Analysis<a class="headerlink" href="#time-series-analysis" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.ml</span><span class="w"> </span><span class="kn">import</span> <span class="n">regression</span>
+
+<span class="c1"># Time series prediction</span>
+<span class="n">time_series_data</span> <span class="o">=</span> <span class="n">load_time_series_expression</span><span class="p">()</span>
+<span class="n">time_features</span> <span class="o">=</span> <span class="n">regression</span><span class="o">.</span><span class="n">extract_time_features</span><span class="p">(</span><span class="n">time_series_data</span><span class="p">)</span>
+
+<span class="c1"># Train time series model</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">regression</span><span class="o">.</span><span class="n">train_regressor</span><span class="p">(</span>
+    <span class="n">time_features</span><span class="p">,</span>
+    <span class="n">time_targets</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;lstm&quot;</span><span class="p">,</span>           <span class="c1"># LSTM for time series</span>
+    <span class="n">time_window</span><span class="o">=</span><span class="mi">10</span>           <span class="c1"># 10 time points window</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="testing">
+<h2>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h2>
+<p>Machine learning functionality is tested comprehensively:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run all ML tests</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_ml_*.py<span class="w"> </span>-v
+
+<span class="c1"># Test specific components</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_ml_features.py::test_select_features<span class="w"> </span>-v
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_ml_validation.py::test_cross_validate<span class="w"> </span>-v
+</pre></div>
+</div>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="#./classification.md"><span class="xref myst">Classification Methods</span></a>: Supervised classification algorithms</p></li>
+<li><p><a class="reference internal" href="#./regression.md"><span class="xref myst">Regression Methods</span></a>: Continuous prediction models</p></li>
+<li><p><a class="reference internal" href="#./features.md"><span class="xref myst">Feature Selection</span></a>: Dimensionality reduction and selection</p></li>
+<li><p><a class="reference internal" href="#./validation.md"><span class="xref myst">Model Validation</span></a>: Model assessment and validation</p></li>
+<li><p><a class="reference internal" href="#./dimensionality.md"><span class="xref myst">Dimensionality Reduction</span></a>: Manifold learning methods</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../math/index.html" class="btn btn-neutral float-left" title="Math: Overview" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../networks/index.html" class="btn btn-neutral float-right" title="Networks: Biological Network Analysis" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

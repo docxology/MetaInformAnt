@@ -152,3 +152,4 @@ Each biological domain has its own subdirectory with detailed documentation:
 - See `src/metainformant/*/README.md` for module-specific details
 
 This documentation provides comprehensive coverage of all METAINFORMANT functionality, from basic usage to advanced implementation details.
+

@@ -1,0 +1,231 @@
+{
+  "metadata": {
+    "version": "1.0",
+    "description": "Dependency manifest for METAINFORMANT examples",
+    "last_updated": "2025-01-01"
+  },
+  "global_dependencies": {
+    "required": [
+      "metainformant",
+      "pathlib",
+      "json"
+    ],
+    "optional": []
+  },
+  "domain_dependencies": {
+    "core": {
+      "required": ["metainformant.core"],
+      "optional": []
+    },
+    "dna": {
+      "required": ["metainformant.dna", "numpy"],
+      "optional": ["biopython"]
+    },
+    "rna": {
+      "required": ["metainformant.rna"],
+      "optional": ["pandas"]
+    },
+    "gwas": {
+      "required": ["metainformant.gwas", "numpy", "pandas", "matplotlib"],
+      "optional": ["scikit-learn"]
+    },
+    "protein": {
+      "required": ["metainformant.protein"],
+      "optional": ["biopython"]
+    },
+    "epigenome": {
+      "required": ["metainformant.epigenome"],
+      "optional": ["pandas", "numpy"]
+    },
+    "ontology": {
+      "required": ["metainformant.ontology"],
+      "optional": ["networkx"]
+    },
+    "phenotype": {
+      "required": ["metainformant.phenotype"],
+      "optional": []
+    },
+    "ecology": {
+      "required": ["metainformant.ecology", "numpy"],
+      "optional": ["scipy"]
+    },
+    "math": {
+      "required": ["metainformant.math", "numpy"],
+      "optional": ["scipy", "matplotlib"]
+    },
+    "information": {
+      "required": ["metainformant.information", "numpy"],
+      "optional": ["scipy"]
+    },
+    "life_events": {
+      "required": ["metainformant.life_events"],
+      "optional": ["pandas", "numpy"]
+    },
+    "multiomics": {
+      "required": ["metainformant.multiomics"],
+      "optional": ["numpy", "pandas", "scikit-learn"]
+    },
+    "singlecell": {
+      "required": ["metainformant.singlecell"],
+      "optional": ["scanpy", "numpy", "pandas"]
+    },
+    "quality": {
+      "required": ["metainformant.quality"],
+      "optional": []
+    },
+    "networks": {
+      "required": ["metainformant.networks"],
+      "optional": ["networkx", "numpy"]
+    },
+    "ml": {
+      "required": ["metainformant.ml", "numpy", "scikit-learn"],
+      "optional": ["pandas", "matplotlib"]
+    },
+    "simulation": {
+      "required": ["metainformant.simulation"],
+      "optional": ["numpy"]
+    },
+    "visualization": {
+      "required": ["metainformant.visualization", "matplotlib"],
+      "optional": ["seaborn", "plotly"]
+    },
+    "integration": {
+      "required": ["metainformant"],
+      "optional": ["numpy", "pandas", "matplotlib"]
+    }
+  },
+  "example_dependencies": {
+    "core/example_config.py": {
+      "required": ["metainformant.core"],
+      "optional": []
+    },
+    "core/example_io.py": {
+      "required": ["metainformant.core"],
+      "optional": []
+    },
+    "core/example_logging.py": {
+      "required": ["metainformant.core"],
+      "optional": []
+    },
+    "core/example_paths.py": {
+      "required": ["metainformant.core"],
+      "optional": []
+    },
+    "core/example_workflow.py": {
+      "required": ["metainformant.core"],
+      "optional": ["pyyaml"]
+    },
+    "dna/example_sequences.py": {
+      "required": ["metainformant.dna", "metainformant.core"],
+      "optional": []
+    },
+    "dna/example_alignment.py": {
+      "required": ["metainformant.dna", "metainformant.core"],
+      "optional": []
+    },
+    "dna/example_phylogeny.py": {
+      "required": ["metainformant.dna", "metainformant.core"],
+      "optional": ["numpy"]
+    },
+    "dna/example_population.py": {
+      "required": ["metainformant.dna", "metainformant.core", "numpy"],
+      "optional": []
+    },
+    "rna/example_amalgkit.py": {
+      "required": ["metainformant.rna", "metainformant.core"],
+      "optional": []
+    },
+    "rna/example_quantification.py": {
+      "required": ["metainformant.rna", "metainformant.core"],
+      "optional": ["numpy"]
+    },
+    "gwas/example_association.py": {
+      "required": ["metainformant.gwas", "metainformant.core", "numpy"],
+      "optional": ["matplotlib"]
+    },
+    "gwas/example_visualization.py": {
+      "required": ["metainformant.gwas", "metainformant.core", "matplotlib", "pandas"],
+      "optional": []
+    },
+    "ml/example_pipeline.py": {
+      "required": ["metainformant.ml", "metainformant.core", "numpy", "scikit-learn"],
+      "optional": ["matplotlib"]
+    },
+    "integration/example_multiomics.py": {
+      "required": ["metainformant", "numpy"],
+      "optional": []
+    },
+    "information/example_entropy.py": {
+      "required": ["metainformant.information", "numpy"],
+      "optional": ["scipy"]
+    },
+    "integration/example_dna_rna.py": {
+      "required": ["metainformant.dna", "metainformant.rna", "numpy"],
+      "optional": ["pandas"]
+    },
+    "integration/example_complete_workflow.py": {
+      "required": ["metainformant"],
+      "optional": ["numpy", "pandas", "matplotlib"]
+    },
+    "life_events/example_events.py": {
+      "required": ["metainformant.life_events"],
+      "optional": ["pandas", "numpy", "matplotlib"]
+    },
+    "math/example_dynamics.py": {
+      "required": ["metainformant.math", "numpy"],
+      "optional": ["scipy", "matplotlib"]
+    },
+    "networks/example_networks.py": {
+      "required": ["metainformant.networks"],
+      "optional": ["networkx", "numpy"]
+    },
+    "ontology/example_go.py": {
+      "required": ["metainformant.ontology"],
+      "optional": ["networkx"]
+    },
+    "phenotype/example_traits.py": {
+      "required": ["metainformant.phenotype"],
+      "optional": []
+    },
+    "protein/example_sequences.py": {
+      "required": ["metainformant.protein"],
+      "optional": ["biopython"]
+    },
+    "ecology/example_community.py": {
+      "required": ["metainformant.ecology", "numpy"],
+      "optional": ["scipy"]
+    },
+    "epigenome/example_methylation.py": {
+      "required": ["metainformant.epigenome"],
+      "optional": ["pandas", "numpy"]
+    },
+    "multiomics/example_integration.py": {
+      "required": ["metainformant.multiomics"],
+      "optional": ["numpy", "pandas", "scikit-learn"]
+    },
+    "quality/example_qc.py": {
+      "required": ["metainformant.quality"],
+      "optional": []
+    },
+    "simulation/example_simulation.py": {
+      "required": ["metainformant.simulation"],
+      "optional": ["numpy"]
+    },
+    "singlecell/example_scrna.py": {
+      "required": ["metainformant.singlecell"],
+      "optional": ["scanpy", "anndata", "numpy", "pandas"]
+    },
+    "visualization/example_plots.py": {
+      "required": ["metainformant.visualization", "matplotlib"],
+      "optional": ["seaborn", "plotly"]
+    }
+  },
+  "external_tools": {
+    "amalgkit": {
+      "description": "RNA-seq analysis workflow tool",
+      "examples": ["rna/example_amalgkit.py"],
+      "check_command": "which amalgkit",
+      "install_hint": "See RNA documentation for installation instructions"
+    }
+  }
+}

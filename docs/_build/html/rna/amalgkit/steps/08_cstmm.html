@@ -1,0 +1,713 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>amalgkit cstmm: Cross-Species TMM Normalization &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">amalgkit cstmm: Cross-Species TMM Normalization</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/rna/amalgkit/steps/08_cstmm.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="amalgkit-cstmm-cross-species-tmm-normalization">
+<h1>amalgkit cstmm: Cross-Species TMM Normalization<a class="headerlink" href="#amalgkit-cstmm-cross-species-tmm-normalization" title="Link to this heading"></a></h1>
+<section id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Link to this heading"></a></h2>
+<p>Performs cross-species transcript abundance normalization using TMM (Trimmed Mean of M-values) on orthologous genes identified via orthogroups. This step enables <strong>comparative expression analysis</strong> across multiple species.</p>
+</section>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">cstmm</span></code> step:</p>
+<ul class="simple">
+<li><p>Loads merged expression matrices from multiple species</p></li>
+<li><p>Maps transcripts to orthogroups (via OrthoFinder orthogroups)</p></li>
+<li><p>Identifies single-copy orthologs (1:1:1 orthologs)</p></li>
+<li><p>Applies TMM normalization using single-copy genes as reference</p></li>
+<li><p>Generates normalized expression matrices for cross-species comparison</p></li>
+</ul>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
+<section id="basic-usage">
+<h3>Basic Usage<a class="headerlink" href="#basic-usage" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>amalgkit<span class="w"> </span>cstmm<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--metadata<span class="w"> </span>output/amalgkit/work/metadata/metadata.tsv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--orthogroup_table<span class="w"> </span>output/orthogroups/Orthogroups.tsv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--dir_busco<span class="w"> </span>output/busco
+</pre></div>
+</div>
+</section>
+<section id="python-api">
+<h3>Python API<a class="headerlink" href="#python-api" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna</span><span class="w"> </span><span class="kn">import</span> <span class="n">amalgkit</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">amalgkit</span><span class="o">.</span><span class="n">cstmm</span><span class="p">(</span>
+    <span class="n">out_dir</span><span class="o">=</span><span class="s2">&quot;output/amalgkit/work&quot;</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="s2">&quot;output/amalgkit/work/metadata/metadata.tsv&quot;</span><span class="p">,</span>
+    <span class="n">orthogroup_table</span><span class="o">=</span><span class="s2">&quot;output/orthogroups/Orthogroups.tsv&quot;</span><span class="p">,</span>
+    <span class="n">dir_busco</span><span class="o">=</span><span class="s2">&quot;output/busco&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="configuration-file">
+<h3>Configuration File<a class="headerlink" href="#configuration-file" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cstmm</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/work</span>
+<span class="w">    </span><span class="nt">orthogroup_table</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/orthogroups/Orthogroups.tsv</span>
+<span class="w">    </span><span class="nt">dir_busco</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/busco</span>
+<span class="w">    </span><span class="nt">dir_count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/work/merge</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Link to this heading"></a></h2>
+<section id="optional-parameters">
+<h3>Optional Parameters<a class="headerlink" href="#optional-parameters" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--out_dir</span></code></p></td>
+<td><p>PATH</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">./</span></code></p></td>
+<td><p>Directory for intermediate and output files.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--metadata</span></code></p></td>
+<td><p>PATH</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">inferred</span></code></p></td>
+<td><p>Path to metadata.tsv. Default: <code class="docutils literal notranslate"><span class="pre">out_dir/metadata/metadata.tsv</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--orthogroup_table</span></code></p></td>
+<td><p>PATH</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>Path to orthogroup table (OrthoFinder <code class="docutils literal notranslate"><span class="pre">Orthogroups.tsv</span></code> or <code class="docutils literal notranslate"><span class="pre">N0.tsv</span></code>). Set to empty string (<code class="docutils literal notranslate"><span class="pre">&quot;&quot;</span></code>) for single-species TMM normalization.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--dir_busco</span></code></p></td>
+<td><p>PATH</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>Path to directory containing per-species BUSCO full tables. File names expected: <code class="docutils literal notranslate"><span class="pre">GENUS_SPECIES_MISC.tsv</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--dir_count</span></code></p></td>
+<td><p>PATH</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">inferred</span></code></p></td>
+<td><p>Path to merged count matrices. Default: <code class="docutils literal notranslate"><span class="pre">out_dir/merge</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="input-requirements">
+<h2>Input Requirements<a class="headerlink" href="#input-requirements" title="Link to this heading"></a></h2>
+<section id="prerequisites">
+<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Orthogroup Table</strong>: From OrthoFinder analysis</p></li>
+<li><p><strong>Merged Expression Matrices</strong>: From <code class="docutils literal notranslate"><span class="pre">amalgkit</span> <span class="pre">merge</span></code> for each species</p></li>
+<li><p><strong>BUSCO Results</strong> (Optional): For quality filtering</p></li>
+</ul>
+</section>
+<section id="orthogroup-table-format">
+<h3>Orthogroup Table Format<a class="headerlink" href="#orthogroup-table-format" title="Link to this heading"></a></h3>
+<p><strong>From OrthoFinder</strong>: <code class="docutils literal notranslate"><span class="pre">Orthogroups.tsv</span></code></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Orthogroup</span>              <span class="n">Species1_transcript1</span>    <span class="n">Species1_transcript2</span>    <span class="n">Species2_transcript1</span>
+<span class="n">OG0000001</span>               <span class="n">Species1_001</span>            <span class="n">Species1_002</span>            <span class="n">Species2_001</span>
+<span class="n">OG0000002</span>               <span class="n">Species1_003</span>                                   <span class="n">Species2_002</span>
+<span class="n">OG0000002</span>               <span class="n">Species1_004</span>                                   <span class="n">Species2_003</span>
+</pre></div>
+</div>
+<p><strong>Required Format</strong>:</p>
+<ul class="simple">
+<li><p>First column: Orthogroup ID (e.g., <code class="docutils literal notranslate"><span class="pre">OG0000001</span></code>)</p></li>
+<li><p>Remaining columns: Transcript IDs per species</p></li>
+<li><p>Tab-delimited</p></li>
+</ul>
+</section>
+<section id="merged-count-matrices">
+<h3>Merged Count Matrices<a class="headerlink" href="#merged-count-matrices" title="Link to this heading"></a></h3>
+<p>Expected structure:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>dir_count/
+├── Species1/
+│   └── Species1_tc.tsv    # Count matrix
+├── Species2/
+│   └── Species2_tc.tsv    # Count matrix
+└── Species3/
+    └── Species3_tc.tsv    # Count matrix
+</pre></div>
+</div>
+</section>
+<section id="busco-full-tables-optional">
+<h3>BUSCO Full Tables (Optional)<a class="headerlink" href="#busco-full-tables-optional" title="Link to this heading"></a></h3>
+<p>Directory structure:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>dir_busco/
+├── Species1_full_table.tsv
+├── Species2_full_table.tsv
+└── Species3_full_table.tsv
+</pre></div>
+</div>
+<p><strong>File Naming</strong>: <code class="docutils literal notranslate"><span class="pre">{Genus}_{Species}_full_table.tsv</span></code><br />
+(Spaces replaced with underscores)</p>
+</section>
+</section>
+<section id="output-files">
+<h2>Output Files<a class="headerlink" href="#output-files" title="Link to this heading"></a></h2>
+<section id="directory-structure">
+<h3>Directory Structure<a class="headerlink" href="#directory-structure" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>out_dir/cstmm/
+└── {Species_List}/
+    ├── {Species_List}_cstmm.tc.tsv          # ⭐ TMM-normalized counts matrix
+    ├── {Species_List}_cstmm.sample_info.tsv # Sample metadata
+    └── cstmm_summary.txt                    # Normalization statistics
+</pre></div>
+</div>
+</section>
+<section id="primary-output">
+<h3>Primary Output<a class="headerlink" href="#primary-output" title="Link to this heading"></a></h3>
+<p><strong><code class="docutils literal notranslate"><span class="pre">{Species_List}_cstmm.tc.tsv</span></code></strong>: TMM-normalized count matrix</p>
+<p><strong>Format</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">orthogroup_id</span>    <span class="n">Species1_SRR1</span>    <span class="n">Species1_SRR2</span>    <span class="n">Species2_SRR1</span>    <span class="n">Species2_SRR2</span>
+<span class="n">OG0000001</span>        <span class="mf">1234.5</span>           <span class="mf">2456.0</span>           <span class="mf">1123.8</span>           <span class="mf">2234.2</span>
+<span class="n">OG0000002</span>        <span class="mf">567.2</span>           <span class="mf">1123.5</span>           <span class="mf">498.7</span>            <span class="mf">987.3</span>
+</pre></div>
+</div>
+<p><strong>Key Features</strong>:</p>
+<ul class="simple">
+<li><p>Rows: Orthogroups (not individual transcripts)</p></li>
+<li><p>Columns: All samples from all species</p></li>
+<li><p>Values: TMM-normalized expression levels</p></li>
+<li><p><strong>Cross-species comparable</strong>: Expression values normalized across species boundaries</p></li>
+</ul>
+</section>
+</section>
+<section id="workflow-integration">
+<h2>Workflow Integration<a class="headerlink" href="#workflow-integration" title="Link to this heading"></a></h2>
+<section id="position-in-pipeline">
+<h3>Position in Pipeline<a class="headerlink" href="#position-in-pipeline" title="Link to this heading"></a></h3>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart LR
+    A[merge Species 1] --&gt; B[cstmm]
+    C[merge Species 2] --&gt; B
+    D[merge Species 3] --&gt; B
+    B --&gt; E[curate]
+</pre></div>
+</div>
+<p><strong>cstmm</strong> runs <strong>after merge</strong> for all species, <strong>before curate</strong>.</p>
+</section>
+<section id="single-species-mode">
+<h3>Single-Species Mode<a class="headerlink" href="#single-species-mode" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># TMM normalization without orthogroups</span>
+amalgkit<span class="w"> </span>cstmm<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--orthogroup_table<span class="w"> </span><span class="s2">&quot;&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/work
+</pre></div>
+</div>
+<p><strong>Effect</strong>: Performs standard TMM normalization (within-species only)</p>
+</section>
+</section>
+<section id="cross-species-normalization-theory">
+<h2>Cross-Species Normalization Theory<a class="headerlink" href="#cross-species-normalization-theory" title="Link to this heading"></a></h2>
+<section id="why-cross-species-normalization">
+<h3>Why Cross-Species Normalization?<a class="headerlink" href="#why-cross-species-normalization" title="Link to this heading"></a></h3>
+<p><strong>Problem</strong>: Expression values from different species are not directly comparable:</p>
+<ul class="simple">
+<li><p>Different transcriptome sizes</p></li>
+<li><p>Different sequencing depths</p></li>
+<li><p>Different library preparation methods</p></li>
+<li><p>Different gene copy numbers</p></li>
+</ul>
+<p><strong>Solution</strong>: TMM normalization using single-copy orthologs:</p>
+<ol class="arabic simple">
+<li><p>Identify 1:1:1 orthologs (single-copy genes in all species)</p></li>
+<li><p>Use these as reference genes (assumed constant expression)</p></li>
+<li><p>Normalize all samples relative to reference</p></li>
+<li><p>Enable cross-species expression comparison</p></li>
+</ol>
+</section>
+<section id="tmm-algorithm">
+<h3>TMM Algorithm<a class="headerlink" href="#tmm-algorithm" title="Link to this heading"></a></h3>
+<p><strong>Trimmed Mean of M-values</strong> (Robinson &amp; Oshlack, 2010):</p>
+<ol class="arabic simple">
+<li><p><strong>Calculate log fold changes</strong> (M-values) between samples</p></li>
+<li><p><strong>Trim extreme values</strong> (remove top/bottom 30% M-values)</p></li>
+<li><p><strong>Calculate mean</strong> of remaining M-values</p></li>
+<li><p><strong>Apply scaling factor</strong> to all genes</p></li>
+</ol>
+<p><strong>Reference Genes</strong>:</p>
+<ul class="simple">
+<li><p>Single-copy orthologs (1:1:1 across all species)</p></li>
+<li><p>High expression (above threshold)</p></li>
+<li><p>Low variance across samples</p></li>
+</ul>
+</section>
+</section>
+<section id="performance-considerations">
+<h2>Performance Considerations<a class="headerlink" href="#performance-considerations" title="Link to this heading"></a></h2>
+<section id="runtime">
+<h3>Runtime<a class="headerlink" href="#runtime" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Small analysis</strong> (2-3 species, &lt;50 samples): 1-5 minutes</p></li>
+<li><p><strong>Medium analysis</strong> (3-5 species, 50-200 samples): 5-15 minutes</p></li>
+<li><p><strong>Large analysis</strong> (&gt;5 species, &gt;200 samples): 15-60 minutes</p></li>
+</ul>
+<p><strong>Factors</strong>:</p>
+<ul class="simple">
+<li><p>Number of orthogroups</p></li>
+<li><p>Number of samples per species</p></li>
+<li><p>Computing resources</p></li>
+</ul>
+</section>
+<section id="memory-usage">
+<h3>Memory Usage<a class="headerlink" href="#memory-usage" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Moderate</strong>: 2-8GB for typical analyses</p></li>
+<li><p>Scales with (# orthogroups) × (# total samples)</p></li>
+</ul>
+</section>
+</section>
+<section id="common-use-cases">
+<h2>Common Use Cases<a class="headerlink" href="#common-use-cases" title="Link to this heading"></a></h2>
+<section id="multi-species-comparative-analysis">
+<h3>1. Multi-Species Comparative Analysis<a class="headerlink" href="#multi-species-comparative-analysis" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># After merging all species</span>
+amalgkit<span class="w"> </span>cstmm<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/multi_species<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--orthogroup_table<span class="w"> </span>output/orthofinder/Orthogroups.tsv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--dir_count<span class="w"> </span>output/amalgkit/multi_species/merge
+</pre></div>
+</div>
+<p><strong>Result</strong>: TMM-normalized matrix with all samples from all species</p>
+</section>
+<section id="cross-species-brain-expression-comparison">
+<h3>2. Cross-Species Brain Expression Comparison<a class="headerlink" href="#cross-species-brain-expression-comparison" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Compare brain expression across species</span>
+amalgkit<span class="w"> </span>cstmm<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/comparative_brain<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--orthogroup_table<span class="w"> </span>output/orthogroups/Orthogroups.tsv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--metadata<span class="w"> </span>output/comparative_brain/metadata/brain_samples.tsv
+</pre></div>
+</div>
+<p><strong>Result</strong>: Normalized expression matrix enabling cross-species brain comparisons</p>
+</section>
+<section id="single-species-tmm-no-orthogroups">
+<h3>3. Single-Species TMM (No Orthogroups)<a class="headerlink" href="#single-species-tmm-no-orthogroups" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Standard TMM normalization</span>
+amalgkit<span class="w"> </span>cstmm<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--orthogroup_table<span class="w"> </span><span class="s2">&quot;&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--dir_count<span class="w"> </span>output/amalgkit/work/merge
+</pre></div>
+</div>
+<p><strong>Result</strong>: Within-species TMM normalization (like edgeR default)</p>
+</section>
+</section>
+<section id="preparing-orthogroup-tables">
+<h2>Preparing Orthogroup Tables<a class="headerlink" href="#preparing-orthogroup-tables" title="Link to this heading"></a></h2>
+<section id="using-orthofinder">
+<h3>Using OrthoFinder<a class="headerlink" href="#using-orthofinder" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run OrthoFinder on protein sequences</span>
+orthofinder<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-f<span class="w"> </span>protein_sequences/<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-t<span class="w"> </span><span class="m">16</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-o<span class="w"> </span>output/orthofinder
+
+<span class="c1"># Extract orthogroups table</span>
+cp<span class="w"> </span>output/orthofinder/Orthogroups/Orthogroups.tsv<span class="w"> </span>output/orthogroups/
+</pre></div>
+</div>
+</section>
+<section id="mapping-transcripts-to-orthogroups">
+<h3>Mapping Transcripts to Orthogroups<a class="headerlink" href="#mapping-transcripts-to-orthogroups" title="Link to this heading"></a></h3>
+<p><strong>Requirement</strong>: Transcript IDs in expression matrices must match protein IDs in orthogroup table.</p>
+<p><strong>Mapping Strategy</strong>:</p>
+<ol class="arabic simple">
+<li><p>Use transcript-to-gene mapping (GFF files)</p></li>
+<li><p>Map genes to orthogroups</p></li>
+<li><p>Aggregate transcript counts to gene level</p></li>
+<li><p>Map genes to orthogroups</p></li>
+</ol>
+<p><strong>Or</strong>: Ensure transcript IDs match protein IDs used in OrthoFinder</p>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="issue-orthogroup-table-not-found">
+<h3>Issue: Orthogroup table not found<a class="headerlink" href="#issue-orthogroup-table-not-found" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Error</span><span class="p">:</span> <span class="n">Could</span> <span class="ow">not</span> <span class="n">find</span> <span class="n">orthogroup</span> <span class="n">table</span>
+</pre></div>
+</div>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic">
+<li><p>Verify file exists:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ls<span class="w"> </span>-lh<span class="w"> </span>output/orthogroups/Orthogroups.tsv
+</pre></div>
+</div>
+</li>
+<li><p>Check file format:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>head<span class="w"> </span>-5<span class="w"> </span>output/orthogroups/Orthogroups.tsv
+<span class="c1"># Should show: Orthogroup_ID, Species1_transcript1, Species1_transcript2, ...</span>
+</pre></div>
+</div>
+</li>
+<li><p>Specify full path:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--orthogroup_table<span class="w"> </span>/absolute/path/to/Orthogroups.tsv
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="issue-no-orthologs-matched">
+<h3>Issue: No orthologs matched<a class="headerlink" href="#issue-no-orthologs-matched" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ne">Warning</span><span class="p">:</span> <span class="n">No</span> <span class="n">orthologs</span> <span class="n">found</span> <span class="ow">in</span> <span class="n">expression</span> <span class="n">matrices</span>
+</pre></div>
+</div>
+<p><strong>Causes</strong>:</p>
+<ol class="arabic simple">
+<li><p>Transcript ID mismatch between matrices and orthogroup table</p></li>
+<li><p>Different ID formats (e.g., “XM_001” vs “Species1_XM_001”)</p></li>
+<li><p>Orthogroups based on proteins, but matrices have transcripts</p></li>
+</ol>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic">
+<li><p>Check ID formats:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># In orthogroup table</span>
+head<span class="w"> </span>-1<span class="w"> </span>output/orthogroups/Orthogroups.tsv<span class="w"> </span><span class="p">|</span><span class="w"> </span>cut<span class="w"> </span>-f2
+
+<span class="c1"># In expression matrix</span>
+head<span class="w"> </span>-1<span class="w"> </span>output/work/merge/Species1/Species1_tc.tsv<span class="w"> </span><span class="p">|</span><span class="w"> </span>cut<span class="w"> </span>-f1
+</pre></div>
+</div>
+</li>
+<li><p>Modify IDs to match:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="c1"># Add species prefix if needed</span>
+<span class="n">og</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;Orthogroups.tsv&quot;</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">og</span><span class="p">[</span><span class="s2">&quot;Species1_transcript&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;Species1_&quot;</span> <span class="o">+</span> <span class="n">og</span><span class="p">[</span><span class="s2">&quot;Species1_transcript&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</li>
+<li><p>Use gene-level aggregation:</p>
+<ul class="simple">
+<li><p>Map transcripts → genes → orthogroups</p></li>
+<li><p>Aggregate transcript counts to genes before cstmm</p></li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="issue-too-few-single-copy-orthologs">
+<h3>Issue: Too few single-copy orthologs<a class="headerlink" href="#issue-too-few-single-copy-orthologs" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ne">Warning</span><span class="p">:</span> <span class="n">Only</span> <span class="mi">50</span> <span class="n">single</span><span class="o">-</span><span class="n">copy</span> <span class="n">orthologs</span> <span class="n">found</span>
+</pre></div>
+</div>
+<p><strong>Causes</strong>:</p>
+<ul class="simple">
+<li><p>Low-quality orthogroup prediction</p></li>
+<li><p>High gene duplication in study species</p></li>
+<li><p>Stringent filtering</p></li>
+</ul>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic simple">
+<li><p>Re-run OrthoFinder with relaxed parameters</p></li>
+<li><p>Check BUSCO completeness scores (should be &gt;90%)</p></li>
+<li><p>Accept multi-copy orthogroups (modify cstmm logic)</p></li>
+</ol>
+</section>
+<section id="issue-empty-cstmm-output">
+<h3>Issue: Empty cstmm output<a class="headerlink" href="#issue-empty-cstmm-output" title="Link to this heading"></a></h3>
+<p><strong>Diagnosis</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>wc<span class="w"> </span>-l<span class="w"> </span>output/work/cstmm/*/*_cstmm.tc.tsv
+<span class="c1"># Shows: 1 (header only, no data)</span>
+</pre></div>
+</div>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic">
+<li><p>Verify merged matrices exist:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ls<span class="w"> </span>output/work/merge/*/*_tc.tsv
+</pre></div>
+</div>
+</li>
+<li><p>Check metadata contains all species:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cut<span class="w"> </span>-f2<span class="w"> </span>output/work/metadata/metadata.tsv<span class="w"> </span><span class="p">|</span><span class="w"> </span>sort<span class="w"> </span>-u
+</pre></div>
+</div>
+</li>
+<li><p>Verify orthogroup table has matching IDs</p></li>
+</ol>
+</section>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<section id="verify-orthogroup-quality">
+<h3>1. Verify Orthogroup Quality<a class="headerlink" href="#verify-orthogroup-quality" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check BUSCO completeness before orthogroup analysis</span>
+<span class="k">for</span><span class="w"> </span>species<span class="w"> </span><span class="k">in</span><span class="w"> </span>Species1<span class="w"> </span>Species2<span class="w"> </span>Species3<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">    </span><span class="nv">busco_summary</span><span class="o">=</span><span class="k">$(</span>grep<span class="w"> </span><span class="s2">&quot;C:&quot;</span><span class="w"> </span><span class="si">${</span><span class="nv">species</span><span class="si">}</span>_full_table.tsv<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-1<span class="k">)</span>
+<span class="w">    </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$species</span><span class="s2">: </span><span class="nv">$busco_summary</span><span class="s2">&quot;</span>
+<span class="k">done</span>
+
+<span class="c1"># Should show &gt;90% complete BUSCOs for reliable orthogroups</span>
+</pre></div>
+</div>
+</section>
+<section id="validate-id-mapping">
+<h3>2. Validate ID Mapping<a class="headerlink" href="#validate-id-mapping" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Verify transcript IDs match orthogroup table</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="c1"># Load orthogroups</span>
+<span class="n">og</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;Orthogroups.tsv&quot;</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Load expression matrix</span>
+<span class="n">expr</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;Species1_tc.tsv&quot;</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="c1"># Check overlap</span>
+<span class="n">og_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">og</span><span class="p">[</span><span class="s2">&quot;Species1_transcript&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">dropna</span><span class="p">())</span>
+<span class="n">expr_ids</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">expr</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+<span class="n">overlap</span> <span class="o">=</span> <span class="n">og_ids</span> <span class="o">&amp;</span> <span class="n">expr_ids</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Overlap: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">overlap</span><span class="p">)</span><span class="si">}</span><span class="s2"> / </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">og_ids</span><span class="p">)</span><span class="si">}</span><span class="s2"> = </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">overlap</span><span class="p">)</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">og_ids</span><span class="p">)</span><span class="o">*</span><span class="mi">100</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2">%&quot;</span><span class="p">)</span>
+
+<span class="c1"># Should be &gt;80% for good results</span>
+</pre></div>
+</div>
+</section>
+<section id="inspect-normalization-factors">
+<h3>3. Inspect Normalization Factors<a class="headerlink" href="#inspect-normalization-factors" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check cstmm summary</span>
+cat<span class="w"> </span>output/work/cstmm/*/cstmm_summary.txt
+
+<span class="c1"># Look for:</span>
+<span class="c1"># - Number of single-copy orthologs used</span>
+<span class="c1"># - Normalization factors (should be ~1.0)</span>
+<span class="c1"># - Sample counts per species</span>
+</pre></div>
+</div>
+</section>
+<section id="validate-cross-species-comparability">
+<h3>4. Validate Cross-Species Comparability<a class="headerlink" href="#validate-cross-species-comparability" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># After cstmm, verify expression values are comparable</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="n">cstmm</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;output/work/cstmm/multi_species/multi_species_cstmm.tc.tsv&quot;</span><span class="p">,</span>
+                    <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="c1"># Check expression distributions across species</span>
+<span class="k">for</span> <span class="n">species</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;Species1&quot;</span><span class="p">,</span> <span class="s2">&quot;Species2&quot;</span><span class="p">,</span> <span class="s2">&quot;Species3&quot;</span><span class="p">]:</span>
+    <span class="n">species_cols</span> <span class="o">=</span> <span class="p">[</span><span class="n">c</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">cstmm</span><span class="o">.</span><span class="n">columns</span> <span class="k">if</span> <span class="n">species</span> <span class="ow">in</span> <span class="n">c</span><span class="p">]</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">species</span><span class="si">}</span><span class="s2">: mean=</span><span class="si">{</span><span class="n">cstmm</span><span class="p">[</span><span class="n">species_cols</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">, &quot;</span>
+          <span class="sa">f</span><span class="s2">&quot;median=</span><span class="si">{</span><span class="n">cstmm</span><span class="p">[</span><span class="n">species_cols</span><span class="p">]</span><span class="o">.</span><span class="n">median</span><span class="p">()</span><span class="o">.</span><span class="n">median</span><span class="p">()</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Values should be similar across species (normalized)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="real-world-examples">
+<h2>Real-World Examples<a class="headerlink" href="#real-world-examples" title="Link to this heading"></a></h2>
+<section id="example-1-four-ant-species-comparison">
+<h3>Example 1: Four Ant Species Comparison<a class="headerlink" href="#example-1-four-ant-species-comparison" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Merge each species</span>
+<span class="k">for</span><span class="w"> </span>species<span class="w"> </span><span class="k">in</span><span class="w"> </span>pbarbatus<span class="w"> </span>cfloridanus<span class="w"> </span>amellifera<span class="w"> </span>linepithema<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">    </span>amalgkit<span class="w"> </span>merge<span class="w"> </span><span class="se">\</span>
+<span class="w">      </span>--out_dir<span class="w"> </span>output/amalgkit/<span class="si">${</span><span class="nv">species</span><span class="si">}</span>/work<span class="w"> </span><span class="se">\</span>
+<span class="w">      </span>--metadata<span class="w"> </span>output/amalgkit/<span class="si">${</span><span class="nv">species</span><span class="si">}</span>/work/metadata/pivot_qualified.tsv
+<span class="k">done</span>
+
+<span class="c1"># Cross-species TMM normalization</span>
+amalgkit<span class="w"> </span>cstmm<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/comparative<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--orthogroup_table<span class="w"> </span>output/orthofinder/Orthogroups.tsv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--dir_count<span class="w"> </span>output/amalgkit/comparative/merge
+</pre></div>
+</div>
+<p><strong>Result</strong>: TMM-normalized matrix with samples from all species in the merge directory</p>
+</section>
+<section id="example-2-insect-brain-multi-species">
+<h3>Example 2: Insect Brain Multi-Species<a class="headerlink" href="#example-2-insect-brain-multi-species" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>amalgkit<span class="w"> </span>cstmm<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/insect_brain_comparative<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--orthogroup_table<span class="w"> </span>output/insect_orthogroups/Orthogroups.tsv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--dir_busco<span class="w"> </span>output/busco<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--metadata<span class="w"> </span>output/insect_brain/metadata/brain_samples.tsv
+</pre></div>
+</div>
+<p><strong>Result</strong>: Normalized brain expression data across multiple insect species</p>
+</section>
+</section>
+<section id="integration-with-metainformant-workflow">
+<h2>Integration with METAINFORMANT Workflow<a class="headerlink" href="#integration-with-metainformant-workflow" title="Link to this heading"></a></h2>
+<section id="multi-species-workflow">
+<h3>Multi-Species Workflow<a class="headerlink" href="#multi-species-workflow" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">execute_workflow</span><span class="p">,</span> <span class="n">load_workflow_config</span>
+
+<span class="c1"># Run workflow for each species</span>
+<span class="n">species_list</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;amellifera&quot;</span><span class="p">,</span> <span class="s2">&quot;pbarbatus&quot;</span><span class="p">,</span> <span class="s2">&quot;cfloridanus&quot;</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">species</span> <span class="ow">in</span> <span class="n">species_list</span><span class="p">:</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">load_workflow_config</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;config/amalgkit_</span><span class="si">{</span><span class="n">species</span><span class="si">}</span><span class="s2">.yaml&quot;</span><span class="p">)</span>
+    <span class="n">execute_workflow</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>  <span class="c1"># Runs: metadata → select → getfastq → quant → merge</span>
+
+<span class="c1"># Then run cross-species normalization</span>
+<span class="c1"># (cstmm is separate, as it requires all species to be merged first)</span>
+</pre></div>
+</div>
+</section>
+<section id="configuration">
+<h3>Configuration<a class="headerlink" href="#configuration" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># config/amalgkit_comparative.yaml</span>
+<span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">cstmm</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">orthogroup_table</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/orthofinder/Orthogroups.tsv</span>
+<span class="w">    </span><span class="nt">dir_busco</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/busco</span>
+<span class="w">    </span><span class="nt">dir_count</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/comparative/merge</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>TMM Normalization</strong>: Robinson &amp; Oshlack (2010) “A scaling normalization method for differential expression analysis of RNA-seq data”</p></li>
+<li><p><strong>OrthoFinder</strong>: https://github.com/davidemms/OrthoFinder</p></li>
+<li><p><strong>edgeR</strong>: https://bioconductor.org/packages/release/bioc/html/edgeR.html</p></li>
+<li><p><strong>METAINFORMANT Workflow</strong>: <code class="docutils literal notranslate"><span class="pre">docs/rna/workflow.md</span></code></p></li>
+</ul>
+</section>
+<section id="see-also">
+<h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Previous Step</strong>: <a class="reference internal" href="#merge.md"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">merge.md</span></code></span></a> - Merging expression matrices per species</p></li>
+<li><p><strong>Next Step</strong>: <a class="reference internal" href="#curate.md"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">curate.md</span></code></span></a> - Quality control on normalized data</p></li>
+<li><p><strong>Next Step</strong>: <a class="reference internal" href="#csca.md"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">csca.md</span></code></span></a> - Cross-species correlation analysis</p></li>
+<li><p><strong>Workflow Overview</strong>: <a class="reference internal" href="../amalgkit.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">../amalgkit.md</span></code></span></a></p></li>
+</ul>
+<hr class="docutils" />
+<p><strong>Last Updated</strong>: October 29, 2025<br />
+<strong>AMALGKIT Version</strong>: 0.12.19<br />
+<strong>Status</strong>: ✅ Production-ready, requires orthogroup tables from OrthoFinder</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,341 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Core: Configuration Management &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Core: Configuration Management</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/core/config.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="core-configuration-management">
+<h1>Core: Configuration Management<a class="headerlink" href="#core-configuration-management" title="Link to this heading"></a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">config</span></code> module provides comprehensive configuration management with support for multiple file formats, environment variable overrides, and type-safe loading.</p>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h2>
+<section id="postgresconfig">
+<h3><code class="docutils literal notranslate"><span class="pre">PostgresConfig</span></code><a class="headerlink" href="#postgresconfig" title="Link to this heading"></a></h3>
+<p>Dataclass for PostgreSQL database configuration.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="nd">@dataclass</span><span class="p">(</span><span class="n">frozen</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">PostgresConfig</span><span class="p">:</span>
+    <span class="n">host</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">port</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">database</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">user</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">password</span><span class="p">:</span> <span class="nb">str</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<section id="database-configuration">
+<h3>Database Configuration<a class="headerlink" href="#database-configuration" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">load_postgres_config_from_env(prefix=&quot;PG&quot;)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">PostgresConfig</span> <span class="pre">|</span> <span class="pre">None</span></code></p>
+<ul>
+<li><p>Load PostgreSQL config from environment variables</p></li>
+<li><p>Supports custom prefix for variable names</p></li>
+<li><p>Returns None if required variables are missing</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="file-based-configuration">
+<h3>File-Based Configuration<a class="headerlink" href="#file-based-configuration" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">load_config_file(config_path)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">Dict[str,</span> <span class="pre">Any]</span></code></p>
+<ul>
+<li><p>Load configuration from YAML, TOML, or JSON files</p></li>
+<li><p>Supports .yaml/.yml, .toml, and .json formats</p></li>
+<li><p>Raises ValueError for unsupported formats</p></li>
+</ul>
+</li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">load_mapping_from_file(config_path)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">Dict[str,</span> <span class="pre">Any]</span></code></p>
+<ul>
+<li><p>Load structured mapping from config files</p></li>
+<li><p>Same format support as load_config_file</p></li>
+<li><p>Includes fallback YAML parser for simple configs</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="environment-variable-handling">
+<h3>Environment Variable Handling<a class="headerlink" href="#environment-variable-handling" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">get_env_or_default(env_var,</span> <span class="pre">default)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+<ul>
+<li><p>Get environment variable with fallback default</p></li>
+</ul>
+</li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">load_typed_env(prefix,</span> <span class="pre">keys)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">Dict[str,</span> <span class="pre">Any]</span></code></p>
+<ul>
+<li><p>Load typed environment variables with prefix</p></li>
+<li><p>Supports int, float, bool, and str types</p></li>
+<li><p>Automatic type coercion and validation</p></li>
+</ul>
+</li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">apply_env_overrides(config,</span> <span class="pre">prefix=&quot;AK&quot;)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">Dict[str,</span> <span class="pre">Any]</span></code></p>
+<ul>
+<li><p>Apply environment overrides to config mapping</p></li>
+<li><p>Supports threads, work_dir, and log_dir overrides</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="usage-examples">
+<h2>Usage Examples<a class="headerlink" href="#usage-examples" title="Link to this heading"></a></h2>
+<section id="postgresql-configuration">
+<h3>PostgreSQL Configuration<a class="headerlink" href="#postgresql-configuration" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span>
+
+<span class="c1"># Load from environment variables</span>
+<span class="n">pg_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">load_postgres_config_from_env</span><span class="p">()</span>
+<span class="k">if</span> <span class="n">pg_config</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Connected to </span><span class="si">{</span><span class="n">pg_config</span><span class="o">.</span><span class="n">database</span><span class="si">}</span><span class="s2"> at </span><span class="si">{</span><span class="n">pg_config</span><span class="o">.</span><span class="n">host</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">pg_config</span><span class="o">.</span><span class="n">port</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="typed-environment-loading">
+<h3>Typed Environment Loading<a class="headerlink" href="#typed-environment-loading" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span>
+
+<span class="c1"># Load typed environment variables</span>
+<span class="n">app_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">load_typed_env</span><span class="p">(</span>
+    <span class="n">prefix</span><span class="o">=</span><span class="s2">&quot;APP&quot;</span><span class="p">,</span>
+    <span class="n">keys</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;PORT&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="s2">&quot;DEBUG&quot;</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="s2">&quot;TIMEOUT&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">}</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Port: </span><span class="si">{</span><span class="n">app_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;PORT&#39;</span><span class="p">,</span><span class="w"> </span><span class="mi">8080</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id1">
+<h3>File-Based Configuration<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span>
+
+<span class="c1"># Load from YAML/TOML/JSON</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">load_mapping_from_file</span><span class="p">(</span><span class="s2">&quot;config.yaml&quot;</span><span class="p">)</span>
+    <span class="n">cfg_with_overrides</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">apply_env_overrides</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Config file not found&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="environment-overrides">
+<h3>Environment Overrides<a class="headerlink" href="#environment-overrides" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">config</span>
+
+<span class="c1"># Apply environment overrides to config</span>
+<span class="n">base_config</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;threads&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="s2">&quot;work_dir&quot;</span><span class="p">:</span> <span class="s2">&quot;/tmp/work&quot;</span><span class="p">}</span>
+<span class="n">final_config</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">apply_env_overrides</span><span class="p">(</span><span class="n">base_config</span><span class="p">)</span>
+<span class="c1"># Can be overridden with AK_THREADS, AK_WORK_DIR env vars</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="supported-file-formats">
+<h2>Supported File Formats<a class="headerlink" href="#supported-file-formats" title="Link to this heading"></a></h2>
+<section id="yaml-yaml-yml">
+<h3>YAML (.yaml, .yml)<a class="headerlink" href="#yaml-yaml-yml" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">database</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">host</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">localhost</span>
+<span class="w">  </span><span class="nt">port</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5432</span>
+<span class="w">  </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">mydb</span>
+
+<span class="nt">compute</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
+<span class="w">  </span><span class="nt">memory_gb</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16</span>
+</pre></div>
+</div>
+</section>
+<section id="toml-toml">
+<h3>TOML (.toml)<a class="headerlink" href="#toml-toml" title="Link to this heading"></a></h3>
+<div class="highlight-toml notranslate"><div class="highlight"><pre><span></span><span class="k">[database]</span>
+<span class="n">host</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;localhost&quot;</span>
+<span class="n">port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">5432</span>
+<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;mydb&quot;</span>
+
+<span class="k">[compute]</span>
+<span class="n">threads</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8</span>
+<span class="n">memory_gb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">16</span>
+</pre></div>
+</div>
+</section>
+<section id="json-json">
+<h3>JSON (.json)<a class="headerlink" href="#json-json" title="Link to this heading"></a></h3>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;database&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;host&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;localhost&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;port&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5432</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;name&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;mydb&quot;</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;compute&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;threads&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">8</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;memory_gb&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">16</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="environment-variables">
+<h2>Environment Variables<a class="headerlink" href="#environment-variables" title="Link to this heading"></a></h2>
+<section id="id2">
+<h3>Database Configuration<a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">PG_HOST</span></code> - Database host</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DB_NAME</span></code> or <code class="docutils literal notranslate"><span class="pre">PG_DATABASE</span></code> - Database name</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DB_USER</span></code> or <code class="docutils literal notranslate"><span class="pre">PG_USER</span></code> - Database user</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">DB_PASSWORD</span></code> or <code class="docutils literal notranslate"><span class="pre">PG_PASSWORD</span></code> - Database password</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">PG_PORT</span></code> - Database port (default: 5432)</p></li>
+</ul>
+</section>
+<section id="application-overrides">
+<h3>Application Overrides<a class="headerlink" href="#application-overrides" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">AK_THREADS</span></code> - Number of threads</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">AK_WORK_DIR</span></code> - Working directory path</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">AK_LOG_DIR</span></code> - Logging directory path</p></li>
+</ul>
+</section>
+</section>
+<section id="error-handling">
+<h2>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading"></a></h2>
+<p>The config module provides robust error handling:</p>
+<ul class="simple">
+<li><p>Clear error messages for missing files</p></li>
+<li><p>Graceful handling of optional dependencies (PyYAML, tomllib)</p></li>
+<li><p>Type validation for environment variables</p></li>
+<li><p>Fallback parsers for simple configurations</p></li>
+</ul>
+</section>
+<section id="dependencies">
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Required</strong>: Standard library only</p></li>
+<li><p><strong>Optional</strong>: PyYAML (for YAML), tomllib (Python 3.11+ for TOML)</p></li>
+<li><p><strong>Database</strong>: psycopg2 (optional, for PostgreSQL integration)</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,271 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Statistical Plots &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Statistical Plots</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/visualization/statistical.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="statistical-plots">
+<h1>Statistical Plots<a class="headerlink" href="#statistical-plots" title="Link to this heading"></a></h1>
+<p>Statistical plotting functions for data analysis including histograms, box plots, violin plots, Q-Q plots, correlation heatmaps, density plots, and statistical diagnostic plots.</p>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<section id="histogram-data-bins-30-ax-none-density-false-alpha-0-7-color-blue-xlabel-none-ylabel-none-title-none">
+<h3><code class="docutils literal notranslate"><span class="pre">histogram(data,</span> <span class="pre">*,</span> <span class="pre">bins=30,</span> <span class="pre">ax=None,</span> <span class="pre">density=False,</span> <span class="pre">alpha=0.7,</span> <span class="pre">color='blue',</span> <span class="pre">xlabel=None,</span> <span class="pre">ylabel=None,</span> <span class="pre">title=None)</span></code><a class="headerlink" href="#histogram-data-bins-30-ax-none-density-false-alpha-0-7-color-blue-xlabel-none-ylabel-none-title-none" title="Link to this heading"></a></h3>
+<p>Create a histogram.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">histogram</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">histogram</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="box-plot-data-ax-none-positions-none-labels-none-xlabel-none-ylabel-none-title-none">
+<h3><code class="docutils literal notranslate"><span class="pre">box_plot(data,</span> <span class="pre">*,</span> <span class="pre">ax=None,</span> <span class="pre">positions=None,</span> <span class="pre">labels=None,</span> <span class="pre">xlabel=None,</span> <span class="pre">ylabel=None,</span> <span class="pre">title=None)</span></code><a class="headerlink" href="#box-plot-data-ax-none-positions-none-labels-none-xlabel-none-ylabel-none-title-none" title="Link to this heading"></a></h3>
+<p>Create a box plot.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">box_plot</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">box_plot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="violin-plot-data-ax-none-positions-none-labels-none-xlabel-none-ylabel-none-title-none">
+<h3><code class="docutils literal notranslate"><span class="pre">violin_plot(data,</span> <span class="pre">*,</span> <span class="pre">ax=None,</span> <span class="pre">positions=None,</span> <span class="pre">labels=None,</span> <span class="pre">xlabel=None,</span> <span class="pre">ylabel=None,</span> <span class="pre">title=None)</span></code><a class="headerlink" href="#violin-plot-data-ax-none-positions-none-labels-none-xlabel-none-ylabel-none-title-none" title="Link to this heading"></a></h3>
+<p>Create a violin plot.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">violin_plot</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">violin_plot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="qq-plot-p-values-ax-none-title-q-q-plot-kwargs">
+<h3><code class="docutils literal notranslate"><span class="pre">qq_plot(p_values,</span> <span class="pre">*,</span> <span class="pre">ax=None,</span> <span class="pre">title='Q-Q</span> <span class="pre">Plot',</span> <span class="pre">**kwargs)</span></code><a class="headerlink" href="#qq-plot-p-values-ax-none-title-q-q-plot-kwargs" title="Link to this heading"></a></h3>
+<p>Create a Q-Q plot for p-value distribution analysis.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">qq_plot</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">pvals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">qq_plot</span><span class="p">(</span><span class="n">pvals</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+</pre></div>
+</div>
+</section>
+<section id="correlation-heatmap-data-method-pearson-cmap-rdbu-r-annot-true-ax-none-kwargs">
+<h3><code class="docutils literal notranslate"><span class="pre">correlation_heatmap(data,</span> <span class="pre">*,</span> <span class="pre">method='pearson',</span> <span class="pre">cmap='RdBu_r',</span> <span class="pre">annot=True,</span> <span class="pre">ax=None,</span> <span class="pre">**kwargs)</span></code><a class="headerlink" href="#correlation-heatmap-data-method-pearson-cmap-rdbu-r-annot-true-ax-none-kwargs" title="Link to this heading"></a></h3>
+<p>Create a correlation heatmap.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">correlation_heatmap</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">)))</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">correlation_heatmap</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="density-plot-data-ax-none-fill-true-alpha-0-5-color-none-xlabel-none-ylabel-none-title-none">
+<h3><code class="docutils literal notranslate"><span class="pre">density_plot(data,</span> <span class="pre">*,</span> <span class="pre">ax=None,</span> <span class="pre">fill=True,</span> <span class="pre">alpha=0.5,</span> <span class="pre">color=None,</span> <span class="pre">xlabel=None,</span> <span class="pre">ylabel=None,</span> <span class="pre">title=None)</span></code><a class="headerlink" href="#density-plot-data-ax-none-fill-true-alpha-0-5-color-none-xlabel-none-ylabel-none-title-none" title="Link to this heading"></a></h3>
+<p>Create a density plot (kernel density estimation).</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">density_plot</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">density_plot</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="ridge-plot-data-labels-none-ax-none-overlap-0-5-kwargs">
+<h3><code class="docutils literal notranslate"><span class="pre">ridge_plot(data,</span> <span class="pre">labels=None,</span> <span class="pre">*,</span> <span class="pre">ax=None,</span> <span class="pre">overlap=0.5,</span> <span class="pre">**kwargs)</span></code><a class="headerlink" href="#ridge-plot-data-labels-none-ax-none-overlap-0-5-kwargs" title="Link to this heading"></a></h3>
+<p>Create a ridge plot (overlapping density plots).</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">ridge_plot</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">3</span><span class="p">)]</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">ridge_plot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="roc-curve-y-true-y-scores-ax-none-title-roc-curve-kwargs">
+<h3><code class="docutils literal notranslate"><span class="pre">roc_curve(y_true,</span> <span class="pre">y_scores,</span> <span class="pre">*,</span> <span class="pre">ax=None,</span> <span class="pre">title='ROC</span> <span class="pre">Curve',</span> <span class="pre">**kwargs)</span></code><a class="headerlink" href="#roc-curve-y-true-y-scores-ax-none-title-roc-curve-kwargs" title="Link to this heading"></a></h3>
+<p>Create a ROC curve plot.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">roc_curve</span>
+
+<span class="n">y_true</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+<span class="n">y_scores</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">]</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">roc_curve</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_scores</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="precision-recall-curve-y-true-y-scores-ax-none-title-precision-recall-curve-kwargs">
+<h3><code class="docutils literal notranslate"><span class="pre">precision_recall_curve(y_true,</span> <span class="pre">y_scores,</span> <span class="pre">*,</span> <span class="pre">ax=None,</span> <span class="pre">title='Precision-Recall</span> <span class="pre">Curve',</span> <span class="pre">**kwargs)</span></code><a class="headerlink" href="#precision-recall-curve-y-true-y-scores-ax-none-title-precision-recall-curve-kwargs" title="Link to this heading"></a></h3>
+<p>Create a precision-recall curve plot.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">precision_recall_curve</span>
+
+<span class="n">y_true</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+<span class="n">y_scores</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">]</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">precision_recall_curve</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_scores</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="residual-plot-y-true-y-pred-ax-none-title-residual-plot-kwargs">
+<h3><code class="docutils literal notranslate"><span class="pre">residual_plot(y_true,</span> <span class="pre">y_pred,</span> <span class="pre">*,</span> <span class="pre">ax=None,</span> <span class="pre">title='Residual</span> <span class="pre">Plot',</span> <span class="pre">**kwargs)</span></code><a class="headerlink" href="#residual-plot-y-true-y-pred-ax-none-title-residual-plot-kwargs" title="Link to this heading"></a></h3>
+<p>Create a residual plot for regression diagnostics.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">residual_plot</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">y_true</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
+<span class="n">y_pred</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.1</span><span class="p">,</span> <span class="mf">1.9</span><span class="p">,</span> <span class="mf">3.2</span><span class="p">,</span> <span class="mf">3.8</span><span class="p">,</span> <span class="mf">5.1</span><span class="p">])</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">residual_plot</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="leverage-plot-x-y-ax-none-title-leverage-plot-kwargs">
+<h3><code class="docutils literal notranslate"><span class="pre">leverage_plot(X,</span> <span class="pre">y,</span> <span class="pre">*,</span> <span class="pre">ax=None,</span> <span class="pre">title='Leverage</span> <span class="pre">Plot',</span> <span class="pre">**kwargs)</span></code><a class="headerlink" href="#leverage-plot-x-y-ax-none-title-leverage-plot-kwargs" title="Link to this heading"></a></h3>
+<p>Create a leverage plot for regression diagnostics.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">leverage_plot</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">((</span><span class="mi">100</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">leverage_plot</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

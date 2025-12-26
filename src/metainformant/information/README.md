@@ -10,6 +10,11 @@ This module implements fundamental information theory concepts for biological da
 - **Network Integration**: Information flow, network entropy, information-based community detection
 - **Visualization**: Integration with visualization module for plotting information measures
 
+### Recent Enhancements (December 2025)
+- **Intelligent Caching**: Automatic caching for expensive entropy calculations
+- **Progress Tracking**: Real-time progress bars for long-running batch analyses
+- **Performance Optimization**: Cached computations with TTL-based expiration
+
 ### Module Architecture
 
 ```mermaid
@@ -43,6 +48,193 @@ graph TB
     Sequences --> Syntactic
     Networks_Data --> Networks
     Ontology_Data --> Semantic
+```
+
+### Information Theory Flow Architecture
+
+```mermaid
+graph TD
+    A[Biological Data] --> B{Data Type}
+    B -->|Sequences| C[Syntactic Information]
+    B -->|Networks| D[Network Information]
+    B -->|Ontology| E[Semantic Information]
+    B -->|Expression| F[Multi-Omics Information]
+
+    C --> G{Measure Type}
+    G -->|Shannon| H[Shannon Entropy]
+    G -->|Mutual Info| I[Mutual Information]
+    G -->|Transfer| J[Transfer Entropy]
+    G -->|Divergence| K[KL Divergence]
+
+    D --> L[Network Entropy]
+    D --> M[Information Flow]
+    D --> N[Community Detection]
+
+    E --> O[Information Content]
+    E --> P[Semantic Similarity]
+    E --> Q[Semantic Entropy]
+
+    F --> R[Cross-Platform MI]
+    F --> S[Platform Entropy]
+    F --> T[Integration Measures]
+
+    H --> U[Analysis]
+    I --> U
+    J --> U
+    K --> U
+    L --> U
+    M --> U
+    N --> U
+    O --> U
+    P --> U
+    Q --> U
+    R --> U
+    S --> U
+    T --> U
+
+    U --> V[Visualization]
+    V --> W[Reports & Insights]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style U fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style W fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Estimation Methods"
+        X[Histogram] -.-> U
+        Y[Kernel Density] -.-> U
+        Z[Jackknife] -.-> U
+        AA[Bootstrap] -.-> U
+    end
+```
+
+### Entropy Calculation Workflow
+
+```mermaid
+graph TD
+    A[Input Data] --> B{Data Type}
+    B -->|Discrete| C[Count Frequencies]
+    B -->|Continuous| D[Estimate Distribution]
+
+    C --> E{Counts Available?}
+    E -->|Yes| F[Shannon Entropy from Counts]
+    E -->|No| G[Convert to Probabilities]
+
+    G --> H[Shannon Entropy from Probs]
+    D --> I[Density Estimation]
+    I --> J[Differential Entropy]
+
+    F --> K[Optional Bias Correction]
+    H --> K
+    J --> K
+
+    K --> L{Advanced Entropy?}
+    L -->|Yes| M[Rényi Entropy]
+    L -->|No| N[Standard Entropy]
+
+    M --> O[Output Results]
+    N --> O
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style K fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style O fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Bias Correction"
+        P[Miller-Madow] -.-> K
+        Q[Chao-Shen] -.-> K
+        R[Jackknife] -.-> K
+    end
+
+    subgraph "Rényi Variants"
+        S[α = 2] -.-> M
+        T[α → ∞] -.-> M
+        U[α → 0] -.-> M
+    end
+```
+
+### Mutual Information Analysis Pipeline
+
+```mermaid
+graph TD
+    A[Two Variables X, Y] --> B[Joint Distribution P(X,Y)]
+    B --> C[Marginal Distributions P(X), P(Y)]
+
+    C --> D[Calculate Entropies]
+    D --> E[H(X) Shannon Entropy X]
+    D --> F[H(Y) Shannon Entropy Y]
+    D --> G[H(X,Y) Joint Entropy]
+
+    E --> H[Mutual Information I(X;Y)]
+    F --> H
+    G --> H
+
+    H --> I{I(X;Y) = H(X) + H(Y) - H(X,Y)}
+    I --> J{Conditional MI?}
+    J -->|Yes| K[Add Condition Z]
+    J -->|No| L[Standard MI]
+
+    K --> M[I(X;Y|Z) = H(X,Z) + H(Y,Z) - H(X,Y,Z) - H(Z)]
+    M --> N[Conditional Results]
+
+    L --> O[MI Results]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style H fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style N fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    style O fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Estimation Methods"
+        P[Plug-in] -.-> H
+        Q[Histogram] -.-> H
+        R[Kernel] -.-> H
+        S[Bias Corrected] -.-> H
+    end
+
+    subgraph "Applications"
+        T[Feature Selection] -.-> O
+        U[Dependency Detection] -.-> O
+        V[Network Inference] -.-> O
+        W[Gene Regulation] -.-> O
+    end
+```
+
+### Semantic Information Analysis
+
+```mermaid
+graph TD
+    A[Annotated Entities] --> B[Ontology/Taxonomy]
+    B --> C[Calculate Information Content]
+
+    C --> D{IC Calculation}
+    D --> E[Frequency-based IC]
+    D --> F[Annotation-based IC]
+
+    E --> G[Term IC Values]
+    F --> G
+
+    G --> H[Semantic Similarity]
+    H --> I{Similarity Method}
+    I -->|Resnik| J[IC-based Similarity]
+    I -->|Lin| K[Normalized IC Similarity]
+    I -->|Jiang-Conrath| L[Distance-based Similarity]
+
+    J --> M[Similarity Matrix]
+    K --> M
+    L --> M
+
+    M --> N[Clustering/Analysis]
+    N --> O[Semantic Results]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style G fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style O fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Biological Applications"
+        P[Gene Function] -.-> N
+        Q[Protein Domains] -.-> N
+        R[Pathway Analysis] -.-> N
+        S[Disease Ontology] -.-> N
+    end
+```
     Syntactic --> Analysis
     Semantic --> Analysis
     Continuous --> Analysis

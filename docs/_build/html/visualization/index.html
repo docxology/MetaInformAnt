@@ -1,0 +1,244 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visualization: Overview &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Simulation: Overview" href="../simulation/index.html" />
+    <link rel="prev" title="Quality Control" href="../quality/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Visualization: Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-organization">Module Organization</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#core-plotting-modules">Core Plotting Modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#specialized-modules">Specialized Modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#utility-modules">Utility Modules</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#domain-integration">Domain Integration</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#documentation">Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Visualization: Overview</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/visualization/index.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="visualization-overview">
+<h1>Visualization: Overview<a class="headerlink" href="#visualization-overview" title="Link to this heading"></a></h1>
+<p>The visualization module provides comprehensive plotting and animation utilities for creating publication-quality figures across all METAINFORMANT domains.</p>
+<section id="module-organization">
+<h2>Module Organization<a class="headerlink" href="#module-organization" title="Link to this heading"></a></h2>
+<p>The visualization package is organized into category-specific modules:</p>
+<section id="core-plotting-modules">
+<h3>Core Plotting Modules<a class="headerlink" href="#core-plotting-modules" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><a class="reference internal" href="basic.html"><span class="std std-doc">Basic Plots</span></a></strong>: Line, scatter, bar, pie, area, step plots, and heatmaps</p></li>
+<li><p><strong><a class="reference internal" href="statistical.html"><span class="std std-doc">Statistical Plots</span></a></strong>: Histograms, box plots, violin plots, Q-Q plots, density plots, ROC curves</p></li>
+<li><p><strong><a class="reference internal" href="genomics.html"><span class="std std-doc">Genomics Plots</span></a></strong>: Manhattan plots, volcano plots, regional plots, chromosome ideograms</p></li>
+<li><p><strong><a class="reference internal" href="expression.html"><span class="std std-doc">Expression Plots</span></a></strong>: Expression heatmaps, enrichment plots, differential expression</p></li>
+<li><p><strong><a class="reference internal" href="dimred.html"><span class="std std-doc">Dimensionality Reduction</span></a></strong>: PCA, UMAP, t-SNE plots with loadings and scree plots</p></li>
+<li><p><strong><a class="reference internal" href="networks.html"><span class="std std-doc">Network Plots</span></a></strong>: Network graphs, circular layouts, hierarchical layouts</p></li>
+<li><p><strong><a class="reference internal" href="timeseries.html"><span class="std std-doc">Time Series</span></a></strong>: Time series plots, autocorrelation, seasonal decomposition, forecasts</p></li>
+<li><p><strong><a class="reference internal" href="multidim.html"><span class="std std-doc">Multi-dimensional</span></a></strong>: Pair plots, parallel coordinates, radar charts, 3D scatter</p></li>
+<li><p><strong><a class="reference internal" href="quality.html"><span class="std std-doc">Quality Control</span></a></strong>: QC metrics, quality scores, adapter content, sequence length</p></li>
+<li><p><strong><a class="reference internal" href="information.html"><span class="std std-doc">Information Theory</span></a></strong>: Entropy plots, mutual information, information profiles</p></li>
+</ul>
+</section>
+<section id="specialized-modules">
+<h3>Specialized Modules<a class="headerlink" href="#specialized-modules" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><a class="reference internal" href="trees.html"><span class="std std-doc">Trees</span></a></strong>: Phylogenetic tree visualization with multiple layouts</p></li>
+<li><p><strong><a class="reference internal" href="animations.html"><span class="std std-doc">Animations</span></a></strong>: Time series, evolution, clustering, network, and trajectory animations</p></li>
+</ul>
+</section>
+<section id="utility-modules">
+<h3>Utility Modules<a class="headerlink" href="#utility-modules" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><a class="reference internal" href="styling.html"><span class="std std-doc">Styling</span></a></strong>: Publication-quality styles, color palettes, font management</p></li>
+<li><p><strong><a class="reference internal" href="integration.html"><span class="std std-doc">Layout</span></a></strong>: Multi-panel figure creation and layout management</p></li>
+<li><p><strong><a class="reference internal" href="integration.html"><span class="std std-doc">Export</span></a></strong>: High-resolution export in multiple formats</p></li>
+<li><p><strong><a class="reference internal" href="integration.html"><span class="std std-doc">Interactive</span></a></strong>: Plotly integration for interactive plots</p></li>
+</ul>
+</section>
+<section id="domain-integration">
+<h3>Domain Integration<a class="headerlink" href="#domain-integration" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><a class="reference internal" href="integration.html"><span class="std std-doc">GWAS Integration</span></a></strong>: Unified access to GWAS visualization functions</p></li>
+<li><p><strong><a class="reference internal" href="integration.html"><span class="std std-doc">Single-Cell Integration</span></a></strong>: Single-cell RNA-seq visualization functions</p></li>
+<li><p><strong><a class="reference internal" href="integration.html"><span class="std std-doc">Information Theory Integration</span></a></strong>: Information theory visualization functions</p></li>
+<li><p><strong><a class="reference internal" href="integration.html"><span class="std std-doc">Life Events Integration</span></a></strong>: Life course event visualization functions</p></li>
+</ul>
+</section>
+</section>
+<section id="quick-start">
+<h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">lineplot</span><span class="p">,</span> <span class="n">scatter_plot</span><span class="p">,</span> <span class="n">histogram</span><span class="p">,</span> <span class="n">heatmap</span><span class="p">,</span>
+    <span class="n">manhattan_plot</span><span class="p">,</span> <span class="n">volcano_plot</span><span class="p">,</span> <span class="n">pca_plot</span><span class="p">,</span>
+    <span class="n">plot_phylo_tree</span><span class="p">,</span> <span class="n">animate_time_series</span>
+<span class="p">)</span>
+
+<span class="c1"># Basic plots</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">lineplot</span><span class="p">(</span><span class="kc">None</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">scatter_plot</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">6</span><span class="p">])</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">histogram</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span> <span class="n">bins</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+
+<span class="c1"># Genomic plots</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">manhattan_plot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">&#39;position&#39;</span><span class="p">,</span> <span class="s1">&#39;neg_log10_p&#39;</span><span class="p">,</span> <span class="s1">&#39;chromosome&#39;</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">volcano_plot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s1">&#39;log2fc&#39;</span><span class="p">,</span> <span class="s1">&#39;neg_log10_p&#39;</span><span class="p">)</span>
+
+<span class="c1"># Dimensionality reduction</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">pca_plot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">pc_x</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">pc_y</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">hue</span><span class="o">=</span><span class="s1">&#39;group&#39;</span><span class="p">)</span>
+
+<span class="c1"># Trees</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">Bio</span><span class="w"> </span><span class="kn">import</span> <span class="n">Phylo</span>
+<span class="n">tree</span> <span class="o">=</span> <span class="n">Phylo</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="s2">&quot;tree.nwk&quot;</span><span class="p">,</span> <span class="s2">&quot;newick&quot;</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">plot_phylo_tree</span><span class="p">(</span><span class="n">tree</span><span class="p">)</span>
+
+<span class="c1"># Animations</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">anim</span> <span class="o">=</span> <span class="n">animate_time_series</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="documentation">
+<h2>Documentation<a class="headerlink" href="#documentation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong><a class="reference internal" href="basic.html"><span class="std std-doc">Basic Plots</span></a></strong>: Simple plotting functions</p></li>
+<li><p><strong><a class="reference internal" href="statistical.html"><span class="std std-doc">Statistical Plots</span></a></strong>: Statistical visualization</p></li>
+<li><p><strong><a class="reference internal" href="genomics.html"><span class="std std-doc">Genomics Plots</span></a></strong>: Genomic visualization</p></li>
+<li><p><strong><a class="reference internal" href="expression.html"><span class="std std-doc">Expression Plots</span></a></strong>: Expression analysis</p></li>
+<li><p><strong><a class="reference internal" href="dimred.html"><span class="std std-doc">Dimensionality Reduction</span></a></strong>: PCA, UMAP, t-SNE</p></li>
+<li><p><strong><a class="reference internal" href="networks.html"><span class="std std-doc">Network Plots</span></a></strong>: Network visualization</p></li>
+<li><p><strong><a class="reference internal" href="timeseries.html"><span class="std std-doc">Time Series</span></a></strong>: Time series analysis</p></li>
+<li><p><strong><a class="reference internal" href="multidim.html"><span class="std std-doc">Multi-dimensional</span></a></strong>: Multi-dimensional plots</p></li>
+<li><p><strong><a class="reference internal" href="quality.html"><span class="std std-doc">Quality Control</span></a></strong>: Quality control plots</p></li>
+<li><p><strong><a class="reference internal" href="information.html"><span class="std std-doc">Information Theory</span></a></strong>: Information theory plots</p></li>
+<li><p><strong><a class="reference internal" href="trees.html"><span class="std std-doc">Trees</span></a></strong>: Phylogenetic trees</p></li>
+<li><p><strong><a class="reference internal" href="animations.html"><span class="std std-doc">Animations</span></a></strong>: Dynamic animations</p></li>
+<li><p><strong><a class="reference internal" href="styling.html"><span class="std std-doc">Styling</span></a></strong>: Styling and customization</p></li>
+<li><p><strong><a class="reference internal" href="integration.html"><span class="std std-doc">Integration</span></a></strong>: Domain integration patterns</p></li>
+<li><p><strong><a class="reference internal" href="examples.html"><span class="std std-doc">Examples</span></a></strong>: Comprehensive usage examples</p></li>
+<li><p><strong><a class="reference internal" href="gallery.html"><span class="std std-doc">Gallery</span></a></strong>: Visualization gallery</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="../quality/index.html" class="btn btn-neutral float-left" title="Quality Control" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="../simulation/index.html" class="btn btn-neutral float-right" title="Simulation: Overview" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

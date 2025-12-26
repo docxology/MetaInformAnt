@@ -1,0 +1,352 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GWAS (Genome-Wide Association Studies) Module &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">GWAS (Genome-Wide Association Studies) Module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/gwas/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="gwas-genome-wide-association-studies-module">
+<h1>GWAS (Genome-Wide Association Studies) Module<a class="headerlink" href="#gwas-genome-wide-association-studies-module" title="Link to this heading"></a></h1>
+<p>Comprehensive end-to-end GWAS pipeline for identifying genetic variants associated with phenotypic traits.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>The GWAS module provides a workflow for genome-wide association studies, from variant data acquisition through quality control, population structure analysis, association testing, multiple testing correction, and visualization.</p>
+<section id="gwas-analysis-pipeline">
+<h3>GWAS Analysis Pipeline<a class="headerlink" href="#gwas-analysis-pipeline" title="Link to this heading"></a></h3>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TD
+    A[Input Data&lt;br/&gt;VCF + Phenotypes] --&gt; B[Data Acquisition&lt;br/&gt;Download variants&lt;br/&gt;Reference genomes]
+    B --&gt; C[Quality Control&lt;br/&gt;MAF filtering&lt;br/&gt;Missing data&lt;br/&gt;HWE testing]
+
+    C --&gt; D[Population Structure&lt;br/&gt;PCA analysis&lt;br/&gt;Kinship matrix]
+    D --&gt; E[Association Testing&lt;br/&gt;Linear/Logistic regression&lt;br/&gt;Covariate adjustment]
+
+    E --&gt; F[Multiple Testing&lt;br/&gt;Bonferroni correction&lt;br/&gt;FDR control&lt;br/&gt;Genomic control]
+    F --&gt; G[Results Visualization&lt;br/&gt;Manhattan plots&lt;br/&gt;Q-Q plots&lt;br/&gt;Regional plots]
+
+    H[Configuration&lt;br/&gt;YAML templates] --&gt; I[Workflow Execution&lt;br/&gt;Parallel processing]
+    I --&gt; J[Results Output&lt;br/&gt;Statistics tables&lt;br/&gt;Visualizations]
+
+    K[Variant Calling&lt;br/&gt;bcftools, GATK] -.-&gt; L[Integration&lt;br/&gt;BAM/CRAM input]
+    L --&gt; B
+
+    M[Statistical Models&lt;br/&gt;Linear, Logistic&lt;br/&gt;Mixed models] --&gt; N[Model Selection&lt;br/&gt;Based on trait type]
+    N --&gt; E
+
+    O[External Tools] -.-&gt; P[Tool Validation&lt;br/&gt;PATH checking&lt;br/&gt;Version compatibility]
+    P --&gt; I
+
+    classDef input fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
+    classDef process fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    classDef analysis fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
+    classDef output fill:#fce4ec,stroke:#c2185b,stroke-width:2px
+    classDef config fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
+
+    class A,H input
+    class B,C,D,E,F,K,L process
+    class G,M,N analysis
+    class J output
+    class I,O,P config
+</pre></div>
+</div>
+</section>
+</section>
+<section id="features">
+<h2>Features<a class="headerlink" href="#features" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Variant Data Acquisition</strong>: Support for pre-existing VCF files, variant calling from BAM/CRAM files (bcftools, GATK), and reference genome downloads. Note: Direct database downloads (dbSNP, 1000 Genomes) are placeholders for future implementation.</p></li>
+<li><p><strong>Quality Control</strong>: MAF filtering, missing data filtering, Hardy-Weinberg equilibrium testing, indel exclusion</p></li>
+<li><p><strong>Population Structure</strong>: Principal component analysis (PCA) and kinship matrix computation</p></li>
+<li><p><strong>Association Testing</strong>: Linear and logistic regression models with covariate adjustment</p></li>
+<li><p><strong>Multiple Testing Correction</strong>: Bonferroni, FDR (Benjamini-Hochberg), and genomic control</p></li>
+<li><p><strong>Visualization</strong>: Manhattan plots, Q-Q plots, and regional association plots</p></li>
+</ul>
+</section>
+<section id="quick-start">
+<h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h2>
+<section id="basic-usage">
+<h3>Basic Usage<a class="headerlink" href="#basic-usage" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.gwas</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_gwas_config</span><span class="p">,</span> <span class="n">execute_gwas_workflow</span>
+
+<span class="c1"># Load configuration</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">load_gwas_config</span><span class="p">(</span><span class="s2">&quot;config/gwas_template.yaml&quot;</span><span class="p">)</span>
+
+<span class="c1"># Run workflow</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">execute_gwas_workflow</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="command-line">
+<h3>Command Line<a class="headerlink" href="#command-line" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run GWAS workflow from config file</span>
+python<span class="w"> </span>-m<span class="w"> </span>metainformant<span class="w"> </span>gwas<span class="w"> </span>run<span class="w"> </span>--config<span class="w"> </span>config/gwas/gwas_template.yaml
+
+<span class="c1"># Validate configuration only</span>
+python<span class="w"> </span>-m<span class="w"> </span>metainformant<span class="w"> </span>gwas<span class="w"> </span>run<span class="w"> </span>--config<span class="w"> </span>config/gwas/gwas_template.yaml<span class="w"> </span>--check
+</pre></div>
+</div>
+</section>
+</section>
+<section id="workflow-steps">
+<h2>Workflow Steps<a class="headerlink" href="#workflow-steps" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Genome Preparation</strong>: Download reference genome (if needed)**</p></li>
+<li><p><strong>Variant Acquisition</strong>: Obtain variant data (VCF files, download, or calling)</p></li>
+<li><p><strong>Quality Control</strong>: Filter variants by MAF, missingness, HWE, quality</p></li>
+<li><p><strong>Population Structure</strong>: Compute PCA and kinship matrix</p></li>
+<li><p><strong>Association Testing</strong>: Test each variant for association with trait</p></li>
+<li><p><strong>Multiple Testing Correction</strong>: Apply correction for multiple comparisons</p></li>
+<li><p><strong>Visualization</strong>: Generate Manhattan plots, Q-Q plots</p></li>
+<li><p><strong>Results Export</strong>: Write results tables and summary reports</p></li>
+</ol>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading"></a></h2>
+<p>See <a class="reference internal" href="config.html"><span class="std std-doc">Configuration Reference</span></a> for detailed configuration options.</p>
+<section id="example-configuration">
+<h3>Example Configuration<a class="headerlink" href="#example-configuration" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">work_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/gwas/work</span>
+<span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
+
+<span class="nt">genome</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">accession</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GCF_000001405.40</span>
+<span class="w">  </span><span class="nt">dest_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/gwas/genome</span>
+
+<span class="nt">variants</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">vcf_files</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/variants/cohort.vcf.gz</span>
+
+<span class="nt">qc</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">min_maf</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.01</span>
+<span class="w">  </span><span class="nt">max_missing</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.05</span>
+<span class="w">  </span><span class="nt">hwe_pval</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1e-6</span>
+
+<span class="nt">samples</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">phenotype_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/phenotypes.tsv</span>
+<span class="w">  </span><span class="nt">covariates_file</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data/covariates.tsv</span>
+
+<span class="nt">association</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">linear</span>
+<span class="w">  </span><span class="nt">trait</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">height</span>
+<span class="w">  </span><span class="nt">covariates</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">age</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">sex</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">PC1</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">PC2</span><span class="p p-Indicator">]</span>
+
+<span class="nt">correction</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">method</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">bonferroni</span>
+<span class="w">  </span><span class="nt">alpha</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.05</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="input-files">
+<h2>Input Files<a class="headerlink" href="#input-files" title="Link to this heading"></a></h2>
+<section id="phenotype-file-tsv">
+<h3>Phenotype File (TSV)<a class="headerlink" href="#phenotype-file-tsv" title="Link to this heading"></a></h3>
+<div class="highlight-tsv notranslate"><div class="highlight"><pre><span></span>sample_id    height    weight    disease_status
+sample1      175.5     70.2      0
+sample2      168.3     65.1      1
+...
+</pre></div>
+</div>
+</section>
+<section id="covariates-file-tsv">
+<h3>Covariates File (TSV)<a class="headerlink" href="#covariates-file-tsv" title="Link to this heading"></a></h3>
+<div class="highlight-tsv notranslate"><div class="highlight"><pre><span></span>sample_id    age    sex    PC1        PC2        PC3
+sample1      45     1      0.0234     -0.0123    0.0045
+sample2      38     2      -0.0156    0.0089     -0.0023
+...
+</pre></div>
+</div>
+</section>
+</section>
+<section id="output-structure">
+<h2>Output Structure<a class="headerlink" href="#output-structure" title="Link to this heading"></a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>output/gwas/
+├── genome/              # Downloaded reference genome
+├── variants/            # VCF files (raw and QC&#39;d)
+├── structure/           # PCA results, kinship matrices
+│   ├── pca_components.tsv
+│   ├── kinship_matrix.tsv
+│   └── structure_summary.json
+├── results/             # Association test results
+│   ├── association_results.tsv
+│   └── summary.json
+└── plots/               # Visualizations
+    ├── manhattan.png
+    ├── qq_plot.png
+    └── regional_*.png
+</pre></div>
+</div>
+</section>
+<section id="api-reference">
+<h2>API Reference<a class="headerlink" href="#api-reference" title="Link to this heading"></a></h2>
+<section id="core-functions">
+<h3>Core Functions<a class="headerlink" href="#core-functions" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">load_gwas_config(config_path)</span></code>: Load GWAS configuration from file</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">execute_gwas_workflow(config)</span></code>: Run complete GWAS workflow</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">parse_vcf_full(vcf_path)</span></code>: Parse VCF and extract genotype matrix</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">apply_qc_filters(vcf_path,</span> <span class="pre">config)</span></code>: Apply quality control filters</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">estimate_population_structure(vcf_path,</span> <span class="pre">config)</span></code>: Compute PCA and kinship</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">run_gwas(vcf_path,</span> <span class="pre">phenotype_path,</span> <span class="pre">config)</span></code>: Run association tests</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">manhattan_plot(results,</span> <span class="pre">output_path)</span></code>: Generate Manhattan plot</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">qq_plot(pvalues,</span> <span class="pre">output_path)</span></code>: Generate Q-Q plot</p></li>
+</ul>
+<p>See module documentation for full API details.</p>
+</section>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h2>
+<p>See <a class="reference internal" href="#./examples/"><span class="xref myst">Examples</span></a> directory for complete usage examples.</p>
+</section>
+<section id="related-modules">
+<h2>Related Modules<a class="headerlink" href="#related-modules" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">dna.variants</span></code>: Basic VCF parsing</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dna.population</span></code>: Population genetics statistics</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">math.popgen</span></code>: Population genetics theory</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ml.regression</span></code>: Regression models</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">visualization.plots</span></code>: Plotting utilities</p></li>
+</ul>
+</section>
+<section id="limitations">
+<h2>Limitations<a class="headerlink" href="#limitations" title="Link to this heading"></a></h2>
+<p>See <a class="reference internal" href="review.html"><span class="std std-doc">Review</span></a> for detailed assessment of functionality and gaps.</p>
+<p><strong>Current Status</strong>:</p>
+<ul class="simple">
+<li><p>✅ Core GWAS workflow: Fully functional</p></li>
+<li><p>✅ Variant calling: Integrated and working</p></li>
+<li><p>⚠️ Database downloads: Placeholder (use pre-existing VCF or calling)</p></li>
+<li><p>❌ Functional annotation: Not yet implemented</p></li>
+<li><p>⚠️ Advanced methods: Basic implementation (MLM planned)</p></li>
+</ul>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Price et al. (2006). Principal components analysis corrects for stratification in genome-wide association studies. <em>Nature Genetics</em>.</p></li>
+<li><p>VanRaden (2008). Efficient methods to compute genomic predictions. <em>Journal of Dairy Science</em>.</p></li>
+<li><p>Benjamini &amp; Hochberg (1995). Controlling the false discovery rate. <em>Journal of the Royal Statistical Society</em>.</p></li>
+</ol>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 import json
 import numpy as np
-from enhanced_visualizations import plot_pca_scree
+from visualizations import plot_pca_scree
 
 # Load PCA results
 pca_file = Path('output/gwas/pbarbatus/results/pca_results.json')

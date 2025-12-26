@@ -1,0 +1,435 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Agents in Information Module Development &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">AI Agents in Information Module Development</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/information/AGENTS.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="ai-agents-in-information-module-development">
+<h1>AI Agents in Information Module Development<a class="headerlink" href="#ai-agents-in-information-module-development" title="Link to this heading"></a></h1>
+<p>This document outlines AI assistance in developing the METAINFORMANT information theory module.</p>
+<section id="ai-contributions">
+<h2>AI Contributions<a class="headerlink" href="#ai-contributions" title="Link to this heading"></a></h2>
+<section id="module-architecture">
+<h3>Module Architecture<a class="headerlink" href="#module-architecture" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> designed:</p>
+<ul class="simple">
+<li><p>Modular structure separating syntactic and semantic information theory</p></li>
+<li><p>Integration modules for visualization and networks</p></li>
+<li><p>High-level analysis functions for biological data</p></li>
+<li><p>Comprehensive API following repository patterns</p></li>
+</ul>
+</section>
+<section id="syntactic-information-theory-syntactic-py">
+<h3>Syntactic Information Theory (<code class="docutils literal notranslate"><span class="pre">syntactic.py</span></code>)<a class="headerlink" href="#syntactic-information-theory-syntactic-py" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> implemented:</p>
+<ul class="simple">
+<li><p>Shannon entropy calculation from probabilities and counts</p></li>
+<li><p>Joint and conditional entropy measures</p></li>
+<li><p>Mutual information between variables</p></li>
+<li><p>Conditional mutual information (I(X; Y|Z))</p></li>
+<li><p>Kullback-Leibler divergence</p></li>
+<li><p>Cross-entropy calculation</p></li>
+<li><p>Total correlation (multivariate mutual information)</p></li>
+<li><p>Transfer entropy for time series analysis</p></li>
+</ul>
+</section>
+<section id="semantic-information-theory-semantic-py">
+<h3>Semantic Information Theory (<code class="docutils literal notranslate"><span class="pre">semantic.py</span></code>)<a class="headerlink" href="#semantic-information-theory-semantic-py" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> developed:</p>
+<ul class="simple">
+<li><p>Information content calculation for hierarchical terms</p></li>
+<li><p>Semantic entropy of annotated entities</p></li>
+<li><p>Semantic similarity using information content</p></li>
+<li><p>Semantic similarity matrix computation</p></li>
+<li><p>Information content from annotations</p></li>
+</ul>
+</section>
+<section id="analysis-functions-analysis-py">
+<h3>Analysis Functions (<code class="docutils literal notranslate"><span class="pre">analysis.py</span></code>)<a class="headerlink" href="#analysis-functions-analysis-py" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> created:</p>
+<ul class="simple">
+<li><p>Information profile calculation for sequence sets</p></li>
+<li><p>Information signature for multivariate data</p></li>
+<li><p>Sequence information analysis with multiple k-mer sizes</p></li>
+<li><p>Sequence comparison using information-theoretic measures</p></li>
+</ul>
+</section>
+<section id="integration-modules">
+<h3>Integration Modules<a class="headerlink" href="#integration-modules" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> implemented:</p>
+<ul class="simple">
+<li><p>Visualization integration (<code class="docutils literal notranslate"><span class="pre">visualization.py</span></code>) for plotting entropy distributions, MI matrices, and information profiles</p></li>
+<li><p>Network integration (<code class="docutils literal notranslate"><span class="pre">networks.py</span></code>) for network entropy, information flow, and information-based community detection</p></li>
+</ul>
+</section>
+<section id="documentation">
+<h3>Documentation<a class="headerlink" href="#documentation" title="Link to this heading"></a></h3>
+<p><strong>Documentation Agent</strong> assisted with:</p>
+<ul class="simple">
+<li><p>Comprehensive README with usage examples</p></li>
+<li><p>Mathematical background and references</p></li>
+<li><p>Integration patterns with other modules</p></li>
+<li><p>API documentation and type hints</p></li>
+</ul>
+</section>
+</section>
+<section id="development-approach">
+<h2>Development Approach<a class="headerlink" href="#development-approach" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Mathematical Rigor</strong>: All implementations based on peer-reviewed literature</p></li>
+<li><p><strong>Modular Design</strong>: Separation of syntactic and semantic methods</p></li>
+<li><p><strong>Integration Focus</strong>: Seamless integration with visualization, networks, and other modules</p></li>
+<li><p><strong>Type Safety</strong>: Comprehensive type hints throughout</p></li>
+<li><p><strong>Error Handling</strong>: Robust handling of edge cases (empty sequences, zero probabilities)</p></li>
+</ul>
+</section>
+<section id="quality-assurance">
+<h2>Quality Assurance<a class="headerlink" href="#quality-assurance" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Human oversight ensures mathematical correctness</p></li>
+<li><p>AI assistance accelerates implementation while maintaining accuracy</p></li>
+<li><p>Comprehensive testing validates all information-theoretic measures</p></li>
+<li><p>Integration tests verify compatibility with other modules</p></li>
+</ul>
+<section id="additional-syntactic-methods-syntactic-py">
+<h3>Additional Syntactic Methods (<code class="docutils literal notranslate"><span class="pre">syntactic.py</span></code>)<a class="headerlink" href="#additional-syntactic-methods-syntactic-py" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> added:</p>
+<ul class="simple">
+<li><p>Jensen-Shannon divergence (consolidated from math module)</p></li>
+<li><p>Rényi entropy with variable order parameter</p></li>
+<li><p>Tsallis entropy (non-extensive entropy)</p></li>
+<li><p>Normalized mutual information with multiple normalization methods</p></li>
+<li><p>Information coefficient (MIC-like measure for continuous variables)</p></li>
+</ul>
+</section>
+<section id="continuous-information-theory-continuous-py">
+<h3>Continuous Information Theory (<code class="docutils literal notranslate"><span class="pre">continuous.py</span></code>)<a class="headerlink" href="#continuous-information-theory-continuous-py" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> implemented:</p>
+<ul class="simple">
+<li><p>Differential entropy for continuous distributions</p></li>
+<li><p>Continuous mutual information estimation</p></li>
+<li><p>Continuous KL divergence estimation</p></li>
+<li><p>Entropy estimation from samples (multiple methods)</p></li>
+</ul>
+</section>
+<section id="estimation-methods-estimation-py">
+<h3>Estimation Methods (<code class="docutils literal notranslate"><span class="pre">estimation.py</span></code>)<a class="headerlink" href="#estimation-methods-estimation-py" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> developed:</p>
+<ul class="simple">
+<li><p>Entropy estimation with multiple methods (plug-in, Miller-Madow, Chao-Shen, jackknife)</p></li>
+<li><p>Mutual information estimation with bias correction</p></li>
+<li><p>KL divergence estimation from samples</p></li>
+<li><p>Generic bias correction function</p></li>
+</ul>
+</section>
+<section id="workflow-functions-workflows-py">
+<h3>Workflow Functions (<code class="docutils literal notranslate"><span class="pre">workflows.py</span></code>)<a class="headerlink" href="#workflow-functions-workflows-py" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> created:</p>
+<ul class="simple">
+<li><p>Batch entropy analysis for multiple sequences</p></li>
+<li><p>Complete information workflow function</p></li>
+<li><p>Dataset comparison using information measures</p></li>
+<li><p>Comprehensive report generation (JSON, Markdown, text formats)</p></li>
+</ul>
+</section>
+<section id="integration-module-integration-py">
+<h3>Integration Module (<code class="docutils literal notranslate"><span class="pre">integration.py</span></code>)<a class="headerlink" href="#integration-module-integration-py" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> implemented:</p>
+<ul class="simple">
+<li><p>DNA sequence integration wrappers</p></li>
+<li><p>RNA expression data integration</p></li>
+<li><p>Single-cell data integration</p></li>
+<li><p>Multi-omics integration functions</p></li>
+<li><p>ML feature selection integration</p></li>
+</ul>
+</section>
+<section id="enhanced-visualization-visualization-py">
+<h3>Enhanced Visualization (<code class="docutils literal notranslate"><span class="pre">visualization.py</span></code>)<a class="headerlink" href="#enhanced-visualization-visualization-py" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> added:</p>
+<ul class="simple">
+<li><p>Rényi entropy spectrum plotting</p></li>
+<li><p>Information network visualization</p></li>
+<li><p>Entropy landscape heatmaps</p></li>
+<li><p>MI network visualization</p></li>
+<li><p>Semantic similarity network visualization</p></li>
+</ul>
+</section>
+<section id="documentation-enhancements">
+<h3>Documentation Enhancements<a class="headerlink" href="#documentation-enhancements" title="Link to this heading"></a></h3>
+<p><strong>Documentation Agent</strong> assisted with:</p>
+<ul class="simple">
+<li><p>Comprehensive README with API reference, performance considerations, best practices</p></li>
+<li><p>EXAMPLES.md with real-world use cases</p></li>
+<li><p>WORKFLOWS.md with step-by-step workflow guides</p></li>
+<li><p>Enhanced AGENTS.md with testing strategy and integration patterns</p></li>
+</ul>
+</section>
+<section id="testing">
+<h3>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> created:</p>
+<ul class="simple">
+<li><p>Comprehensive test suite for all new methods</p></li>
+<li><p>Integration tests for cross-module functionality</p></li>
+<li><p>Tests for continuous and estimation methods</p></li>
+<li><p>Tests for workflow and integration functions</p></li>
+</ul>
+</section>
+</section>
+<section id="id1">
+<h2>Development Approach<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Mathematical Rigor</strong>: All implementations based on peer-reviewed literature</p></li>
+<li><p><strong>Modular Design</strong>: Separation of syntactic and semantic methods</p></li>
+<li><p><strong>Integration Focus</strong>: Seamless integration with visualization, networks, and other modules</p></li>
+<li><p><strong>Type Safety</strong>: Comprehensive type hints throughout</p></li>
+<li><p><strong>Error Handling</strong>: Robust handling of edge cases (empty sequences, zero probabilities)</p></li>
+<li><p><strong>Performance Awareness</strong>: Efficient algorithms with complexity documentation</p></li>
+</ul>
+</section>
+<section id="testing-strategy">
+<h2>Testing Strategy<a class="headerlink" href="#testing-strategy" title="Link to this heading"></a></h2>
+<section id="test-coverage">
+<h3>Test Coverage<a class="headerlink" href="#test-coverage" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Unit Tests</strong>: Individual function correctness</p></li>
+<li><p><strong>Integration Tests</strong>: Cross-module functionality</p></li>
+<li><p><strong>Edge Case Tests</strong>: Empty inputs, zero probabilities, numerical precision</p></li>
+<li><p><strong>Property Tests</strong>: Mathematical properties (non-negativity, bounds)</p></li>
+<li><p><strong>Performance Tests</strong>: Timing and memory usage for large datasets</p></li>
+</ul>
+</section>
+<section id="test-organization">
+<h3>Test Organization<a class="headerlink" href="#test-organization" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">test_information_comprehensive.py</span></code>: Core functionality tests</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">test_information_integration.py</span></code>: Integration with other modules</p></li>
+</ul>
+</section>
+<section id="test-execution">
+<h3>Test Execution<a class="headerlink" href="#test-execution" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>All tests use real implementations (no mocks)</p></li>
+<li><p>Tests write outputs to <code class="docutils literal notranslate"><span class="pre">output/</span></code> directory</p></li>
+<li><p>Tests gracefully skip when optional dependencies unavailable</p></li>
+</ul>
+</section>
+</section>
+<section id="integration-patterns">
+<h2>Integration Patterns<a class="headerlink" href="#integration-patterns" title="Link to this heading"></a></h2>
+<section id="pattern-1-dna-information-visualization">
+<h3>Pattern 1: DNA → Information → Visualization<a class="headerlink" href="#pattern-1-dna-information-visualization" title="Link to this heading"></a></h3>
+<p>DNA sequences → Information profile → Visualization plots</p>
+</section>
+<section id="pattern-2-expression-information-ml">
+<h3>Pattern 2: Expression → Information → ML<a class="headerlink" href="#pattern-2-expression-information-ml" title="Link to this heading"></a></h3>
+<p>RNA expression → Entropy/MI → Feature selection → ML models</p>
+</section>
+<section id="pattern-3-network-information-network-analysis">
+<h3>Pattern 3: Network → Information → Network Analysis<a class="headerlink" href="#pattern-3-network-information-network-analysis" title="Link to this heading"></a></h3>
+<p>Biological networks → Network entropy → Information flow → Community detection</p>
+</section>
+<section id="pattern-4-multi-omics-information-integration">
+<h3>Pattern 4: Multi-Omics → Information → Integration<a class="headerlink" href="#pattern-4-multi-omics-information-integration" title="Link to this heading"></a></h3>
+<p>Multiple platforms → Platform entropy → Cross-platform MI → Systems biology</p>
+</section>
+</section>
+<section id="performance-optimization">
+<h2>Performance Optimization<a class="headerlink" href="#performance-optimization" title="Link to this heading"></a></h2>
+<section id="strategies-used">
+<h3>Strategies Used<a class="headerlink" href="#strategies-used" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Vectorization</strong>: NumPy-based implementations for efficiency</p></li>
+<li><p><strong>Lazy Evaluation</strong>: Import optional dependencies only when needed</p></li>
+<li><p><strong>Memory Efficiency</strong>: Process large datasets in batches</p></li>
+<li><p><strong>Algorithm Selection</strong>: Choose appropriate methods based on data size</p></li>
+</ul>
+</section>
+<section id="optimization-techniques">
+<h3>Optimization Techniques<a class="headerlink" href="#optimization-techniques" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Efficient k-mer counting with Counter</p></li>
+<li><p>Optimized histogram-based continuous methods</p></li>
+<li><p>Caching of expensive computations where appropriate</p></li>
+<li><p>Parallel processing support for batch operations</p></li>
+</ul>
+</section>
+</section>
+<section id="future-enhancements">
+<h2>Future Enhancements<a class="headerlink" href="#future-enhancements" title="Link to this heading"></a></h2>
+<section id="planned-methods">
+<h3>Planned Methods<a class="headerlink" href="#planned-methods" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Partial Information Decomposition</strong>: Decompose MI into unique, shared, synergistic components</p></li>
+<li><p><strong>Integrated Information (Phi)</strong>: Measure of integrated information in complex systems</p></li>
+<li><p><strong>Predictive Information</strong>: Information about future states</p></li>
+<li><p><strong>Active Information</strong>: Information gain from interventions</p></li>
+<li><p><strong>Channel Capacity</strong>: Maximum information transmission rate</p></li>
+<li><p><strong>Fisher Information</strong>: Statistical information in parameter estimation</p></li>
+</ul>
+</section>
+<section id="planned-modules">
+<h3>Planned Modules<a class="headerlink" href="#planned-modules" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Time Series</strong>: Advanced time series information analysis</p></li>
+<li><p><strong>Spatial</strong>: Spatial information measures for spatial data</p></li>
+<li><p><strong>Causal</strong>: Causal information measures and causal inference</p></li>
+</ul>
+</section>
+<section id="planned-enhancements">
+<h3>Planned Enhancements<a class="headerlink" href="#planned-enhancements" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>GPU Acceleration</strong>: CUDA/OpenCL support for large-scale computations</p></li>
+<li><p><strong>Distributed Processing</strong>: Support for distributed computing</p></li>
+<li><p><strong>Advanced Estimation</strong>: More sophisticated entropy estimation methods</p></li>
+<li><p><strong>Interactive Visualization</strong>: Interactive plots for exploration</p></li>
+</ul>
+</section>
+</section>
+<section id="id2">
+<h2>Quality Assurance<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Human oversight ensures mathematical correctness</p></li>
+<li><p>AI assistance accelerates implementation while maintaining accuracy</p></li>
+<li><p>Comprehensive testing validates all information-theoretic measures</p></li>
+<li><p>Integration tests verify compatibility with other modules</p></li>
+<li><p>Performance benchmarks validate efficiency</p></li>
+</ul>
+</section>
+<section id="references-and-standards">
+<h2>References and Standards<a class="headerlink" href="#references-and-standards" title="Link to this heading"></a></h2>
+<p>All implementations follow established information theory literature:</p>
+<ul class="simple">
+<li><p>Shannon entropy: Shannon (1948)</p></li>
+<li><p>Mutual information: Cover &amp; Thomas (2006)</p></li>
+<li><p>Transfer entropy: Schreiber (2000)</p></li>
+<li><p>KL divergence: Kullback &amp; Leibler (1951)</p></li>
+<li><p>Jensen-Shannon divergence: Lin (1991)</p></li>
+<li><p>Rényi entropy: Rényi (1961)</p></li>
+<li><p>Tsallis entropy: Tsallis (1988)</p></li>
+</ul>
+<p>This module provides a comprehensive foundation for information-theoretic analysis of biological data.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

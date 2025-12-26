@@ -1,0 +1,399 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Core: Path Management &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Core: Path Management</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/core/paths.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="core-path-management">
+<h1>Core: Path Management<a class="headerlink" href="#core-path-management" title="Link to this heading"></a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">paths</span></code> module provides comprehensive path handling utilities with safety checks, file operations, and directory management for secure and predictable file system operations.</p>
+<section id="core-path-functions">
+<h2>Core Path Functions<a class="headerlink" href="#core-path-functions" title="Link to this heading"></a></h2>
+<section id="path-resolution-and-validation">
+<h3>Path Resolution and Validation<a class="headerlink" href="#path-resolution-and-validation" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">expand_and_resolve(path)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">Path</span></code></p>
+<ul>
+<li><p>Expand user home (~) and environment variables</p></li>
+<li><p>Resolve to absolute path without requiring file existence</p></li>
+</ul>
+</li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">is_within(path,</span> <span class="pre">parent)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+<ul>
+<li><p>Check if path is contained within parent directory</p></li>
+<li><p>Resolves both paths before comparison</p></li>
+<li><p>Safe containment checking for security</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="directory-operations">
+<h3>Directory Operations<a class="headerlink" href="#directory-operations" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">ensure_directory(path)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+<ul>
+<li><p>Create directory and all parent directories</p></li>
+<li><p>Safe to call on existing directories</p></li>
+</ul>
+</li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">prepare_file_path(file_path)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+<ul>
+<li><p>Ensure parent directories exist for file path</p></li>
+<li><p>Prepares directory structure for file creation</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="safety-and-validation">
+<h3>Safety and Validation<a class="headerlink" href="#safety-and-validation" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">is_safe_path(path)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+<ul>
+<li><p>Check for path traversal attempts and dangerous patterns</p></li>
+<li><p>Prevents directory traversal and injection attacks</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="file-operations">
+<h2>File Operations<a class="headerlink" href="#file-operations" title="Link to this heading"></a></h2>
+<section id="file-information">
+<h3>File Information<a class="headerlink" href="#file-information" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">get_file_extension(filename)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+<ul>
+<li><p>Extract file extension including the dot</p></li>
+<li><p>Returns empty string if no extension</p></li>
+</ul>
+</li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">get_file_size(path)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+<ul>
+<li><p>Get file size in bytes</p></li>
+<li><p>Returns 0 for non-existent files</p></li>
+</ul>
+</li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">get_directory_size(path)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+<ul>
+<li><p>Calculate total size of all files in directory recursively</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="file-name-manipulation">
+<h3>File Name Manipulation<a class="headerlink" href="#file-name-manipulation" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">change_extension(path,</span> <span class="pre">new_extension)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">Path</span></code></p>
+<ul>
+<li><p>Change file extension (with or without dot)</p></li>
+<li><p>Returns new Path object</p></li>
+</ul>
+</li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">sanitize_filename(filename)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+<ul>
+<li><p>Remove dangerous characters for filesystem safety</p></li>
+<li><p>Handles control characters and reserved names</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="file-discovery">
+<h3>File Discovery<a class="headerlink" href="#file-discovery" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">find_files_by_extension(directory,</span> <span class="pre">extension)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">List[Path]</span></code></p>
+<ul>
+<li><p>Find all files with specific extension recursively</p></li>
+<li><p>Extension can include or exclude the dot</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="temporary-files">
+<h2>Temporary Files<a class="headerlink" href="#temporary-files" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">create_temp_file(suffix=&quot;&quot;,</span> <span class="pre">prefix=&quot;tmp&quot;,</span> <span class="pre">directory=None)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">Path</span></code></p>
+<ul>
+<li><p>Create unique temporary file path</p></li>
+<li><p>Uses secure hashing for uniqueness</p></li>
+<li><p>Optional custom directory</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="usage-examples">
+<h2>Usage Examples<a class="headerlink" href="#usage-examples" title="Link to this heading"></a></h2>
+<section id="basic-path-operations">
+<h3>Basic Path Operations<a class="headerlink" href="#basic-path-operations" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">paths</span>
+
+<span class="c1"># Expand and resolve paths</span>
+<span class="n">home_config</span> <span class="o">=</span> <span class="n">paths</span><span class="o">.</span><span class="n">expand_and_resolve</span><span class="p">(</span><span class="s2">&quot;~/config/settings.yaml&quot;</span><span class="p">)</span>
+<span class="n">absolute_path</span> <span class="o">=</span> <span class="n">paths</span><span class="o">.</span><span class="n">expand_and_resolve</span><span class="p">(</span><span class="s2">&quot;./relative/path&quot;</span><span class="p">)</span>
+
+<span class="c1"># Safety checks</span>
+<span class="k">if</span> <span class="n">paths</span><span class="o">.</span><span class="n">is_within</span><span class="p">(</span><span class="n">user_path</span><span class="p">,</span> <span class="s2">&quot;/safe/directory&quot;</span><span class="p">):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Path is safe to use&quot;</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unsafe path detected&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="directory-management">
+<h3>Directory Management<a class="headerlink" href="#directory-management" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">paths</span>
+
+<span class="c1"># Ensure directories exist</span>
+<span class="n">output_dir</span> <span class="o">=</span> <span class="n">paths</span><span class="o">.</span><span class="n">ensure_directory</span><span class="p">(</span><span class="s2">&quot;output/analysis&quot;</span><span class="p">)</span>
+<span class="n">nested_dir</span> <span class="o">=</span> <span class="n">paths</span><span class="o">.</span><span class="n">ensure_directory</span><span class="p">(</span><span class="s2">&quot;output/deep/nested/structure&quot;</span><span class="p">)</span>
+
+<span class="c1"># Prepare for file creation</span>
+<span class="n">paths</span><span class="o">.</span><span class="n">prepare_file_path</span><span class="p">(</span><span class="s2">&quot;output/results/final_report.txt&quot;</span><span class="p">)</span>
+<span class="c1"># Now safe to write to the file</span>
+</pre></div>
+</div>
+</section>
+<section id="id1">
+<h3>File Operations<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">paths</span>
+
+<span class="c1"># File information</span>
+<span class="n">size</span> <span class="o">=</span> <span class="n">paths</span><span class="o">.</span><span class="n">get_file_size</span><span class="p">(</span><span class="s2">&quot;large_dataset.fasta&quot;</span><span class="p">)</span>
+<span class="n">ext</span> <span class="o">=</span> <span class="n">paths</span><span class="o">.</span><span class="n">get_file_extension</span><span class="p">(</span><span class="s2">&quot;sequence.fasta&quot;</span><span class="p">)</span>  <span class="c1"># &quot;.fasta&quot;</span>
+
+<span class="c1"># Change extensions</span>
+<span class="n">json_path</span> <span class="o">=</span> <span class="n">paths</span><span class="o">.</span><span class="n">change_extension</span><span class="p">(</span><span class="s2">&quot;data.csv&quot;</span><span class="p">,</span> <span class="s2">&quot;.json&quot;</span><span class="p">)</span>
+<span class="n">compressed</span> <span class="o">=</span> <span class="n">paths</span><span class="o">.</span><span class="n">change_extension</span><span class="p">(</span><span class="s2">&quot;results.txt&quot;</span><span class="p">,</span> <span class="s2">&quot;.txt.gz&quot;</span><span class="p">)</span>
+
+<span class="c1"># Find files</span>
+<span class="n">fasta_files</span> <span class="o">=</span> <span class="n">paths</span><span class="o">.</span><span class="n">find_files_by_extension</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">,</span> <span class="s2">&quot;.fasta&quot;</span><span class="p">)</span>
+<span class="n">all_csv</span> <span class="o">=</span> <span class="n">paths</span><span class="o">.</span><span class="n">find_files_by_extension</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;csv&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="safe-filename-handling">
+<h3>Safe Filename Handling<a class="headerlink" href="#safe-filename-handling" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">paths</span>
+
+<span class="c1"># Sanitize potentially dangerous filenames</span>
+<span class="n">safe_name</span> <span class="o">=</span> <span class="n">paths</span><span class="o">.</span><span class="n">sanitize_filename</span><span class="p">(</span><span class="s2">&quot;dangerous&lt;file&gt;name?.txt&quot;</span><span class="p">)</span>
+<span class="c1"># Becomes: &quot;dangerous_file_name_.txt&quot;</span>
+
+<span class="c1"># Check path safety</span>
+<span class="k">if</span> <span class="n">paths</span><span class="o">.</span><span class="n">is_safe_path</span><span class="p">(</span><span class="n">user_input_path</span><span class="p">):</span>
+    <span class="n">process_path</span><span class="p">(</span><span class="n">user_input_path</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Unsafe path detected&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="directory-size-analysis">
+<h3>Directory Size Analysis<a class="headerlink" href="#directory-size-analysis" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">paths</span>
+
+<span class="c1"># Get sizes for cleanup decisions</span>
+<span class="n">data_size</span> <span class="o">=</span> <span class="n">paths</span><span class="o">.</span><span class="n">get_directory_size</span><span class="p">(</span><span class="s2">&quot;data/&quot;</span><span class="p">)</span>
+<span class="n">output_size</span> <span class="o">=</span> <span class="n">paths</span><span class="o">.</span><span class="n">get_directory_size</span><span class="p">(</span><span class="s2">&quot;output/&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Data directory: </span><span class="si">{</span><span class="n">data_size</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> GB&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Output directory: </span><span class="si">{</span><span class="n">output_size</span><span class="w"> </span><span class="o">/</span><span class="w"> </span><span class="mi">1024</span><span class="o">**</span><span class="mi">3</span><span class="si">:</span><span class="s2">.1f</span><span class="si">}</span><span class="s2"> GB&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="temporary-file-creation">
+<h3>Temporary File Creation<a class="headerlink" href="#temporary-file-creation" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">paths</span>
+
+<span class="c1"># Create unique temporary files</span>
+<span class="n">temp_csv</span> <span class="o">=</span> <span class="n">paths</span><span class="o">.</span><span class="n">create_temp_file</span><span class="p">(</span><span class="s2">&quot;.csv&quot;</span><span class="p">,</span> <span class="s2">&quot;analysis&quot;</span><span class="p">)</span>
+<span class="n">temp_log</span> <span class="o">=</span> <span class="n">paths</span><span class="o">.</span><span class="n">create_temp_file</span><span class="p">(</span><span class="s2">&quot;.log&quot;</span><span class="p">,</span> <span class="s2">&quot;process&quot;</span><span class="p">,</span> <span class="s2">&quot;/tmp/my_app&quot;</span><span class="p">)</span>
+
+<span class="c1"># Safe to use without conflicts</span>
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">temp_csv</span><span class="p">,</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;temporary,data</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="repository-conventions">
+<h2>Repository Conventions<a class="headerlink" href="#repository-conventions" title="Link to this heading"></a></h2>
+<p>The METAINFORMANT project follows strict path conventions:</p>
+<section id="directory-structure">
+<h3>Directory Structure<a class="headerlink" href="#directory-structure" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">config/</span></code></strong>: Configuration files and run options</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">data/</span></code></strong>: Input datasets and local databases (read-mostly)</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">output/</span></code></strong>: All outputs from tests and real runs (ephemeral)</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">src/</span></code></strong>: Source code</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">tests/</span></code></strong>: Test files and data</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">docs/</span></code></strong>: Documentation</p></li>
+</ul>
+</section>
+<section id="path-safety">
+<h3>Path Safety<a class="headerlink" href="#path-safety" title="Link to this heading"></a></h3>
+<p>All path operations include security checks:</p>
+<ul class="simple">
+<li><p>No writing outside allowed directories without explicit user paths</p></li>
+<li><p>Containment validation for security</p></li>
+<li><p>Sanitization of user-provided filenames</p></li>
+<li><p>Prevention of path traversal attacks</p></li>
+</ul>
+</section>
+<section id="integration-with-core-modules">
+<h3>Integration with Core Modules<a class="headerlink" href="#integration-with-core-modules" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">paths</span><span class="p">,</span> <span class="n">io</span><span class="p">,</span> <span class="n">config</span>
+
+<span class="c1"># Load config with path expansion</span>
+<span class="n">cfg_path</span> <span class="o">=</span> <span class="n">paths</span><span class="o">.</span><span class="n">expand_and_resolve</span><span class="p">(</span><span class="s2">&quot;config/analysis.yaml&quot;</span><span class="p">)</span>
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">config</span><span class="o">.</span><span class="n">load_mapping_from_file</span><span class="p">(</span><span class="n">cfg_path</span><span class="p">)</span>
+
+<span class="c1"># Prepare output directory</span>
+<span class="n">output_dir</span> <span class="o">=</span> <span class="n">paths</span><span class="o">.</span><span class="n">ensure_directory</span><span class="p">(</span><span class="n">cfg</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;output_dir&quot;</span><span class="p">,</span> <span class="s2">&quot;output&quot;</span><span class="p">))</span>
+
+<span class="c1"># Write results safely</span>
+<span class="n">result_path</span> <span class="o">=</span> <span class="n">output_dir</span> <span class="o">/</span> <span class="s2">&quot;analysis_results.json&quot;</span>
+<span class="n">io</span><span class="o">.</span><span class="n">dump_json</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">result_path</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="error-handling">
+<h2>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading"></a></h2>
+<p>Path operations provide robust error handling:</p>
+<ul class="simple">
+<li><p>Graceful handling of non-existent files/directories</p></li>
+<li><p>Clear error messages for invalid operations</p></li>
+<li><p>Safe fallbacks for edge cases</p></li>
+</ul>
+</section>
+<section id="dependencies">
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Required</strong>: Standard library <code class="docutils literal notranslate"><span class="pre">pathlib</span></code>, <code class="docutils literal notranslate"><span class="pre">os</span></code>, <code class="docutils literal notranslate"><span class="pre">tempfile</span></code></p></li>
+<li><p><strong>Optional</strong>: <code class="docutils literal notranslate"><span class="pre">re</span></code> module for filename sanitization</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

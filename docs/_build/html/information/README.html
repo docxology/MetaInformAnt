@@ -1,0 +1,1052 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Information Theory Module &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Information Theory Module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/information/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="information-theory-module">
+<h1>Information Theory Module<a class="headerlink" href="#information-theory-module" title="Link to this heading"></a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">information</span></code> module provides comprehensive information-theoretic methods for analyzing biological data, including both syntactic (Shannon entropy, mutual information) and semantic (information content, semantic similarity) information measures.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>This module implements fundamental information theory concepts for biological data analysis:</p>
+<ul class="simple">
+<li><p><strong>Syntactic Information Theory</strong>: Shannon entropy, mutual information, KL divergence, transfer entropy</p></li>
+<li><p><strong>Semantic Information Theory</strong>: Information content, semantic similarity, semantic entropy</p></li>
+<li><p><strong>Network Integration</strong>: Information flow, network entropy, information-based community detection</p></li>
+<li><p><strong>Visualization</strong>: Integration with visualization module for plotting information measures</p></li>
+</ul>
+</section>
+<section id="key-components">
+<h2>Key Components<a class="headerlink" href="#key-components" title="Link to this heading"></a></h2>
+<section id="syntactic-information-theory-syntactic-py">
+<h3>Syntactic Information Theory (<code class="docutils literal notranslate"><span class="pre">syntactic.py</span></code>)<a class="headerlink" href="#syntactic-information-theory-syntactic-py" title="Link to this heading"></a></h3>
+<p>Fundamental information-theoretic measures for analyzing data distributions.</p>
+<section id="shannon-entropy">
+<h4>Shannon Entropy<a class="headerlink" href="#shannon-entropy" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">shannon_entropy</span>
+
+<span class="c1"># Calculate entropy of a probability distribution</span>
+<span class="n">probs</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">]</span>
+<span class="n">entropy</span> <span class="o">=</span> <span class="n">shannon_entropy</span><span class="p">(</span><span class="n">probs</span><span class="p">)</span>  <span class="c1"># bits</span>
+
+<span class="c1"># From counts</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">shannon_entropy_from_counts</span>
+<span class="n">counts</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;A&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span> <span class="s2">&quot;T&quot;</span><span class="p">:</span> <span class="mi">30</span><span class="p">,</span> <span class="s2">&quot;G&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">}</span>
+<span class="n">entropy</span> <span class="o">=</span> <span class="n">shannon_entropy_from_counts</span><span class="p">(</span><span class="n">counts</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="mutual-information">
+<h4>Mutual Information<a class="headerlink" href="#mutual-information" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">mutual_information</span>
+
+<span class="c1"># Calculate mutual information between two sequences</span>
+<span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+<span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>  <span class="c1"># Perfect negative correlation</span>
+<span class="n">mi</span> <span class="o">=</span> <span class="n">mutual_information</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="kullback-leibler-divergence">
+<h4>Kullback-Leibler Divergence<a class="headerlink" href="#kullback-leibler-divergence" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">kl_divergence</span>
+
+<span class="c1"># Compare two probability distributions</span>
+<span class="n">p</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">]</span>
+<span class="n">q</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">]</span>
+<span class="n">divergence</span> <span class="o">=</span> <span class="n">kl_divergence</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="transfer-entropy">
+<h4>Transfer Entropy<a class="headerlink" href="#transfer-entropy" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">transfer_entropy</span>
+
+<span class="c1"># Measure information transfer between time series</span>
+<span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+<span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+<span class="n">te</span> <span class="o">=</span> <span class="n">transfer_entropy</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">lag</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="semantic-information-theory-semantic-py">
+<h3>Semantic Information Theory (<code class="docutils literal notranslate"><span class="pre">semantic.py</span></code>)<a class="headerlink" href="#semantic-information-theory-semantic-py" title="Link to this heading"></a></h3>
+<p>Information measures for hierarchical and ontological data structures.</p>
+<section id="information-content">
+<h4>Information Content<a class="headerlink" href="#information-content" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">information_content</span>
+
+<span class="c1"># Calculate information content of GO terms</span>
+<span class="n">term_frequencies</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;GO:0008150&quot;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span> <span class="s2">&quot;GO:0003674&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">}</span>
+<span class="n">ic</span> <span class="o">=</span> <span class="n">information_content</span><span class="p">(</span><span class="n">term_frequencies</span><span class="p">,</span> <span class="s2">&quot;GO:0003674&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="semantic-similarity">
+<h4>Semantic Similarity<a class="headerlink" href="#semantic-similarity" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">semantic_similarity</span><span class="p">,</span> <span class="n">semantic_similarity_matrix</span>
+
+<span class="c1"># Calculate similarity between terms</span>
+<span class="n">term_ic</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;A&quot;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">}</span>
+<span class="n">hierarchy</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;A&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;C&quot;</span><span class="p">},</span> <span class="s2">&quot;B&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;C&quot;</span><span class="p">}}</span>
+<span class="n">similarity</span> <span class="o">=</span> <span class="n">semantic_similarity</span><span class="p">(</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="n">term_ic</span><span class="p">,</span> <span class="n">hierarchy</span><span class="p">)</span>
+
+<span class="c1"># Pairwise similarity matrix</span>
+<span class="n">terms</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">]</span>
+<span class="n">similarity_matrix</span> <span class="o">=</span> <span class="n">semantic_similarity_matrix</span><span class="p">(</span><span class="n">terms</span><span class="p">,</span> <span class="n">term_ic</span><span class="p">,</span> <span class="n">hierarchy</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="analysis-functions-analysis-py">
+<h3>Analysis Functions (<code class="docutils literal notranslate"><span class="pre">analysis.py</span></code>)<a class="headerlink" href="#analysis-functions-analysis-py" title="Link to this heading"></a></h3>
+<p>High-level analysis workflows for biological sequences and data.</p>
+<section id="information-profile">
+<h4>Information Profile<a class="headerlink" href="#information-profile" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">information_profile</span>
+
+<span class="c1"># Analyze sequence information content</span>
+<span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ATCGATCG&quot;</span><span class="p">,</span> <span class="s2">&quot;AAAAAA&quot;</span><span class="p">,</span> <span class="s2">&quot;ATCGATCG&quot;</span><span class="p">]</span>
+<span class="n">profile</span> <span class="o">=</span> <span class="n">information_profile</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Entropy: </span><span class="si">{</span><span class="n">profile</span><span class="p">[</span><span class="s1">&#39;entropy&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> bits&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unique k-mers: </span><span class="si">{</span><span class="n">profile</span><span class="p">[</span><span class="s1">&#39;unique_kmers&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Complexity: </span><span class="si">{</span><span class="n">profile</span><span class="p">[</span><span class="s1">&#39;sequence_complexity&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="sequence-information-analysis">
+<h4>Sequence Information Analysis<a class="headerlink" href="#sequence-information-analysis" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">analyze_sequence_information</span>
+
+<span class="c1"># Comprehensive sequence analysis</span>
+<span class="n">sequence</span> <span class="o">=</span> <span class="s2">&quot;ATCGATCGATCG&quot;</span>
+<span class="n">analysis</span> <span class="o">=</span> <span class="n">analyze_sequence_information</span><span class="p">(</span><span class="n">sequence</span><span class="p">,</span> <span class="n">k_values</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="sequence-comparison">
+<h4>Sequence Comparison<a class="headerlink" href="#sequence-comparison" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">compare_sequences_information</span>
+
+<span class="c1"># Compare two sequences</span>
+<span class="n">seq1</span> <span class="o">=</span> <span class="s2">&quot;ATCGATCG&quot;</span>
+<span class="n">seq2</span> <span class="o">=</span> <span class="s2">&quot;ATCGATCG&quot;</span>
+<span class="n">comparison</span> <span class="o">=</span> <span class="n">compare_sequences_information</span><span class="p">(</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;KL divergence: </span><span class="si">{</span><span class="n">comparison</span><span class="p">[</span><span class="s1">&#39;kl_divergence&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mutual information: </span><span class="si">{</span><span class="n">comparison</span><span class="p">[</span><span class="s1">&#39;mutual_information&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="network-integration-networks-py">
+<h3>Network Integration (<code class="docutils literal notranslate"><span class="pre">networks.py</span></code>)<a class="headerlink" href="#network-integration-networks-py" title="Link to this heading"></a></h3>
+<p>Information-theoretic analysis of biological networks.</p>
+<section id="network-entropy">
+<h4>Network Entropy<a class="headerlink" href="#network-entropy" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information.networks</span><span class="w"> </span><span class="kn">import</span> <span class="n">network_entropy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
+
+<span class="c1"># Create network</span>
+<span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">karate_club_graph</span><span class="p">()</span>
+
+<span class="c1"># Calculate entropy of degree distribution</span>
+<span class="n">entropy</span> <span class="o">=</span> <span class="n">network_entropy</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
+
+<span class="c1"># Or entropy of node attributes</span>
+<span class="n">entropy_attr</span> <span class="o">=</span> <span class="n">network_entropy</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="s2">&quot;club&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="information-flow">
+<h4>Information Flow<a class="headerlink" href="#information-flow" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information.networks</span><span class="w"> </span><span class="kn">import</span> <span class="n">information_flow</span>
+
+<span class="c1"># Analyze information flow through network</span>
+<span class="n">flow</span> <span class="o">=</span> <span class="n">information_flow</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">source_nodes</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Mr. Hi&quot;</span><span class="p">],</span> <span class="n">target_nodes</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">nodes</span><span class="p">()))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Path length entropy: </span><span class="si">{</span><span class="n">flow</span><span class="p">[</span><span class="s1">&#39;path_length_entropy&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="mutual-information-network">
+<h4>Mutual Information Network<a class="headerlink" href="#mutual-information-network" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information.networks</span><span class="w"> </span><span class="kn">import</span> <span class="n">mutual_information_network</span>
+
+<span class="c1"># Calculate MI matrix from network structure</span>
+<span class="n">mi_matrix</span> <span class="o">=</span> <span class="n">mutual_information_network</span><span class="p">(</span><span class="n">G</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="visualization-integration-visualization-py">
+<h3>Visualization Integration (<code class="docutils literal notranslate"><span class="pre">visualization.py</span></code>)<a class="headerlink" href="#visualization-integration-visualization-py" title="Link to this heading"></a></h3>
+<p>Plotting functions for information-theoretic analysis.</p>
+<section id="plot-entropy-distribution">
+<h4>Plot Entropy Distribution<a class="headerlink" href="#plot-entropy-distribution" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_entropy_distribution</span>
+
+<span class="c1"># Plot distribution of entropy values</span>
+<span class="n">entropies</span> <span class="o">=</span> <span class="p">[</span><span class="mf">2.5</span><span class="p">,</span> <span class="mf">3.1</span><span class="p">,</span> <span class="mf">2.8</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">2.9</span><span class="p">]</span>
+<span class="n">plot_entropy_distribution</span><span class="p">(</span><span class="n">entropies</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/information/entropy.png&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="plot-mutual-information-matrix">
+<h4>Plot Mutual Information Matrix<a class="headerlink" href="#plot-mutual-information-matrix" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_mutual_information_matrix</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Plot MI matrix as heatmap</span>
+<span class="n">mi_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;Gene_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)]</span>
+<span class="n">plot_mutual_information_matrix</span><span class="p">(</span><span class="n">mi_matrix</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/information/mi_matrix.png&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="plot-information-profile">
+<h4>Plot Information Profile<a class="headerlink" href="#plot-information-profile" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">information_profile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_information_profile</span>
+
+<span class="c1"># Analyze and visualize</span>
+<span class="n">profile</span> <span class="o">=</span> <span class="n">information_profile</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">plot_information_profile</span><span class="p">(</span><span class="n">profile</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/information/profile.png&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="integration-with-other-modules">
+<h2>Integration with Other Modules<a class="headerlink" href="#integration-with-other-modules" title="Link to this heading"></a></h2>
+<section id="with-dna-module">
+<h3>With DNA Module<a class="headerlink" href="#with-dna-module" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.dna</span><span class="w"> </span><span class="kn">import</span> <span class="n">sequences</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">information_profile</span>
+
+<span class="c1"># Analyze DNA sequence information</span>
+<span class="n">dna_seqs</span> <span class="o">=</span> <span class="n">sequences</span><span class="o">.</span><span class="n">read_fasta</span><span class="p">(</span><span class="s2">&quot;data/sequences.fasta&quot;</span><span class="p">)</span>
+<span class="n">profile</span> <span class="o">=</span> <span class="n">information_profile</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">dna_seqs</span><span class="o">.</span><span class="n">values</span><span class="p">()),</span> <span class="n">k</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="with-networks-module">
+<h3>With Networks Module<a class="headerlink" href="#with-networks-module" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.networks</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_network</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information.networks</span><span class="w"> </span><span class="kn">import</span> <span class="n">network_entropy</span><span class="p">,</span> <span class="n">information_flow</span>
+
+<span class="c1"># Create network and analyze information</span>
+<span class="n">network</span> <span class="o">=</span> <span class="n">create_network</span><span class="p">([</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">],</span> <span class="n">directed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">network</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">)</span>
+<span class="n">network</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">)</span>
+
+<span class="n">entropy</span> <span class="o">=</span> <span class="n">network_entropy</span><span class="p">(</span><span class="n">network</span><span class="p">)</span>
+<span class="n">flow</span> <span class="o">=</span> <span class="n">information_flow</span><span class="p">(</span><span class="n">network</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="with-ontology-module">
+<h3>With Ontology Module<a class="headerlink" href="#with-ontology-module" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.ontology</span><span class="w"> </span><span class="kn">import</span> <span class="n">go</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">information_content</span><span class="p">,</span> <span class="n">semantic_similarity</span>
+
+<span class="c1"># Analyze GO term information content</span>
+<span class="n">go_terms</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">load_go_terms</span><span class="p">(</span><span class="s2">&quot;go.obo&quot;</span><span class="p">)</span>
+<span class="n">term_freqs</span> <span class="o">=</span> <span class="p">{</span><span class="n">term</span><span class="o">.</span><span class="n">id</span><span class="p">:</span> <span class="n">term</span><span class="o">.</span><span class="n">frequency</span> <span class="k">for</span> <span class="n">term</span> <span class="ow">in</span> <span class="n">go_terms</span><span class="p">}</span>
+<span class="n">ic</span> <span class="o">=</span> <span class="n">information_content</span><span class="p">(</span><span class="n">term_freqs</span><span class="p">,</span> <span class="s2">&quot;GO:0008150&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="with-visualization-module">
+<h3>With Visualization Module<a class="headerlink" href="#with-visualization-module" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">analyze_sequence_information</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_information_profile</span>
+
+<span class="c1"># Analyze and visualize</span>
+<span class="n">analysis</span> <span class="o">=</span> <span class="n">analyze_sequence_information</span><span class="p">(</span><span class="s2">&quot;ATCGATCGATCG&quot;</span><span class="p">)</span>
+<span class="n">profile</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;entropy&quot;</span><span class="p">:</span> <span class="n">analysis</span><span class="p">[</span><span class="s2">&quot;kmer_analyses&quot;</span><span class="p">][</span><span class="mi">1</span><span class="p">][</span><span class="s2">&quot;entropy&quot;</span><span class="p">]}</span>
+<span class="n">plot_information_profile</span><span class="p">(</span><span class="n">profile</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="mathematical-background">
+<h2>Mathematical Background<a class="headerlink" href="#mathematical-background" title="Link to this heading"></a></h2>
+<section id="id1">
+<h3>Shannon Entropy<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<p>Shannon entropy measures the uncertainty in a probability distribution:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>H(X) = -Σ p(x) × log₂(p(x))
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h3>Mutual Information<a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
+<p>Mutual information measures shared information between variables:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">I</span><span class="p">(</span><span class="n">X</span><span class="p">;</span> <span class="n">Y</span><span class="p">)</span> <span class="o">=</span> <span class="n">H</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">+</span> <span class="n">H</span><span class="p">(</span><span class="n">Y</span><span class="p">)</span> <span class="o">-</span> <span class="n">H</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">Y</span><span class="p">)</span> <span class="o">=</span> <span class="n">H</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">-</span> <span class="n">H</span><span class="p">(</span><span class="n">X</span><span class="o">|</span><span class="n">Y</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h3>Kullback-Leibler Divergence<a class="headerlink" href="#id3" title="Link to this heading"></a></h3>
+<p>KL divergence measures how different two distributions are:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>D_KL(P||Q) = Σ p(x) × log(p(x) / q(x))
+</pre></div>
+</div>
+</section>
+<section id="id4">
+<h3>Transfer Entropy<a class="headerlink" href="#id4" title="Link to this heading"></a></h3>
+<p>Transfer entropy measures information transfer between time series:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>T(Y → X) = H(X_t | X_{t-1}) - H(X_t | X_{t-1}, Y_{t-1})
+</pre></div>
+</div>
+</section>
+</section>
+<section id="performance-features">
+<h2>Performance Features<a class="headerlink" href="#performance-features" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Efficient Algorithms</strong>: Optimized implementations for large datasets</p></li>
+<li><p><strong>Memory Conscious</strong>: Handles large sequences and networks efficiently</p></li>
+<li><p><strong>Vectorized Operations</strong>: NumPy-based implementations where applicable</p></li>
+<li><p><strong>Parallel Processing</strong>: Supports parallel computation for multiple sequences</p></li>
+</ul>
+</section>
+<section id="testing">
+<h2>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h2>
+<p>Comprehensive tests ensure mathematical correctness:</p>
+<ul class="simple">
+<li><p>Verification against known analytical solutions</p></li>
+<li><p>Edge case handling (empty sequences, zero probabilities)</p></li>
+<li><p>Integration tests with other modules</p></li>
+<li><p>Performance benchmarks</p></li>
+</ul>
+</section>
+<section id="dependencies">
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Core</strong>: NumPy for numerical computations</p></li>
+<li><p><strong>Optional</strong>: NetworkX for network analysis</p></li>
+<li><p><strong>Visualization</strong>: Matplotlib for plotting (via visualization module)</p></li>
+</ul>
+<section id="continuous-information-theory-continuous-py">
+<h3>Continuous Information Theory (<code class="docutils literal notranslate"><span class="pre">continuous.py</span></code>)<a class="headerlink" href="#continuous-information-theory-continuous-py" title="Link to this heading"></a></h3>
+<p>Methods for analyzing continuous probability distributions.</p>
+<section id="differential-entropy">
+<h4>Differential Entropy<a class="headerlink" href="#differential-entropy" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">differential_entropy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Calculate differential entropy for continuous data</span>
+<span class="n">samples</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>
+<span class="n">h</span> <span class="o">=</span> <span class="n">differential_entropy</span><span class="p">(</span><span class="n">samples</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;histogram&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="continuous-mutual-information">
+<h4>Continuous Mutual Information<a class="headerlink" href="#continuous-mutual-information" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">mutual_information_continuous</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">x</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span> <span class="o">*</span> <span class="mf">0.1</span>  <span class="c1"># Strong correlation</span>
+<span class="n">mi</span> <span class="o">=</span> <span class="n">mutual_information_continuous</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="estimation-methods-estimation-py">
+<h3>Estimation Methods (<code class="docutils literal notranslate"><span class="pre">estimation.py</span></code>)<a class="headerlink" href="#estimation-methods-estimation-py" title="Link to this heading"></a></h3>
+<p>Entropy and mutual information estimation with bias correction.</p>
+<section id="entropy-estimation">
+<h4>Entropy Estimation<a class="headerlink" href="#entropy-estimation" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">entropy_estimator</span>
+
+<span class="n">counts</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;A&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span> <span class="s2">&quot;T&quot;</span><span class="p">:</span> <span class="mi">30</span><span class="p">,</span> <span class="s2">&quot;G&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">}</span>
+<span class="c1"># Plug-in estimator</span>
+<span class="n">h_plugin</span> <span class="o">=</span> <span class="n">entropy_estimator</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;plugin&quot;</span><span class="p">)</span>
+<span class="c1"># Miller-Madow bias correction</span>
+<span class="n">h_mm</span> <span class="o">=</span> <span class="n">entropy_estimator</span><span class="p">(</span><span class="n">counts</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;miller_madow&quot;</span><span class="p">,</span> <span class="n">bias_correction</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="bias-correction">
+<h4>Bias Correction<a class="headerlink" href="#bias-correction" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">bias_correction</span>
+
+<span class="c1"># Correct entropy estimate for small sample bias</span>
+<span class="n">corrected</span> <span class="o">=</span> <span class="n">bias_correction</span><span class="p">(</span><span class="n">estimate</span><span class="o">=</span><span class="mf">1.5</span><span class="p">,</span> <span class="n">n_samples</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">n_bins</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">measure</span><span class="o">=</span><span class="s2">&quot;entropy&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="additional-syntactic-methods">
+<h3>Additional Syntactic Methods<a class="headerlink" href="#additional-syntactic-methods" title="Link to this heading"></a></h3>
+<section id="jensen-shannon-divergence">
+<h4>Jensen-Shannon Divergence<a class="headerlink" href="#jensen-shannon-divergence" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">jensen_shannon_divergence</span>
+
+<span class="n">p</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">]</span>
+<span class="n">q</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">]</span>
+<span class="n">js</span> <span class="o">=</span> <span class="n">jensen_shannon_divergence</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="n">q</span><span class="p">)</span>  <span class="c1"># Symmetrized KL divergence</span>
+</pre></div>
+</div>
+</section>
+<section id="renyi-entropy">
+<h4>Rényi Entropy<a class="headerlink" href="#renyi-entropy" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">renyi_entropy</span>
+
+<span class="n">probs</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">]</span>
+<span class="c1"># Collision entropy (α=2)</span>
+<span class="n">h_2</span> <span class="o">=</span> <span class="n">renyi_entropy</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
+<span class="c1"># α=1 equals Shannon entropy</span>
+<span class="n">h_1</span> <span class="o">=</span> <span class="n">renyi_entropy</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="tsallis-entropy">
+<h4>Tsallis Entropy<a class="headerlink" href="#tsallis-entropy" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">tsallis_entropy</span>
+
+<span class="n">probs</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">]</span>
+<span class="n">h_q</span> <span class="o">=</span> <span class="n">tsallis_entropy</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>  <span class="c1"># Non-extensive entropy</span>
+</pre></div>
+</div>
+</section>
+<section id="normalized-mutual-information">
+<h4>Normalized Mutual Information<a class="headerlink" href="#normalized-mutual-information" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">normalized_mutual_information</span>
+
+<span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+<span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+<span class="n">nmi</span> <span class="o">=</span> <span class="n">normalized_mutual_information</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;arithmetic&quot;</span><span class="p">)</span>  <span class="c1"># Normalized to [0, 1]</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="workflow-functions-workflows-py">
+<h3>Workflow Functions (<code class="docutils literal notranslate"><span class="pre">workflows.py</span></code>)<a class="headerlink" href="#workflow-functions-workflows-py" title="Link to this heading"></a></h3>
+<p>High-level batch processing and workflow functions.</p>
+<section id="batch-entropy-analysis">
+<h4>Batch Entropy Analysis<a class="headerlink" href="#batch-entropy-analysis" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">batch_entropy_analysis</span>
+
+<span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ATCG&quot;</span><span class="p">,</span> <span class="s2">&quot;ATCG&quot;</span><span class="p">,</span> <span class="s2">&quot;AAAA&quot;</span><span class="p">,</span> <span class="s2">&quot;GCTA&quot;</span><span class="p">]</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">batch_entropy_analysis</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;output/information&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="information-workflow">
+<h4>Information Workflow<a class="headerlink" href="#information-workflow" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">information_workflow</span>
+
+<span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ATCGATCG&quot;</span><span class="p">,</span> <span class="s2">&quot;AAAA&quot;</span><span class="p">,</span> <span class="s2">&quot;GCTAGCTA&quot;</span><span class="p">]</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">information_workflow</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">k_values</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;output/information&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="dataset-comparison">
+<h4>Dataset Comparison<a class="headerlink" href="#dataset-comparison" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">compare_datasets</span>
+
+<span class="n">dataset1</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ATCG&quot;</span><span class="p">,</span> <span class="s2">&quot;ATCG&quot;</span><span class="p">]</span>
+<span class="n">dataset2</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;AAAA&quot;</span><span class="p">,</span> <span class="s2">&quot;AAAA&quot;</span><span class="p">]</span>
+<span class="n">comparison</span> <span class="o">=</span> <span class="n">compare_datasets</span><span class="p">(</span><span class="n">dataset1</span><span class="p">,</span> <span class="n">dataset2</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;kl_divergence&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="integration-functions-integration-py">
+<h3>Integration Functions (<code class="docutils literal notranslate"><span class="pre">integration.py</span></code>)<a class="headerlink" href="#integration-functions-integration-py" title="Link to this heading"></a></h3>
+<p>Wrappers for integrating with other modules.</p>
+<section id="dna-integration">
+<h4>DNA Integration<a class="headerlink" href="#dna-integration" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">dna_integration</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.dna</span><span class="w"> </span><span class="kn">import</span> <span class="n">sequences</span>
+
+<span class="n">dna_seqs</span> <span class="o">=</span> <span class="n">sequences</span><span class="o">.</span><span class="n">read_fasta</span><span class="p">(</span><span class="s2">&quot;data/sequences.fasta&quot;</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">dna_integration</span><span class="p">(</span><span class="n">dna_seqs</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">analysis_type</span><span class="o">=</span><span class="s2">&quot;profile&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="rna-integration">
+<h4>RNA Integration<a class="headerlink" href="#rna-integration" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">rna_integration</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">expression</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>  <span class="c1"># 100 samples, 50 genes</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">rna_integration</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;mutual_information&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="single-cell-integration">
+<h4>Single-Cell Integration<a class="headerlink" href="#single-cell-integration" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">singlecell_integration</span>
+
+<span class="n">count_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">50</span><span class="p">))</span>
+<span class="n">cell_types</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;TypeA&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">50</span> <span class="o">+</span> <span class="p">[</span><span class="s2">&quot;TypeB&quot;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">50</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">singlecell_integration</span><span class="p">(</span><span class="n">count_matrix</span><span class="p">,</span> <span class="n">cell_types</span><span class="o">=</span><span class="n">cell_types</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;cell_type_entropy&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="multi-omics-integration">
+<h4>Multi-Omics Integration<a class="headerlink" href="#multi-omics-integration" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">multiomics_integration</span>
+
+<span class="n">genomics</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+<span class="n">transcriptomics</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+<span class="c1"># Use first feature (default)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">multiomics_integration</span><span class="p">(</span>
+    <span class="n">genomics_data</span><span class="o">=</span><span class="n">genomics</span><span class="p">,</span>
+    <span class="n">transcriptomics_data</span><span class="o">=</span><span class="n">transcriptomics</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;cross_platform_mi&quot;</span>
+<span class="p">)</span>
+<span class="c1"># Results always in matrix format</span>
+<span class="n">mi_matrix</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;genomics_transcriptomics_mi_matrix&quot;</span><span class="p">]</span>
+<span class="n">mean_mi</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;genomics_transcriptomics_mean_mi&quot;</span><span class="p">]</span>
+
+<span class="c1"># Use specific features</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">multiomics_integration</span><span class="p">(</span>
+    <span class="n">genomics_data</span><span class="o">=</span><span class="n">genomics</span><span class="p">,</span>
+    <span class="n">transcriptomics_data</span><span class="o">=</span><span class="n">transcriptomics</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;cross_platform_mi&quot;</span><span class="p">,</span>
+    <span class="n">feature_indices</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;genomics&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="s2">&quot;transcriptomics&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">]}</span>
+<span class="p">)</span>
+<span class="c1"># Access matrix and statistics</span>
+<span class="n">mi_matrix</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;genomics_transcriptomics_mi_matrix&quot;</span><span class="p">]</span>
+<span class="n">mean_mi</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;genomics_transcriptomics_mean_mi&quot;</span><span class="p">]</span>
+<span class="n">max_mi</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;genomics_transcriptomics_max_mi&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="ml-integration">
+<h4>ML Integration<a class="headerlink" href="#ml-integration" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">ml_integration</span>
+
+<span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">ml_integration</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;feature_mi&quot;</span><span class="p">)</span>  <span class="c1"># Feature selection using MI</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="enhanced-visualization">
+<h3>Enhanced Visualization<a class="headerlink" href="#enhanced-visualization" title="Link to this heading"></a></h3>
+<section id="renyi-spectrum">
+<h4>Rényi Spectrum<a class="headerlink" href="#renyi-spectrum" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_renyi_spectrum</span>
+
+<span class="n">probs</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">]</span>
+<span class="n">plot_renyi_spectrum</span><span class="p">(</span><span class="n">probs</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/information/renyi_spectrum.png&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="information-network">
+<h4>Information Network<a class="headerlink" href="#information-network" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_information_network</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
+
+<span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">karate_club_graph</span><span class="p">()</span>
+<span class="n">mi_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">nodes</span><span class="p">()),</span> <span class="nb">len</span><span class="p">(</span><span class="n">G</span><span class="o">.</span><span class="n">nodes</span><span class="p">()))</span>
+<span class="n">plot_information_network</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">mi_matrix</span><span class="o">=</span><span class="n">mi_matrix</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/information/network.png&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="entropy-landscape">
+<h4>Entropy Landscape<a class="headerlink" href="#entropy-landscape" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_entropy_landscape</span>
+
+<span class="n">entropy_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="n">plot_entropy_landscape</span><span class="p">(</span><span class="n">entropy_data</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/information/landscape.png&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="api-reference">
+<h2>API Reference<a class="headerlink" href="#api-reference" title="Link to this heading"></a></h2>
+<section id="syntactic-information-theory">
+<h3>Syntactic Information Theory<a class="headerlink" href="#syntactic-information-theory" title="Link to this heading"></a></h3>
+<section id="shannon-entropy-probs-sequence-float-base-float-2-0-float">
+<h4><code class="docutils literal notranslate"><span class="pre">shannon_entropy(probs:</span> <span class="pre">Sequence[float],</span> <span class="pre">base:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">2.0)</span> <span class="pre">-&gt;</span> <span class="pre">float</span></code><a class="headerlink" href="#shannon-entropy-probs-sequence-float-base-float-2-0-float" title="Link to this heading"></a></h4>
+<p>Calculate Shannon entropy of a probability distribution.</p>
+</section>
+<section id="mutual-information-x-sequence-any-y-sequence-any-base-float-2-0-float">
+<h4><code class="docutils literal notranslate"><span class="pre">mutual_information(x:</span> <span class="pre">Sequence[Any],</span> <span class="pre">y:</span> <span class="pre">Sequence[Any],</span> <span class="pre">base:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">2.0)</span> <span class="pre">-&gt;</span> <span class="pre">float</span></code><a class="headerlink" href="#mutual-information-x-sequence-any-y-sequence-any-base-float-2-0-float" title="Link to this heading"></a></h4>
+<p>Calculate mutual information between two sequences.</p>
+</section>
+<section id="kl-divergence-p-sequence-float-q-sequence-float-base-float-2-0-float">
+<h4><code class="docutils literal notranslate"><span class="pre">kl_divergence(p:</span> <span class="pre">Sequence[float],</span> <span class="pre">q:</span> <span class="pre">Sequence[float],</span> <span class="pre">base:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">2.0)</span> <span class="pre">-&gt;</span> <span class="pre">float</span></code><a class="headerlink" href="#kl-divergence-p-sequence-float-q-sequence-float-base-float-2-0-float" title="Link to this heading"></a></h4>
+<p>Calculate Kullback-Leibler divergence.</p>
+</section>
+<section id="jensen-shannon-divergence-p-sequence-float-q-sequence-float-base-float-2-0-float">
+<h4><code class="docutils literal notranslate"><span class="pre">jensen_shannon_divergence(p:</span> <span class="pre">Sequence[float],</span> <span class="pre">q:</span> <span class="pre">Sequence[float],</span> <span class="pre">base:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">2.0)</span> <span class="pre">-&gt;</span> <span class="pre">float</span></code><a class="headerlink" href="#jensen-shannon-divergence-p-sequence-float-q-sequence-float-base-float-2-0-float" title="Link to this heading"></a></h4>
+<p>Calculate Jensen-Shannon divergence (symmetrized KL).</p>
+</section>
+<section id="renyi-entropy-probs-sequence-float-alpha-float-2-0-base-float-2-0-float">
+<h4><code class="docutils literal notranslate"><span class="pre">renyi_entropy(probs:</span> <span class="pre">Sequence[float],</span> <span class="pre">alpha:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">2.0,</span> <span class="pre">base:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">2.0)</span> <span class="pre">-&gt;</span> <span class="pre">float</span></code><a class="headerlink" href="#renyi-entropy-probs-sequence-float-alpha-float-2-0-base-float-2-0-float" title="Link to this heading"></a></h4>
+<p>Calculate Rényi entropy of order α.</p>
+</section>
+<section id="tsallis-entropy-probs-sequence-float-q-float-2-0-base-float-2-0-float">
+<h4><code class="docutils literal notranslate"><span class="pre">tsallis_entropy(probs:</span> <span class="pre">Sequence[float],</span> <span class="pre">q:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">2.0,</span> <span class="pre">base:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">2.0)</span> <span class="pre">-&gt;</span> <span class="pre">float</span></code><a class="headerlink" href="#tsallis-entropy-probs-sequence-float-q-float-2-0-base-float-2-0-float" title="Link to this heading"></a></h4>
+<p>Calculate Tsallis entropy (non-extensive).</p>
+</section>
+<section id="normalized-mutual-information-x-sequence-any-y-sequence-any-method-str-arithmetic-base-float-2-0-float">
+<h4><code class="docutils literal notranslate"><span class="pre">normalized_mutual_information(x:</span> <span class="pre">Sequence[Any],</span> <span class="pre">y:</span> <span class="pre">Sequence[Any],</span> <span class="pre">method:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&quot;arithmetic&quot;,</span> <span class="pre">base:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">2.0)</span> <span class="pre">-&gt;</span> <span class="pre">float</span></code><a class="headerlink" href="#normalized-mutual-information-x-sequence-any-y-sequence-any-method-str-arithmetic-base-float-2-0-float" title="Link to this heading"></a></h4>
+<p>Calculate normalized mutual information.</p>
+</section>
+<section id="transfer-entropy-x-sequence-any-y-sequence-any-lag-int-1-base-float-2-0-float">
+<h4><code class="docutils literal notranslate"><span class="pre">transfer_entropy(x:</span> <span class="pre">Sequence[Any],</span> <span class="pre">y:</span> <span class="pre">Sequence[Any],</span> <span class="pre">lag:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1,</span> <span class="pre">base:</span> <span class="pre">float</span> <span class="pre">=</span> <span class="pre">2.0)</span> <span class="pre">-&gt;</span> <span class="pre">float</span></code><a class="headerlink" href="#transfer-entropy-x-sequence-any-y-sequence-any-lag-int-1-base-float-2-0-float" title="Link to this heading"></a></h4>
+<p>Calculate transfer entropy for time series.</p>
+</section>
+</section>
+<section id="continuous-information-theory">
+<h3>Continuous Information Theory<a class="headerlink" href="#continuous-information-theory" title="Link to this heading"></a></h3>
+<section id="differential-entropy-samples-np-ndarray-method-str-histogram-bins-int-none-none-float">
+<h4><code class="docutils literal notranslate"><span class="pre">differential_entropy(samples:</span> <span class="pre">np.ndarray,</span> <span class="pre">method:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&quot;histogram&quot;,</span> <span class="pre">bins:</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None)</span> <span class="pre">-&gt;</span> <span class="pre">float</span></code><a class="headerlink" href="#differential-entropy-samples-np-ndarray-method-str-histogram-bins-int-none-none-float" title="Link to this heading"></a></h4>
+<p>Calculate differential entropy for continuous data.</p>
+</section>
+<section id="mutual-information-continuous-x-np-ndarray-y-np-ndarray-method-str-histogram-bins-int-none-none-float">
+<h4><code class="docutils literal notranslate"><span class="pre">mutual_information_continuous(x:</span> <span class="pre">np.ndarray,</span> <span class="pre">y:</span> <span class="pre">np.ndarray,</span> <span class="pre">method:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&quot;histogram&quot;,</span> <span class="pre">bins:</span> <span class="pre">int</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None)</span> <span class="pre">-&gt;</span> <span class="pre">float</span></code><a class="headerlink" href="#mutual-information-continuous-x-np-ndarray-y-np-ndarray-method-str-histogram-bins-int-none-none-float" title="Link to this heading"></a></h4>
+<p>Calculate mutual information for continuous variables.</p>
+</section>
+</section>
+<section id="estimation-methods">
+<h3>Estimation Methods<a class="headerlink" href="#estimation-methods" title="Link to this heading"></a></h3>
+<section id="entropy-estimator-counts-dict-any-int-list-int-method-str-plugin-bias-correction-bool-true-float">
+<h4><code class="docutils literal notranslate"><span class="pre">entropy_estimator(counts:</span> <span class="pre">dict[Any,</span> <span class="pre">int]</span> <span class="pre">|</span> <span class="pre">list[int],</span> <span class="pre">method:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&quot;plugin&quot;,</span> <span class="pre">bias_correction:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True)</span> <span class="pre">-&gt;</span> <span class="pre">float</span></code><a class="headerlink" href="#entropy-estimator-counts-dict-any-int-list-int-method-str-plugin-bias-correction-bool-true-float" title="Link to this heading"></a></h4>
+<p>Estimate entropy from counts with various methods.</p>
+</section>
+<section id="mutual-information-estimator-x-list-any-y-list-any-method-str-plugin-bias-correction-bool-true-float">
+<h4><code class="docutils literal notranslate"><span class="pre">mutual_information_estimator(x:</span> <span class="pre">list[Any],</span> <span class="pre">y:</span> <span class="pre">list[Any],</span> <span class="pre">method:</span> <span class="pre">str</span> <span class="pre">=</span> <span class="pre">&quot;plugin&quot;,</span> <span class="pre">bias_correction:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True)</span> <span class="pre">-&gt;</span> <span class="pre">float</span></code><a class="headerlink" href="#mutual-information-estimator-x-list-any-y-list-any-method-str-plugin-bias-correction-bool-true-float" title="Link to this heading"></a></h4>
+<p>Estimate mutual information with bias correction.</p>
+</section>
+</section>
+<section id="workflow-functions">
+<h3>Workflow Functions<a class="headerlink" href="#workflow-functions" title="Link to this heading"></a></h3>
+<section id="batch-entropy-analysis-sequences-list-str-k-int-1-output-dir-path-none-none-dict-str-any">
+<h4><code class="docutils literal notranslate"><span class="pre">batch_entropy_analysis(sequences:</span> <span class="pre">list[str],</span> <span class="pre">k:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1,</span> <span class="pre">output_dir:</span> <span class="pre">Path</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None)</span> <span class="pre">-&gt;</span> <span class="pre">dict[str,</span> <span class="pre">Any]</span></code><a class="headerlink" href="#batch-entropy-analysis-sequences-list-str-k-int-1-output-dir-path-none-none-dict-str-any" title="Link to this heading"></a></h4>
+<p>Perform entropy analysis on multiple sequences.</p>
+</section>
+<section id="information-workflow-sequences-list-str-k-values-list-int-none-none-output-dir-path-none-none-dict-str-any">
+<h4><code class="docutils literal notranslate"><span class="pre">information_workflow(sequences:</span> <span class="pre">list[str],</span> <span class="pre">k_values:</span> <span class="pre">list[int]</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">output_dir:</span> <span class="pre">Path</span> <span class="pre">|</span> <span class="pre">None</span> <span class="pre">=</span> <span class="pre">None)</span> <span class="pre">-&gt;</span> <span class="pre">dict[str,</span> <span class="pre">Any]</span></code><a class="headerlink" href="#information-workflow-sequences-list-str-k-values-list-int-none-none-output-dir-path-none-none-dict-str-any" title="Link to this heading"></a></h4>
+<p>Complete information-theoretic workflow for sequence analysis.</p>
+</section>
+</section>
+</section>
+<section id="performance-considerations">
+<h2>Performance Considerations<a class="headerlink" href="#performance-considerations" title="Link to this heading"></a></h2>
+<section id="complexity">
+<h3>Complexity<a class="headerlink" href="#complexity" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Shannon Entropy</strong>: O(n) where n is number of symbols</p></li>
+<li><p><strong>Mutual Information</strong>: O(n) where n is sequence length</p></li>
+<li><p><strong>KL Divergence</strong>: O(n) where n is distribution size</p></li>
+<li><p><strong>Rényi/Tsallis Entropy</strong>: O(n) where n is distribution size</p></li>
+<li><p><strong>Transfer Entropy</strong>: O(n × m) where n is sequence length, m is lag</p></li>
+<li><p><strong>Network Entropy</strong>: O(V) where V is number of nodes</p></li>
+</ul>
+</section>
+<section id="memory-usage">
+<h3>Memory Usage<a class="headerlink" href="#memory-usage" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Most functions have O(n) memory complexity</p></li>
+<li><p>Large sequence analysis: Consider processing in batches</p></li>
+<li><p>Network analysis: Memory scales with number of edges</p></li>
+<li><p>Continuous methods: Histogram-based methods use O(bins) memory</p></li>
+</ul>
+</section>
+<section id="best-practices">
+<h3>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Discretization</strong>: For continuous data, choose appropriate bin counts</p>
+<ul class="simple">
+<li><p>Too few bins: Loss of information</p></li>
+<li><p>Too many bins: Overfitting and bias</p></li>
+</ul>
+</li>
+<li><p><strong>Bias Correction</strong>: Always use bias correction for small samples</p>
+<ul class="simple">
+<li><p>Sample size &lt; 100: Use Miller-Madow or Chao-Shen</p></li>
+<li><p>Sample size &gt; 1000: Plug-in estimator usually sufficient</p></li>
+</ul>
+</li>
+<li><p><strong>K-mer Size</strong>: For sequence analysis</p>
+<ul class="simple">
+<li><p>k=1: Base composition</p></li>
+<li><p>k=2-3: Short motifs</p></li>
+<li><p>k&gt;3: Long-range patterns (requires more data)</p></li>
+</ul>
+</li>
+<li><p><strong>Normalization</strong>: Use normalized MI for comparing different datasets</p></li>
+<li><p><strong>Continuous Data</strong>: Prefer histogram method for most cases, KDE for smooth distributions</p></li>
+</ol>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="common-issues">
+<h3>Common Issues<a class="headerlink" href="#common-issues" title="Link to this heading"></a></h3>
+<p><strong>Issue</strong>: Entropy returns 0.0 for non-empty data</p>
+<ul class="simple">
+<li><p><strong>Cause</strong>: All values are identical</p></li>
+<li><p><strong>Solution</strong>: Check data diversity</p></li>
+</ul>
+<p><strong>Issue</strong>: MI returns negative values</p>
+<ul class="simple">
+<li><p><strong>Cause</strong>: Numerical precision issues (should be non-negative)</p></li>
+<li><p><strong>Solution</strong>: Use <code class="docutils literal notranslate"><span class="pre">max(0.0,</span> <span class="pre">mi)</span></code> or check for bugs</p></li>
+</ul>
+<p><strong>Issue</strong>: KL divergence returns infinity</p>
+<ul class="simple">
+<li><p><strong>Cause</strong>: Q has zeros where P has positives</p></li>
+<li><p><strong>Solution</strong>: Smooth distributions or check data alignment</p></li>
+</ul>
+<p><strong>Issue</strong>: Continuous entropy estimation fails</p>
+<ul class="simple">
+<li><p><strong>Cause</strong>: Insufficient samples or inappropriate binning</p></li>
+<li><p><strong>Solution</strong>: Increase sample size or adjust bin count</p></li>
+</ul>
+<p><strong>Issue</strong>: Network functions fail with ImportError</p>
+<ul class="simple">
+<li><p><strong>Cause</strong>: NetworkX not installed</p></li>
+<li><p><strong>Solution</strong>: Install NetworkX: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">networkx</span></code></p></li>
+</ul>
+</section>
+</section>
+<section id="integration-tutorials">
+<h2>Integration Tutorials<a class="headerlink" href="#integration-tutorials" title="Link to this heading"></a></h2>
+<section id="tutorial-1-dna-sequence-analysis-workflow">
+<h3>Tutorial 1: DNA Sequence Analysis Workflow<a class="headerlink" href="#tutorial-1-dna-sequence-analysis-workflow" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.dna</span><span class="w"> </span><span class="kn">import</span> <span class="n">sequences</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">information_workflow</span><span class="p">,</span> <span class="n">information_report</span>
+
+<span class="c1"># Load sequences</span>
+<span class="n">dna_seqs</span> <span class="o">=</span> <span class="n">sequences</span><span class="o">.</span><span class="n">read_fasta</span><span class="p">(</span><span class="s2">&quot;data/sequences.fasta&quot;</span><span class="p">)</span>
+<span class="n">seq_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">dna_seqs</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+<span class="c1"># Run complete workflow</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">information_workflow</span><span class="p">(</span><span class="n">seq_list</span><span class="p">,</span> <span class="n">k_values</span><span class="o">=</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span> <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;output/information&quot;</span><span class="p">)</span>
+
+<span class="c1"># Generate report</span>
+<span class="n">information_report</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;docs/information/report.md&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;markdown&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="tutorial-2-rna-expression-analysis">
+<h3>Tutorial 2: RNA Expression Analysis<a class="headerlink" href="#tutorial-2-rna-expression-analysis" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">rna_integration</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Load expression data (samples x genes)</span>
+<span class="n">expression</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;data/expression.npy&quot;</span><span class="p">)</span>
+
+<span class="c1"># Calculate entropy for each gene</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">rna_integration</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;entropy&quot;</span><span class="p">)</span>
+
+<span class="c1"># Find high-entropy genes (diverse expression)</span>
+<span class="n">high_entropy_genes</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">g</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;gene_entropies&quot;</span><span class="p">]</span> <span class="k">if</span> <span class="n">g</span><span class="p">[</span><span class="s2">&quot;entropy&quot;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;mean_entropy&quot;</span><span class="p">]</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="tutorial-3-feature-selection-using-information-theory">
+<h3>Tutorial 3: Feature Selection using Information Theory<a class="headerlink" href="#tutorial-3-feature-selection-using-information-theory" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">ml_integration</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Load features and labels</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;data/features.npy&quot;</span><span class="p">)</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;data/labels.npy&quot;</span><span class="p">)</span>
+
+<span class="c1"># Select features using mutual information</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">ml_integration</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;feature_mi&quot;</span><span class="p">)</span>
+
+<span class="c1"># Get top features</span>
+<span class="n">top_features</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;top_features&quot;</span><span class="p">]</span>
+<span class="n">X_selected</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:,</span> <span class="n">top_features</span><span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="tutorial-4-multi-omics-information-integration">
+<h3>Tutorial 4: Multi-Omics Information Integration<a class="headerlink" href="#tutorial-4-multi-omics-information-integration" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">multiomics_integration</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Load multi-omics data</span>
+<span class="n">genomics</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;data/genomics.npy&quot;</span><span class="p">)</span>
+<span class="n">transcriptomics</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;data/transcriptomics.npy&quot;</span><span class="p">)</span>
+<span class="n">proteomics</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;data/proteomics.npy&quot;</span><span class="p">)</span>
+
+<span class="c1"># Cross-platform information analysis</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">multiomics_integration</span><span class="p">(</span>
+    <span class="n">genomics_data</span><span class="o">=</span><span class="n">genomics</span><span class="p">,</span>
+    <span class="n">transcriptomics_data</span><span class="o">=</span><span class="n">transcriptomics</span><span class="p">,</span>
+    <span class="n">proteomics_data</span><span class="o">=</span><span class="n">proteomics</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;platform_entropy&quot;</span>
+<span class="p">)</span>
+
+<span class="c1"># Compare information content across platforms</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Genomics entropy: </span><span class="si">{</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;genomics_entropy&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Transcriptomics entropy: </span><span class="si">{</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;transcriptomics_entropy&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Proteomics entropy: </span><span class="si">{</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;proteomics_entropy&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Cross-platform MI analysis with feature selection</span>
+<span class="n">mi_results</span> <span class="o">=</span> <span class="n">multiomics_integration</span><span class="p">(</span>
+    <span class="n">genomics_data</span><span class="o">=</span><span class="n">genomics</span><span class="p">,</span>
+    <span class="n">transcriptomics_data</span><span class="o">=</span><span class="n">transcriptomics</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;cross_platform_mi&quot;</span><span class="p">,</span>
+    <span class="n">feature_indices</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;genomics&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span> <span class="s2">&quot;transcriptomics&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">]}</span>
+<span class="p">)</span>
+
+<span class="c1"># Access matrix format results</span>
+<span class="n">mi_matrix</span> <span class="o">=</span> <span class="n">mi_results</span><span class="p">[</span><span class="s2">&quot;genomics_transcriptomics_mi_matrix&quot;</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MI Matrix: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mi_matrix</span><span class="p">)</span><span class="si">}</span><span class="s2"> x </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">mi_matrix</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mean MI: </span><span class="si">{</span><span class="n">mi_results</span><span class="p">[</span><span class="s1">&#39;genomics_transcriptomics_mean_mi&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="tutorial-5-network-information-analysis">
+<h3>Tutorial 5: Network Information Analysis<a class="headerlink" href="#tutorial-5-network-information-analysis" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.networks</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_network</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information.networks</span><span class="w"> </span><span class="kn">import</span> <span class="n">network_entropy</span><span class="p">,</span> <span class="n">mutual_information_network</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_mi_network</span>
+
+<span class="c1"># Create or load network</span>
+<span class="n">network</span> <span class="o">=</span> <span class="n">create_network</span><span class="p">([</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">,</span> <span class="s2">&quot;D&quot;</span><span class="p">],</span> <span class="n">directed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">network</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">)</span>
+<span class="n">network</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">)</span>
+<span class="n">network</span><span class="o">.</span><span class="n">add_edge</span><span class="p">(</span><span class="s2">&quot;C&quot;</span><span class="p">,</span> <span class="s2">&quot;D&quot;</span><span class="p">)</span>
+
+<span class="c1"># Calculate network entropy</span>
+<span class="n">entropy</span> <span class="o">=</span> <span class="n">network_entropy</span><span class="p">(</span><span class="n">network</span><span class="p">)</span>
+
+<span class="c1"># Calculate MI matrix</span>
+<span class="n">mi_matrix</span> <span class="o">=</span> <span class="n">mutual_information_network</span><span class="p">(</span><span class="n">network</span><span class="p">)</span>
+
+<span class="c1"># Visualize</span>
+<span class="n">plot_mi_network</span><span class="p">(</span><span class="n">mi_matrix</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;C&quot;</span><span class="p">,</span> <span class="s2">&quot;D&quot;</span><span class="p">],</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/information/mi_net.png&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id5">
+<h2>Integration with Other Modules<a class="headerlink" href="#id5" title="Link to this heading"></a></h2>
+<section id="with-rna-module">
+<h3>With RNA Module<a class="headerlink" href="#with-rna-module" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">rna_integration</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna</span><span class="w"> </span><span class="kn">import</span> <span class="n">workflow</span>
+
+<span class="c1"># Analyze expression data entropy</span>
+<span class="n">expression_data</span> <span class="o">=</span> <span class="n">workflow</span><span class="o">.</span><span class="n">extract_expression_data</span><span class="p">(</span><span class="s2">&quot;data/rna_counts.csv&quot;</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">rna_integration</span><span class="p">(</span><span class="n">expression_data</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;mutual_information&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="with-single-cell-module">
+<h3>With Single-Cell Module<a class="headerlink" href="#with-single-cell-module" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">singlecell_integration</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell</span><span class="w"> </span><span class="kn">import</span> <span class="n">preprocessing</span>
+
+<span class="c1"># Load and preprocess single-cell data</span>
+<span class="n">count_matrix</span> <span class="o">=</span> <span class="n">preprocessing</span><span class="o">.</span><span class="n">load_count_matrix</span><span class="p">(</span><span class="s2">&quot;data/counts.h5ad&quot;</span><span class="p">)</span>
+<span class="n">cell_types</span> <span class="o">=</span> <span class="n">preprocessing</span><span class="o">.</span><span class="n">get_cell_types</span><span class="p">(</span><span class="n">count_matrix</span><span class="p">)</span>
+
+<span class="c1"># Information analysis</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">singlecell_integration</span><span class="p">(</span><span class="n">count_matrix</span><span class="p">,</span> <span class="n">cell_types</span><span class="o">=</span><span class="n">cell_types</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;cell_type_entropy&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="with-multi-omics-module">
+<h3>With Multi-Omics Module<a class="headerlink" href="#with-multi-omics-module" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">multiomics_integration</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.multiomics</span><span class="w"> </span><span class="kn">import</span> <span class="n">integration</span>
+
+<span class="c1"># Load multi-omics dataset</span>
+<span class="n">omics_data</span> <span class="o">=</span> <span class="n">integration</span><span class="o">.</span><span class="n">load_multiomics_data</span><span class="p">(</span><span class="s2">&quot;data/omics_data.h5&quot;</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">multiomics_integration</span><span class="p">(</span>
+    <span class="n">genomics_data</span><span class="o">=</span><span class="n">omics_data</span><span class="p">[</span><span class="s2">&quot;genomics&quot;</span><span class="p">],</span>
+    <span class="n">transcriptomics_data</span><span class="o">=</span><span class="n">omics_data</span><span class="p">[</span><span class="s2">&quot;transcriptomics&quot;</span><span class="p">],</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;cross_platform_mi&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="with-ml-module">
+<h3>With ML Module<a class="headerlink" href="#with-ml-module" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">ml_integration</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.ml</span><span class="w"> </span><span class="kn">import</span> <span class="n">features</span>
+
+<span class="c1"># Feature selection using information theory</span>
+<span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">features</span><span class="o">.</span><span class="n">load_dataset</span><span class="p">(</span><span class="s2">&quot;data/ml_data.csv&quot;</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">ml_integration</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;feature_mi&quot;</span><span class="p">)</span>
+
+<span class="c1"># Use top features for model training</span>
+<span class="n">top_features</span> <span class="o">=</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;top_features&quot;</span><span class="p">]</span>
+<span class="n">X_selected</span> <span class="o">=</span> <span class="n">X</span><span class="p">[:,</span> <span class="n">top_features</span><span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="with-quality-module">
+<h3>With Quality Module<a class="headerlink" href="#with-quality-module" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.quality</span><span class="w"> </span><span class="kn">import</span> <span class="n">fastq</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">shannon_entropy_from_counts</span>
+
+<span class="c1"># Analyze quality score entropy</span>
+<span class="n">quality_scores</span> <span class="o">=</span> <span class="n">fastq</span><span class="o">.</span><span class="n">read_quality_scores</span><span class="p">(</span><span class="s2">&quot;data/reads.fastq&quot;</span><span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">collections</span><span class="w"> </span><span class="kn">import</span> <span class="n">Counter</span>
+<span class="n">counts</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">(</span><span class="n">quality_scores</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+<span class="n">entropy</span> <span class="o">=</span> <span class="n">shannon_entropy_from_counts</span><span class="p">(</span><span class="n">counts</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="with-simulation-module">
+<h3>With Simulation Module<a class="headerlink" href="#with-simulation-module" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.simulation</span><span class="w"> </span><span class="kn">import</span> <span class="n">sequences</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">information_profile</span>
+
+<span class="c1"># Analyze simulated sequence entropy</span>
+<span class="n">sim_seqs</span> <span class="o">=</span> <span class="n">sequences</span><span class="o">.</span><span class="n">generate_dna_sequences</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+<span class="n">profile</span> <span class="o">=</span> <span class="n">information_profile</span><span class="p">(</span><span class="n">sim_seqs</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="c1"># Compare with real data</span>
+<span class="n">real_profile</span> <span class="o">=</span> <span class="n">information_profile</span><span class="p">(</span><span class="n">real_sequences</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Shannon, C. E. (1948). A mathematical theory of communication. Bell System Technical Journal, 27(3), 379-423.</p></li>
+<li><p>Cover, T. M., &amp; Thomas, J. A. (2006). Elements of Information Theory. John Wiley &amp; Sons.</p></li>
+<li><p>Schreiber, T. (2000). Measuring information transfer. Physical Review Letters, 85(2), 461.</p></li>
+<li><p>Kullback, S., &amp; Leibler, R. A. (1951). On information and sufficiency. The Annals of Mathematical Statistics, 22(1), 79-86.</p></li>
+<li><p>Rényi, A. (1961). On measures of entropy and information. Proceedings of the Fourth Berkeley Symposium on Mathematical Statistics and Probability, 1, 547-561.</p></li>
+<li><p>Tsallis, C. (1988). Possible generalization of Boltzmann-Gibbs statistics. Journal of Statistical Physics, 52(1-2), 479-487.</p></li>
+<li><p>Lin, J. (1991). Divergence measures based on the Shannon entropy. IEEE Transactions on Information Theory, 37(1), 145-151.</p></li>
+</ul>
+<p>This module provides comprehensive information-theoretic tools for analyzing biological data across multiple scales and domains.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

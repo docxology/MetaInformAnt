@@ -1,0 +1,676 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UV Setup Guide for METAINFORMANT &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/custom.css" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">UV Setup Guide for METAINFORMANT</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/UV_SETUP.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="uv-setup-guide-for-metainformant">
+<h1>UV Setup Guide for METAINFORMANT<a class="headerlink" href="#uv-setup-guide-for-metainformant" title="Link to this heading"></a></h1>
+<p>Complete guide for setting up and using <code class="docutils literal notranslate"><span class="pre">uv</span></code> (fast Python package manager) with METAINFORMANT, including support for FAT filesystems and external drives.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>METAINFORMANT uses <code class="docutils literal notranslate"><span class="pre">uv</span></code> for fast, reliable dependency management. This guide covers:</p>
+<ul class="simple">
+<li><p>Installation and basic setup</p></li>
+<li><p>FAT filesystem support (exFAT, FAT32)</p></li>
+<li><p>Cache directory configuration</p></li>
+<li><p>Virtual environment handling</p></li>
+<li><p>Testing and verification</p></li>
+<li><p>Troubleshooting</p></li>
+</ul>
+</section>
+<section id="quick-start">
+<h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h2>
+<section id="standard-setup-ext4-ntfs-etc">
+<h3>Standard Setup (ext4, NTFS, etc.)<a class="headerlink" href="#standard-setup-ext4-ntfs-etc" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install uv if not already installed</span>
+curl<span class="w"> </span>-LsSf<span class="w"> </span>https://astral.sh/uv/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh
+
+<span class="c1"># Run automated setup</span>
+bash<span class="w"> </span>scripts/package/setup.sh
+
+<span class="c1"># Verify setup</span>
+bash<span class="w"> </span>scripts/package/verify.sh<span class="w"> </span>--mode<span class="w"> </span>setup
+</pre></div>
+</div>
+</section>
+<section id="fat-filesystem-setup-exfat-fat32">
+<h3>FAT Filesystem Setup (exFAT, FAT32)<a class="headerlink" href="#fat-filesystem-setup-exfat-fat32" title="Link to this heading"></a></h3>
+<p>On FAT filesystems, setup is <strong>automatic</strong> - the scripts detect the filesystem and configure appropriately:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Same command works on FAT filesystems</span>
+bash<span class="w"> </span>scripts/package/setup.sh
+
+<span class="c1"># The script automatically:</span>
+<span class="c1"># - Detects FAT filesystem</span>
+<span class="c1"># - Sets UV_CACHE_DIR=/tmp/uv-cache</span>
+<span class="c1"># - Creates venv at /tmp/metainformant_venv</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="installation">
+<h2>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h2>
+<section id="installing-uv">
+<h3>Installing UV<a class="headerlink" href="#installing-uv" title="Link to this heading"></a></h3>
+<p><strong>macOS (Homebrew)</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>brew<span class="w"> </span>install<span class="w"> </span>uv
+</pre></div>
+</div>
+<p><strong>Official Installer</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>curl<span class="w"> </span>-LsSf<span class="w"> </span>https://astral.sh/uv/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh
+</pre></div>
+</div>
+<p><strong>Verify Installation</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>--version
+</pre></div>
+</div>
+</section>
+</section>
+<section id="filesystem-detection">
+<h2>Filesystem Detection<a class="headerlink" href="#filesystem-detection" title="Link to this heading"></a></h2>
+<p>METAINFORMANT automatically detects filesystem type and configures UV accordingly.</p>
+<section id="supported-filesystems">
+<h3>Supported Filesystems<a class="headerlink" href="#supported-filesystems" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Filesystem</p></th>
+<th class="head"><p>Symlinks</p></th>
+<th class="head"><p>UV Cache</p></th>
+<th class="head"><p>Venv Location</p></th>
+<th class="head"><p>Notes</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>ext4</strong></p></td>
+<td><p>✅ Yes</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">.uv-cache</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">.venv</span></code></p></td>
+<td><p>Standard Linux</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>NTFS</strong></p></td>
+<td><p>✅ Yes</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">.uv-cache</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">.venv</span></code></p></td>
+<td><p>Cross-platform</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>exFAT</strong></p></td>
+<td><p>❌ No</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">/tmp/uv-cache</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">/tmp/metainformant_venv</span></code></p></td>
+<td><p>Auto-detected</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>FAT32</strong></p></td>
+<td><p>❌ No</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">/tmp/uv-cache</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">/tmp/metainformant_venv</span></code></p></td>
+<td><p>Auto-detected</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Btrfs</strong></p></td>
+<td><p>✅ Yes</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">.uv-cache</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">.venv</span></code></p></td>
+<td><p>Advanced Linux</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>APFS</strong></p></td>
+<td><p>✅ Yes</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">.uv-cache</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">.venv</span></code></p></td>
+<td><p>macOS</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="automatic-detection">
+<h3>Automatic Detection<a class="headerlink" href="#automatic-detection" title="Link to this heading"></a></h3>
+<p>All setup scripts automatically detect filesystem type:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Filesystem detection happens automatically</span>
+bash<span class="w"> </span>scripts/package/setup.sh
+
+<span class="c1"># Output shows detection:</span>
+<span class="c1"># [1.5/5] Detecting filesystem type and configuring UV cache...</span>
+<span class="c1">#   → FAT filesystem detected - using /tmp/uv-cache for UV cache</span>
+<span class="c1">#   → Virtual environment will be created at /tmp/metainformant_venv</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="cache-directory-configuration">
+<h2>Cache Directory Configuration<a class="headerlink" href="#cache-directory-configuration" title="Link to this heading"></a></h2>
+<section id="standard-filesystems">
+<h3>Standard Filesystems<a class="headerlink" href="#standard-filesystems" title="Link to this heading"></a></h3>
+<p>On filesystems with symlink support (ext4, NTFS, etc.), UV uses <code class="docutils literal notranslate"><span class="pre">.uv-cache</span></code> in the repository root:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Default behavior</span>
+cache-dir<span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">&quot;.uv-cache&quot;</span><span class="w">  </span><span class="c1"># In pyproject.toml</span>
+</pre></div>
+</div>
+</section>
+<section id="fat-filesystems">
+<h3>FAT Filesystems<a class="headerlink" href="#fat-filesystems" title="Link to this heading"></a></h3>
+<p>On FAT filesystems (exFAT, FAT32), UV cache <strong>must</strong> be in a location that supports symlinks:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Automatically set by setup scripts</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">UV_CACHE_DIR</span><span class="o">=</span><span class="s2">&quot;/tmp/uv-cache&quot;</span>
+</pre></div>
+</div>
+<p><strong>Why?</strong> UV requires symlink support for its cache directory. FAT filesystems don’t support symlinks, so the cache must be on a filesystem that does (typically <code class="docutils literal notranslate"><span class="pre">/tmp</span></code>).</p>
+</section>
+<section id="manual-override">
+<h3>Manual Override<a class="headerlink" href="#manual-override" title="Link to this heading"></a></h3>
+<p>You can manually set the cache directory:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># For FAT filesystems</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">UV_CACHE_DIR</span><span class="o">=</span><span class="s2">&quot;/tmp/uv-cache&quot;</span>
+
+<span class="c1"># For standard filesystems (optional)</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">UV_CACHE_DIR</span><span class="o">=</span><span class="s2">&quot;/path/to/custom/cache&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="virtual-environment-handling">
+<h2>Virtual Environment Handling<a class="headerlink" href="#virtual-environment-handling" title="Link to this heading"></a></h2>
+<section id="id1">
+<h3>Standard Filesystems<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<p>Virtual environments are created in the repository root:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Standard location</span>
+.venv/
+</pre></div>
+</div>
+</section>
+<section id="id2">
+<h3>FAT Filesystems<a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
+<p>On FAT filesystems, virtual environments are created in <code class="docutils literal notranslate"><span class="pre">/tmp</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># FAT filesystem location</span>
+/tmp/metainformant_venv/
+</pre></div>
+</div>
+<p><strong>Why?</strong> Python virtual environments require symlink support, which FAT filesystems don’t provide.</p>
+<p><strong>Note</strong>: The <code class="docutils literal notranslate"><span class="pre">/tmp</span></code> venv persists until reboot. After reboot, recreate it:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>venv<span class="w"> </span>/tmp/metainformant_venv
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="w"> </span>--python<span class="w"> </span>/tmp/metainformant_venv/bin/python3
+</pre></div>
+</div>
+</section>
+<section id="venv-location-detection">
+<h3>Venv Location Detection<a class="headerlink" href="#venv-location-detection" title="Link to this heading"></a></h3>
+<p>Scripts automatically detect and use the correct venv location:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Test scripts automatically find venv</span>
+bash<span class="w"> </span>scripts/package/test.sh<span class="w"> </span>--mode<span class="w"> </span>fast
+
+<span class="c1"># Output shows detection:</span>
+<span class="c1">#   → Filesystem: exfat</span>
+<span class="c1">#   → UV cache: /tmp/uv-cache</span>
+<span class="c1">#   → Virtual env: /tmp/metainformant_venv</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="setup-scripts">
+<h2>Setup Scripts<a class="headerlink" href="#setup-scripts" title="Link to this heading"></a></h2>
+<section id="main-setup-script">
+<h3>Main Setup Script<a class="headerlink" href="#main-setup-script" title="Link to this heading"></a></h3>
+<p><strong><code class="docutils literal notranslate"><span class="pre">scripts/package/setup.sh</span></code></strong> - Complete environment setup:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Basic setup (installs dev + scientific deps + amalgkit by default)</span>
+bash<span class="w"> </span>scripts/package/setup.sh
+
+<span class="c1"># Skip amalgkit installation</span>
+bash<span class="w"> </span>scripts/package/setup.sh<span class="w"> </span>--skip-amalgkit
+
+<span class="c1"># With all optional dependencies (database, networks, scraping, etc.)</span>
+bash<span class="w"> </span>scripts/package/setup.sh<span class="w"> </span>--with-all
+
+<span class="c1"># With scraping dependencies (cloudscraper) for web scraping</span>
+bash<span class="w"> </span>scripts/package/setup.sh<span class="w"> </span>--with-scraping
+
+<span class="c1"># With external CLI dependencies (seqkit, sra-tools, etc.)</span>
+bash<span class="w"> </span>scripts/package/setup.sh<span class="w"> </span>--with-deps
+
+<span class="c1"># Skip tests during setup</span>
+bash<span class="w"> </span>scripts/package/setup.sh<span class="w"> </span>--skip-tests
+</pre></div>
+</div>
+<p><strong>Features</strong>:</p>
+<ul class="simple">
+<li><p>✅ Automatic filesystem detection</p></li>
+<li><p>✅ Cache directory configuration</p></li>
+<li><p>✅ Virtual environment creation</p></li>
+<li><p>✅ Dependency installation</p></li>
+<li><p>✅ FAT filesystem support</p></li>
+</ul>
+</section>
+<section id="development-setup-script">
+<h3>Development Setup Script<a class="headerlink" href="#development-setup-script" title="Link to this heading"></a></h3>
+<p><strong><code class="docutils literal notranslate"><span class="pre">scripts/package/uv_dev_setup.sh</span></code></strong> - Development environment:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bash<span class="w"> </span>scripts/package/uv_dev_setup.sh
+</pre></div>
+</div>
+<p><strong>Features</strong>:</p>
+<ul class="simple">
+<li><p>✅ Filesystem detection</p></li>
+<li><p>✅ Cache configuration</p></li>
+<li><p>✅ Dependency syncing</p></li>
+<li><p>✅ Pre-commit hooks</p></li>
+<li><p>✅ Task runner scripts</p></li>
+</ul>
+</section>
+</section>
+<section id="testing">
+<h2>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h2>
+<section id="test-scripts">
+<h3>Test Scripts<a class="headerlink" href="#test-scripts" title="Link to this heading"></a></h3>
+<p>All test scripts handle FAT filesystems automatically:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Standard test runner</span>
+bash<span class="w"> </span>scripts/package/test.sh<span class="w"> </span>--mode<span class="w"> </span>fast
+
+<span class="c1"># Optimized test runner</span>
+bash<span class="w"> </span>scripts/package/uv_test_optimized.sh<span class="w"> </span>fast
+
+<span class="c1"># Test modes</span>
+bash<span class="w"> </span>scripts/package/test.sh<span class="w"> </span>--mode<span class="w"> </span>fast<span class="w"> </span>coverage
+bash<span class="w"> </span>scripts/package/test.sh<span class="w"> </span>--mode<span class="w"> </span>fast<span class="w"> </span>parallel
+bash<span class="w"> </span>scripts/package/test.sh<span class="w"> </span>--mode<span class="w"> </span>fast<span class="w"> </span>integration
+</pre></div>
+</div>
+<p><strong>Automatic Handling</strong>:</p>
+<ul class="simple">
+<li><p>✅ Filesystem detection</p></li>
+<li><p>✅ Cache directory configuration</p></li>
+<li><p>✅ Venv location detection</p></li>
+<li><p>✅ Proper pytest command selection</p></li>
+</ul>
+</section>
+<section id="verification-script">
+<h3>Verification Script<a class="headerlink" href="#verification-script" title="Link to this heading"></a></h3>
+<p><strong><code class="docutils literal notranslate"><span class="pre">scripts/package/verify.sh</span> <span class="pre">--mode</span> <span class="pre">setup</span></code></strong> - Verify setup:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bash<span class="w"> </span>scripts/package/verify.sh<span class="w"> </span>--mode<span class="w"> </span>setup
+</pre></div>
+</div>
+<p><strong>Checks</strong>:</p>
+<ul class="simple">
+<li><p>✅ UV installation</p></li>
+<li><p>✅ Filesystem type detection</p></li>
+<li><p>✅ Cache directory configuration</p></li>
+<li><p>✅ Virtual environment location</p></li>
+<li><p>✅ Venv creation capability</p></li>
+<li><p>✅ Basic UV commands</p></li>
+<li><p>✅ Package installation</p></li>
+</ul>
+<p><strong>Example Output</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>🔍 Verifying UV setup for METAINFORMANT...
+
+[1/7] Checking UV installation...
+✓ UV is installed: uv 0.1.0
+
+[2/7] Detecting filesystem type...
+⚠ FAT filesystem detected: exfat (no symlink support)
+
+[3/7] Checking UV cache directory configuration...
+✓ UV_CACHE_DIR is set: /tmp/uv-cache
+✓ Cache directory is writable: /tmp/uv-cache
+
+[4/7] Checking virtual environment location...
+✓ Virtual environment found at: /tmp/metainformant_venv (Python 3.11.5)
+
+[5/7] Testing venv creation capability...
+✓ Venv already exists, skipping creation test
+
+[6/7] Testing basic UV commands...
+✓ uv pip list command works
+✓ Python in venv is executable
+
+[7/7] Testing package installation capability...
+✓ Package installation test passed
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Verification Summary:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Passed: 7
+Warnings: 1
+
+✓ UV setup verified for FAT filesystem
+
+Configuration:
+  Filesystem: exfat (FAT - no symlink support)
+  UV cache: /tmp/uv-cache
+  Virtual env: /tmp/metainformant_venv
+</pre></div>
+</div>
+</section>
+</section>
+<section id="usage-examples">
+<h2>Usage Examples<a class="headerlink" href="#usage-examples" title="Link to this heading"></a></h2>
+<section id="running-commands">
+<h3>Running Commands<a class="headerlink" href="#running-commands" title="Link to this heading"></a></h3>
+<p><strong>Standard Filesystem</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Use uv run</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest
+uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>metainformant<span class="w"> </span>--help
+
+<span class="c1"># Or activate venv</span>
+<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+pytest
+</pre></div>
+</div>
+<p><strong>FAT Filesystem</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Use venv Python directly</span>
+/tmp/metainformant_venv/bin/python3<span class="w"> </span>-m<span class="w"> </span>pytest
+/tmp/metainformant_venv/bin/python3<span class="w"> </span>-m<span class="w"> </span>metainformant<span class="w"> </span>--help
+
+<span class="c1"># Or activate venv</span>
+<span class="nb">source</span><span class="w"> </span>/tmp/metainformant_venv/bin/activate
+pytest
+</pre></div>
+</div>
+</section>
+<section id="installing-packages">
+<h3>Installing Packages<a class="headerlink" href="#installing-packages" title="Link to this heading"></a></h3>
+<p><strong>Standard Filesystem</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>&lt;package&gt;
+</pre></div>
+</div>
+<p><strong>FAT Filesystem</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Cache directory automatically set by scripts</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">UV_CACHE_DIR</span><span class="o">=</span><span class="s2">&quot;/tmp/uv-cache&quot;</span>
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>&lt;package&gt;<span class="w"> </span>--python<span class="w"> </span>/tmp/metainformant_venv/bin/python3
+</pre></div>
+</div>
+</section>
+<section id="running-tests">
+<h3>Running Tests<a class="headerlink" href="#running-tests" title="Link to this heading"></a></h3>
+<p><strong>All Filesystems</strong> (automatic detection):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Test scripts handle everything automatically</span>
+bash<span class="w"> </span>scripts/package/test.sh<span class="w"> </span>--mode<span class="w"> </span>fast
+bash<span class="w"> </span>scripts/package/uv_test_optimized.sh<span class="w"> </span>fast
+</pre></div>
+</div>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="problem-operation-not-permitted-when-creating-venv">
+<h3>Problem: “Operation not permitted” when creating venv<a class="headerlink" href="#problem-operation-not-permitted-when-creating-venv" title="Link to this heading"></a></h3>
+<p><strong>Cause</strong>: FAT filesystem doesn’t support symlinks</p>
+<p><strong>Solution</strong>: Scripts automatically handle this. If manual setup needed:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">UV_CACHE_DIR</span><span class="o">=</span><span class="s2">&quot;/tmp/uv-cache&quot;</span>
+uv<span class="w"> </span>venv<span class="w"> </span>/tmp/metainformant_venv
+</pre></div>
+</div>
+</section>
+<section id="problem-failed-to-symlink-file-errors">
+<h3>Problem: “failed to symlink file” errors<a class="headerlink" href="#problem-failed-to-symlink-file-errors" title="Link to this heading"></a></h3>
+<p><strong>Cause</strong>: UV cache directory on FAT filesystem</p>
+<p><strong>Solution</strong>: Set cache directory to <code class="docutils literal notranslate"><span class="pre">/tmp</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">UV_CACHE_DIR</span><span class="o">=</span><span class="s2">&quot;/tmp/uv-cache&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="problem-virtual-environment-not-found">
+<h3>Problem: Virtual environment not found<a class="headerlink" href="#problem-virtual-environment-not-found" title="Link to this heading"></a></h3>
+<p><strong>Cause</strong>: Venv location differs on FAT filesystems</p>
+<p><strong>Solution</strong>: Check both locations:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check standard location</span>
+ls<span class="w"> </span>-la<span class="w"> </span>.venv/bin/python3
+
+<span class="c1"># Check FAT filesystem location</span>
+ls<span class="w"> </span>-la<span class="w"> </span>/tmp/metainformant_venv/bin/python3
+
+<span class="c1"># Or run verification script</span>
+bash<span class="w"> </span>scripts/package/verify.sh<span class="w"> </span>--mode<span class="w"> </span>setup
+</pre></div>
+</div>
+</section>
+<section id="problem-packages-not-installing">
+<h3>Problem: Packages not installing<a class="headerlink" href="#problem-packages-not-installing" title="Link to this heading"></a></h3>
+<p><strong>Cause</strong>: Cache directory not configured for FAT filesystem</p>
+<p><strong>Solution</strong>: Ensure UV_CACHE_DIR is set:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">UV_CACHE_DIR</span><span class="o">=</span><span class="s2">&quot;/tmp/uv-cache&quot;</span>
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>&lt;package&gt;<span class="w"> </span>--python<span class="w"> </span>/path/to/venv/bin/python3
+</pre></div>
+</div>
+</section>
+<section id="problem-tests-fail-with-import-errors">
+<h3>Problem: Tests fail with import errors<a class="headerlink" href="#problem-tests-fail-with-import-errors" title="Link to this heading"></a></h3>
+<p><strong>Cause</strong>: Venv not activated or wrong Python used</p>
+<p><strong>Solution</strong>: Use correct Python:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># FAT filesystem</span>
+/tmp/metainformant_venv/bin/python3<span class="w"> </span>-m<span class="w"> </span>pytest
+
+<span class="c1"># Standard filesystem</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest
+</pre></div>
+</div>
+</section>
+<section id="problem-venv-deleted-after-reboot">
+<h3>Problem: Venv deleted after reboot<a class="headerlink" href="#problem-venv-deleted-after-reboot" title="Link to this heading"></a></h3>
+<p><strong>Cause</strong>: <code class="docutils literal notranslate"><span class="pre">/tmp</span></code> is cleared on reboot (FAT filesystem limitation)</p>
+<p><strong>Solution</strong>: Recreate venv:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">UV_CACHE_DIR</span><span class="o">=</span><span class="s2">&quot;/tmp/uv-cache&quot;</span>
+uv<span class="w"> </span>venv<span class="w"> </span>/tmp/metainformant_venv
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="w"> </span>--python<span class="w"> </span>/tmp/metainformant_venv/bin/python3
+</pre></div>
+</div>
+<p>Or use setup script:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bash<span class="w"> </span>scripts/package/setup.sh
+</pre></div>
+</div>
+</section>
+</section>
+<section id="filesystem-detection-api">
+<h2>Filesystem Detection API<a class="headerlink" href="#filesystem-detection-api" title="Link to this heading"></a></h2>
+<p>METAINFORMANT provides Python utilities for filesystem detection:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core.filesystem</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">detect_filesystem_type</span><span class="p">,</span>
+    <span class="n">supports_symlinks</span><span class="p">,</span>
+    <span class="n">get_uv_cache_dir</span><span class="p">,</span>
+    <span class="n">get_venv_location</span><span class="p">,</span>
+    <span class="n">is_fat_filesystem</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Detect filesystem type</span>
+<span class="n">fs_type</span> <span class="o">=</span> <span class="n">detect_filesystem_type</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Filesystem: </span><span class="si">{</span><span class="n">fs_type</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Check symlink support</span>
+<span class="n">has_symlinks</span> <span class="o">=</span> <span class="n">supports_symlinks</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Symlinks supported: </span><span class="si">{</span><span class="n">has_symlinks</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Get appropriate UV cache directory</span>
+<span class="n">cache_dir</span> <span class="o">=</span> <span class="n">get_uv_cache_dir</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;UV cache: </span><span class="si">{</span><span class="n">cache_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Get appropriate venv location</span>
+<span class="n">venv_dir</span> <span class="o">=</span> <span class="n">get_venv_location</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Venv location: </span><span class="si">{</span><span class="n">venv_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Check if FAT filesystem</span>
+<span class="n">is_fat</span> <span class="o">=</span> <span class="n">is_fat_filesystem</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Is FAT: </span><span class="si">{</span><span class="n">is_fat</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<section id="always-use-setup-scripts">
+<h3>1. Always Use Setup Scripts<a class="headerlink" href="#always-use-setup-scripts" title="Link to this heading"></a></h3>
+<p>Setup scripts handle all filesystem detection automatically:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Recommended</span>
+bash<span class="w"> </span>scripts/package/setup.sh
+</pre></div>
+</div>
+</section>
+<section id="verify-setup">
+<h3>2. Verify Setup<a class="headerlink" href="#verify-setup" title="Link to this heading"></a></h3>
+<p>Always verify setup after installation:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bash<span class="w"> </span>scripts/package/verify.sh<span class="w"> </span>--mode<span class="w"> </span>setup
+</pre></div>
+</div>
+</section>
+<section id="check-filesystem-type">
+<h3>3. Check Filesystem Type<a class="headerlink" href="#check-filesystem-type" title="Link to this heading"></a></h3>
+<p>If experiencing issues, check filesystem type:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>df<span class="w"> </span>-T<span class="w"> </span>.
+</pre></div>
+</div>
+</section>
+<section id="use-verification-script">
+<h3>4. Use Verification Script<a class="headerlink" href="#use-verification-script" title="Link to this heading"></a></h3>
+<p>When troubleshooting, run verification script:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bash<span class="w"> </span>scripts/package/verify.sh<span class="w"> </span>--mode<span class="w"> </span>setup
+</pre></div>
+</div>
+</section>
+<section id="fat-filesystem-considerations">
+<h3>5. FAT Filesystem Considerations<a class="headerlink" href="#fat-filesystem-considerations" title="Link to this heading"></a></h3>
+<p>On FAT filesystems:</p>
+<ul class="simple">
+<li><p>✅ Cache directory automatically uses <code class="docutils literal notranslate"><span class="pre">/tmp/uv-cache</span></code></p></li>
+<li><p>✅ Venv automatically uses <code class="docutils literal notranslate"><span class="pre">/tmp/metainformant_venv</span></code></p></li>
+<li><p>⚠️ Venv deleted on reboot (recreate with setup script)</p></li>
+<li><p>⚠️ No manual configuration needed</p></li>
+</ul>
+</section>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong><a class="reference internal" href="setup.html"><span class="std std-doc">Setup Guide</span></a></strong> - General setup instructions</p></li>
+<li><p><strong><a class="reference internal" href="testing.html"><span class="std std-doc">Testing Guide</span></a></strong> - Testing documentation</p></li>
+<li><p><strong><a class="reference internal" href="rna/EXTERNAL_DRIVE_SETUP.html"><span class="std std-doc">External Drive Setup</span></a></strong> - Detailed external drive guide</p></li>
+<li><p><strong><span class="xref myst">Quick Start</span></strong> - Quick start guide</p></li>
+</ul>
+</section>
+<section id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Link to this heading"></a></h2>
+<p>METAINFORMANT’s UV setup is <strong>fully automatic</strong> on all filesystems:</p>
+<p>✅ <strong>Automatic filesystem detection</strong> - No manual configuration needed<br />
+✅ <strong>Automatic cache directory</strong> - Uses <code class="docutils literal notranslate"><span class="pre">/tmp/uv-cache</span></code> on FAT filesystems<br />
+✅ <strong>Automatic venv location</strong> - Uses <code class="docutils literal notranslate"><span class="pre">/tmp/metainformant_venv</span></code> on FAT filesystems<br />
+✅ <strong>All scripts handle FAT</strong> - Setup, testing, and verification scripts work automatically<br />
+✅ <strong>Comprehensive verification</strong> - Verification script confirms proper setup</p>
+<p><strong>No manual <code class="docutils literal notranslate"><span class="pre">UV_CACHE_DIR</span></code> exports needed</strong> - everything is handled automatically!</p>
+<hr class="docutils" />
+<p><em>Last Updated: January 2025</em><br />
+<em>Tested on: ext4, NTFS, exFAT, FAT32 filesystems</em></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

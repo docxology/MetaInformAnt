@@ -5,6 +5,147 @@
 :end-before: "## Installation"
 ```
 
+## Documentation Navigation
+
+```mermaid
+graph TD
+    A[METAINFORMANT Documentation] --> B[Getting Started]
+    A --> C[User Guides]
+    A --> D[Module Documentation]
+    A --> E[Developer Resources]
+    A --> F[Reference]
+
+    B --> B1[Installation]
+    B --> B2[Quick Start]
+    B --> B3[Tutorials]
+
+    C --> C1[Workflow Guides]
+    C --> C2[Best Practices]
+    C --> C3[Troubleshooting]
+
+    D --> D1[Core Modules]
+    D --> D2[Molecular Analysis]
+    D --> D3[Statistical Methods]
+    D --> D4[Systems Biology]
+    D --> D5[Annotation & Metadata]
+    D --> D6[Utilities]
+
+    E --> E1[Architecture]
+    E --> E2[Contributing]
+    E --> E3[Testing]
+    E --> E4[API Reference]
+
+    F --> F1[CLI Reference]
+    F --> F2[Configuration]
+    F --> F3[Error Codes]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style D fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style F fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Primary Entry Points"
+        G1[README.md] -.-> B
+        G2[QUICKSTART.md] -.-> B
+        G3[TUTORIALS.md] -.-> C
+    end
+
+    subgraph "Module Categories"
+        H1[core/] -.-> D1
+        H2[dna/, rna/, protein/, epigenome/] -.-> D2
+        H3[gwas/, math/, ml/, information/] -.-> D3
+        H4[networks/, multiomics/, singlecell/, simulation/] -.-> D4
+        H5[ontology/, phenotype/, ecology/, life_events/] -.-> D5
+        H6[quality/, visualization/] -.-> D6
+    end
+
+    subgraph "Key Documents"
+        I1[architecture.md] -.-> E1
+        I2[testing.md] -.-> E3
+        I3[cli.md] -.-> F1
+        I4[UV_SETUP.md] -.-> B1
+    end
+```
+
+## Module Overview Matrix
+
+| Category | Module | Description | Key Features |
+|----------|--------|-------------|--------------|
+| **Core** | [core](core/) | Shared utilities and infrastructure | Configuration, I/O, logging, parallel processing, caching |
+| **DNA** | [dna](dna/) | Genomic sequence analysis | Sequences, alignment, phylogeny, population genetics |
+| **RNA** | [rna](rna/) | Transcriptomic analysis | RNA-seq workflows, amalgkit integration |
+| **Protein** | [protein](protein/) | Protein structure and function | Sequences, AlphaFold integration, proteomics |
+| **Epigenome** | [epigenome](epigenome/) | Epigenetic modifications | Methylation, ChIP-seq, chromatin accessibility |
+| **GWAS** | [gwas](gwas/) | Genome-wide association studies | Association testing, quality control, visualization |
+| **Math** | [math](math/) | Mathematical biology | Population genetics theory, coalescent models |
+| **ML** | [ml](ml/) | Machine learning pipelines | Classification, regression, feature selection |
+| **Information** | [information](information/) | Information theory | Entropy, mutual information, semantic similarity |
+| **Networks** | [networks](networks/) | Biological networks | PPI, pathways, community detection |
+| **Multi-omics** | [multiomics](multiomics/) | Multi-omic integration | Joint analysis, data harmonization |
+| **Single-cell** | [singlecell](singlecell/) | Single-cell genomics | Preprocessing, clustering, trajectory analysis |
+| **Simulation** | [simulation](simulation/) | Synthetic data generation | Sequence simulation, agent-based models |
+| **Ontology** | [ontology](ontology/) | Functional annotation | Gene Ontology, semantic similarity |
+| **Phenotype** | [phenotype](phenotype/) | Phenotypic data | Trait analysis, AntWiki integration |
+| **Ecology** | [ecology](ecology/) | Ecological analysis | Community diversity, environmental data |
+| **Life Events** | [life_events](life_events/) | Temporal event analysis | Life course modeling, embeddings |
+| **Quality** | [quality](quality/) | Data quality assessment | FASTQ analysis, assembly validation |
+| **Visualization** | [visualization](visualization/) | Plotting and graphics | 20+ specialized plotting modules |
+
+## Data Flow Architecture
+
+```mermaid
+graph LR
+    A[Raw Data] --> B[Ingestion]
+    B --> C[Validation]
+    C --> D{Data Type}
+
+    D -->|Genomic| E[DNA Pipeline]
+    D -->|Transcriptomic| F[RNA Pipeline]
+    D -->|Proteomic| G[Protein Pipeline]
+    D -->|Phenotypic| H[Phenotype Pipeline]
+
+    E --> I[Quality Control]
+    F --> I
+    G --> I
+    H --> I
+
+    I --> J[Analysis]
+    J --> K{Integration Level}
+
+    K -->|Single-omic| L[Individual Results]
+    K -->|Multi-omic| M[Integrated Results]
+
+    L --> N[Visualization]
+    M --> N
+
+    N --> O[Publication]
+    O --> P[Scientific Insights]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style I fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style P fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Data Sources"
+        Q[NCBI] -.-> E
+        R[SRA] -.-> F
+        S[PDB] -.-> G
+        T[AntWiki] -.-> H
+    end
+
+    subgraph "Analysis Types"
+        U[Sequence Analysis] -.-> E
+        V[Expression Analysis] -.-> F
+        W[Structure Analysis] -.-> G
+        X[Trait Analysis] -.-> H
+    end
+
+    subgraph "Integration Methods"
+        Y[GWAS] -.-> K
+        Z[Networks] -.-> K
+        AA[ML] -.-> K
+        BB[Systems Biology] -.-> K
+    end
+```
+
 ## Quick Start
 
 ### Installation

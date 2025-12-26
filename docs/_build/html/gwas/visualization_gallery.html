@@ -1,0 +1,759 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GWAS Visualization Gallery &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">GWAS Visualization Gallery</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/gwas/visualization_gallery.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="gwas-visualization-gallery">
+<h1>GWAS Visualization Gallery<a class="headerlink" href="#gwas-visualization-gallery" title="Link to this heading"></a></h1>
+<p>This document showcases all available visualization types in the METAINFORMANT GWAS module, organized by category.</p>
+<section id="quick-start">
+<h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.gwas</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_all_plots</span>
+
+<span class="c1"># Generate all visualizations at once</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">generate_all_plots</span><span class="p">(</span>
+    <span class="n">association_results</span><span class="o">=</span><span class="s2">&quot;output/gwas/results/association_results.tsv&quot;</span><span class="p">,</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;output/gwas/plots&quot;</span><span class="p">,</span>
+    <span class="n">pca_file</span><span class="o">=</span><span class="s2">&quot;output/gwas/structure/pca_components.tsv&quot;</span><span class="p">,</span>
+    <span class="n">kinship_file</span><span class="o">=</span><span class="s2">&quot;output/gwas/structure/kinship_matrix.tsv&quot;</span><span class="p">,</span>
+    <span class="n">significance_threshold</span><span class="o">=</span><span class="mf">5e-8</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Generated </span><span class="si">{</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;num_plots_generated&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> plots&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="visualization-categories">
+<h2>Visualization Categories<a class="headerlink" href="#visualization-categories" title="Link to this heading"></a></h2>
+<section id="genome-wide-visualizations">
+<h3>1. Genome-Wide Visualizations<a class="headerlink" href="#genome-wide-visualizations" title="Link to this heading"></a></h3>
+<section id="manhattan-plot">
+<h4>Manhattan Plot<a class="headerlink" href="#manhattan-plot" title="Link to this heading"></a></h4>
+<p><strong>Module</strong>: <code class="docutils literal notranslate"><span class="pre">visualization_genome.py</span></code><br />
+<strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">manhattan_plot()</span></code></p>
+<p>Standard chromosome-wide association plot optimized for millions of SNPs.</p>
+<p><strong>Features</strong>:</p>
+<ul class="simple">
+<li><p>Intelligent point thinning for performance</p></li>
+<li><p>Alternating chromosome colors</p></li>
+<li><p>Genome-wide and suggestive significance lines</p></li>
+<li><p>Handles up to 50,000 points per chromosome</p></li>
+</ul>
+<p><strong>Use Cases</strong>:</p>
+<ul class="simple">
+<li><p>Primary GWAS results visualization</p></li>
+<li><p>Identifying genome-wide significant loci</p></li>
+<li><p>Publication figures</p></li>
+</ul>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.gwas.visualization_genome</span><span class="w"> </span><span class="kn">import</span> <span class="n">manhattan_plot</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">manhattan_plot</span><span class="p">(</span>
+    <span class="n">results</span><span class="o">=</span><span class="s2">&quot;results.tsv&quot;</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;plots/manhattan.png&quot;</span><span class="p">,</span>
+    <span class="n">significance_threshold</span><span class="o">=</span><span class="mf">5e-8</span><span class="p">,</span>
+    <span class="n">max_points_per_chrom</span><span class="o">=</span><span class="mi">50000</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="circular-manhattan-plot">
+<h4>Circular Manhattan Plot<a class="headerlink" href="#circular-manhattan-plot" title="Link to this heading"></a></h4>
+<p><strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">circular_manhattan_plot()</span></code></p>
+<p>Circular genome-wide view with radial p-values.</p>
+<p><strong>Use Cases</strong>:</p>
+<ul class="simple">
+<li><p>Compact genome-wide overview</p></li>
+<li><p>Identifying genome-wide patterns</p></li>
+<li><p>Alternative to linear Manhattan plot</p></li>
+</ul>
+</section>
+<section id="chromosome-ideogram">
+<h4>Chromosome Ideogram<a class="headerlink" href="#chromosome-ideogram" title="Link to this heading"></a></h4>
+<p><strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">chromosome_ideogram()</span></code></p>
+<p>Chromosome map with significant loci marked.</p>
+<p><strong>Use Cases</strong>:</p>
+<ul class="simple">
+<li><p>Visualizing distribution of hits</p></li>
+<li><p>Quick overview of significant regions</p></li>
+<li><p>Identifying clustered associations</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="statistical-diagnostics">
+<h3>2. Statistical Diagnostics<a class="headerlink" href="#statistical-diagnostics" title="Link to this heading"></a></h3>
+<section id="q-q-plot">
+<h4>Q-Q Plot<a class="headerlink" href="#q-q-plot" title="Link to this heading"></a></h4>
+<p><strong>Module</strong>: <code class="docutils literal notranslate"><span class="pre">visualization_statistical.py</span></code><br />
+<strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">qq_plot()</span></code></p>
+<p>Quantile-quantile plot with 95% CI and genomic inflation factor.</p>
+<p><strong>Features</strong>:</p>
+<ul class="simple">
+<li><p>95% confidence intervals</p></li>
+<li><p>Lambda GC calculation and display</p></li>
+<li><p>Automatic inflation status assessment</p></li>
+</ul>
+<p><strong>Interpretation</strong>:</p>
+<ul class="simple">
+<li><p>Points on diagonal: well-calibrated</p></li>
+<li><p>Deviation at right: true associations</p></li>
+<li><p>Global inflation: population stratification or relatedness</p></li>
+</ul>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.gwas.visualization_statistical</span><span class="w"> </span><span class="kn">import</span> <span class="n">qq_plot</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">qq_plot</span><span class="p">(</span>
+    <span class="n">results</span><span class="o">=</span><span class="s2">&quot;results.tsv&quot;</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;plots/qq_plot.png&quot;</span><span class="p">,</span>
+    <span class="n">show_ci</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">show_lambda_gc</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="stratified-q-q-plot">
+<h4>Stratified Q-Q Plot<a class="headerlink" href="#stratified-q-q-plot" title="Link to this heading"></a></h4>
+<p><strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">qq_plot_stratified()</span></code></p>
+<p>Q-Q plot separated by MAF bins.</p>
+<p><strong>Use Cases</strong>:</p>
+<ul class="simple">
+<li><p>Checking if inflation varies by frequency</p></li>
+<li><p>Identifying frequency-specific issues</p></li>
+<li><p>Quality control by allele frequency</p></li>
+</ul>
+</section>
+<section id="lambda-gc-by-chromosome">
+<h4>Lambda GC by Chromosome<a class="headerlink" href="#lambda-gc-by-chromosome" title="Link to this heading"></a></h4>
+<p><strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">lambda_gc_plot()</span></code></p>
+<p>Genomic inflation factor per chromosome.</p>
+<p><strong>Use Cases</strong>:</p>
+<ul class="simple">
+<li><p>Identifying chromosome-specific issues</p></li>
+<li><p>Quality control across genome</p></li>
+<li><p>Detecting localized problems</p></li>
+</ul>
+</section>
+<section id="volcano-plot">
+<h4>Volcano Plot<a class="headerlink" href="#volcano-plot" title="Link to this heading"></a></h4>
+<p><strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">volcano_plot()</span></code></p>
+<p>Effect size vs significance scatter plot.</p>
+<p><strong>Use Cases</strong>:</p>
+<ul class="simple">
+<li><p>Identifying large-effect variants</p></li>
+<li><p>Combining significance with biological relevance</p></li>
+<li><p>Publication figures</p></li>
+</ul>
+</section>
+<section id="power-plot">
+<h4>Power Plot<a class="headerlink" href="#power-plot" title="Link to this heading"></a></h4>
+<p><strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">power_plot()</span></code></p>
+<p>Statistical power curves at different sample sizes.</p>
+<p><strong>Use Cases</strong>:</p>
+<ul class="simple">
+<li><p>Study design and planning</p></li>
+<li><p>Post-hoc power analysis</p></li>
+<li><p>Sample size estimation</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="regional-locus-specific">
+<h3>3. Regional/Locus-Specific<a class="headerlink" href="#regional-locus-specific" title="Link to this heading"></a></h3>
+<section id="regional-association-plot">
+<h4>Regional Association Plot<a class="headerlink" href="#regional-association-plot" title="Link to this heading"></a></h4>
+<p><strong>Module</strong>: <code class="docutils literal notranslate"><span class="pre">visualization_regional.py</span></code><br />
+<strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">regional_plot()</span></code></p>
+<p>Detailed association view for genomic window.</p>
+<p><strong>Use Cases</strong>:</p>
+<ul class="simple">
+<li><p>Fine-mapping significant loci</p></li>
+<li><p>Identifying lead SNPs</p></li>
+<li><p>Examining local LD structure</p></li>
+</ul>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.gwas.visualization_regional</span><span class="w"> </span><span class="kn">import</span> <span class="n">regional_plot</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">regional_plot</span><span class="p">(</span>
+    <span class="n">results</span><span class="o">=</span><span class="s2">&quot;results.tsv&quot;</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;plots/region_chr1.png&quot;</span><span class="p">,</span>
+    <span class="n">chrom</span><span class="o">=</span><span class="s2">&quot;chr1&quot;</span><span class="p">,</span>
+    <span class="n">start</span><span class="o">=</span><span class="mi">1000000</span><span class="p">,</span>
+    <span class="n">end</span><span class="o">=</span><span class="mi">2000000</span><span class="p">,</span>
+    <span class="n">lead_snp_pos</span><span class="o">=</span><span class="mi">1500000</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="regional-ld-plot">
+<h4>Regional LD Plot<a class="headerlink" href="#regional-ld-plot" title="Link to this heading"></a></h4>
+<p><strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">regional_ld_plot()</span></code></p>
+<p>Linkage disequilibrium around lead SNP.</p>
+<p><strong>Note</strong>: Requires external LD calculation (PLINK recommended).</p>
+</section>
+<section id="gene-annotation-plot">
+<h4>Gene Annotation Plot<a class="headerlink" href="#gene-annotation-plot" title="Link to this heading"></a></h4>
+<p><strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">gene_annotation_plot()</span></code></p>
+<p>Association with gene structures overlaid.</p>
+<p><strong>Use Cases</strong>:</p>
+<ul class="simple">
+<li><p>Identifying variants in genes</p></li>
+<li><p>Functional annotation</p></li>
+<li><p>Publication figures</p></li>
+</ul>
+</section>
+<section id="recombination-rate-plot">
+<h4>Recombination Rate Plot<a class="headerlink" href="#recombination-rate-plot" title="Link to this heading"></a></h4>
+<p><strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">recombination_rate_plot()</span></code></p>
+<p>Association with recombination hotspots.</p>
+<p><strong>Note</strong>: Requires recombination map data.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="population-structure">
+<h3>4. Population Structure<a class="headerlink" href="#population-structure" title="Link to this heading"></a></h3>
+<section id="pca-plot">
+<h4>PCA Plot<a class="headerlink" href="#pca-plot" title="Link to this heading"></a></h4>
+<p><strong>Module</strong>: <code class="docutils literal notranslate"><span class="pre">visualization_population.py</span></code><br />
+<strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">pca_plot()</span></code></p>
+<p>Principal component scatter plot (2D or 3D).</p>
+<p><strong>Features</strong>:</p>
+<ul class="simple">
+<li><p>Optional phenotype coloring</p></li>
+<li><p>2D and 3D modes</p></li>
+<li><p>Sample outlier identification</p></li>
+</ul>
+<p><strong>Use Cases</strong>:</p>
+<ul class="simple">
+<li><p>Visualizing population stratification</p></li>
+<li><p>Quality control (outlier detection)</p></li>
+<li><p>Adjusting for ancestry</p></li>
+</ul>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.gwas.visualization_population</span><span class="w"> </span><span class="kn">import</span> <span class="n">pca_plot</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">pca_plot</span><span class="p">(</span>
+    <span class="n">pca_file</span><span class="o">=</span><span class="s2">&quot;structure/pca_components.tsv&quot;</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;plots/pca.png&quot;</span><span class="p">,</span>
+    <span class="n">pc1</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">pc2</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">phenotype_file</span><span class="o">=</span><span class="s2">&quot;phenotypes.tsv&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="pca-scree-plot">
+<h4>PCA Scree Plot<a class="headerlink" href="#pca-scree-plot" title="Link to this heading"></a></h4>
+<p><strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">pca_scree_plot()</span></code></p>
+<p>Variance explained by each PC.</p>
+<p><strong>Use Cases</strong>:</p>
+<ul class="simple">
+<li><p>Determining number of PCs to adjust for</p></li>
+<li><p>Understanding population structure complexity</p></li>
+</ul>
+</section>
+<section id="kinship-heatmap">
+<h4>Kinship Heatmap<a class="headerlink" href="#kinship-heatmap" title="Link to this heading"></a></h4>
+<p><strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">kinship_heatmap()</span></code></p>
+<p>Pairwise genetic relationships.</p>
+<p><strong>Use Cases</strong>:</p>
+<ul class="simple">
+<li><p>Identifying related samples</p></li>
+<li><p>Mixed model adjustment</p></li>
+<li><p>Quality control</p></li>
+</ul>
+</section>
+<section id="admixture-plot">
+<h4>Admixture Plot<a class="headerlink" href="#admixture-plot" title="Link to this heading"></a></h4>
+<p><strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">admixture_plot()</span></code></p>
+<p>Ancestry proportions (stacked bar plot).</p>
+<p><strong>Note</strong>: Requires ADMIXTURE software output.</p>
+</section>
+<section id="population-tree">
+<h4>Population Tree<a class="headerlink" href="#population-tree" title="Link to this heading"></a></h4>
+<p><strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">population_tree()</span></code></p>
+<p>Hierarchical clustering dendrogram.</p>
+<p><strong>Use Cases</strong>:</p>
+<ul class="simple">
+<li><p>Visualizing population relationships</p></li>
+<li><p>Identifying genetic clusters</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="variant-properties">
+<h3>5. Variant Properties<a class="headerlink" href="#variant-properties" title="Link to this heading"></a></h3>
+<section id="maf-distribution">
+<h4>MAF Distribution<a class="headerlink" href="#maf-distribution" title="Link to this heading"></a></h4>
+<p><strong>Module</strong>: <code class="docutils literal notranslate"><span class="pre">visualization_variants.py</span></code><br />
+<strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">maf_distribution()</span></code></p>
+<p>Allele frequency spectrum histogram.</p>
+<p><strong>Features</strong>:</p>
+<ul class="simple">
+<li><p>Rare variant highlighting (MAF &lt; 0.05)</p></li>
+<li><p>Summary statistics</p></li>
+</ul>
+<p><strong>Use Cases</strong>:</p>
+<ul class="simple">
+<li><p>Quality control</p></li>
+<li><p>Understanding variant frequency distribution</p></li>
+<li><p>Assessing QC filter effects</p></li>
+</ul>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.gwas.visualization_variants</span><span class="w"> </span><span class="kn">import</span> <span class="n">maf_distribution</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">maf_distribution</span><span class="p">(</span>
+    <span class="n">results</span><span class="o">=</span><span class="s2">&quot;results.tsv&quot;</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;plots/maf_dist.png&quot;</span><span class="p">,</span>
+    <span class="n">bins</span><span class="o">=</span><span class="mi">50</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="variant-density-plot">
+<h4>Variant Density Plot<a class="headerlink" href="#variant-density-plot" title="Link to this heading"></a></h4>
+<p><strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">variant_density_plot()</span></code></p>
+<p>SNP density across genome.</p>
+<p><strong>Use Cases</strong>:</p>
+<ul class="simple">
+<li><p>Identifying high/low density regions</p></li>
+<li><p>Quality control</p></li>
+<li><p>Visualizing variant distribution</p></li>
+</ul>
+</section>
+<section id="hwe-deviation-plot">
+<h4>HWE Deviation Plot<a class="headerlink" href="#hwe-deviation-plot" title="Link to this heading"></a></h4>
+<p><strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">hwe_deviation_plot()</span></code></p>
+<p>Hardy-Weinberg equilibrium p-value distribution.</p>
+<p><strong>Use Cases</strong>:</p>
+<ul class="simple">
+<li><p>Quality control</p></li>
+<li><p>Identifying genotyping errors</p></li>
+<li><p>Detecting population substructure</p></li>
+</ul>
+</section>
+<section id="missingness-plot">
+<h4>Missingness Plot<a class="headerlink" href="#missingness-plot" title="Link to this heading"></a></h4>
+<p><strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">missingness_plot()</span></code></p>
+<p>Missing data patterns.</p>
+<p><strong>Note</strong>: Requires VCF parsing implementation.</p>
+</section>
+<section id="transition-transversion-ratio">
+<h4>Transition/Transversion Ratio<a class="headerlink" href="#transition-transversion-ratio" title="Link to this heading"></a></h4>
+<p><strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">transition_transversion_plot()</span></code></p>
+<p>Ts/Tv ratio visualization and interpretation.</p>
+<p><strong>Interpretation</strong>:</p>
+<ul class="simple">
+<li><p>Expected Ts/Tv: 2.0-2.1 (whole genome)</p></li>
+<li><p>Low Ts/Tv: possible quality issues</p></li>
+<li><p>Automated quality assessment</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="effect-sizes-and-functional-annotation">
+<h3>6. Effect Sizes and Functional Annotation<a class="headerlink" href="#effect-sizes-and-functional-annotation" title="Link to this heading"></a></h3>
+<section id="forest-plot">
+<h4>Forest Plot<a class="headerlink" href="#forest-plot" title="Link to this heading"></a></h4>
+<p><strong>Module</strong>: <code class="docutils literal notranslate"><span class="pre">visualization_effects.py</span></code><br />
+<strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">effect_size_forest_plot()</span></code></p>
+<p>Effect estimates with 95% confidence intervals.</p>
+<p><strong>Features</strong>:</p>
+<ul class="simple">
+<li><p>Top N significant variants</p></li>
+<li><p>Confidence intervals</p></li>
+<li><p>Directional coloring</p></li>
+</ul>
+<p><strong>Use Cases</strong>:</p>
+<ul class="simple">
+<li><p>Reporting significant associations</p></li>
+<li><p>Comparing effect sizes</p></li>
+<li><p>Publication figures</p></li>
+</ul>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.gwas.visualization_effects</span><span class="w"> </span><span class="kn">import</span> <span class="n">effect_size_forest_plot</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">effect_size_forest_plot</span><span class="p">(</span>
+    <span class="n">results</span><span class="o">=</span><span class="s2">&quot;results.tsv&quot;</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;plots/forest.png&quot;</span><span class="p">,</span>
+    <span class="n">top_n</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">significance_threshold</span><span class="o">=</span><span class="mf">5e-8</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="effect-direction-plot">
+<h4>Effect Direction Plot<a class="headerlink" href="#effect-direction-plot" title="Link to this heading"></a></h4>
+<p><strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">effect_direction_plot()</span></code></p>
+<p>Distribution of positive/negative effects.</p>
+<p><strong>Use Cases</strong>:</p>
+<ul class="simple">
+<li><p>Checking for directional bias</p></li>
+<li><p>Quality control</p></li>
+<li><p>Understanding effect patterns</p></li>
+</ul>
+</section>
+<section id="functional-enrichment-plot">
+<h4>Functional Enrichment Plot<a class="headerlink" href="#functional-enrichment-plot" title="Link to this heading"></a></h4>
+<p><strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">functional_enrichment_plot()</span></code></p>
+<p>Variant distribution by functional category.</p>
+<p><strong>Note</strong>: Requires variant annotation (ANNOVAR, VEP, SnpEff).</p>
+</section>
+<section id="allelic-series-plot">
+<h4>Allelic Series Plot<a class="headerlink" href="#allelic-series-plot" title="Link to this heading"></a></h4>
+<p><strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">allelic_series_plot()</span></code></p>
+<p>Multiple alleles at locus with dose-response.</p>
+<p><strong>Note</strong>: For complex loci with multiple functional alleles.</p>
+</section>
+</section>
+<hr class="docutils" />
+<section id="multi-trait-and-cross-cohort-comparisons">
+<h3>7. Multi-Trait and Cross-Cohort Comparisons<a class="headerlink" href="#multi-trait-and-cross-cohort-comparisons" title="Link to this heading"></a></h3>
+<section id="miami-plot">
+<h4>Miami Plot<a class="headerlink" href="#miami-plot" title="Link to this heading"></a></h4>
+<p><strong>Module</strong>: <code class="docutils literal notranslate"><span class="pre">visualization_comparison.py</span></code><br />
+<strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">miami_plot()</span></code></p>
+<p>Back-to-back Manhattan plots for two traits.</p>
+<p><strong>Use Cases</strong>:</p>
+<ul class="simple">
+<li><p>Identifying pleiotropic loci</p></li>
+<li><p>Comparing two phenotypes</p></li>
+<li><p>Publication figures for trait pairs</p></li>
+</ul>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.gwas.visualization_comparison</span><span class="w"> </span><span class="kn">import</span> <span class="n">miami_plot</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">miami_plot</span><span class="p">(</span>
+    <span class="n">results1</span><span class="o">=</span><span class="s2">&quot;trait1_results.tsv&quot;</span><span class="p">,</span>
+    <span class="n">results2</span><span class="o">=</span><span class="s2">&quot;trait2_results.tsv&quot;</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;plots/miami.png&quot;</span><span class="p">,</span>
+    <span class="n">trait1_name</span><span class="o">=</span><span class="s2">&quot;Height&quot;</span><span class="p">,</span>
+    <span class="n">trait2_name</span><span class="o">=</span><span class="s2">&quot;BMI&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="multi-trait-manhattan">
+<h4>Multi-Trait Manhattan<a class="headerlink" href="#multi-trait-manhattan" title="Link to this heading"></a></h4>
+<p><strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">multi_trait_manhattan()</span></code></p>
+<p>Stacked Manhattan plots for multiple phenotypes.</p>
+<p><strong>Use Cases</strong>:</p>
+<ul class="simple">
+<li><p>Comparing many traits simultaneously</p></li>
+<li><p>Identifying shared associations</p></li>
+<li><p>Comprehensive trait analysis</p></li>
+</ul>
+</section>
+<section id="cross-cohort-forest-plot">
+<h4>Cross-Cohort Forest Plot<a class="headerlink" href="#cross-cohort-forest-plot" title="Link to this heading"></a></h4>
+<p><strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">cross_cohort_forest()</span></code></p>
+<p>Meta-analysis forest plot.</p>
+<p><strong>Note</strong>: For comparing variant effects across studies.</p>
+</section>
+<section id="concordance-plot">
+<h4>Concordance Plot<a class="headerlink" href="#concordance-plot" title="Link to this heading"></a></h4>
+<p><strong>Function</strong>: <code class="docutils literal notranslate"><span class="pre">concordance_plot()</span></code></p>
+<p>Discovery vs replication scatter plot.</p>
+<p><strong>Features</strong>:</p>
+<ul class="simple">
+<li><p>Correlation calculation</p></li>
+<li><p>Best-fit line</p></li>
+<li><p>Concordance statistics</p></li>
+</ul>
+<p><strong>Use Cases</strong>:</p>
+<ul class="simple">
+<li><p>Validating replication</p></li>
+<li><p>Meta-analysis quality control</p></li>
+<li><p>Assessing consistency</p></li>
+</ul>
+</section>
+</section>
+</section>
+<hr class="docutils" />
+<section id="visualization-suite">
+<h2>Visualization Suite<a class="headerlink" href="#visualization-suite" title="Link to this heading"></a></h2>
+<p>Generate all plots at once:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.gwas</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_all_plots</span>
+
+<span class="n">results</span> <span class="o">=</span> <span class="n">generate_all_plots</span><span class="p">(</span>
+    <span class="n">association_results</span><span class="o">=</span><span class="s2">&quot;output/gwas/results/association_results.tsv&quot;</span><span class="p">,</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;output/gwas/plots&quot;</span><span class="p">,</span>
+    <span class="n">pca_file</span><span class="o">=</span><span class="s2">&quot;output/gwas/structure/pca_components.tsv&quot;</span><span class="p">,</span>
+    <span class="n">kinship_file</span><span class="o">=</span><span class="s2">&quot;output/gwas/structure/kinship_matrix.tsv&quot;</span><span class="p">,</span>
+    <span class="n">vcf_file</span><span class="o">=</span><span class="s2">&quot;data/variants.vcf.gz&quot;</span><span class="p">,</span>
+    <span class="n">significance_threshold</span><span class="o">=</span><span class="mf">5e-8</span>
+<span class="p">)</span>
+
+<span class="c1"># Check results</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Successful: </span><span class="si">{</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;num_plots_generated&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Skipped: </span><span class="si">{</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;num_plots_skipped&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Errors: </span><span class="si">{</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;num_errors&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># List generated plots</span>
+<span class="k">for</span> <span class="n">plot_name</span> <span class="ow">in</span> <span class="n">results</span><span class="p">[</span><span class="s1">&#39;successful_plots&#39;</span><span class="p">]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  ✓ </span><span class="si">{</span><span class="n">plot_name</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="workflow-integration">
+<h2>Workflow Integration<a class="headerlink" href="#workflow-integration" title="Link to this heading"></a></h2>
+<p>Enable comprehensive plots in workflow:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># config/gwas/gwas_amellifera.yaml</span>
+<span class="nt">output</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">results_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/gwas/amellifera/results</span>
+<span class="w">  </span><span class="nt">plots_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/gwas/amellifera/plots</span>
+<span class="w">  </span><span class="nt">comprehensive_plots</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">  </span><span class="c1"># Enable visualization suite (all plot types)</span>
+<span class="w">  </span><span class="nt">significance_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5e-8</span>
+</pre></div>
+</div>
+<p>Or programmatically:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.gwas</span><span class="w"> </span><span class="kn">import</span> <span class="n">execute_gwas_workflow</span><span class="p">,</span> <span class="n">load_gwas_config</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">load_gwas_config</span><span class="p">(</span><span class="s2">&quot;config/gwas/gwas_amellifera.yaml&quot;</span><span class="p">)</span>
+<span class="n">config</span><span class="o">.</span><span class="n">output</span><span class="p">[</span><span class="s2">&quot;comprehensive_plots&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+
+<span class="n">results</span> <span class="o">=</span> <span class="n">execute_gwas_workflow</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="performance-notes">
+<h2>Performance Notes<a class="headerlink" href="#performance-notes" title="Link to this heading"></a></h2>
+<section id="large-scale-data">
+<h3>Large-Scale Data<a class="headerlink" href="#large-scale-data" title="Link to this heading"></a></h3>
+<p>For genome-scale data (millions of SNPs):</p>
+<ol class="arabic simple">
+<li><p><strong>Manhattan Plot</strong>: Uses intelligent thinning (keeps all significant, samples non-significant)</p></li>
+<li><p><strong>Q-Q Plot</strong>: Handles millions of points efficiently</p></li>
+<li><p><strong>Circular Manhattan</strong>: May be slow with &gt;5M SNPs</p></li>
+<li><p><strong>Kinship Heatmap</strong>: Auto-downsamples if &gt;200 samples</p></li>
+</ol>
+</section>
+<section id="optimization-tips">
+<h3>Optimization Tips<a class="headerlink" href="#optimization-tips" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">max_points_per_chrom</span></code> parameter for Manhattan plots</p></li>
+<li><p>Generate regional plots only for significant loci</p></li>
+<li><p>Use summary statistics for large cohorts</p></li>
+<li><p>Consider rasterization for publication figures</p></li>
+</ul>
+</section>
+</section>
+<section id="customization">
+<h2>Customization<a class="headerlink" href="#customization" title="Link to this heading"></a></h2>
+<p>All visualization functions accept standard matplotlib parameters:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Custom colors</span>
+<span class="n">manhattan_plot</span><span class="p">(</span>
+    <span class="n">results</span><span class="o">=</span><span class="s2">&quot;results.tsv&quot;</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;plots/manhattan.png&quot;</span><span class="p">,</span>
+    <span class="n">chrom_colors</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;#FF6B6B&quot;</span><span class="p">,</span> <span class="s2">&quot;#4ECDC4&quot;</span><span class="p">,</span> <span class="s2">&quot;#45B7D1&quot;</span><span class="p">]</span>
+<span class="p">)</span>
+
+<span class="c1"># Custom size</span>
+<span class="n">qq_plot</span><span class="p">(</span>
+    <span class="n">results</span><span class="o">=</span><span class="s2">&quot;results.tsv&quot;</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;plots/qq.png&quot;</span><span class="p">,</span>
+    <span class="n">title</span><span class="o">=</span><span class="s2">&quot;My Custom QQ Plot&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="exporting-for-publication">
+<h2>Exporting for Publication<a class="headerlink" href="#exporting-for-publication" title="Link to this heading"></a></h2>
+<p>All plots support high-resolution export:</p>
+<ul class="simple">
+<li><p>Default DPI: 300 (publication quality)</p></li>
+<li><p>Formats: PNG (default), SVG, PDF</p></li>
+<li><p>Vector graphics for scalability</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Save as vector graphic</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+<span class="c1"># After generating plot, save as PDF</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;figure.pdf&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s2">&quot;tight&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="common-issues">
+<h3>Common Issues<a class="headerlink" href="#common-issues" title="Link to this heading"></a></h3>
+<p><strong>Issue</strong>: “No variants found”</p>
+<ul class="simple">
+<li><p>Check input file format (TSV with headers)</p></li>
+<li><p>Ensure CHROM, POS, p_value columns exist</p></li>
+</ul>
+<p><strong>Issue</strong>: “Plot generation skipped”</p>
+<ul class="simple">
+<li><p>Some plots require additional data (PCA, kinship, VCF)</p></li>
+<li><p>Check log messages for specific requirements</p></li>
+</ul>
+<p><strong>Issue</strong>: “Memory error with large datasets”</p>
+<ul class="simple">
+<li><p>Reduce <code class="docutils literal notranslate"><span class="pre">max_points_per_chrom</span></code> for Manhattan plots</p></li>
+<li><p>Use regional plots instead of genome-wide</p></li>
+<li><p>Increase system memory or use HPC</p></li>
+</ul>
+</section>
+<section id="getting-help">
+<h3>Getting Help<a class="headerlink" href="#getting-help" title="Link to this heading"></a></h3>
+<p>For issues or questions:</p>
+<ul class="simple">
+<li><p>Check log files for detailed error messages</p></li>
+<li><p>See individual function docstrings for parameters</p></li>
+<li><p>Refer to examples in <code class="docutils literal notranslate"><span class="pre">tests/gwas/</span></code> directory</p></li>
+</ul>
+</section>
+</section>
+<section id="future-enhancements">
+<h2>Future Enhancements<a class="headerlink" href="#future-enhancements" title="Link to this heading"></a></h2>
+<p>Planned visualization additions:</p>
+<ul class="simple">
+<li><p>Interactive plots (Plotly/Bokeh)</p></li>
+<li><p>Gene track annotations</p></li>
+<li><p>LD heatmaps</p></li>
+<li><p>Conditional analysis plots</p></li>
+<li><p>PheWAS plots</p></li>
+<li><p>GWAS catalog integration</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Link to this heading"></a></h2>
+<p><strong>Total Visualization Functions</strong>: 30+</p>
+<p><strong>Categories</strong>:</p>
+<ul class="simple">
+<li><p>Genome-wide: 4 functions</p></li>
+<li><p>Statistical: 5 functions</p></li>
+<li><p>Regional: 4 functions</p></li>
+<li><p>Population: 5 functions</p></li>
+<li><p>Variants: 5 functions</p></li>
+<li><p>Effects: 4 functions</p></li>
+<li><p>Comparison: 4 functions</p></li>
+</ul>
+<p><strong>Quick Reference</strong>: Use <code class="docutils literal notranslate"><span class="pre">generate_all_plots()</span></code> to create comprehensive visualization suite automatically.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

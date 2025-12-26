@@ -1,0 +1,833 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>amalgkit curate: Automatic Outlier Removal and Bias Correction &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">amalgkit curate: Automatic Outlier Removal and Bias Correction</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/rna/amalgkit/steps/09_curate.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="amalgkit-curate-automatic-outlier-removal-and-bias-correction">
+<h1>amalgkit curate: Automatic Outlier Removal and Bias Correction<a class="headerlink" href="#amalgkit-curate-automatic-outlier-removal-and-bias-correction" title="Link to this heading"></a></h1>
+<section id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Link to this heading"></a></h2>
+<p>Performs quality control, outlier removal, and batch effect correction on merged expression matrices. This step <strong>cleans and harmonizes</strong> expression data for downstream analysis.</p>
+</section>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">curate</span></code> step:</p>
+<ul class="simple">
+<li><p>Removes low-quality samples based on mapping rate</p></li>
+<li><p>Iteratively detects and removes outlier samples</p></li>
+<li><p>Performs batch effect correction (SVA, RUVSeq, ComBat-seq)</p></li>
+<li><p>Generates comprehensive QC visualizations (PDFs)</p></li>
+<li><p>Creates curated expression matrices ready for analysis</p></li>
+<li><p>Produces tissue specificity (tau) scores</p></li>
+</ul>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
+<section id="basic-usage">
+<h3>Basic Usage<a class="headerlink" href="#basic-usage" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>amalgkit<span class="w"> </span>curate<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--metadata<span class="w"> </span>output/amalgkit/work/metadata/pivot_qualified.tsv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--batch_effect_alg<span class="w"> </span>sva
+</pre></div>
+</div>
+</section>
+<section id="recommended-usage-sva-issues-workaround">
+<h3>Recommended Usage (SVA Issues Workaround)<a class="headerlink" href="#recommended-usage-sva-issues-workaround" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Use &#39;no&#39; batch correction if SVA fails</span>
+amalgkit<span class="w"> </span>curate<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--batch_effect_alg<span class="w"> </span>no
+</pre></div>
+</div>
+</section>
+<section id="python-api">
+<h3>Python API<a class="headerlink" href="#python-api" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna</span><span class="w"> </span><span class="kn">import</span> <span class="n">amalgkit</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">amalgkit</span><span class="o">.</span><span class="n">curate</span><span class="p">(</span>
+    <span class="n">out_dir</span><span class="o">=</span><span class="s2">&quot;output/amalgkit/work&quot;</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="s2">&quot;output/amalgkit/work/metadata/pivot_qualified.tsv&quot;</span><span class="p">,</span>
+    <span class="n">batch_effect_alg</span><span class="o">=</span><span class="s2">&quot;no&quot;</span>  <span class="c1"># or &quot;sva&quot;, &quot;ruvseq&quot;, &quot;combatseq&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="configuration-file">
+<h3>Configuration File<a class="headerlink" href="#configuration-file" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">curate</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/amellifera/work</span>
+<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/amellifera/work/metadata/pivot_qualified.tsv</span>
+<span class="w">    </span><span class="nt">sample_group</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">brain</span>
+<span class="w">    </span><span class="nt">batch_effect_alg</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">no</span>
+<span class="w">    </span><span class="nt">mapping_rate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.2</span>
+<span class="w">    </span><span class="nt">correlation_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.3</span>
+<span class="w">    </span><span class="nt">norm</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">log2p1-fpkm</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Link to this heading"></a></h2>
+<section id="optional-parameters">
+<h3>Optional Parameters<a class="headerlink" href="#optional-parameters" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--out_dir</span></code></p></td>
+<td><p>PATH</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">./</span></code></p></td>
+<td><p>Directory for intermediate and output files.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--metadata</span></code></p></td>
+<td><p>PATH</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">inferred</span></code></p></td>
+<td><p>Path to metadata.tsv. Default: <code class="docutils literal notranslate"><span class="pre">out_dir/metadata/metadata.tsv</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--batch</span></code></p></td>
+<td><p>INT</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>Process only one sample group (1-based index). For batch processing.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--sample_group</span></code></p></td>
+<td><p>STR</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>Comma-separated sample groups to curate. Default: all groups.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--sample_group_color</span></code></p></td>
+<td><p>STR</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">DEFAULT</span></code></p></td>
+<td><p>Comma-separated hex colors for sample groups in plots.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--redo</span></code></p></td>
+<td><p>yes/no</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">no</span></code></p></td>
+<td><p>Re-run curation even if outputs exist.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--input_dir</span></code></p></td>
+<td><p>PATH</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">inferred</span></code></p></td>
+<td><p>Input directory. Default: <code class="docutils literal notranslate"><span class="pre">out_dir/cstmm</span></code> if exists, else <code class="docutils literal notranslate"><span class="pre">out_dir/merge</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--dist_method</span></code></p></td>
+<td><p>STR</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">pearson</span></code></p></td>
+<td><p>Distance method for clustering: <code class="docutils literal notranslate"><span class="pre">pearson</span></code>, <code class="docutils literal notranslate"><span class="pre">spearman</span></code>, <code class="docutils literal notranslate"><span class="pre">euclidean</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--mapping_rate</span></code></p></td>
+<td><p>FLOAT</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.2</span></code></p></td>
+<td><p>Minimum mapping rate cutoff (20%). Samples below are removed.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--correlation_threshold</span></code></p></td>
+<td><p>FLOAT</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">0.3</span></code></p></td>
+<td><p>Minimum Pearson correlation for outlier detection.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--plot_intermediate</span></code></p></td>
+<td><p>yes/no</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">no</span></code></p></td>
+<td><p>Plot SVA correction after each iteration (very slow!).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--one_outlier_per_iter</span></code></p></td>
+<td><p>yes/no</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">no</span></code></p></td>
+<td><p>Remove only 1 outlier per iteration (slower, more conservative).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--norm</span></code></p></td>
+<td><p>STR</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">log2p1-fpkm</span></code></p></td>
+<td><p>Expression normalization: <code class="docutils literal notranslate"><span class="pre">log2p1-fpkm</span></code>, <code class="docutils literal notranslate"><span class="pre">lognp1-tpm</span></code>, <code class="docutils literal notranslate"><span class="pre">log2-fpkm</span></code>, etc.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--batch_effect_alg</span></code></p></td>
+<td><p>STR</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">sva</span></code></p></td>
+<td><p>Batch effect algorithm: <code class="docutils literal notranslate"><span class="pre">no</span></code>, <code class="docutils literal notranslate"><span class="pre">sva</span></code>, <code class="docutils literal notranslate"><span class="pre">ruvseq</span></code>, <code class="docutils literal notranslate"><span class="pre">combatseq</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--clip_negative</span></code></p></td>
+<td><p>yes/no</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">yes</span></code></p></td>
+<td><p>Clip negative values to 0 after batch correction.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--maintain_zero</span></code></p></td>
+<td><p>yes/no</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">yes</span></code></p></td>
+<td><p>Maintain zero values through batch correction.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--skip_curation</span></code></p></td>
+<td><p>yes/no</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">no</span></code></p></td>
+<td><p>Skip curation, only output transformed expression.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="input-requirements">
+<h2>Input Requirements<a class="headerlink" href="#input-requirements" title="Link to this heading"></a></h2>
+<section id="prerequisites">
+<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Merged Expression Matrix</strong>: From <code class="docutils literal notranslate"><span class="pre">amalgkit</span> <span class="pre">merge</span></code> (<code class="docutils literal notranslate"><span class="pre">Species_name_tc.tsv</span></code>, <code class="docutils literal notranslate"><span class="pre">Species_name_tpm.tsv</span></code>)</p></li>
+<li><p><strong>Metadata Table</strong>: Sample metadata with mapping rates</p></li>
+<li><p><strong>R Environment</strong>: With required packages (see below)</p></li>
+</ul>
+</section>
+<section id="r-dependencies">
+<h3>R Dependencies<a class="headerlink" href="#r-dependencies" title="Link to this heading"></a></h3>
+<p><strong>Core Packages</strong> (Required):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">edgeR</span></code> - Expression normalization</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ggplot2</span></code> - Visualization</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dendextend</span></code> - Dendrograms</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gplots</span></code> - Heatmaps</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">viridis</span></code> - Color palettes</p></li>
+</ul>
+<p><strong>Optional Packages</strong> (Enhanced functionality):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">sva</span></code> - Surrogate Variable Analysis (batch correction)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">RUVSeq</span></code> - Remove Unwanted Variation</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Rtsne</span></code> - t-SNE dimensionality reduction</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">amap</span></code> - Alternative clustering</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">vegan</span></code> - Community ecology statistics</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pvclust</span></code> - Hierarchical clustering with p-values</p></li>
+</ul>
+<p><strong>Installation</strong>:</p>
+<div class="highlight-r notranslate"><div class="highlight"><pre><span></span><span class="c1"># Core packages</span>
+<span class="nf">install.packages</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="s">&quot;dendextend&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;viridis&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;gplots&quot;</span><span class="p">))</span>
+
+<span class="c1"># Bioconductor packages</span>
+<span class="kr">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="nf">requireNamespace</span><span class="p">(</span><span class="s">&quot;BiocManager&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">quietly</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kc">TRUE</span><span class="p">))</span>
+<span class="w">    </span><span class="nf">install.packages</span><span class="p">(</span><span class="s">&quot;BiocManager&quot;</span><span class="p">)</span>
+<span class="n">BiocManager</span><span class="o">::</span><span class="nf">install</span><span class="p">(</span><span class="nf">c</span><span class="p">(</span><span class="s">&quot;edgeR&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;sva&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;RUVSeq&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;pcaMethods&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;NMF&quot;</span><span class="p">))</span>
+</pre></div>
+</div>
+<p><strong>Note</strong>: See <a class="reference internal" href="../r_packages.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">../r_packages.md</span></code></span></a> for detailed R setup instructions.</p>
+</section>
+</section>
+<section id="output-files">
+<h2>Output Files<a class="headerlink" href="#output-files" title="Link to this heading"></a></h2>
+<section id="directory-structure">
+<h3>Directory Structure<a class="headerlink" href="#directory-structure" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>out_dir/curate/{Scientific_Name}/
+├── plots/
+│   ├── {Species}.0.original.pdf                    # Original data visualization
+│   ├── {Species}.0.original.no.pdf                 # Original (no batch correction)
+│   ├── {Species}.1.mapping_cutoff.pdf              # After mapping filter
+│   ├── {Species}.1.mapping_cutoff.no.pdf
+│   ├── {Species}.2.correlation_cutoff.pdf          # After outlier removal
+│   └── {Species}.2.correlation_cutoff.no.pdf
+├── tables/
+│   ├── {Species}.uncorrected.tc.tsv                # Original expression
+│   ├── {Species}.uncorrected.sample_group.mean.tsv # Original means
+│   ├── {Species}.no.tc.tsv                         # ⭐ Curated expression (PRIMARY)
+│   ├── {Species}.no.sample_group.mean.tsv          # Curated means
+│   ├── {Species}.no.tau.tsv                        # Tissue specificity scores
+│   ├── {Species}.no.correlation_statistics.tsv     # QC correlation stats
+│   └── {Species}.metadata.tsv                      # Sample metadata with QC metrics
+├── rdata/
+│   ├── {Species}.no.0.RData                        # Round 0 analysis state
+│   ├── {Species}.no.1.RData                        # Round 1 analysis state
+│   └── {Species}.no.2.RData                        # Round 2 analysis state
+└── curate_completion_flag.txt                      # Completion marker
+</pre></div>
+</div>
+</section>
+<section id="primary-outputs">
+<h3>Primary Outputs<a class="headerlink" href="#primary-outputs" title="Link to this heading"></a></h3>
+<p><strong>1. Curated Expression Matrix (<code class="docutils literal notranslate"><span class="pre">{Species}.no.tc.tsv</span></code>)</strong></p>
+<p>The main output - cleaned, QC’d expression matrix:</p>
+<ul class="simple">
+<li><p>Outlier samples removed</p></li>
+<li><p>Low-quality samples removed</p></li>
+<li><p>Batch effects corrected (if enabled)</p></li>
+<li><p>Ready for downstream analysis</p></li>
+</ul>
+<p><strong>2. PDF Visualizations (6 files)</strong></p>
+<p>Each PDF contains:</p>
+<ul class="simple">
+<li><p><strong>Dendrogram</strong>: Hierarchical clustering of samples</p></li>
+<li><p><strong>Heatmap</strong>: Sample correlation matrix</p></li>
+<li><p><strong>PCA Plot</strong>: Principal component analysis</p></li>
+<li><p><strong>QC Metrics</strong>: Mapping rates, correlations</p></li>
+</ul>
+<p>Visualization stages:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">.0.original.*</span></code>: Before any QC</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.1.mapping_cutoff.*</span></code>: After mapping rate filter</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">.2.correlation_cutoff.*</span></code>: After outlier removal</p></li>
+</ul>
+<p><strong>3. Tissue Specificity (<code class="docutils literal notranslate"><span class="pre">{Species}.no.tau.tsv</span></code>)</strong></p>
+<p>Tau scores (0-1) indicating tissue specificity:</p>
+<ul class="simple">
+<li><p>0 = Ubiquitously expressed</p></li>
+<li><p>1 = Highly tissue-specific</p></li>
+</ul>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">transcript_id</span>       <span class="n">tau</span>
+<span class="n">XM_006566778</span><span class="mf">.3</span>      <span class="mf">0.15</span>    <span class="c1"># Ubiquitous (housekeeping)</span>
+<span class="n">XM_006566779</span><span class="mf">.2</span>      <span class="mf">0.87</span>    <span class="c1"># Tissue-specific</span>
+<span class="n">XM_006566780</span><span class="mf">.1</span>      <span class="mf">0.45</span>    <span class="c1"># Moderately specific</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="workflow-integration">
+<h2>Workflow Integration<a class="headerlink" href="#workflow-integration" title="Link to this heading"></a></h2>
+<section id="position-in-pipeline">
+<h3>Position in Pipeline<a class="headerlink" href="#position-in-pipeline" title="Link to this heading"></a></h3>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart LR
+    A[merge] --&gt; B[curate]
+    C[cstmm] --&gt; B
+    B --&gt; D[csca]
+    B --&gt; E[sanity]
+</pre></div>
+</div>
+<p><strong>curate</strong> runs <strong>after merge or cstmm</strong>, <strong>before csca/sanity</strong>.</p>
+</section>
+</section>
+<section id="batch-effect-correction-algorithms">
+<h2>Batch Effect Correction Algorithms<a class="headerlink" href="#batch-effect-correction-algorithms" title="Link to this heading"></a></h2>
+<section id="no-no-batch-correction">
+<h3><code class="docutils literal notranslate"><span class="pre">no</span></code> - No Batch Correction<a class="headerlink" href="#no-no-batch-correction" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--batch_effect_alg<span class="w"> </span>no
+</pre></div>
+</div>
+<p><strong>When to Use</strong>:</p>
+<ul class="simple">
+<li><p>SVA compilation issues (common on macOS)</p></li>
+<li><p>Single-batch experiments</p></li>
+<li><p>Small sample sizes (&lt;10 samples)</p></li>
+<li><p>Quick QC visualization</p></li>
+</ul>
+<p><strong>What It Does</strong>:</p>
+<ul class="simple">
+<li><p>Mapping rate filtering</p></li>
+<li><p>Outlier removal</p></li>
+<li><p>Normalization (log2+1 FPKM)</p></li>
+<li><p><strong>No</strong> batch effect removal</p></li>
+</ul>
+<p><strong>Recommendation</strong>: Use this as default if SVA fails</p>
+</section>
+<section id="sva-surrogate-variable-analysis-default">
+<h3><code class="docutils literal notranslate"><span class="pre">sva</span></code> - Surrogate Variable Analysis (Default)<a class="headerlink" href="#sva-surrogate-variable-analysis-default" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--batch_effect_alg<span class="w"> </span>sva
+</pre></div>
+</div>
+<p><strong>When to Use</strong>:</p>
+<ul class="simple">
+<li><p>Multi-batch experiments</p></li>
+<li><p>Large datasets (&gt;20 samples)</p></li>
+<li><p>Publication-quality analysis</p></li>
+<li><p>When R environment is properly configured</p></li>
+</ul>
+<p><strong>What It Does</strong>:</p>
+<ul class="simple">
+<li><p>Estimates surrogate variables (hidden batch effects)</p></li>
+<li><p>Removes systematic biases</p></li>
+<li><p>Preserves biological variation</p></li>
+</ul>
+<p><strong>Requirements</strong>: R package <code class="docutils literal notranslate"><span class="pre">sva</span></code> must be installed and functional</p>
+<p><strong>Known Issues</strong>: May fail on macOS due to gfortran compilation problems</p>
+</section>
+<section id="ruvseq-remove-unwanted-variation">
+<h3><code class="docutils literal notranslate"><span class="pre">ruvseq</span></code> - Remove Unwanted Variation<a class="headerlink" href="#ruvseq-remove-unwanted-variation" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--batch_effect_alg<span class="w"> </span>ruvseq
+</pre></div>
+</div>
+<p><strong>When to Use</strong>:</p>
+<ul class="simple">
+<li><p>Alternative to SVA</p></li>
+<li><p>When control genes can be identified</p></li>
+<li><p>Experimental feature</p></li>
+</ul>
+<p><strong>Status</strong>: Experimental in amalgkit</p>
+</section>
+<section id="combatseq-combat-seq">
+<h3><code class="docutils literal notranslate"><span class="pre">combatseq</span></code> - ComBat-Seq<a class="headerlink" href="#combatseq-combat-seq" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--batch_effect_alg<span class="w"> </span>combatseq
+</pre></div>
+</div>
+<p><strong>When to Use</strong>:</p>
+<ul class="simple">
+<li><p>Known batch structure (BioProject IDs)</p></li>
+<li><p>Count-based batch correction</p></li>
+<li><p>Experimental feature</p></li>
+</ul>
+<p><strong>Status</strong>: Experimental in amalgkit</p>
+</section>
+</section>
+<section id="quality-control-process">
+<h2>Quality Control Process<a class="headerlink" href="#quality-control-process" title="Link to this heading"></a></h2>
+<section id="step-1-mapping-rate-filter">
+<h3>Step 1: Mapping Rate Filter<a class="headerlink" href="#step-1-mapping-rate-filter" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--mapping_rate<span class="w"> </span><span class="m">0</span>.2<span class="w">  </span><span class="c1"># Remove samples with &lt;20% mapping</span>
+</pre></div>
+</div>
+<p><strong>Effect</strong>: Removes low-quality samples with poor alignment</p>
+<p><strong>Typical Results</strong>:</p>
+<ul class="simple">
+<li><p>0-5% of samples removed</p></li>
+<li><p>Most samples have &gt;50% mapping rate</p></li>
+</ul>
+</section>
+<section id="step-2-correlation-based-outlier-removal">
+<h3>Step 2: Correlation-Based Outlier Removal<a class="headerlink" href="#step-2-correlation-based-outlier-removal" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--correlation_threshold<span class="w"> </span><span class="m">0</span>.3<span class="w">  </span><span class="c1"># Remove samples with mean r &lt; 0.3</span>
+</pre></div>
+</div>
+<p><strong>Process</strong>:</p>
+<ol class="arabic simple">
+<li><p>Calculate pairwise Pearson correlations</p></li>
+<li><p>Compute mean correlation per sample</p></li>
+<li><p>Remove samples below threshold</p></li>
+<li><p>Repeat iteratively until no outliers</p></li>
+</ol>
+<p><strong>Typical Results</strong>:</p>
+<ul class="simple">
+<li><p>1-10% of samples removed</p></li>
+<li><p>2-3 iterations</p></li>
+<li><p>Final dataset: highly correlated samples</p></li>
+</ul>
+</section>
+<section id="step-3-batch-effect-correction-if-enabled">
+<h3>Step 3: Batch Effect Correction (if enabled)<a class="headerlink" href="#step-3-batch-effect-correction-if-enabled" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--batch_effect_alg<span class="w"> </span>sva
+</pre></div>
+</div>
+<p><strong>Effect</strong>: Removes systematic batch effects while preserving biological variation</p>
+</section>
+</section>
+<section id="performance-considerations">
+<h2>Performance Considerations<a class="headerlink" href="#performance-considerations" title="Link to this heading"></a></h2>
+<section id="runtime">
+<h3>Runtime<a class="headerlink" href="#runtime" title="Link to this heading"></a></h3>
+<p><strong>Without Batch Correction</strong> (<code class="docutils literal notranslate"><span class="pre">--batch_effect_alg</span> <span class="pre">no</span></code>):</p>
+<ul class="simple">
+<li><p><strong>Small datasets</strong> (&lt;20 samples): 1-3 minutes</p></li>
+<li><p><strong>Medium datasets</strong> (20-100 samples): 3-10 minutes</p></li>
+<li><p><strong>Large datasets</strong> (&gt;100 samples): 10-30 minutes</p></li>
+</ul>
+<p><strong>With SVA Batch Correction</strong>:</p>
+<ul class="simple">
+<li><p>Add 2-5x runtime (depends on # surrogate variables)</p></li>
+</ul>
+</section>
+<section id="memory-usage">
+<h3>Memory Usage<a class="headerlink" href="#memory-usage" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>R process</strong>: 2-8GB</p></li>
+<li><p>Scales with (# samples) × (# transcripts)</p></li>
+</ul>
+</section>
+<section id="disk-space">
+<h3>Disk Space<a class="headerlink" href="#disk-space" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Per species</strong>: 50-200MB (PDFs + tables)</p></li>
+</ul>
+</section>
+</section>
+<section id="common-use-cases">
+<h2>Common Use Cases<a class="headerlink" href="#common-use-cases" title="Link to this heading"></a></h2>
+<section id="standard-curation-no-batch-correction">
+<h3>1. Standard Curation (No Batch Correction)<a class="headerlink" href="#standard-curation-no-batch-correction" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Recommended default</span>
+amalgkit<span class="w"> </span>curate<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/amellifera/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--batch_effect_alg<span class="w"> </span>no
+</pre></div>
+</div>
+<p><strong>Result</strong>: QC’d expression matrix with outliers removed</p>
+</section>
+<section id="tissue-specific-curation">
+<h3>2. Tissue-Specific Curation<a class="headerlink" href="#tissue-specific-curation" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Curate only brain samples</span>
+amalgkit<span class="w"> </span>curate<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--sample_group<span class="w"> </span>brain<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--batch_effect_alg<span class="w"> </span>no
+</pre></div>
+</div>
+<p><strong>Result</strong>: Brain-specific curated matrix</p>
+</section>
+<section id="multi-tissue-curation">
+<h3>3. Multi-Tissue Curation<a class="headerlink" href="#multi-tissue-curation" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Curate multiple tissues together</span>
+amalgkit<span class="w"> </span>curate<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--sample_group<span class="w"> </span>brain,liver,heart<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--batch_effect_alg<span class="w"> </span>no
+</pre></div>
+</div>
+<p><strong>Result</strong>: Multi-tissue curated matrix</p>
+</section>
+<section id="conservative-outlier-removal">
+<h3>4. Conservative Outlier Removal<a class="headerlink" href="#conservative-outlier-removal" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Remove only 1 outlier per iteration</span>
+amalgkit<span class="w"> </span>curate<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--one_outlier_per_iter<span class="w"> </span>yes<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--batch_effect_alg<span class="w"> </span>no
+</pre></div>
+</div>
+<p><strong>Result</strong>: More conservative QC (slower, fewer samples removed)</p>
+</section>
+<section id="publication-quality-with-sva">
+<h3>5. Publication-Quality with SVA<a class="headerlink" href="#publication-quality-with-sva" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Full batch correction (if R environment supports it)</span>
+amalgkit<span class="w"> </span>curate<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--batch_effect_alg<span class="w"> </span>sva<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--plot_intermediate<span class="w"> </span>no<span class="w">  </span><span class="c1"># Keep fast</span>
+</pre></div>
+</div>
+<p><strong>Result</strong>: Batch-corrected expression matrix</p>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="issue-r-package-errors-sva-rtsne-amap">
+<h3>Issue: R package errors (sva, Rtsne, amap)<a class="headerlink" href="#issue-r-package-errors-sva-rtsne-amap" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Error</span> <span class="ow">in</span> <span class="n">library</span><span class="p">(</span><span class="n">sva</span><span class="p">):</span> <span class="n">there</span> <span class="ow">is</span> <span class="n">no</span> <span class="n">package</span> <span class="n">called</span> <span class="s1">&#39;sva&#39;</span>
+</pre></div>
+</div>
+<p><strong>Solution</strong>: Use <code class="docutils literal notranslate"><span class="pre">--batch_effect_alg</span> <span class="pre">no</span></code></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>amalgkit<span class="w"> </span>curate<span class="w"> </span>--batch_effect_alg<span class="w"> </span>no
+</pre></div>
+</div>
+<p><strong>Reason</strong>: SVA and other packages have compilation issues on some systems (especially macOS). Using <code class="docutils literal notranslate"><span class="pre">no</span></code> skips batch correction but still performs all other QC steps.</p>
+<p><strong>See Also</strong>: <a class="reference internal" href="../r_packages.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">../r_packages.md</span></code></span></a> for detailed R setup</p>
+</section>
+<section id="issue-curate-completes-in-0-seconds">
+<h3>Issue: Curate completes in 0 seconds<a class="headerlink" href="#issue-curate-completes-in-0-seconds" title="Link to this heading"></a></h3>
+<p><strong>Cause</strong>: Existing outputs detected, no reprocessing</p>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic">
+<li><p>Force re-run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>amalgkit<span class="w"> </span>curate<span class="w"> </span>--redo<span class="w"> </span>yes
+</pre></div>
+</div>
+</li>
+<li><p>Delete existing outputs:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rm<span class="w"> </span>-rf<span class="w"> </span>output/work/curate/*
+amalgkit<span class="w"> </span>curate
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="issue-all-samples-removed-as-outliers">
+<h3>Issue: All samples removed as outliers<a class="headerlink" href="#issue-all-samples-removed-as-outliers" title="Link to this heading"></a></h3>
+<p><strong>Diagnosis</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check curate logs</span>
+cat<span class="w"> </span>output/work/curate/*/tables/*.metadata.tsv
+</pre></div>
+</div>
+<p><strong>Causes</strong>:</p>
+<ol class="arabic simple">
+<li><p>Threshold too strict</p></li>
+<li><p>Heterogeneous sample set</p></li>
+<li><p>Low-quality data</p></li>
+</ol>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic">
+<li><p>Lower correlation threshold:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--correlation_threshold<span class="w"> </span><span class="m">0</span>.1
+</pre></div>
+</div>
+</li>
+<li><p>Lower mapping rate cutoff:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--mapping_rate<span class="w"> </span><span class="m">0</span>.1
+</pre></div>
+</div>
+</li>
+<li><p>Skip curation:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--skip_curation<span class="w"> </span>yes
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="issue-pdf-plots-look-strange">
+<h3>Issue: PDF plots look strange<a class="headerlink" href="#issue-pdf-plots-look-strange" title="Link to this heading"></a></h3>
+<p><strong>Diagnosis</strong>: Open PDFs and inspect</p>
+<p><strong>Common Issues</strong>:</p>
+<ul class="simple">
+<li><p>Sample labels overlapping</p></li>
+<li><p>Colors not distinguishable</p></li>
+<li><p>Dendrogram too crowded</p></li>
+</ul>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic">
+<li><p>Customize colors:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--sample_group_color<span class="w"> </span><span class="s2">&quot;#d95f02ff,#1b9e77ff,#7570b3ff&quot;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Use fewer sample groups</p></li>
+<li><p>Process sample groups separately</p></li>
+</ol>
+</section>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<section id="always-start-with-batch-effect-alg-no">
+<h3>1. Always Start with <code class="docutils literal notranslate"><span class="pre">--batch_effect_alg</span> <span class="pre">no</span></code><a class="headerlink" href="#always-start-with-batch-effect-alg-no" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Good: Fast, reliable</span>
+--batch_effect_alg<span class="w"> </span>no
+
+<span class="c1"># Risky: May fail with R errors</span>
+--batch_effect_alg<span class="w"> </span>sva<span class="w">  </span><span class="c1"># Only if R environment is fully configured</span>
+</pre></div>
+</div>
+</section>
+<section id="inspect-pdf-visualizations">
+<h3>2. Inspect PDF Visualizations<a class="headerlink" href="#inspect-pdf-visualizations" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># View all PDFs</span>
+open<span class="w"> </span>output/work/curate/*/plots/*.pdf
+
+<span class="c1"># Look for:</span>
+<span class="c1"># - Outlier samples (far from others in dendrogram)</span>
+<span class="c1"># - Batch effects (clear clusters by BioProject)</span>
+<span class="c1"># - Sample correlation patterns</span>
+</pre></div>
+</div>
+</section>
+<section id="validate-qc-metrics">
+<h3>3. Validate QC Metrics<a class="headerlink" href="#validate-qc-metrics" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check how many samples were removed</span>
+diff<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>&lt;<span class="o">(</span>wc<span class="w"> </span>-l<span class="w"> </span>output/work/merge/Species/Species_tc.tsv<span class="o">)</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>&lt;<span class="o">(</span>wc<span class="w"> </span>-l<span class="w"> </span>output/work/curate/Species/tables/Species.no.tc.tsv<span class="o">)</span>
+
+<span class="c1"># Check correlation statistics</span>
+cat<span class="w"> </span>output/work/curate/Species/tables/Species.no.correlation_statistics.tsv
+</pre></div>
+</div>
+</section>
+<section id="use-curated-matrix-for-downstream-analysis">
+<h3>4. Use Curated Matrix for Downstream Analysis<a class="headerlink" href="#use-curated-matrix-for-downstream-analysis" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="c1"># Use curated, not original</span>
+<span class="n">curated</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
+    <span class="s2">&quot;output/work/curate/Apis_mellifera/tables/Apis_mellifera.no.tc.tsv&quot;</span><span class="p">,</span>
+    <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">,</span>
+    <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span>
+<span class="p">)</span>
+
+<span class="c1"># Not this:</span>
+<span class="c1"># original = pd.read_csv(&quot;output/work/merge/Apis_mellifera/Apis_mellifera_tc.tsv&quot;, ...)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="real-world-examples">
+<h2>Real-World Examples<a class="headerlink" href="#real-world-examples" title="Link to this heading"></a></h2>
+<section id="example-1-apis-mellifera-83-brain-samples">
+<h3>Example 1: Apis mellifera (83 Brain Samples)<a class="headerlink" href="#example-1-apis-mellifera-83-brain-samples" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>amalgkit<span class="w"> </span>curate<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/amellifera/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--sample_group<span class="w"> </span>brain<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--batch_effect_alg<span class="w"> </span>no<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--mapping_rate<span class="w"> </span><span class="m">0</span>.2
+</pre></div>
+</div>
+<p><strong>Result</strong>:</p>
+<ul class="simple">
+<li><p>83 samples → 83 samples (no outliers removed)</p></li>
+<li><p>6 PDF visualizations generated</p></li>
+<li><p>17 output files total</p></li>
+<li><p>Runtime: 5 minutes</p></li>
+</ul>
+</section>
+<section id="example-2-multi-species-comparative">
+<h3>Example 2: Multi-Species Comparative<a class="headerlink" href="#example-2-multi-species-comparative" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Curate each species</span>
+<span class="k">for</span><span class="w"> </span>species<span class="w"> </span><span class="k">in</span><span class="w"> </span>amellifera<span class="w"> </span>pbarbatus<span class="w"> </span>cfloridanus<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">    </span>amalgkit<span class="w"> </span>curate<span class="w"> </span><span class="se">\</span>
+<span class="w">      </span>--out_dir<span class="w"> </span>output/amalgkit/<span class="si">${</span><span class="nv">species</span><span class="si">}</span>/work<span class="w"> </span><span class="se">\</span>
+<span class="w">      </span>--batch_effect_alg<span class="w"> </span>no
+<span class="k">done</span>
+</pre></div>
+</div>
+<p><strong>Result</strong>: Curated expression matrices for cross-species analysis</p>
+</section>
+</section>
+<section id="integration-with-metainformant-workflow">
+<h2>Integration with METAINFORMANT Workflow<a class="headerlink" href="#integration-with-metainformant-workflow" title="Link to this heading"></a></h2>
+<section id="automatic-execution">
+<h3>Automatic Execution<a class="headerlink" href="#automatic-execution" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">execute_workflow</span><span class="p">,</span> <span class="n">load_workflow_config</span>
+
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">load_workflow_config</span><span class="p">(</span><span class="s2">&quot;config/amalgkit_amellifera.yaml&quot;</span><span class="p">)</span>
+<span class="n">execute_workflow</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>  <span class="c1"># curate runs automatically after merge</span>
+</pre></div>
+</div>
+</section>
+<section id="configuration">
+<h3>Configuration<a class="headerlink" href="#configuration" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">curate</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">batch_effect_alg</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">no</span><span class="w">  </span><span class="c1"># Recommended default</span>
+<span class="w">    </span><span class="nt">mapping_rate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.2</span>
+<span class="w">    </span><span class="nt">correlation_threshold</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.3</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>SVA</strong>: https://bioconductor.org/packages/release/bioc/html/sva.html</p></li>
+<li><p><strong>RUVSeq</strong>: https://bioconductor.org/packages/release/bioc/html/RUVSeq.html</p></li>
+<li><p><strong>edgeR</strong>: https://bioconductor.org/packages/release/bioc/html/edgeR.html</p></li>
+<li><p><strong>R Package Setup</strong>: <a class="reference internal" href="../r_packages.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">../r_packages.md</span></code></span></a></p></li>
+<li><p><strong>METAINFORMANT Workflow</strong>: <code class="docutils literal notranslate"><span class="pre">docs/rna/workflow.md</span></code></p></li>
+</ul>
+</section>
+<section id="see-also">
+<h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Previous Step</strong>: <a class="reference internal" href="#merge.md"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">merge.md</span></code></span></a> - Merging abundance estimates</p></li>
+<li><p><strong>Next Step</strong>: <a class="reference internal" href="#sanity.md"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">sanity.md</span></code></span></a> - Integrity checking</p></li>
+<li><p><strong>Next Step</strong>: <a class="reference internal" href="#csca.md"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">csca.md</span></code></span></a> - Cross-species correlation analysis</p></li>
+<li><p><strong>Workflow Overview</strong>: <a class="reference internal" href="../amalgkit.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">../amalgkit.md</span></code></span></a></p></li>
+<li><p><strong>Testing</strong>: <code class="docutils literal notranslate"><span class="pre">tests/test_rna_amalgkit_steps.py::test_curate_basic_execution</span></code></p></li>
+</ul>
+<hr class="docutils" />
+<p><strong>Last Updated</strong>: October 29, 2025<br />
+<strong>AMALGKIT Version</strong>: 0.12.19<br />
+<strong>Status</strong>: ✅ Production-ready with <code class="docutils literal notranslate"><span class="pre">--batch_effect_alg</span> <span class="pre">no</span></code> (SVA may require R environment configuration)</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

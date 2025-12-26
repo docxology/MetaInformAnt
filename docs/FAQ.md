@@ -1,0 +1,522 @@
+# METAINFORMANT Frequently Asked Questions
+
+Common questions and answers about using METAINFORMANT for biological data analysis.
+
+## Installation and Setup
+
+### Q: How do I install METAINFORMANT?
+
+**A:** METAINFORMANT uses `uv` for dependency management. Install with:
+
+```bash
+# Install uv first (if not already installed)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install METAINFORMANT
+uv pip install metainformant
+
+# For scientific computing features
+uv pip install metainformant[scientific]
+
+# For machine learning features
+uv pip install metainformant[ml]
+
+# For all optional dependencies
+uv pip install metainformant[all]
+```
+
+### Q: I'm getting import errors after installation. What should I do?
+
+**A:** Try reinstalling with all optional dependencies:
+
+```bash
+# Clean reinstall
+uv pip uninstall metainformant
+uv pip install --force-reinstall metainformant[scientific,ml,networks]
+
+# Verify installation
+python -c "import metainformant as mi; print('Installation successful!')"
+```
+
+### Q: How do I set up the external drive temp directory for large datasets?
+
+**A:** METAINFORMANT needs special setup for external drives. Add to your `~/.bashrc` or `~/.zshrc`:
+
+```bash
+# METAINFORMANT external drive setup
+export TMPDIR="/Volumes/ExternalDrive/tmp"
+export TEMP="$TMPDIR"
+export TMP="$TMPDIR"
+
+# Create directory if it doesn't exist
+mkdir -p "$TMPDIR"
+```
+
+See [Disk Space Management](DISK_SPACE_MANAGEMENT.md) for complete setup instructions.
+
+## Data Analysis
+
+### Q: What file formats does METAINFORMANT support?
+
+**A:** METAINFORMANT supports many biological data formats:
+
+- **Sequences**: FASTA, FASTQ, GenBank
+- **Genomics**: VCF, BED, GTF/GFF, BAM/CRAM
+- **Expression**: CSV, TSV, HDF5, AnnData (single-cell)
+- **Networks**: GraphML, edge lists, adjacency matrices
+- **Images**: PNG, SVG, PDF (plots)
+- **Configuration**: YAML, TOML, JSON
+
+### Q: How do I handle large datasets that don't fit in memory?
+
+**A:** METAINFORMANT provides several approaches:
+
+```python
+# 1. Streaming processing
+from metainformant.core.io import read_jsonl
+for record in read_jsonl("large_file.jsonl"):
+    process_record(record)
+
+# 2. Chunked processing
+from metainformant.core.parallel import run_parallel
+results = run_parallel(process_function, data_chunks, max_workers=4)
+
+# 3. Use memory-efficient formats
+import pandas as pd
+# Read in chunks
+for chunk in pd.read_csv("large_file.csv", chunksize=10000):
+    process_chunk(chunk)
+```
+
+### Q: Why am I getting "No Mocking" errors?
+
+**A:** METAINFORMANT uses real implementations only (no mocks or fakes). This ensures reliable results but requires:
+
+1. **Real data**: Use actual biological data files
+2. **Real dependencies**: Install external tools (bcftools, amalgkit, etc.)
+3. **Real network**: Ensure internet connectivity for downloads
+4. **Real compute**: Some analyses require significant resources
+
+### Q: How do I speed up my analysis?
+
+**A:** Several optimization strategies:
+
+```python
+# Enable parallel processing
+from metainformant.core import parallel
+results = parallel.run_parallel(analyze_function, data_items, max_workers=8)
+
+# Use caching for expensive operations
+from metainformant.math import coalescent
+# Tajima constants are automatically cached
+constants = coalescent.tajima_constants(100)
+
+# Vectorize operations
+import numpy as np
+# Use NumPy arrays instead of Python lists
+data_array = np.array(data_list)
+result = np.mean(data_array)  # Fast vectorized operation
+```
+
+## Module-Specific Questions
+
+### DNA Analysis
+
+**Q: Why is my sequence alignment taking so long?**
+
+**A:** Sequence alignment complexity is O(n×m) where n and m are sequence lengths. For long sequences:
+
+```python
+# Use local alignment for similarity search
+from metainformant.dna import alignment
+result = alignment.local_align(query_seq, target_seq)
+
+# Or use k-mer based methods for approximate matching
+from metainformant.information.analysis import analyze_sequence_information
+info = analyze_sequence_information(sequence, k_values=[5, 10])
+```
+
+**Q: How do I handle different genetic codes?**
+
+**A:** METAINFORMANT supports multiple genetic codes:
+
+```python
+from metainformant.dna import codon
+
+# Standard genetic code (default)
+amino_acids = codon.translate_sequence(dna_sequence)
+
+# Mitochondrial genetic code
+mito_code = codon.get_genetic_code("mitochondrial")
+amino_acids = codon.translate_sequence(dna_sequence, genetic_code=mito_code)
+```
+
+### RNA Analysis
+
+**Q: Amalgkit integration isn't working. What should I check?**
+
+**A:** Ensure amalgkit is properly installed and configured:
+
+```bash
+# Check installation
+which amalgkit
+
+# Verify configuration
+amalgkit --help
+
+# Test METAINFORMANT integration
+from metainformant.rna import amalgkit
+print("Amalgkit available:", amalgkit.check_cli_available())
+```
+
+**Q: How do I customize RNA-seq workflow parameters?**
+
+**A:** Use configuration files or direct parameter setting:
+
+```python
+from metainformant.rna.workflow import AmalgkitWorkflowConfig
+
+config = AmalgkitWorkflowConfig(
+    work_dir="output/rna_analysis",
+    threads=8,
+    species_list=["Drosophila_melanogaster"],
+    # Additional parameters
+    quant_params={"--lib_type": "fr-firststrand"},
+    merge_params={"--min_samples": "3"}
+)
+```
+
+### GWAS Analysis
+
+**Q: My GWAS results show inflated p-values. What's wrong?**
+
+**A:** This is likely population stratification. Control for it:
+
+```python
+from metainformant.gwas import structure, association
+
+# Compute PCA for population structure
+pca_result = structure.compute_pca(genotypes)
+
+# Include PCs as covariates in association test
+result = association.association_test_linear(
+    genotypes=genotypes,
+    phenotypes=phenotypes,
+    covariates=pca_result["pcs"][:, :10]  # First 10 PCs
+)
+```
+
+**Q: How do I handle different GWAS file formats?**
+
+**A:** METAINFORMANT handles multiple formats:
+
+```python
+from metainformant.gwas import download, parsing
+
+# Download from public databases
+result = download.download_variant_data(
+    source="dbsnp",
+    accession="GCF_000001405.40",
+    dest_dir="data/variants"
+)
+
+# Parse VCF files
+vcf_data = parsing.parse_vcf_full("data/variants/data.vcf.gz")
+
+# Handle PLINK format
+plink_data = parsing.parse_plink_files(
+    bed_file="data/gwas/data.bed",
+    bim_file="data/gwas/data.bim",
+    fam_file="data/gwas/data.fam"
+)
+```
+
+### Information Theory
+
+**Q: What's the difference between syntactic and semantic information?**
+
+**A:** Syntactic information measures statistical patterns, semantic information measures biological meaning:
+
+```python
+from metainformant.information import syntactic, semantic
+
+# Syntactic: Statistical patterns
+entropy = syntactic.shannon_entropy(probabilities)
+mi = syntactic.mutual_information(feature1, feature2)
+
+# Semantic: Biological meaning
+ic = semantic.information_content(annotations, term)
+similarity = semantic.semantic_similarity(term1, term2, ic_dict)
+```
+
+**Q: Why are my entropy calculations different from other tools?**
+
+**A:** Check the base and normalization:
+
+```python
+# Default is base 2 (bits)
+entropy_bits = syntactic.shannon_entropy(probs, base=2)
+
+# Natural log (nats)
+entropy_nats = syntactic.shannon_entropy(probs, base=math.e)
+
+# Base 10 (dits)
+entropy_dits = syntactic.shannon_entropy(probs, base=10)
+```
+
+### Machine Learning
+
+**Q: Which classifier should I use for my biological data?**
+
+**A:** Try multiple and compare:
+
+```python
+from metainformant import ml
+from sklearn.model_selection import cross_val_score
+
+methods = ["rf", "svm", "lr", "nb"]
+results = {}
+
+for method in methods:
+    clf = ml.classification.train_classifier(X_train, y_train, method=method)
+    scores = ml.classification.cross_validate_classifier(clf, X_train, y_train)
+    results[method] = scores["accuracy"]
+
+best_method = max(results, key=results.get)
+print(f"Best method: {best_method} (accuracy: {results[best_method]:.3f})")
+```
+
+**Q: How do I handle class imbalance in biological datasets?**
+
+**A:** Use appropriate techniques:
+
+```python
+from imblearn.over_sampling import SMOTE
+from metainformant import ml
+
+# Oversample minority class
+smote = SMOTE(random_state=42)
+X_resampled, y_resampled = smote.fit_resample(X_train, y_train)
+
+# Train on balanced data
+clf = ml.classification.train_classifier(X_resampled, y_resampled, method="rf")
+```
+
+## Performance and Troubleshooting
+
+### Q: METAINFORMANT is using too much memory. How can I reduce it?
+
+**A:** Several strategies:
+
+1. **Process in chunks**:
+```python
+# Read large files in chunks
+from metainformant.core.io import read_jsonl
+for chunk in read_jsonl("large_file.jsonl"):
+    process_chunk(chunk)
+    del chunk  # Free memory
+```
+
+2. **Use memory-efficient formats**:
+```python
+# Use HDF5 for large arrays
+import h5py
+with h5py.File("data.h5", "r") as f:
+    data = f["dataset"][:]  # Load only what you need
+```
+
+3. **Clear caches**:
+```python
+from metainformant.core.cache import JsonCache
+cache = JsonCache("output/cache")
+cache.clear()  # Clear cache files
+```
+
+### Q: How do I debug slow performance?
+
+**A:** Profile your code:
+
+```python
+import cProfile
+import pstats
+
+def analyze_data():
+    # Your analysis code here
+    pass
+
+# Profile execution
+profiler = cProfile.Profile()
+profiler.enable()
+result = analyze_data()
+profiler.disable()
+
+# Print top 10 slowest functions
+stats = pstats.Stats(profiler).sort_stats('cumulative')
+stats.print_stats(10)
+```
+
+### Q: I'm getting numerical precision errors. What should I do?
+
+**A:** Check data types and scaling:
+
+```python
+import numpy as np
+
+# Ensure proper data types
+data = np.array(your_data, dtype=np.float64)
+
+# Check for numerical issues
+print(f"Data range: {np.min(data):.2e} to {np.max(data):.2e}")
+print(f"Contains NaN: {np.any(np.isnan(data))}")
+print(f"Contains Inf: {np.any(np.isinf(data))}")
+
+# Normalize if needed
+if np.max(np.abs(data)) > 1e10:  # Very large numbers
+    data = data / np.max(np.abs(data))
+```
+
+## Development and Contributing
+
+### Q: How do I contribute to METAINFORMANT?
+
+**A:** Follow the contribution guidelines:
+
+1. **Fork and clone**:
+```bash
+git clone https://github.com/your-username/metainformant.git
+cd metainformant
+uv venv
+uv pip install -e .[dev]
+```
+
+2. **Make changes** following the [Cursor Rules](.cursorrules)
+
+3. **Add tests** (no mocks, real implementations)
+
+4. **Run tests**:
+```bash
+uv run pytest tests/ -v
+```
+
+5. **Submit pull request**
+
+### Q: How do I report a bug?
+
+**A:** Use the GitHub issue tracker with:
+
+- **Clear title** describing the problem
+- **Minimal reproducible example**
+- **METAINFORMANT version**: `uv run metainformant --version`
+- **Python version**: `python --version`
+- **Operating system**
+- **Full error traceback**
+
+### Q: How do I request a new feature?
+
+**A:** Create a GitHub issue with:
+
+- **Feature description** and use case
+- **Proposed implementation** (if you have ideas)
+- **Alternative solutions** you've considered
+- **Impact assessment** on existing code
+
+## Compatibility
+
+### Q: Which Python versions are supported?
+
+**A:** METAINFORMANT requires Python 3.11+. Python 3.12+ is recommended for optimal performance.
+
+### Q: Does METAINFORMANT work on Windows/Mac/Linux?
+
+**A:** Yes, METAINFORMANT is cross-platform. Some external tools (bcftools, GATK, amalgkit) may have platform-specific installation requirements.
+
+### Q: How do I use METAINFORMANT in a Docker container?
+
+**A:** Use the provided Dockerfile or build your own:
+
+```dockerfile
+FROM python:3.12-slim
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    zlib1g-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install METAINFORMANT
+RUN pip install metainformant[scientific,ml]
+
+# Set working directory
+WORKDIR /workspace
+
+# Run
+CMD ["python"]
+```
+
+## Advanced Usage
+
+### Q: How do I create custom analysis pipelines?
+
+**A:** Use the workflow orchestration system:
+
+```python
+from metainformant.core.workflow import run_config_based_workflow
+
+workflow = {
+    "name": "custom_analysis",
+    "steps": [
+        {
+            "name": "load_data",
+            "function": "metainformant.core.io.load_json",
+            "params": {"path": "data/input.json"},
+            "output_key": "data"
+        },
+        {
+            "name": "analyze",
+            "function": "metainformant.information.analysis.batch_entropy_analysis",
+            "params": {"sequences": "{data.sequences}", "k": 2},
+            "output_key": "results"
+        },
+        {
+            "name": "save",
+            "function": "metainformant.core.io.dump_json",
+            "params": {"obj": "{results}", "path": "output/results.json"}
+        }
+    ]
+}
+
+results = run_config_based_workflow(workflow)
+```
+
+### Q: Can I use METAINFORMANT in Jupyter notebooks?
+
+**A:** Yes! METAINFORMANT works great in Jupyter:
+
+```python
+# Install in notebook
+!pip install metainformant[scientific]
+
+# Use in cells
+import metainformant as mi
+
+# Interactive analysis
+sequences = ["ATCG", "GCTA", "TTTT"]
+for seq in sequences:
+    gc = mi.dna.composition.gc_content(seq)
+    print(f"GC content of {seq}: {gc:.2f}")
+```
+
+### Q: How do I cite METAINFORMANT in my research?
+
+**A:** Cite METAINFORMANT as:
+
+```
+METAINFORMANT: A comprehensive toolkit for multi-omic biological data analysis.
+Available at: https://github.com/username/metainformant
+
+If you use specific modules, cite the underlying algorithms and the METAINFORMANT implementation.
+```
+
+---
+
+If your question isn't answered here, check the [documentation](DOCUMENTATION_GUIDE.md) or create an issue on GitHub.

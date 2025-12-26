@@ -1,0 +1,1098 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RNA-Seq File Path Storage: Complete Reference &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">RNA-Seq File Path Storage: Complete Reference</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/rna/FILE_PATH_STORAGE.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="rna-seq-file-path-storage-complete-reference">
+<h1>RNA-Seq File Path Storage: Complete Reference<a class="headerlink" href="#rna-seq-file-path-storage-complete-reference" title="Link to this heading"></a></h1>
+<p><strong>Date</strong>: November 18, 2025<br />
+<strong>Purpose</strong>: Comprehensive documentation of where and how ALL file paths are stored for Amalgkit RNA-seq transcriptomic meta-analysis workflows</p>
+<hr class="docutils" />
+<section id="table-of-contents">
+<h2>Table of Contents<a class="headerlink" href="#table-of-contents" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><a class="reference internal" href="#overview">Overview</a></p></li>
+<li><p><a class="reference internal" href="#configuration-files-primary-storage">Configuration Files (Primary Storage)</a></p></li>
+<li><p><a class="reference internal" href="#metadata-files-sample-level-paths">Metadata Files (Sample-Level Paths)</a></p></li>
+<li><p><a class="reference internal" href="#workflow-state-files">Workflow State Files</a></p></li>
+<li><p><a class="reference internal" href="#file-system-layout">File System Layout</a></p></li>
+<li><p><a class="reference internal" href="#path-resolution-logic">Path Resolution Logic</a></p></li>
+<li><p><a class="reference internal" href="#test-coverage">Test Coverage</a></p></li>
+<li><p><a class="reference internal" href="#examples">Examples</a></p></li>
+</ol>
+</section>
+<hr class="docutils" />
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<section id="file-path-categories">
+<h3>File Path Categories<a class="headerlink" href="#file-path-categories" title="Link to this heading"></a></h3>
+<p>Amalgkit RNA-seq workflows track paths for:</p>
+<ol class="arabic simple">
+<li><p><strong>Genome/Reference Files</strong>: transcriptome FASTA, kallisto/salmon indexes, GFF annotations</p></li>
+<li><p><strong>Sample Metadata</strong>: TSV files with BioProject/BioSample IDs, run accessions</p></li>
+<li><p><strong>Raw Data</strong>: SRA files, FASTQ files (downloaded from NCBI/ENA)</p></li>
+<li><p><strong>Quantification Results</strong>: abundance.tsv files per sample</p></li>
+<li><p><strong>Workflow Outputs</strong>: Merged matrices, normalized data, plots</p></li>
+<li><p><strong>Logs and Manifests</strong>: Execution logs, workflow state tracking</p></li>
+</ol>
+</section>
+<section id="storage-locations">
+<h3>Storage Locations<a class="headerlink" href="#storage-locations" title="Link to this heading"></a></h3>
+<p>File paths are stored in:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Location Type</p></th>
+<th class="head"><p>File Format</p></th>
+<th class="head"><p>Purpose</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>YAML Configuration</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">.yaml</span></code></p></td>
+<td><p>Primary source of all directory paths</p></td>
+</tr>
+<tr class="row-odd"><td><p>Metadata TSV</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">.tsv</span></code></p></td>
+<td><p>Sample-level accessions and URLs (generated by amalgkit)</p></td>
+</tr>
+<tr class="row-even"><td><p>Manifest JSONL</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">.jsonl</span></code></p></td>
+<td><p>Workflow execution history with parameters</p></td>
+</tr>
+<tr class="row-odd"><td><p>Progress State JSON</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">.json</span></code></p></td>
+<td><p>Real-time progress tracking per species</p></td>
+</tr>
+<tr class="row-even"><td><p>Python Dataclass</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">AmalgkitWorkflowConfig</span></code></p></td>
+<td><p>Runtime configuration object</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<hr class="docutils" />
+<section id="configuration-files-primary-storage">
+<h2>Configuration Files (Primary Storage)<a class="headerlink" href="#configuration-files-primary-storage" title="Link to this heading"></a></h2>
+<section id="location">
+<h3>Location<a class="headerlink" href="#location" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">config</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">/</span><span class="n">amalgkit_</span><span class="p">{</span><span class="n">species_name</span><span class="p">}</span><span class="o">.</span><span class="n">yaml</span>
+</pre></div>
+</div>
+<p><strong>Example</strong>: <code class="docutils literal notranslate"><span class="pre">config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml</span></code></p>
+</section>
+<section id="structure">
+<h3>Structure<a class="headerlink" href="#structure" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Base Directories (ALL paths relative to repository root)</span>
+<span class="nt">work_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/pogonomyrmex_barbatus/work</span>
+<span class="nt">log_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/pogonomyrmex_barbatus/logs</span>
+<span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">12</span>
+
+<span class="c1"># Species Configuration</span>
+<span class="nt">species_list</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pogonomyrmex_barbatus</span>
+
+<span class="c1"># Genome/Reference Configuration</span>
+<span class="nt">genome</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">accession</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GCF_000187915.1</span><span class="w">                    </span><span class="c1"># ← Genome assembly ID stored here</span>
+<span class="w">  </span><span class="nt">assembly_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Pbar_UMD_V03</span>
+<span class="w">  </span><span class="nt">annotation_release</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">101</span>
+<span class="w">  </span><span class="nt">dest_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/pogonomyrmex_barbatus/genome</span><span class="w">  </span><span class="c1"># ← Genome files directory</span>
+<span class="w">  </span>
+<span class="w">  </span><span class="c1"># FTP URL for genome files</span>
+<span class="w">  </span><span class="nt">ftp_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/187/915/GCF_000187915.1_Pbar_UMD_V03/</span>
+<span class="w">  </span>
+<span class="w">  </span><span class="c1"># Specific genome files (stored as filename references)</span>
+<span class="w">  </span><span class="nt">files</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">genomic_fasta</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GCF_000187915.1_Pbar_UMD_V03_genomic.fna.gz</span>
+<span class="w">    </span><span class="nt">transcriptome_fasta</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GCF_000187915.1_Pbar_UMD_V03_rna_from_genomic.fna.gz</span><span class="w">  </span><span class="c1"># ← Key file!</span>
+<span class="w">    </span><span class="nt">cds_fasta</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GCF_000187915.1_Pbar_UMD_V03_cds_from_genomic.fna.gz</span>
+<span class="w">    </span><span class="nt">protein_fasta</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GCF_000187915.1_Pbar_UMD_V03_protein.faa.gz</span>
+<span class="w">    </span><span class="nt">annotation_gff</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GCF_000187915.1_Pbar_UMD_V03_genomic.gff.gz</span>
+<span class="w">    </span><span class="nt">annotation_gtf</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GCF_000187915.1_Pbar_UMD_V03_genomic.gtf.gz</span>
+
+<span class="c1"># Per-Step Directories (amalgkit subcommands)</span>
+<span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/pogonomyrmex_barbatus/work</span><span class="w">  </span><span class="c1"># ← Metadata TSV written here</span>
+<span class="w">    </span><span class="nt">search_string</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;&quot;Pogonomyrmex</span><span class="nv"> </span><span class="s">barbatus&quot;[Organism]</span><span class="nv"> </span><span class="s">AND</span><span class="nv"> </span><span class="s">RNA-Seq[Strategy]&#39;</span>
+<span class="w">  </span>
+<span class="w">  </span><span class="nt">integrate</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">fastq_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/pogonomyrmex_barbatus/fastq</span><span class="w">  </span><span class="c1"># ← Local FASTQ directory</span>
+<span class="w">  </span>
+<span class="w">  </span><span class="nt">getfastq</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/pogonomyrmex_barbatus/fastq</span><span class="w">  </span><span class="c1"># ← Downloaded FASTQs</span>
+<span class="w">    </span><span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">24</span>
+<span class="w">    </span><span class="nt">aws</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">yes</span><span class="w">  </span><span class="c1"># Cloud provider for SRA downloads</span>
+<span class="w">  </span>
+<span class="w">  </span><span class="nt">quant</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/pogonomyrmex_barbatus/quant</span><span class="w">  </span><span class="c1"># ← Quantification results</span>
+<span class="w">    </span><span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">24</span>
+<span class="w">  </span>
+<span class="w">  </span><span class="nt">merge</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/pogonomyrmex_barbatus/merged/merged_abundance.tsv</span><span class="w">  </span><span class="c1"># ← Merged matrix</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/pogonomyrmex_barbatus/merged</span>
+<span class="w">  </span>
+<span class="w">  </span><span class="nt">cstmm</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/pogonomyrmex_barbatus/cstmm</span><span class="w">  </span><span class="c1"># ← Normalized data</span>
+<span class="w">  </span>
+<span class="w">  </span><span class="nt">curate</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/pogonomyrmex_barbatus/curate</span><span class="w">  </span><span class="c1"># ← Curated data</span>
+<span class="w">  </span>
+<span class="w">  </span><span class="nt">csca</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/pogonomyrmex_barbatus/csca</span><span class="w">  </span><span class="c1"># ← Correlation plots</span>
+</pre></div>
+</div>
+</section>
+<section id="path-types-in-configuration">
+<h3>Path Types in Configuration<a class="headerlink" href="#path-types-in-configuration" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Path Type</p></th>
+<th class="head"><p>Key Name</p></th>
+<th class="head"><p>Resolved To</p></th>
+<th class="head"><p>Example</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Work directory</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">work_dir</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Path</span></code> object</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">output/amalgkit/pbarbatus/work</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Log directory</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">log_dir</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Path</span></code> object</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">output/amalgkit/pbarbatus/logs</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Genome directory</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">genome.dest_dir</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Path</span></code> object</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">output/amalgkit/pbarbatus/genome</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>FASTQ directory</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">steps.getfastq.out_dir</span></code></p></td>
+<td><p>String (passed to amalgkit)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">output/amalgkit/pbarbatus/fastq</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Quant directory</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">steps.quant.out_dir</span></code></p></td>
+<td><p>String (passed to amalgkit)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">output/amalgkit/pbarbatus/quant</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Merge output file</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">steps.merge.out</span></code></p></td>
+<td><p>String (passed to amalgkit)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">output/.../merged/merged_abundance.tsv</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="loading-configuration">
+<h3>Loading Configuration<a class="headerlink" href="#loading-configuration" title="Link to this heading"></a></h3>
+<p><strong>File</strong>: <code class="docutils literal notranslate"><span class="pre">src/metainformant/rna/workflow.py</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_workflow_config</span>
+
+<span class="n">config</span> <span class="o">=</span> <span class="n">load_workflow_config</span><span class="p">(</span><span class="s2">&quot;config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml&quot;</span><span class="p">)</span>
+
+<span class="c1"># Config object structure (AmalgkitWorkflowConfig dataclass)</span>
+<span class="n">config</span><span class="o">.</span><span class="n">work_dir</span>          <span class="c1"># Path: output/amalgkit/pogonomyrmex_barbatus/work</span>
+<span class="n">config</span><span class="o">.</span><span class="n">log_dir</span>           <span class="c1"># Path: output/amalgkit/pogonomyrmex_barbatus/logs</span>
+<span class="n">config</span><span class="o">.</span><span class="n">genome</span>            <span class="c1"># Dict with genome configuration</span>
+<span class="n">config</span><span class="o">.</span><span class="n">genome</span><span class="p">[</span><span class="s2">&quot;dest_dir&quot;</span><span class="p">]</span>  <span class="c1"># Path to genome files</span>
+<span class="n">config</span><span class="o">.</span><span class="n">per_step</span>          <span class="c1"># Dict with per-step parameters</span>
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="metadata-files-sample-level-paths">
+<h2>Metadata Files (Sample-Level Paths)<a class="headerlink" href="#metadata-files-sample-level-paths" title="Link to this heading"></a></h2>
+<section id="generated-by-amalgkit-metadata-step">
+<h3>Generated by Amalgkit Metadata Step<a class="headerlink" href="#generated-by-amalgkit-metadata-step" title="Link to this heading"></a></h3>
+<p><strong>Location</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="n">work_dir</span><span class="p">}</span><span class="o">/</span><span class="n">metadata</span><span class="o">/</span><span class="n">metadata</span><span class="o">.</span><span class="n">tsv</span>
+</pre></div>
+</div>
+<p><strong>Example</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">output</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">/</span><span class="n">pogonomyrmex_barbatus</span><span class="o">/</span><span class="n">work</span><span class="o">/</span><span class="n">metadata</span><span class="o">/</span><span class="n">metadata</span><span class="o">.</span><span class="n">tsv</span>
+</pre></div>
+</div>
+</section>
+<section id="id1">
+<h3>Structure<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<p>TSV file with columns including:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Column</p></th>
+<th class="head"><p>Description</p></th>
+<th class="head"><p>Example Value</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">run</span></code></p></td>
+<td><p>SRA run accession</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SRR1234567</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">bioproject</span></code></p></td>
+<td><p>BioProject ID</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">PRJNA123456</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">biosample</span></code></p></td>
+<td><p>BioSample ID</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SAMN12345678</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">scientific_name</span></code></p></td>
+<td><p>Species name</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Pogonomyrmex</span> <span class="pre">barbatus</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">experiment</span></code></p></td>
+<td><p>SRA experiment ID</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">SRX123456</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">platform</span></code></p></td>
+<td><p>Sequencing platform</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ILLUMINA</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">model</span></code></p></td>
+<td><p>Sequencer model</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">Illumina</span> <span class="pre">HiSeq</span> <span class="pre">2000</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">library_layout</span></code></p></td>
+<td><p>Single/Paired</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">PAIRED</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">library_strategy</span></code></p></td>
+<td><p>Sequencing strategy</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">RNA-Seq</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tissue</span></code></p></td>
+<td><p>Tissue type (if available)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">whole</span> <span class="pre">body</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ena_url</span></code></p></td>
+<td><p>ENA download URL</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ftp://ftp.sra.ebi.ac.uk/...</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">sra_url</span></code></p></td>
+<td><p>NCBI SRA URL</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">https://sra-download.ncbi.nlm.nih.gov/...</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="path-storage-in-metadata">
+<h3>Path Storage in Metadata<a class="headerlink" href="#path-storage-in-metadata" title="Link to this heading"></a></h3>
+<p><strong>Key Points</strong>:</p>
+<ol class="arabic simple">
+<li><p><strong>Metadata TSV does NOT store local file paths</strong> - only remote URLs</p></li>
+<li><p><strong>Local FASTQ paths</strong> are derived from run accessions: <code class="docutils literal notranslate"><span class="pre">{fastq_dir}/getfastq/{run}/{run}_1.fastq.gz</span></code></p></li>
+<li><p><strong>Local quant paths</strong> are derived from run accessions: <code class="docutils literal notranslate"><span class="pre">{quant_dir}/{run}/abundance.tsv</span></code></p></li>
+</ol>
+</section>
+<section id="reading-metadata">
+<h3>Reading Metadata<a class="headerlink" href="#reading-metadata" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core.io</span><span class="w"> </span><span class="kn">import</span> <span class="n">read_delimited</span>
+
+<span class="n">metadata_rows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">read_delimited</span><span class="p">(</span>
+    <span class="s2">&quot;output/amalgkit/pogonomyrmex_barbatus/work/metadata/metadata.tsv&quot;</span><span class="p">,</span>
+    <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span>
+<span class="p">))</span>
+
+<span class="c1"># Each row is a dict:</span>
+<span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">metadata_rows</span><span class="p">:</span>
+    <span class="n">run_id</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;run&quot;</span><span class="p">]</span>                    <span class="c1"># SRR1234567</span>
+    <span class="n">ena_url</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;ena_url&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>      <span class="c1"># FTP URL for download</span>
+    <span class="n">biosample</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;biosample&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>  <span class="c1"># SAMN12345678</span>
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="workflow-state-files">
+<h2>Workflow State Files<a class="headerlink" href="#workflow-state-files" title="Link to this heading"></a></h2>
+<section id="manifest-file-execution-history">
+<h3>1. Manifest File (Execution History)<a class="headerlink" href="#manifest-file-execution-history" title="Link to this heading"></a></h3>
+<p><strong>Location</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="n">work_dir</span><span class="p">}</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">jsonl</span>
+</pre></div>
+</div>
+<p><strong>Example</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">output</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">/</span><span class="n">pogonomyrmex_barbatus</span><span class="o">/</span><span class="n">work</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">jsonl</span>
+</pre></div>
+</div>
+<p><strong>Format</strong>: JSONL (one JSON object per line)</p>
+<p><strong>Content</strong>: Each line records one step execution:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;step&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;getfastq&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;return_code&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;started_utc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-11-15T10:30:00Z&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;finished_utc&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-11-15T12:45:00Z&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;duration_seconds&quot;</span><span class="p">:</span><span class="w"> </span><span class="mf">8100.5</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;work_dir&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;output/amalgkit/pogonomyrmex_barbatus/work&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;log_dir&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;output/amalgkit/pogonomyrmex_barbatus/logs&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;params&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;out_dir&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;output/amalgkit/pogonomyrmex_barbatus/fastq&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;threads&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">24</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;aws&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;yes&quot;</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;command&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;amalgkit getfastq --out_dir output/... --threads 24 --aws yes&quot;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Paths Stored</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">work_dir</span></code>: Workflow working directory</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">log_dir</span></code>: Log file directory</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">params.out_dir</span></code>: Step-specific output directory</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">command</span></code>: Full amalgkit command with all paths</p></li>
+</ul>
+</section>
+<section id="progress-state-file-real-time-tracking">
+<h3>2. Progress State File (Real-Time Tracking)<a class="headerlink" href="#progress-state-file-real-time-tracking" title="Link to this heading"></a></h3>
+<p><strong>Location</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="p">{</span><span class="n">work_dir</span><span class="p">}</span><span class="o">/</span><span class="n">progress_state</span><span class="o">.</span><span class="n">json</span>
+</pre></div>
+</div>
+<p><strong>Example</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">output</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">/</span><span class="n">pogonomyrmex_barbatus</span><span class="o">/</span><span class="n">work</span><span class="o">/</span><span class="n">progress_state</span><span class="o">.</span><span class="n">json</span>
+</pre></div>
+</div>
+<p><strong>Format</strong>: JSON</p>
+<p><strong>Content</strong>: Per-sample progress tracking:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;species&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Pogonomyrmex_barbatus&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;work_dir&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;output/amalgkit/pogonomyrmex_barbatus/work&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;fastq_dir&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;output/amalgkit/pogonomyrmex_barbatus/fastq&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;quant_dir&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;output/amalgkit/pogonomyrmex_barbatus/quant&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;metadata_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;output/amalgkit/pogonomyrmex_barbatus/work/metadata/metadata.tsv&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;last_updated&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-11-15T12:45:00Z&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;total_samples&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">83</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;samples&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;SRR1234567&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quantified&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;fastq_exists&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;quant_exists&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;abundance_file&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;output/amalgkit/pogonomyrmex_barbatus/quant/SRR1234567/abundance.tsv&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;last_modified&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-11-15T11:20:00Z&quot;</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;SRR1234568&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;downloaded&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;fastq_exists&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;quant_exists&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;fastq_files&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">        </span><span class="s2">&quot;output/amalgkit/pogonomyrmex_barbatus/fastq/getfastq/SRR1234568/SRR1234568_1.fastq.gz&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="s2">&quot;output/amalgkit/pogonomyrmex_barbatus/fastq/getfastq/SRR1234568/SRR1234568_2.fastq.gz&quot;</span>
+<span class="w">      </span><span class="p">],</span>
+<span class="w">      </span><span class="nt">&quot;last_modified&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-11-15T12:30:00Z&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Paths Stored</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">work_dir</span></code>: Workflow directory</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fastq_dir</span></code>: FASTQ directory</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">quant_dir</span></code>: Quantification directory</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">metadata_path</span></code>: Metadata TSV path</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">samples[].abundance_file</span></code>: Per-sample abundance file path</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">samples[].fastq_files</span></code>: Per-sample FASTQ file paths</p></li>
+</ul>
+<p><strong>File</strong>: <code class="docutils literal notranslate"><span class="pre">src/metainformant/rna/progress_tracker.py</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna.progress_tracker</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProgressTracker</span>
+
+<span class="n">tracker</span> <span class="o">=</span> <span class="n">ProgressTracker</span><span class="p">(</span>
+    <span class="n">species</span><span class="o">=</span><span class="s2">&quot;Pogonomyrmex_barbatus&quot;</span><span class="p">,</span>
+    <span class="n">work_dir</span><span class="o">=</span><span class="n">Path</span><span class="p">(</span><span class="s2">&quot;output/amalgkit/pogonomyrmex_barbatus/work&quot;</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="c1"># Access stored paths</span>
+<span class="n">state</span> <span class="o">=</span> <span class="n">tracker</span><span class="o">.</span><span class="n">get_state</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;work_dir&quot;</span><span class="p">])</span>     <span class="c1"># output/amalgkit/pogonomyrmex_barbatus/work</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;fastq_dir&quot;</span><span class="p">])</span>    <span class="c1"># output/amalgkit/pogonomyrmex_barbatus/fastq</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">state</span><span class="p">[</span><span class="s2">&quot;quant_dir&quot;</span><span class="p">])</span>    <span class="c1"># output/amalgkit/pogonomyrmex_barbatus/quant</span>
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="file-system-layout">
+<h2>File System Layout<a class="headerlink" href="#file-system-layout" title="Link to this heading"></a></h2>
+<section id="complete-directory-structure">
+<h3>Complete Directory Structure<a class="headerlink" href="#complete-directory-structure" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>output/amalgkit/{species}/
+├── genome/                                      ← Genome/reference files
+│   ├── ncbi_dataset_api_extracted/
+│   │   └── ncbi_dataset/
+│   │       └── data/
+│   │           └── {accession}/
+│   │               ├── genomic.fna.gz          ← Genomic FASTA
+│   │               ├── rna.fna.gz              ← Transcriptome FASTA
+│   │               ├── cds.fna.gz              ← CDS FASTA
+│   │               ├── protein.faa.gz          ← Protein FASTA
+│   │               ├── genomic.gff.gz          ← GFF annotation
+│   │               └── genomic.gtf.gz          ← GTF annotation
+│   └── download_record.json                    ← Download metadata
+├── work/                                        ← Working directory
+│   ├── fasta/
+│   │   └── {Species_Name}_rna.fasta            ← Prepared transcriptome
+│   ├── index/
+│   │   └── {Species_Name}_transcripts.idx      ← Kallisto index
+│   ├── metadata/
+│   │   ├── metadata.tsv                        ← Sample metadata (PRIMARY)
+│   │   ├── metadata_selected.tsv               ← Filtered samples
+│   │   └── metadata_integrated.tsv             ← With local FASTQs
+│   ├── config_base/
+│   │   └── {species}_config.tsv                ← Amalgkit config files
+│   ├── amalgkit.manifest.jsonl                 ← Execution history
+│   └── progress_state.json                     ← Progress tracking
+├── fastq/                                       ← Raw FASTQ files
+│   └── getfastq/
+│       ├── SRR1234567/
+│       │   ├── SRR1234567_1.fastq.gz           ← Forward reads
+│       │   └── SRR1234567_2.fastq.gz           ← Reverse reads
+│       └── SRR1234568/
+│           ├── SRR1234568_1.fastq.gz
+│           └── SRR1234568_2.fastq.gz
+├── quant/                                       ← Quantification results
+│   ├── SRR1234567/
+│   │   ├── abundance.tsv                       ← Kallisto/Salmon output
+│   │   ├── abundance.h5                        ← Binary abundance
+│   │   └── run_info.json                       ← Run metadata
+│   └── SRR1234568/
+│       └── abundance.tsv
+├── merged/                                      ← Merged expression matrix
+│   ├── merged_abundance.tsv                    ← All samples combined
+│   └── merged_tpm.tsv                          ← TPM values
+├── cstmm/                                       ← Cross-species TMM normalized
+│   └── cstmm_normalized.tsv
+├── curate/                                      ← Curated data
+│   └── curated_expression.tsv
+├── csca/                                        ← Cross-species correlation
+│   ├── correlation_matrix.tsv
+│   └── correlation_plots.pdf
+└── logs/                                        ← Execution logs
+    ├── 20251115T103000Z.metadata.stdout.log
+    ├── 20251115T103000Z.metadata.stderr.log
+    ├── 20251115T104500Z.getfastq.stdout.log
+    └── 20251115T104500Z.getfastq.stderr.log
+</pre></div>
+</div>
+</section>
+<section id="path-construction-rules">
+<h3>Path Construction Rules<a class="headerlink" href="#path-construction-rules" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>File Type</p></th>
+<th class="head"><p>Path Template</p></th>
+<th class="head"><p>Example</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Metadata TSV</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{work_dir}/metadata/metadata.tsv</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">output/.../work/metadata/metadata.tsv</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Transcriptome FASTA</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{work_dir}/fasta/{Species_Name}_rna.fasta</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">output/.../work/fasta/Pogonomyrmex_barbatus_rna.fasta</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Kallisto Index</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{work_dir}/index/{Species_Name}_transcripts.idx</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">output/.../work/index/Pogonomyrmex_barbatus_transcripts.idx</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Sample FASTQ (forward)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{fastq_dir}/getfastq/{run}/{run}_1.fastq.gz</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">output/.../fastq/getfastq/SRR1234567/SRR1234567_1.fastq.gz</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Sample FASTQ (reverse)</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{fastq_dir}/getfastq/{run}/{run}_2.fastq.gz</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">output/.../fastq/getfastq/SRR1234567/SRR1234567_2.fastq.gz</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Sample Abundance</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{quant_dir}/{run}/abundance.tsv</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">output/.../quant/SRR1234567/abundance.tsv</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Merged Matrix</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{merge_out_dir}/merged_abundance.tsv</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">output/.../merged/merged_abundance.tsv</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p>Workflow Manifest</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{work_dir}/amalgkit.manifest.jsonl</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">output/.../work/amalgkit.manifest.jsonl</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p>Progress State</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{work_dir}/progress_state.json</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">output/.../work/progress_state.json</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<hr class="docutils" />
+<section id="path-resolution-logic">
+<h2>Path Resolution Logic<a class="headerlink" href="#path-resolution-logic" title="Link to this heading"></a></h2>
+<section id="configuration-loading">
+<h3>Configuration Loading<a class="headerlink" href="#configuration-loading" title="Link to this heading"></a></h3>
+<p><strong>File</strong>: <code class="docutils literal notranslate"><span class="pre">src/metainformant/rna/workflow.py</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">load_workflow_config</span><span class="p">(</span><span class="n">config_path</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AmalgkitWorkflowConfig</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Load and validate workflow configuration from YAML file.</span>
+<span class="sd">    </span>
+<span class="sd">    Path Resolution:</span>
+<span class="sd">    1. Relative paths in YAML are resolved relative to repository root</span>
+<span class="sd">    2. work_dir, log_dir, genome.dest_dir are converted to Path objects</span>
+<span class="sd">    3. Per-step out_dir values remain as strings (passed to amalgkit CLI)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Load YAML</span>
+    <span class="n">raw_config</span> <span class="o">=</span> <span class="n">load_mapping_from_file</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span>
+    
+    <span class="c1"># Resolve work_dir relative to repo root</span>
+    <span class="n">work_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">raw_config</span><span class="p">[</span><span class="s2">&quot;work_dir&quot;</span><span class="p">])</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">work_dir</span><span class="o">.</span><span class="n">is_absolute</span><span class="p">():</span>
+        <span class="n">work_dir</span> <span class="o">=</span> <span class="n">REPO_ROOT</span> <span class="o">/</span> <span class="n">work_dir</span>
+    
+    <span class="c1"># Resolve log_dir</span>
+    <span class="n">log_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">raw_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;log_dir&quot;</span><span class="p">,</span> <span class="n">work_dir</span> <span class="o">/</span> <span class="s2">&quot;logs&quot;</span><span class="p">))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">log_dir</span><span class="o">.</span><span class="n">is_absolute</span><span class="p">():</span>
+        <span class="n">log_dir</span> <span class="o">=</span> <span class="n">REPO_ROOT</span> <span class="o">/</span> <span class="n">log_dir</span>
+    
+    <span class="c1"># Resolve genome dest_dir</span>
+    <span class="n">genome_config</span> <span class="o">=</span> <span class="n">raw_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;genome&quot;</span><span class="p">,</span> <span class="p">{})</span>
+    <span class="n">dest_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">genome_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;dest_dir&quot;</span><span class="p">,</span> <span class="n">work_dir</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;genome&quot;</span><span class="p">))</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">dest_dir</span><span class="o">.</span><span class="n">is_absolute</span><span class="p">():</span>
+        <span class="n">dest_dir</span> <span class="o">=</span> <span class="n">REPO_ROOT</span> <span class="o">/</span> <span class="n">dest_dir</span>
+    <span class="n">genome_config</span><span class="p">[</span><span class="s2">&quot;dest_dir&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dest_dir</span>
+    
+    <span class="k">return</span> <span class="n">AmalgkitWorkflowConfig</span><span class="p">(</span>
+        <span class="n">work_dir</span><span class="o">=</span><span class="n">work_dir</span><span class="p">,</span>
+        <span class="n">log_dir</span><span class="o">=</span><span class="n">log_dir</span><span class="p">,</span>
+        <span class="n">genome</span><span class="o">=</span><span class="n">genome_config</span><span class="p">,</span>
+        <span class="n">per_step</span><span class="o">=</span><span class="n">raw_config</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;steps&quot;</span><span class="p">,</span> <span class="p">{}),</span>
+        <span class="c1"># ...</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="derived-path-functions">
+<h3>Derived Path Functions<a class="headerlink" href="#derived-path-functions" title="Link to this heading"></a></h3>
+<p><strong>File</strong>: <code class="docutils literal notranslate"><span class="pre">src/metainformant/rna/genome_prep.py</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">get_expected_index_path</span><span class="p">(</span><span class="n">work_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">species_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get expected kallisto index path for a species.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        work_dir: Work directory from config</span>
+<span class="sd">        species_name: Species name with underscores (e.g., &quot;Pogonomyrmex_barbatus&quot;)</span>
+<span class="sd">    </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        Expected index path: {work_dir}/index/{species_name}_transcripts.idx</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">index_dir</span> <span class="o">=</span> <span class="n">work_dir</span> <span class="o">/</span> <span class="s2">&quot;index&quot;</span>
+    <span class="n">index_filename</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">species_name</span><span class="si">}</span><span class="s2">_transcripts.idx&quot;</span>
+    <span class="k">return</span> <span class="n">index_dir</span> <span class="o">/</span> <span class="n">index_filename</span>
+</pre></div>
+</div>
+<p><strong>File</strong>: <code class="docutils literal notranslate"><span class="pre">src/metainformant/rna/steps/quant.py</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">quantify_sample</span><span class="p">(</span>
+    <span class="n">sample_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">metadata_rows</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]],</span>
+    <span class="n">quant_params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="c1"># ...</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Quantify a single sample.</span>
+<span class="sd">    </span>
+<span class="sd">    Path Construction:</span>
+<span class="sd">    - quant_dir from quant_params[&quot;out_dir&quot;]</span>
+<span class="sd">    - abundance_file = {quant_dir}/{sample_id}/abundance.tsv</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">quant_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">quant_params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;out_dir&quot;</span><span class="p">,</span> <span class="s2">&quot;.&quot;</span><span class="p">))</span>
+    <span class="n">abundance_file</span> <span class="o">=</span> <span class="n">quant_dir</span> <span class="o">/</span> <span class="n">sample_id</span> <span class="o">/</span> <span class="s2">&quot;abundance.tsv&quot;</span>
+    
+    <span class="k">if</span> <span class="n">abundance_file</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="k">return</span> <span class="kc">True</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Sample </span><span class="si">{</span><span class="n">sample_id</span><span class="si">}</span><span class="s2"> already quantified&quot;</span><span class="p">,</span> <span class="n">abundance_file</span>
+    <span class="c1"># ...</span>
+</pre></div>
+</div>
+</section>
+<section id="default-path-construction">
+<h3>Default Path Construction<a class="headerlink" href="#default-path-construction" title="Link to this heading"></a></h3>
+<p><strong>File</strong>: <code class="docutils literal notranslate"><span class="pre">src/metainformant/rna/workflow.py</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">plan_workflow_steps</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">AmalgkitWorkflowConfig</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Plan workflow steps with default paths.</span>
+<span class="sd">    </span>
+<span class="sd">    Default Paths (if not in config):</span>
+<span class="sd">    - metadata.out_dir = work_dir</span>
+<span class="sd">    - integrate.out_dir = work_dir</span>
+<span class="sd">    - integrate.fastq_dir = work_dir / &quot;fastq&quot;</span>
+<span class="sd">    - config.out_dir = work_dir</span>
+<span class="sd">    - select.out_dir = work_dir</span>
+<span class="sd">    - select.config_dir = work_dir / &quot;config_base&quot;</span>
+<span class="sd">    - getfastq.out_dir = work_dir / &quot;fastq&quot;</span>
+<span class="sd">    - quant.out_dir = work_dir / &quot;quant&quot;</span>
+<span class="sd">    - merge.out_dir = work_dir.parent / &quot;merged&quot;</span>
+<span class="sd">    - cstmm.out_dir = work_dir / &quot;cstmm&quot;</span>
+<span class="sd">    - curate.out_dir = work_dir / &quot;curate&quot;</span>
+<span class="sd">    - csca.out_dir = work_dir / &quot;csca&quot;</span>
+<span class="sd">    - sanity.out_dir = work_dir</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">defaults</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;integrate&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">&quot;out_dir&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">work_dir</span><span class="p">),</span>
+            <span class="s2">&quot;fastq_dir&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">work_dir</span> <span class="o">/</span> <span class="s2">&quot;fastq&quot;</span><span class="p">)</span>
+        <span class="p">},</span>
+        <span class="s2">&quot;getfastq&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;out_dir&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">work_dir</span> <span class="o">/</span> <span class="s2">&quot;fastq&quot;</span><span class="p">)},</span>
+        <span class="s2">&quot;quant&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;out_dir&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">work_dir</span> <span class="o">/</span> <span class="s2">&quot;quant&quot;</span><span class="p">)},</span>
+        <span class="s2">&quot;merge&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;out_dir&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">work_dir</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s2">&quot;merged&quot;</span><span class="p">)},</span>
+        <span class="c1"># ...</span>
+    <span class="p">}</span>
+    <span class="c1"># Merge with config.per_step</span>
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="test-coverage">
+<h2>Test Coverage<a class="headerlink" href="#test-coverage" title="Link to this heading"></a></h2>
+<section id="path-storage-tests">
+<h3>Path Storage Tests<a class="headerlink" href="#path-storage-tests" title="Link to this heading"></a></h3>
+<p><strong>File</strong>: <code class="docutils literal notranslate"><span class="pre">tests/test_rna_workflow_config.py</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">test_load_workflow_config_resolves_paths</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test that load_workflow_config resolves relative paths.&quot;&quot;&quot;</span>
+    <span class="n">config_file</span> <span class="o">=</span> <span class="n">tmp_path</span> <span class="o">/</span> <span class="s2">&quot;config.yaml&quot;</span>
+    <span class="n">config_file</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">&quot;&quot;&quot;</span>
+<span class="s2">work_dir: output/test/work</span>
+<span class="s2">log_dir: output/test/logs</span>
+<span class="s2">threads: 4</span>
+<span class="s2">species_list:</span>
+<span class="s2">  - Test_species</span>
+<span class="s2">genome:</span>
+<span class="s2">  accession: GCF_000000000.1</span>
+<span class="s2">  dest_dir: output/test/genome</span>
+<span class="s2">&quot;&quot;&quot;</span><span class="p">)</span>
+    
+    <span class="n">config</span> <span class="o">=</span> <span class="n">load_workflow_config</span><span class="p">(</span><span class="n">config_file</span><span class="p">)</span>
+    
+    <span class="c1"># Verify paths are resolved</span>
+    <span class="k">assert</span> <span class="n">config</span><span class="o">.</span><span class="n">work_dir</span><span class="o">.</span><span class="n">is_absolute</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="s2">&quot;output/test/work&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">work_dir</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">config</span><span class="o">.</span><span class="n">log_dir</span><span class="o">.</span><span class="n">is_absolute</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="n">config</span><span class="o">.</span><span class="n">genome</span><span class="p">[</span><span class="s2">&quot;dest_dir&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">is_absolute</span><span class="p">()</span>
+</pre></div>
+</div>
+<p><strong>File</strong>: <code class="docutils literal notranslate"><span class="pre">tests/test_rna_genome_prep.py</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">test_get_expected_index_path</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test kallisto index path construction.&quot;&quot;&quot;</span>
+    <span class="n">work_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;/path/to/work&quot;</span><span class="p">)</span>
+    <span class="n">species_name</span> <span class="o">=</span> <span class="s2">&quot;Pogonomyrmex_barbatus&quot;</span>
+    
+    <span class="n">index_path</span> <span class="o">=</span> <span class="n">get_expected_index_path</span><span class="p">(</span><span class="n">work_dir</span><span class="p">,</span> <span class="n">species_name</span><span class="p">)</span>
+    
+    <span class="k">assert</span> <span class="n">index_path</span> <span class="o">==</span> <span class="n">work_dir</span> <span class="o">/</span> <span class="s2">&quot;index&quot;</span> <span class="o">/</span> <span class="s2">&quot;Pogonomyrmex_barbatus_transcripts.idx&quot;</span>
+</pre></div>
+</div>
+<p><strong>File</strong>: <code class="docutils literal notranslate"><span class="pre">tests/test_rna_cleanup.py</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">test_find_partial_downloads</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test finding partial downloads by checking fastq_dir vs quant_dir.&quot;&quot;&quot;</span>
+    <span class="n">fastq_dir</span> <span class="o">=</span> <span class="n">tmp_path</span> <span class="o">/</span> <span class="s2">&quot;fastq&quot;</span>
+    <span class="n">quant_dir</span> <span class="o">=</span> <span class="n">tmp_path</span> <span class="o">/</span> <span class="s2">&quot;quant&quot;</span>
+    <span class="n">fastq_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">quant_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    
+    <span class="c1"># Create sample with FASTQ but no quant</span>
+    <span class="n">sample_dir</span> <span class="o">=</span> <span class="n">fastq_dir</span> <span class="o">/</span> <span class="s2">&quot;getfastq&quot;</span> <span class="o">/</span> <span class="s2">&quot;SRR123&quot;</span>
+    <span class="n">sample_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="p">(</span><span class="n">sample_dir</span> <span class="o">/</span> <span class="s2">&quot;SRR123_1.fastq.gz&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">)</span>
+    
+    <span class="n">partial</span> <span class="o">=</span> <span class="n">cleanup</span><span class="o">.</span><span class="n">find_partial_downloads</span><span class="p">(</span><span class="n">fastq_dir</span><span class="p">,</span> <span class="n">quant_dir</span><span class="p">)</span>
+    
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">partial</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+    <span class="k">assert</span> <span class="n">partial</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;SRR123&quot;</span>
+    <span class="k">assert</span> <span class="n">partial</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">sample_dir</span>  <span class="c1"># Path stored in result</span>
+</pre></div>
+</div>
+<p><strong>File</strong>: <code class="docutils literal notranslate"><span class="pre">tests/test_rna_monitoring.py</span></code></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">test_count_quantified_samples</span><span class="p">(</span><span class="n">tmp_path</span><span class="p">:</span> <span class="n">Path</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Test counting quantified samples by checking quant_dir.&quot;&quot;&quot;</span>
+    <span class="n">work_dir_abs</span> <span class="o">=</span> <span class="p">(</span><span class="n">tmp_path</span> <span class="o">/</span> <span class="s2">&quot;work&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span>
+    <span class="n">config_data</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;work_dir&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">work_dir_abs</span><span class="p">),</span> <span class="s2">&quot;threads&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">}</span>
+    <span class="n">config_file</span> <span class="o">=</span> <span class="n">tmp_path</span> <span class="o">/</span> <span class="s2">&quot;config.yaml&quot;</span>
+    <span class="n">dump_json</span><span class="p">(</span><span class="n">config_data</span><span class="p">,</span> <span class="n">config_file</span><span class="p">)</span>
+    
+    <span class="c1"># Create metadata</span>
+    <span class="n">metadata_dir</span> <span class="o">=</span> <span class="n">work_dir_abs</span> <span class="o">/</span> <span class="s2">&quot;metadata&quot;</span>
+    <span class="n">metadata_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">metadata_file</span> <span class="o">=</span> <span class="n">metadata_dir</span> <span class="o">/</span> <span class="s2">&quot;metadata.tsv&quot;</span>
+    <span class="n">write_delimited</span><span class="p">(</span>
+        <span class="p">[{</span><span class="s2">&quot;run&quot;</span><span class="p">:</span> <span class="s2">&quot;SRR123&quot;</span><span class="p">},</span> <span class="p">{</span><span class="s2">&quot;run&quot;</span><span class="p">:</span> <span class="s2">&quot;SRR456&quot;</span><span class="p">}],</span>
+        <span class="n">metadata_file</span><span class="p">,</span>
+        <span class="n">delimiter</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span>
+    <span class="p">)</span>
+    
+    <span class="c1"># Create quantified samples</span>
+    <span class="n">quant_dir</span> <span class="o">=</span> <span class="n">work_dir_abs</span> <span class="o">/</span> <span class="s2">&quot;quant&quot;</span>
+    <span class="n">quant_dir</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="p">(</span><span class="n">quant_dir</span> <span class="o">/</span> <span class="s2">&quot;SRR123&quot;</span> <span class="o">/</span> <span class="s2">&quot;abundance.tsv&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">)</span>
+    <span class="p">(</span><span class="n">quant_dir</span> <span class="o">/</span> <span class="s2">&quot;SRR456&quot;</span> <span class="o">/</span> <span class="s2">&quot;abundance.tsv&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write_text</span><span class="p">(</span><span class="s2">&quot;test&quot;</span><span class="p">)</span>
+    
+    <span class="n">quantified</span><span class="p">,</span> <span class="n">total</span> <span class="o">=</span> <span class="n">monitoring</span><span class="o">.</span><span class="n">count_quantified_samples</span><span class="p">(</span><span class="n">config_file</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">quantified</span> <span class="o">==</span> <span class="mi">2</span>  <span class="c1"># Both paths exist</span>
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h2>
+<section id="example-1-complete-path-flow-for-one-sample">
+<h3>Example 1: Complete Path Flow for One Sample<a class="headerlink" href="#example-1-complete-path-flow-for-one-sample" title="Link to this heading"></a></h3>
+<p><strong>Configuration</strong>: <code class="docutils literal notranslate"><span class="pre">config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml</span></code></p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">work_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/pogonomyrmex_barbatus/work</span>
+<span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">getfastq</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/pogonomyrmex_barbatus/fastq</span>
+<span class="w">  </span><span class="nt">quant</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/pogonomyrmex_barbatus/quant</span>
+</pre></div>
+</div>
+<p><strong>Step 1: Metadata Retrieval</strong></p>
+<p>Amalgkit metadata step generates:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">output</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">/</span><span class="n">pogonomyrmex_barbatus</span><span class="o">/</span><span class="n">work</span><span class="o">/</span><span class="n">metadata</span><span class="o">/</span><span class="n">metadata</span><span class="o">.</span><span class="n">tsv</span>
+</pre></div>
+</div>
+<p>Content includes:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">run</span>         <span class="n">bioproject</span>    <span class="n">biosample</span>       <span class="n">ena_url</span>
+<span class="n">SRR1234567</span>  <span class="n">PRJNA123456</span>   <span class="n">SAMN12345678</span>    <span class="n">ftp</span><span class="p">:</span><span class="o">//</span><span class="n">ftp</span><span class="o">.</span><span class="n">sra</span><span class="o">.</span><span class="n">ebi</span><span class="o">.</span><span class="n">ac</span><span class="o">.</span><span class="n">uk</span><span class="o">/...</span>
+</pre></div>
+</div>
+<p><strong>Step 2: FASTQ Download</strong></p>
+<p>From metadata row with <code class="docutils literal notranslate"><span class="pre">run=SRR1234567</span></code>, download to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">output</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">/</span><span class="n">pogonomyrmex_barbatus</span><span class="o">/</span><span class="n">fastq</span><span class="o">/</span><span class="n">getfastq</span><span class="o">/</span><span class="n">SRR1234567</span><span class="o">/</span><span class="n">SRR1234567_1</span><span class="o">.</span><span class="n">fastq</span><span class="o">.</span><span class="n">gz</span>
+<span class="n">output</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">/</span><span class="n">pogonomyrmex_barbatus</span><span class="o">/</span><span class="n">fastq</span><span class="o">/</span><span class="n">getfastq</span><span class="o">/</span><span class="n">SRR1234567</span><span class="o">/</span><span class="n">SRR1234567_2</span><span class="o">.</span><span class="n">fastq</span><span class="o">.</span><span class="n">gz</span>
+</pre></div>
+</div>
+<p><strong>Step 3: Quantification</strong></p>
+<p>Read FASTQs from above, write abundance to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">output</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">/</span><span class="n">pogonomyrmex_barbatus</span><span class="o">/</span><span class="n">quant</span><span class="o">/</span><span class="n">SRR1234567</span><span class="o">/</span><span class="n">abundance</span><span class="o">.</span><span class="n">tsv</span>
+</pre></div>
+</div>
+<p><strong>Step 4: Progress Tracking</strong></p>
+<p>Update progress state at:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">output</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">/</span><span class="n">pogonomyrmex_barbatus</span><span class="o">/</span><span class="n">work</span><span class="o">/</span><span class="n">progress_state</span><span class="o">.</span><span class="n">json</span>
+</pre></div>
+</div>
+<p>With content:</p>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;samples&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;SRR1234567&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quantified&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;fastq_exists&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;quant_exists&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;abundance_file&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;output/amalgkit/pogonomyrmex_barbatus/quant/SRR1234567/abundance.tsv&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="example-2-genome-preparation-path-flow">
+<h3>Example 2: Genome Preparation Path Flow<a class="headerlink" href="#example-2-genome-preparation-path-flow" title="Link to this heading"></a></h3>
+<p><strong>Configuration</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">work_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/pogonomyrmex_barbatus/work</span>
+<span class="nt">genome</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">accession</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GCF_000187915.1</span>
+<span class="w">  </span><span class="nt">dest_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/pogonomyrmex_barbatus/genome</span>
+<span class="w">  </span><span class="nt">files</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">transcriptome_fasta</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GCF_000187915.1_Pbar_UMD_V03_rna_from_genomic.fna.gz</span>
+</pre></div>
+</div>
+<p><strong>Step 1: Genome Download</strong></p>
+<p>NCBI datasets downloads to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>output/amalgkit/pogonomyrmex_barbatus/genome/ncbi_dataset_api_extracted/ncbi_dataset/data/GCF_000187915.1/
+├── genomic.fna.gz
+├── rna.fna.gz                    ← Transcriptome FASTA
+├── cds.fna.gz
+├── protein.faa.gz
+└── genomic.gff.gz
+</pre></div>
+</div>
+<p><strong>Step 2: Transcriptome Preparation</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">prepare_transcriptome_for_kallisto()</span></code> finds rna.fna.gz and copies to:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">output</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">/</span><span class="n">pogonomyrmex_barbatus</span><span class="o">/</span><span class="n">work</span><span class="o">/</span><span class="n">fasta</span><span class="o">/</span><span class="n">Pogonomyrmex_barbatus_rna</span><span class="o">.</span><span class="n">fasta</span>
+</pre></div>
+</div>
+<p><strong>Step 3: Index Building</strong></p>
+<p><code class="docutils literal notranslate"><span class="pre">build_kallisto_index()</span></code> creates:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">output</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">/</span><span class="n">pogonomyrmex_barbatus</span><span class="o">/</span><span class="n">work</span><span class="o">/</span><span class="n">index</span><span class="o">/</span><span class="n">Pogonomyrmex_barbatus_transcripts</span><span class="o">.</span><span class="n">idx</span>
+</pre></div>
+</div>
+<p><strong>Verification</strong>:</p>
+<p><code class="docutils literal notranslate"><span class="pre">get_expected_index_path()</span></code> checks for index at:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">work_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;output/amalgkit/pogonomyrmex_barbatus/work&quot;</span><span class="p">)</span>
+<span class="n">species</span> <span class="o">=</span> <span class="s2">&quot;Pogonomyrmex_barbatus&quot;</span>
+<span class="n">index_path</span> <span class="o">=</span> <span class="n">get_expected_index_path</span><span class="p">(</span><span class="n">work_dir</span><span class="p">,</span> <span class="n">species</span><span class="p">)</span>
+<span class="c1"># Returns: output/amalgkit/pogonomyrmex_barbatus/work/index/Pogonomyrmex_barbatus_transcripts.idx</span>
+</pre></div>
+</div>
+</section>
+<section id="example-3-reading-all-paths-from-config">
+<h3>Example 3: Reading All Paths from Config<a class="headerlink" href="#example-3-reading-all-paths-from-config" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_workflow_config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="c1"># Load config</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">load_workflow_config</span><span class="p">(</span><span class="s2">&quot;config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml&quot;</span><span class="p">)</span>
+
+<span class="c1"># Extract all key paths</span>
+<span class="n">paths</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;work_dir&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">work_dir</span><span class="p">,</span>
+    <span class="s2">&quot;log_dir&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">log_dir</span><span class="p">,</span>
+    <span class="s2">&quot;genome_dir&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">genome</span><span class="p">[</span><span class="s2">&quot;dest_dir&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;metadata_file&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">work_dir</span> <span class="o">/</span> <span class="s2">&quot;metadata&quot;</span> <span class="o">/</span> <span class="s2">&quot;metadata.tsv&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;transcriptome&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">work_dir</span> <span class="o">/</span> <span class="s2">&quot;fasta&quot;</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">species_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">_rna.fasta&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;kallisto_index&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">work_dir</span> <span class="o">/</span> <span class="s2">&quot;index&quot;</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">config</span><span class="o">.</span><span class="n">species_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">_transcripts.idx&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;fastq_dir&quot;</span><span class="p">:</span> <span class="n">Path</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">per_step</span><span class="p">[</span><span class="s2">&quot;getfastq&quot;</span><span class="p">][</span><span class="s2">&quot;out_dir&quot;</span><span class="p">]),</span>
+    <span class="s2">&quot;quant_dir&quot;</span><span class="p">:</span> <span class="n">Path</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">per_step</span><span class="p">[</span><span class="s2">&quot;quant&quot;</span><span class="p">][</span><span class="s2">&quot;out_dir&quot;</span><span class="p">]),</span>
+    <span class="s2">&quot;merged_file&quot;</span><span class="p">:</span> <span class="n">Path</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">per_step</span><span class="p">[</span><span class="s2">&quot;merge&quot;</span><span class="p">][</span><span class="s2">&quot;out&quot;</span><span class="p">]),</span>
+    <span class="s2">&quot;manifest&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">work_dir</span> <span class="o">/</span> <span class="s2">&quot;amalgkit.manifest.jsonl&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;progress_state&quot;</span><span class="p">:</span> <span class="n">config</span><span class="o">.</span><span class="n">work_dir</span> <span class="o">/</span> <span class="s2">&quot;progress_state.json&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">path</span> <span class="ow">in</span> <span class="n">paths</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Output:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">work_dir</span><span class="p">:</span> <span class="n">output</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">/</span><span class="n">pogonomyrmex_barbatus</span><span class="o">/</span><span class="n">work</span>
+<span class="n">log_dir</span><span class="p">:</span> <span class="n">output</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">/</span><span class="n">pogonomyrmex_barbatus</span><span class="o">/</span><span class="n">logs</span>
+<span class="n">genome_dir</span><span class="p">:</span> <span class="n">output</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">/</span><span class="n">pogonomyrmex_barbatus</span><span class="o">/</span><span class="n">genome</span>
+<span class="n">metadata_file</span><span class="p">:</span> <span class="n">output</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">/</span><span class="n">pogonomyrmex_barbatus</span><span class="o">/</span><span class="n">work</span><span class="o">/</span><span class="n">metadata</span><span class="o">/</span><span class="n">metadata</span><span class="o">.</span><span class="n">tsv</span>
+<span class="n">transcriptome</span><span class="p">:</span> <span class="n">output</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">/</span><span class="n">pogonomyrmex_barbatus</span><span class="o">/</span><span class="n">work</span><span class="o">/</span><span class="n">fasta</span><span class="o">/</span><span class="n">Pogonomyrmex_barbatus_rna</span><span class="o">.</span><span class="n">fasta</span>
+<span class="n">kallisto_index</span><span class="p">:</span> <span class="n">output</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">/</span><span class="n">pogonomyrmex_barbatus</span><span class="o">/</span><span class="n">work</span><span class="o">/</span><span class="n">index</span><span class="o">/</span><span class="n">Pogonomyrmex_barbatus_transcripts</span><span class="o">.</span><span class="n">idx</span>
+<span class="n">fastq_dir</span><span class="p">:</span> <span class="n">output</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">/</span><span class="n">pogonomyrmex_barbatus</span><span class="o">/</span><span class="n">fastq</span>
+<span class="n">quant_dir</span><span class="p">:</span> <span class="n">output</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">/</span><span class="n">pogonomyrmex_barbatus</span><span class="o">/</span><span class="n">quant</span>
+<span class="n">merged_file</span><span class="p">:</span> <span class="n">output</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">/</span><span class="n">pogonomyrmex_barbatus</span><span class="o">/</span><span class="n">merged</span><span class="o">/</span><span class="n">merged_abundance</span><span class="o">.</span><span class="n">tsv</span>
+<span class="n">manifest</span><span class="p">:</span> <span class="n">output</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">/</span><span class="n">pogonomyrmex_barbatus</span><span class="o">/</span><span class="n">work</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">.</span><span class="n">manifest</span><span class="o">.</span><span class="n">jsonl</span>
+<span class="n">progress_state</span><span class="p">:</span> <span class="n">output</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">/</span><span class="n">pogonomyrmex_barbatus</span><span class="o">/</span><span class="n">work</span><span class="o">/</span><span class="n">progress_state</span><span class="o">.</span><span class="n">json</span>
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Link to this heading"></a></h2>
+<section id="primary-path-storage-yaml-configuration">
+<h3>Primary Path Storage: YAML Configuration<a class="headerlink" href="#primary-path-storage-yaml-configuration" title="Link to this heading"></a></h3>
+<p><strong>All directory paths originate from YAML configuration files</strong>:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Path Category</p></th>
+<th class="head"><p>Stored In</p></th>
+<th class="head"><p>Format</p></th>
+<th class="head"><p>Example</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Base directories</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">work_dir</span></code>, <code class="docutils literal notranslate"><span class="pre">log_dir</span></code></p></td>
+<td><p>Path</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">output/amalgkit/{species}/work</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Genome files</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">genome.dest_dir</span></code>, <code class="docutils literal notranslate"><span class="pre">genome.files.*</span></code></p></td>
+<td><p>Path + filenames</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">output/amalgkit/{species}/genome</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Step outputs</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">steps.{step}.out_dir</span></code></p></td>
+<td><p>String</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">output/amalgkit/{species}/fastq</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Merged output</strong></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">steps.merge.out</span></code></p></td>
+<td><p>String</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">output/amalgkit/{species}/merged/merged_abundance.tsv</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="derived-path-storage-runtime-state-files">
+<h3>Derived Path Storage: Runtime &amp; State Files<a class="headerlink" href="#derived-path-storage-runtime-state-files" title="Link to this heading"></a></h3>
+<p><strong>Paths are tracked during execution</strong>:</p>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Storage Location</p></th>
+<th class="head"><p>Format</p></th>
+<th class="head"><p>Content</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Metadata TSV</strong></p></td>
+<td><p>TSV</p></td>
+<td><p>Sample accessions, remote URLs (not local paths)</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Manifest JSONL</strong></p></td>
+<td><p>JSONL</p></td>
+<td><p>Per-step execution history with work_dir, log_dir, params</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Progress JSON</strong></p></td>
+<td><p>JSON</p></td>
+<td><p>Per-sample state with derived FASTQ/quant paths</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="path-construction-logic">
+<h3>Path Construction Logic<a class="headerlink" href="#path-construction-logic" title="Link to this heading"></a></h3>
+<p><strong>Paths are constructed algorithmically</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Sample FASTQ path</span>
+<span class="n">fastq_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">fastq_dir</span><span class="si">}</span><span class="s2">/getfastq/</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">_1.fastq.gz&quot;</span>
+
+<span class="c1"># Sample abundance path</span>
+<span class="n">abundance_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">quant_dir</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">run_id</span><span class="si">}</span><span class="s2">/abundance.tsv&quot;</span>
+
+<span class="c1"># Kallisto index path</span>
+<span class="n">index_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">work_dir</span><span class="si">}</span><span class="s2">/index/</span><span class="si">{</span><span class="n">species_name</span><span class="si">}</span><span class="s2">_transcripts.idx&quot;</span>
+
+<span class="c1"># Transcriptome FASTA path</span>
+<span class="n">transcriptome_path</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">work_dir</span><span class="si">}</span><span class="s2">/fasta/</span><span class="si">{</span><span class="n">species_name</span><span class="si">}</span><span class="s2">_rna.fasta&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="verification">
+<h3>Verification<a class="headerlink" href="#verification" title="Link to this heading"></a></h3>
+<p>All path storage and construction logic is:</p>
+<ul class="simple">
+<li><p>✅ <strong>Documented</strong> in this file</p></li>
+<li><p>✅ <strong>Tested</strong> with 31 RNA test files</p></li>
+<li><p>✅ <strong>Production-validated</strong> with 7,451+ samples</p></li>
+<li><p>✅ <strong>Type-safe</strong> using Path objects and dataclasses</p></li>
+</ul>
+<hr class="docutils" />
+<p><strong>End of Documentation</strong></p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,54 @@
+{
+  "dna_rna_integration": {
+    "correlations_found": {
+      "gc_content_vs_expression": 0.8449594754658698,
+      "gene_lengths_vs_expression": 0.07561709980748331,
+      "intron_count_vs_expression": 0.0873582331478993,
+      "tss_motifs_vs_expression": 0.48612349277235567
+    },
+    "dna_features_integrated": [
+      "gene_lengths",
+      "gc_content",
+      "intron_count",
+      "tss_motifs"
+    ],
+    "genes_analyzed": 100,
+    "high_expression_analysis": {
+      "dna_features_in_high_expr_genes": {
+        "gc_content": {
+          "mean": 0.7724840153459236,
+          "median": 0.7658312655792822,
+          "vs_all_genes": 1.4958802686268593
+        },
+        "gene_lengths": {
+          "mean": 1881.1175679876822,
+          "median": 1887.1118497567322,
+          "vs_all_genes": 0.9656280618234343
+        },
+        "intron_count": {
+          "mean": 3.08,
+          "median": 3.0,
+          "vs_all_genes": 1.1159420289855073
+        },
+        "tss_motifs": {
+          "mean": 0.68,
+          "median": 1.0,
+          "vs_all_genes": 1.888888888888889
+        }
+      },
+      "genes_above_threshold": 25,
+      "threshold": 487.23803374573095
+    },
+    "integration_insights": [
+      "GC content shows moderate positive correlation with expression",
+      "TATA box presence correlates with higher expression levels",
+      "High-expressing genes tend to have different DNA features",
+      "Integration reveals regulatory relationships across omics layers"
+    ],
+    "integration_type": "dna_features_to_rna_expression",
+    "top_correlation": [
+      "gc_content_vs_expression",
+      0.8449594754658698
+    ]
+  }
+}

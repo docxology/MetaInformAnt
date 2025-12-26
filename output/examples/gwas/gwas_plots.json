@@ -1,0 +1,132 @@
+{
+  "gwas_visualization_demo": {
+    "chromosome_statistics": [
+      {
+        "chromosome": "chr1",
+        "gw_significant": 16,
+        "mean_beta": -0.00048245076881785296,
+        "median_p": 0.4941079505334861,
+        "min_p": 7.998257479850652e-10,
+        "n_snps": 1000,
+        "suggestive": 0
+      },
+      {
+        "chromosome": "chr2",
+        "gw_significant": 5,
+        "mean_beta": 0.0027116945421269004,
+        "median_p": 0.5164742420690536,
+        "min_p": 4.711726122608859e-09,
+        "n_snps": 1000,
+        "suggestive": 0
+      },
+      {
+        "chromosome": "chr3",
+        "gw_significant": 13,
+        "mean_beta": -0.002254851568430824,
+        "median_p": 0.5005023584324544,
+        "min_p": 8.983485431455831e-17,
+        "n_snps": 1000,
+        "suggestive": 0
+      },
+      {
+        "chromosome": "chr4",
+        "gw_significant": 10,
+        "mean_beta": -0.0027066316028234835,
+        "median_p": 0.4764732949722048,
+        "min_p": 4.187648028927502e-16,
+        "n_snps": 1000,
+        "suggestive": 0
+      },
+      {
+        "chromosome": "chr5",
+        "gw_significant": 6,
+        "mean_beta": -0.0003367488852573648,
+        "median_p": 0.4871756647078485,
+        "min_p": 2.372544399317009e-09,
+        "n_snps": 1000,
+        "suggestive": 0
+      }
+    ],
+    "dataset_summary": {
+      "chromosomes": [
+        "chr1",
+        "chr2",
+        "chr3",
+        "chr4",
+        "chr5"
+      ],
+      "genome_wide_significant": 50,
+      "lambda_gc": "N/A",
+      "suggestive_significant": 0,
+      "total_snps": 5000
+    },
+    "effect_size_analysis": {
+      "significant_effects": {
+        "gw_sig_count": 50,
+        "gw_sig_mean_beta": 0.029600128718600568,
+        "gw_sig_median_beta": -0.0061326655705781635
+      },
+      "summary_stats": {
+        "max_beta": 0.8329328203626433,
+        "mean_beta": -0.0006137976566405252,
+        "median_beta": -0.001780663690973956,
+        "min_beta": -0.8372016416891769,
+        "std_beta": 0.10593163720276202
+      }
+    },
+    "gwas_visualization_best_practices": [
+      "Use Manhattan plots to visualize genome-wide associations",
+      "Include Q-Q plots to check for test statistic inflation",
+      "Set appropriate significance thresholds",
+      "Use consistent color schemes across plots",
+      "Save both raster (PNG) and vector (PDF) formats",
+      "Include lambda GC values to assess inflation",
+      "Consider regional plots for significant loci"
+    ],
+    "interpretation_guidelines": [
+      "Manhattan plot peaks indicate associated regions",
+      "Q-Q plot deviation from diagonal suggests inflation",
+      "\u03bb > 1.05 may indicate population structure or other artifacts",
+      "Effect sizes help prioritize variants for follow-up",
+      "Chromosome-specific patterns may indicate technical artifacts"
+    ],
+    "plots_generated": {
+      "manhattan_plot": {
+        "error": "manhattan_plot() got an unexpected keyword argument 'suggestive_threshold'. Did you mean 'suggestiveness_threshold'?"
+      },
+      "qq_plot": {
+        "error": "qq_plot() missing 1 required positional argument: 'output_path'"
+      }
+    },
+    "timestamp": "2024-12-26T10:00:00Z",
+    "visualization_metadata": {
+      "plot_characteristics": {
+        "manhattan": {
+          "color_scheme": "Alternating chromosome colors",
+          "thresholds": {
+            "genome_wide": 5e-08,
+            "suggestive": 1e-05
+          },
+          "type": "Genome-wide association results",
+          "x_axis": "Chromosomal position",
+          "y_axis": "-log10(p-value)"
+        },
+        "qq": {
+          "diagonal": "Null expectation line",
+          "lambda_gc": "Genomic control inflation factor",
+          "type": "Expected vs observed p-value distribution",
+          "x_axis": "Expected -log10(p)",
+          "y_axis": "Observed -log10(p)"
+        }
+      },
+      "plot_files": {
+        "manhattan_plot": "manhattan_plot.png",
+        "qq_plot": "qq_plot.png",
+        "vector_formats": [
+          "manhattan_plot.pdf",
+          "qq_plot.pdf"
+        ]
+      }
+    }
+  }
+}

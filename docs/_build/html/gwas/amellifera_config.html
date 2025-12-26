@@ -1,0 +1,464 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GWAS Configuration for Apis mellifera &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">GWAS Configuration for Apis mellifera</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/gwas/amellifera_config.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="gwas-configuration-for-apis-mellifera">
+<h1>GWAS Configuration for Apis mellifera<a class="headerlink" href="#gwas-configuration-for-apis-mellifera" title="Link to this heading"></a></h1>
+<p>This document describes the GWAS configuration setup for <em>Apis mellifera</em> (Western Honey Bee).</p>
+<section id="configuration-file">
+<h2>Configuration File<a class="headerlink" href="#configuration-file" title="Link to this heading"></a></h2>
+<p><strong>Location</strong>: <code class="docutils literal notranslate"><span class="pre">config/gwas/gwas_amellifera.yaml</span></code></p>
+</section>
+<section id="species-information">
+<h2>Species Information<a class="headerlink" href="#species-information" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Species</strong>: <em>Apis mellifera</em> (Western Honey Bee)</p></li>
+<li><p><strong>NCBI Taxonomy ID</strong>: 7460</p></li>
+<li><p><strong>Reference Assembly</strong>: GCF_003254395.2 (Amel_HAv3.1)</p></li>
+<li><p><strong>FTP URL</strong>: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/003/254/395/GCF_003254395.2_Amel_HAv3.1/</p></li>
+<li><p><strong>Genome Size</strong>: ~260 Mbp (16 chromosomes)</p></li>
+</ul>
+</section>
+<section id="configuration-overview">
+<h2>Configuration Overview<a class="headerlink" href="#configuration-overview" title="Link to this heading"></a></h2>
+<p>The configuration file is optimized for honeybee GWAS with extensive genomic datasets and strong population structure.</p>
+<section id="reference-genome">
+<h3>1. Reference Genome<a class="headerlink" href="#reference-genome" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">genome</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">accession</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GCF_003254395.2</span>
+<span class="w">  </span><span class="nt">dest_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/gwas/amellifera/genome</span>
+<span class="w">  </span><span class="nt">include</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">genome</span><span class="w">         </span><span class="c1"># Genomic sequences (FASTA)</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gff3</span><span class="w">          </span><span class="c1"># Gene annotations</span>
+<span class="w">  </span><span class="nt">ftp_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/003/254/395/GCF_003254395.2_Amel_HAv3.1/</span>
+</pre></div>
+</div>
+</section>
+<section id="variant-data-sources">
+<h3>2. Variant Data Sources<a class="headerlink" href="#variant-data-sources" title="Link to this heading"></a></h3>
+<p>Honeybees have extensive genomic datasets available. The configuration supports three options:</p>
+<section id="option-1-pre-called-vcf-files">
+<h4>Option 1: Pre-called VCF Files<a class="headerlink" href="#option-1-pre-called-vcf-files" title="Link to this heading"></a></h4>
+<p>Large-scale honeybee projects often provide pre-called VCF files:</p>
+<ul class="simple">
+<li><p>British and Irish <em>A. mellifera mellifera</em> whole genome sequences</p></li>
+<li><p>European population datasets</p></li>
+<li><p>African lineage datasets</p></li>
+</ul>
+</section>
+<section id="option-2-download-from-databases">
+<h4>Option 2: Download from Databases<a class="headerlink" href="#option-2-download-from-databases" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p>NCBI dbSNP (if variants available)</p></li>
+<li><p>Research consortium datasets (i5K, Honey Bee Genomics Initiative)</p></li>
+</ul>
+</section>
+<section id="option-3-variant-calling">
+<h4>Option 3: Variant Calling<a class="headerlink" href="#option-3-variant-calling" title="Link to this heading"></a></h4>
+<p>Many honeybee whole-genome sequencing datasets are available on SRA:</p>
+<ul class="simple">
+<li><p>Search terms: <code class="docutils literal notranslate"><span class="pre">&quot;Apis</span> <span class="pre">mellifera&quot;[Organism]</span> <span class="pre">AND</span> <span class="pre">&quot;whole</span> <span class="pre">genome&quot;[Strategy]</span></code></p></li>
+<li><p>Population-specific searches by subspecies or trait</p></li>
+<li><p>Consider batch calling by population/region for large cohorts</p></li>
+</ul>
+</section>
+</section>
+<section id="quality-control">
+<h3>3. Quality Control<a class="headerlink" href="#quality-control" title="Link to this heading"></a></h3>
+<p>Optimized parameters for honeybee genomes:</p>
+<ul class="simple">
+<li><p>MAF threshold: 0.01 (appropriate for population-level analysis)</p></li>
+<li><p>Max missing: 0.05 (honeybee datasets often have high coverage)</p></li>
+<li><p>Min call rate: 0.95</p></li>
+<li><p>HWE p-value: 1e-6 (accounts for population structure)</p></li>
+<li><p>Exclude indels: true</p></li>
+<li><p>Min quality: 30.0</p></li>
+</ul>
+</section>
+<section id="population-structure">
+<h3>4. Population Structure<a class="headerlink" href="#population-structure" title="Link to this heading"></a></h3>
+<p><strong>Critical for honeybee GWAS</strong>: Strong population structure due to:</p>
+<ul class="simple">
+<li><p>Multiple subspecies (5 major lineages)</p></li>
+<li><p>Geographic isolation</p></li>
+<li><p>Breeding practices</p></li>
+</ul>
+<p>Configuration:</p>
+<ul class="simple">
+<li><p>PCA computation: Enabled</p></li>
+<li><p><strong>20 principal components</strong> (increased from default 10 due to subspecies diversity)</p></li>
+<li><p>Kinship matrix: Enabled (VanRaden method)</p></li>
+<li><p>Important covariates: Population/subspecies, sampling location</p></li>
+</ul>
+</section>
+<section id="association-testing">
+<h3>5. Association Testing<a class="headerlink" href="#association-testing" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Model: Linear regression (configurable to logistic for binary traits)</p></li>
+<li><p>Trait: Configurable (common traits: Varroa resistance, hygienic behavior, honey production)</p></li>
+<li><p>Min sample size: 50-100 samples recommended</p></li>
+<li><p>Covariates: Include top PCs (PC1-PC10), population, sampling location</p></li>
+</ul>
+</section>
+<section id="multiple-testing-correction">
+<h3>6. Multiple Testing Correction<a class="headerlink" href="#multiple-testing-correction" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Method: Bonferroni</p></li>
+<li><p>Alpha: 0.05</p></li>
+<li><p>Genome-wide significance: ~5e-8 (similar to human GWAS, 16 chromosomes)</p></li>
+</ul>
+</section>
+</section>
+<section id="common-honeybee-traits">
+<h2>Common Honeybee Traits<a class="headerlink" href="#common-honeybee-traits" title="Link to this heading"></a></h2>
+<p>The configuration supports analysis of various honeybee traits:</p>
+<section id="disease-resistance">
+<h3>Disease Resistance<a class="headerlink" href="#disease-resistance" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Varroa destructor resistance</p></li>
+<li><p>Nosema resistance</p></li>
+<li><p>American foulbrood resistance</p></li>
+<li><p>European foulbrood resistance</p></li>
+</ul>
+</section>
+<section id="behavioral-traits">
+<h3>Behavioral Traits<a class="headerlink" href="#behavioral-traits" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Hygienic behavior</p></li>
+<li><p>Defensive behavior</p></li>
+<li><p>Foraging behavior</p></li>
+<li><p>Swarming tendency</p></li>
+</ul>
+</section>
+<section id="productivity-traits">
+<h3>Productivity Traits<a class="headerlink" href="#productivity-traits" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Honey production</p></li>
+<li><p>Colony strength</p></li>
+<li><p>Brood production</p></li>
+<li><p>Pollen collection</p></li>
+</ul>
+</section>
+<section id="environmental-adaptation">
+<h3>Environmental Adaptation<a class="headerlink" href="#environmental-adaptation" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Overwintering success</p></li>
+<li><p>Temperature tolerance</p></li>
+<li><p>Drought resistance</p></li>
+<li><p>Pollinator efficiency</p></li>
+</ul>
+</section>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
+<section id="configuration-validation">
+<h3>Configuration Validation<a class="headerlink" href="#configuration-validation" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>metainformant<span class="w"> </span>gwas<span class="w"> </span>run<span class="w"> </span>--config<span class="w"> </span>config/gwas/gwas_amellifera.yaml<span class="w"> </span>--check
+</pre></div>
+</div>
+</section>
+<section id="full-workflow-execution">
+<h3>Full Workflow Execution<a class="headerlink" href="#full-workflow-execution" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>metainformant<span class="w"> </span>gwas<span class="w"> </span>run<span class="w"> </span>--config<span class="w"> </span>config/gwas/gwas_amellifera.yaml
+</pre></div>
+</div>
+</section>
+<section id="python-api">
+<h3>Python API<a class="headerlink" href="#python-api" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.gwas</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_gwas_config</span><span class="p">,</span> <span class="n">execute_gwas_workflow</span>
+
+<span class="c1"># Load configuration</span>
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">load_gwas_config</span><span class="p">(</span><span class="s2">&quot;config/gwas/gwas_amellifera.yaml&quot;</span><span class="p">)</span>
+
+<span class="c1"># Validate configuration</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">execute_gwas_workflow</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># Execute workflow</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">execute_gwas_workflow</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="required-data-files">
+<h2>Required Data Files<a class="headerlink" href="#required-data-files" title="Link to this heading"></a></h2>
+<p>Before running the full workflow, ensure you have:</p>
+<ol class="arabic">
+<li><p><strong>Phenotype file</strong> (<code class="docutils literal notranslate"><span class="pre">data/phenotypes/amellifera/phenotypes.tsv</span></code>):</p>
+<ul>
+<li><p>TSV format with <code class="docutils literal notranslate"><span class="pre">sample_id</span></code> and trait columns</p></li>
+<li><p>Example traits: <code class="docutils literal notranslate"><span class="pre">varroa_resistance</span></code>, <code class="docutils literal notranslate"><span class="pre">honey_yield</span></code>, <code class="docutils literal notranslate"><span class="pre">hygienic_behavior</span></code></p></li>
+<li><p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sample_id</span>	<span class="n">varroa_resistance</span>	<span class="n">honey_yield</span>
+<span class="n">BEE001</span>	<span class="mf">0.85</span>	<span class="mf">45.2</span>
+<span class="n">BEE002</span>	<span class="mf">0.92</span>	<span class="mf">52.1</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+<li><p><strong>Variant data</strong> (one of):</p>
+<ul class="simple">
+<li><p>VCF file(s) specified in <code class="docutils literal notranslate"><span class="pre">variants.vcf_files</span></code></p></li>
+<li><p>Or BAM/CRAM files for variant calling in <code class="docutils literal notranslate"><span class="pre">variants.calling.bam_files</span></code></p></li>
+<li><p>Or configure download from public databases</p></li>
+</ul>
+</li>
+<li><p><strong>Covariates file</strong> (optional but recommended):</p>
+<ul>
+<li><p>TSV format with <code class="docutils literal notranslate"><span class="pre">sample_id</span></code>, population, subspecies, sampling location, PCs</p></li>
+<li><p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sample_id</span>	<span class="n">population</span>	<span class="n">subspecies</span>	<span class="n">sampling_location</span>	<span class="n">PC1</span>	<span class="n">PC2</span>
+<span class="n">BEE001</span>	<span class="n">European</span>	<span class="n">Apis_mellifera_mellifera</span>	<span class="n">UK</span>	<span class="mf">0.0234</span>	<span class="o">-</span><span class="mf">0.0123</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="finding-honeybee-genomic-datasets">
+<h2>Finding Honeybee Genomic Datasets<a class="headerlink" href="#finding-honeybee-genomic-datasets" title="Link to this heading"></a></h2>
+<section id="ncbi-sra-search-strategies">
+<h3>NCBI SRA Search Strategies<a class="headerlink" href="#ncbi-sra-search-strategies" title="Link to this heading"></a></h3>
+<ol class="arabic">
+<li><p><strong>Whole genome sequences</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;Apis mellifera&quot;</span><span class="p">[</span><span class="n">Organism</span><span class="p">]</span> <span class="n">AND</span> <span class="s2">&quot;whole genome&quot;</span><span class="p">[</span><span class="n">Strategy</span><span class="p">]</span> <span class="n">AND</span> <span class="n">Illumina</span><span class="p">[</span><span class="n">Platform</span><span class="p">]</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Population-specific searches</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;Apis mellifera&quot;</span><span class="p">[</span><span class="n">Organism</span><span class="p">]</span> <span class="n">AND</span> <span class="s2">&quot;Apis mellifera mellifera&quot;</span><span class="p">[</span><span class="n">Title</span><span class="p">]</span>
+<span class="s2">&quot;Apis mellifera&quot;</span><span class="p">[</span><span class="n">Organism</span><span class="p">]</span> <span class="n">AND</span> <span class="s2">&quot;African&quot;</span><span class="p">[</span><span class="n">Title</span><span class="p">]</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Trait-specific searches</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;Apis mellifera&quot;</span><span class="p">[</span><span class="n">Organism</span><span class="p">]</span> <span class="n">AND</span> <span class="s2">&quot;Varroa&quot;</span><span class="p">[</span><span class="n">Title</span><span class="p">]</span>
+<span class="s2">&quot;Apis mellifera&quot;</span><span class="p">[</span><span class="n">Organism</span><span class="p">]</span> <span class="n">AND</span> <span class="s2">&quot;resistance&quot;</span><span class="p">[</span><span class="n">Title</span><span class="p">]</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="public-datasets">
+<h3>Public Datasets<a class="headerlink" href="#public-datasets" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Zenodo</strong>: British and Irish <em>A. mellifera mellifera</em> whole genome sequences</p></li>
+<li><p><strong>ENA</strong>: European Nucleotide Archive</p></li>
+<li><p><strong>GSA</strong>: Genome Sequence Archive (China)</p></li>
+<li><p><strong>Research consortia</strong>: i5K, Honey Bee Genomics Initiative publications</p></li>
+</ul>
+</section>
+</section>
+<section id="workflow-steps">
+<h2>Workflow Steps<a class="headerlink" href="#workflow-steps" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Genome Download</strong>: Downloads A. mellifera Amel_HAv3.1 reference genome from NCBI</p></li>
+<li><p><strong>Variant Acquisition</strong>:</p>
+<ul class="simple">
+<li><p>Uses pre-existing VCF files, OR</p></li>
+<li><p>Downloads from databases, OR</p></li>
+<li><p>Calls variants from BAM/CRAM files</p></li>
+</ul>
+</li>
+<li><p><strong>Quality Control</strong>: Filters variants based on QC parameters optimized for honeybees</p></li>
+<li><p><strong>Population Structure</strong>: Computes PCA (20 components) and kinship matrices</p></li>
+<li><p><strong>Association Testing</strong>: Performs GWAS with population structure correction</p></li>
+<li><p><strong>Multiple Testing Correction</strong>: Applies Bonferroni correction</p></li>
+<li><p><strong>Visualization</strong>: Generates Manhattan plots, Q-Q plots, regional plots</p></li>
+<li><p><strong>Results Export</strong>: Writes results to output directories</p></li>
+</ol>
+</section>
+<section id="output-directories">
+<h2>Output Directories<a class="headerlink" href="#output-directories" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Work directory</strong>: <code class="docutils literal notranslate"><span class="pre">output/gwas/amellifera/work</span></code></p></li>
+<li><p><strong>Genome</strong>: <code class="docutils literal notranslate"><span class="pre">output/gwas/amellifera/genome</span></code></p></li>
+<li><p><strong>Variants</strong>: <code class="docutils literal notranslate"><span class="pre">output/gwas/amellifera/variants</span></code></p></li>
+<li><p><strong>Results</strong>: <code class="docutils literal notranslate"><span class="pre">output/gwas/amellifera/results</span></code></p></li>
+<li><p><strong>Plots</strong>: <code class="docutils literal notranslate"><span class="pre">output/gwas/amellifera/plots</span></code></p></li>
+<li><p><strong>Logs</strong>: <code class="docutils literal notranslate"><span class="pre">output/gwas/amellifera/logs</span></code></p></li>
+</ul>
+</section>
+<section id="special-considerations-for-honeybees">
+<h2>Special Considerations for Honeybees<a class="headerlink" href="#special-considerations-for-honeybees" title="Link to this heading"></a></h2>
+<section id="id1">
+<h3>Population Structure<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Honeybees show strong population structure across subspecies</p></li>
+<li><p><strong>Always include PCs as covariates</strong> (recommended: PC1-PC10)</p></li>
+<li><p>Consider population/subspecies as covariates</p></li>
+</ul>
+</section>
+<section id="sample-size">
+<h3>Sample Size<a class="headerlink" href="#sample-size" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Minimum 50-100 samples per variant recommended</p></li>
+<li><p>Large cohorts (500+ samples) provide better power for rare variants</p></li>
+</ul>
+</section>
+<section id="chromosome-organization">
+<h3>Chromosome Organization<a class="headerlink" href="#chromosome-organization" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>16 chromosomes in A. mellifera</p></li>
+<li><p>Genome-wide significance threshold: ~5e-8 (0.05 / 1,000,000 tests)</p></li>
+</ul>
+</section>
+<section id="colony-structure">
+<h3>Colony Structure<a class="headerlink" href="#colony-structure" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Account for queen-worker relationships in kinship matrices</p></li>
+<li><p>Consider colony-level covariates when available</p></li>
+<li><p>Inbreeding coefficients may be relevant for some populations</p></li>
+</ul>
+</section>
+</section>
+<section id="testing">
+<h2>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h2>
+<p>Run configuration tests:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pytest<span class="w"> </span>tests/test_gwas_config_amellifera.py<span class="w"> </span>-v
+</pre></div>
+</div>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="#../config/gwas_template.yaml"><span class="xref myst">GWAS Configuration Template</span></a></p></li>
+<li><p><a class="reference internal" href="workflow.html"><span class="std std-doc">GWAS Workflow Documentation</span></a></p></li>
+<li><p><a class="reference internal" href="config.html"><span class="std std-doc">GWAS Configuration Guide</span></a></p></li>
+</ul>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p>Wallberg et al. (2014). A worldwide survey of genome sequence variation provides insight into the evolutionary history of the honeybee Apis mellifera. <em>Nature Genetics</em>.</p></li>
+<li><p>The Honey Bee Genome Sequencing Consortium (2006). Insights into social insects from the genome of the honeybee Apis mellifera. <em>Nature</em>.</p></li>
+<li><p>Cridland et al. (2017). The population genetics of structural variants in honeybees. <em>G3: Genes, Genomes, Genetics</em>.</p></li>
+</ol>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

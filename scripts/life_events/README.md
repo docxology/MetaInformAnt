@@ -11,7 +11,7 @@ scripts/life_events/
 ├── learn_embeddings.py             # Sequence embedding learning
 ├── train_model.py                  # Outcome prediction model training
 ├── predict_outcomes.py             # Outcome prediction and interpretation
-├── generate_all_visualizations.py  # Comprehensive visualization suite
+├── generate_visualizations.py  # Visualization suite
 ├── generate_statistical_summary.py # Statistical analysis and reporting
 ├── life_course_example.py          # Life course analysis examples
 ├── analyze_intervention.py         # Intervention impact analysis
@@ -162,7 +162,7 @@ python3 scripts/life_events/compare_groups.py --sequences data/life_events/seque
 
 ## Visualization
 
-### Complete Visualization Suite (`generate_all_visualizations.py`)
+### Visualization Suite (`generate_visualizations.py`)
 
 Generate comprehensive visualizations for life event analysis results.
 
@@ -176,7 +176,7 @@ Generate comprehensive visualizations for life event analysis results.
 **Usage:**
 ```bash
 # Generate all visualizations
-python3 scripts/life_events/generate_all_visualizations.py --results-dir output/life_events --output output/life_events/visualizations
+python3 scripts/life_events/generate_visualizations.py --results-dir output/life_events --output output/life_events/visualizations
 ```
 
 ### Sequence Visualization (`visualize_sequences.py`)

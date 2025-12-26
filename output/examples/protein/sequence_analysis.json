@@ -1,0 +1,43 @@
+{
+  "protein_sequence_analysis": {
+    "results": {
+      "protein_A": {
+        "charged_residues": 11,
+        "hydrophobic_ratio": 0.3953488372093023,
+        "hydrophobic_residues": 17,
+        "isoelectric_point_estimate": 6.0,
+        "length": 43,
+        "molecular_weight": 4730,
+        "sequence": "MAKDVKFGNDPLAVDKGHLVQIYLGKGLTVLGGNDLRQFGGGK"
+      },
+      "protein_B": {
+        "charged_residues": 36,
+        "hydrophobic_ratio": 0.46808510638297873,
+        "hydrophobic_residues": 66,
+        "isoelectric_point_estimate": 6.0,
+        "length": 141,
+        "molecular_weight": 15510,
+        "sequence": "MVLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR"
+      },
+      "protein_C": {
+        "charged_residues": 77,
+        "hydrophobic_ratio": 0.4122448979591837,
+        "hydrophobic_residues": 101,
+        "isoelectric_point_estimate": 6.0,
+        "length": 245,
+        "molecular_weight": 26950,
+        "sequence": "MKVLWAALLVTFLAGCQAKVEQAVETEPEPELRQQTEWQSGQRWELALGRFWDYLRWVQTLSEQVQEELLSSQVTQELRALMDETMKELKAYKSELEEQLTPVAEETRARLSKELQAAQARLGADMEDVCGRLVQYRGEVQAMLGQSTEELRVRLASHLRKLRKRLLRDADDLQKRLAVYQAGAREGAERGLSAIRERLGPLVEQGRVRAATVGSLAGQPLQERAQAWGERLRARAEQDAAKGYR"
+      },
+      "protein_D": {
+        "charged_residues": 51,
+        "hydrophobic_ratio": 0.384180790960452,
+        "hydrophobic_residues": 68,
+        "isoelectric_point_estimate": 6.0,
+        "length": 177,
+        "molecular_weight": 19470,
+        "sequence": "MGDVEKGKKIFVQKCAQCHTVEKGGKHKTGPNLHGLFGRKTGQAPGYSYTAANKNKGIIWGEDTLMEYLENPKKYIPGTKMIFAGLKKEVGEHGLGHVTRAFSDGLAHLDNLKGTFAQLSELHCDKLHVDPENFRLLGNVLVCVLAHHFGKEFTPPVQAAYQKVVAGVANALAHKYH"
+      }
+    },
+    "sequences_analyzed": 4
+  }
+}

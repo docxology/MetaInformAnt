@@ -43,18 +43,274 @@ graph TB
     QC_Mod --> Preprocess
 ```
 
-### Single-Cell Analysis Workflow
+### Single-Cell Preprocessing Pipeline
 
 ```mermaid
-flowchart TD
-    Start[Count Matrix] --> QC[Quality Control]
-    QC --> Filter[Filter Cells/Genes]
-    Filter --> Normalize[Normalize]
-    Normalize --> DimRed[Dimensionality Reduction]
-    DimRed --> Cluster[Clustering]
-    Cluster --> Trajectory[Trajectory Analysis]
-    Trajectory --> DE[Differential Expression]
-    DE --> Output[Results]
+graph TD
+    A[Raw Count Matrix] --> B[Quality Control]
+    B --> C[Cell Filtering]
+    B --> D[Gene Filtering]
+
+    C --> E{Mitochondrial Content}
+    C --> F{Ribosomal Content}
+    C --> G{UMIs per Cell}
+    C --> H{Genes per Cell}
+
+    E --> I[Remove High MT Cells]
+    F --> I
+    G --> I
+    H --> I
+
+    D --> J{Minimum Expression}
+    D --> K{Expression Variability}
+    D --> L{Technical Genes}
+
+    J --> M[Remove Low Expression Genes]
+    K --> M
+    L --> M
+
+    I --> N[Filtered Matrix]
+    M --> N
+
+    N --> O[Normalization]
+    O --> P{Method}
+    P -->|Log Normalization| Q[Library Size Normalization]
+    P -->|SCTransform| R[Regularized Negative Binomial]
+    P -->|Pearson Residuals| S[Pearson Residual Analysis]
+
+    Q --> T[Log Transformation]
+    R --> T
+    S --> T
+
+    T --> U[Feature Selection]
+    U --> V{Highly Variable Genes}
+    U --> W{Spike-ins}
+    U --> X{Cell Cycle Genes}
+
+    V --> Y[Selected Genes]
+    W --> Y
+    X --> Y
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style N fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style Y fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "QC Metrics"
+        AA[Library Size] -.-> B
+        BB[Gene Detection] -.-> B
+        CC[MT Percentage] -.-> B
+        DD[Complexity] -.-> B
+    end
+
+    subgraph "Normalization Methods"
+        EE[Total Count] -.-> Q
+        FF[Median] -.-> Q
+        GG[DESeq2 Style] -.-> Q
+    end
+```
+
+### Dimensionality Reduction and Clustering
+
+```mermaid
+graph TD
+    A[Normalized Matrix] --> B[Scaling]
+    B --> C{Z-score Scaling}
+    B --> D{Pearson Residuals}
+
+    C --> E[Dimensionality Reduction]
+    D --> E
+
+    E --> F{Method}
+    F -->|PCA| G[Principal Component Analysis]
+    F -->|t-SNE| H[t-Distributed Stochastic Neighbor Embedding]
+    F -->|UMAP| I[Uniform Manifold Approximation]
+
+    G --> J[Component Selection]
+    H --> J
+    I --> J
+
+    J --> K[Neighborhood Graph]
+    K --> L[Clustering]
+
+    L --> M{Algorithm}
+    M -->|Leiden| N[Leiden Algorithm]
+    M -->|Louvain| O[Louvain Algorithm]
+    M -->|K-means| P[K-means Clustering]
+
+    N --> Q[Cluster Assignments]
+    O --> Q
+    P --> Q
+
+    Q --> R[Cluster Evaluation]
+    R --> S[Adjusted Rand Index]
+    R --> T[Silhouette Score]
+    R --> U[Calinski-Harabasz Index]
+
+    S --> V[Optimal Clustering]
+    T --> V
+    U --> V
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style J fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style V fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "DR Parameters"
+        W[n_components] -.-> G
+        X[perplexity] -.-> H
+        Y[n_neighbors] -.-> I
+    end
+
+    subgraph "Graph Construction"
+        Z[kNN Graph] -.-> K
+        AA[Distance Matrix] -.-> K
+        BB[Similarity Matrix] -.-> K
+    end
+```
+
+### Trajectory Inference and Analysis
+
+```mermaid
+graph TD
+    A[Clustered Data] --> B[Trajectory Inference]
+    B --> C{Method}
+    C -->|Monocle| D[Reversed Graph Embedding]
+    C -->|Slingshot| E[Minimum Spanning Tree]
+    C -->|PAGA| F[Partition-based Graph Abstraction]
+    C -->|Palantir| G[Diffusion Maps]
+
+    D --> H[Trajectory Reconstruction]
+    E --> H
+    F --> H
+    G --> H
+
+    H --> I[Branch Points]
+    H --> J[Pseudotime]
+    H --> K[Trajectory Paths]
+
+    I --> L[Bifurcation Analysis]
+    J --> M[Temporal Dynamics]
+    K --> N[Path-specific Genes]
+
+    L --> O[Differential Expression]
+    M --> O
+    N --> O
+
+    O --> P{Gene Expression}
+    P -->|Branch-specific| Q[Branch DE Genes]
+    P -->|Trajectory| R[Pseudotime DE Genes]
+    P -->|Endpoint| S[Terminal DE Genes]
+
+    Q --> T[Functional Enrichment]
+    R --> T
+    S --> T
+
+    T --> U[Biological Interpretation]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style H fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style U fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Trajectory Methods"
+        V[Graph-based] -.-> D
+        W[Tree-based] -.-> E
+        X[Diffusion] -.-> G
+        Y[Force-directed] -.-> F
+    end
+
+    subgraph "Analysis Outputs"
+        Z[Cell Ordering] -.-> J
+        AA[Branch Probabilities] -.-> I
+        BB[Transition States] -.-> L
+    end
+```
+
+### Single-Cell Integration Methods
+
+```mermaid
+graph TD
+    A[Multiple scRNA-seq Datasets] --> B[Batch Effect Detection]
+    B --> C[Integration Method]
+
+    C --> D{Approach}
+    D -->|Mutual KNN| E[Mutual Nearest Neighbors]
+    D -->|Harmony| F[Harmony Algorithm]
+    D -->|Scanorama| G[Scanorama]
+    D -->|BBKNN| H[Batch Balanced KNN]
+
+    E --> I[Integrated Space]
+    F --> I
+    G --> I
+    H --> I
+
+    I --> J[Unified Clustering]
+    J --> K[Cross-dataset Comparison]
+    K --> L[Biological Insights]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style I fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style L fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Integration Quality"
+        M[Batch Mixing] -.-> I
+        N[Biological Preservation] -.-> I
+        O[Local Structure] -.-> I
+    end
+
+    subgraph "Evaluation Metrics"
+        P[ARI Score] -.-> K
+        Q[ASW Score] -.-> K
+        R[LISI Score] -.-> K
+    end
+```
+
+### Differential Expression Analysis
+
+```mermaid
+graph TD
+    A[Single-Cell Data] --> B[DE Test Selection]
+    B --> C{Method}
+    C -->|Wilcoxon| D[Wilcoxon Rank Sum]
+    C -->|t-test| E[Welch's t-test]
+    C -->|Logistic| F[Logistic Regression]
+    C -->|MAST| G[MAST]
+
+    D --> H[Statistical Testing]
+    E --> H
+    F --> H
+    G --> H
+
+    H --> I[P-value Calculation]
+    I --> J[Multiple Testing Correction]
+
+    J --> K[Significant Genes]
+    K --> L[Effect Size Calculation]
+    L --> M[Gene Ranking]
+
+    M --> N{Interpretation}
+    N -->|Pathway| O[Pathway Enrichment]
+    N -->|TF| P[Transcription Factor Analysis]
+    N -->|Surface| Q[Cell Surface Markers]
+
+    O --> R[Biological Insights]
+    P --> R
+    Q --> R
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style K fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "DE Test Types"
+        S[Two-group] -.-> B
+        T[Multi-group] -.-> B
+        U[Pseudotime] -.-> B
+        V[Branch] -.-> B
+    end
+
+    subgraph "Correction Methods"
+        W[Bonferroni] -.-> J
+        X[B-H FDR] -.-> J
+        Y[Holm-Bonferroni] -.-> J
+    end
 ```
 
 ## Key Components

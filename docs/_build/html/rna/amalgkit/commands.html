@@ -1,0 +1,365 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Genome Setup Commands &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Genome Setup Commands</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/rna/amalgkit/commands.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="genome-setup-commands">
+<h1>Genome Setup Commands<a class="headerlink" href="#genome-setup-commands" title="Link to this heading"></a></h1>
+<p>This document lists all commands to run the genome setup scripts sequentially.</p>
+<section id="quick-reference">
+<h2>Quick Reference<a class="headerlink" href="#quick-reference" title="Link to this heading"></a></h2>
+<section id="option-1-run-all-steps-sequentially-recommended">
+<h3>Option 1: Run All Steps Sequentially (Recommended)<a class="headerlink" href="#option-1-run-all-steps-sequentially-recommended" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run the complete pipeline script</span>
+bash<span class="w"> </span>scripts/rna/run_genome_setup.sh
+</pre></div>
+</div>
+</section>
+<section id="option-2-use-master-orchestrator">
+<h3>Option 2: Use Master Orchestrator<a class="headerlink" href="#option-2-use-master-orchestrator" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run everything in one command</span>
+python3<span class="w"> </span>scripts/rna/orchestrate_genome_setup.py
+</pre></div>
+</div>
+</section>
+<section id="option-3-run-steps-individually">
+<h3>Option 3: Run Steps Individually<a class="headerlink" href="#option-3-run-steps-individually" title="Link to this heading"></a></h3>
+<p>Run each step manually for more control:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Step 1: Check current status</span>
+python3<span class="w"> </span>scripts/rna/verify_genomes_and_indexes.py
+
+<span class="c1"># Step 2: Download missing genomes</span>
+python3<span class="w"> </span>scripts/rna/download_missing_genomes.py
+
+<span class="c1"># Step 3: Prepare transcriptomes</span>
+python3<span class="w"> </span>scripts/rna/prepare_transcriptomes.py
+
+<span class="c1"># Step 4: Build kallisto indexes</span>
+python3<span class="w"> </span>scripts/rna/build_kallisto_indexes.py
+
+<span class="c1"># Step 5: Verify final status</span>
+python3<span class="w"> </span>scripts/rna/verify_genomes_and_indexes.py
+</pre></div>
+</div>
+</section>
+</section>
+<section id="detailed-command-reference">
+<h2>Detailed Command Reference<a class="headerlink" href="#detailed-command-reference" title="Link to this heading"></a></h2>
+<section id="step-1-verification">
+<h3>Step 1: Verification<a class="headerlink" href="#step-1-verification" title="Link to this heading"></a></h3>
+<p><strong>Check status of all species:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/rna/verify_genomes_and_indexes.py
+</pre></div>
+</div>
+<p><strong>Check specific species:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/rna/verify_genomes_and_indexes.py<span class="w"> </span>--species<span class="w"> </span>camponotus_floridanus
+</pre></div>
+</div>
+<p><strong>Custom output location:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/rna/verify_genomes_and_indexes.py<span class="w"> </span>--output<span class="w"> </span>output/my_status.json
+</pre></div>
+</div>
+</section>
+<section id="step-2-download-genomes">
+<h3>Step 2: Download Genomes<a class="headerlink" href="#step-2-download-genomes" title="Link to this heading"></a></h3>
+<p><strong>Download all missing genomes:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/rna/download_missing_genomes.py
+</pre></div>
+</div>
+<p><strong>Download specific species:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/rna/download_missing_genomes.py<span class="w"> </span>--species<span class="w"> </span>camponotus_floridanus
+</pre></div>
+</div>
+<p><strong>Dry run (see what would be downloaded):</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/rna/download_missing_genomes.py<span class="w"> </span>--dry-run
+</pre></div>
+</div>
+</section>
+<section id="step-3-prepare-transcriptomes">
+<h3>Step 3: Prepare Transcriptomes<a class="headerlink" href="#step-3-prepare-transcriptomes" title="Link to this heading"></a></h3>
+<p><strong>Prepare all transcriptomes:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/rna/prepare_transcriptomes.py
+</pre></div>
+</div>
+<p><strong>Prepare specific species:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/rna/prepare_transcriptomes.py<span class="w"> </span>--species<span class="w"> </span>camponotus_floridanus
+</pre></div>
+</div>
+<p><strong>Dry run:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/rna/prepare_transcriptomes.py<span class="w"> </span>--dry-run
+</pre></div>
+</div>
+</section>
+<section id="step-4-build-kallisto-indexes">
+<h3>Step 4: Build Kallisto Indexes<a class="headerlink" href="#step-4-build-kallisto-indexes" title="Link to this heading"></a></h3>
+<p><strong>Build all indexes:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/rna/build_kallisto_indexes.py
+</pre></div>
+</div>
+<p><strong>Build specific species:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/rna/build_kallisto_indexes.py<span class="w"> </span>--species<span class="w"> </span>camponotus_floridanus
+</pre></div>
+</div>
+<p><strong>Custom k-mer size (for short reads):</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/rna/build_kallisto_indexes.py<span class="w"> </span>--kmer-size<span class="w"> </span><span class="m">23</span>
+</pre></div>
+</div>
+<p><strong>Dry run:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/rna/build_kallisto_indexes.py<span class="w"> </span>--dry-run
+</pre></div>
+</div>
+</section>
+<section id="step-5-master-orchestrator">
+<h3>Step 5: Master Orchestrator<a class="headerlink" href="#step-5-master-orchestrator" title="Link to this heading"></a></h3>
+<p><strong>Run complete pipeline:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/rna/orchestrate_genome_setup.py
+</pre></div>
+</div>
+<p><strong>Run for specific species:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/rna/orchestrate_genome_setup.py<span class="w"> </span>--species<span class="w"> </span>camponotus_floridanus
+</pre></div>
+</div>
+<p><strong>Skip specific steps:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Skip download step (if genomes already downloaded)</span>
+python3<span class="w"> </span>scripts/rna/orchestrate_genome_setup.py<span class="w"> </span>--skip-download
+
+<span class="c1"># Skip preparation step</span>
+python3<span class="w"> </span>scripts/rna/orchestrate_genome_setup.py<span class="w"> </span>--skip-prepare
+
+<span class="c1"># Skip index building</span>
+python3<span class="w"> </span>scripts/rna/orchestrate_genome_setup.py<span class="w"> </span>--skip-build
+
+<span class="c1"># Skip initial verification</span>
+python3<span class="w"> </span>scripts/rna/orchestrate_genome_setup.py<span class="w"> </span>--skip-verify-initial
+
+<span class="c1"># Skip final verification</span>
+python3<span class="w"> </span>scripts/rna/orchestrate_genome_setup.py<span class="w"> </span>--skip-verify-final
+</pre></div>
+</div>
+<p><strong>Dry run:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/rna/orchestrate_genome_setup.py<span class="w"> </span>--dry-run
+</pre></div>
+</div>
+</section>
+</section>
+<section id="example-workflow">
+<h2>Example Workflow<a class="headerlink" href="#example-workflow" title="Link to this heading"></a></h2>
+<section id="complete-setup-for-all-species">
+<h3>Complete Setup for All Species<a class="headerlink" href="#complete-setup-for-all-species" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Option A: Automated pipeline script</span>
+bash<span class="w"> </span>scripts/rna/run_genome_setup.sh
+
+<span class="c1"># Option B: Master orchestrator</span>
+python3<span class="w"> </span>scripts/rna/orchestrate_genome_setup.py
+
+<span class="c1"># Option C: Manual step-by-step</span>
+python3<span class="w"> </span>scripts/rna/verify_genomes_and_indexes.py
+python3<span class="w"> </span>scripts/rna/download_missing_genomes.py
+python3<span class="w"> </span>scripts/rna/prepare_transcriptomes.py
+python3<span class="w"> </span>scripts/rna/build_kallisto_indexes.py
+python3<span class="w"> </span>scripts/rna/verify_genomes_and_indexes.py
+</pre></div>
+</div>
+</section>
+<section id="setup-for-single-species">
+<h3>Setup for Single Species<a class="headerlink" href="#setup-for-single-species" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Complete setup for one species</span>
+python3<span class="w"> </span>scripts/rna/orchestrate_genome_setup.py<span class="w"> </span>--species<span class="w"> </span>camponotus_floridanus
+
+<span class="c1"># Or step-by-step:</span>
+python3<span class="w"> </span>scripts/rna/download_missing_genomes.py<span class="w"> </span>--species<span class="w"> </span>camponotus_floridanus
+python3<span class="w"> </span>scripts/rna/prepare_transcriptomes.py<span class="w"> </span>--species<span class="w"> </span>camponotus_floridanus
+python3<span class="w"> </span>scripts/rna/build_kallisto_indexes.py<span class="w"> </span>--species<span class="w"> </span>camponotus_floridanus
+</pre></div>
+</div>
+</section>
+<section id="incremental-setup">
+<h3>Incremental Setup<a class="headerlink" href="#incremental-setup" title="Link to this heading"></a></h3>
+<p>If you only need to do specific steps:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check what&#39;s missing</span>
+python3<span class="w"> </span>scripts/rna/verify_genomes_and_indexes.py
+
+<span class="c1"># Download only missing genomes</span>
+python3<span class="w"> </span>scripts/rna/download_missing_genomes.py
+
+<span class="c1"># Prepare only newly downloaded genomes</span>
+python3<span class="w"> </span>scripts/rna/prepare_transcriptomes.py
+
+<span class="c1"># Build only newly prepared transcriptomes</span>
+python3<span class="w"> </span>scripts/rna/build_kallisto_indexes.py
+</pre></div>
+</div>
+</section>
+</section>
+<section id="output-files">
+<h2>Output Files<a class="headerlink" href="#output-files" title="Link to this heading"></a></h2>
+<p>All scripts write JSON result files to <code class="docutils literal notranslate"><span class="pre">output/</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">output/genome_index_status.json</span></code> - Verification results</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output/genome_download_results.json</span></code> - Download results</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output/transcriptome_preparation_results.json</span></code> - Preparation results</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output/kallisto_index_build_results.json</span></code> - Index build results</p></li>
+</ul>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="if-a-script-fails-midway">
+<h3>If a script fails midway<a class="headerlink" href="#if-a-script-fails-midway" title="Link to this heading"></a></h3>
+<p>You can resume by running only the failed steps:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check current status</span>
+python3<span class="w"> </span>scripts/rna/verify_genomes_and_indexes.py
+
+<span class="c1"># Continue from where it left off</span>
+python3<span class="w"> </span>scripts/rna/download_missing_genomes.py<span class="w">  </span><span class="c1"># Only downloads missing</span>
+python3<span class="w"> </span>scripts/rna/prepare_transcriptomes.py<span class="w">     </span><span class="c1"># Only prepares missing</span>
+python3<span class="w"> </span>scripts/rna/build_kallisto_indexes.py<span class="w">     </span><span class="c1"># Only builds missing</span>
+</pre></div>
+</div>
+</section>
+<section id="check-progress-during-long-downloads">
+<h3>Check progress during long downloads<a class="headerlink" href="#check-progress-during-long-downloads" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check status while downloads are running (in another terminal)</span>
+python3<span class="w"> </span>scripts/rna/verify_genomes_and_indexes.py
+
+<span class="c1"># Check download progress files</span>
+cat<span class="w"> </span>output/amalgkit/*/genome/download.progress.txt
+</pre></div>
+</div>
+</section>
+</section>
+<section id="see-also">
+<h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="genome_setup_guide.html"><span class="std std-doc">Genome Setup Guide</span></a> - Detailed setup instructions</p></li>
+<li><p><a class="reference internal" href="genome_preparation.html"><span class="std std-doc">Genome Preparation</span></a> - Technical documentation and API reference</p></li>
+<li><p><a class="reference internal" href="#steps/quant.md"><span class="xref myst">Quantification Step</span></a> - Using kallisto indexes for quantification</p></li>
+<li><p><a class="reference internal" href="amalgkit.html"><span class="std std-doc">Workflow Guide</span></a> - Complete workflow documentation</p></li>
+<li><p><a class="reference internal" href="README.html"><span class="std std-doc">Amalgkit README</span></a> - Overview of amalgkit integration</p></li>
+<li><p><a class="reference internal" href="../README.html"><span class="std std-doc">RNA Domain README</span></a> - RNA domain overview</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

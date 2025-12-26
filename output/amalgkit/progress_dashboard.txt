@@ -1,6 +1,6 @@
 ====================================================================================================
 RNA-SEQ WORKFLOW PROGRESS DASHBOARD
-Updated: 2025-12-17 13:27:04
+Updated: 2025-12-25 14:37:31
 ====================================================================================================
 
 OVERALL STATISTICS
@@ -38,6 +38,6 @@ CATEGORIES:
   Needs Delete = Quantified but FASTQs still present
   Completed = Quantified and FASTQs deleted
 
-Dashboard Location: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/progress_dashboard.txt
-State File: /private/var/folders/vc/rgmbpjpj0dbg61vr54xjskc80000gn/T/pytest-of-4d/pytest-278/test_get_species_summary0/progress_state.json
-Log File: /Users/4d/Documents/GitHub/metainformant/output/amalgkit/progress_tracker.log
+Dashboard Location: /Users/4d/Documents/GitHub/MetaInformAnt/output/amalgkit/progress_dashboard.txt
+State File: /private/var/folders/vc/rgmbpjpj0dbg61vr54xjskc80000gn/T/pytest-of-4d/pytest-14/test_get_species_summary0/progress_state.json
+Log File: /Users/4d/Documents/GitHub/MetaInformAnt/output/amalgkit/progress_tracker.log

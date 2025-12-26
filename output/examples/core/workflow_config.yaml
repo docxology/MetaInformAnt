@@ -1,0 +1,31 @@
+output:
+  directory: output/examples/core/workflow_output
+  final_report: analysis_report.json
+  intermediate_files: true
+steps:
+  analyze_sequences:
+    calculate_gc: true
+    description: Calculate sequence statistics
+    find_motifs:
+    - ATCG
+    - GATC
+  generate_report:
+    description: Create analysis summary report
+    include_plots: false
+    output_format: json
+  load_data:
+    description: Load sequence data from file
+    expected_count: 5
+    input_file: sample_sequences.fasta
+  validate_data:
+    allowed_bases:
+    - A
+    - T
+    - C
+    - G
+    description: Validate sequence integrity
+    min_length: 10
+workflow:
+  description: Demonstration of basic workflow orchestration
+  name: dna_sequence_analysis_demo
+  version: '1.0'

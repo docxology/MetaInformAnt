@@ -1,0 +1,396 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DNA: Population Genetics &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">DNA: Population Genetics</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/dna/population.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="dna-population-genetics">
+<h1>DNA: Population Genetics<a class="headerlink" href="#dna-population-genetics" title="Link to this heading"></a></h1>
+<p>Population genetic analysis and diversity metrics for DNA sequences.</p>
+<p><strong>Functions</strong>: <code class="docutils literal notranslate"><span class="pre">allele_frequencies</span></code>, <code class="docutils literal notranslate"><span class="pre">observed_heterozygosity</span></code>, <code class="docutils literal notranslate"><span class="pre">nucleotide_diversity</span></code>, <code class="docutils literal notranslate"><span class="pre">tajimas_d</span></code>, <code class="docutils literal notranslate"><span class="pre">hudson_fst</span></code>, <code class="docutils literal notranslate"><span class="pre">segregating_sites</span></code>, <code class="docutils literal notranslate"><span class="pre">wattersons_theta</span></code>.</p>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TD
+  A[Sequences/Genotypes] --&gt; B[Summary Stats]
+  B --&gt; C[pi]
+  B --&gt; D[Tajima&#39;s D]
+  B --&gt; E[Fst]
+  B --&gt; F[S, theta_w]
+</pre></div>
+</div>
+</section>
+<section id="overview">
+<h1>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h1>
+<p>This module provides population genetics statistics for DNA sequence data, including:</p>
+<ul class="simple">
+<li><p><strong>Diversity metrics</strong>: Nucleotide diversity (π), segregating sites</p></li>
+<li><p><strong>Neutrality tests</strong>: Tajima’s D (simplified version)</p></li>
+<li><p><strong>Population differentiation</strong>: F-statistics (Hudson’s Fst)</p></li>
+<li><p><strong>Allele frequencies</strong>: From genotype matrices</p></li>
+<li><p><strong>Heterozygosity</strong>: Observed heterozygosity from diploid genotypes</p></li>
+</ul>
+</section>
+<section id="functions">
+<h1>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h1>
+<section id="allele-frequencies-genotype-matrix">
+<h2><code class="docutils literal notranslate"><span class="pre">allele_frequencies(genotype_matrix)</span></code><a class="headerlink" href="#allele-frequencies-genotype-matrix" title="Link to this heading"></a></h2>
+<p>Compute frequency of allele ‘1’ per site from a genotype matrix.</p>
+<p><strong>Parameters</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">genotype_matrix</span></code>: List of lists where rows are individuals, columns are sites; values 0/1</p></li>
+</ul>
+<p><strong>Returns</strong>: List of frequencies per site (float values in [0, 1])</p>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.dna</span><span class="w"> </span><span class="kn">import</span> <span class="n">population</span>
+
+<span class="n">genotypes</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>  <span class="c1"># Individual 1</span>
+    <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>  <span class="c1"># Individual 2</span>
+    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>  <span class="c1"># Individual 3</span>
+<span class="p">]</span>
+<span class="n">freqs</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">allele_frequencies</span><span class="p">(</span><span class="n">genotypes</span><span class="p">)</span>
+<span class="c1"># Returns: [0.333..., 0.666..., 0.666...]</span>
+</pre></div>
+</div>
+</section>
+<section id="observed-heterozygosity-genotypes">
+<h2><code class="docutils literal notranslate"><span class="pre">observed_heterozygosity(genotypes)</span></code><a class="headerlink" href="#observed-heterozygosity-genotypes" title="Link to this heading"></a></h2>
+<p>Calculate the proportion of heterozygous individuals among diploid genotypes.</p>
+<p><strong>Parameters</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">genotypes</span></code>: Iterable of tuples (a1, a2) with alleles 0/1</p></li>
+</ul>
+<p><strong>Returns</strong>: Float in [0, 1] representing proportion of heterozygotes</p>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">genotypes</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)]</span>
+<span class="n">h_obs</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">observed_heterozygosity</span><span class="p">(</span><span class="n">genotypes</span><span class="p">)</span>
+<span class="c1"># Returns: 0.5 (2 of 4 are heterozygous)</span>
+</pre></div>
+</div>
+</section>
+<section id="nucleotide-diversity-seqs">
+<h2><code class="docutils literal notranslate"><span class="pre">nucleotide_diversity(seqs)</span></code><a class="headerlink" href="#nucleotide-diversity-seqs" title="Link to this heading"></a></h2>
+<p>Calculate average pairwise nucleotide difference per site (π).</p>
+<p><strong>Parameters</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">seqs</span></code>: Sequence of DNA sequences (strings)</p></li>
+</ul>
+<p><strong>Returns</strong>: Average pairwise diversity per site (float)</p>
+<p><strong>Note</strong>: If sequences have different lengths, truncates to shortest length.</p>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">seqs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;AAAA&quot;</span><span class="p">,</span> <span class="s2">&quot;AAAT&quot;</span><span class="p">,</span> <span class="s2">&quot;AATT&quot;</span><span class="p">]</span>
+<span class="n">pi</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">nucleotide_diversity</span><span class="p">(</span><span class="n">seqs</span><span class="p">)</span>
+<span class="c1"># Returns average pairwise differences per site</span>
+</pre></div>
+</div>
+</section>
+<section id="tajimas-d-seqs">
+<h2><code class="docutils literal notranslate"><span class="pre">tajimas_d(seqs)</span></code><a class="headerlink" href="#tajimas-d-seqs" title="Link to this heading"></a></h2>
+<p>Calculate simplified Tajima’s D statistic for departure from neutral equilibrium.</p>
+<p><strong>Parameters</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">seqs</span></code>: Sequence of DNA sequences (strings)</p></li>
+</ul>
+<p><strong>Returns</strong>: Simplified Tajima’s D statistic (float)</p>
+<p><strong>Note</strong>: This is a simplified version. For publication-quality analysis with proper variance calculation, use <code class="docutils literal notranslate"><span class="pre">metainformant.math.coalescent.tajimas_D()</span></code>.</p>
+<p><strong>Interpretation</strong>:</p>
+<ul class="simple">
+<li><p>D &gt; 0: Suggests balancing selection or population contraction</p></li>
+<li><p>D &lt; 0: Suggests directional selection or population expansion</p></li>
+<li><p>D ≈ 0: Consistent with neutral equilibrium</p></li>
+</ul>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">seqs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;AAAA&quot;</span><span class="p">,</span> <span class="s2">&quot;AAAT&quot;</span><span class="p">,</span> <span class="s2">&quot;AATT&quot;</span><span class="p">,</span> <span class="s2">&quot;ATTT&quot;</span><span class="p">]</span>
+<span class="n">d</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">tajimas_d</span><span class="p">(</span><span class="n">seqs</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="hudson-fst-pop1-pop2">
+<h2><code class="docutils literal notranslate"><span class="pre">hudson_fst(pop1,</span> <span class="pre">pop2)</span></code><a class="headerlink" href="#hudson-fst-pop1-pop2" title="Link to this heading"></a></h2>
+<p>Calculate Hudson’s Fst estimator for two populations.</p>
+<p><strong>Parameters</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pop1</span></code>: Sequence of DNA sequences from population 1</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pop2</span></code>: Sequence of DNA sequences from population 2</p></li>
+</ul>
+<p><strong>Returns</strong>: Fst value in [0, 1] where:</p>
+<ul class="simple">
+<li><p>0 = no differentiation</p></li>
+<li><p>1 = complete differentiation (fixed differences)</p></li>
+</ul>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pop1</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;AAAA&quot;</span><span class="p">,</span> <span class="s2">&quot;AAAA&quot;</span><span class="p">,</span> <span class="s2">&quot;AAAT&quot;</span><span class="p">]</span>
+<span class="n">pop2</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;TTTT&quot;</span><span class="p">,</span> <span class="s2">&quot;TTTT&quot;</span><span class="p">,</span> <span class="s2">&quot;TTTA&quot;</span><span class="p">]</span>
+<span class="n">fst</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">hudson_fst</span><span class="p">(</span><span class="n">pop1</span><span class="p">,</span> <span class="n">pop2</span><span class="p">)</span>
+<span class="c1"># Returns: 1.0 for fixed differences</span>
+</pre></div>
+</div>
+</section>
+<section id="segregating-sites-seqs">
+<h2><code class="docutils literal notranslate"><span class="pre">segregating_sites(seqs)</span></code><a class="headerlink" href="#segregating-sites-seqs" title="Link to this heading"></a></h2>
+<p>Count the number of sites with more than one allele among sequences.</p>
+<p><strong>Parameters</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">seqs</span></code>: Sequence of DNA sequences (strings)</p></li>
+</ul>
+<p><strong>Returns</strong>: Integer count of segregating (polymorphic) sites</p>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">seqs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;AAAA&quot;</span><span class="p">,</span> <span class="s2">&quot;AAAT&quot;</span><span class="p">,</span> <span class="s2">&quot;AATT&quot;</span><span class="p">]</span>
+<span class="n">S</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">segregating_sites</span><span class="p">(</span><span class="n">seqs</span><span class="p">)</span>
+<span class="c1"># Returns: 2 (sites at positions 2 and 3 are polymorphic)</span>
+</pre></div>
+</div>
+</section>
+<section id="wattersons-theta-seqs">
+<h2><code class="docutils literal notranslate"><span class="pre">wattersons_theta(seqs)</span></code><a class="headerlink" href="#wattersons-theta-seqs" title="Link to this heading"></a></h2>
+<p>Calculate Watterson’s theta per site: θ_W = S / (a₁ × L).</p>
+<p><strong>Parameters</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">seqs</span></code>: Sequence of DNA sequences (strings)</p></li>
+</ul>
+<p><strong>Returns</strong>: Watterson’s theta estimate per site (float)</p>
+<p><strong>Formula</strong>: θ_W = S / (a₁ × L) where:</p>
+<ul class="simple">
+<li><p>S = number of segregating sites</p></li>
+<li><p>a₁ = Σᵢ₌₁ⁿ⁻¹ 1/i (harmonic sum)</p></li>
+<li><p>L = sequence length</p></li>
+</ul>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">seqs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;AAAA&quot;</span><span class="p">,</span> <span class="s2">&quot;AAAT&quot;</span><span class="p">,</span> <span class="s2">&quot;AATT&quot;</span><span class="p">]</span>
+<span class="n">theta_w</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">wattersons_theta</span><span class="p">(</span><span class="n">seqs</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="usage-examples">
+<h1>Usage Examples<a class="headerlink" href="#usage-examples" title="Link to this heading"></a></h1>
+<section id="basic-population-analysis">
+<h2>Basic Population Analysis<a class="headerlink" href="#basic-population-analysis" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.dna</span><span class="w"> </span><span class="kn">import</span> <span class="n">population</span>
+
+<span class="c1"># Load sequences (from FASTA, etc.)</span>
+<span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ATCGATCG&quot;</span><span class="p">,</span> <span class="s2">&quot;ATCGTTCG&quot;</span><span class="p">,</span> <span class="s2">&quot;ATCGATCG&quot;</span><span class="p">,</span> <span class="s2">&quot;ATCGTTCG&quot;</span><span class="p">]</span>
+
+<span class="c1"># Calculate diversity metrics</span>
+<span class="n">pi</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">nucleotide_diversity</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Nucleotide diversity (π): </span><span class="si">{</span><span class="n">pi</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Count segregating sites</span>
+<span class="n">S</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">segregating_sites</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Segregating sites: </span><span class="si">{</span><span class="n">S</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Calculate Watterson&#39;s theta</span>
+<span class="n">theta_w</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">wattersons_theta</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Watterson&#39;s theta: </span><span class="si">{</span><span class="n">theta_w</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Calculate Tajima&#39;s D</span>
+<span class="n">d</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">tajimas_d</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tajima&#39;s D: </span><span class="si">{</span><span class="n">d</span><span class="si">:</span><span class="s2">.6f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="population-differentiation">
+<h2>Population Differentiation<a class="headerlink" href="#population-differentiation" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Compare two populations</span>
+<span class="n">pop1</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;AAAA&quot;</span><span class="p">,</span> <span class="s2">&quot;AAAT&quot;</span><span class="p">,</span> <span class="s2">&quot;AAAA&quot;</span><span class="p">]</span>
+<span class="n">pop2</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;TTTT&quot;</span><span class="p">,</span> <span class="s2">&quot;TTTA&quot;</span><span class="p">,</span> <span class="s2">&quot;TTTT&quot;</span><span class="p">]</span>
+
+<span class="n">fst</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">hudson_fst</span><span class="p">(</span><span class="n">pop1</span><span class="p">,</span> <span class="n">pop2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Fst between populations: </span><span class="si">{</span><span class="n">fst</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="genotype-analysis">
+<h2>Genotype Analysis<a class="headerlink" href="#genotype-analysis" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># From genotype matrix (0/1 encoding)</span>
+<span class="n">genotype_matrix</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>  <span class="c1"># Individual 1</span>
+    <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>  <span class="c1"># Individual 2</span>
+    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>  <span class="c1"># Individual 3</span>
+    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>  <span class="c1"># Individual 4</span>
+<span class="p">]</span>
+
+<span class="c1"># Calculate allele frequencies</span>
+<span class="n">freqs</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">allele_frequencies</span><span class="p">(</span><span class="n">genotype_matrix</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Allele frequencies: </span><span class="si">{</span><span class="n">freqs</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Calculate observed heterozygosity</span>
+<span class="n">genotypes</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)]</span>
+<span class="n">h_obs</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">observed_heterozygosity</span><span class="p">(</span><span class="n">genotypes</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Observed heterozygosity: </span><span class="si">{</span><span class="n">h_obs</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="integration-with-other-modules">
+<h1>Integration with Other Modules<a class="headerlink" href="#integration-with-other-modules" title="Link to this heading"></a></h1>
+<section id="with-math-module">
+<h2>With Math Module<a class="headerlink" href="#with-math-module" title="Link to this heading"></a></h2>
+<p>For more advanced population genetics calculations, combine with <code class="docutils literal notranslate"><span class="pre">math.popgen</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.dna</span><span class="w"> </span><span class="kn">import</span> <span class="n">population</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.math.coalescent</span><span class="w"> </span><span class="kn">import</span> <span class="n">tajimas_D</span>
+
+<span class="c1"># Calculate observed statistics</span>
+<span class="n">seqs</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;AAAA&quot;</span><span class="p">,</span> <span class="s2">&quot;AAAT&quot;</span><span class="p">,</span> <span class="s2">&quot;AATT&quot;</span><span class="p">]</span>
+<span class="n">pi</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">nucleotide_diversity</span><span class="p">(</span><span class="n">seqs</span><span class="p">)</span>
+<span class="n">S</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">segregating_sites</span><span class="p">(</span><span class="n">seqs</span><span class="p">)</span>
+
+<span class="c1"># Use full Tajima&#39;s D implementation</span>
+<span class="n">d_full</span> <span class="o">=</span> <span class="n">tajimas_D</span><span class="p">(</span><span class="n">S</span><span class="p">,</span> <span class="n">pi</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">seqs</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+<section id="with-gwas-module">
+<h2>With GWAS Module<a class="headerlink" href="#with-gwas-module" title="Link to this heading"></a></h2>
+<p>Population genetics statistics complement GWAS analysis:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.dna</span><span class="w"> </span><span class="kn">import</span> <span class="n">population</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.gwas</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_vcf_full</span>
+
+<span class="c1"># Parse VCF and extract sequences</span>
+<span class="n">vcf_data</span> <span class="o">=</span> <span class="n">parse_vcf_full</span><span class="p">(</span><span class="s2">&quot;variants.vcf&quot;</span><span class="p">)</span>
+<span class="c1"># ... convert to sequences ...</span>
+
+<span class="c1"># Calculate population diversity</span>
+<span class="n">pi</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">nucleotide_diversity</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="notes-and-limitations">
+<h1>Notes and Limitations<a class="headerlink" href="#notes-and-limitations" title="Link to this heading"></a></h1>
+<ol class="arabic simple">
+<li><p><strong>Sequence Length</strong>: Functions that process multiple sequences truncate to the shortest length if sequences differ.</p></li>
+<li><p><strong>Tajima’s D</strong>: The <code class="docutils literal notranslate"><span class="pre">tajimas_d()</span></code> function is a simplified version. For statistical testing, use <code class="docutils literal notranslate"><span class="pre">metainformant.math.coalescent.tajimas_D()</span></code>.</p></li>
+<li><p><strong>Genotype Encoding</strong>: Allele frequency functions assume binary encoding (0/1). Ensure your data is properly encoded.</p></li>
+<li><p><strong>Input Validation</strong>: Functions handle edge cases (empty inputs, single sequences) but may not validate all input types.</p></li>
+</ol>
+</section>
+<section id="references">
+<h1>References<a class="headerlink" href="#references" title="Link to this heading"></a></h1>
+<ul class="simple">
+<li><p>Tajima, F. (1989). Statistical method for testing the neutral mutation hypothesis by DNA polymorphism. <em>Genetics</em>, 123(3), 585-595.</p></li>
+<li><p>Hudson, R. R., Slatkin, M., &amp; Maddison, W. P. (1992). Estimation of levels of gene flow from DNA sequence data. <em>Genetics</em>, 132(2), 583-589.</p></li>
+<li><p>Watterson, G. A. (1975). On the number of segregating sites in genetical models without recombination. <em>Theoretical Population Biology</em>, 7(2), 256-276.</p></li>
+</ul>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

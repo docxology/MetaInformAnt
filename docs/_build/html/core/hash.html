@@ -1,0 +1,365 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Core: Hashing and Integrity Utilities &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Core: Hashing and Integrity Utilities</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/core/hash.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="core-hashing-and-integrity-utilities">
+<h1>Core: Hashing and Integrity Utilities<a class="headerlink" href="#core-hashing-and-integrity-utilities" title="Link to this heading"></a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">hash</span></code> module provides cryptographic hashing utilities for data integrity, deterministic seed generation, and file verification.</p>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<section id="sha-256-hashing">
+<h3>SHA-256 Hashing<a class="headerlink" href="#sha-256-hashing" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">sha256_bytes(data)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+<ul>
+<li><p>Compute SHA-256 hex digest of byte data</p></li>
+<li><p>Returns 64-character hexadecimal string</p></li>
+</ul>
+</li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">sha256_file(path,</span> <span class="pre">chunk_size=1048576)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+<ul>
+<li><p>Compute SHA-256 hash of file without loading entirely into memory</p></li>
+<li><p>Uses configurable chunk size for large files</p></li>
+<li><p>Memory-efficient for files of any size</p></li>
+</ul>
+</li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">sha256_string(s)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">str</span></code></p>
+<ul>
+<li><p>Compute SHA-256 hash of string content</p></li>
+<li><p>UTF-8 encoding used internally</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="integrity-verification">
+<h3>Integrity Verification<a class="headerlink" href="#integrity-verification" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">verify_file_integrity(file_path,</span> <span class="pre">expected_hash)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+<ul>
+<li><p>Verify file hasn’t been corrupted or tampered with</p></li>
+<li><p>Compares computed hash against expected value</p></li>
+<li><p>Returns False for unreadable files</p></li>
+</ul>
+</li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">file_hash_comparison(file1,</span> <span class="pre">file2)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">bool</span></code></p>
+<ul>
+<li><p>Compare two files by computing their hashes</p></li>
+<li><p>Efficient alternative to byte-by-byte comparison</p></li>
+<li><p>Useful for duplicate detection</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="deterministic-operations">
+<h3>Deterministic Operations<a class="headerlink" href="#deterministic-operations" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">deterministic_seed(data)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">int</span></code></p>
+<ul>
+<li><p>Generate deterministic integer seed from string data</p></li>
+<li><p>Seed is in valid range for random number generators</p></li>
+<li><p>Useful for reproducible simulations</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="batch-operations">
+<h3>Batch Operations<a class="headerlink" href="#batch-operations" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">hash_directory(path,</span> <span class="pre">pattern=&quot;**/*&quot;)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">Dict[str,</span> <span class="pre">str]</span></code></p>
+<ul>
+<li><p>Compute hashes for all files in directory matching pattern</p></li>
+<li><p>Returns relative paths as keys, hashes as values</p></li>
+<li><p>Skips unreadable files gracefully</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="usage-examples">
+<h2>Usage Examples<a class="headerlink" href="#usage-examples" title="Link to this heading"></a></h2>
+<section id="basic-hashing">
+<h3>Basic Hashing<a class="headerlink" href="#basic-hashing" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core</span><span class="w"> </span><span class="kn">import</span> <span class="nb">hash</span>
+
+<span class="c1"># Hash byte data</span>
+<span class="n">data</span> <span class="o">=</span> <span class="sa">b</span><span class="s2">&quot;Hello, World!&quot;</span>
+<span class="n">digest</span> <span class="o">=</span> <span class="nb">hash</span><span class="o">.</span><span class="n">sha256_bytes</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SHA256: </span><span class="si">{</span><span class="n">digest</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Hash string content</span>
+<span class="n">text_hash</span> <span class="o">=</span> <span class="nb">hash</span><span class="o">.</span><span class="n">sha256_string</span><span class="p">(</span><span class="s2">&quot;Hello, World!&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;String hash: </span><span class="si">{</span><span class="n">text_hash</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Hash large files efficiently</span>
+<span class="n">file_hash</span> <span class="o">=</span> <span class="nb">hash</span><span class="o">.</span><span class="n">sha256_file</span><span class="p">(</span><span class="s2">&quot;large_dataset.fasta&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;File hash: </span><span class="si">{</span><span class="n">file_hash</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="file-integrity-verification">
+<h3>File Integrity Verification<a class="headerlink" href="#file-integrity-verification" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core</span><span class="w"> </span><span class="kn">import</span> <span class="nb">hash</span>
+
+<span class="c1"># Verify downloaded file integrity</span>
+<span class="n">expected_hash</span> <span class="o">=</span> <span class="s2">&quot;a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3&quot;</span>
+<span class="n">is_valid</span> <span class="o">=</span> <span class="nb">hash</span><span class="o">.</span><span class="n">verify_file_integrity</span><span class="p">(</span><span class="s2">&quot;downloaded_file.zip&quot;</span><span class="p">,</span> <span class="n">expected_hash</span><span class="p">)</span>
+
+<span class="k">if</span> <span class="n">is_valid</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;File integrity verified ✓&quot;</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;File corrupted or tampered with ✗&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="deterministic-seeds">
+<h3>Deterministic Seeds<a class="headerlink" href="#deterministic-seeds" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core</span><span class="w"> </span><span class="kn">import</span> <span class="nb">hash</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+
+<span class="c1"># Generate reproducible random sequences</span>
+<span class="n">seed_value</span> <span class="o">=</span> <span class="nb">hash</span><span class="o">.</span><span class="n">deterministic_seed</span><span class="p">(</span><span class="s2">&quot;experiment_123&quot;</span><span class="p">)</span>
+<span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">seed_value</span><span class="p">)</span>
+
+<span class="c1"># Will always produce the same sequence</span>
+<span class="n">values</span> <span class="o">=</span> <span class="p">[</span><span class="n">random</span><span class="o">.</span><span class="n">random</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">)]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Reproducible values: </span><span class="si">{</span><span class="n">values</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="directory-integrity-checking">
+<h3>Directory Integrity Checking<a class="headerlink" href="#directory-integrity-checking" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core</span><span class="w"> </span><span class="kn">import</span> <span class="nb">hash</span>
+
+<span class="c1"># Hash all Python files in project</span>
+<span class="n">python_files</span> <span class="o">=</span> <span class="nb">hash</span><span class="o">.</span><span class="n">hash_directory</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot;**/*.py&quot;</span><span class="p">)</span>
+
+<span class="c1"># Check for changes</span>
+<span class="k">for</span> <span class="n">file_path</span><span class="p">,</span> <span class="n">file_hash</span> <span class="ow">in</span> <span class="n">python_files</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">file_path</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">file_hash</span><span class="p">[:</span><span class="mi">8</span><span class="p">]</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="duplicate-file-detection">
+<h3>Duplicate File Detection<a class="headerlink" href="#duplicate-file-detection" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core</span><span class="w"> </span><span class="kn">import</span> <span class="nb">hash</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">find_duplicates</span><span class="p">(</span><span class="n">file_list</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Find duplicate files using hashing.&quot;&quot;&quot;</span>
+    <span class="n">seen_hashes</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">duplicates</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">for</span> <span class="n">file_path</span> <span class="ow">in</span> <span class="n">file_list</span><span class="p">:</span>
+        <span class="n">file_hash</span> <span class="o">=</span> <span class="nb">hash</span><span class="o">.</span><span class="n">sha256_file</span><span class="p">(</span><span class="n">file_path</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">file_hash</span> <span class="ow">in</span> <span class="n">seen_hashes</span><span class="p">:</span>
+            <span class="n">duplicates</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">file_path</span><span class="p">,</span> <span class="n">seen_hashes</span><span class="p">[</span><span class="n">file_hash</span><span class="p">]))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">seen_hashes</span><span class="p">[</span><span class="n">file_hash</span><span class="p">]</span> <span class="o">=</span> <span class="n">file_path</span>
+
+    <span class="k">return</span> <span class="n">duplicates</span>
+
+<span class="c1"># Usage</span>
+<span class="n">files</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;data1.fasta&quot;</span><span class="p">,</span> <span class="s2">&quot;data2.fasta&quot;</span><span class="p">,</span> <span class="s2">&quot;data3.fasta&quot;</span><span class="p">]</span>
+<span class="n">dups</span> <span class="o">=</span> <span class="n">find_duplicates</span><span class="p">(</span><span class="n">files</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">dup</span><span class="p">,</span> <span class="n">original</span> <span class="ow">in</span> <span class="n">dups</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Duplicate: </span><span class="si">{</span><span class="n">dup</span><span class="si">}</span><span class="s2"> matches </span><span class="si">{</span><span class="n">original</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="performance-considerations">
+<h2>Performance Considerations<a class="headerlink" href="#performance-considerations" title="Link to this heading"></a></h2>
+<section id="memory-efficiency">
+<h3>Memory Efficiency<a class="headerlink" href="#memory-efficiency" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">sha256_file</span></code></strong>: Uses chunked reading (default 1MB chunks)</p></li>
+<li><p>Large files processed without memory exhaustion</p></li>
+<li><p>Configurable chunk size for optimization</p></li>
+</ul>
+</section>
+<section id="speed-optimization">
+<h3>Speed Optimization<a class="headerlink" href="#speed-optimization" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Cryptographic operations are CPU-intensive</p></li>
+<li><p>SHA-256 provides good balance of speed and collision resistance</p></li>
+<li><p>Consider caching hashes for frequently accessed files</p></li>
+</ul>
+</section>
+</section>
+<section id="security-notes">
+<h2>Security Notes<a class="headerlink" href="#security-notes" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>SHA-256 is cryptographically secure for integrity checking</p></li>
+<li><p>Not suitable for password hashing (use dedicated functions)</p></li>
+<li><p>Hash collisions are theoretically possible but practically unlikely</p></li>
+<li><p>File integrity checking helps detect corruption and tampering</p></li>
+</ul>
+</section>
+<section id="error-handling">
+<h2>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading"></a></h2>
+<p>Hash operations are designed to be robust:</p>
+<ul class="simple">
+<li><p>File I/O errors return appropriate default values</p></li>
+<li><p>Unreadable files are skipped in batch operations</p></li>
+<li><p>Deterministic seed generation handles edge cases</p></li>
+<li><p>All functions work with pathlib.Path and string paths</p></li>
+</ul>
+</section>
+<section id="integration-with-core-modules">
+<h2>Integration with Core Modules<a class="headerlink" href="#integration-with-core-modules" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core</span><span class="w"> </span><span class="kn">import</span> <span class="nb">hash</span><span class="p">,</span> <span class="n">cache</span><span class="p">,</span> <span class="n">io</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">cached_computation_with_integrity</span><span class="p">(</span><span class="n">cache_dir</span><span class="p">,</span> <span class="n">key</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Cache computation result with integrity verification.&quot;&quot;&quot;</span>
+    <span class="n">cache_file</span> <span class="o">=</span> <span class="n">cache_dir</span> <span class="o">/</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">.json&quot;</span>
+
+    <span class="c1"># Try to load cached result</span>
+    <span class="k">if</span> <span class="n">cache_file</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+        <span class="n">cached_data</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">load_json</span><span class="p">(</span><span class="n">cache_file</span><span class="p">)</span>
+        <span class="c1"># Verify cache file integrity</span>
+        <span class="k">if</span> <span class="nb">hash</span><span class="o">.</span><span class="n">verify_file_integrity</span><span class="p">(</span><span class="n">cache_file</span><span class="p">,</span> <span class="n">cached_data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;_integrity_hash&#39;</span><span class="p">)):</span>
+            <span class="k">return</span> <span class="n">cached_data</span><span class="p">[</span><span class="s1">&#39;result&#39;</span><span class="p">]</span>
+
+    <span class="c1"># Compute and cache with integrity hash</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">)</span>
+    <span class="n">data_to_cache</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;result&#39;</span><span class="p">:</span> <span class="n">result</span><span class="p">,</span>
+        <span class="s1">&#39;_integrity_hash&#39;</span><span class="p">:</span> <span class="nb">hash</span><span class="o">.</span><span class="n">sha256_string</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">result</span><span class="p">))</span>
+    <span class="p">}</span>
+    <span class="n">io</span><span class="o">.</span><span class="n">dump_json</span><span class="p">(</span><span class="n">data_to_cache</span><span class="p">,</span> <span class="n">cache_file</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">result</span>
+</pre></div>
+</div>
+</section>
+<section id="dependencies">
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Required</strong>: Standard library <code class="docutils literal notranslate"><span class="pre">hashlib</span></code>, <code class="docutils literal notranslate"><span class="pre">pathlib</span></code></p></li>
+<li><p><strong>Optional</strong>: None (all functionality uses stdlib)</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

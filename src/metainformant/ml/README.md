@@ -42,12 +42,171 @@ graph TB
     Networks --> Features
 ```
 
-### Machine Learning Workflow
+### Machine Learning Pipeline Architecture
 
 ```mermaid
-flowchart TD
-    Start[Data] --> Preprocess[Preprocess]
-    Preprocess --> FeatureSel[Feature Selection]
+graph TD
+    A[Biological Data] --> B[Data Preprocessing]
+    B --> C[Feature Engineering]
+
+    C --> D{Task Type}
+    D -->|Classification| E[Classification Pipeline]
+    D -->|Regression| F[Regression Pipeline]
+
+    E --> G[Train/Test Split]
+    F --> G
+
+    G --> H[Model Training]
+    H --> I[Hyperparameter Tuning]
+
+    I --> J[Model Evaluation]
+    J --> K[Performance Metrics]
+
+    K --> L{Cross-Validation}
+    L --> M[Validation Scores]
+    L --> N[Performance Plots]
+
+    M --> O[Model Selection]
+    N --> O
+
+    O --> P{Deploy/Interpret}
+    P -->|Deploy| Q[Model Deployment]
+    P -->|Interpret| R[Feature Importance]
+    P -->|Ensemble| S[Model Combination]
+
+    Q --> T[Predictions]
+    R --> U[Biological Insights]
+    S --> T
+
+    T --> V[Results]
+    U --> V
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style H fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style V fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Feature Selection"
+        W[Filter Methods] -.-> C
+        X[Wrapper Methods] -.-> C
+        Y[Embedded Methods] -.-> C
+    end
+
+    subgraph "Algorithms"
+        Z[Random Forest] -.-> H
+        AA[SVM] -.-> H
+        BB[Neural Networks] -.-> H
+        CC[Gradient Boosting] -.-> H
+    end
+
+    subgraph "Evaluation Metrics"
+        DD[Accuracy/F1] -.-> K
+        EE[MSE/R²] -.-> K
+        FF[AUC-ROC] -.-> K
+        GG[Confusion Matrix] -.-> K
+    end
+```
+
+### Feature Selection Workflow
+
+```mermaid
+graph TD
+    A[High-dimensional Data] --> B[Feature Assessment]
+    B --> C{Selection Method}
+
+    C -->|Filter| D[Statistical Tests]
+    C -->|Wrapper| E[Model-based Selection]
+    C -->|Embedded| F[Regularization Methods]
+
+    D --> G[Univariate Tests]
+    D --> H[Mutual Information]
+    D --> I[Variance Threshold]
+
+    E --> J[Recursive Elimination]
+    E --> K[Sequential Selection]
+
+    F --> L[LASSO Regression]
+    F --> M[Ridge Regression]
+    F --> N[Elastic Net]
+
+    G --> O[Feature Ranking]
+    H --> O
+    I --> O
+    J --> O
+    K --> O
+    L --> O
+    M --> O
+    N --> O
+
+    O --> P[Optimal Feature Set]
+    P --> Q[Reduced Dimensionality]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style O fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style Q fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Biological Applications"
+        R[Gene Expression] -.-> A
+        S[Protein Features] -.-> A
+        T[Genomic Variants] -.-> A
+        U[Metabolomic Data] -.-> A
+    end
+
+    subgraph "Validation"
+        V[Cross-validation] -.-> P
+        W[Biological Relevance] -.-> P
+        X[Stability Assessment] -.-> P
+    end
+```
+
+### Cross-Validation Framework
+
+```mermaid
+graph TD
+    A[Training Data] --> B[Cross-Validation Strategy]
+    B --> C{K-fold CV}
+    B --> D{Stratified CV}
+    B --> E{Time Series CV}
+
+    C --> F[Fold Creation]
+    D --> F
+    E --> F
+
+    F --> G[Model Training]
+    G --> H[Performance Evaluation]
+
+    H --> I[Average Metrics]
+    H --> J[Variance Estimation]
+    H --> K[Overfitting Detection]
+
+    I --> L[Model Comparison]
+    J --> L
+    K --> L
+
+    L --> M[Best Model Selection]
+    M --> N[Final Model Training]
+
+    N --> O[Test Set Evaluation]
+    O --> P[Generalization Assessment]
+
+    P --> Q[Model Confidence]
+    Q --> R[Deployment Decision]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style G fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Validation Techniques"
+        S[Holdout Validation] -.-> O
+        T[Bootstrap Validation] -.-> O
+        U[Permutation Testing] -.-> O
+    end
+
+    subgraph "Performance Measures"
+        V[Bias-Variance Tradeoff] -.-> L
+        W[Confidence Intervals] -.-> Q
+        X[Prediction Intervals] -.-> Q
+    end
+```
     FeatureSel --> Split[Train/Test Split]
     Split --> Train[Train Model]
     Train --> Validate[Cross-Validate]

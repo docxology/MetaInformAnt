@@ -1,0 +1,522 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multi-Omics Integration API Reference &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Multi-Omics Integration API Reference</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/multiomics/integration.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="multi-omics-integration-api-reference">
+<h1>Multi-Omics Integration API Reference<a class="headerlink" href="#multi-omics-integration-api-reference" title="Link to this heading"></a></h1>
+<p>Complete API reference for the multi-omics integration module.</p>
+<section id="classes">
+<h2>Classes<a class="headerlink" href="#classes" title="Link to this heading"></a></h2>
+<section id="multiomicsdata">
+<h3>MultiOmicsData<a class="headerlink" href="#multiomicsdata" title="Link to this heading"></a></h3>
+<p>Container for multi-omics datasets with automatic sample alignment.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">MultiOmicsData</span><span class="p">:</span>
+    <span class="n">genomics</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">transcriptomics</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">proteomics</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metabolomics</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">epigenomics</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+</pre></div>
+</div>
+<section id="attributes">
+<h4>Attributes<a class="headerlink" href="#attributes" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>genomics</strong>: Genomic data (SNPs, mutations) as DataFrame (samples × features)</p></li>
+<li><p><strong>transcriptomics</strong>: Gene expression data as DataFrame (samples × genes)</p></li>
+<li><p><strong>proteomics</strong>: Protein abundance data as DataFrame (samples × proteins)</p></li>
+<li><p><strong>metabolomics</strong>: Metabolite data as DataFrame (samples × metabolites)</p></li>
+<li><p><strong>epigenomics</strong>: Epigenomic data as DataFrame (samples × epigenetic marks)</p></li>
+<li><p><strong>metadata</strong>: Sample metadata as DataFrame (samples × metadata columns)</p></li>
+</ul>
+</section>
+<section id="properties">
+<h4>Properties<a class="headerlink" href="#properties" title="Link to this heading"></a></h4>
+<section id="samples-list-str">
+<h5><code class="docutils literal notranslate"><span class="pre">samples:</span> <span class="pre">List[str]</span></code><a class="headerlink" href="#samples-list-str" title="Link to this heading"></a></h5>
+<p>Get list of aligned samples across all omics layers.</p>
+<p><strong>Returns:</strong></p>
+<ul class="simple">
+<li><p>List of sample identifiers (index values) that are present in all provided omics layers. Samples are sorted alphabetically.</p></li>
+</ul>
+</section>
+<section id="n-samples-int">
+<h5><code class="docutils literal notranslate"><span class="pre">n_samples:</span> <span class="pre">int</span></code><a class="headerlink" href="#n-samples-int" title="Link to this heading"></a></h5>
+<p>Get number of aligned samples across all omics layers.</p>
+<p><strong>Returns:</strong></p>
+<ul class="simple">
+<li><p>Integer count of samples present in all layers.</p></li>
+</ul>
+</section>
+<section id="layer-names-list-str">
+<h5><code class="docutils literal notranslate"><span class="pre">layer_names:</span> <span class="pre">List[str]</span></code><a class="headerlink" href="#layer-names-list-str" title="Link to this heading"></a></h5>
+<p>Get names of all available omics layers.</p>
+<p><strong>Returns:</strong></p>
+<ul class="simple">
+<li><p>List of layer names (e.g., [‘genomics’, ‘transcriptomics’]). Only includes layers that were provided (not None).</p></li>
+</ul>
+</section>
+</section>
+<section id="methods">
+<h4>Methods<a class="headerlink" href="#methods" title="Link to this heading"></a></h4>
+<section id="get-layer-layer-name-str-pd-dataframe">
+<h5><code class="docutils literal notranslate"><span class="pre">get_layer(layer_name:</span> <span class="pre">str)</span> <span class="pre">-&gt;</span> <span class="pre">pd.DataFrame</span></code><a class="headerlink" href="#get-layer-layer-name-str-pd-dataframe" title="Link to this heading"></a></h5>
+<p>Retrieve a specific omics layer as DataFrame.</p>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">layer_name</span></code> (str): Name of the omics layer (e.g., ‘genomics’, ‘transcriptomics’)</p></li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul class="simple">
+<li><p>DataFrame containing the specified omics layer with aligned samples.</p></li>
+</ul>
+<p><strong>Raises:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">KeyError</span></code>: If layer_name is not available in this object</p></li>
+</ul>
+</section>
+<section id="subset-samples-sample-list-list-str-multiomicsdata">
+<h5><code class="docutils literal notranslate"><span class="pre">subset_samples(sample_list:</span> <span class="pre">List[str])</span> <span class="pre">-&gt;</span> <span class="pre">MultiOmicsData</span></code><a class="headerlink" href="#subset-samples-sample-list-list-str-multiomicsdata" title="Link to this heading"></a></h5>
+<p>Create a new MultiOmicsData object with subset of samples.</p>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">sample_list</span></code> (List[str]): List of sample identifiers to include</p></li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul class="simple">
+<li><p>New MultiOmicsData object containing only the specified samples. Sample alignment is automatically performed on the subset.</p></li>
+</ul>
+<p><strong>Raises:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ValueError</span></code>: If sample_list is empty or no samples found</p></li>
+</ul>
+</section>
+<section id="subset-features-feature-dict-dict-str-list-str-multiomicsdata">
+<h5><code class="docutils literal notranslate"><span class="pre">subset_features(feature_dict:</span> <span class="pre">Dict[str,</span> <span class="pre">List[str]])</span> <span class="pre">-&gt;</span> <span class="pre">MultiOmicsData</span></code><a class="headerlink" href="#subset-features-feature-dict-dict-str-list-str-multiomicsdata" title="Link to this heading"></a></h5>
+<p>Create a new MultiOmicsData object with subset of features.</p>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">feature_dict</span></code> (Dict[str, List[str]]): Dictionary mapping layer names to lists of feature identifiers to include (e.g., {“transcriptomics”: [“GENE1”, “GENE2”]})</p></li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul class="simple">
+<li><p>New MultiOmicsData object with filtered features. Samples remain aligned across all layers.</p></li>
+</ul>
+<p><strong>Raises:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ValueError</span></code>: If feature_dict is empty or no valid features found</p></li>
+</ul>
+</section>
+<section id="to-dict-dict-str-any">
+<h5><code class="docutils literal notranslate"><span class="pre">to_dict()</span> <span class="pre">-&gt;</span> <span class="pre">Dict[str,</span> <span class="pre">Any]</span></code><a class="headerlink" href="#to-dict-dict-str-any" title="Link to this heading"></a></h5>
+<p>Convert MultiOmicsData to dictionary for serialization.</p>
+<p><strong>Returns:</strong></p>
+<ul class="simple">
+<li><p>Dictionary containing all omics layers and metadata as DataFrames.</p></li>
+</ul>
+</section>
+<section id="save-output-path-union-str-path-none">
+<h5><code class="docutils literal notranslate"><span class="pre">save(output_path:</span> <span class="pre">Union[str,</span> <span class="pre">Path])</span> <span class="pre">-&gt;</span> <span class="pre">None</span></code><a class="headerlink" href="#save-output-path-union-str-path-none" title="Link to this heading"></a></h5>
+<p>Save MultiOmicsData to directory using core.io.</p>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">output_path</span></code> (Union[str, Path]): Directory path to save data files</p></li>
+</ul>
+<p><strong>Note:</strong></p>
+<ul class="simple">
+<li><p>Saves each omics layer as a separate CSV file and metadata if present.</p></li>
+<li><p>Uses core.io for file operations to ensure proper path handling.</p></li>
+</ul>
+</section>
+<section id="load-input-path-union-str-path-multiomicsdata-classmethod">
+<h5><code class="docutils literal notranslate"><span class="pre">load(input_path:</span> <span class="pre">Union[str,</span> <span class="pre">Path])</span> <span class="pre">-&gt;</span> <span class="pre">MultiOmicsData</span></code> (classmethod)<a class="headerlink" href="#load-input-path-union-str-path-multiomicsdata-classmethod" title="Link to this heading"></a></h5>
+<p>Load MultiOmicsData from directory using core.io.</p>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">input_path</span></code> (Union[str, Path]): Directory path containing data files</p></li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul class="simple">
+<li><p>MultiOmicsData object with loaded layers</p></li>
+</ul>
+<p><strong>Raises:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">FileNotFoundError</span></code>: If directory not found</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ValueError</span></code>: If no data files found</p></li>
+</ul>
+</section>
+</section>
+</section>
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<section id="integrate-omics-data">
+<h3>integrate_omics_data<a class="headerlink" href="#integrate-omics-data" title="Link to this heading"></a></h3>
+<p>Load and integrate multiple omics datasets into unified structure.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">integrate_omics_data</span><span class="p">(</span>
+    <span class="n">data_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">]],</span>
+    <span class="n">sample_mapping</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">feature_mapping</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MultiOmicsData</span><span class="p">:</span>
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">data_dict</span></code> (Dict[str, Union[pd.DataFrame, str, Path]]): Dictionary mapping omics type names (“genomics”, “transcriptomics”, etc.) to either pandas DataFrame or file path. Supported file formats: CSV (.csv), TSV (.tsv, .txt), Excel (.xlsx, .xls). Gzip compression is automatically handled via core.io.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sample_mapping</span></code> (Optional[Dict[str, Dict[str, str]]]): Optional nested dictionary mapping dataset names to sample ID transformation dictionaries for harmonizing sample IDs across datasets. Format: {omics_type: {old_id: new_id}}</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">feature_mapping</span></code> (Optional[Dict[str, Dict[str, str]]]): Optional nested dictionary mapping dataset names to feature ID transformation dictionaries for harmonizing feature names. Format: {omics_type: {old_feature: new_feature}}</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">metadata</span></code> (Optional[Union[pd.DataFrame, str, Path]]): Optional sample metadata as DataFrame or file path. Metadata is aligned to common samples after integration.</p></li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul class="simple">
+<li><p>MultiOmicsData object with all provided omics layers integrated and samples aligned to common set.</p></li>
+</ul>
+<p><strong>Raises:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ValueError</span></code>: If file format is unsupported or required columns are missing, or if no common samples found across datasets</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">FileNotFoundError</span></code>: If file paths do not exist</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">IOError</span></code>: If file read fails</p></li>
+</ul>
+</section>
+<section id="joint-pca">
+<h3>joint_pca<a class="headerlink" href="#joint-pca" title="Link to this heading"></a></h3>
+<p>Perform joint Principal Component Analysis across multiple omics layers.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">joint_pca</span><span class="p">(</span>
+    <span class="n">omics_data</span><span class="p">:</span> <span class="n">MultiOmicsData</span><span class="p">,</span>
+    <span class="n">n_components</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">50</span><span class="p">,</span>
+    <span class="n">layer_weights</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">standardize</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">omics_data</span></code> (MultiOmicsData): Multi-omics data object with aligned samples</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n_components</span></code> (int): Number of principal components to extract. Must be positive and less than min(n_samples, n_features). Will be automatically capped if too large. Default: 50</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">layer_weights</span></code> (Optional[Dict[str, float]]): Optional dictionary mapping layer names to relative weights. If None, all layers weighted equally (1.0). Weights are applied as sqrt(weight) scaling before concatenation.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">standardize</span></code> (bool): If True (default), features are z-score standardized (mean 0, std 1) per layer before concatenation</p></li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul class="simple">
+<li><p>Tuple containing:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">joint_embeddings</span></code>: Array of shape (n_samples, n_components) with joint low-dimensional representation</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">layer_loadings</span></code>: Dictionary mapping layer names to loading matrices of shape (n_features_in_layer, n_components)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">explained_variance</span></code>: Array of explained variance ratios for each component</p></li>
+</ul>
+</li>
+</ul>
+<p><strong>Raises:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ValueError</span></code>: If n_components is invalid or data is insufficient</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">MemoryError</span></code>: If insufficient memory for covariance matrix computation</p></li>
+</ul>
+</section>
+<section id="joint-nmf">
+<h3>joint_nmf<a class="headerlink" href="#joint-nmf" title="Link to this heading"></a></h3>
+<p>Perform joint Non-negative Matrix Factorization across omics layers.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">joint_nmf</span><span class="p">(</span>
+    <span class="n">omics_data</span><span class="p">:</span> <span class="n">MultiOmicsData</span><span class="p">,</span>
+    <span class="n">n_components</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
+    <span class="n">max_iter</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">200</span><span class="p">,</span>
+    <span class="n">regularization</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">tolerance</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-6</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]:</span>
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">omics_data</span></code> (MultiOmicsData): Multi-omics data object with aligned samples. All data must be non-negative (will be shifted if needed)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n_components</span></code> (int): Number of latent factors (components) to extract. Must be positive and less than min(n_samples, min_features_per_layer). Default: 20</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max_iter</span></code> (int): Maximum number of optimization iterations. Default: 200</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">regularization</span></code> (float): L2 regularization strength for factors. Default: 0.01</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">random_state</span></code> (Optional[int]): Random seed for reproducible initialization</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tolerance</span></code> (float): Convergence tolerance for early stopping. Algorithm stops if relative change in reconstruction error is below this. Default: 1e-6</p></li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul class="simple">
+<li><p>Tuple containing:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">sample_factors</span></code>: Shared sample factor matrix W of shape (n_samples, n_components)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">layer_feature_factors</span></code>: Dictionary mapping layer names to feature factor matrices H_i of shape (n_components, n_features_in_layer)</p></li>
+</ul>
+</li>
+</ul>
+<p><strong>Raises:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ValueError</span></code>: If n_components is invalid or data is insufficient</p></li>
+</ul>
+</section>
+<section id="canonical-correlation">
+<h3>canonical_correlation<a class="headerlink" href="#canonical-correlation" title="Link to this heading"></a></h3>
+<p>Perform Canonical Correlation Analysis between two omics layers.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">canonical_correlation</span><span class="p">(</span>
+    <span class="n">omics_data</span><span class="p">:</span> <span class="n">MultiOmicsData</span><span class="p">,</span>
+    <span class="n">layer_pair</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span>
+    <span class="n">n_components</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+    <span class="n">regularization</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.01</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">omics_data</span></code> (MultiOmicsData): Multi-omics data object with aligned samples</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">layer_pair</span></code> (Tuple[str, str]): Tuple of (layer1_name, layer2_name) to analyze. Both layers must exist in omics_data.layer_names</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n_components</span></code> (int): Number of canonical variate pairs to extract. Must be positive and less than min(n_samples, n_features_X, n_features_Y). Default: 10</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">regularization</span></code> (float): Ridge regularization parameter for covariance matrices (prevents singular matrix issues). Should be positive and typically small (0.001-0.1). Larger values provide more stability but may bias results. Default: 0.01</p></li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul class="simple">
+<li><p>Tuple containing:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">X_canonical</span></code>: Canonical variates for first layer (n_samples, n_components)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Y_canonical</span></code>: Canonical variates for second layer (n_samples, n_components)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">X_weights</span></code>: Feature weights for first layer (n_features_X, n_components)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Y_weights</span></code>: Feature weights for second layer (n_features_Y, n_components)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">correlations</span></code>: Canonical correlations for each component pair</p></li>
+</ul>
+</li>
+</ul>
+<p><strong>Raises:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ValueError</span></code>: If layer names not found in omics_data or invalid parameters</p></li>
+</ul>
+</section>
+<section id="from-dna-variants">
+<h3>from_dna_variants<a class="headerlink" href="#from-dna-variants" title="Link to this heading"></a></h3>
+<p>Convert DNA variant data (VCF) to genomics layer DataFrame.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">from_dna_variants</span><span class="p">(</span>
+    <span class="n">vcf_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">],</span>
+    <span class="n">sample_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">variant_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">vcf_path</span></code> (Union[str, Path]): Path to VCF file</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sample_ids</span></code> (Optional[List[str]]): Optional list of sample IDs to include. If None, includes all samples.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">variant_ids</span></code> (Optional[List[str]]): Optional list of variant IDs to include. If None, includes all variants.</p></li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul class="simple">
+<li><p>DataFrame with samples as index, variants as columns, and genotype values (0, 1, 2 for homozygous ref, heterozygous, homozygous alt) as values.</p></li>
+</ul>
+<p><strong>Raises:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">FileNotFoundError</span></code>: If VCF file does not exist</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ValueError</span></code>: If VCF parsing fails</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ImportError</span></code>: If DNA module not available</p></li>
+</ul>
+</section>
+<section id="from-rna-expression">
+<h3>from_rna_expression<a class="headerlink" href="#from-rna-expression" title="Link to this heading"></a></h3>
+<p>Convert RNA expression data to transcriptomics layer DataFrame.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">from_rna_expression</span><span class="p">(</span>
+    <span class="n">expression_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">],</span>
+    <span class="n">sample_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">gene_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">transpose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">expression_path</span></code> (Union[str, Path]): Path to expression file (CSV or TSV)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sample_ids</span></code> (Optional[List[str]]): Optional list of sample IDs to include</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gene_ids</span></code> (Optional[List[str]]): Optional list of gene IDs to include</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">transpose</span></code> (bool): If True, assumes file has genes as rows and samples as columns. If False (default), assumes samples as rows and genes as columns.</p></li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul class="simple">
+<li><p>DataFrame with samples as index, genes as columns, and expression values.</p></li>
+</ul>
+<p><strong>Raises:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">FileNotFoundError</span></code>: If expression file does not exist</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ValueError</span></code>: If file format is invalid</p></li>
+</ul>
+</section>
+<section id="from-protein-abundance">
+<h3>from_protein_abundance<a class="headerlink" href="#from-protein-abundance" title="Link to this heading"></a></h3>
+<p>Convert protein abundance data to proteomics layer DataFrame.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">from_protein_abundance</span><span class="p">(</span>
+    <span class="n">protein_path</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Path</span><span class="p">],</span>
+    <span class="n">sample_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">protein_ids</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">transpose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">protein_path</span></code> (Union[str, Path]): Path to protein file (CSV, TSV, or FASTA)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sample_ids</span></code> (Optional[List[str]]): Optional list of sample IDs to include</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">protein_ids</span></code> (Optional[List[str]]): Optional list of protein IDs to include</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">transpose</span></code> (bool): If True, assumes file has proteins as rows and samples as columns. If False (default), assumes samples as rows and proteins as columns. Not applicable for FASTA files.</p></li>
+</ul>
+<p><strong>Returns:</strong></p>
+<ul class="simple">
+<li><p>DataFrame with samples as index, proteins as columns, and abundance values.</p></li>
+</ul>
+<p><strong>Raises:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">FileNotFoundError</span></code>: If protein file does not exist</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ValueError</span></code>: If file format is invalid</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ImportError</span></code>: If protein module not available (for FASTA files)</p></li>
+</ul>
+</section>
+</section>
+<section id="error-handling">
+<h2>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading"></a></h2>
+<p>All functions include comprehensive error handling:</p>
+<ul class="simple">
+<li><p><strong>Validation errors</strong>: Raised for invalid inputs (empty data, wrong types, etc.)</p></li>
+<li><p><strong>File I/O errors</strong>: Raised for missing files or read failures</p></li>
+<li><p><strong>Computation errors</strong>: Raised for numerical issues (singular matrices, etc.)</p></li>
+<li><p><strong>Memory errors</strong>: Raised for insufficient memory</p></li>
+</ul>
+<p>All errors include descriptive messages and context.</p>
+</section>
+<section id="logging">
+<h2>Logging<a class="headerlink" href="#logging" title="Link to this heading"></a></h2>
+<p>The module uses structured logging via <code class="docutils literal notranslate"><span class="pre">metainformant.core.logging</span></code>:</p>
+<ul class="simple">
+<li><p><strong>INFO</strong>: Major operations (loading data, starting analysis)</p></li>
+<li><p><strong>DEBUG</strong>: Detailed information (file paths, data shapes)</p></li>
+<li><p><strong>WARNING</strong>: Non-fatal issues (missing samples, data shifts)</p></li>
+<li><p><strong>ERROR</strong>: Fatal errors (file read failures, computation errors)</p></li>
+</ul>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h2>
+<p>See <a class="reference internal" href="#../src/metainformant/multiomics/README.md"><span class="xref myst">Module README</span></a> and <a class="reference internal" href="index.html"><span class="std std-doc">Index Documentation</span></a> for comprehensive usage examples.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

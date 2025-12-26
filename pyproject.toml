@@ -26,6 +26,7 @@ dependencies = [
     "pyyaml>=6.0",
     "pytest-timeout>=2.4.0",
     "beautifulsoup4>=4.12.0",
+    "scipy>=1.16.3",
 ]
 
 [project.optional-dependencies]
@@ -97,6 +98,7 @@ dev = [
     "mypy>=1.0.0",
     "pre-commit>=2.20.0",
     "sphinx>=5.0.0",  # Documentation
+    "sphinx-rtd-theme>=1.2.0",  # Read the Docs theme
     "sphinx-autodoc-typehints>=1.19.0",
     "myst-parser>=0.18.0",  # Markdown support in docs
     "jupyter>=1.0.0",  # For example notebooks
@@ -247,6 +249,29 @@ exclude = '''
   | dist
 )/
 '''
+
+# Flake8 code quality
+[tool.flake8]
+max-line-length = 120
+extend-ignore = ["E203", "W503"]
+exclude = [
+    ".git",
+    "__pycache__",
+    "build",
+    "dist",
+    "*.egg-info",
+    ".venv",
+    "venv",
+    "env",
+    "ENV",
+    ".tox",
+    ".mypy_cache",
+    ".pytest_cache",
+]
+# Allow imports not at top of file in __init__.py files
+per-file-ignores = [
+    "__init__.py:E402",
+]
 
 # isort import sorting
 [tool.isort]

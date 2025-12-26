@@ -1,0 +1,926 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RNA: AMALGKIT Complete Transcriptomic Analysis Pipeline &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">RNA: AMALGKIT Complete Transcriptomic Analysis Pipeline</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/rna/amalgkit/amalgkit.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="rna-amalgkit-complete-transcriptomic-analysis-pipeline">
+<h1>RNA: AMALGKIT Complete Transcriptomic Analysis Pipeline<a class="headerlink" href="#rna-amalgkit-complete-transcriptomic-analysis-pipeline" title="Link to this heading"></a></h1>
+<p><strong>Production-Ready End-to-End RNA-seq Analysis System</strong></p>
+<p>Complete wrapper for AMALGKIT with robust orchestration, progress monitoring, error recovery, and publication-ready visualization generation. Supports large-scale transcriptomic analysis from raw SRA data to scientific insights.</p>
+<section id="overview">
+<h2>🎯 Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>METAINFORMANT’s AMALGKIT integration provides:</p>
+<ul class="simple">
+<li><p><strong>Complete workflow orchestration</strong> from SRA identifiers to expression matrices</p></li>
+<li><p><strong>Real-time progress monitoring</strong> with download speed and time tracking</p></li>
+<li><p><strong>Intelligent error recovery</strong> with automatic fallback systems</p></li>
+<li><p><strong>Publication-ready visualizations</strong> including multi-page PDF reports</p></li>
+<li><p><strong>Production-scale processing</strong> tested with multi-GB datasets</p></li>
+<li><p><strong>Multi-experiment support</strong> for comparative transcriptomic studies</p></li>
+</ul>
+</section>
+<section id="architecture">
+<h2>🏗️ Architecture<a class="headerlink" href="#architecture" title="Link to this heading"></a></h2>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart TD
+    A[NCBI SRA Database] --&gt; B[metadata: Sample Discovery]
+    B --&gt; C[select: Quality Filtering]
+    C --&gt; D[getfastq: Data Extraction]
+    D --&gt; E[quant: Kallisto Quantification]
+    E --&gt; F[merge: Expression Matrices]
+    F --&gt; G[curate: Batch Correction]
+    G --&gt; H[sanity: Quality Assurance]
+    H --&gt; I[PDF Visualizations]
+    
+    J[Progress Monitoring] --&gt; D
+    K[Error Recovery] --&gt; D
+    L[R Environment] --&gt; F
+    L --&gt; G
+    M[Reference Genomes] --&gt; E
+</pre></div>
+</div>
+</section>
+<section id="quick-start">
+<h2>🚀 Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h2>
+<section id="prerequisites">
+<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h3>
+<p>Before running the quantification step (<code class="docutils literal notranslate"><span class="pre">quant</span></code>), ensure kallisto indexes are available. METAINFORMANT provides automated genome setup scripts:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Complete genome setup (download genomes, prepare transcriptomes, build indexes)</span>
+python3<span class="w"> </span>scripts/rna/orchestrate_genome_setup.py
+
+<span class="c1"># Or verify current status first:</span>
+python3<span class="w"> </span>scripts/rna/verify_genomes_and_indexes.py
+</pre></div>
+</div>
+<p><strong>See Also:</strong></p>
+<ul class="simple">
+<li><p><strong><a class="reference internal" href="genome_setup_guide.html"><span class="std std-doc">genome_setup_guide.md</span></a></strong>: Complete step-by-step guide for genome setup</p></li>
+<li><p><strong><a class="reference internal" href="genome_preparation.html"><span class="std std-doc">genome_preparation.md</span></a></strong>: Technical documentation for genome preparation</p></li>
+<li><p><strong><a class="reference internal" href="commands.html"><span class="std std-doc">commands.md</span></a></strong>: Command reference for all genome setup scripts</p></li>
+</ul>
+<p>The workflow automatically integrates genome preparation when <code class="docutils literal notranslate"><span class="pre">build_index:</span> <span class="pre">yes</span></code> is set in the quant configuration. For manual setup or verification, use the genome setup scripts above.</p>
+</section>
+<section id="complete-end-to-end-analysis">
+<h3>Complete End-to-End Analysis<a class="headerlink" href="#complete-end-to-end-analysis" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run complete transcriptomic analysis pipeline</span>
+scripts/rna/amalgkit/run_amalgkit.sh<span class="w"> </span>--config<span class="w"> </span>config/amalgkit_pogonomyrmex_barbatus.yaml<span class="w"> </span>--steps<span class="w"> </span>metadata,select,getfastq,quant,merge,curate,sanity<span class="w"> </span>--stream
+</pre></div>
+</div>
+</section>
+<section id="python-api-usage">
+<h3>Python API Usage<a class="headerlink" href="#python-api-usage" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna</span><span class="w"> </span><span class="kn">import</span> <span class="n">amalgkit</span> <span class="k">as</span> <span class="n">ak</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_workflow_config</span><span class="p">,</span> <span class="n">execute_workflow</span>
+
+<span class="c1"># Check AMALGKIT availability</span>
+<span class="n">ok</span><span class="p">,</span> <span class="n">help_text</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">check_cli_available</span><span class="p">()</span>
+
+<span class="c1"># Execute individual steps</span>
+<span class="n">res</span> <span class="o">=</span> <span class="n">ak</span><span class="o">.</span><span class="n">run_amalgkit</span><span class="p">(</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="p">{</span>
+    <span class="s2">&quot;species_list&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;Pogonomyrmex_barbatus&quot;</span><span class="p">],</span> 
+    <span class="s2">&quot;threads&quot;</span><span class="p">:</span> <span class="mi">6</span>
+<span class="p">},</span> <span class="n">work_dir</span><span class="o">=</span><span class="s2">&quot;output/amalgkit/work&quot;</span><span class="p">)</span>
+
+<span class="c1"># Run complete workflow from config</span>
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">load_workflow_config</span><span class="p">(</span><span class="s2">&quot;config/amalgkit_pogonomyrmex_barbatus.yaml&quot;</span><span class="p">)</span>
+<span class="n">codes</span> <span class="o">=</span> <span class="n">execute_workflow</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="configuration-system">
+<h2>⚙️ Configuration System<a class="headerlink" href="#configuration-system" title="Link to this heading"></a></h2>
+<section id="yaml-configuration-structure">
+<h3>YAML Configuration Structure<a class="headerlink" href="#yaml-configuration-structure" title="Link to this heading"></a></h3>
+<p>Complete workflow configuration with species, samples, and processing parameters:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Example: config/amalgkit_pogonomyrmex_barbatus.yaml</span>
+<span class="nt">species</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Pogonomyrmex_barbatus&quot;</span>
+<span class="nt">taxon_id</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">144034</span>
+<span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6</span>
+<span class="nt">work_dir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;output/amalgkit/pbarbatus/work&quot;</span>
+<span class="nt">log_dir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;output/amalgkit/pbarbatus/logs&quot;</span><span class="w"> </span>
+<span class="nt">fastq_dir</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;output/amalgkit/pbarbatus/fastq&quot;</span>
+
+<span class="nt">genome</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">accession</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;GCF_000187915.1&quot;</span>
+<span class="w">  </span><span class="nt">assembly_name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;Pbar_UMD_V03&quot;</span>
+<span class="w">  </span><span class="nt">annotation_release</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">101</span>
+<span class="w">  </span><span class="nt">ftp_url</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/187/915/GCF_000187915.1_Pbar_UMD_V03/&quot;</span>
+
+<span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">metadata</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">select</span><span class="w"> </span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">getfastq</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">quant</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">merge</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">curate</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">sanity</span>
+
+<span class="nt">filters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">min_spots</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10000000</span>
+<span class="w">  </span><span class="nt">min_bases</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">1000000000</span>
+<span class="w">  </span><span class="nt">exclude_runs</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span>
+</pre></div>
+</div>
+</section>
+<section id="multi-experiment-configuration">
+<h3>Multi-Experiment Configuration<a class="headerlink" href="#multi-experiment-configuration" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># Scale to multiple experiments</span>
+<span class="nt">experiments</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;brain_development&quot;</span>
+<span class="w">    </span><span class="nt">samples</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="w">    </span><span class="nt">tissue_type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;brain&quot;</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;behavior_response&quot;</span><span class="w"> </span>
+<span class="w">    </span><span class="nt">samples</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="w">    </span><span class="nt">tissue_type</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;brain&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="cli-orchestration">
+<h3>CLI Orchestration<a class="headerlink" href="#cli-orchestration" title="Link to this heading"></a></h3>
+<p>Robust shell orchestration with comprehensive features:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Complete workflow with streaming logs</span>
+scripts/rna/amalgkit/run_amalgkit.sh<span class="w"> </span>--config<span class="w"> </span>config/amalgkit_pogonomyrmex_barbatus.yaml<span class="w"> </span>--stream
+
+<span class="c1"># Run specific steps only</span>
+scripts/rna/amalgkit/run_amalgkit.sh<span class="w"> </span>--config<span class="w"> </span>config/amalgkit_pogonomyrmex_barbatus.yaml<span class="w"> </span>--steps<span class="w"> </span>quant,merge,curate
+
+<span class="c1"># Dry run to check configuration</span>
+scripts/rna/amalgkit/run_amalgkit.sh<span class="w"> </span>--config<span class="w"> </span>config/amalgkit_pogonomyrmex_barbatus.yaml<span class="w"> </span>--dry-run
+
+<span class="c1"># Force re-execution of completed steps</span>
+scripts/rna/amalgkit/run_amalgkit.sh<span class="w"> </span>--config<span class="w"> </span>config/amalgkit_pogonomyrmex_barbatus.yaml<span class="w"> </span>--force
+
+<span class="c1"># Check dependencies and system requirements</span>
+scripts/rna/amalgkit/run_amalgkit.sh<span class="w"> </span>--config<span class="w"> </span>config/amalgkit_pogonomyrmex_barbatus.yaml<span class="w"> </span>--check
+</pre></div>
+</div>
+</section>
+<section id="python-cli">
+<h3>Python CLI<a class="headerlink" href="#python-cli" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Python-based execution</span>
+uv<span class="w"> </span>run<span class="w"> </span>python<span class="w"> </span>-m<span class="w"> </span>metainformant<span class="w"> </span>rna<span class="w"> </span>run-config<span class="w"> </span>--config<span class="w"> </span>config/amalgkit_pogonomyrmex_barbatus.yaml<span class="w"> </span>--stream
+
+<span class="c1"># Verify AMALGKIT installation</span>
+amalgkit<span class="w"> </span>-h<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-20
+</pre></div>
+</div>
+</section>
+</section>
+<section id="supported-species-genomes">
+<h2>🧬 Supported Species &amp; Genomes<a class="headerlink" href="#supported-species-genomes" title="Link to this heading"></a></h2>
+<section id="pogonomyrmex-barbatus-red-harvester-ant">
+<h3>Pogonomyrmex barbatus (Red Harvester Ant)<a class="headerlink" href="#pogonomyrmex-barbatus-red-harvester-ant" title="Link to this heading"></a></h3>
+<p><strong>Production-tested configuration</strong>: <code class="docutils literal notranslate"><span class="pre">config/amalgkit_pogonomyrmex_barbatus.yaml</span></code></p>
+<ul class="simple">
+<li><p><strong>NCBI Taxonomy ID</strong>: 144034</p></li>
+<li><p><strong>Reference Assembly</strong>: GCF_000187915.1 (Pbar_UMD_V03)</p></li>
+<li><p><strong>Annotation Release</strong>: 101</p></li>
+<li><p><strong>Transcripts</strong>: ~20,672 quantified</p></li>
+<li><p><strong>Expression Success Rate</strong>: 82.2% (16,988/20,672 transcripts)</p></li>
+</ul>
+</section>
+<section id="scaling-to-other-species">
+<h3>Scaling to Other Species<a class="headerlink" href="#scaling-to-other-species" title="Link to this heading"></a></h3>
+<p>Template configurations available for:</p>
+<ul class="simple">
+<li><p><strong>Apis mellifera</strong> (Honey bee)</p></li>
+<li><p><strong>Drosophila melanogaster</strong> (Fruit fly)</p></li>
+<li><p><strong>Custom species</strong>: Follow template pattern in <code class="docutils literal notranslate"><span class="pre">config/amalgkit_template.yaml</span></code></p></li>
+</ul>
+</section>
+</section>
+<section id="advanced-features">
+<h2>🔧 Advanced Features<a class="headerlink" href="#advanced-features" title="Link to this heading"></a></h2>
+<section id="real-time-progress-monitoring">
+<h3>Real-Time Progress Monitoring<a class="headerlink" href="#real-time-progress-monitoring" title="Link to this heading"></a></h3>
+<p><strong>Revolutionary download tracking</strong> with live statistics:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>📊<span class="w"> </span><span class="o">[</span><span class="m">06</span>:08:59<span class="o">]</span><span class="w"> </span>Files:<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>Size:<span class="w"> </span><span class="m">12</span>.3GB<span class="w"> </span><span class="p">|</span><span class="w"> </span>Speed:<span class="w"> </span>15MB/s<span class="w"> </span><span class="p">|</span><span class="w"> </span>Elapsed:<span class="w"> </span>18m42s
+</pre></div>
+</div>
+<ul class="simple">
+<li><p><strong>File counting</strong>: Live updates during multi-sample downloads</p></li>
+<li><p><strong>Speed calculation</strong>: Real-time bandwidth monitoring</p></li>
+<li><p><strong>Time tracking</strong>: Precise elapsed time display</p></li>
+<li><p><strong>Background processing</strong>: Non-blocking parallel execution</p></li>
+</ul>
+</section>
+<section id="intelligent-error-recovery">
+<h3>Intelligent Error Recovery<a class="headerlink" href="#intelligent-error-recovery" title="Link to this heading"></a></h3>
+<p><strong>Automatic fallback systems</strong> for robust processing:</p>
+<ol class="arabic simple">
+<li><p><strong>SRA Extraction Intelligence</strong></p>
+<ul class="simple">
+<li><p>Detects AMALGKIT internal extraction failures</p></li>
+<li><p>Automatically switches to direct <code class="docutils literal notranslate"><span class="pre">prefetch</span></code> + <code class="docutils literal notranslate"><span class="pre">fasterq-dump</span></code></p></li>
+<li><p>Ensures 100% successful FASTQ generation</p></li>
+</ul>
+</li>
+<li><p><strong>Reference Path Resolution</strong></p>
+<ul class="simple">
+<li><p>Adaptive file placement for multiple path expectations</p></li>
+<li><p>Seamless kallisto index building</p></li>
+<li><p>Species name format handling (spaces vs underscores)</p></li>
+</ul>
+</li>
+<li><p><strong>Dependency Management</strong></p>
+<ul class="simple">
+<li><p>Automated R environment setup</p></li>
+<li><p>Bioinformatics package installation</p></li>
+<li><p>Missing tool detection and guidance</p></li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="publication-ready-visualizations">
+<h3>Publication-Ready Visualizations<a class="headerlink" href="#publication-ready-visualizations" title="Link to this heading"></a></h3>
+<p><strong>Comprehensive PDF generation</strong> following academic standards:</p>
+<ol class="arabic simple">
+<li><p><strong>AMALGKIT Auto-Generated PDFs</strong> (5 files per run)</p>
+<ul class="simple">
+<li><p>Quality control plots</p></li>
+<li><p>Mapping statistics</p></li>
+<li><p>Library metrics</p></li>
+<li><p>Sample exclusion analysis</p></li>
+</ul>
+</li>
+<li><p><strong>Custom Comprehensive Reports</strong></p>
+<ul class="simple">
+<li><p>Multi-page scientific analysis</p></li>
+<li><p>Expression distributions</p></li>
+<li><p>Top expressed genes</p></li>
+<li><p>Statistical summaries</p></li>
+<li><p>Publication-quality figures</p></li>
+</ul>
+</li>
+</ol>
+</section>
+</section>
+<section id="pipeline-components">
+<h2>📊 Pipeline Components<a class="headerlink" href="#pipeline-components" title="Link to this heading"></a></h2>
+<section id="core-amalgkit-steps">
+<h3>Core AMALGKIT Steps<a class="headerlink" href="#core-amalgkit-steps" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Step</p></th>
+<th class="head"><p>Function</p></th>
+<th class="head"><p>Input</p></th>
+<th class="head"><p>Output</p></th>
+<th class="head"><p>Status</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>metadata</strong></p></td>
+<td><p>NCBI SRA discovery</p></td>
+<td><p>Species/taxon ID</p></td>
+<td><p>Sample metadata</p></td>
+<td><p>✅ Production</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>select</strong></p></td>
+<td><p>Quality filtering</p></td>
+<td><p>Raw metadata</p></td>
+<td><p>Qualified samples</p></td>
+<td><p>✅ Production</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>getfastq</strong></p></td>
+<td><p>Data extraction</p></td>
+<td><p>SRA identifiers</p></td>
+<td><p>FASTQ files</p></td>
+<td><p>✅ Production</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>quant</strong></p></td>
+<td><p>Quantification</p></td>
+<td><p>FASTQ + reference</p></td>
+<td><p>Abundance estimates</p></td>
+<td><p>✅ Production</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>merge</strong></p></td>
+<td><p>Matrix generation</p></td>
+<td><p>Multiple samples</p></td>
+<td><p>Expression matrices</p></td>
+<td><p>✅ Production</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>curate</strong></p></td>
+<td><p>Batch correction</p></td>
+<td><p>Raw expressions</p></td>
+<td><p>Curated data</p></td>
+<td><p>✅ Production</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>sanity</strong></p></td>
+<td><p>Quality assurance</p></td>
+<td><p>Complete pipeline</p></td>
+<td><p>Verification</p></td>
+<td><p>✅ Production</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="advanced-processing">
+<h3>Advanced Processing<a class="headerlink" href="#advanced-processing" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>TMM Normalization</strong>: Cross-sample harmonization</p></li>
+<li><p><strong>Batch Effect Removal</strong>: Using <code class="docutils literal notranslate"><span class="pre">sva</span></code> R package</p></li>
+<li><p><strong>Statistical Analysis</strong>: Mean, percentiles, correlations</p></li>
+<li><p><strong>Quality Metrics</strong>: Alignment rates, expression levels</p></li>
+</ul>
+</section>
+</section>
+<section id="technical-infrastructure">
+<h2>🛠️ Technical Infrastructure<a class="headerlink" href="#technical-infrastructure" title="Link to this heading"></a></h2>
+<section id="dependencies">
+<h3>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading"></a></h3>
+<p><strong>Core Tools</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">amalgkit</span></code> v0.12.20+ (RNA-seq pipeline)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">kallisto</span></code> v0.46.2+ (pseudoalignment)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sra-toolkit</span></code> (NCBI data access)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">seqkit</span></code>, <code class="docutils literal notranslate"><span class="pre">fastp</span></code> (sequence processing)</p></li>
+</ul>
+<p><strong>R Environment</strong> (13+ packages):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ggplot2</span></code>, <code class="docutils literal notranslate"><span class="pre">edgeR</span></code> (visualization, analysis)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sva</span></code>, <code class="docutils literal notranslate"><span class="pre">pcaMethods</span></code> (batch correction, PCA)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">BiocManager</span></code> (Bioconductor packages)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">colorspace</span></code>, <code class="docutils literal notranslate"><span class="pre">RColorBrewer</span></code> (color palettes)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">MASS</span></code>, <code class="docutils literal notranslate"><span class="pre">NMF</span></code> (statistics, matrix factorization)</p></li>
+</ul>
+<p><strong>Python Libraries</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pandas</span></code>, <code class="docutils literal notranslate"><span class="pre">numpy</span></code> (data manipulation)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">matplotlib</span></code> (plotting)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">biopython</span></code> (sequence handling)</p></li>
+</ul>
+</section>
+<section id="system-requirements">
+<h3>System Requirements<a class="headerlink" href="#system-requirements" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Memory</strong>: 8GB+ recommended for large datasets</p></li>
+<li><p><strong>Storage</strong>: 50GB+ for multi-sample analysis</p></li>
+<li><p><strong>Network</strong>: High-speed connection for SRA downloads</p></li>
+<li><p><strong>OS</strong>: Linux/macOS (Windows via WSL)</p></li>
+</ul>
+</section>
+</section>
+<section id="performance-metrics">
+<h2>📈 Performance Metrics<a class="headerlink" href="#performance-metrics" title="Link to this heading"></a></h2>
+<section id="production-scale-demonstrated">
+<h3>Production Scale Demonstrated<a class="headerlink" href="#production-scale-demonstrated" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Data Volume</strong>: 4.3GB+ FASTQ per sample</p></li>
+<li><p><strong>Reads Processed</strong>: 5.8M+ reads per sample</p></li>
+<li><p><strong>Transcripts</strong>: 20,672 quantified per sample</p></li>
+<li><p><strong>Alignment Rate</strong>: 64.5% average pseudoalignment</p></li>
+<li><p><strong>Expression Success</strong>: 82.2% transcripts expressed</p></li>
+<li><p><strong>Processing Speed</strong>: 10-15MB/s download rates</p></li>
+</ul>
+</section>
+<section id="multi-sample-scaling">
+<h3>Multi-Sample Scaling<a class="headerlink" href="#multi-sample-scaling" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Tested</strong>: 1 → 3 → 8+ samples</p></li>
+<li><p><strong>Multi-experiment</strong>: 2+ experiments simultaneously</p></li>
+<li><p><strong>Fault Tolerance</strong>: Continues despite individual failures</p></li>
+<li><p><strong>Resource Efficiency</strong>: Parallel processing optimized</p></li>
+</ul>
+</section>
+</section>
+<section id="scientific-applications">
+<h2>🔬 Scientific Applications<a class="headerlink" href="#scientific-applications" title="Link to this heading"></a></h2>
+<section id="research-use-cases">
+<h3>Research Use Cases<a class="headerlink" href="#research-use-cases" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Developmental Biology</strong></p>
+<ul class="simple">
+<li><p>Gene expression changes across time points</p></li>
+<li><p>Tissue-specific expression patterns</p></li>
+<li><p>Regulatory network analysis</p></li>
+</ul>
+</li>
+<li><p><strong>Behavioral Genomics</strong></p>
+<ul class="simple">
+<li><p>Response to environmental stimuli</p></li>
+<li><p>Social behavior correlates</p></li>
+<li><p>Neurogenomic profiling</p></li>
+</ul>
+</li>
+<li><p><strong>Comparative Transcriptomics</strong></p>
+<ul class="simple">
+<li><p>Species comparisons</p></li>
+<li><p>Evolutionary analysis</p></li>
+<li><p>Functional conservation studies</p></li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="output-data-products">
+<h3>Output Data Products<a class="headerlink" href="#output-data-products" title="Link to this heading"></a></h3>
+<p><strong>Expression Matrices</strong>:</p>
+<ul class="simple">
+<li><p>Raw counts (estimated counts)</p></li>
+<li><p>Normalized TPM (Transcripts Per Million)</p></li>
+<li><p>Effective lengths</p></li>
+<li><p>Batch-corrected values</p></li>
+</ul>
+<p><strong>Quality Metrics</strong>:</p>
+<ul class="simple">
+<li><p>Mapping rates per sample</p></li>
+<li><p>Library size distributions</p></li>
+<li><p>Expression level summaries</p></li>
+<li><p>Sample correlation matrices</p></li>
+</ul>
+<p><strong>Visualizations</strong>:</p>
+<ul class="simple">
+<li><p>Expression distributions</p></li>
+<li><p>PCA plots</p></li>
+<li><p>Heatmaps</p></li>
+<li><p>Quality control charts</p></li>
+</ul>
+</section>
+</section>
+<section id="logging-reproducibility">
+<h2>📝 Logging &amp; Reproducibility<a class="headerlink" href="#logging-reproducibility" title="Link to this heading"></a></h2>
+<section id="comprehensive-logging-system">
+<h3>Comprehensive Logging System<a class="headerlink" href="#comprehensive-logging-system" title="Link to this heading"></a></h3>
+<p><strong>Multi-level logging</strong> for complete audit trails:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Streaming logs during execution  </span>
+<span class="o">[</span>INFO<span class="w"> </span><span class="m">21</span>:16:35<span class="o">]</span><span class="w"> </span>Starting<span class="w"> </span>METAINFORMANT<span class="w"> </span>Amalgkit<span class="w"> </span>Orchestrator
+<span class="o">[</span>INFO<span class="w"> </span><span class="m">21</span>:16:35<span class="o">]</span><span class="w"> </span>Configuration:<span class="w"> </span>config/amalgkit_pogonomyrmex_barbatus.yaml
+<span class="o">[</span>SUCCESS<span class="w"> </span><span class="m">21</span>:17:12<span class="o">]</span><span class="w"> </span>Step<span class="w"> </span>sanity<span class="w"> </span>completed<span class="w"> </span>successfully<span class="w"> </span><span class="o">(</span>3s<span class="o">)</span>
+</pre></div>
+</div>
+<p><strong>Log Destinations</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">work_dir/logs/</span></code> - Per-step detailed logs</p></li>
+<li><p>Console output - Real-time status updates</p></li>
+<li><p>Progress monitoring - Download/processing statistics</p></li>
+</ul>
+</section>
+<section id="reproducibility-artifacts">
+<h3>Reproducibility Artifacts<a class="headerlink" href="#reproducibility-artifacts" title="Link to this heading"></a></h3>
+<p><strong>Generated Documentation</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">work_dir/amalgkit.manifest.jsonl</span></code> - Complete execution log</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">work_dir/amalgkit.report.json</span></code> - Structured summary</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">work_dir/amalgkit.report.md</span></code> - Human-readable report</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">COMPREHENSIVE_EXPRESSION_ANALYSIS.pdf</span></code> - Publication-ready results</p></li>
+</ul>
+</section>
+<section id="configuration-management">
+<h3>Configuration Management<a class="headerlink" href="#configuration-management" title="Link to this heading"></a></h3>
+<p><strong>Version Control Integration</strong>:</p>
+<ul class="simple">
+<li><p>All configs stored in <code class="docutils literal notranslate"><span class="pre">config/</span></code> directory</p></li>
+<li><p>Template-based approach for species scaling</p></li>
+<li><p>Environment-specific overrides via environment variables</p></li>
+<li><p>Reproducible execution commands documented</p></li>
+</ul>
+</section>
+</section>
+<section id="production-deployment">
+<h2>🚀 Production Deployment<a class="headerlink" href="#production-deployment" title="Link to this heading"></a></h2>
+<section id="orchestration-commands">
+<h3>Orchestration Commands<a class="headerlink" href="#orchestration-commands" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Production-ready execution</span>
+scripts/rna/amalgkit/run_amalgkit.sh<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--config<span class="w"> </span>config/amalgkit_pogonomyrmex_barbatus.yaml<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--steps<span class="w"> </span>metadata,select,getfastq,quant,merge,curate,sanity<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--stream<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--parallel
+
+<span class="c1"># Quality assurance before deployment</span>
+scripts/rna/amalgkit/run_amalgkit.sh<span class="w"> </span>--config<span class="w"> </span>config/amalgkit_pogonomyrmex_barbatus.yaml<span class="w"> </span>--check
+
+<span class="c1"># Development/testing with smaller dataset</span>
+scripts/rna/amalgkit/run_amalgkit.sh<span class="w"> </span>--config<span class="w"> </span>config/amalgkit_pogonomyrmex_barbatus.yaml<span class="w"> </span>--steps<span class="w"> </span>quant<span class="w"> </span>--dry-run
+</pre></div>
+</div>
+</section>
+<section id="scaling-strategies">
+<h3>Scaling Strategies<a class="headerlink" href="#scaling-strategies" title="Link to this heading"></a></h3>
+<ol class="arabic">
+<li><p><strong>Single Species, Multiple Experiments</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 8 samples from 2 experiments</span>
+scripts/rna/amalgkit/run_amalgkit.sh<span class="w"> </span>--config<span class="w"> </span>config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+</pre></div>
+</div>
+</li>
+<li><p><strong>Cross-Species Comparative Analysis</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Multiple species configurations</span>
+<span class="k">for</span><span class="w"> </span>species<span class="w"> </span><span class="k">in</span><span class="w"> </span>pbarbatus<span class="w"> </span>amellifera<span class="w"> </span>melanogaster<span class="p">;</span><span class="w"> </span><span class="k">do</span>
+<span class="w">  </span>scripts/rna/amalgkit/run_amalgkit.sh<span class="w"> </span>--config<span class="w"> </span>config/amalgkit_<span class="si">${</span><span class="nv">species</span><span class="si">}</span>.yaml
+<span class="k">done</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>High-Performance Computing</strong></p>
+<ul class="simple">
+<li><p>Cluster job submission scripts</p></li>
+<li><p>Parallel sample processing</p></li>
+<li><p>Resource allocation optimization</p></li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="quality-assurance">
+<h3>Quality Assurance<a class="headerlink" href="#quality-assurance" title="Link to this heading"></a></h3>
+<p><strong>No-Mock Testing Policy</strong>: All external API calls are real</p>
+<ul class="simple">
+<li><p><strong>Network calls</strong>: Actual NCBI/SRA downloads</p></li>
+<li><p><strong>Tool execution</strong>: Real bioinformatics software</p></li>
+<li><p><strong>Data processing</strong>: Production-scale datasets</p></li>
+<li><p><strong>Error conditions</strong>: Tested with real failure scenarios</p></li>
+</ul>
+<p><strong>Validation Checks</strong>:</p>
+<ul class="simple">
+<li><p>Dependency verification</p></li>
+<li><p>File format validation</p></li>
+<li><p>Statistical sanity checks</p></li>
+<li><p>Output completeness verification</p></li>
+</ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="advanced-usage">
+<h2>🔧 Advanced Usage<a class="headerlink" href="#advanced-usage" title="Link to this heading"></a></h2>
+<section id="custom-step-execution">
+<h3>Custom Step Execution<a class="headerlink" href="#custom-step-execution" title="Link to this heading"></a></h3>
+<p>Run individual steps with fine-grained control:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run individual steps using step runners</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna.steps</span><span class="w"> </span><span class="kn">import</span> <span class="n">STEP_RUNNERS</span>
+
+<span class="c1"># Run metadata step</span>
+<span class="n">metadata_runner</span> <span class="o">=</span> <span class="n">STEP_RUNNERS</span><span class="p">[</span><span class="s2">&quot;metadata&quot;</span><span class="p">]</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">metadata_runner</span><span class="p">(</span>
+    <span class="p">{</span><span class="s2">&quot;out_dir&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">work_dir</span><span class="p">),</span> <span class="s2">&quot;threads&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">},</span>
+    <span class="n">work_dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">work_dir</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="c1"># Run quantification step</span>
+<span class="n">quant_runner</span> <span class="o">=</span> <span class="n">STEP_RUNNERS</span><span class="p">[</span><span class="s2">&quot;quant&quot;</span><span class="p">]</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">quant_runner</span><span class="p">(</span>
+    <span class="p">{</span><span class="s2">&quot;out_dir&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">work_dir</span> <span class="o">/</span> <span class="s2">&quot;quant&quot;</span><span class="p">),</span> <span class="s2">&quot;threads&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">},</span>
+    <span class="n">work_dir</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">work_dir</span><span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="parallel-execution">
+<h3>Parallel Execution<a class="headerlink" href="#parallel-execution" title="Link to this heading"></a></h3>
+<p>Execute multiple workflows in parallel:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run multiple workflows in parallel</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">concurrent.futures</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">AmalgkitWorkflowConfig</span><span class="p">,</span> <span class="n">execute_workflow</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">run_workflow_for_species</span><span class="p">(</span><span class="n">species</span><span class="p">):</span>
+    <span class="n">config_data</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;work_dir&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;output/amalgkit/</span><span class="si">{</span><span class="n">species</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;species_list&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">species</span><span class="p">],</span>
+        <span class="s2">&quot;threads&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
+        <span class="s2">&quot;steps&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="s2">&quot;select&quot;</span><span class="p">]</span>
+    <span class="p">}</span>
+    <span class="n">cfg</span> <span class="o">=</span> <span class="n">AmalgkitWorkflowConfig</span><span class="p">(</span><span class="o">**</span><span class="n">config_data</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">execute_workflow</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+
+<span class="c1"># Execute for multiple species</span>
+<span class="n">species_list</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Homo_sapiens&quot;</span><span class="p">,</span> <span class="s2">&quot;Mus_musculus&quot;</span><span class="p">,</span> <span class="s2">&quot;Drosophila_melanogaster&quot;</span><span class="p">]</span>
+<span class="k">with</span> <span class="n">concurrent</span><span class="o">.</span><span class="n">futures</span><span class="o">.</span><span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">executor</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">run_workflow_for_species</span><span class="p">,</span> <span class="n">species_list</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+<section id="performance-optimization">
+<h3>Performance Optimization<a class="headerlink" href="#performance-optimization" title="Link to this heading"></a></h3>
+<section id="memory-management">
+<h4>Memory Management<a class="headerlink" href="#memory-management" title="Link to this heading"></a></h4>
+<p>For large datasets, use streaming processing:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">config_data</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;work_dir&quot;</span><span class="p">:</span> <span class="s2">&quot;output/amalgkit/large&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;threads&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span>
+    <span class="s2">&quot;steps&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;metadata&quot;</span><span class="p">,</span> <span class="s2">&quot;select&quot;</span><span class="p">,</span> <span class="s2">&quot;getfastq&quot;</span><span class="p">],</span>  <span class="c1"># Stop before memory-intensive steps</span>
+    <span class="s2">&quot;filters&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;max_spots&quot;</span><span class="p">:</span> <span class="mi">10000000</span>  <span class="c1"># Limit sample size</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="network-optimization">
+<h4>Network Optimization<a class="headerlink" href="#network-optimization" title="Link to this heading"></a></h4>
+<p>Use multiple download sources for faster downloads:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">getfastq</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">aws</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">yes</span>
+<span class="w">    </span><span class="nt">ncbi</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">yes</span>
+<span class="w">    </span><span class="nt">gcp</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">yes</span>
+<span class="w">    </span><span class="nt">accelerate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">  </span><span class="c1"># Enable cloud acceleration</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="integration-examples">
+<h3>Integration Examples<a class="headerlink" href="#integration-examples" title="Link to this heading"></a></h3>
+<section id="with-visualization">
+<h4>With Visualization<a class="headerlink" href="#with-visualization" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">plots</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="c1"># Load results</span>
+<span class="n">results_file</span> <span class="o">=</span> <span class="n">work_dir</span> <span class="o">/</span> <span class="s2">&quot;merged&quot;</span> <span class="o">/</span> <span class="s2">&quot;merged_abundance.tsv&quot;</span>
+<span class="k">if</span> <span class="n">results_file</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">results_file</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">)</span>
+    
+    <span class="c1"># Create expression heatmap</span>
+    <span class="n">plots</span><span class="o">.</span><span class="n">heatmap</span><span class="p">(</span>
+        <span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:</span><span class="mi">100</span><span class="p">,</span> <span class="p">:</span><span class="mi">50</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>  <span class="c1"># First 100 genes, 50 samples</span>
+        <span class="n">title</span><span class="o">=</span><span class="s2">&quot;Expression Heatmap&quot;</span><span class="p">,</span>
+        <span class="n">xlabel</span><span class="o">=</span><span class="s2">&quot;Samples&quot;</span><span class="p">,</span>
+        <span class="n">ylabel</span><span class="o">=</span><span class="s2">&quot;Genes&quot;</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="with-statistical-analysis">
+<h4>With Statistical Analysis<a class="headerlink" href="#with-statistical-analysis" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.math</span><span class="w"> </span><span class="kn">import</span> <span class="n">statistics</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Analyze expression data</span>
+<span class="k">if</span> <span class="n">results_file</span><span class="o">.</span><span class="n">exists</span><span class="p">():</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">results_file</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">)</span>
+    
+    <span class="c1"># Calculate diversity metrics</span>
+    <span class="n">expression_matrix</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">iloc</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">:]</span><span class="o">.</span><span class="n">values</span>  <span class="c1"># Exclude gene names</span>
+    <span class="n">shannon_diversities</span> <span class="o">=</span> <span class="p">[]</span>
+    
+    <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">expression_matrix</span><span class="o">.</span><span class="n">T</span><span class="p">:</span>  <span class="c1"># Transpose for per-sample</span>
+        <span class="n">diversity</span> <span class="o">=</span> <span class="n">statistics</span><span class="o">.</span><span class="n">shannon_diversity</span><span class="p">(</span><span class="n">sample</span><span class="p">)</span>
+        <span class="n">shannon_diversities</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">diversity</span><span class="p">)</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Average Shannon diversity: </span><span class="si">{</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">shannon_diversities</span><span class="p">)</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="testing-and-validation">
+<h3>Testing and Validation<a class="headerlink" href="#testing-and-validation" title="Link to this heading"></a></h3>
+<section id="unit-tests">
+<h4>Unit Tests<a class="headerlink" href="#unit-tests" title="Link to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run amalgkit integration tests</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_rna_amalgkit_comprehensive.py<span class="w"> </span>-v
+
+<span class="c1"># Test specific functionality</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_rna_amalgkit_comprehensive.py::TestAmalgkitIntegration::test_check_cli_available<span class="w"> </span>-v
+</pre></div>
+</div>
+</section>
+<section id="integration-tests">
+<h4>Integration Tests<a class="headerlink" href="#integration-tests" title="Link to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run workflow integration tests</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_rna_workflow.py<span class="w"> </span>-v
+
+<span class="c1"># Test with real data (requires network)</span>
+<span class="nv">NCBI_EMAIL</span><span class="o">=</span><span class="s2">&quot;your@email.com&quot;</span><span class="w"> </span>uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_rna_amalgkit.py::test_metadata_step_execution<span class="w"> </span>-v
+</pre></div>
+</div>
+</section>
+</section>
+<section id="advanced-troubleshooting">
+<h3>Advanced Troubleshooting<a class="headerlink" href="#advanced-troubleshooting" title="Link to this heading"></a></h3>
+<section id="debug-mode">
+<h4>Debug Mode<a class="headerlink" href="#debug-mode" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Enable debug logging</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+
+<span class="c1"># Run with detailed output</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_workflow_config</span><span class="p">,</span> <span class="n">execute_workflow</span>
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">load_workflow_config</span><span class="p">(</span><span class="s1">&#39;config.yaml&#39;</span><span class="p">)</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">execute_workflow</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="common-issues">
+<h4>Common Issues<a class="headerlink" href="#common-issues" title="Link to this heading"></a></h4>
+<ol class="arabic simple">
+<li><p><strong>Network timeouts</strong>: Add retry configuration in YAML</p></li>
+<li><p><strong>Insufficient disk space</strong>: Use smaller datasets or enable auto-cleanup</p></li>
+<li><p><strong>Memory issues</strong>: Reduce parallelization or limit sample size</p></li>
+</ol>
+</section>
+</section>
+<section id="best-practices">
+<h3>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h3>
+<section id="configuration">
+<h4>Configuration<a class="headerlink" href="#configuration" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p>Start with simple configurations and add complexity</p></li>
+<li><p>Test configurations with small datasets first</p></li>
+<li><p>Use descriptive names for work directories</p></li>
+<li><p>Document configuration changes</p></li>
+</ul>
+</section>
+<section id="execution">
+<h4>Execution<a class="headerlink" href="#execution" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p>Run steps individually for debugging</p></li>
+<li><p>Monitor disk space and memory usage</p></li>
+<li><p>Keep logs for troubleshooting</p></li>
+</ul>
+</section>
+<section id="data-management">
+<h4>Data Management<a class="headerlink" href="#data-management" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p>Use versioned work directories</p></li>
+<li><p>Archive large intermediate files</p></li>
+<li><p>Document data sources and processing steps</p></li>
+<li><p>Validate data integrity at each step</p></li>
+</ul>
+</section>
+</section>
+</section>
+<hr class="docutils" />
+<section id="api-reference">
+<h2>📚 API Reference<a class="headerlink" href="#api-reference" title="Link to this heading"></a></h2>
+<section id="core-functions">
+<h3>Core Functions<a class="headerlink" href="#core-functions" title="Link to this heading"></a></h3>
+<p>Key functions: <code class="docutils literal notranslate"><span class="pre">build_cli_args</span></code>, <code class="docutils literal notranslate"><span class="pre">build_amalgkit_command</span></code>, <code class="docutils literal notranslate"><span class="pre">check_cli_available</span></code>, <code class="docutils literal notranslate"><span class="pre">run_amalgkit</span></code>, and convenience wrappers per subcommand: <code class="docutils literal notranslate"><span class="pre">metadata</span></code>, <code class="docutils literal notranslate"><span class="pre">integrate</span></code>, <code class="docutils literal notranslate"><span class="pre">config</span></code>, <code class="docutils literal notranslate"><span class="pre">select</span></code>, <code class="docutils literal notranslate"><span class="pre">getfastq</span></code>, <code class="docutils literal notranslate"><span class="pre">quant</span></code>, <code class="docutils literal notranslate"><span class="pre">merge</span></code>, <code class="docutils literal notranslate"><span class="pre">cstmm</span></code>, <code class="docutils literal notranslate"><span class="pre">curate</span></code>, <code class="docutils literal notranslate"><span class="pre">csca</span></code>, <code class="docutils literal notranslate"><span class="pre">sanity</span></code>.</p>
+<p><strong>See Also</strong>: <a class="reference internal" href="../API.html"><span class="std std-doc">Complete API Reference</span></a> | <a class="reference internal" href="FUNCTIONS.html"><span class="std std-doc">Function Index</span></a></p>
+</section>
+<section id="parameter-mapping">
+<h3>Parameter Mapping<a class="headerlink" href="#parameter-mapping" title="Link to this heading"></a></h3>
+<p>The wrapper follows simple rules implemented in <code class="docutils literal notranslate"><span class="pre">build_cli_args</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">None</span></code> values are skipped</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bool</span> <span class="pre">True</span></code> adds only the flag (<code class="docutils literal notranslate"><span class="pre">False</span></code> is skipped)</p></li>
+<li><p>Lists/tuples repeat the flag per item</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pathlib.Path</span></code> is stringified</p></li>
+<li><p>Other scalars are appended as <code class="docutils literal notranslate"><span class="pre">--flag</span> <span class="pre">value</span></code></p></li>
+</ul>
+<p>This enables a clean, typed interface in Python while preserving exact <code class="docutils literal notranslate"><span class="pre">amalgkit</span></code> flag names.</p>
+</section>
+<section id="workflow-integration">
+<h3>Workflow Integration<a class="headerlink" href="#workflow-integration" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">load_workflow_config</span><span class="p">,</span>
+    <span class="n">execute_workflow</span>
+<span class="p">)</span>
+
+<span class="c1"># Load configuration</span>
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">load_workflow_config</span><span class="p">(</span><span class="s2">&quot;config/amalgkit_pogonomyrmex_barbatus.yaml&quot;</span><span class="p">)</span>
+
+<span class="c1"># Execute workflow</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">execute_workflow</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Pipeline completed with exit codes: </span><span class="si">{</span><span class="n">results</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<hr class="docutils" />
+<section id="see-also">
+<h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<section id="documentation">
+<h3>Documentation<a class="headerlink" href="#documentation" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><a class="reference internal" href="../API.html"><span class="std std-doc">API Reference</span></a></strong> - Complete function documentation</p></li>
+<li><p><strong><a class="reference internal" href="FUNCTIONS.html"><span class="std std-doc">Function Index</span></a></strong> - Quick function lookup</p></li>
+<li><p><strong><a class="reference internal" href="steps/README.html"><span class="std std-doc">Step Documentation</span></a></strong> - Detailed step guides</p></li>
+<li><p><strong><a class="reference internal" href="../GETTING_STARTED.html"><span class="std std-doc">Getting Started</span></a></strong> - Complete setup and workflow guide</p></li>
+<li><p><strong><a class="reference internal" href="genome_setup_guide.html"><span class="std std-doc">Genome Setup</span></a></strong> - Genome preparation guide</p></li>
+<li><p><strong><a class="reference internal" href="../README.html"><span class="std std-doc">Main Index</span></a></strong> - RNA domain master index</p></li>
+</ul>
+</section>
+<section id="related-topics">
+<h3>Related Topics<a class="headerlink" href="#related-topics" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><a class="reference internal" href="../workflow.html"><span class="std std-doc">Workflow Guide</span></a></strong> - Workflow planning and execution</p></li>
+<li><p><strong><a class="reference internal" href="../CONFIGURATION.html"><span class="std std-doc">Configuration Guide</span></a></strong> - Configuration management</p></li>
+<li><p><strong><a class="reference internal" href="../ORCHESTRATION.html"><span class="std std-doc">Orchestration</span></a></strong> - Workflow orchestration</p></li>
+</ul>
+<hr class="docutils" />
+<p><em>This documentation reflects the production-ready AMALGKIT integration successfully demonstrated with Pogonomyrmex barbatus transcriptomic analysis, processing 5.8M+ reads and generating publication-quality results.</em></p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

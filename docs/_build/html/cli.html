@@ -1,0 +1,270 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CLI &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/custom.css" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">CLI</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/cli.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="cli">
+<h1>CLI<a class="headerlink" href="#cli" title="Link to this heading"></a></h1>
+<p>Entry: <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">run</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">metainformant</span></code> or <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">run</span> <span class="pre">metainformant</span></code>.</p>
+<div class="highlight-text notranslate"><div class="highlight"><pre><span></span>uv run metainformant setup --with-amalgkit --ncbi-email &quot;you@example.com&quot;
+uv run metainformant dna fetch --assembly GCF_000001405.40
+uv run metainformant rna plan --work-dir output/amalgkit/work --threads 8 --species Apis_mellifera
+uv run metainformant rna plan-species --work-dir output/amalgkit/work --threads 8 --taxon-id 7460 --tissue brain --tissue muscle
+uv run metainformant rna plan-config --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+uv run metainformant rna run  --work-dir output/amalgkit/work --threads 8 --species Apis_mellifera --check
+uv run metainformant rna run-config --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --check
+uv run metainformant gwas run --config config/gwas/gwas_template.yaml
+uv run metainformant gwas run --config config/gwas/gwas_template.yaml --check
+uv run metainformant protein taxon-ids --file tests/data/protein/taxon_id_list.txt
+uv run metainformant protein comp --fasta data/protein/example.faa
+uv run metainformant protein rmsd-ca --pdb-a file1.pdb --pdb-b file2.pdb
+uv run metainformant math selection --help
+uv run metainformant ontology run --go data/go.obo --output output/ontology
+uv run metainformant phenotype run --input data/phenotypes.json --output output/phenotype
+uv run metainformant networks run --input data/interactions.tsv --output output/networks
+uv run metainformant multiomics run --genomics data/genomics.tsv --transcriptomics data/rna.tsv --output output/multiomics
+uv run metainformant singlecell run --input data/counts.h5ad --output output/singlecell --qc --normalize
+uv run metainformant quality run --fastq data/reads.fq --output output/quality --analyze-fastq
+uv run metainformant simulation run --model sequences --output output/simulation --n 1000
+uv run metainformant visualization run --input data/results.csv --plot-type heatmap --output output/visualization
+uv run metainformant epigenome run --methylation data/methylation.tsv --output output/epigenome --compute-beta
+uv run metainformant ecology run --input data/abundance.tsv --output output/ecology --diversity
+uv run metainformant ml run --features data/features.csv --labels data/labels.csv --output output/ml --classify
+uv run metainformant information entropy --input data/sequences.fasta --k 1
+uv run metainformant information mutual-information --x data/variable1.csv --y data/variable2.csv --output output/information
+uv run metainformant information profile --sequences data/sequences.fasta --k 2 --visualize
+uv run metainformant life-events embed --input data/event_sequences.json --output output/life_events/embeddings --embedding-dim 100
+uv run metainformant life-events predict --events data/event_sequences.json --model output/life_events/model.pkl --output output/life_events/predictions
+uv run metainformant life-events interpret --model output/life_events/model.pkl --sequences data/event_sequences.json --output output/life_events/interpretation
+uv run metainformant tests -q
+</pre></div>
+</div>
+<p>Subcommands</p>
+<ul class="simple">
+<li><p><strong>setup</strong>: runs repository setup (uv, dependencies); supports <code class="docutils literal notranslate"><span class="pre">--with-amalgkit</span></code> and <code class="docutils literal notranslate"><span class="pre">--ncbi-email</span></code> options</p></li>
+<li><p><strong>dna fetch</strong>: validates assembly accessions (see <a class="reference internal" href="dna/accessions.html"><span class="std std-doc">DNA Accessions</span></a>)</p></li>
+<li><p><strong>rna plan</strong>: prints an ordered plan of subcommands and parameters (see <a class="reference internal" href="rna/workflow.html"><span class="std std-doc">RNA Workflow</span></a>)</p></li>
+<li><p><strong>rna plan-species</strong>: plans workflow with species/tissue parameters; requires <code class="docutils literal notranslate"><span class="pre">--work-dir</span></code> and <code class="docutils literal notranslate"><span class="pre">--threads</span></code>; optional <code class="docutils literal notranslate"><span class="pre">--taxon-id</span></code> and repeatable <code class="docutils literal notranslate"><span class="pre">--tissue</span></code> filters</p></li>
+<li><p><strong>rna plan-config</strong>: plans workflow from a config file without executing; requires <code class="docutils literal notranslate"><span class="pre">--config</span></code> path to YAML/TOML/JSON file</p></li>
+<li><p><strong>rna run</strong>: executes the workflow; use <code class="docutils literal notranslate"><span class="pre">--check</span></code> to stop on first failure; logs written in <code class="docutils literal notranslate"><span class="pre">work-dir/logs</span></code> (default examples place this under <code class="docutils literal notranslate"><span class="pre">output/</span></code>)</p></li>
+<li><p><strong>rna run-config</strong>: executes the workflow from a config file under <code class="docutils literal notranslate"><span class="pre">config/</span></code>; logs and manifest written under paths specified by the config</p></li>
+<li><p><strong>gwas run</strong>: executes GWAS workflow from configuration file (see <a class="reference internal" href="gwas/workflow.html"><span class="std std-doc">GWAS Workflow</span></a>); use <code class="docutils literal notranslate"><span class="pre">--check</span></code> to validate configuration without execution</p></li>
+<li><p><strong>protein taxon-ids</strong>: reads and prints taxon IDs from file (see <a class="reference internal" href="protein/proteomes.html"><span class="std std-doc">Protein Proteomes</span></a>)</p></li>
+<li><p><strong>protein comp</strong>: calculates amino acid composition for sequences in FASTA</p></li>
+<li><p><strong>protein rmsd-ca</strong>: computes Kabsch RMSD using CA atoms from two PDB files</p></li>
+<li><p><strong>math selection</strong>: selection model experiments and visualizations (see <a class="reference internal" href="math/selection.html"><span class="std std-doc">Math Selection</span></a>)</p></li>
+<li><p><strong>ontology run</strong>: ontology analysis workflow (GO term queries, enrichment analysis, ontology summaries)</p>
+<ul>
+<li><p>Options: <code class="docutils literal notranslate"><span class="pre">--go</span></code> (OBO file), <code class="docutils literal notranslate"><span class="pre">--output</span></code> (default: output/ontology), <code class="docutils literal notranslate"><span class="pre">--query-term</span></code>, <code class="docutils literal notranslate"><span class="pre">--ancestors</span></code>, <code class="docutils literal notranslate"><span class="pre">--descendants</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>phenotype run</strong>: phenotype analysis workflow (trait statistics, correlations, AntWiki data integration)</p>
+<ul>
+<li><p>Options: <code class="docutils literal notranslate"><span class="pre">--input</span></code> (required, JSON/CSV/TSV), <code class="docutils literal notranslate"><span class="pre">--output</span></code> (default: output/phenotype), <code class="docutils literal notranslate"><span class="pre">--analyze-statistics</span></code>, <code class="docutils literal notranslate"><span class="pre">--analyze-correlations</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>networks run</strong>: network analysis workflow (metrics, community detection, centrality measures)</p>
+<ul>
+<li><p>Options: <code class="docutils literal notranslate"><span class="pre">--input</span></code> (required, edge list), <code class="docutils literal notranslate"><span class="pre">--output</span></code> (default: output/networks), <code class="docutils literal notranslate"><span class="pre">--analyze-metrics</span></code>, <code class="docutils literal notranslate"><span class="pre">--detect-communities</span></code>, <code class="docutils literal notranslate"><span class="pre">--analyze-centrality</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>multiomics run</strong>: multi-omics integration workflow (joint PCA, NMF, CCA across genomics/transcriptomics/proteomics)</p>
+<ul>
+<li><p>Options: <code class="docutils literal notranslate"><span class="pre">--genomics</span></code>, <code class="docutils literal notranslate"><span class="pre">--transcriptomics</span></code>, <code class="docutils literal notranslate"><span class="pre">--proteomics</span></code>, <code class="docutils literal notranslate"><span class="pre">--output</span></code> (default: output/multiomics), <code class="docutils literal notranslate"><span class="pre">--joint-pca</span></code>, <code class="docutils literal notranslate"><span class="pre">--joint-nmf</span></code>, <code class="docutils literal notranslate"><span class="pre">--canonical-correlation</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>singlecell run</strong>: single-cell analysis workflow (QC, normalization, dimensionality reduction, clustering)</p>
+<ul>
+<li><p>Options: <code class="docutils literal notranslate"><span class="pre">--input</span></code> (required, count matrix), <code class="docutils literal notranslate"><span class="pre">--output</span></code> (default: output/singlecell), <code class="docutils literal notranslate"><span class="pre">--qc</span></code>, <code class="docutils literal notranslate"><span class="pre">--normalize</span></code>, <code class="docutils literal notranslate"><span class="pre">--cluster</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>quality run</strong>: quality control workflow (FASTQ metrics, contamination detection)</p>
+<ul>
+<li><p>Options: <code class="docutils literal notranslate"><span class="pre">--fastq</span></code>, <code class="docutils literal notranslate"><span class="pre">--output</span></code> (default: output/quality), <code class="docutils literal notranslate"><span class="pre">--analyze-fastq</span></code>, <code class="docutils literal notranslate"><span class="pre">--detect-contamination</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>simulation run</strong>: simulation workflow (synthetic sequences, agent-based models, expression simulation)</p>
+<ul>
+<li><p>Options: <code class="docutils literal notranslate"><span class="pre">--model</span></code> (required: sequences/agents/expression), <code class="docutils literal notranslate"><span class="pre">--output</span></code> (default: output/simulation), <code class="docutils literal notranslate"><span class="pre">--n</span></code> (sequences count), <code class="docutils literal notranslate"><span class="pre">--steps</span></code> (simulation steps)</p></li>
+</ul>
+</li>
+<li><p><strong>visualization run</strong>: visualization workflow (publication-quality plots, heatmaps, animations, histograms)</p>
+<ul>
+<li><p>Options: <code class="docutils literal notranslate"><span class="pre">--input</span></code> (required, data file), <code class="docutils literal notranslate"><span class="pre">--plot-type</span></code> (required: lineplot/heatmap/animation/histogram), <code class="docutils literal notranslate"><span class="pre">--output</span></code> (default: output/visualization)</p></li>
+</ul>
+</li>
+<li><p><strong>epigenome run</strong>: epigenome analysis workflow (DNA methylation patterns, chromatin accessibility tracks)</p>
+<ul>
+<li><p>Options: <code class="docutils literal notranslate"><span class="pre">--methylation</span></code> (CpG table), <code class="docutils literal notranslate"><span class="pre">--bedgraph</span></code> (track file), <code class="docutils literal notranslate"><span class="pre">--output</span></code> (default: output/epigenome), <code class="docutils literal notranslate"><span class="pre">--compute-beta</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>ecology run</strong>: ecology analysis workflow (community diversity metrics, species richness, beta diversity)</p>
+<ul>
+<li><p>Options: <code class="docutils literal notranslate"><span class="pre">--input</span></code> (required, abundance table), <code class="docutils literal notranslate"><span class="pre">--output</span></code> (default: output/ecology), <code class="docutils literal notranslate"><span class="pre">--diversity</span></code>, <code class="docutils literal notranslate"><span class="pre">--beta-diversity</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>ml run</strong>: machine learning pipeline workflow (feature selection, classification, regression, validation)</p>
+<ul>
+<li><p>Options: <code class="docutils literal notranslate"><span class="pre">--features</span></code> (required, feature matrix), <code class="docutils literal notranslate"><span class="pre">--labels</span></code> (optional), <code class="docutils literal notranslate"><span class="pre">--output</span></code> (default: output/ml), <code class="docutils literal notranslate"><span class="pre">--classify</span></code>, <code class="docutils literal notranslate"><span class="pre">--regress</span></code>, <code class="docutils literal notranslate"><span class="pre">--feature-selection</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>information entropy</strong>: calculates Shannon entropy for sequences or data files (see <a class="reference internal" href="information/index.html"><span class="std std-doc">Information Theory</span></a>)</p></li>
+<li><p><strong>information mutual-information</strong>: calculates mutual information between two variables/data files</p></li>
+<li><p><strong>information profile</strong>: calculates information profile for sequences with optional visualization</p></li>
+<li><p><strong>life-events embed</strong>: learns event embeddings from life course event sequences (see <a class="reference internal" href="life_events/index.html"><span class="std std-doc">Life Events</span></a>)</p></li>
+<li><p><strong>life-events predict</strong>: predicts life outcomes from event sequences using pre-trained models</p></li>
+<li><p><strong>life-events interpret</strong>: interprets model predictions and provides feature importance analysis</p></li>
+<li><p><strong>tests</strong>: runs the repo tests (see <a class="reference internal" href="testing.html"><span class="std std-doc">Testing</span></a>)</p></li>
+</ul>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>sequenceDiagram
+  participant U as User
+  participant CLI as __main__.py
+  participant DNA as dna/*
+  participant RNA as rna/*
+  U-&gt;&gt;CLI: uv run metainformant rna plan --work-dir W
+  CLI-&gt;&gt;RNA: plan_workflow(config)
+  RNA--&gt;&gt;CLI: steps: [(name, params)...]
+  U-&gt;&gt;CLI: uv run metainformant rna run --work-dir W --check
+  CLI-&gt;&gt;RNA: execute_workflow(config, check=True)
+  RNA-&gt;&gt;RNA: run_amalgkit(step, params)
+  RNA--&gt;&gt;CLI: return codes
+</pre></div>
+</div>
+<p>See: <a class="reference internal" href="rna/workflow.html"><span class="std std-doc">RNA Workflow</span></a>, <a class="reference internal" href="dna/index.html"><span class="std std-doc">DNA</span></a>, <a class="reference internal" href="gwas/workflow.html"><span class="std std-doc">GWAS Workflow</span></a>, <a class="reference internal" href="testing.html"><span class="std std-doc">Testing</span></a>.</p>
+<section id="configuration-files">
+<h2>Configuration Files<a class="headerlink" href="#configuration-files" title="Link to this heading"></a></h2>
+<p>Many workflows support configuration files for complex parameter sets:</p>
+<ul class="simple">
+<li><p><strong>RNA workflows</strong>: Use <code class="docutils literal notranslate"><span class="pre">config/amalgkit/*.yaml</span></code> files (see <a class="reference internal" href="rna/workflow.html"><span class="std std-doc">RNA Workflow</span></a>)</p></li>
+<li><p><strong>GWAS workflows</strong>: Use <code class="docutils literal notranslate"><span class="pre">config/gwas/*.yaml</span></code> files (see <a class="reference internal" href="gwas/workflow.html"><span class="std std-doc">GWAS Workflow</span></a>)</p></li>
+<li><p><strong>Network analysis</strong>: Template available at <code class="docutils literal notranslate"><span class="pre">config/networks_template.yaml</span></code></p></li>
+<li><p><strong>Multi-omics</strong>: Template available at <code class="docutils literal notranslate"><span class="pre">config/multiomics_template.yaml</span></code></p></li>
+<li><p><strong>Single-cell</strong>: Template available at <code class="docutils literal notranslate"><span class="pre">config/singlecell_template.yaml</span></code></p></li>
+</ul>
+<p>See <a class="reference internal" href="core/config.html"><span class="std std-doc">Configuration Management</span></a> for details on using configuration files and environment variable overrides.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

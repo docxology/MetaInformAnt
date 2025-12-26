@@ -1,4 +1,4 @@
-"""Tests for advanced simulation functions in life_events module."""
+"""Tests for simulation functions in life_events module."""
 
 from __future__ import annotations
 
@@ -13,7 +13,7 @@ from metainformant.life_events import (
     add_temporal_noise,
     generate_cohort_sequences,
     generate_event_chain,
-    generate_realistic_life_events,
+    generate_synthetic_life_events,
 )
 
 
@@ -72,9 +72,9 @@ def test_add_temporal_noise(tmp_path):
     assert noisy_seq.person_id == seq.person_id
 
 
-def test_generate_realistic_life_events(tmp_path):
+def test_generate_synthetic_life_events(tmp_path):
     """Test realistic life events generation with advanced patterns."""
-    sequences, outcomes = generate_realistic_life_events(
+    sequences, outcomes = generate_synthetic_life_events(
         n_sequences=20,
         min_events_per_sequence=5,
         max_events_per_sequence=15,
@@ -113,7 +113,7 @@ def test_generate_cohort_sequences(tmp_path):
 
 def test_generate_realistic_with_noise(tmp_path):
     """Test realistic generation with temporal noise and missing data."""
-    sequences, outcomes = generate_realistic_life_events(
+    sequences, outcomes = generate_synthetic_life_events(
         n_sequences=10,
         temporal_noise=0.2,
         missing_data_probability=0.1,

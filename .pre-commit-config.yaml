@@ -66,8 +66,19 @@ repos:
       - id: trailing-whitespace
         exclude: '\.md$|\.rst$'
 
-      # Check for private keys
-      - id: detect-private-key
+  # Check for private keys
+  - id: detect-private-key
+
+  # Example validation
+  - repo: local
+    hooks:
+      - id: validate-examples
+        name: Validate METAINFORMANT examples
+        entry: python scripts/validate_examples.py --fast
+        language: system
+        files: ^examples/.*\.py$
+        pass_filenames: false
+        description: Fast validation of example files for syntax and import errors
 
       # Check for AWS credentials
       - id: detect-aws-credentials

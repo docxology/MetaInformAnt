@@ -1,0 +1,189 @@
+{
+  "dna_population_genetics_analysis": {
+    "analysis_methods": {
+      "fst": {
+        "description": "Fixation index measuring population differentiation",
+        "formula": "Fst = (Ht - Hs) / Ht",
+        "interpretation": "0: no differentiation; 1: complete differentiation"
+      },
+      "nucleotide_diversity": {
+        "description": "Average pairwise differences between sequences (\u03c0)",
+        "formula": "\u03c0 = (sum of pairwise differences) / (n choose 2)",
+        "interpretation": "Higher values indicate more genetic diversity"
+      },
+      "tajimas_d": {
+        "description": "Test for departure from neutral evolution",
+        "formula": "D = (\u03c0 - \u03b8) / sqrt(Var(\u03c0 - \u03b8))",
+        "interpretation": "Negative: purifying selection; Positive: balancing selection"
+      },
+      "wattersons_theta": {
+        "description": "Expected nucleotide diversity under neutral model",
+        "formula": "\u03b8 = S / sum(1/i for i in 1 to n-1)",
+        "interpretation": "Expected diversity based on segregating sites"
+      }
+    },
+    "functions_demonstrated": [
+      "nucleotide_diversity",
+      "wattersons_theta",
+      "tajimas_d",
+      "hudson_fst",
+      "fu_and_li_d_star_from_sequences",
+      "fu_and_li_f_star_from_sequences",
+      "fay_wu_h_from_sequences",
+      "segregating_sites",
+      "allele_frequencies",
+      "observed_heterozygosity"
+    ],
+    "key_insights": [
+      "High nucleotide diversity indicates recent population expansion or balancing selection",
+      "Tajima's D < 0 suggests purifying selection or population growth",
+      "Fst values near 0 indicate well-mixed populations",
+      "Heterozygosity measures genetic variation within populations",
+      "Multiple neutrality tests provide robust assessment of evolutionary forces"
+    ],
+    "population_data": {
+      "combined_neutrality_test": [
+        "ATCGATCGATCGATCGATCG",
+        "ATCGATCGATCGATCGATCA",
+        "ATCGATCGATCGATCGATCG",
+        "ATCGATCGATCGATCGTTTG",
+        "ATCGATCGATCGATCGATCG",
+        "GTCGATCGATCGATCGATCG",
+        "ATCGATCGATCGATCGAAAA",
+        "ATCGATCGATCGATCGATCG",
+        "ATCGTTTTTTTTTTTTTTTT",
+        "ATCGATCGATCGATCGATCG"
+      ],
+      "high_diversity": [
+        "ATCGATCGATCGATCGATCG",
+        "GTCGATCGATCGATCGATCG",
+        "ATCGATCGATCGATCGTTTG",
+        "ATCGATCGATCGATCGAAAA",
+        "ATCGTTTTTTTTTTTTTTTT"
+      ],
+      "low_diversity": [
+        "ATCGATCGATCGATCGATCG",
+        "ATCGATCGATCGATCGATCG",
+        "ATCGATCGATCGATCGATCA",
+        "ATCGATCGATCGATCGATCG",
+        "ATCGATCGATCGATCGATCG"
+      ]
+    },
+    "results": {
+      "comparative_analysis": {
+        "diversity_comparison": {
+          "low_vs_high_diversity": {
+            "pi_ratio": 16.25,
+            "segregating_sites_ratio": 14.0,
+            "theta_ratio": 14.0
+          }
+        },
+        "neutrality_test_summary": {
+          "directional_bias": {
+            "negative": 1,
+            "positive": 0
+          },
+          "significant_deviations": 1,
+          "tests_performed": 4
+        }
+      },
+      "diversity_statistics": {
+        "high_diversity": {
+          "nucleotide_diversity_pi": 0.325,
+          "pi_theta_ratio": 0.9672619047619049,
+          "segregating_sites": 14,
+          "wattersons_theta": 0.33599999999999997
+        },
+        "low_diversity": {
+          "nucleotide_diversity_pi": 0.02,
+          "pi_theta_ratio": 0.8333333333333335,
+          "segregating_sites": 1,
+          "wattersons_theta": 0.023999999999999997
+        }
+      },
+      "genotype_analysis": {
+        "population_1": {
+          "allele_frequencies": [
+            0.3333333333333333,
+            0.0,
+            0.3333333333333333,
+            0.3333333333333333,
+            0.0
+          ],
+          "heterozygosity_per_snp": [
+            0.2,
+            0.2,
+            0.2
+          ],
+          "num_individuals": 5,
+          "num_snps": 3,
+          "observed_heterozygosity": 0.20000000000000004
+        },
+        "population_2": {
+          "allele_frequencies": [
+            0.6666666666666666,
+            1.0,
+            1.0,
+            0.6666666666666666,
+            1.0
+          ],
+          "heterozygosity_per_snp": [
+            1.0,
+            0.8,
+            0.8
+          ],
+          "num_individuals": 5,
+          "num_snps": 3,
+          "observed_heterozygosity": 0.8666666666666667
+        }
+      },
+      "neutrality_tests": {
+        "fay_wu_h": {
+          "interpretation": "Detects recent positive selection",
+          "significance": "Negative values suggest recent selective sweeps",
+          "statistic": -4.769911784417324
+        },
+        "fu_li_d_star": {
+          "interpretation": "Tests for recent population growth or selection",
+          "significance": "Negative values suggest population expansion",
+          "statistic": -0.07449534420881351
+        },
+        "fu_li_f_star": {
+          "interpretation": "More powerful for detecting population growth",
+          "significance": "Negative values suggest population expansion",
+          "statistic": 0.0
+        },
+        "tajimas_d": {
+          "interpretation": "Negative: purifying selection or population expansion; Positive: balancing selection or bottleneck",
+          "significance": "Typically significant if |D| > 2",
+          "statistic": -1.1858407079646018
+        }
+      },
+      "population_differentiation": {
+        "fst_value": 0.12878787878787878,
+        "interpretation": {
+          "0.0-0.05": "Little genetic differentiation",
+          "0.05-0.15": "Moderate genetic differentiation",
+          "0.15-0.25": "Great genetic differentiation",
+          "0.25+": "Very great genetic differentiation"
+        },
+        "population_sizes": {
+          "population_1": 5,
+          "population_2": 5
+        }
+      }
+    },
+    "summary_metrics": {
+      "diversity_range": {
+        "max_pi": 0.325,
+        "min_pi": 0.02
+      },
+      "fst_calculated": true,
+      "genotype_matrices_analyzed": 2,
+      "neutrality_tests_performed": 4,
+      "populations_analyzed": 3,
+      "total_sequences": 20
+    },
+    "timestamp": "2024-12-26T10:00:00Z"
+  }
+}

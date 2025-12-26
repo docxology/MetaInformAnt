@@ -1,0 +1,476 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Multi-Omics: Integrated Biological Data Analysis &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Multi-Omics: Integrated Biological Data Analysis</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/multiomics/index.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="multi-omics-integrated-biological-data-analysis">
+<h1>Multi-Omics: Integrated Biological Data Analysis<a class="headerlink" href="#multi-omics-integrated-biological-data-analysis" title="Link to this heading"></a></h1>
+<p>The multi-omics module provides tools for integrating and analyzing data from multiple omic layers including genomics, transcriptomics, proteomics, and epigenomics to enable systems-level biological analysis.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>This module enables comprehensive systems biology analysis by combining data from different molecular layers to understand complex biological processes, identify multi-omic signatures, and discover integrated biomarkers.</p>
+</section>
+<section id="core-components">
+<h2>Core Components<a class="headerlink" href="#core-components" title="Link to this heading"></a></h2>
+<section id="data-integration">
+<h3><a class="reference internal" href="integration.html"><span class="std std-doc">Data Integration</span></a><a class="headerlink" href="#data-integration" title="Link to this heading"></a></h3>
+<p>Framework for combining heterogeneous biological datasets:</p>
+<ul class="simple">
+<li><p>Cross-platform data harmonization and alignment</p></li>
+<li><p>Multi-omics data container (<code class="docutils literal notranslate"><span class="pre">MultiOmicsData</span></code>) with automatic sample matching</p></li>
+<li><p>File I/O using core.io for CSV/TSV/Excel formats with gzip support</p></li>
+<li><p>Sample and feature ID mapping for dataset harmonization</p></li>
+<li><p>Metadata integration and alignment</p></li>
+<li><p>Integration helpers for DNA, RNA, and protein modules</p></li>
+</ul>
+</section>
+<section id="joint-analysis-methods">
+<h3>Joint Analysis Methods<a class="headerlink" href="#joint-analysis-methods" title="Link to this heading"></a></h3>
+<p>Statistical and computational methods for multi-omic analysis:</p>
+<ul class="simple">
+<li><p><strong>Joint PCA</strong>: Principal component analysis across concatenated omics layers</p></li>
+<li><p><strong>Joint NMF</strong>: Non-negative matrix factorization with shared sample factors</p></li>
+<li><p><strong>Canonical Correlation Analysis (CCA)</strong>: Find maximally correlated patterns between omics layers</p></li>
+<li><p>Automatic sample alignment and validation</p></li>
+<li><p>Comprehensive error handling and logging</p></li>
+</ul>
+</section>
+<section id="planned-features">
+<h3>Planned Features<a class="headerlink" href="#planned-features" title="Link to this heading"></a></h3>
+<p>The following features are planned for future releases:</p>
+<ul class="simple">
+<li><p>Multi-view clustering and consensus clustering</p></li>
+<li><p>Cross-omics biomarker discovery pipelines</p></li>
+<li><p>Pathway-level integration and enrichment analysis</p></li>
+<li><p>Batch effect correction for integrated datasets</p></li>
+<li><p>Integrative network construction</p></li>
+</ul>
+</section>
+</section>
+<section id="architecture">
+<h2>Architecture<a class="headerlink" href="#architecture" title="Link to this heading"></a></h2>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart TD
+    A[Genomics] --&gt; B[MultiOmicsData]
+    C[Transcriptomics] --&gt; B
+    D[Proteomics] --&gt; B
+    E[Epigenomics] --&gt; B
+
+    B --&gt; F[Data Integration]
+    F --&gt; G[Joint Analysis]
+    F --&gt; H[Biomarker Discovery]
+    F --&gt; I[Pathway Integration]
+
+    G --&gt; J[Joint PCA/NMF]
+    G --&gt; K[Canonical Correlation]
+    G --&gt; L[Multi-view Clustering]
+
+    H --&gt; M[Cross-omics Signatures]
+    H --&gt; N[Integrated Features]
+    H --&gt; O[Validation]
+
+    I --&gt; P[Pathway Activity]
+    I --&gt; Q[Crosstalk Analysis]
+    I --&gt; R[Systems Networks]
+
+    J --&gt; S[Biological Insights]
+    K --&gt; S
+    L --&gt; S
+    M --&gt; S
+    N --&gt; S
+    O --&gt; S
+    P --&gt; S
+    Q --&gt; S
+    R --&gt; S
+</pre></div>
+</div>
+</section>
+<section id="key-features">
+<h2>Key Features<a class="headerlink" href="#key-features" title="Link to this heading"></a></h2>
+<section id="multi-omics-data-container">
+<h3>Multi-Omics Data Container<a class="headerlink" href="#multi-omics-data-container" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Sample Alignment</strong>: Automatic alignment of samples across omics layers</p></li>
+<li><p><strong>Data Validation</strong>: Comprehensive validation of multi-omic datasets</p></li>
+<li><p><strong>Missing Data Handling</strong>: Robust handling of missing values across layers</p></li>
+<li><p><strong>Metadata Integration</strong>: Integration of sample and feature metadata</p></li>
+</ul>
+</section>
+<section id="integration-methods">
+<h3>Integration Methods<a class="headerlink" href="#integration-methods" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Joint PCA</strong>: Principal component analysis across concatenated omics layers with layer weighting</p></li>
+<li><p><strong>Joint NMF</strong>: Non-negative matrix factorization with shared sample factors and convergence detection</p></li>
+<li><p><strong>Canonical Correlation</strong>: Find maximally correlated patterns between two omics layers</p></li>
+<li><p>Automatic data validation and error handling</p></li>
+<li><p>Comprehensive logging for debugging and monitoring</p></li>
+</ul>
+</section>
+<section id="module-integration-helpers">
+<h3>Module Integration Helpers<a class="headerlink" href="#module-integration-helpers" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>from_dna_variants()</strong>: Convert VCF files to genomics layer DataFrame</p></li>
+<li><p><strong>from_rna_expression()</strong>: Load expression data for transcriptomics layer</p></li>
+<li><p><strong>from_protein_abundance()</strong>: Convert protein data to proteomics layer</p></li>
+</ul>
+</section>
+</section>
+<section id="quick-start">
+<h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h2>
+<section id="basic-multi-omics-integration">
+<h3>Basic Multi-Omics Integration<a class="headerlink" href="#basic-multi-omics-integration" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.multiomics</span><span class="w"> </span><span class="kn">import</span> <span class="n">MultiOmicsData</span><span class="p">,</span> <span class="n">integrate_omics_data</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="c1"># Method 1: Create from DataFrames</span>
+<span class="n">genomics_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;genomics_features.csv&quot;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">transcriptomics_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;expression_matrix.csv&quot;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">proteomics_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;protein_abundances.csv&quot;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="n">multiomics_data</span> <span class="o">=</span> <span class="n">MultiOmicsData</span><span class="p">(</span>
+    <span class="n">genomics</span><span class="o">=</span><span class="n">genomics_data</span><span class="p">,</span>
+    <span class="n">transcriptomics</span><span class="o">=</span><span class="n">transcriptomics_data</span><span class="p">,</span>
+    <span class="n">proteomics</span><span class="o">=</span><span class="n">proteomics_data</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Integrated </span><span class="si">{</span><span class="n">multiomics_data</span><span class="o">.</span><span class="n">n_samples</span><span class="si">}</span><span class="s2"> samples across </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">multiomics_data</span><span class="o">.</span><span class="n">layer_names</span><span class="p">)</span><span class="si">}</span><span class="s2"> omics layers&quot;</span><span class="p">)</span>
+
+<span class="c1"># Method 2: Load from files</span>
+<span class="n">data_dict</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;genomics&quot;</span><span class="p">:</span> <span class="s2">&quot;genomics_features.csv&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;transcriptomics&quot;</span><span class="p">:</span> <span class="s2">&quot;expression_matrix.csv&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;proteomics&quot;</span><span class="p">:</span> <span class="s2">&quot;protein_abundances.csv&quot;</span>
+<span class="p">}</span>
+<span class="n">multiomics_data</span> <span class="o">=</span> <span class="n">integrate_omics_data</span><span class="p">(</span><span class="n">data_dict</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="joint-dimensionality-reduction">
+<h3>Joint Dimensionality Reduction<a class="headerlink" href="#joint-dimensionality-reduction" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.multiomics</span><span class="w"> </span><span class="kn">import</span> <span class="n">joint_pca</span><span class="p">,</span> <span class="n">joint_nmf</span>
+
+<span class="c1"># Joint PCA across omics layers</span>
+<span class="n">embeddings</span><span class="p">,</span> <span class="n">loadings</span><span class="p">,</span> <span class="n">explained_variance</span> <span class="o">=</span> <span class="n">joint_pca</span><span class="p">(</span>
+    <span class="n">multiomics_data</span><span class="p">,</span>
+    <span class="n">n_components</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+    <span class="n">standardize</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">layer_weights</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;genomics&quot;</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="s2">&quot;transcriptomics&quot;</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">}</span>  <span class="c1"># Optional layer weighting</span>
+<span class="p">)</span>
+
+<span class="c1"># Access joint components</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Joint embeddings shape: </span><span class="si">{</span><span class="n">embeddings</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;First component explained variance: </span><span class="si">{</span><span class="n">explained_variance</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Genomics loadings shape: </span><span class="si">{</span><span class="n">loadings</span><span class="p">[</span><span class="s1">&#39;genomics&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Joint NMF for multi-view factorization</span>
+<span class="n">W</span><span class="p">,</span> <span class="n">H</span> <span class="o">=</span> <span class="n">joint_nmf</span><span class="p">(</span>
+    <span class="n">multiomics_data</span><span class="p">,</span>
+    <span class="n">n_components</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">max_iter</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+    <span class="n">regularization</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
+    <span class="n">tolerance</span><span class="o">=</span><span class="mf">1e-6</span>  <span class="c1"># Convergence tolerance</span>
+<span class="p">)</span>
+
+<span class="c1"># W: shared sample factors (n_samples x n_components)</span>
+<span class="c1"># H: layer-specific feature factors (dict of n_components x n_features)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sample factors shape: </span><span class="si">{</span><span class="n">W</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Genomics feature factors: </span><span class="si">{</span><span class="n">H</span><span class="p">[</span><span class="s1">&#39;genomics&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="canonical-correlation-analysis">
+<h3>Canonical Correlation Analysis<a class="headerlink" href="#canonical-correlation-analysis" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.multiomics</span><span class="w"> </span><span class="kn">import</span> <span class="n">canonical_correlation</span>
+
+<span class="c1"># CCA between transcriptomics and proteomics</span>
+<span class="n">X_c</span><span class="p">,</span> <span class="n">Y_c</span><span class="p">,</span> <span class="n">X_w</span><span class="p">,</span> <span class="n">Y_w</span><span class="p">,</span> <span class="n">correlations</span> <span class="o">=</span> <span class="n">canonical_correlation</span><span class="p">(</span>
+    <span class="n">multiomics_data</span><span class="p">,</span>
+    <span class="n">layer_pair</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;transcriptomics&quot;</span><span class="p">,</span> <span class="s2">&quot;proteomics&quot;</span><span class="p">),</span>
+    <span class="n">n_components</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">regularization</span><span class="o">=</span><span class="mf">0.01</span>
+<span class="p">)</span>
+
+<span class="c1"># Interpret correlations</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Canonical correlations: </span><span class="si">{</span><span class="n">correlations</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;First canonical variate correlation: </span><span class="si">{</span><span class="n">correlations</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Transcriptomics weights shape: </span><span class="si">{</span><span class="n">X_w</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Proteomics weights shape: </span><span class="si">{</span><span class="n">Y_w</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="integration-with-other-modules">
+<h2>Integration with Other Modules<a class="headerlink" href="#integration-with-other-modules" title="Link to this heading"></a></h2>
+<section id="with-rna-expression-data">
+<h3>With RNA Expression Data<a class="headerlink" href="#with-rna-expression-data" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.multiomics</span><span class="w"> </span><span class="kn">import</span> <span class="n">MultiOmicsData</span><span class="p">,</span> <span class="n">from_rna_expression</span><span class="p">,</span> <span class="n">joint_pca</span>
+
+<span class="c1"># Load RNA expression data using helper function</span>
+<span class="n">expression_data</span> <span class="o">=</span> <span class="n">from_rna_expression</span><span class="p">(</span><span class="s2">&quot;expression.tsv&quot;</span><span class="p">)</span>
+
+<span class="c1"># Or load manually and integrate</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="n">expression_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;expression.tsv&quot;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Add to multi-omics container</span>
+<span class="n">multiomics_data</span> <span class="o">=</span> <span class="n">MultiOmicsData</span><span class="p">(</span>
+    <span class="n">transcriptomics</span><span class="o">=</span><span class="n">expression_data</span><span class="p">,</span>
+    <span class="c1"># Add other omics data...</span>
+<span class="p">)</span>
+
+<span class="c1"># Joint analysis with expression</span>
+<span class="n">embeddings</span><span class="p">,</span> <span class="n">loadings</span><span class="p">,</span> <span class="n">variance</span> <span class="o">=</span> <span class="n">joint_pca</span><span class="p">(</span><span class="n">multiomics_data</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="with-dna-variants">
+<h3>With DNA Variants<a class="headerlink" href="#with-dna-variants" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.multiomics</span><span class="w"> </span><span class="kn">import</span> <span class="n">MultiOmicsData</span><span class="p">,</span> <span class="n">from_dna_variants</span><span class="p">,</span> <span class="n">from_rna_expression</span>
+
+<span class="c1"># Load genomics data from VCF</span>
+<span class="n">genomics_data</span> <span class="o">=</span> <span class="n">from_dna_variants</span><span class="p">(</span><span class="s2">&quot;variants.vcf&quot;</span><span class="p">)</span>
+
+<span class="c1"># Load transcriptomics data</span>
+<span class="n">transcriptomics_data</span> <span class="o">=</span> <span class="n">from_rna_expression</span><span class="p">(</span><span class="s2">&quot;expression.tsv&quot;</span><span class="p">)</span>
+
+<span class="c1"># Create multi-omics dataset</span>
+<span class="n">multiomics_data</span> <span class="o">=</span> <span class="n">MultiOmicsData</span><span class="p">(</span>
+    <span class="n">genomics</span><span class="o">=</span><span class="n">genomics_data</span><span class="p">,</span>
+    <span class="n">transcriptomics</span><span class="o">=</span><span class="n">transcriptomics_data</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="with-protein-data">
+<h3>With Protein Data<a class="headerlink" href="#with-protein-data" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.multiomics</span><span class="w"> </span><span class="kn">import</span> <span class="n">MultiOmicsData</span><span class="p">,</span> <span class="n">from_protein_abundance</span><span class="p">,</span> <span class="n">from_rna_expression</span>
+
+<span class="c1"># Load protein abundance data</span>
+<span class="n">proteomics_data</span> <span class="o">=</span> <span class="n">from_protein_abundance</span><span class="p">(</span><span class="s2">&quot;proteins.csv&quot;</span><span class="p">)</span>
+
+<span class="c1"># Load transcriptomics for comparison</span>
+<span class="n">transcriptomics_data</span> <span class="o">=</span> <span class="n">from_rna_expression</span><span class="p">(</span><span class="s2">&quot;expression.tsv&quot;</span><span class="p">)</span>
+
+<span class="c1"># Create multi-omics dataset</span>
+<span class="n">multiomics_data</span> <span class="o">=</span> <span class="n">MultiOmicsData</span><span class="p">(</span>
+    <span class="n">proteomics</span><span class="o">=</span><span class="n">proteomics_data</span><span class="p">,</span>
+    <span class="n">transcriptomics</span><span class="o">=</span><span class="n">transcriptomics_data</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="advanced-workflows">
+<h2>Advanced Workflows<a class="headerlink" href="#advanced-workflows" title="Link to this heading"></a></h2>
+<section id="saving-and-loading-multi-omics-data">
+<h3>Saving and Loading Multi-Omics Data<a class="headerlink" href="#saving-and-loading-multi-omics-data" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.multiomics</span><span class="w"> </span><span class="kn">import</span> <span class="n">MultiOmicsData</span>
+
+<span class="c1"># Save multi-omics data to directory</span>
+<span class="n">multiomics_data</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;output/multiomics_data&quot;</span><span class="p">)</span>
+
+<span class="c1"># Load saved data</span>
+<span class="n">loaded_data</span> <span class="o">=</span> <span class="n">MultiOmicsData</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s2">&quot;output/multiomics_data&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="subsetting-multi-omics-data">
+<h3>Subsetting Multi-Omics Data<a class="headerlink" href="#subsetting-multi-omics-data" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Subset by samples</span>
+<span class="n">subset_samples</span> <span class="o">=</span> <span class="n">multiomics_data</span><span class="o">.</span><span class="n">subset_samples</span><span class="p">([</span><span class="s2">&quot;sample1&quot;</span><span class="p">,</span> <span class="s2">&quot;sample2&quot;</span><span class="p">,</span> <span class="s2">&quot;sample3&quot;</span><span class="p">])</span>
+
+<span class="c1"># Subset by features</span>
+<span class="n">subset_features</span> <span class="o">=</span> <span class="n">multiomics_data</span><span class="o">.</span><span class="n">subset_features</span><span class="p">({</span>
+    <span class="s2">&quot;transcriptomics&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;GENE1&quot;</span><span class="p">,</span> <span class="s2">&quot;GENE2&quot;</span><span class="p">,</span> <span class="s2">&quot;GENE3&quot;</span><span class="p">],</span>
+    <span class="s2">&quot;genomics&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;SNP_001&quot;</span><span class="p">,</span> <span class="s2">&quot;SNP_002&quot;</span><span class="p">]</span>
+<span class="p">})</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="performance-features">
+<h2>Performance Features<a class="headerlink" href="#performance-features" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Scalable Integration</strong>: Efficient algorithms for large multi-omic datasets</p></li>
+<li><p><strong>Memory Optimization</strong>: Streaming processing for large feature matrices</p></li>
+<li><p><strong>Parallel Processing</strong>: Multi-core support for computationally intensive operations</p></li>
+<li><p><strong>Sparse Matrix Support</strong>: Memory-efficient storage for sparse omics data</p></li>
+</ul>
+</section>
+<section id="data-compatibility">
+<h2>Data Compatibility<a class="headerlink" href="#data-compatibility" title="Link to this heading"></a></h2>
+<section id="supported-data-types">
+<h3>Supported Data Types<a class="headerlink" href="#supported-data-types" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Genomics</strong>: SNP data, copy number variations, genomic features</p></li>
+<li><p><strong>Transcriptomics</strong>: Gene expression (RNA-seq, microarray), alternative splicing</p></li>
+<li><p><strong>Proteomics</strong>: Protein abundance, post-translational modifications</p></li>
+<li><p><strong>Epigenomics</strong>: DNA methylation, histone modifications, chromatin accessibility</p></li>
+<li><p><strong>Metabolomics</strong>: Metabolite concentrations and profiles</p></li>
+</ul>
+</section>
+<section id="data-format-requirements">
+<h3>Data Format Requirements<a class="headerlink" href="#data-format-requirements" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Sample Alignment</strong>: Samples must be aligned across omics layers</p></li>
+<li><p><strong>Feature Annotation</strong>: Features should be properly annotated</p></li>
+<li><p><strong>Quality Control</strong>: Pre-filtering and normalization recommended</p></li>
+<li><p><strong>Missing Data</strong>: Robust handling of missing values across layers</p></li>
+</ul>
+</section>
+</section>
+<section id="limitations-and-considerations">
+<h2>Limitations and Considerations<a class="headerlink" href="#limitations-and-considerations" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Memory Requirements</strong>: Large datasets may require significant memory. Consider subsetting data before analysis.</p></li>
+<li><p><strong>Sample Size</strong>: Joint analysis methods require at least 2-3 samples. CCA requires at least 3 samples.</p></li>
+<li><p><strong>Feature Count</strong>: n_components is automatically capped to min(n_samples, n_features) - 1.</p></li>
+<li><p><strong>Data Types</strong>: All data must be numeric. Non-numeric columns will trigger warnings.</p></li>
+<li><p><strong>File Formats</strong>: Supports CSV, TSV, and Excel files. Gzip compression is automatically handled.</p></li>
+<li><p><strong>Missing Data</strong>: Currently requires complete data across all layers. Missing value imputation should be performed before integration.</p></li>
+</ul>
+</section>
+<section id="testing">
+<h2>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h2>
+<p>Multi-omics functionality is tested comprehensively:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run all multi-omics tests</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_multiomics_*.py<span class="w"> </span>-v
+
+<span class="c1"># Test specific components</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_multiomics_integration.py::TestMultiOmicsData::test_multiomics_data_initialization<span class="w"> </span>-v
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_multiomics_integration.py::test_joint_pca_basic<span class="w"> </span>-v
+</pre></div>
+</div>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="integration.html"><span class="std std-doc">Data Integration API</span></a>: Complete API reference for integration functions</p></li>
+<li><p><a class="reference internal" href="#../src/metainformant/multiomics/README.md"><span class="xref myst">Module README</span></a>: Detailed usage examples and integration patterns</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

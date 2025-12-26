@@ -67,7 +67,7 @@ This document outlines AI assistance in developing METAINFORMANT's utility scrip
   - Genome assembly retrieval from NCBI
   - SRA sample download and organization
   - Reference genome preparation and indexing
-- **download_real_honeybee_variants.py**: Real variant data acquisition
+- **download_honeybee_variants.py**: Variant data acquisition
   - Honeybee-specific variant datasets
   - Integration with NCBI VCF resources
 - **query_bioproject_metadata.py**: BioProject metadata extraction

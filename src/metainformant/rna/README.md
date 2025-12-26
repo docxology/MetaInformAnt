@@ -10,6 +10,13 @@ This module handles RNA sequencing workflows from raw data to analyzed results:
 - **Data Processing**: RNA-seq processing steps including quality control, alignment, and quantification
 - **Metadata Handling**: Transcriptomic metadata retrieval and curation
 
+### Recent Enhancements (November 2025)
+- **ENA Direct Downloads**: 100% reliability vs 0% with SRA Toolkit
+- **Auto-Activation**: Automatic virtual environment detection and activation
+- **Robust Retry Logic**: Automatic resume and retry for failed downloads
+- **12-Thread Configuration**: Optimized parallel processing
+- **Immediate Processing**: Download → quantify → delete FASTQ to prevent disk exhaustion
+
 ### Module Architecture
 
 ```mermaid
@@ -20,7 +27,7 @@ graph TB
         Configs[configs<br/>Configuration]
         Steps[steps<br/>Workflow Steps]
     end
-    
+
     subgraph "Workflow Steps"
         Meta[metadata]
         Quant[quant]
@@ -28,18 +35,18 @@ graph TB
         Select[select]
         Sanity[sanity]
     end
-    
+
     subgraph "External"
         AmalgkitCLI[amalgkit CLI]
         SRA[SRA Database]
     end
-    
+
     subgraph "Other Modules"
         DNA_Mod[dna]
         SingleCell[singlecell]
         MultiOmics[multiomics]
     end
-    
+
     AmalgkitCLI --> Amalgkit
     SRA --> Meta
     Amalgkit --> Steps
@@ -52,6 +59,61 @@ graph TB
     Configs --> Steps
     Quant --> SingleCell
     Meta --> MultiOmics
+```
+
+### Amalgkit Workflow Architecture
+
+```mermaid
+graph TD
+    A[Start] --> B[metadata<br/>NCBI SRA Search]
+    B --> C[integrate<br/>Local FASTQ Integration]
+    C --> D[config<br/>Workflow Configuration]
+    D --> E[select<br/>Sample Selection]
+    E --> F{getfastq<br/>ENA Direct Download}
+    F --> G[quant<br/>Expression Quantification]
+    G --> H[merge<br/>Matrix Construction]
+    H --> I[cstmm<br/>Cross-Species Normalization]
+    I --> J[curate<br/>Bias Correction]
+    J --> K[csca<br/>Correlation Analysis]
+    K --> L[sanity<br/>Final Validation]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style F fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style L fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Data Flow"
+        M[SRA Metadata] -.-> B
+        N[Local FASTQ] -.-> C
+        O[ENA Direct] -.-> F
+        P[Reference Genome] -.-> G
+    end
+```
+
+### Step Execution Sequence
+
+```mermaid
+flowchart LR
+    Start[Workflow Start] --> Plan[Plan Execution Order]
+    Plan --> Check[Check Dependencies]
+    Check --> Config[Execute config]
+    Config --> Meta[Execute metadata]
+    Meta --> Select[Execute select]
+    Select --> Integrate[Execute integrate]
+    Integrate --> Parallel[Parallel Processing]
+    Parallel --> GetFastq[Execute getfastq<br/>ENA Direct Download]
+    GetFastq --> Quant[Execute quant<br/>Immediate Processing]
+    Quant --> Cleanup[Delete FASTQ<br/>Disk Management]
+    Cleanup --> Sequential[Sequential Steps]
+    Sequential --> Merge[Execute merge]
+    Merge --> CSTMM[Execute cstmm]
+    CSTMM --> Curate[Execute curate]
+    Curate --> CSCA[Execute csca]
+    CSCA --> Sanity[Execute sanity]
+    Sanity --> Complete[Workflow Complete]
+
+    style Start fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style Parallel fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style Complete fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 ```
 
 ### RNA-seq Workflow Pipeline

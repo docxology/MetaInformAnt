@@ -1,0 +1,1700 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Life Events Module &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Life Events Module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/life_events/README.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="life-events-module">
+<h1>Life Events Module<a class="headerlink" href="#life-events-module" title="Link to this heading"></a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">life_events</span></code> module provides comprehensive tools for analyzing human life courses as temporal event sequences, enabling prediction of life outcomes from event data using NLP-inspired methods.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>This module treats life courses as sequences of events (similar to how NLP treats text as sequences of words), allowing the application of sequence modeling techniques to predict outcomes like early mortality, personality traits, and health outcomes. The implementation is inspired by research that represents human lives using NLP techniques to examine the evolution and predictability of life outcomes.</p>
+</section>
+<section id="key-features">
+<h2>Key Features<a class="headerlink" href="#key-features" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Event Sequence Representation</strong>: Structured data types for temporal event sequences with domain categorization</p></li>
+<li><p><strong>Event Embeddings</strong>: Learn dense vector representations of events using Word2Vec-style methods (Skip-gram, CBOW)</p></li>
+<li><p><strong>Sequence Embeddings</strong>: Aggregate event sequences into fixed-size vectors for ML models</p></li>
+<li><p><strong>Domain-Specific Embeddings</strong>: Separate embedding spaces for different life domains (health, education, occupation, etc.)</p></li>
+<li><p><strong>Temporal Analysis</strong>: Filtering and querying by time periods</p></li>
+<li><p><strong>Prediction Models</strong>: Classification and regression models for predicting life outcomes</p></li>
+<li><p><strong>Visualization</strong>: Timeline plots, embedding visualizations, attention heatmaps, importance plots</p></li>
+<li><p><strong>Model Interpretation</strong>: Event importance, temporal patterns, feature attribution</p></li>
+<li><p><strong>Workflow Integration</strong>: End-to-end pipelines for complete analysis</p></li>
+<li><p><strong>Utility Functions</strong>: Data loading, validation, and statistics computation</p></li>
+<li><p><strong>Integration</strong>: Seamless integration with ML, phenotype, visualization, and multi-omics modules</p></li>
+</ul>
+</section>
+<section id="core-components">
+<h2>Core Components<a class="headerlink" href="#core-components" title="Link to this heading"></a></h2>
+<section id="event-data-structures-events-py">
+<h3>Event Data Structures (<code class="docutils literal notranslate"><span class="pre">events.py</span></code>)<a class="headerlink" href="#event-data-structures-events-py" title="Link to this heading"></a></h3>
+<section id="event">
+<h4>Event<a class="headerlink" href="#event" title="Link to this heading"></a></h4>
+<p>Individual life event with temporal and domain information:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">Event</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+
+<span class="n">event</span> <span class="o">=</span> <span class="n">Event</span><span class="p">(</span>
+    <span class="n">event_type</span><span class="o">=</span><span class="s2">&quot;diagnosis&quot;</span><span class="p">,</span>
+    <span class="n">timestamp</span><span class="o">=</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span>
+    <span class="n">domain</span><span class="o">=</span><span class="s2">&quot;health&quot;</span><span class="p">,</span>
+    <span class="n">attributes</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;condition&quot;</span><span class="p">:</span> <span class="s2">&quot;diabetes&quot;</span><span class="p">,</span> <span class="s2">&quot;severity&quot;</span><span class="p">:</span> <span class="s2">&quot;moderate&quot;</span><span class="p">}</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="eventsequence">
+<h4>EventSequence<a class="headerlink" href="#eventsequence" title="Link to this heading"></a></h4>
+<p>Container for temporal event sequence of a single person:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventSequence</span><span class="p">,</span> <span class="n">Event</span>
+
+<span class="n">sequence</span> <span class="o">=</span> <span class="n">EventSequence</span><span class="p">(</span>
+    <span class="n">person_id</span><span class="o">=</span><span class="s2">&quot;person_001&quot;</span><span class="p">,</span>
+    <span class="n">events</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">Event</span><span class="p">(</span><span class="s2">&quot;degree&quot;</span><span class="p">,</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2010</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">&quot;education&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;degree&quot;</span><span class="p">:</span> <span class="s2">&quot;BS&quot;</span><span class="p">}),</span>
+        <span class="n">Event</span><span class="p">(</span><span class="s2">&quot;job_change&quot;</span><span class="p">,</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2015</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">&quot;occupation&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;company&quot;</span><span class="p">:</span> <span class="s2">&quot;TechCorp&quot;</span><span class="p">}),</span>
+        <span class="n">Event</span><span class="p">(</span><span class="s2">&quot;diagnosis&quot;</span><span class="p">,</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span> <span class="s2">&quot;health&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;condition&quot;</span><span class="p">:</span> <span class="s2">&quot;diabetes&quot;</span><span class="p">}),</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+
+<span class="c1"># Filter by domain</span>
+<span class="n">health_events</span> <span class="o">=</span> <span class="n">sequence</span><span class="o">.</span><span class="n">filter_by_domain</span><span class="p">(</span><span class="s2">&quot;health&quot;</span><span class="p">)</span>
+
+<span class="c1"># Filter by time</span>
+<span class="n">recent_events</span> <span class="o">=</span> <span class="n">sequence</span><span class="o">.</span><span class="n">filter_by_time</span><span class="p">(</span>
+    <span class="n">start_time</span><span class="o">=</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2015</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+    <span class="n">end_time</span><span class="o">=</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2025</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="eventdatabase">
+<h4>EventDatabase<a class="headerlink" href="#eventdatabase" title="Link to this heading"></a></h4>
+<p>Collection of multiple event sequences:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventDatabase</span>
+
+<span class="n">database</span> <span class="o">=</span> <span class="n">EventDatabase</span><span class="p">(</span><span class="n">sequences</span><span class="o">=</span><span class="p">[</span><span class="n">sequence1</span><span class="p">,</span> <span class="n">sequence2</span><span class="p">,</span> <span class="n">sequence3</span><span class="p">])</span>
+<span class="n">stats</span> <span class="o">=</span> <span class="n">database</span><span class="o">.</span><span class="n">get_statistics</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="event-embeddings-embeddings-py">
+<h3>Event Embeddings (<code class="docutils literal notranslate"><span class="pre">embeddings.py</span></code>)<a class="headerlink" href="#event-embeddings-embeddings-py" title="Link to this heading"></a></h3>
+<section id="learn-event-embeddings">
+<h4>Learn Event Embeddings<a class="headerlink" href="#learn-event-embeddings" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">learn_event_embeddings</span>
+
+<span class="c1"># Convert events to token format: &quot;domain:event_type&quot;</span>
+<span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">[</span><span class="s2">&quot;health:diagnosis&quot;</span><span class="p">,</span> <span class="s2">&quot;occupation:job_change&quot;</span><span class="p">,</span> <span class="s2">&quot;income:raise&quot;</span><span class="p">],</span>
+    <span class="p">[</span><span class="s2">&quot;education:degree&quot;</span><span class="p">,</span> <span class="s2">&quot;occupation:job_change&quot;</span><span class="p">,</span> <span class="s2">&quot;address:move&quot;</span><span class="p">],</span>
+<span class="p">]</span>
+
+<span class="n">embeddings</span> <span class="o">=</span> <span class="n">learn_event_embeddings</span><span class="p">(</span>
+    <span class="n">sequences</span><span class="p">,</span>
+    <span class="n">embedding_dim</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">window_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;skipgram&quot;</span><span class="p">,</span>
+    <span class="n">epochs</span><span class="o">=</span><span class="mi">10</span>
+<span class="p">)</span>
+
+<span class="c1"># Access embedding for an event</span>
+<span class="n">diagnosis_embedding</span> <span class="o">=</span> <span class="n">embeddings</span><span class="p">[</span><span class="s2">&quot;health:diagnosis&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="sequence-embeddings">
+<h4>Sequence Embeddings<a class="headerlink" href="#sequence-embeddings" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">sequence_embeddings</span>
+
+<span class="c1"># Aggregate sequences into fixed-size vectors</span>
+<span class="n">seq_embeddings</span> <span class="o">=</span> <span class="n">sequence_embeddings</span><span class="p">(</span>
+    <span class="n">sequences</span><span class="p">,</span>
+    <span class="n">event_embeddings</span><span class="o">=</span><span class="n">embeddings</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;mean&quot;</span><span class="p">,</span>
+    <span class="n">temporal_weighting</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="domain-specific-embeddings">
+<h4>Domain-Specific Embeddings<a class="headerlink" href="#domain-specific-embeddings" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">domain_specific_embeddings</span>
+
+<span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">[</span><span class="s2">&quot;diagnosis&quot;</span><span class="p">,</span> <span class="s2">&quot;job_change&quot;</span><span class="p">,</span> <span class="s2">&quot;raise&quot;</span><span class="p">],</span>
+    <span class="p">[</span><span class="s2">&quot;degree&quot;</span><span class="p">,</span> <span class="s2">&quot;job_change&quot;</span><span class="p">,</span> <span class="s2">&quot;move&quot;</span><span class="p">],</span>
+<span class="p">]</span>
+<span class="n">domains</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">[</span><span class="s2">&quot;health&quot;</span><span class="p">,</span> <span class="s2">&quot;occupation&quot;</span><span class="p">,</span> <span class="s2">&quot;income&quot;</span><span class="p">],</span>
+    <span class="p">[</span><span class="s2">&quot;education&quot;</span><span class="p">,</span> <span class="s2">&quot;occupation&quot;</span><span class="p">,</span> <span class="s2">&quot;address&quot;</span><span class="p">],</span>
+<span class="p">]</span>
+
+<span class="n">domain_embeddings</span> <span class="o">=</span> <span class="n">domain_specific_embeddings</span><span class="p">(</span>
+    <span class="n">sequences</span><span class="p">,</span>
+    <span class="n">domains</span><span class="p">,</span>
+    <span class="n">embedding_dim</span><span class="o">=</span><span class="mi">100</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="integration-with-other-modules">
+<h2>Integration with Other Modules<a class="headerlink" href="#integration-with-other-modules" title="Link to this heading"></a></h2>
+<section id="with-ml-module">
+<h3>With ML Module<a class="headerlink" href="#with-ml-module" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">learn_event_embeddings</span><span class="p">,</span> <span class="n">sequence_embeddings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.ml</span><span class="w"> </span><span class="kn">import</span> <span class="n">BiologicalClassifier</span>
+
+<span class="c1"># Learn embeddings</span>
+<span class="n">embeddings</span> <span class="o">=</span> <span class="n">learn_event_embeddings</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span>
+
+<span class="c1"># Convert sequences to vectors</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">sequence_embeddings</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">embeddings</span><span class="p">)</span>
+
+<span class="c1"># Train classifier</span>
+<span class="n">classifier</span> <span class="o">=</span> <span class="n">BiologicalClassifier</span><span class="p">(</span><span class="n">algorithm</span><span class="o">=</span><span class="s2">&quot;random_forest&quot;</span><span class="p">)</span>
+<span class="n">classifier</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="with-visualization-module">
+<h3>With Visualization Module<a class="headerlink" href="#with-visualization-module" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">learn_event_embeddings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.ml.dimensionality</span><span class="w"> </span><span class="kn">import</span> <span class="n">biological_embedding</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">plots</span>
+
+<span class="c1"># Learn embeddings</span>
+<span class="n">embeddings</span> <span class="o">=</span> <span class="n">learn_event_embeddings</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span>
+
+<span class="c1"># Reduce to 2D for visualization</span>
+<span class="n">embedding_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">embeddings</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+<span class="n">reduced</span> <span class="o">=</span> <span class="n">biological_embedding</span><span class="p">(</span><span class="n">embedding_matrix</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;umap&quot;</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="c1"># Visualize</span>
+<span class="n">plots</span><span class="o">.</span><span class="n">scatterplot</span><span class="p">(</span><span class="n">reduced</span><span class="p">[</span><span class="s2">&quot;embedding&quot;</span><span class="p">][:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">reduced</span><span class="p">[</span><span class="s2">&quot;embedding&quot;</span><span class="p">][:,</span> <span class="mi">1</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="data-format">
+<h2>Data Format<a class="headerlink" href="#data-format" title="Link to this heading"></a></h2>
+<section id="event-sequence-json-format">
+<h3>Event Sequence JSON Format<a class="headerlink" href="#event-sequence-json-format" title="Link to this heading"></a></h3>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;person_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;person_001&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;events&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;event_type&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;diagnosis&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;timestamp&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2020-01-15T00:00:00&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;domain&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;health&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;attributes&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;condition&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;diabetes&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;severity&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;moderate&quot;</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">&quot;metadata&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="synthetic-data-generation">
+<h2>Synthetic Data Generation<a class="headerlink" href="#synthetic-data-generation" title="Link to this heading"></a></h2>
+<p>For testing and demonstration purposes, the module includes a synthetic data generator:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_synthetic_life_events</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Generate synthetic sequences with outcomes</span>
+<span class="n">sequences</span><span class="p">,</span> <span class="n">outcomes</span> <span class="o">=</span> <span class="n">generate_synthetic_life_events</span><span class="p">(</span>
+    <span class="n">n_sequences</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">min_events_per_sequence</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">max_events_per_sequence</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+    <span class="n">generate_outcomes</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">outcome_relationship</span><span class="o">=</span><span class="s2">&quot;complex&quot;</span><span class="p">,</span>  <span class="c1"># or: &quot;random&quot;, &quot;health_focused&quot;, &quot;education_focused&quot;</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Generated </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span><span class="si">}</span><span class="s2"> sequences&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Outcomes shape: </span><span class="si">{</span><span class="n">outcomes</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<section id="synthetic-data-options">
+<h3>Synthetic Data Options<a class="headerlink" href="#synthetic-data-options" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>n_sequences</strong>: Number of event sequences to generate</p></li>
+<li><p><strong>min/max_events_per_sequence</strong>: Control sequence length</p></li>
+<li><p><strong>domains</strong>: Custom domain list (defaults to all standard domains)</p></li>
+<li><p><strong>event_types_by_domain</strong>: Custom event types per domain</p></li>
+<li><p><strong>generate_outcomes</strong>: Whether to generate outcome labels</p></li>
+<li><p><strong>outcome_relationship</strong>: How outcomes relate to events:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;random&quot;</span></code>: Random binary outcomes</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;health_focused&quot;</span></code>: Higher outcome for more health events</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;education_focused&quot;</span></code>: Higher outcome for education events</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;complex&quot;</span></code>: Complex pattern based on multiple domains</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="enhanced-realistic-simulation">
+<h3>Enhanced Realistic Simulation<a class="headerlink" href="#enhanced-realistic-simulation" title="Link to this heading"></a></h3>
+<p>For more sophisticated synthetic data with temporal dependencies and realistic patterns:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_realistic_life_events</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Generate sequences with transition probabilities and co-occurrence patterns</span>
+<span class="n">sequences</span><span class="p">,</span> <span class="n">outcomes</span> <span class="o">=</span> <span class="n">generate_realistic_life_events</span><span class="p">(</span>
+    <span class="n">n_sequences</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">transition_probabilities</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;education&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;occupation&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span> <span class="s2">&quot;income&quot;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">},</span>
+        <span class="s2">&quot;occupation&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;income&quot;</span><span class="p">:</span> <span class="mf">0.6</span><span class="p">,</span> <span class="s2">&quot;address&quot;</span><span class="p">:</span> <span class="mf">0.4</span><span class="p">}</span>
+    <span class="p">},</span>
+    <span class="n">cooccurrence_patterns</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;job_change&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;move&quot;</span><span class="p">,</span> <span class="s2">&quot;raise&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;degree&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;job_change&quot;</span><span class="p">]</span>
+    <span class="p">},</span>
+    <span class="n">seasonal_patterns</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">rare_event_probability</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+    <span class="n">temporal_noise</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+    <span class="n">missing_data_probability</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Advanced Features:</strong></p>
+<ul class="simple">
+<li><p><strong>transition_probabilities</strong>: Domain transition probabilities (Markov chain)</p></li>
+<li><p><strong>cooccurrence_patterns</strong>: Events that tend to co-occur</p></li>
+<li><p><strong>seasonal_patterns</strong>: Seasonal/cyclical temporal variations</p></li>
+<li><p><strong>rare_event_probability</strong>: Probability of injecting rare but important events</p></li>
+<li><p><strong>temporal_noise</strong>: Level of temporal uncertainty/noise</p></li>
+<li><p><strong>missing_data_probability</strong>: Probability of missing events</p></li>
+</ul>
+</section>
+<section id="event-chain-generation">
+<h3>Event Chain Generation<a class="headerlink" href="#event-chain-generation" title="Link to this heading"></a></h3>
+<p>Generate causally linked event sequences:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_event_chain</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+
+<span class="n">chain_rules</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;education:degree&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;occupation:job_change&quot;</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span> <span class="s2">&quot;income:raise&quot;</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">},</span>
+    <span class="s2">&quot;occupation:job_change&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;address:move&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="s2">&quot;income:raise&quot;</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="n">events</span> <span class="o">=</span> <span class="n">generate_event_chain</span><span class="p">(</span>
+    <span class="n">chain_rules</span><span class="o">=</span><span class="n">chain_rules</span><span class="p">,</span>
+    <span class="n">start_event</span><span class="o">=</span><span class="s2">&quot;degree&quot;</span><span class="p">,</span>
+    <span class="n">start_domain</span><span class="o">=</span><span class="s2">&quot;education&quot;</span><span class="p">,</span>
+    <span class="n">n_events</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">start_timestamp</span><span class="o">=</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2010</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">timestamp</span><span class="p">(),</span>
+    <span class="n">time_span</span><span class="o">=</span><span class="mi">365</span><span class="o">*</span><span class="mi">5</span><span class="o">*</span><span class="mi">86400</span><span class="p">,</span>  <span class="c1"># 5 years</span>
+    <span class="n">event_types_by_domain</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;education&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;degree&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;occupation&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;job_change&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;income&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;raise&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;address&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;move&quot;</span><span class="p">]</span>
+    <span class="p">},</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="cohort-generation">
+<h3>Cohort Generation<a class="headerlink" href="#cohort-generation" title="Link to this heading"></a></h3>
+<p>Generate population-level sequences with cohort-specific patterns:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_cohort_sequences</span>
+
+<span class="n">cohorts</span> <span class="o">=</span> <span class="n">generate_cohort_sequences</span><span class="p">(</span>
+    <span class="n">n_cohorts</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+    <span class="n">n_sequences_per_cohort</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+    <span class="n">cohort_differences</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;young&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;education&quot;</span><span class="p">:</span> <span class="mf">0.4</span><span class="p">,</span> <span class="s2">&quot;occupation&quot;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">},</span>
+        <span class="s2">&quot;middle&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;occupation&quot;</span><span class="p">:</span> <span class="mf">0.4</span><span class="p">,</span> <span class="s2">&quot;income&quot;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">},</span>
+        <span class="s2">&quot;old&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;health&quot;</span><span class="p">:</span> <span class="mf">0.4</span><span class="p">,</span> <span class="s2">&quot;retirement&quot;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">}</span>
+    <span class="p">},</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span>
+<span class="p">)</span>
+
+<span class="c1"># Access cohorts</span>
+<span class="n">young_cohort</span> <span class="o">=</span> <span class="n">cohorts</span><span class="p">[</span><span class="s2">&quot;young&quot;</span><span class="p">]</span>
+<span class="n">middle_cohort</span> <span class="o">=</span> <span class="n">cohorts</span><span class="p">[</span><span class="s2">&quot;middle&quot;</span><span class="p">]</span>
+<span class="n">old_cohort</span> <span class="o">=</span> <span class="n">cohorts</span><span class="p">[</span><span class="s2">&quot;old&quot;</span><span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="temporal-noise-injection">
+<h3>Temporal Noise Injection<a class="headerlink" href="#temporal-noise-injection" title="Link to this heading"></a></h3>
+<p>Add realistic temporal noise to existing sequences:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_temporal_noise</span>
+
+<span class="c1"># Add noise to sequence</span>
+<span class="n">noisy_sequence</span> <span class="o">=</span> <span class="n">add_temporal_noise</span><span class="p">(</span>
+    <span class="n">sequence</span><span class="p">,</span>
+    <span class="n">noise_level</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>  <span class="c1"># 20% of events have temporal noise</span>
+    <span class="n">max_days_shift</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>  <span class="c1"># Up to 30 days shift</span>
+    <span class="n">missing_probability</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>  <span class="c1"># 5% chance of missing events</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="advanced-prediction-models">
+<h2>Advanced Prediction Models<a class="headerlink" href="#advanced-prediction-models" title="Link to this heading"></a></h2>
+<section id="lstm-sequence-model">
+<h3>LSTM Sequence Model<a class="headerlink" href="#lstm-sequence-model" title="Link to this heading"></a></h3>
+<p>Full PyTorch implementation with batching and padding:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">LSTMSequenceModel</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">lstm_model</span> <span class="o">=</span> <span class="n">LSTMSequenceModel</span><span class="p">(</span>
+    <span class="n">embedding_dim</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">hidden_dim</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
+    <span class="n">num_layers</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">task_type</span><span class="o">=</span><span class="s2">&quot;classification&quot;</span><span class="p">,</span>
+    <span class="n">epochs</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span>
+<span class="p">)</span>
+
+<span class="n">lstm_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">sequences_tokens</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">event_embeddings</span><span class="o">=</span><span class="n">embeddings</span><span class="p">)</span>
+<span class="n">predictions</span> <span class="o">=</span> <span class="n">lstm_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">new_sequences_tokens</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="gru-sequence-model">
+<h3>GRU Sequence Model<a class="headerlink" href="#gru-sequence-model" title="Link to this heading"></a></h3>
+<p>Similar to LSTM but with GRU cells:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">GRUSequenceModel</span>
+
+<span class="n">gru_model</span> <span class="o">=</span> <span class="n">GRUSequenceModel</span><span class="p">(</span>
+    <span class="n">embedding_dim</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">hidden_dim</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
+    <span class="n">num_layers</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">task_type</span><span class="o">=</span><span class="s2">&quot;classification&quot;</span><span class="p">,</span>
+    <span class="n">epochs</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span>
+<span class="p">)</span>
+
+<span class="n">gru_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">sequences_tokens</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+<span class="n">predictions</span> <span class="o">=</span> <span class="n">gru_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">new_sequences_tokens</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="ensemble-predictor">
+<h3>Ensemble Predictor<a class="headerlink" href="#ensemble-predictor" title="Link to this heading"></a></h3>
+<p>Combine multiple models for improved predictions:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">EnsemblePredictor</span><span class="p">,</span>
+    <span class="n">EventSequencePredictor</span><span class="p">,</span>
+    <span class="n">LSTMSequenceModel</span><span class="p">,</span>
+    <span class="n">GRUSequenceModel</span>
+<span class="p">)</span>
+
+<span class="c1"># Train multiple models</span>
+<span class="n">model1</span> <span class="o">=</span> <span class="n">EventSequencePredictor</span><span class="p">(</span><span class="n">model_type</span><span class="o">=</span><span class="s2">&quot;embedding&quot;</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">model1</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">sequences_tokens</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+<span class="n">model2</span> <span class="o">=</span> <span class="n">LSTMSequenceModel</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="mi">43</span><span class="p">)</span>
+<span class="n">model2</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">sequences_tokens</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+<span class="n">model3</span> <span class="o">=</span> <span class="n">GRUSequenceModel</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="mi">44</span><span class="p">)</span>
+<span class="n">model3</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">sequences_tokens</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+<span class="c1"># Create ensemble</span>
+<span class="n">ensemble</span> <span class="o">=</span> <span class="n">EnsemblePredictor</span><span class="p">(</span>
+    <span class="n">models</span><span class="o">=</span><span class="p">[</span><span class="n">model1</span><span class="p">,</span> <span class="n">model2</span><span class="p">,</span> <span class="n">model3</span><span class="p">],</span>
+    <span class="n">weights</span><span class="o">=</span><span class="p">[</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">],</span>  <span class="c1"># Optional: custom weights</span>
+    <span class="n">task_type</span><span class="o">=</span><span class="s2">&quot;classification&quot;</span>
+<span class="p">)</span>
+
+<span class="n">predictions</span> <span class="o">=</span> <span class="n">ensemble</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">new_sequences_tokens</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="survival-predictor">
+<h3>Survival Predictor<a class="headerlink" href="#survival-predictor" title="Link to this heading"></a></h3>
+<p>Predict time until an event occurs:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">SurvivalPredictor</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">survival_model</span> <span class="o">=</span> <span class="n">SurvivalPredictor</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;cox&quot;</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+
+<span class="c1"># event_times: time until event (or censoring time)</span>
+<span class="c1"># event_occurred: 1 if event occurred, 0 if censored</span>
+<span class="n">survival_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">sequences_tokens</span><span class="p">,</span> <span class="n">event_times</span><span class="p">,</span> <span class="n">event_occurred</span><span class="p">)</span>
+
+<span class="c1"># Predict time until event</span>
+<span class="n">predicted_times</span> <span class="o">=</span> <span class="n">survival_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">new_sequences_tokens</span><span class="p">)</span>
+
+<span class="c1"># Predict survival function</span>
+<span class="n">times</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">365</span><span class="p">,</span> <span class="mi">730</span><span class="p">,</span> <span class="mi">1095</span><span class="p">,</span> <span class="mi">1460</span><span class="p">])</span>  <span class="c1"># 1, 2, 3, 4 years</span>
+<span class="n">survival_probs</span> <span class="o">=</span> <span class="n">survival_model</span><span class="o">.</span><span class="n">predict_survival_function</span><span class="p">(</span><span class="n">new_sequences_tokens</span><span class="p">,</span> <span class="n">times</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="multi-task-predictor">
+<h3>Multi-Task Predictor<a class="headerlink" href="#multi-task-predictor" title="Link to this heading"></a></h3>
+<p>Predict multiple outcomes simultaneously:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">MultiTaskPredictor</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">multi_task</span> <span class="o">=</span> <span class="n">MultiTaskPredictor</span><span class="p">(</span>
+    <span class="n">task_types</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;health_outcome&quot;</span><span class="p">:</span> <span class="s2">&quot;classification&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;income_level&quot;</span><span class="p">:</span> <span class="s2">&quot;regression&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;education_level&quot;</span><span class="p">:</span> <span class="s2">&quot;classification&quot;</span>
+    <span class="p">},</span>
+    <span class="n">embedding_dim</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span>
+<span class="p">)</span>
+
+<span class="c1"># Prepare outcomes for all tasks</span>
+<span class="n">outcomes</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;health_outcome&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]),</span>
+    <span class="s2">&quot;income_level&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">50000</span><span class="p">,</span> <span class="mi">75000</span><span class="p">,</span> <span class="mi">60000</span><span class="p">,</span> <span class="mi">80000</span><span class="p">]),</span>
+    <span class="s2">&quot;education_level&quot;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span>
+<span class="p">}</span>
+
+<span class="n">multi_task</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">sequences_tokens</span><span class="p">,</span> <span class="n">outcomes</span><span class="p">)</span>
+
+<span class="c1"># Predict all tasks</span>
+<span class="n">all_predictions</span> <span class="o">=</span> <span class="n">multi_task</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">new_sequences_tokens</span><span class="p">)</span>
+
+<span class="c1"># Predict specific task</span>
+<span class="n">health_predictions</span> <span class="o">=</span> <span class="n">multi_task</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">new_sequences_tokens</span><span class="p">,</span> <span class="n">task_name</span><span class="o">=</span><span class="s2">&quot;health_outcome&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="comprehensive-visualization-suite">
+<h2>Comprehensive Visualization Suite<a class="headerlink" href="#comprehensive-visualization-suite" title="Link to this heading"></a></h2>
+<section id="domain-distribution">
+<h3>Domain Distribution<a class="headerlink" href="#domain-distribution" title="Link to this heading"></a></h3>
+<p>Visualize distribution of domains across sequences:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_domain_distribution</span>
+
+<span class="c1"># Bar chart</span>
+<span class="n">plot_domain_distribution</span><span class="p">(</span>
+    <span class="n">sequences</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/domain_distribution.png&quot;</span><span class="p">,</span>
+    <span class="n">plot_type</span><span class="o">=</span><span class="s2">&quot;bar&quot;</span>
+<span class="p">)</span>
+
+<span class="c1"># Pie chart</span>
+<span class="n">plot_domain_distribution</span><span class="p">(</span>
+    <span class="n">sequences</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/domain_distribution_pie.png&quot;</span><span class="p">,</span>
+    <span class="n">plot_type</span><span class="o">=</span><span class="s2">&quot;pie&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="temporal-density">
+<h3>Temporal Density<a class="headerlink" href="#temporal-density" title="Link to this heading"></a></h3>
+<p>Visualize event density over time:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_temporal_density</span>
+
+<span class="n">plot_temporal_density</span><span class="p">(</span>
+    <span class="n">sequences</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/temporal_density.png&quot;</span><span class="p">,</span>
+    <span class="n">bins</span><span class="o">=</span><span class="mi">50</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="event-co-occurrence">
+<h3>Event Co-occurrence<a class="headerlink" href="#event-co-occurrence" title="Link to this heading"></a></h3>
+<p>Heatmap of event co-occurrence patterns:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_event_cooccurrence</span>
+
+<span class="n">plot_event_cooccurrence</span><span class="p">(</span>
+    <span class="n">sequences</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/cooccurrence.png&quot;</span><span class="p">,</span>
+    <span class="n">top_n</span><span class="o">=</span><span class="mi">20</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="outcome-distribution">
+<h3>Outcome Distribution<a class="headerlink" href="#outcome-distribution" title="Link to this heading"></a></h3>
+<p>Visualize distribution of outcomes:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_outcome_distribution</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">plot_outcome_distribution</span><span class="p">(</span>
+    <span class="n">outcomes</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/outcome_distribution.png&quot;</span><span class="p">,</span>
+    <span class="n">plot_type</span><span class="o">=</span><span class="s2">&quot;histogram&quot;</span>  <span class="c1"># or &quot;boxplot&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="sequence-similarity">
+<h3>Sequence Similarity<a class="headerlink" href="#sequence-similarity" title="Link to this heading"></a></h3>
+<p>Heatmap of sequence similarity matrix:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_sequence_similarity</span>
+
+<span class="n">plot_sequence_similarity</span><span class="p">(</span>
+    <span class="n">sequences</span><span class="p">,</span>
+    <span class="n">embeddings</span><span class="o">=</span><span class="n">embeddings</span><span class="p">,</span>  <span class="c1"># Optional</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/similarity_matrix.png&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="transition-network">
+<h3>Transition Network<a class="headerlink" href="#transition-network" title="Link to this heading"></a></h3>
+<p>Network graph of event transitions:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_transition_network</span>
+
+<span class="n">plot_transition_network</span><span class="p">(</span>
+    <span class="n">sequences</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/transition_network.png&quot;</span><span class="p">,</span>
+    <span class="n">top_n</span><span class="o">=</span><span class="mi">15</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="domain-timeline">
+<h3>Domain Timeline<a class="headerlink" href="#domain-timeline" title="Link to this heading"></a></h3>
+<p>Multi-domain timeline (Gantt-style) for multiple sequences:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_domain_timeline</span>
+
+<span class="n">plot_domain_timeline</span><span class="p">(</span>
+    <span class="n">sequences</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/domain_timeline.png&quot;</span><span class="p">,</span>
+    <span class="n">max_sequences</span><span class="o">=</span><span class="mi">10</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="prediction-accuracy">
+<h3>Prediction Accuracy<a class="headerlink" href="#prediction-accuracy" title="Link to this heading"></a></h3>
+<p>ROC curve, confusion matrix, and calibration plots:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_prediction_accuracy</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">plot_prediction_accuracy</span><span class="p">(</span>
+    <span class="n">y_true</span><span class="p">,</span>
+    <span class="n">y_pred</span><span class="p">,</span>
+    <span class="n">task_type</span><span class="o">=</span><span class="s2">&quot;classification&quot;</span><span class="p">,</span>  <span class="c1"># or &quot;regression&quot;</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/prediction_accuracy.png&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="temporal-patterns">
+<h3>Temporal Patterns<a class="headerlink" href="#temporal-patterns" title="Link to this heading"></a></h3>
+<p>Time-based importance visualization:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_temporal_patterns</span>
+
+<span class="n">importance_scores</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">}</span>  <span class="c1"># Sequence index -&gt; importance</span>
+<span class="n">plot_temporal_patterns</span><span class="p">(</span>
+    <span class="n">sequences</span><span class="p">,</span>
+    <span class="n">importance_scores</span><span class="o">=</span><span class="n">importance_scores</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/temporal_patterns.png&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="population-comparison">
+<h3>Population Comparison<a class="headerlink" href="#population-comparison" title="Link to this heading"></a></h3>
+<p>Side-by-side comparison of two groups:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_population_comparison</span>
+
+<span class="n">plot_population_comparison</span><span class="p">(</span>
+    <span class="n">sequences_group1</span><span class="p">,</span>
+    <span class="n">sequences_group2</span><span class="p">,</span>
+    <span class="n">group1_label</span><span class="o">=</span><span class="s2">&quot;Treatment&quot;</span><span class="p">,</span>
+    <span class="n">group2_label</span><span class="o">=</span><span class="s2">&quot;Control&quot;</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/population_comparison.png&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="intervention-effects">
+<h3>Intervention Effects<a class="headerlink" href="#intervention-effects" title="Link to this heading"></a></h3>
+<p>Before/after intervention visualization:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_intervention_effects</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">plot_intervention_effects</span><span class="p">(</span>
+    <span class="n">pre_sequences</span><span class="p">,</span>
+    <span class="n">post_sequences</span><span class="p">,</span>
+    <span class="n">pre_outcomes</span><span class="o">=</span><span class="n">pre_outcomes</span><span class="p">,</span>  <span class="c1"># Optional</span>
+    <span class="n">post_outcomes</span><span class="o">=</span><span class="n">post_outcomes</span><span class="p">,</span>  <span class="c1"># Optional</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/intervention_effects.png&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="embedding-clusters">
+<h3>Embedding Clusters<a class="headerlink" href="#embedding-clusters" title="Link to this heading"></a></h3>
+<p>Clustered embedding visualization:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_embedding_clusters</span>
+
+<span class="n">clusters</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;health:diagnosis&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="s2">&quot;health:hospitalization&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="s2">&quot;education:degree&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="s2">&quot;education:certification&quot;</span><span class="p">:</span> <span class="mi">1</span>
+<span class="p">}</span>
+
+<span class="n">plot_embedding_clusters</span><span class="p">(</span>
+    <span class="n">embeddings</span><span class="p">,</span>
+    <span class="n">clusters</span><span class="o">=</span><span class="n">clusters</span><span class="p">,</span>  <span class="c1"># Optional</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;umap&quot;</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/embedding_clusters.png&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="sequence-length-distribution">
+<h3>Sequence Length Distribution<a class="headerlink" href="#sequence-length-distribution" title="Link to this heading"></a></h3>
+<p>Histogram of sequence lengths:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_sequence_length_distribution</span>
+
+<span class="n">plot_sequence_length_distribution</span><span class="p">(</span>
+    <span class="n">sequences</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/sequence_lengths.png&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="event-frequency-heatmap">
+<h3>Event Frequency Heatmap<a class="headerlink" href="#event-frequency-heatmap" title="Link to this heading"></a></h3>
+<p>Temporal frequency heatmap of events:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_event_frequency_heatmap</span>
+
+<span class="n">plot_event_frequency_heatmap</span><span class="p">(</span>
+    <span class="n">sequences</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/frequency_heatmap.png&quot;</span><span class="p">,</span>
+    <span class="n">time_bins</span><span class="o">=</span><span class="mi">10</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="modular-scripts">
+<h2>Modular Scripts<a class="headerlink" href="#modular-scripts" title="Link to this heading"></a></h2>
+<p>The module provides focused command-line scripts for specific tasks:</p>
+<section id="generate-synthetic-data">
+<h3>Generate Synthetic Data<a class="headerlink" href="#generate-synthetic-data" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Basic generation</span>
+python3<span class="w"> </span>scripts/life_events/generate_synthetic_data.py<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--n-sequences<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output<span class="w"> </span>output/life_events/synthetic.json
+
+<span class="c1"># Realistic generation with patterns</span>
+python3<span class="w"> </span>scripts/life_events/generate_synthetic_data.py<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--n-sequences<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--realistic<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--seasonal-patterns<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--temporal-noise<span class="w"> </span><span class="m">0</span>.1<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output<span class="w"> </span>output/life_events/realistic.json
+</pre></div>
+</div>
+</section>
+<section id="learn-embeddings">
+<h3>Learn Embeddings<a class="headerlink" href="#learn-embeddings" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/life_events/learn_embeddings.py<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--input<span class="w"> </span>data/sequences.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output<span class="w"> </span>output/life_events/embeddings.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--embedding-dim<span class="w"> </span><span class="m">200</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--window-size<span class="w"> </span><span class="m">10</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--epochs<span class="w"> </span><span class="m">20</span>
+</pre></div>
+</div>
+</section>
+<section id="train-model">
+<h3>Train Model<a class="headerlink" href="#train-model" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/life_events/train_model.py<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--sequences<span class="w"> </span>data/sequences.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--outcomes<span class="w"> </span>data/outcomes.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output<span class="w"> </span>output/life_events/model.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--model-type<span class="w"> </span>lstm<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--epochs<span class="w"> </span><span class="m">20</span>
+</pre></div>
+</div>
+</section>
+<section id="predict-outcomes">
+<h3>Predict Outcomes<a class="headerlink" href="#predict-outcomes" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/life_events/predict_outcomes.py<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--model<span class="w"> </span>output/life_events/model.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--sequences<span class="w"> </span>data/test_sequences.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output<span class="w"> </span>output/life_events/predictions.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--probabilities
+</pre></div>
+</div>
+</section>
+<section id="visualize-sequences">
+<h3>Visualize Sequences<a class="headerlink" href="#visualize-sequences" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/life_events/visualize_sequences.py<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--input<span class="w"> </span>data/sequences.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output<span class="w"> </span>output/life_events/visualizations/<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--all-visualizations
+</pre></div>
+</div>
+</section>
+<section id="compare-groups">
+<h3>Compare Groups<a class="headerlink" href="#compare-groups" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/life_events/compare_groups.py<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--group1<span class="w"> </span>data/group1.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--group2<span class="w"> </span>data/group2.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--group1-label<span class="w"> </span><span class="s2">&quot;Treatment&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--group2-label<span class="w"> </span><span class="s2">&quot;Control&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output<span class="w"> </span>output/life_events/comparison/
+</pre></div>
+</div>
+</section>
+<section id="analyze-intervention">
+<h3>Analyze Intervention<a class="headerlink" href="#analyze-intervention" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/life_events/analyze_intervention.py<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--sequences<span class="w"> </span>data/sequences.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--intervention-time<span class="w"> </span><span class="m">2015</span>-01-01<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--pre-outcomes<span class="w"> </span>data/pre_outcomes.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--post-outcomes<span class="w"> </span>data/post_outcomes.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output<span class="w"> </span>output/life_events/intervention/
+</pre></div>
+</div>
+</section>
+<section id="interpret-predictions">
+<h3>Interpret Predictions<a class="headerlink" href="#interpret-predictions" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/life_events/interpret_predictions.py<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--model<span class="w"> </span>output/life_events/model.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--sequences<span class="w"> </span>data/sequences.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output<span class="w"> </span>output/life_events/interpretation/<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--method<span class="w"> </span>permutation<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--top-n<span class="w"> </span><span class="m">20</span>
+</pre></div>
+</div>
+</section>
+<section id="export-embeddings">
+<h3>Export Embeddings<a class="headerlink" href="#export-embeddings" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Export to CSV</span>
+python3<span class="w"> </span>scripts/life_events/export_embeddings.py<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--input<span class="w"> </span>output/life_events/embeddings.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output<span class="w"> </span>output/life_events/embeddings.csv<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--format<span class="w"> </span>csv
+
+<span class="c1"># Export to Word2Vec format</span>
+python3<span class="w"> </span>scripts/life_events/export_embeddings.py<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--input<span class="w"> </span>output/life_events/embeddings.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output<span class="w"> </span>output/life_events/embeddings.txt<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--format<span class="w"> </span>word2vec
+</pre></div>
+</div>
+</section>
+<section id="validate-data">
+<h3>Validate Data<a class="headerlink" href="#validate-data" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/life_events/validate_data.py<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--input<span class="w"> </span>data/sequences.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output<span class="w"> </span>output/life_events/validation_report.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--strict
+</pre></div>
+</div>
+</section>
+</section>
+<section id="complete-end-to-end-workflow">
+<h2>Complete End-to-End Workflow<a class="headerlink" href="#complete-end-to-end-workflow" title="Link to this heading"></a></h2>
+<p>Here’s a complete example showing the full workflow from synthetic data generation through visualization:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">generate_synthetic_life_events</span><span class="p">,</span>
+    <span class="n">analyze_life_course</span><span class="p">,</span>
+    <span class="n">load_life_events_config</span><span class="p">,</span>
+    <span class="n">plot_event_timeline</span><span class="p">,</span>
+    <span class="n">plot_event_embeddings</span><span class="p">,</span>
+    <span class="n">plot_prediction_importance</span><span class="p">,</span>
+    <span class="n">event_importance</span><span class="p">,</span>
+    <span class="n">EventSequencePredictor</span><span class="p">,</span>
+    <span class="n">learn_event_embeddings</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Step 1: Generate synthetic data</span>
+<span class="n">sequences</span><span class="p">,</span> <span class="n">outcomes</span> <span class="o">=</span> <span class="n">generate_synthetic_life_events</span><span class="p">(</span>
+    <span class="n">n_sequences</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+    <span class="n">generate_outcomes</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">outcome_relationship</span><span class="o">=</span><span class="s2">&quot;complex&quot;</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span>
+<span class="p">)</span>
+
+<span class="c1"># Step 2: Load configuration (optional)</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">load_life_events_config</span><span class="p">(</span><span class="s2">&quot;config/life_events_template.yaml&quot;</span><span class="p">)</span>
+
+<span class="c1"># Step 3: Run complete analysis workflow</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">analyze_life_course</span><span class="p">(</span>
+    <span class="n">sequences</span><span class="p">,</span>
+    <span class="n">outcomes</span><span class="o">=</span><span class="n">outcomes</span><span class="p">,</span>
+    <span class="n">config_obj</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;output/life_events&quot;</span>
+<span class="p">)</span>
+
+<span class="c1"># Step 4: Generate visualizations</span>
+<span class="n">output_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;output/life_events&quot;</span><span class="p">)</span>
+
+<span class="c1"># Timeline for first sequence</span>
+<span class="n">plot_event_timeline</span><span class="p">(</span><span class="n">sequences</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">output_path</span><span class="o">=</span><span class="n">output_dir</span> <span class="o">/</span> <span class="s2">&quot;timeline.png&quot;</span><span class="p">)</span>
+
+<span class="c1"># Embedding visualization</span>
+<span class="n">embeddings</span> <span class="o">=</span> <span class="n">learn_event_embeddings</span><span class="p">(</span>
+    <span class="p">[[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">domain</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">event_type</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">seq</span><span class="o">.</span><span class="n">events</span><span class="p">]</span> <span class="k">for</span> <span class="n">seq</span> <span class="ow">in</span> <span class="n">sequences</span><span class="p">],</span>
+    <span class="n">embedding_dim</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span>
+<span class="p">)</span>
+<span class="n">plot_event_embeddings</span><span class="p">(</span><span class="n">embeddings</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;umap&quot;</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="n">output_dir</span> <span class="o">/</span> <span class="s2">&quot;embeddings.png&quot;</span><span class="p">)</span>
+
+<span class="c1"># Importance plot</span>
+<span class="n">sequences_tokens</span> <span class="o">=</span> <span class="p">[[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">domain</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">event_type</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">seq</span><span class="o">.</span><span class="n">events</span><span class="p">]</span> <span class="k">for</span> <span class="n">seq</span> <span class="ow">in</span> <span class="n">sequences</span><span class="p">]</span>
+<span class="n">predictor</span> <span class="o">=</span> <span class="n">EventSequencePredictor</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="s2">&quot;model&quot;</span><span class="p">])</span>
+<span class="n">importance</span> <span class="o">=</span> <span class="n">event_importance</span><span class="p">(</span><span class="n">predictor</span><span class="p">,</span> <span class="n">sequences_tokens</span><span class="p">,</span> <span class="n">embeddings</span><span class="p">)</span>
+<span class="n">plot_prediction_importance</span><span class="p">(</span><span class="n">importance</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="n">output_dir</span> <span class="o">/</span> <span class="s2">&quot;importance.png&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Analysis complete! Results saved to </span><span class="si">{</span><span class="n">output_dir</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Model accuracy: </span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;accuracy&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;N/A&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="usage-patterns">
+<h2>Usage Patterns<a class="headerlink" href="#usage-patterns" title="Link to this heading"></a></h2>
+<section id="loading-event-data">
+<h3>Loading Event Data<a class="headerlink" href="#loading-event-data" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventSequence</span><span class="p">,</span> <span class="n">load_sequences_from_json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">io</span>
+
+<span class="c1"># Load from JSON (convenience function)</span>
+<span class="n">sequences</span> <span class="o">=</span> <span class="n">load_sequences_from_json</span><span class="p">(</span><span class="s2">&quot;events.json&quot;</span><span class="p">)</span>
+
+<span class="c1"># Or load manually</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">load_json</span><span class="p">(</span><span class="s2">&quot;events.json&quot;</span><span class="p">)</span>
+<span class="n">sequence</span> <span class="o">=</span> <span class="n">EventSequence</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="utility-functions">
+<h3>Utility Functions<a class="headerlink" href="#utility-functions" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">validate_sequence</span><span class="p">,</span>
+    <span class="n">convert_sequences_to_tokens</span><span class="p">,</span>
+    <span class="n">get_event_statistics</span>
+<span class="p">)</span>
+
+<span class="c1"># Validate sequence</span>
+<span class="n">is_valid</span><span class="p">,</span> <span class="n">errors</span> <span class="o">=</span> <span class="n">validate_sequence</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">is_valid</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Validation errors:&quot;</span><span class="p">,</span> <span class="n">errors</span><span class="p">)</span>
+
+<span class="c1"># Convert to tokens for ML</span>
+<span class="n">tokens</span> <span class="o">=</span> <span class="n">convert_sequences_to_tokens</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span>
+
+<span class="c1"># Get statistics</span>
+<span class="n">stats</span> <span class="o">=</span> <span class="n">get_event_statistics</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total events: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;total_events&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Domains: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;domains&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="analyzing-event-patterns">
+<h3>Analyzing Event Patterns<a class="headerlink" href="#analyzing-event-patterns" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Get unique event types</span>
+<span class="n">event_types</span> <span class="o">=</span> <span class="n">sequence</span><span class="o">.</span><span class="n">get_event_types</span><span class="p">()</span>
+
+<span class="c1"># Get domains covered</span>
+<span class="n">domains</span> <span class="o">=</span> <span class="n">sequence</span><span class="o">.</span><span class="n">get_domains</span><span class="p">()</span>
+
+<span class="c1"># Filter by domain</span>
+<span class="n">health_sequence</span> <span class="o">=</span> <span class="n">sequence</span><span class="o">.</span><span class="n">filter_by_domain</span><span class="p">(</span><span class="s2">&quot;health&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="learning-and-using-embeddings">
+<h3>Learning and Using Embeddings<a class="headerlink" href="#learning-and-using-embeddings" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Convert sequences to token lists</span>
+<span class="n">sequences_tokens</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">[</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">domain</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">e</span><span class="o">.</span><span class="n">event_type</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">seq</span><span class="o">.</span><span class="n">events</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">seq</span> <span class="ow">in</span> <span class="n">database</span><span class="o">.</span><span class="n">sequences</span>
+<span class="p">]</span>
+
+<span class="c1"># Learn embeddings</span>
+<span class="n">embeddings</span> <span class="o">=</span> <span class="n">learn_event_embeddings</span><span class="p">(</span><span class="n">sequences_tokens</span><span class="p">)</span>
+
+<span class="c1"># Get sequence-level embeddings</span>
+<span class="n">seq_embeddings</span> <span class="o">=</span> <span class="n">sequence_embeddings</span><span class="p">(</span><span class="n">sequences_tokens</span><span class="p">,</span> <span class="n">embeddings</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="prediction-models-models-py">
+<h3>Prediction Models (<code class="docutils literal notranslate"><span class="pre">models.py</span></code>)<a class="headerlink" href="#prediction-models-models-py" title="Link to this heading"></a></h3>
+<section id="eventsequencepredictor">
+<h4>EventSequencePredictor<a class="headerlink" href="#eventsequencepredictor" title="Link to this heading"></a></h4>
+<p>Train models to predict outcomes from event sequences:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventSequencePredictor</span><span class="p">,</span> <span class="n">learn_event_embeddings</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Prepare sequences and outcomes</span>
+<span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">[</span><span class="s2">&quot;health:diagnosis&quot;</span><span class="p">,</span> <span class="s2">&quot;occupation:job_change&quot;</span><span class="p">],</span>
+    <span class="p">[</span><span class="s2">&quot;education:degree&quot;</span><span class="p">,</span> <span class="s2">&quot;occupation:job_change&quot;</span><span class="p">],</span>
+<span class="p">]</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>  <span class="c1"># Binary classification labels</span>
+
+<span class="c1"># Train predictor</span>
+<span class="n">predictor</span> <span class="o">=</span> <span class="n">EventSequencePredictor</span><span class="p">(</span>
+    <span class="n">model_type</span><span class="o">=</span><span class="s2">&quot;embedding&quot;</span><span class="p">,</span>
+    <span class="n">task_type</span><span class="o">=</span><span class="s2">&quot;classification&quot;</span><span class="p">,</span>
+    <span class="n">embedding_dim</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span>
+<span class="p">)</span>
+
+<span class="c1"># Learn embeddings first</span>
+<span class="n">embeddings</span> <span class="o">=</span> <span class="n">learn_event_embeddings</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">embedding_dim</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+
+<span class="c1"># Fit model</span>
+<span class="n">predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">event_embeddings</span><span class="o">=</span><span class="n">embeddings</span><span class="p">)</span>
+
+<span class="c1"># Make predictions</span>
+<span class="n">predictions</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span>
+<span class="n">probabilities</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span>
+
+<span class="c1"># Save model for later use</span>
+<span class="n">predictor</span><span class="o">.</span><span class="n">save_model</span><span class="p">(</span><span class="s2">&quot;output/model.json&quot;</span><span class="p">)</span>
+
+<span class="c1"># Load saved model</span>
+<span class="n">loaded_predictor</span> <span class="o">=</span> <span class="n">EventSequencePredictor</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="s2">&quot;output/model.json&quot;</span><span class="p">)</span>
+<span class="n">new_predictions</span> <span class="o">=</span> <span class="n">loaded_predictor</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">new_sequences</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="visualization-visualization-py">
+<h3>Visualization (<code class="docutils literal notranslate"><span class="pre">visualization.py</span></code>)<a class="headerlink" href="#visualization-visualization-py" title="Link to this heading"></a></h3>
+<section id="plot-event-timeline">
+<h4>Plot Event Timeline<a class="headerlink" href="#plot-event-timeline" title="Link to this heading"></a></h4>
+<p>Visualize individual life course as timeline:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventSequence</span><span class="p">,</span> <span class="n">Event</span><span class="p">,</span> <span class="n">plot_event_timeline</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+
+<span class="n">sequence</span> <span class="o">=</span> <span class="n">EventSequence</span><span class="p">(</span>
+    <span class="n">person_id</span><span class="o">=</span><span class="s2">&quot;person_001&quot;</span><span class="p">,</span>
+    <span class="n">events</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">Event</span><span class="p">(</span><span class="s2">&quot;degree&quot;</span><span class="p">,</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2010</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">&quot;education&quot;</span><span class="p">),</span>
+        <span class="n">Event</span><span class="p">(</span><span class="s2">&quot;job_change&quot;</span><span class="p">,</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2015</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">&quot;occupation&quot;</span><span class="p">),</span>
+        <span class="n">Event</span><span class="p">(</span><span class="s2">&quot;diagnosis&quot;</span><span class="p">,</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span> <span class="s2">&quot;health&quot;</span><span class="p">),</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plot_event_timeline</span><span class="p">(</span><span class="n">sequence</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/timeline.png&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="plot-event-embeddings">
+<h4>Plot Event Embeddings<a class="headerlink" href="#plot-event-embeddings" title="Link to this heading"></a></h4>
+<p>Visualize event embeddings in 2D or 3D:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">learn_event_embeddings</span><span class="p">,</span> <span class="n">plot_event_embeddings</span>
+
+<span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">[</span><span class="s2">&quot;health:diagnosis&quot;</span><span class="p">,</span> <span class="s2">&quot;occupation:job_change&quot;</span><span class="p">],</span>
+    <span class="p">[</span><span class="s2">&quot;education:degree&quot;</span><span class="p">,</span> <span class="s2">&quot;occupation:job_change&quot;</span><span class="p">],</span>
+<span class="p">]</span>
+
+<span class="n">embeddings</span> <span class="o">=</span> <span class="n">learn_event_embeddings</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">embedding_dim</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+
+<span class="c1"># Plot with UMAP reduction</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plot_event_embeddings</span><span class="p">(</span>
+    <span class="n">embeddings</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;umap&quot;</span><span class="p">,</span>
+    <span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/embeddings.png&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="plot-prediction-importance">
+<h4>Plot Prediction Importance<a class="headerlink" href="#plot-prediction-importance" title="Link to this heading"></a></h4>
+<p>Visualize which events are most important for predictions:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">EventSequencePredictor</span><span class="p">,</span> <span class="n">learn_event_embeddings</span><span class="p">,</span> <span class="n">event_importance</span><span class="p">,</span>
+    <span class="n">plot_prediction_importance</span>
+<span class="p">)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Train model and get importance</span>
+<span class="n">sequences</span> <span class="o">=</span> <span class="p">[[</span><span class="s2">&quot;health:diagnosis&quot;</span><span class="p">,</span> <span class="s2">&quot;occupation:job_change&quot;</span><span class="p">]]</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">])</span>
+<span class="n">predictor</span> <span class="o">=</span> <span class="n">EventSequencePredictor</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">embeddings</span> <span class="o">=</span> <span class="n">learn_event_embeddings</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">event_embeddings</span><span class="o">=</span><span class="n">embeddings</span><span class="p">)</span>
+
+<span class="n">importance</span> <span class="o">=</span> <span class="n">event_importance</span><span class="p">(</span><span class="n">predictor</span><span class="p">,</span> <span class="n">sequences</span><span class="p">,</span> <span class="n">embeddings</span><span class="p">)</span>
+
+<span class="c1"># Plot importance</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plot_prediction_importance</span><span class="p">(</span>
+    <span class="n">importance</span><span class="p">,</span>
+    <span class="n">top_n</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;output/importance.png&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="model-interpretation-interpretability-py">
+<h3>Model Interpretation (<code class="docutils literal notranslate"><span class="pre">interpretability.py</span></code>)<a class="headerlink" href="#model-interpretation-interpretability-py" title="Link to this heading"></a></h3>
+<section id="event-importance">
+<h4>Event Importance<a class="headerlink" href="#event-importance" title="Link to this heading"></a></h4>
+<p>Identify which events contribute most to predictions:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">EventSequencePredictor</span><span class="p">,</span> <span class="n">learn_event_embeddings</span><span class="p">,</span> <span class="n">event_importance</span>
+<span class="p">)</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">[</span><span class="s2">&quot;health:diagnosis&quot;</span><span class="p">,</span> <span class="s2">&quot;occupation:job_change&quot;</span><span class="p">,</span> <span class="s2">&quot;income:raise&quot;</span><span class="p">],</span>
+    <span class="p">[</span><span class="s2">&quot;education:degree&quot;</span><span class="p">,</span> <span class="s2">&quot;occupation:job_change&quot;</span><span class="p">,</span> <span class="s2">&quot;address:move&quot;</span><span class="p">],</span>
+<span class="p">]</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+
+<span class="n">predictor</span> <span class="o">=</span> <span class="n">EventSequencePredictor</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">embeddings</span> <span class="o">=</span> <span class="n">learn_event_embeddings</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">event_embeddings</span><span class="o">=</span><span class="n">embeddings</span><span class="p">)</span>
+
+<span class="c1"># Compute importance</span>
+<span class="n">importance</span> <span class="o">=</span> <span class="n">event_importance</span><span class="p">(</span>
+    <span class="n">predictor</span><span class="p">,</span>
+    <span class="n">sequences</span><span class="p">,</span>
+    <span class="n">embeddings</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;permutation&quot;</span>
+<span class="p">)</span>
+
+<span class="c1"># Events with highest importance</span>
+<span class="n">sorted_events</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">importance</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Top important events:&quot;</span><span class="p">,</span> <span class="n">sorted_events</span><span class="p">[:</span><span class="mi">5</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="id1">
+<h4>Temporal Patterns<a class="headerlink" href="#id1" title="Link to this heading"></a></h4>
+<p>Analyze which time periods are critical for predictions:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">temporal_patterns</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">[</span><span class="s2">&quot;health:diagnosis&quot;</span><span class="p">,</span> <span class="s2">&quot;occupation:job_change&quot;</span><span class="p">],</span>
+    <span class="p">[</span><span class="s2">&quot;education:degree&quot;</span><span class="p">,</span> <span class="s2">&quot;occupation:job_change&quot;</span><span class="p">],</span>
+<span class="p">]</span>
+<span class="n">predictions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">])</span>
+
+<span class="n">patterns</span> <span class="o">=</span> <span class="n">temporal_patterns</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">predictions</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Position importance:&quot;</span><span class="p">,</span> <span class="n">patterns</span><span class="p">[</span><span class="s2">&quot;position_importance&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="feature-attribution">
+<h4>Feature Attribution<a class="headerlink" href="#feature-attribution" title="Link to this heading"></a></h4>
+<p>Compute SHAP-style feature attribution:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">feature_attribution</span>
+
+<span class="n">attribution</span> <span class="o">=</span> <span class="n">feature_attribution</span><span class="p">(</span>
+    <span class="n">predictor</span><span class="p">,</span>
+    <span class="n">sequences</span><span class="p">,</span>
+    <span class="n">embeddings</span><span class="p">,</span>
+    <span class="n">use_shap</span><span class="o">=</span><span class="kc">False</span>  <span class="c1"># Uses permutation method if SHAP not available</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="workflow-examples-workflow-py">
+<h3>Workflow Examples (<code class="docutils literal notranslate"><span class="pre">workflow.py</span></code>)<a class="headerlink" href="#workflow-examples-workflow-py" title="Link to this heading"></a></h3>
+<section id="complete-life-course-analysis">
+<h4>Complete Life Course Analysis<a class="headerlink" href="#complete-life-course-analysis" title="Link to this heading"></a></h4>
+<p>End-to-end analysis from sequences to predictions:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventSequence</span><span class="p">,</span> <span class="n">Event</span><span class="p">,</span> <span class="n">analyze_life_course</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Create sequences</span>
+<span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">EventSequence</span><span class="p">(</span>
+        <span class="s2">&quot;person_001&quot;</span><span class="p">,</span>
+        <span class="p">[</span><span class="n">Event</span><span class="p">(</span><span class="s2">&quot;degree&quot;</span><span class="p">,</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2010</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">&quot;education&quot;</span><span class="p">)]</span>
+    <span class="p">),</span>
+    <span class="n">EventSequence</span><span class="p">(</span>
+        <span class="s2">&quot;person_002&quot;</span><span class="p">,</span>
+        <span class="p">[</span><span class="n">Event</span><span class="p">(</span><span class="s2">&quot;diagnosis&quot;</span><span class="p">,</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">15</span><span class="p">),</span> <span class="s2">&quot;health&quot;</span><span class="p">)]</span>
+    <span class="p">),</span>
+<span class="p">]</span>
+
+<span class="c1"># Optional outcomes for training</span>
+<span class="n">outcomes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+
+<span class="c1"># Run complete analysis</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">analyze_life_course</span><span class="p">(</span>
+    <span class="n">sequences</span><span class="p">,</span>
+    <span class="n">outcomes</span><span class="o">=</span><span class="n">outcomes</span><span class="p">,</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;output/life_events&quot;</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Trained model: </span><span class="si">{</span><span class="n">results</span><span class="p">[</span><span class="s1">&#39;model_type&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Accuracy: </span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;accuracy&#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;N/A&#39;</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="compare-populations">
+<h4>Compare Populations<a class="headerlink" href="#compare-populations" title="Link to this heading"></a></h4>
+<p>Compare event patterns between groups:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">compare_populations</span>
+
+<span class="n">group1</span> <span class="o">=</span> <span class="p">[</span><span class="n">EventSequence</span><span class="p">(</span><span class="s2">&quot;p1&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">Event</span><span class="p">(</span><span class="s2">&quot;degree&quot;</span><span class="p">,</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2010</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">&quot;education&quot;</span><span class="p">)])]</span>
+<span class="n">group2</span> <span class="o">=</span> <span class="p">[</span><span class="n">EventSequence</span><span class="p">(</span><span class="s2">&quot;p2&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">Event</span><span class="p">(</span><span class="s2">&quot;job_change&quot;</span><span class="p">,</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2015</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">&quot;occupation&quot;</span><span class="p">)])]</span>
+
+<span class="n">comparison</span> <span class="o">=</span> <span class="n">compare_populations</span><span class="p">(</span><span class="n">group1</span><span class="p">,</span> <span class="n">group2</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Common event types:&quot;</span><span class="p">,</span> <span class="n">comparison</span><span class="p">[</span><span class="s2">&quot;comparison&quot;</span><span class="p">][</span><span class="s2">&quot;common_event_types&quot;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Unique to group 1:&quot;</span><span class="p">,</span> <span class="n">comparison</span><span class="p">[</span><span class="s2">&quot;comparison&quot;</span><span class="p">][</span><span class="s2">&quot;unique_to_group1&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="intervention-analysis">
+<h4>Intervention Analysis<a class="headerlink" href="#intervention-analysis" title="Link to this heading"></a></h4>
+<p>Analyze effects of interventions:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">intervention_analysis</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">EventSequence</span><span class="p">(</span>
+        <span class="s2">&quot;person_001&quot;</span><span class="p">,</span>
+        <span class="p">[</span>
+            <span class="n">Event</span><span class="p">(</span><span class="s2">&quot;degree&quot;</span><span class="p">,</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2010</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">&quot;education&quot;</span><span class="p">),</span>
+            <span class="n">Event</span><span class="p">(</span><span class="s2">&quot;job_change&quot;</span><span class="p">,</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2015</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">&quot;occupation&quot;</span><span class="p">),</span>
+            <span class="n">Event</span><span class="p">(</span><span class="s2">&quot;diagnosis&quot;</span><span class="p">,</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">&quot;health&quot;</span><span class="p">),</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+<span class="p">]</span>
+
+<span class="n">intervention_time</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2017</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">timestamp</span><span class="p">()</span>
+<span class="n">pre_outcomes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.5</span><span class="p">])</span>
+<span class="n">post_outcomes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.8</span><span class="p">])</span>
+
+<span class="n">results</span> <span class="o">=</span> <span class="n">intervention_analysis</span><span class="p">(</span>
+    <span class="n">sequences</span><span class="p">,</span>
+    <span class="n">intervention_time</span><span class="o">=</span><span class="n">intervention_time</span><span class="p">,</span>
+    <span class="n">pre_intervention_outcomes</span><span class="o">=</span><span class="n">pre_outcomes</span><span class="p">,</span>
+    <span class="n">post_intervention_outcomes</span><span class="o">=</span><span class="n">post_outcomes</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Outcome change:&quot;</span><span class="p">,</span> <span class="n">results</span><span class="p">[</span><span class="s2">&quot;outcome_change&quot;</span><span class="p">][</span><span class="s2">&quot;mean&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="cli-usage">
+<h2>CLI Usage<a class="headerlink" href="#cli-usage" title="Link to this heading"></a></h2>
+<p>The module provides CLI commands through the main METAINFORMANT CLI:</p>
+<section id="id2">
+<h3>Learn Event Embeddings<a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>metainformant<span class="w"> </span>life-events<span class="w"> </span>embed<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--input<span class="w"> </span>data/event_sequences.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output<span class="w"> </span>output/life_events/embeddings<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--embedding-dim<span class="w"> </span><span class="m">100</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--window-size<span class="w"> </span><span class="m">5</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--epochs<span class="w"> </span><span class="m">10</span>
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h3>Predict Outcomes<a class="headerlink" href="#id3" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>metainformant<span class="w"> </span>life-events<span class="w"> </span>predict<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--events<span class="w"> </span>data/test_sequences.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--model<span class="w"> </span>output/life_events/model.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output<span class="w"> </span>output/life_events/predictions
+</pre></div>
+</div>
+<p>This command:</p>
+<ul class="simple">
+<li><p>Loads a trained model from the specified path</p></li>
+<li><p>Loads event sequences from the events file</p></li>
+<li><p>Makes predictions for all sequences</p></li>
+<li><p>Saves predictions to JSON with sequence IDs and probabilities (for classification tasks)</p></li>
+<li><p>Prints summary statistics</p></li>
+</ul>
+</section>
+<section id="id4">
+<h3>Interpret Predictions<a class="headerlink" href="#id4" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>metainformant<span class="w"> </span>life-events<span class="w"> </span>interpret<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--model<span class="w"> </span>output/life_events/model.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--sequences<span class="w"> </span>data/test_sequences.json<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>--output<span class="w"> </span>output/life_events/interpretation
+</pre></div>
+</div>
+</section>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading"></a></h2>
+<p>Workflow functions support structured configuration files following the same pattern as other METAINFORMANT modules.</p>
+<section id="configuration-class">
+<h3>Configuration Class<a class="headerlink" href="#configuration-class" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">LifeEventsWorkflowConfig</span><span class="p">,</span> <span class="n">load_life_events_config</span>
+
+<span class="c1"># Load from file</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">load_life_events_config</span><span class="p">(</span><span class="s2">&quot;config/life_events.yaml&quot;</span><span class="p">)</span>
+
+<span class="c1"># Use in workflow</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">analyze_life_course</span>
+
+<span class="n">results</span> <span class="o">=</span> <span class="n">analyze_life_course</span><span class="p">(</span>
+    <span class="n">sequences</span><span class="p">,</span>
+    <span class="n">outcomes</span><span class="o">=</span><span class="n">outcomes</span><span class="p">,</span>
+    <span class="n">config_obj</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="s2">&quot;output/life_events&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="configuration-template">
+<h3>Configuration Template<a class="headerlink" href="#configuration-template" title="Link to this heading"></a></h3>
+<p>A complete configuration template is available at <code class="docutils literal notranslate"><span class="pre">config/life_events_template.yaml</span></code>. This template includes all configurable sections with comments explaining each parameter.</p>
+</section>
+<section id="example-configuration-file-yaml">
+<h3>Example Configuration File (YAML)<a class="headerlink" href="#example-configuration-file-yaml" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">work_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/life_events/work</span>
+<span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4</span>
+<span class="nt">log_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/life_events/logs</span>
+
+<span class="nt">embedding</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">embedding_dim</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">100</span>
+<span class="w">  </span><span class="nt">window_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span>
+<span class="w">  </span><span class="nt">epochs</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span>
+<span class="w">  </span><span class="nt">method</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">skipgram</span>
+<span class="w">  </span><span class="nt">learning_rate</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.01</span>
+
+<span class="nt">model</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">model_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">embedding</span>
+<span class="w">  </span><span class="nt">task_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">classification</span>
+<span class="w">  </span><span class="nt">random_state</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">42</span>
+
+<span class="nt">workflow</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">save_model</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">  </span><span class="nt">save_embeddings</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="nt">output</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">format</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">json</span>
+<span class="w">  </span><span class="nt">include_probabilities</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+</pre></div>
+</div>
+</section>
+<section id="environment-variable-overrides">
+<h3>Environment Variable Overrides<a class="headerlink" href="#environment-variable-overrides" title="Link to this heading"></a></h3>
+<p>Configuration values can be overridden using environment variables with the <code class="docutils literal notranslate"><span class="pre">LE_</span></code> prefix:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">LE_WORK_DIR</span><span class="o">=</span>/path/to/work
+<span class="nb">export</span><span class="w"> </span><span class="nv">LE_THREADS</span><span class="o">=</span><span class="m">8</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">LE_EMBEDDING_DIM</span><span class="o">=</span><span class="m">200</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">LE_WINDOW_SIZE</span><span class="o">=</span><span class="m">10</span>
+
+<span class="c1"># Then run workflow</span>
+python<span class="w"> </span>-m<span class="w"> </span>metainformant.life_events<span class="w"> </span>...
+</pre></div>
+</div>
+</section>
+<section id="using-configuration-in-code">
+<h3>Using Configuration in Code<a class="headerlink" href="#using-configuration-in-code" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">LifeEventsWorkflowConfig</span><span class="p">,</span>
+    <span class="n">load_life_events_config</span><span class="p">,</span>
+    <span class="n">analyze_life_course</span>
+<span class="p">)</span>
+
+<span class="c1"># Option 1: Load from file</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">load_life_events_config</span><span class="p">(</span><span class="s2">&quot;config/life_events.yaml&quot;</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">analyze_life_course</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">outcomes</span><span class="p">,</span> <span class="n">config_obj</span><span class="o">=</span><span class="n">config</span><span class="p">)</span>
+
+<span class="c1"># Option 2: Pass config path (auto-loads)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">analyze_life_course</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">outcomes</span><span class="p">,</span> <span class="n">config_path</span><span class="o">=</span><span class="s2">&quot;config/life_events.yaml&quot;</span><span class="p">)</span>
+
+<span class="c1"># Option 3: Pass dict directly (backward compatible)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">analyze_life_course</span><span class="p">(</span>
+    <span class="n">sequences</span><span class="p">,</span>
+    <span class="n">outcomes</span><span class="p">,</span>
+    <span class="n">config_obj</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;embedding_dim&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span> <span class="s2">&quot;window_size&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">}</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="integration-examples">
+<h2>Integration Examples<a class="headerlink" href="#integration-examples" title="Link to this heading"></a></h2>
+<section id="with-phenotype-module">
+<h3>With Phenotype Module<a class="headerlink" href="#with-phenotype-module" title="Link to this heading"></a></h3>
+<p>Extract phenotypes from event sequences:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventSequence</span><span class="p">,</span> <span class="n">Event</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.phenotype</span><span class="w"> </span><span class="kn">import</span> <span class="n">extract_phenotypes_from_events</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="kn">import</span> <span class="n">datetime</span>
+
+<span class="n">sequence</span> <span class="o">=</span> <span class="n">EventSequence</span><span class="p">(</span>
+    <span class="s2">&quot;person_001&quot;</span><span class="p">,</span>
+    <span class="p">[</span>
+        <span class="n">Event</span><span class="p">(</span><span class="s2">&quot;diabetes&quot;</span><span class="p">,</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2020</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">&quot;health&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;severity&quot;</span><span class="p">:</span> <span class="s2">&quot;moderate&quot;</span><span class="p">}),</span>
+        <span class="n">Event</span><span class="p">(</span><span class="s2">&quot;bachelors&quot;</span><span class="p">,</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2010</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="s2">&quot;education&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;degree&quot;</span><span class="p">:</span> <span class="s2">&quot;BS&quot;</span><span class="p">}),</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+
+<span class="n">phenotypes</span> <span class="o">=</span> <span class="n">extract_phenotypes_from_events</span><span class="p">(</span><span class="n">sequence</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Health events:&quot;</span><span class="p">,</span> <span class="n">phenotypes</span><span class="p">[</span><span class="s2">&quot;health_events&quot;</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Education achievements:&quot;</span><span class="p">,</span> <span class="n">phenotypes</span><span class="p">[</span><span class="s2">&quot;education_achievements&quot;</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="with-networks-module">
+<h3>With Networks Module<a class="headerlink" href="#with-networks-module" title="Link to this heading"></a></h3>
+<p>Create event co-occurrence networks:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventDatabase</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.networks</span><span class="w"> </span><span class="kn">import</span> <span class="n">graph</span>
+
+<span class="n">database</span> <span class="o">=</span> <span class="n">EventDatabase</span><span class="p">(</span><span class="n">sequences</span><span class="o">=</span><span class="p">[</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">,</span> <span class="n">seq3</span><span class="p">])</span>
+
+<span class="c1"># Build co-occurrence network</span>
+<span class="c1"># (Implementation would extract event pairs and create network)</span>
+</pre></div>
+</div>
+</section>
+<section id="with-multi-omics-module">
+<h3>With Multi-omics Module<a class="headerlink" href="#with-multi-omics-module" title="Link to this heading"></a></h3>
+<p>Integrate events as one data layer:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventDatabase</span><span class="p">,</span> <span class="n">sequence_embeddings</span><span class="p">,</span> <span class="n">learn_event_embeddings</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.multiomics</span><span class="w"> </span><span class="kn">import</span> <span class="n">MultiOmicsData</span><span class="p">,</span> <span class="n">joint_pca</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="c1"># Convert events to feature matrix</span>
+<span class="n">embeddings</span> <span class="o">=</span> <span class="n">learn_event_embeddings</span><span class="p">(</span><span class="n">sequences_tokens</span><span class="p">)</span>
+<span class="n">event_features</span> <span class="o">=</span> <span class="n">sequence_embeddings</span><span class="p">(</span><span class="n">sequences_tokens</span><span class="p">,</span> <span class="n">embeddings</span><span class="p">)</span>
+
+<span class="c1"># Create multi-omics data</span>
+<span class="n">omics_data</span> <span class="o">=</span> <span class="n">MultiOmicsData</span><span class="p">(</span>
+    <span class="n">genomics</span><span class="o">=</span><span class="n">genomic_df</span><span class="p">,</span>
+    <span class="n">transcriptomics</span><span class="o">=</span><span class="n">transcriptomic_df</span><span class="p">,</span>
+    <span class="c1"># Add events as custom layer</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">event_features</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="c1"># Joint analysis</span>
+<span class="n">joint_embeddings</span><span class="p">,</span> <span class="n">loadings</span><span class="p">,</span> <span class="n">variance</span> <span class="o">=</span> <span class="n">joint_pca</span><span class="p">(</span><span class="n">omics_data</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="model-persistence">
+<h2>Model Persistence<a class="headerlink" href="#model-persistence" title="Link to this heading"></a></h2>
+<p>Trained models can be saved and loaded for reuse:</p>
+<section id="saving-models">
+<h3>Saving Models<a class="headerlink" href="#saving-models" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventSequencePredictor</span>
+
+<span class="c1"># Train model</span>
+<span class="n">predictor</span> <span class="o">=</span> <span class="n">EventSequencePredictor</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">predictor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">outcomes</span><span class="p">,</span> <span class="n">event_embeddings</span><span class="o">=</span><span class="n">embeddings</span><span class="p">)</span>
+
+<span class="c1"># Save model</span>
+<span class="n">predictor</span><span class="o">.</span><span class="n">save_model</span><span class="p">(</span><span class="s2">&quot;output/model.json&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>The saved model includes:</p>
+<ul class="simple">
+<li><p>Model hyperparameters (type, task, dimensions)</p></li>
+<li><p>Event embeddings</p></li>
+<li><p>Vocabulary and mappings</p></li>
+<li><p>Classifier/regressor state (weights, coefficients, training data)</p></li>
+<li><p>Class labels (for classification)</p></li>
+</ul>
+</section>
+<section id="loading-models">
+<h3>Loading Models<a class="headerlink" href="#loading-models" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.life_events</span><span class="w"> </span><span class="kn">import</span> <span class="n">EventSequencePredictor</span>
+
+<span class="c1"># Load saved model</span>
+<span class="n">predictor</span> <span class="o">=</span> <span class="n">EventSequencePredictor</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="s2">&quot;output/model.json&quot;</span><span class="p">)</span>
+
+<span class="c1"># Use immediately for prediction</span>
+<span class="n">predictions</span> <span class="o">=</span> <span class="n">predictor</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">new_sequences</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="model-file-format">
+<h3>Model File Format<a class="headerlink" href="#model-file-format" title="Link to this heading"></a></h3>
+<p>Models are saved as JSON files containing:</p>
+<ul class="simple">
+<li><p>Metadata: model type, task type, hyperparameters</p></li>
+<li><p>Embeddings: event token → vector mapping</p></li>
+<li><p>Vocabulary: token lists and index mappings</p></li>
+<li><p>Model state: classifier/regressor parameters and training data</p></li>
+</ul>
+<p>This format is human-readable and can be inspected or modified if needed.</p>
+</section>
+</section>
+<section id="performance-considerations">
+<h2>Performance Considerations<a class="headerlink" href="#performance-considerations" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Embedding learning scales with vocabulary size and number of sequences</p></li>
+<li><p>Sequence embeddings use efficient NumPy operations</p></li>
+<li><p>Filtering operations are O(n) where n is number of events</p></li>
+<li><p>All operations use real implementations (no mocks)</p></li>
+<li><p>For large datasets, consider using domain-specific embeddings to reduce vocabulary size</p></li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">verbose=True</span></code> in <code class="docutils literal notranslate"><span class="pre">learn_event_embeddings()</span></code> to monitor progress for large datasets</p></li>
+<li><p>Model persistence uses efficient JSON serialization; large models may take time to save/load</p></li>
+</ul>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="empty-sequences-error">
+<h3>Empty Sequences Error<a class="headerlink" href="#empty-sequences-error" title="Link to this heading"></a></h3>
+<p>If you get “sequences list cannot be empty” error:</p>
+<ul class="simple">
+<li><p>Ensure your input data contains at least one sequence</p></li>
+<li><p>Check that sequences are properly loaded from files</p></li>
+<li><p>Verify that filtering operations haven’t removed all events</p></li>
+</ul>
+</section>
+<section id="embedding-dimension-issues">
+<h3>Embedding Dimension Issues<a class="headerlink" href="#embedding-dimension-issues" title="Link to this heading"></a></h3>
+<p>If embeddings are too large or too small:</p>
+<ul class="simple">
+<li><p>Adjust <code class="docutils literal notranslate"><span class="pre">embedding_dim</span></code> parameter (typical values: 50-200)</p></li>
+<li><p>Consider vocabulary size when choosing dimension</p></li>
+<li><p>Use domain-specific embeddings for large vocabularies</p></li>
+</ul>
+</section>
+<section id="model-not-fitted-error">
+<h3>Model Not Fitted Error<a class="headerlink" href="#model-not-fitted-error" title="Link to this heading"></a></h3>
+<p>If you get “Model must be fitted” error:</p>
+<ul class="simple">
+<li><p>Call <code class="docutils literal notranslate"><span class="pre">fit()</span></code> before <code class="docutils literal notranslate"><span class="pre">predict()</span></code> or <code class="docutils literal notranslate"><span class="pre">predict_proba()</span></code></p></li>
+<li><p>Ensure training data is not empty</p></li>
+<li><p>Check that outcomes match sequence length</p></li>
+</ul>
+</section>
+<section id="model-loading-errors">
+<h3>Model Loading Errors<a class="headerlink" href="#model-loading-errors" title="Link to this heading"></a></h3>
+<p>If model loading fails:</p>
+<ul class="simple">
+<li><p>Verify the model file exists and is readable</p></li>
+<li><p>Check that the model file format is valid JSON</p></li>
+<li><p>Ensure the model was saved with the same version of the code</p></li>
+<li><p>Check error message for specific missing fields</p></li>
+</ul>
+</section>
+<section id="configuration-errors">
+<h3>Configuration Errors<a class="headerlink" href="#configuration-errors" title="Link to this heading"></a></h3>
+<p>If configuration loading fails:</p>
+<ul class="simple">
+<li><p>Verify config file format (YAML, TOML, or JSON)</p></li>
+<li><p>Check that required fields are present</p></li>
+<li><p>Ensure environment variable names use correct prefix (LE_)</p></li>
+<li><p>Check file paths in configuration are absolute or relative to working directory</p></li>
+<li><p>See <code class="docutils literal notranslate"><span class="pre">config/life_events_template.yaml</span></code> for a complete example configuration</p></li>
+</ul>
+</section>
+<section id="missing-optional-dependencies">
+<h3>Missing Optional Dependencies<a class="headerlink" href="#missing-optional-dependencies" title="Link to this heading"></a></h3>
+<p>If visualization functions fail:</p>
+<ul class="simple">
+<li><p>Install matplotlib: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">matplotlib</span></code></p></li>
+<li><p>Visualization functions are optional and will gracefully degrade</p></li>
+<li><p>Check that output directory is writable</p></li>
+</ul>
+</section>
+<section id="synthetic-data-generation-issues">
+<h3>Synthetic Data Generation Issues<a class="headerlink" href="#synthetic-data-generation-issues" title="Link to this heading"></a></h3>
+<p>If synthetic data generation fails:</p>
+<ul class="simple">
+<li><p>Ensure numpy is installed: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">numpy</span></code></p></li>
+<li><p>Check that date ranges are valid (start_date &lt; end_date)</p></li>
+<li><p>Verify domain and event_type dictionaries are properly formatted</p></li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">random_state</span></code> parameter for reproducibility</p></li>
+</ul>
+</section>
+</section>
+<section id="testing">
+<h2>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h2>
+<p>Comprehensive tests cover:</p>
+<ul class="simple">
+<li><p>Event data structure validation</p></li>
+<li><p>Embedding learning algorithms</p></li>
+<li><p>Sequence aggregation methods</p></li>
+<li><p>Prediction models (classification and regression)</p></li>
+<li><p>Workflow functions</p></li>
+<li><p>Visualization functions</p></li>
+<li><p>Interpretability tools</p></li>
+<li><p>Integration with other modules</p></li>
+</ul>
+<p>Run tests with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pytest<span class="w"> </span>tests/test_life_events_*.py
+</pre></div>
+</div>
+<p>Run specific test suites:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pytest<span class="w"> </span>tests/test_life_events_events.py
+pytest<span class="w"> </span>tests/test_life_events_embeddings.py
+pytest<span class="w"> </span>tests/test_life_events_models.py
+pytest<span class="w"> </span>tests/test_life_events_workflow.py
+pytest<span class="w"> </span>tests/test_life_events_visualization.py
+pytest<span class="w"> </span>tests/test_life_events_interpretability.py
+pytest<span class="w"> </span>tests/test_life_events_utils.py
+pytest<span class="w"> </span>tests/test_life_events_integration.py
+</pre></div>
+</div>
+</section>
+<section id="dependencies">
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading"></a></h2>
+<section id="required">
+<h3>Required<a class="headerlink" href="#required" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">numpy&gt;=1.21.0</span></code>: Core numerical operations</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pandas&gt;=1.3.0</span></code>: Data structure support</p></li>
+<li><p>Standard library: <code class="docutils literal notranslate"><span class="pre">datetime</span></code>, <code class="docutils literal notranslate"><span class="pre">collections</span></code>, <code class="docutils literal notranslate"><span class="pre">pathlib</span></code></p></li>
+</ul>
+</section>
+<section id="optional">
+<h3>Optional<a class="headerlink" href="#optional" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">matplotlib&gt;=3.5.0</span></code>: For visualization functions</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">scikit-learn&gt;=1.1.0</span></code>: For ML model evaluation metrics</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">scipy&gt;=1.9.0</span></code>: For statistical tests in intervention analysis</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">shap&gt;=0.40.0</span></code>: For advanced feature attribution (not yet fully integrated)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">torch</span></code> or <code class="docutils literal notranslate"><span class="pre">tensorflow</span></code>: For future transformer/LSTM models (not yet fully implemented)</p></li>
+</ul>
+<p>All optional dependencies are handled defensively - the module will work without them, but some features may be limited.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

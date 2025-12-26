@@ -1,0 +1,501 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Architecture &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/custom.css" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Architecture</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/architecture.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="architecture">
+<h1>Architecture<a class="headerlink" href="#architecture" title="Link to this heading"></a></h1>
+<p>High-level architecture of METAINFORMANT.</p>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart LR
+  subgraph CLI
+    A[metainformant.__main__\nargparse CLI]
+  end
+  subgraph Core[Core Utilities]
+    C1[config]
+    C2[io]
+    C3[logging]
+    C4[text]
+    C5[parallel]
+    C6[hash]
+    C7[paths]
+    C8[cache]
+    C9[db]
+  end
+  subgraph DNA
+    D1[sequences]
+    D2[alignment]
+    D3[msa]
+    D4[phylogeny]
+    D5[population]
+    D6[entrez/ncbi]
+    D7[variants]
+  end
+  subgraph RNA
+    R1[amalgkit]
+    R2[workflow]
+    R3[configs]
+  end
+  subgraph GWAS[Genome-Wide Association]
+    G1[quality]
+    G2[structure]
+    G3[association]
+    G4[visualization]
+  end
+  subgraph SingleCell[Single-Cell Genomics]
+    SC1[preprocessing]
+    SC2[dimensionality]
+    SC3[clustering]
+    SC4[trajectory]
+    SC5[visualization]
+    SC6[integration]
+  end
+  subgraph Quality[Quality Control]
+    Q1[fastq]
+  end
+  subgraph Simulation
+    S1[sequences]
+    S2[rna]
+    S3[agents]
+  end
+  subgraph Math
+    M1[price]
+    M2[selection]
+    M3[ddm]
+  end
+  subgraph Viz
+    V1[trees]
+    V2[plots]
+    V3[animations]
+  end
+  subgraph Information[Information Theory]
+    I1[entropy]
+    I2[mutual-information]
+    I3[profile]
+  end
+  subgraph LifeEvents[Life Events]
+    L1[embed]
+    L2[predict]
+    L3[interpret]
+  end
+  subgraph Other
+    O1[protein]
+    O2[ontology]
+    O3[phenotype]
+    O4[epigenome]
+    O5[ecology]
+    O6[ml]
+    O7[multiomics]
+    O8[networks]
+  end
+  A --&gt; D1 &amp; D2 &amp; D3 &amp; D4 &amp; D5
+  A --&gt; R1 &amp; R2
+  A --&gt; G1 &amp; G2 &amp; G3 &amp; G4
+  A --&gt; SC1 &amp; SC2 &amp; SC3 &amp; SC4 &amp; SC5 &amp; SC6
+  A --&gt; Q1
+  A --&gt; S1 &amp; S2 &amp; S3
+  A --&gt; M1 &amp; M2 &amp; M3
+  A --&gt; V1 &amp; V2 &amp; V3
+  A --&gt; I1 &amp; I2 &amp; I3
+  A --&gt; L1 &amp; L2 &amp; L3
+  A --&gt; O1 &amp; O2 &amp; O3 &amp; O4 &amp; O5 &amp; O6 &amp; O7 &amp; O8
+  C1 -.-&gt; A
+  C2 -.-&gt; A
+  C1 -.-&gt; D1
+  C2 -.-&gt; D1
+  C1 -.-&gt; R2
+  C2 -.-&gt; R1
+  C2 -.-&gt; SC1
+  C5 -.-&gt; SC2
+  C8 -.-&gt; SC6
+  C2 -.-&gt; Q1
+  C5 -.-&gt; R2
+  C8 -.-&gt; R2
+  C1 -.-&gt; O6
+  C2 -.-&gt; O6
+  C1 -.-&gt; O7
+  C2 -.-&gt; O7
+  C1 -.-&gt; O8
+  C2 -.-&gt; O8
+</pre></div>
+</div>
+<section id="project-directories-and-conventions">
+<h2>Project directories and conventions<a class="headerlink" href="#project-directories-and-conventions" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">config/</span></code></strong>: Declarative configuration and options for runs. Read by <code class="docutils literal notranslate"><span class="pre">metainformant.core.config</span></code> and consumed across domains. Environment variables may override values.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">data/</span></code></strong>: Canonical datasets and local databases. Treated as read-mostly inputs and long-lived artifacts under versioned subfolders.</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">output/</span></code></strong>: All run and test outputs. Ephemeral, reproducible, safe to delete. Modules must default to writing here unless a user-specified path is provided.</p></li>
+</ul>
+<p>Guidelines:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">core</span></code> owns config loading and path resolution; domain modules do not hardcode absolute paths.</p></li>
+<li><p>Prefer parameters and env variables to override locations, but default to <code class="docutils literal notranslate"><span class="pre">config/</span></code>, <code class="docutils literal notranslate"><span class="pre">data/</span></code>, and <code class="docutils literal notranslate"><span class="pre">output/</span></code> at repo root.</p></li>
+<li><p>Tests and CLI runs should not write outside <code class="docutils literal notranslate"><span class="pre">output/</span></code>.</p></li>
+</ul>
+</section>
+<section id="module-relationships-and-dependencies">
+<h2>Module Relationships and Dependencies<a class="headerlink" href="#module-relationships-and-dependencies" title="Link to this heading"></a></h2>
+<section id="core-dependencies">
+<h3>Core Dependencies<a class="headerlink" href="#core-dependencies" title="Link to this heading"></a></h3>
+<p>All modules depend on <code class="docutils literal notranslate"><span class="pre">core</span></code> utilities:</p>
+<ul class="simple">
+<li><p><strong>config</strong>: Configuration loading and environment variable handling</p></li>
+<li><p><strong>io</strong>: File I/O operations (JSON, CSV, TSV, compressed formats)</p></li>
+<li><p><strong>logging</strong>: Structured logging across all modules</p></li>
+<li><p><strong>paths</strong>: Path validation and containment checks</p></li>
+<li><p><strong>cache</strong>: JSON-based caching for expensive operations</p></li>
+</ul>
+</section>
+<section id="domain-module-dependencies">
+<h3>Domain Module Dependencies<a class="headerlink" href="#domain-module-dependencies" title="Link to this heading"></a></h3>
+<section id="core-module">
+<h4>Core Module<a class="headerlink" href="#core-module" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Purpose</strong>: Shared infrastructure and utilities for all modules</p></li>
+<li><p><strong>Depends on</strong>: None (base module)</p></li>
+<li><p><strong>Used by</strong>: All modules (infrastructure layer)</p></li>
+<li><p><strong>Key Components</strong>:</p>
+<ul>
+<li><p><strong>config</strong>: Configuration loading with environment variable overrides</p></li>
+<li><p><strong>io</strong>: File I/O operations (JSON, CSV, TSV, gzip-aware)</p></li>
+<li><p><strong>logging</strong>: Structured logging with consistent formatting</p></li>
+<li><p><strong>paths</strong>: Path validation and containment checks</p></li>
+<li><p><strong>cache</strong>: JSON-based caching for expensive operations</p></li>
+<li><p><strong>parallel</strong>: Parallel processing utilities</p></li>
+<li><p><strong>hash</strong>: Hashing and checksum functions</p></li>
+<li><p><strong>text</strong>: Text processing utilities</p></li>
+<li><p><strong>db</strong>: Database utilities</p></li>
+</ul>
+</li>
+<li><p><strong>Integrates with</strong>: All domain modules as the foundation layer</p></li>
+</ul>
+</section>
+<section id="dna-module">
+<h4>DNA Module<a class="headerlink" href="#dna-module" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Depends on</strong>: <code class="docutils literal notranslate"><span class="pre">core</span></code> (all utilities)</p></li>
+<li><p><strong>Used by</strong>: <code class="docutils literal notranslate"><span class="pre">gwas</span></code>, <code class="docutils literal notranslate"><span class="pre">rna</span></code> (for genomic coordinates), <code class="docutils literal notranslate"><span class="pre">information</span></code> (sequence analysis)</p></li>
+<li><p><strong>Integrates with</strong>: <code class="docutils literal notranslate"><span class="pre">visualization</span></code> (phylogenetic trees), <code class="docutils literal notranslate"><span class="pre">math.popgen</span></code> (population genetics theory)</p></li>
+</ul>
+</section>
+<section id="rna-module">
+<h4>RNA Module<a class="headerlink" href="#rna-module" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Depends on</strong>: <code class="docutils literal notranslate"><span class="pre">core</span></code>, <code class="docutils literal notranslate"><span class="pre">dna</span></code> (for genomic coordinates)</p></li>
+<li><p><strong>Used by</strong>: <code class="docutils literal notranslate"><span class="pre">multiomics</span></code> (transcriptomics integration)</p></li>
+<li><p><strong>Integrates with</strong>: External <code class="docutils literal notranslate"><span class="pre">amalgkit</span></code> CLI tool</p></li>
+</ul>
+</section>
+<section id="gwas-module">
+<h4>GWAS Module<a class="headerlink" href="#gwas-module" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Depends on</strong>: <code class="docutils literal notranslate"><span class="pre">core</span></code>, <code class="docutils literal notranslate"><span class="pre">dna.variants</span></code>, <code class="docutils literal notranslate"><span class="pre">dna.population</span></code>, <code class="docutils literal notranslate"><span class="pre">math.popgen</span></code>, <code class="docutils literal notranslate"><span class="pre">ml.regression</span></code></p></li>
+<li><p><strong>Used by</strong>: <code class="docutils literal notranslate"><span class="pre">multiomics</span></code> (genomics integration)</p></li>
+<li><p><strong>Integrates with</strong>: <code class="docutils literal notranslate"><span class="pre">visualization</span></code> (Manhattan plots, Q-Q plots), external tools (bcftools, GATK)</p></li>
+</ul>
+</section>
+<section id="protein-module">
+<h4>Protein Module<a class="headerlink" href="#protein-module" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Depends on</strong>: <code class="docutils literal notranslate"><span class="pre">core</span></code></p></li>
+<li><p><strong>Used by</strong>: <code class="docutils literal notranslate"><span class="pre">networks</span></code> (protein-protein interactions), <code class="docutils literal notranslate"><span class="pre">multiomics</span></code> (proteomics integration)</p></li>
+<li><p><strong>Integrates with</strong>: External databases (UniProt, InterPro, AlphaFold, PDB)</p></li>
+</ul>
+</section>
+<section id="single-cell-module">
+<h4>Single-Cell Module<a class="headerlink" href="#single-cell-module" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Depends on</strong>: <code class="docutils literal notranslate"><span class="pre">core</span></code>, <code class="docutils literal notranslate"><span class="pre">rna</span></code> (expression data), <code class="docutils literal notranslate"><span class="pre">ml.dimensionality</span></code></p></li>
+<li><p><strong>Used by</strong>: <code class="docutils literal notranslate"><span class="pre">multiomics</span></code> (single-cell omics integration), <code class="docutils literal notranslate"><span class="pre">information</span></code> (single-cell information analysis)</p></li>
+<li><p><strong>Integrates with</strong>: External tools (scanpy, anndata) when available</p></li>
+</ul>
+</section>
+<section id="multi-omics-module">
+<h4>Multi-Omics Module<a class="headerlink" href="#multi-omics-module" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Depends on</strong>: <code class="docutils literal notranslate"><span class="pre">core</span></code>, <code class="docutils literal notranslate"><span class="pre">dna</span></code>, <code class="docutils literal notranslate"><span class="pre">rna</span></code>, <code class="docutils literal notranslate"><span class="pre">protein</span></code>, <code class="docutils literal notranslate"><span class="pre">singlecell</span></code>, <code class="docutils literal notranslate"><span class="pre">ml.dimensionality</span></code></p></li>
+<li><p><strong>Used by</strong>: Workflow orchestration scripts</p></li>
+<li><p><strong>Integrates with</strong>: All omics modules for cross-platform integration</p></li>
+</ul>
+</section>
+<section id="networks-module">
+<h4>Networks Module<a class="headerlink" href="#networks-module" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Depends on</strong>: <code class="docutils literal notranslate"><span class="pre">core</span></code>, <code class="docutils literal notranslate"><span class="pre">protein</span></code> (PPI networks), <code class="docutils literal notranslate"><span class="pre">ontology</span></code> (functional annotation)</p></li>
+<li><p><strong>Used by</strong>: <code class="docutils literal notranslate"><span class="pre">multiomics</span></code> (network-based integration)</p></li>
+<li><p><strong>Integrates with</strong>: <code class="docutils literal notranslate"><span class="pre">visualization</span></code> (network plots)</p></li>
+</ul>
+</section>
+<section id="information-theory-module">
+<h4>Information Theory Module<a class="headerlink" href="#information-theory-module" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Depends on</strong>: <code class="docutils literal notranslate"><span class="pre">core</span></code></p></li>
+<li><p><strong>Used by</strong>: All modules (can analyze any biological data)</p></li>
+<li><p><strong>Integrates with</strong>: <code class="docutils literal notranslate"><span class="pre">dna</span></code>, <code class="docutils literal notranslate"><span class="pre">rna</span></code>, <code class="docutils literal notranslate"><span class="pre">singlecell</span></code>, <code class="docutils literal notranslate"><span class="pre">multiomics</span></code> (cross-module integration functions)</p></li>
+</ul>
+</section>
+<section id="life-events-module">
+<h4>Life Events Module<a class="headerlink" href="#life-events-module" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Depends on</strong>: <code class="docutils literal notranslate"><span class="pre">core</span></code></p></li>
+<li><p><strong>Used by</strong>: <code class="docutils literal notranslate"><span class="pre">phenotype</span></code> (life course phenotype extraction)</p></li>
+<li><p><strong>Integrates with</strong>: <code class="docutils literal notranslate"><span class="pre">ml</span></code> (sequence models), <code class="docutils literal notranslate"><span class="pre">visualization</span></code> (event timeline plots)</p></li>
+</ul>
+</section>
+<section id="phenotype-module">
+<h4>Phenotype Module<a class="headerlink" href="#phenotype-module" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Depends on</strong>: <code class="docutils literal notranslate"><span class="pre">core</span></code>, <code class="docutils literal notranslate"><span class="pre">life_events</span></code> (optional, for life course integration)</p></li>
+<li><p><strong>Used by</strong>: <code class="docutils literal notranslate"><span class="pre">gwas</span></code> (phenotype-genotype associations)</p></li>
+<li><p><strong>Integrates with</strong>: <code class="docutils literal notranslate"><span class="pre">ontology</span></code> (trait functional annotation)</p></li>
+</ul>
+</section>
+<section id="quality-module">
+<h4>Quality Module<a class="headerlink" href="#quality-module" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Depends on</strong>: <code class="docutils literal notranslate"><span class="pre">core</span></code>, <code class="docutils literal notranslate"><span class="pre">dna.fastq</span></code></p></li>
+<li><p><strong>Used by</strong>: <code class="docutils literal notranslate"><span class="pre">rna</span></code> (FASTQ quality control), <code class="docutils literal notranslate"><span class="pre">gwas</span></code> (variant QC)</p></li>
+<li><p><strong>Integrates with</strong>: External tools (FastQC) when available</p></li>
+</ul>
+</section>
+<section id="math-module">
+<h4>Math Module<a class="headerlink" href="#math-module" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Depends on</strong>: <code class="docutils literal notranslate"><span class="pre">core</span></code></p></li>
+<li><p><strong>Used by</strong>: <code class="docutils literal notranslate"><span class="pre">dna.population</span></code> (population genetics theory), <code class="docutils literal notranslate"><span class="pre">gwas</span></code> (statistical models)</p></li>
+<li><p><strong>Integrates with</strong>: Domain modules for theoretical analysis</p></li>
+</ul>
+</section>
+<section id="visualization-module">
+<h4>Visualization Module<a class="headerlink" href="#visualization-module" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Depends on</strong>: <code class="docutils literal notranslate"><span class="pre">core</span></code> (optional matplotlib/seaborn)</p></li>
+<li><p><strong>Used by</strong>: All modules (plotting support)</p></li>
+<li><p><strong>Integrates with</strong>: Domain-specific visualization (phylogenetic trees, network graphs)</p></li>
+</ul>
+</section>
+<section id="ml-module">
+<h4>ML Module<a class="headerlink" href="#ml-module" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Depends on</strong>: <code class="docutils literal notranslate"><span class="pre">core</span></code></p></li>
+<li><p><strong>Used by</strong>: <code class="docutils literal notranslate"><span class="pre">gwas</span></code> (regression models), <code class="docutils literal notranslate"><span class="pre">singlecell</span></code> (dimensionality reduction), <code class="docutils literal notranslate"><span class="pre">life_events</span></code> (sequence models)</p></li>
+<li><p><strong>Integrates with</strong>: Domain modules for biological data preprocessing</p></li>
+</ul>
+</section>
+<section id="ontology-module">
+<h4>Ontology Module<a class="headerlink" href="#ontology-module" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Depends on</strong>: <code class="docutils literal notranslate"><span class="pre">core</span></code></p></li>
+<li><p><strong>Used by</strong>: <code class="docutils literal notranslate"><span class="pre">networks</span></code> (functional enrichment), <code class="docutils literal notranslate"><span class="pre">phenotype</span></code> (trait annotation)</p></li>
+<li><p><strong>Integrates with</strong>: External databases (Gene Ontology)</p></li>
+</ul>
+</section>
+<section id="epigenome-module">
+<h4>Epigenome Module<a class="headerlink" href="#epigenome-module" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Depends on</strong>: <code class="docutils literal notranslate"><span class="pre">core</span></code>, <code class="docutils literal notranslate"><span class="pre">dna</span></code> (for genomic coordinates)</p></li>
+<li><p><strong>Used by</strong>: <code class="docutils literal notranslate"><span class="pre">multiomics</span></code> (epigenomics integration)</p></li>
+<li><p><strong>Integrates with</strong>: <code class="docutils literal notranslate"><span class="pre">visualization</span></code> (methylation plots)</p></li>
+</ul>
+</section>
+<section id="ecology-module">
+<h4>Ecology Module<a class="headerlink" href="#ecology-module" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Depends on</strong>: <code class="docutils literal notranslate"><span class="pre">core</span></code></p></li>
+<li><p><strong>Used by</strong>: Workflow scripts</p></li>
+<li><p><strong>Integrates with</strong>: <code class="docutils literal notranslate"><span class="pre">math</span></code> (diversity calculations)</p></li>
+</ul>
+</section>
+<section id="simulation-module">
+<h4>Simulation Module<a class="headerlink" href="#simulation-module" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Depends on</strong>: <code class="docutils literal notranslate"><span class="pre">core</span></code></p></li>
+<li><p><strong>Used by</strong>: All modules (for generating synthetic test data)</p></li>
+<li><p><strong>Key Components</strong>:</p>
+<ul>
+<li><p><strong>sequences</strong>: Synthetic sequence generation (DNA, RNA, protein)</p></li>
+<li><p><strong>rna</strong>: RNA expression count simulation</p></li>
+<li><p><strong>agents</strong>: Agent-based modeling and ecosystem simulation</p></li>
+</ul>
+</li>
+<li><p><strong>Integrates with</strong>: All modules for testing and validation purposes</p></li>
+</ul>
+</section>
+</section>
+<section id="common-integration-patterns">
+<h3>Common Integration Patterns<a class="headerlink" href="#common-integration-patterns" title="Link to this heading"></a></h3>
+<section id="multi-omics-integration-workflow">
+<h4>Multi-Omics Integration Workflow<a class="headerlink" href="#multi-omics-integration-workflow" title="Link to this heading"></a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>DNA (genomics) → Multi-Omics
+RNA (transcriptomics) → Multi-Omics  
+Protein (proteomics) → Multi-Omics
+Single-Cell → Multi-Omics
+→ Joint PCA/NMF/CCA
+→ Visualization
+</pre></div>
+</div>
+</section>
+<section id="genotype-phenotype-association">
+<h4>Genotype-Phenotype Association<a class="headerlink" href="#genotype-phenotype-association" title="Link to this heading"></a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>DNA (variants) → GWAS
+Phenotype (traits) → GWAS
+→ Association Testing
+→ Visualization (Manhattan plots)
+</pre></div>
+</div>
+</section>
+<section id="functional-annotation-pipeline">
+<h4>Functional Annotation Pipeline<a class="headerlink" href="#functional-annotation-pipeline" title="Link to this heading"></a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>DNA/RNA/Protein (sequences) → Ontology
+Networks (modules) → Ontology
+→ Enrichment Analysis
+→ Visualization
+</pre></div>
+</div>
+</section>
+<section id="quality-control-pipeline">
+<h4>Quality Control Pipeline<a class="headerlink" href="#quality-control-pipeline" title="Link to this heading"></a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>DNA (FASTQ) → Quality
+RNA (FASTQ) → Quality
+→ QC Metrics
+→ Filtering
+→ Downstream Analysis
+</pre></div>
+</div>
+</section>
+</section>
+<section id="data-flow-patterns">
+<h3>Data Flow Patterns<a class="headerlink" href="#data-flow-patterns" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Input → Processing → Output</strong>: Most modules follow this pattern using <code class="docutils literal notranslate"><span class="pre">core.io</span></code> for I/O</p></li>
+<li><p><strong>Configuration → Workflow → Results</strong>: Workflow modules use <code class="docutils literal notranslate"><span class="pre">core.config</span></code> for configuration</p></li>
+<li><p><strong>Cache → Compute → Cache</strong>: Expensive operations use <code class="docutils literal notranslate"><span class="pre">core.cache</span></code> for results</p></li>
+<li><p><strong>Logging</strong>: All modules use <code class="docutils literal notranslate"><span class="pre">core.logging</span></code> for consistent log messages</p></li>
+</ol>
+<p>See also: <a class="reference internal" href="cli.html"><span class="std std-doc">CLI</span></a>, <a class="reference internal" href="core/README.html"><span class="std std-doc">Core</span></a>.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,748 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>amalgkit metadata: NCBI SRA Metadata Retrieval &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">amalgkit metadata: NCBI SRA Metadata Retrieval</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/rna/amalgkit/steps/01_metadata.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="amalgkit-metadata-ncbi-sra-metadata-retrieval">
+<h1>amalgkit metadata: NCBI SRA Metadata Retrieval<a class="headerlink" href="#amalgkit-metadata-ncbi-sra-metadata-retrieval" title="Link to this heading"></a></h1>
+<section id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Link to this heading"></a></h2>
+<p>Queries NCBI SRA database using Entrez search to discover and retrieve metadata for RNA-seq samples. This is the <strong>first step</strong> in the amalgkit workflow, identifying available datasets for downstream analysis.</p>
+</section>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">metadata</span></code> step:</p>
+<ul class="simple">
+<li><p>Searches NCBI SRA database using custom Entrez queries</p></li>
+<li><p>Retrieves comprehensive metadata for matching samples</p></li>
+<li><p>Generates standardized metadata tables for downstream processing</p></li>
+<li><p>Supports species-specific and platform-specific filtering</p></li>
+</ul>
+</section>
+<section id="function-signature">
+<h2>Function Signature<a class="headerlink" href="#function-signature" title="Link to this heading"></a></h2>
+<section id="python-api">
+<h3>Python API<a class="headerlink" href="#python-api" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna</span><span class="w"> </span><span class="kn">import</span> <span class="n">amalgkit</span>
+
+<span class="c1"># High-level wrapper</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">metadata</span><span class="p">(</span>
+    <span class="n">params</span><span class="p">:</span> <span class="n">AmalgkitParams</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">CompletedProcess</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+
+<span class="c1"># Step runner (low-level)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna.steps.metadata</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_metadata</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">run_metadata</span><span class="p">(</span>
+    <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">work_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">log_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">check</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">CompletedProcess</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+</pre></div>
+</div>
+<p><strong>See Also</strong>: <a class="reference internal" href="../../API.html#metadata"><span class="std std-ref">API Reference</span></a> | <a class="reference internal" href="../FUNCTIONS.html"><span class="std std-doc">Function Index</span></a></p>
+</section>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
+<section id="basic-usage">
+<h3>Basic Usage<a class="headerlink" href="#basic-usage" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>amalgkit<span class="w"> </span>metadata<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--search_string<span class="w"> </span><span class="s1">&#39;&quot;Apis mellifera&quot;[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--entrez_email<span class="w"> </span>your.email@example.com
+</pre></div>
+</div>
+</section>
+<section id="id1">
+<h3>Python API<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna</span><span class="w"> </span><span class="kn">import</span> <span class="n">amalgkit</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">amalgkit</span><span class="o">.</span><span class="n">metadata</span><span class="p">(</span>
+    <span class="n">out_dir</span><span class="o">=</span><span class="s2">&quot;output/amalgkit/work&quot;</span><span class="p">,</span>
+    <span class="n">search_string</span><span class="o">=</span><span class="s1">&#39;&quot;Apis mellifera&quot;[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]&#39;</span><span class="p">,</span>
+    <span class="n">entrez_email</span><span class="o">=</span><span class="s2">&quot;your.email@example.com&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="configuration-file">
+<h3>Configuration File<a class="headerlink" href="#configuration-file" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">metadata</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/amellifera/work</span>
+<span class="w">    </span><span class="nt">search_string</span><span class="p">:</span><span class="w"> </span><span class="s">&#39;&quot;Apis</span><span class="nv"> </span><span class="s">mellifera&quot;[Organism]</span><span class="nv"> </span><span class="s">AND</span><span class="nv"> </span><span class="s">RNA-Seq[Strategy]</span><span class="nv"> </span><span class="s">AND</span><span class="nv"> </span><span class="s">Illumina[Platform]&#39;</span>
+<span class="w">    </span><span class="nt">entrez_email</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">your.email@example.com</span>
+<span class="w">    </span><span class="nt">redo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">yes</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Link to this heading"></a></h2>
+<section id="required-parameters">
+<h3>Required Parameters<a class="headerlink" href="#required-parameters" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--search_string</span></code></p></td>
+<td><p>PATH/STR</p></td>
+<td><p><strong>Required</strong>. Entrez search string to identify SRA entries. See <a class="reference external" href="https://www.ncbi.nlm.nih.gov/books/NBK25499/">NCBI E-utilities documentation</a> for syntax.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="optional-parameters">
+<h3>Optional Parameters<a class="headerlink" href="#optional-parameters" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--out_dir</span></code></p></td>
+<td><p>PATH</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">./</span></code></p></td>
+<td><p>Directory where intermediate and output files are generated.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--redo</span></code></p></td>
+<td><p>yes/no</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">no</span></code></p></td>
+<td><p>Force re-analysis even if previous output files exist. Use <code class="docutils literal notranslate"><span class="pre">yes</span></code> to fetch latest data.</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--entrez_email</span></code></p></td>
+<td><p>email</p></td>
+<td><p>``</p></td>
+<td><p>Your email address for NCBI Entrez API (recommended for rate limiting).</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--resolve_names</span></code></p></td>
+<td><p>yes/no</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">yes</span></code></p></td>
+<td><p>Resolve scientific names by translating taxid to scientific names using NCBI taxonomy. Original names preserved in <code class="docutils literal notranslate"><span class="pre">scientific_name_original</span></code> column.</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="search-string-examples">
+<h2>Search String Examples<a class="headerlink" href="#search-string-examples" title="Link to this heading"></a></h2>
+<section id="species-specific-searches">
+<h3>Species-Specific Searches<a class="headerlink" href="#species-specific-searches" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Honey bee RNA-seq data</span>
+--search_string<span class="w"> </span><span class="s1">&#39;&quot;Apis mellifera&quot;[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]&#39;</span>
+
+<span class="c1"># Red harvester ant</span>
+--search_string<span class="w"> </span><span class="s1">&#39;&quot;Pogonomyrmex barbatus&quot;[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]&#39;</span>
+
+<span class="c1"># Human samples</span>
+--search_string<span class="w"> </span><span class="s1">&#39;&quot;Homo sapiens&quot;[Organism] AND RNA-Seq[Strategy]&#39;</span>
+</pre></div>
+</div>
+</section>
+<section id="advanced-filtering">
+<h3>Advanced Filtering<a class="headerlink" href="#advanced-filtering" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Specific tissue type</span>
+--search_string<span class="w"> </span><span class="s1">&#39;&quot;Apis mellifera&quot;[Organism] AND RNA-Seq[Strategy] AND brain[Title]&#39;</span>
+
+<span class="c1"># Date-restricted search</span>
+--search_string<span class="w"> </span><span class="s1">&#39;&quot;Apis mellifera&quot;[Organism] AND RNA-Seq[Strategy] AND 2020:2025[Publication Date]&#39;</span>
+
+<span class="c1"># Paired-end only</span>
+--search_string<span class="w"> </span><span class="s1">&#39;&quot;Apis mellifera&quot;[Organism] AND RNA-Seq[Strategy] AND paired[Layout]&#39;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="input-requirements">
+<h2>Input Requirements<a class="headerlink" href="#input-requirements" title="Link to this heading"></a></h2>
+<section id="prerequisites">
+<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Network Access</strong>: Active internet connection to NCBI servers</p></li>
+<li><p><strong>Email (Recommended)</strong>: For NCBI rate limiting compliance</p></li>
+<li><p><strong>Search String</strong>: Valid Entrez search query</p></li>
+</ul>
+</section>
+<section id="system-dependencies">
+<h3>System Dependencies<a class="headerlink" href="#system-dependencies" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Python packages: <code class="docutils literal notranslate"><span class="pre">biopython</span></code> (for Entrez API)</p></li>
+<li><p>Network: HTTPS access to <code class="docutils literal notranslate"><span class="pre">eutils.ncbi.nlm.nih.gov</span></code></p></li>
+</ul>
+</section>
+</section>
+<section id="output-files">
+<h2>Output Files<a class="headerlink" href="#output-files" title="Link to this heading"></a></h2>
+<section id="primary-output">
+<h3>Primary Output<a class="headerlink" href="#primary-output" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>out_dir/metadata/
+└── metadata.tsv
+</pre></div>
+</div>
+<p><strong><code class="docutils literal notranslate"><span class="pre">metadata.tsv</span></code></strong>: Tab-delimited table with columns:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Run</span></code> - SRA run accession (e.g., SRR12345678)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ReleaseDate</span></code> - Public release date</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">LoadDate</span></code> - Database load date</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">spots</span></code> - Number of spots (read pairs/reads)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bases</span></code> - Total base count</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">spots_with_mates</span></code> - Paired-end spots</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">avgLength</span></code> - Average read length</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">size_MB</span></code> - File size in megabytes</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">download_path</span></code> - SRA download URL</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Experiment</span></code> - SRA experiment accession</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">LibraryName</span></code> - Library identifier</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">LibraryStrategy</span></code> - Sequencing strategy (RNA-Seq)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">LibrarySelection</span></code> - Selection method</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">LibrarySource</span></code> - Source type (TRANSCRIPTOMIC)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">LibraryLayout</span></code> - SINGLE or PAIRED</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">InsertSize</span></code> - Insert size (paired-end)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">InsertDev</span></code> - Insert size std deviation</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Platform</span></code> - Sequencing platform (ILLUMINA)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Model</span></code> - Instrument model</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SRAStudy</span></code> - Study accession</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">BioProject</span></code> - BioProject ID</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Study_Pubmed_id</span></code> - PubMed ID</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ProjectID</span></code> - NCBI Project ID</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Sample</span></code> - Sample accession</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">BioSample</span></code> - BioSample ID</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SampleType</span></code> - Sample type</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">TaxID</span></code> - NCBI Taxonomy ID</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ScientificName</span></code> - Species scientific name (resolved from taxid if <code class="docutils literal notranslate"><span class="pre">--resolve_names</span> <span class="pre">yes</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">scientific_name_original</span></code> - Original scientific name from metadata (preserved when <code class="docutils literal notranslate"><span class="pre">--resolve_names</span> <span class="pre">yes</span></code>)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">taxid_domain</span></code>, <code class="docutils literal notranslate"><span class="pre">taxid_kingdom</span></code>, <code class="docutils literal notranslate"><span class="pre">taxid_phylum</span></code>, <code class="docutils literal notranslate"><span class="pre">taxid_class</span></code>, <code class="docutils literal notranslate"><span class="pre">taxid_order</span></code>, <code class="docutils literal notranslate"><span class="pre">taxid_family</span></code>, <code class="docutils literal notranslate"><span class="pre">taxid_genus</span></code>, <code class="docutils literal notranslate"><span class="pre">taxid_species</span></code> - Standard rank taxids (v0.12.20+)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SampleName</span></code> - Sample name</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">g1k_pop_code</span></code> - Population code (if applicable)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">source</span></code> - Sample source</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">g1k_analysis_group</span></code> - Analysis group</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Subject_ID</span></code> - Subject identifier</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Sex</span></code> - Biological sex</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Disease</span></code> - Disease status</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Tumor</span></code> - Tumor indicator</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Affection_Status</span></code> - Phenotype status</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Analyte_Type</span></code> - Analyte type</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Histological_Type</span></code> - Tissue histology</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Body_Site</span></code> - Anatomical site</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">CenterName</span></code> - Sequencing center</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Submission</span></code> - Submission accession</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dbgap_study_accession</span></code> - dbGaP study ID</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Consent</span></code> - Data use consent</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">RunHash</span></code> - Run hash</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ReadHash</span></code> - Read hash</p></li>
+</ul>
+</section>
+<section id="additional-files">
+<h3>Additional Files<a class="headerlink" href="#additional-files" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>out_dir/metadata/
+├── metadata.tsv                    # Primary output
+├── metadata.filtered.tissue.tsv    # Tissue-filtered (if filters applied)
+└── metadata_original.tsv           # Backup of original query results
+</pre></div>
+</div>
+</section>
+</section>
+<section id="common-use-cases">
+<h2>Common Use Cases<a class="headerlink" href="#common-use-cases" title="Link to this heading"></a></h2>
+<section id="initial-species-discovery">
+<h3>1. Initial Species Discovery<a class="headerlink" href="#initial-species-discovery" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Find all available RNA-seq data for a species</span>
+amalgkit<span class="w"> </span>metadata<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/discovery<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--search_string<span class="w"> </span><span class="s1">&#39;&quot;Camponotus floridanus&quot;[Organism] AND RNA-Seq[Strategy]&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--entrez_email<span class="w"> </span>your.email@example.com
+</pre></div>
+</div>
+<p><strong>Expected Outcome</strong>: Discovers all public RNA-seq datasets for the species.</p>
+</section>
+<section id="tissue-specific-analysis">
+<h3>2. Tissue-Specific Analysis<a class="headerlink" href="#tissue-specific-analysis" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Target specific tissues</span>
+amalgkit<span class="w"> </span>metadata<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/brain_analysis<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--search_string<span class="w"> </span><span class="s1">&#39;&quot;Apis mellifera&quot;[Organism] AND RNA-Seq[Strategy] AND (brain[Title] OR head[Title])&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--entrez_email<span class="w"> </span>your.email@example.com
+</pre></div>
+</div>
+<p><strong>Expected Outcome</strong>: Retrieves metadata for brain/head-specific samples only.</p>
+</section>
+<section id="update-existing-metadata">
+<h3>3. Update Existing Metadata<a class="headerlink" href="#update-existing-metadata" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Force refresh to get latest uploads</span>
+amalgkit<span class="w"> </span>metadata<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--search_string<span class="w"> </span><span class="s1">&#39;&quot;Species name&quot;[Organism] AND RNA-Seq[Strategy]&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--redo<span class="w"> </span>yes<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--entrez_email<span class="w"> </span>your.email@example.com
+</pre></div>
+</div>
+<p><strong>Expected Outcome</strong>: Downloads fresh metadata, replacing cached results.</p>
+</section>
+</section>
+<section id="workflow-integration">
+<h2>Workflow Integration<a class="headerlink" href="#workflow-integration" title="Link to this heading"></a></h2>
+<section id="position-in-pipeline">
+<h3>Position in Pipeline<a class="headerlink" href="#position-in-pipeline" title="Link to this heading"></a></h3>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart LR
+    A[metadata] --&gt; B[config]
+    A --&gt; C[select]
+    C --&gt; D[getfastq]
+</pre></div>
+</div>
+<p><strong>metadata</strong> is always the <strong>first step</strong> in the workflow.</p>
+</section>
+<section id="downstream-dependencies">
+<h3>Downstream Dependencies<a class="headerlink" href="#downstream-dependencies" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Step</p></th>
+<th class="head"><p>Dependency</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">config</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">metadata.tsv</span></code></p></td>
+<td><p>Uses species list to generate config files</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">select</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">metadata.tsv</span></code></p></td>
+<td><p>Filters samples based on quality metrics</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">integrate</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">metadata.tsv</span></code></p></td>
+<td><p>Merges local FASTQ info into metadata</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">getfastq</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">metadata.tsv</span></code> (via select)</p></td>
+<td><p>Downloads SRA files listed in metadata</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="performance-considerations">
+<h2>Performance Considerations<a class="headerlink" href="#performance-considerations" title="Link to this heading"></a></h2>
+<section id="runtime">
+<h3>Runtime<a class="headerlink" href="#runtime" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Small queries</strong> (&lt;100 samples): 10-30 seconds</p></li>
+<li><p><strong>Medium queries</strong> (100-1000 samples): 1-5 minutes</p></li>
+<li><p><strong>Large queries</strong> (1000-10000 samples): 5-30 minutes</p></li>
+<li><p><strong>Very large queries</strong> (&gt;10000 samples): May require NCBI rate limiting handling</p></li>
+</ul>
+</section>
+<section id="rate-limiting">
+<h3>Rate Limiting<a class="headerlink" href="#rate-limiting" title="Link to this heading"></a></h3>
+<p>NCBI enforces request rate limits:</p>
+<ul class="simple">
+<li><p><strong>Without email</strong>: 3 requests/second</p></li>
+<li><p><strong>With email</strong>: 10 requests/second</p></li>
+<li><p><strong>Recommendation</strong>: Always provide <code class="docutils literal notranslate"><span class="pre">--entrez_email</span></code></p></li>
+</ul>
+</section>
+<section id="caching-behavior">
+<h3>Caching Behavior<a class="headerlink" href="#caching-behavior" title="Link to this heading"></a></h3>
+<p>When <code class="docutils literal notranslate"><span class="pre">--redo</span> <span class="pre">no</span></code> (default):</p>
+<ul class="simple">
+<li><p>Checks for existing <code class="docutils literal notranslate"><span class="pre">metadata.tsv</span></code></p></li>
+<li><p>Skips download if file exists</p></li>
+<li><p><strong>Fast re-runs</strong>: &lt;1 second</p></li>
+</ul>
+<p>When <code class="docutils literal notranslate"><span class="pre">--redo</span> <span class="pre">yes</span></code>:</p>
+<ul class="simple">
+<li><p>Always downloads fresh data</p></li>
+<li><p>Overwrites existing metadata</p></li>
+<li><p><strong>Use for</strong>: Getting latest submissions</p></li>
+</ul>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="issue-no-samples-found">
+<h3>Issue: No samples found<a class="headerlink" href="#issue-no-samples-found" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Error: Search returns zero results</span>
+</pre></div>
+</div>
+<p><strong>Diagnosis</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Test search at NCBI web interface</span>
+<span class="c1"># Visit: https://www.ncbi.nlm.nih.gov/sra/</span>
+<span class="c1"># Paste your search string</span>
+</pre></div>
+</div>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic simple">
+<li><p>Verify species name spelling (use NCBI taxonomy)</p></li>
+<li><p>Check for available RNA-seq data on NCBI SRA</p></li>
+<li><p>Broaden search criteria (remove filters)</p></li>
+<li><p>Try alternative search terms</p></li>
+</ol>
+</section>
+<section id="issue-ncbi-connection-timeout">
+<h3>Issue: NCBI connection timeout<a class="headerlink" href="#issue-ncbi-connection-timeout" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">urllib</span><span class="o">.</span><span class="n">error</span><span class="o">.</span><span class="n">URLError</span><span class="p">:</span> <span class="o">&lt;</span><span class="n">urlopen</span> <span class="n">error</span> <span class="p">[</span><span class="n">Errno</span> <span class="mi">60</span><span class="p">]</span> <span class="n">Operation</span> <span class="n">timed</span> <span class="n">out</span><span class="o">&gt;</span>
+</pre></div>
+</div>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic simple">
+<li><p>Check internet connectivity</p></li>
+<li><p>Retry with <code class="docutils literal notranslate"><span class="pre">--redo</span> <span class="pre">yes</span></code></p></li>
+<li><p>Verify firewall settings allow HTTPS to <code class="docutils literal notranslate"><span class="pre">eutils.ncbi.nlm.nih.gov</span></code></p></li>
+<li><p>Try at different time (NCBI maintenance windows)</p></li>
+</ol>
+</section>
+<section id="issue-rate-limiting-error">
+<h3>Issue: Rate limiting error<a class="headerlink" href="#issue-rate-limiting-error" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">HTTP</span> <span class="n">Error</span> <span class="mi">429</span><span class="p">:</span> <span class="n">Too</span> <span class="n">Many</span> <span class="n">Requests</span>
+</pre></div>
+</div>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic simple">
+<li><p>Add <code class="docutils literal notranslate"><span class="pre">--entrez_email</span></code> parameter</p></li>
+<li><p>Reduce query complexity</p></li>
+<li><p>Wait 1 minute and retry</p></li>
+<li><p>Break into smaller date-range queries</p></li>
+</ol>
+</section>
+<section id="issue-empty-metadata-tsv-generated">
+<h3>Issue: Empty metadata.tsv generated<a class="headerlink" href="#issue-empty-metadata-tsv-generated" title="Link to this heading"></a></h3>
+<p><strong>Diagnosis</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check file size</span>
+wc<span class="w"> </span>-l<span class="w"> </span>out_dir/metadata/metadata.tsv
+<span class="c1"># Should show &gt; 1 (header + data rows)</span>
+</pre></div>
+</div>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic simple">
+<li><p>Verify search string returns results on NCBI web interface</p></li>
+<li><p>Check for API access issues (test with simple query)</p></li>
+<li><p>Inspect stderr logs for Entrez errors</p></li>
+<li><p>Try with <code class="docutils literal notranslate"><span class="pre">--redo</span> <span class="pre">yes</span></code> to force refresh</p></li>
+</ol>
+</section>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<section id="always-provide-email">
+<h3>1. Always Provide Email<a class="headerlink" href="#always-provide-email" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Good: Enables higher rate limits</span>
+--entrez_email<span class="w"> </span>your.email@example.com
+
+<span class="c1"># Bad: Subject to strict rate limiting</span>
+<span class="c1"># (no email parameter)</span>
+</pre></div>
+</div>
+</section>
+<section id="use-specific-searches">
+<h3>2. Use Specific Searches<a class="headerlink" href="#use-specific-searches" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Good: Precise, fast queries</span>
+--search_string<span class="w"> </span><span class="s1">&#39;&quot;Apis mellifera&quot;[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]&#39;</span>
+
+<span class="c1"># Less optimal: Very broad, slow queries</span>
+--search_string<span class="w"> </span><span class="s1">&#39;RNA-Seq[Strategy]&#39;</span>
+</pre></div>
+</div>
+</section>
+<section id="enable-redo-for-fresh-data">
+<h3>3. Enable Redo for Fresh Data<a class="headerlink" href="#enable-redo-for-fresh-data" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># For production runs: get latest data</span>
+--redo<span class="w"> </span>yes
+
+<span class="c1"># For development/testing: use cached</span>
+--redo<span class="w"> </span>no
+</pre></div>
+</div>
+</section>
+<section id="validate-metadata-after-download">
+<h3>4. Validate Metadata After Download<a class="headerlink" href="#validate-metadata-after-download" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check sample count</span>
+wc<span class="w"> </span>-l<span class="w"> </span>output/amalgkit/work/metadata/metadata.tsv
+
+<span class="c1"># Inspect first few samples</span>
+head<span class="w"> </span>-20<span class="w"> </span>output/amalgkit/work/metadata/metadata.tsv
+
+<span class="c1"># Check for specific columns</span>
+head<span class="w"> </span>-1<span class="w"> </span>output/amalgkit/work/metadata/metadata.tsv<span class="w"> </span><span class="p">|</span><span class="w"> </span>tr<span class="w"> </span><span class="s1">&#39;\t&#39;</span><span class="w"> </span><span class="s1">&#39;\n&#39;</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="real-world-examples">
+<h2>Real-World Examples<a class="headerlink" href="#real-world-examples" title="Link to this heading"></a></h2>
+<section id="example-1-apis-mellifera-honey-bee">
+<h3>Example 1: Apis mellifera (Honey Bee)<a class="headerlink" href="#example-1-apis-mellifera-honey-bee" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>amalgkit<span class="w"> </span>metadata<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/amellifera/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--search_string<span class="w"> </span><span class="s1">&#39;&quot;Apis mellifera&quot;[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--entrez_email<span class="w"> </span>research@example.com<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--redo<span class="w"> </span>yes
+</pre></div>
+</div>
+<p><strong>Result</strong>: Retrieved 6,606 samples (as of Oct 2025)</p>
+</section>
+<section id="example-2-pogonomyrmex-barbatus-red-harvester-ant">
+<h3>Example 2: Pogonomyrmex barbatus (Red Harvester Ant)<a class="headerlink" href="#example-2-pogonomyrmex-barbatus-red-harvester-ant" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>amalgkit<span class="w"> </span>metadata<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/pbarbatus/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--search_string<span class="w"> </span><span class="s1">&#39;&quot;Pogonomyrmex barbatus&quot;[Organism] AND RNA-Seq[Strategy]&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--entrez_email<span class="w"> </span>research@example.com
+</pre></div>
+</div>
+<p><strong>Result</strong>: Retrieved 120 samples, filtered to 83 brain samples</p>
+</section>
+<section id="example-3-multi-species-comparative">
+<h3>Example 3: Multi-Species Comparative<a class="headerlink" href="#example-3-multi-species-comparative" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna</span><span class="w"> </span><span class="kn">import</span> <span class="n">amalgkit</span>
+
+<span class="n">species_list</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;Apis mellifera&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Bombus terrestris&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Bombus impatiens&quot;</span>
+<span class="p">]</span>
+
+<span class="k">for</span> <span class="n">species</span> <span class="ow">in</span> <span class="n">species_list</span><span class="p">:</span>
+    <span class="n">search</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;&quot;</span><span class="si">{</span><span class="n">species</span><span class="si">}</span><span class="s1">&quot;[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]&#39;</span>
+    <span class="n">amalgkit</span><span class="o">.</span><span class="n">metadata</span><span class="p">(</span>
+        <span class="n">out_dir</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;output/amalgkit/</span><span class="si">{</span><span class="n">species</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span><span class="w"> </span><span class="s1">&#39;_&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="si">}</span><span class="s2">/work&quot;</span><span class="p">,</span>
+        <span class="n">search_string</span><span class="o">=</span><span class="n">search</span><span class="p">,</span>
+        <span class="n">entrez_email</span><span class="o">=</span><span class="s2">&quot;research@example.com&quot;</span>
+    <span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Result</strong>: Retrieves metadata for 3 bee species for comparative analysis.</p>
+</section>
+</section>
+<section id="integration-with-metainformant-workflow">
+<h2>Integration with METAINFORMANT Workflow<a class="headerlink" href="#integration-with-metainformant-workflow" title="Link to this heading"></a></h2>
+<section id="automatic-metadata-handling">
+<h3>Automatic Metadata Handling<a class="headerlink" href="#automatic-metadata-handling" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_workflow_config</span><span class="p">,</span> <span class="n">execute_workflow</span>
+
+<span class="c1"># Load configuration</span>
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">load_workflow_config</span><span class="p">(</span><span class="s2">&quot;config/amalgkit_amellifera.yaml&quot;</span><span class="p">)</span>
+
+<span class="c1"># Execute metadata step (automatic in workflow)</span>
+<span class="c1"># Run just the metadata stage via the CLI orchestrator:</span>
+<span class="c1"># (This runs the real `amalgkit metadata` command.)</span>
+<span class="c1">#</span>
+<span class="c1"># If you want to run only metadata, invoke the workflow runner with a single step:</span>
+<span class="c1">#   python3 scripts/rna/run_workflow.py &lt;config&gt; --steps metadata</span>
+
+<span class="c1"># Metadata automatically available for downstream steps</span>
+</pre></div>
+</div>
+</section>
+<section id="metadata-filtering-in-workflow">
+<h3>Metadata Filtering in Workflow<a class="headerlink" href="#metadata-filtering-in-workflow" title="Link to this heading"></a></h3>
+<p>The workflow automatically applies filters after metadata retrieval:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># config/amalgkit_amellifera.yaml</span>
+<span class="nt">filters</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">require_tissue</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span><span class="w">           </span><span class="c1"># Only samples with tissue annotations</span>
+<span class="w">  </span><span class="nt">min_spots</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10000000</span><span class="w">           </span><span class="c1"># Minimum 10M reads</span>
+<span class="w">  </span><span class="nt">library_layout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">PAIRED</span><span class="w">         </span><span class="c1"># Paired-end only</span>
+<span class="w">  </span><span class="nt">platform</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">Illumina</span><span class="w">            </span><span class="c1"># Illumina platform only</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>NCBI E-utilities</strong>: https://www.ncbi.nlm.nih.gov/books/NBK25499/</p></li>
+<li><p><strong>SRA Database</strong>: https://www.ncbi.nlm.nih.gov/sra/</p></li>
+<li><p><strong>Entrez Search Examples</strong>: https://www.ncbi.nlm.nih.gov/books/NBK3837/</p></li>
+<li><p><strong>METAINFORMANT RNA Workflow</strong>: <code class="docutils literal notranslate"><span class="pre">docs/rna/workflow.md</span></code></p></li>
+</ul>
+</section>
+<section id="see-also">
+<h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<section id="related-steps">
+<h3>Related Steps<a class="headerlink" href="#related-steps" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><a class="reference internal" href="#config.md"><span class="xref myst">config.md</span></a></strong> - Next: Generate configuration files</p></li>
+<li><p><strong><a class="reference internal" href="#select.md"><span class="xref myst">select.md</span></a></strong> - Next: Filter samples by quality</p></li>
+</ul>
+</section>
+<section id="documentation">
+<h3>Documentation<a class="headerlink" href="#documentation" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><a class="reference internal" href="../../API.html#metadata"><span class="std std-ref">API Reference</span></a></strong> - Complete function documentation</p></li>
+<li><p><strong><a class="reference internal" href="../FUNCTIONS.html"><span class="std std-doc">Function Index</span></a></strong> - Quick function lookup</p></li>
+<li><p><strong><a class="reference internal" href="../amalgkit.html"><span class="std std-doc">Pipeline Overview</span></a></strong> - Complete pipeline documentation</p></li>
+<li><p><strong><a class="reference internal" href="README.html"><span class="std std-doc">Steps Index</span></a></strong> - All step documentation</p></li>
+<li><p><strong><a class="reference internal" href="../../workflow.html"><span class="std std-doc">Workflow Guide</span></a></strong> - Workflow planning and execution</p></li>
+<li><p><strong><a class="reference internal" href="../../README.html"><span class="std std-doc">Main Index</span></a></strong> - RNA domain master index</p></li>
+</ul>
+<hr class="docutils" />
+<p><strong>Last Updated</strong>: November 11, 2025<br />
+<strong>AMALGKIT Version</strong>: 0.12.20<br />
+<strong>Status</strong>: ✅ Production-ready, comprehensively tested</p>
+</section>
+</section>
+<section id="new-features-in-v0-12-20">
+<h2>New Features in v0.12.20<a class="headerlink" href="#new-features-in-v0-12-20" title="Link to this heading"></a></h2>
+<section id="scientific-name-resolution-resolve-names">
+<h3>Scientific Name Resolution (<code class="docutils literal notranslate"><span class="pre">--resolve_names</span></code>)<a class="headerlink" href="#scientific-name-resolution-resolve-names" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">--resolve_names</span></code> option (default: <code class="docutils literal notranslate"><span class="pre">yes</span></code>) resolves scientific names by translating taxonomy IDs to standardized scientific names using NCBI’s taxonomy database. This ensures consistent naming even when metadata contains synonyms or outdated names.</p>
+<p><strong>Example</strong>: If metadata contains “Bergera koenigii” (synonym), it will be resolved to “Murraya koenigii” based on the taxonomy ID, with the original name preserved in <code class="docutils literal notranslate"><span class="pre">scientific_name_original</span></code>.</p>
+<p><strong>Usage</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Enable name resolution (default)</span>
+amalgkit<span class="w"> </span>metadata<span class="w"> </span>--resolve_names<span class="w"> </span>yes<span class="w"> </span>--search_string<span class="w"> </span>...
+
+<span class="c1"># Disable name resolution (use original names)</span>
+amalgkit<span class="w"> </span>metadata<span class="w"> </span>--resolve_names<span class="w"> </span>no<span class="w"> </span>--search_string<span class="w"> </span>...
+</pre></div>
+</div>
+</section>
+<section id="standard-rank-taxids">
+<h3>Standard Rank Taxids<a class="headerlink" href="#standard-rank-taxids" title="Link to this heading"></a></h3>
+<p>Metadata now includes taxonomy IDs for standard taxonomic ranks:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">taxid_domain</span></code> - Domain-level taxid</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">taxid_kingdom</span></code> - Kingdom-level taxid</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">taxid_phylum</span></code> - Phylum-level taxid</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">taxid_class</span></code> - Class-level taxid</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">taxid_order</span></code> - Order-level taxid</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">taxid_family</span></code> - Family-level taxid</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">taxid_genus</span></code> - Genus-level taxid</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">taxid_species</span></code> - Species-level taxid</p></li>
+</ul>
+<p>These columns are automatically populated from the NCBI taxonomy hierarchy and enable filtering and grouping at any taxonomic rank.</p>
+<p><strong>Reference</strong>: <a class="reference external" href="https://github.com/kfuku52/amalgkit/pull/162">GitHub PR #162</a></p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

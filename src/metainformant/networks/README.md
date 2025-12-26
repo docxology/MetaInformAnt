@@ -45,16 +45,200 @@ graph TB
     Info_Mod --> Graph
 ```
 
-### Network Analysis Workflow
+### Network Construction Pipeline
 
 ```mermaid
-flowchart LR
-    Start[Input Data] --> Build[Build Network]
-    Build --> Analyze[Analyze Topology]
-    Analyze --> Communities[Detect Communities]
-    Communities --> Enrich[Functional Enrichment]
-    Enrich --> Visualize[Visualize]
-    Visualize --> Output[Results]
+graph TD
+    A[Interaction Data] --> B{Data Source}
+    B -->|PPI Database| C[Parse PPI Interactions]
+    B -->|Expression Data| D[Infer Regulatory Networks]
+    B -->|Pathway DB| E[Load Pathway Interactions]
+    B -->|Literature| F[Extract Literature Interactions]
+
+    C --> G[Create Network Graph]
+    D --> G
+    E --> G
+    F --> G
+
+    G --> H[Add Node Attributes]
+    G --> I[Add Edge Attributes]
+
+    H --> J[Validate Network]
+    I --> J
+
+    J --> K{Clean Network?}
+    K -->|Yes| L[Remove Isolates]
+    K -->|No| M[Keep Original]
+
+    L --> N[Final Network]
+    M --> N
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style G fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style N fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Data Formats"
+        O[TSV/CSV] -.-> C
+        P[GMT Files] -.-> E
+        Q[PubMed] -.-> F
+        R[STRING DB] -.-> C
+    end
+
+    subgraph "Network Types"
+        S[PPI Networks] -.-> N
+        T[Regulatory] -.-> N
+        U[Metabolic] -.-> N
+        V[Co-expression] -.-> N
+    end
+```
+
+### Community Detection Framework
+
+```mermaid
+graph TD
+    A[Network Graph] --> B{Community Method}
+    B -->|Modularity| C[Louvain Algorithm]
+    B -->|Label Propagation| D[Label Propagation]
+    B -->|Walktrap| E[Walktrap Algorithm]
+    B -->|Infomap| F[Infomap Algorithm]
+
+    C --> G[Optimize Modularity]
+    D --> H[Propagate Labels]
+    E --> I[Random Walks]
+    F --> J[Information Theory]
+
+    G --> K[Community Assignment]
+    H --> K
+    I --> K
+    J --> K
+
+    K --> L[Community Statistics]
+    L --> M[Community Quality Metrics]
+    M --> N[Modularity Score]
+    M --> O[Conductance]
+
+    N --> P[Algorithm Comparison]
+    O --> P
+
+    P --> Q[Best Communities]
+    Q --> R[Functional Enrichment]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style K fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Quality Metrics"
+        S[Modularity Q] -.-> N
+        T[NMI Score] -.-> P
+        U[ARI Score] -.-> P
+    end
+
+    subgraph "Applications"
+        V[Protein Complexes] -.-> R
+        W[Functional Modules] -.-> R
+        X[Disease Pathways] -.-> R
+    end
+```
+
+### Network Topology Analysis
+
+```mermaid
+graph TD
+    A[Network Graph] --> B[Basic Statistics]
+    B --> C[Node Count]
+    B --> D[Edge Count]
+    B --> E[Density]
+    B --> F[Connected Components]
+
+    C --> G[Global Metrics]
+    D --> G
+    E --> G
+    F --> G
+
+    G --> H[Degree Distribution]
+    G --> I[Clustering Coefficient]
+    G --> J[Average Path Length]
+
+    H --> K[Centrality Analysis]
+    I --> K
+    J --> K
+
+    K --> L[Node Centrality]
+    K --> M[Edge Betweenness]
+    K --> N[PageRank]
+
+    L --> O[Key Nodes Identification]
+    M --> P[Bottleneck Edges]
+    N --> Q[Influence Ranking]
+
+    O --> R[Network Summary]
+    P --> R
+    Q --> R
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style G fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Centrality Measures"
+        S[Degree Centrality] -.-> L
+        T[Betweenness] -.-> M
+        U[Closeness] -.-> L
+        V[Eigenvector] -.-> N
+    end
+
+    subgraph "Applications"
+        W[Hub Proteins] -.-> O
+        X[Essential Genes] -.-> O
+        Y[Drug Targets] -.-> O
+    end
+```
+
+### Pathway Enrichment Analysis
+
+```mermaid
+graph TD
+    A[Gene/Protein Set] --> B[Background Genes]
+    B --> C[Pathway Database]
+    C --> D[Gene Set Collection]
+
+    A --> E[Hypergeometric Test]
+    D --> E
+
+    E --> F[P-value Calculation]
+    F --> G[Multiple Testing Correction]
+
+    G --> H{Enriched Pathways?}
+    H -->|Yes| I[Pathway Ranking]
+    H -->|No| J[No Significant Enrichment]
+
+    I --> K[Pathway Visualization]
+    K --> L[Gene-Concept Network]
+
+    L --> M[Functional Interpretation]
+    M --> N[Enrichment Results]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style E fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style N fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Databases"
+        O[KEGG] -.-> C
+        P[Reactome] -.-> C
+        Q[GO] -.-> C
+        R[WikiPathways] -.-> C
+    end
+
+    subgraph "Methods"
+        S[Fisher's Exact] -.-> E
+        T[Chi-square] -.-> E
+        U[Binomial] -.-> E
+    end
+
+    subgraph "Corrections"
+        V[Bonferroni] -.-> G
+        W[B-H FDR] -.-> G
+        X[Holm-Bonferroni] -.-> G
+    end
 ```
 
 ## Key Components

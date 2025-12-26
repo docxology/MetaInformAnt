@@ -1,0 +1,14 @@
+{
+  "singlecell_analysis": {
+    "cells_passing_qc": 97,
+    "cells_total": 100,
+    "genes_expressed_stats": {
+      "max": 33,
+      "mean": 19.698,
+      "median": 19.0
+    },
+    "genes_total": 500,
+    "mean_umis_per_cell": 123.03,
+    "qc_pass_rate": 0.97
+  }
+}

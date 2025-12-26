@@ -1,0 +1,438 @@
+# METAINFORMANT Comparison Guides
+
+Decision-making guides for choosing between different analysis methods, algorithms, and approaches in METAINFORMANT.
+
+## Method Comparison Guides
+
+### 1. Sequence Alignment Methods
+
+Choose the right alignment algorithm based on your sequence data and analysis goals.
+
+#### When to Use Each Method
+
+| Method | Best For | Advantages | Limitations | Performance |
+|--------|----------|------------|-------------|-------------|
+| **Global Alignment**<br/>(Needleman-Wunsch) | Similar sequences,<br/>full-length alignment | Finds optimal alignment<br/>of entire sequences | Poor with dissimilar<br/>sequences | O(n×m) time |
+| **Local Alignment**<br/>(Smith-Waterman) | Subsequence similarity,<br/>database searching | Finds best matching<br/>subsequences | May miss global<br/>similarity | O(n×m) time |
+| **Semi-global** | Sequences with different<br/>lengths, one complete | Handles terminal gaps<br/>appropriately | Limited use cases | O(n×m) time |
+
+#### Decision Tree
+
+```mermaid
+graph TD
+    A[Sequence Alignment Needed] --> B{Sequence Lengths?}
+    B -->|Similar| C{Full vs Partial Match?}
+    B -->|Different| D[Semi-global Alignment]
+
+    C -->|Full sequence| E[Global Alignment<br/>Needleman-Wunsch]
+    C -->|Local regions| F[Local Alignment<br/>Smith-Waterman]
+
+    E --> G[metainformant.dna.alignment.global_align]
+    F --> H[metainformant.dna.alignment.local_align]
+    D --> I[metainformant.dna.alignment.semi_global_align]
+```
+
+#### Example Usage
+
+```python
+from metainformant.dna import alignment
+
+# Short, similar sequences → Global alignment
+seq1 = "ATCGATCGATCG"
+seq2 = "ATCGATCGATCG"
+global_result = alignment.global_align(seq1, seq2)
+
+# Database search → Local alignment
+query = "ATCGATCG"
+database_seq = "TTTTATCGATCGTTTT"
+local_result = alignment.local_align(query, database_seq)
+
+# Different length sequences → Semi-global
+short_seq = "ATCG"
+long_seq = "TTTTATCGTTTT"
+semi_result = alignment.semi_global_align(short_seq, long_seq)
+```
+
+### 2. Population Genetics Statistics
+
+Compare different measures of genetic diversity and selection.
+
+#### Diversity Measures Comparison
+
+| Statistic | Measures | Best For | Formula | Interpretation |
+|-----------|----------|----------|---------|----------------|
+| **π (Pi)** | Average pairwise differences | Total diversity | Σ d_ij / (n(n-1)/2) | Raw nucleotide diversity |
+| **θ (Theta)** | Population mutation rate | Expected diversity | 4Nμ | Theoretical diversity |
+| **Watterson's θ** | Segregating sites | Sample diversity | S / Σ(1/i) | Sites-based diversity |
+
+#### Selection Tests Comparison
+
+| Test | Detects | Method | Assumptions | Power |
+|------|---------|--------|-------------|-------|
+| **Tajima's D** | Deviation from neutrality | π vs θ comparison | Neutral evolution | High for sweeps |
+| **Fu & Li's D** | Recent selective sweeps | External mutations | No recombination | High for recent events |
+| **Fay & Wu's H** | Old selective sweeps | High-frequency variants | No recombination | High for old events |
+
+#### Decision Guide
+
+```python
+from metainformant.dna import population
+from metainformant.math import coalescent
+
+# Calculate comprehensive population statistics
+sequences = ["ATCG...", "GCTA...", ...]  # Your sequences
+
+# Basic diversity
+pi = population.nucleotide_diversity(sequences)
+theta_w = population.wattersons_theta(sequences)
+
+print(f"Observed diversity (π): {pi:.4f}")
+print(f"Expected diversity (θ_W): {theta_w:.4f}")
+
+# Selection tests
+tajima_d = population.tajimas_d(sequences)
+fu_li_d = population.fu_and_li_d_star_from_sequences(sequences)
+fay_wu_h = population.fay_wu_h_from_sequences(sequences)
+
+# Interpretation
+if tajima_d < -2:
+    print("Possible selective sweep or population expansion")
+elif tajima_d > 2:
+    print("Possible balancing selection or bottleneck")
+else:
+    print("Neutral evolution")
+```
+
+### 3. Distance/Similarity Measures
+
+Choose appropriate distance metrics for different data types.
+
+#### Sequence Distance Methods
+
+| Method | Data Type | Properties | Use Case | Implementation |
+|--------|-----------|------------|----------|----------------|
+| **Hamming** | Equal length sequences | Counts differences | SNP analysis | `dna.distances.hamming_distance` |
+| **Jukes-Cantor** | DNA sequences | Corrects multiple hits | Evolutionary distance | `dna.distances.jukes_cantor_distance` |
+| **Kimura 2-parameter** | DNA/RNA | Transition/transversion | Nucleotide evolution | `dna.distances.kimura_2p_distance` |
+| **Levenshtein** | Any strings | Insertions/deletions | Sequence editing | `text.levenshtein_distance` |
+
+#### Decision Factors
+
+```mermaid
+graph TD
+    A[Choose Distance Method] --> B{Data Type?}
+    B -->|DNA/RNA sequences| C{Evolutionary model?}
+    B -->|Equal length| D[Hamming Distance]
+    B -->|Any strings| E[Levenshtein Distance]
+
+    C -->|Simple| F[Jukes-Cantor]
+    C -->|Transitions ≠ Transversions| G[Kimura 2-parameter]
+    C -->|Complex model| H[Tamura-Nei]
+
+    D --> I[metainformant.dna.distances.hamming_distance]
+    E --> J[metainformant.text.levenshtein_distance]
+    F --> K[metainformant.dna.distances.jukes_cantor_distance]
+    G --> L[metainformant.dna.distances.kimura_2p_distance]
+```
+
+### 4. Machine Learning Methods
+
+Compare classification and regression approaches for biological data.
+
+#### Classification Methods
+
+| Method | Strengths | Weaknesses | Best For | Implementation |
+|--------|-----------|------------|----------|----------------|
+| **Random Forest** | Handles mixed data, feature selection | Can overfit, less interpretable | Complex biological data | `ml.classification.train_classifier(method="rf")` |
+| **SVM** | Effective in high dimensions | Slow training, kernel choice | Gene expression classification | `ml.classification.train_classifier(method="svm")` |
+| **Logistic Regression** | Interpretable, fast | Assumes linear relationships | Simple feature sets | `ml.classification.train_classifier(method="lr")` |
+| **Naive Bayes** | Fast, works with small data | Independence assumption | Text/protein classification | `ml.classification.train_classifier(method="nb")` |
+
+#### Feature Selection Methods
+
+| Method | Type | Best For | Speed | Implementation |
+|--------|------|----------|-------|----------------|
+| **Mutual Information** | Filter | Non-linear relationships | Fast | `ml.features.select_features(method="mutual_info")` |
+| **Recursive Elimination** | Wrapper | Any classifier | Slow | `ml.features.select_features(method="rfe")` |
+| **LASSO** | Embedded | Linear relationships | Medium | `ml.features.select_features(method="lasso")` |
+| **Variance Threshold** | Filter | High variance features | Fast | `ml.features.select_features(method="variance")` |
+
+#### Usage Example
+
+```python
+from metainformant import ml
+import numpy as np
+
+# Prepare data
+X = np.random.randn(1000, 100)  # Features
+y = np.random.randint(0, 2, 1000)  # Binary labels
+
+# Compare methods
+methods = ["rf", "svm", "lr"]
+results = {}
+
+for method in methods:
+    # Train classifier
+    clf = ml.classification.train_classifier(X, y, method=method)
+
+    # Cross-validate
+    cv_scores = ml.classification.cross_validate_classifier(clf, X, y, cv=5)
+    results[method] = cv_scores
+
+# Compare results
+print("Classification Method Comparison:")
+for method, scores in results.items():
+    print(f"{method}: Mean accuracy = {scores['accuracy']:.3f} (+/- {scores['accuracy_std']:.3f})")
+
+# Feature selection comparison
+feature_methods = ["mutual_info", "variance"]
+for method in feature_methods:
+    selected_X, mask = ml.features.select_features(X, y, method=method, k=20)
+    print(f"{method}: Selected {selected_X.shape[1]} features")
+```
+
+### 5. GWAS Analysis Methods
+
+Compare different approaches to genome-wide association studies.
+
+#### Association Test Methods
+
+| Method | Data Type | Advantages | Disadvantages | Use Case |
+|--------|-----------|------------|---------------|----------|
+| **Linear Regression** | Quantitative traits | Fast, interpretable | Assumes normality | Most GWAS |
+| **Logistic Regression** | Binary traits | Handles case-control | Slower than linear | Disease studies |
+| **Mixed Linear Model** | Related individuals | Controls population structure | Computationally intensive | Family studies |
+| **Score Test** | Large datasets | Memory efficient | Less powerful | Biobank data |
+
+#### Population Structure Control
+
+| Method | Approach | Best For | Implementation |
+|--------|----------|----------|----------------|
+| **PCA** | Dimensionality reduction | Simple structure | `gwas.structure.compute_pca` |
+| **Kinship Matrix** | Relatedness estimation | Complex pedigrees | `gwas.structure.compute_kinship_matrix` |
+| **Admixture** | Ancestry proportions | Admixed populations | `gwas.structure.admixture_analysis` |
+
+#### Multiple Testing Correction
+
+| Method | Type | Conservative? | Power | Implementation |
+|--------|------|---------------|-------|----------------|
+| **Bonferroni** | Family-wise | Very conservative | Low power | `gwas.correction.bonferroni_correction` |
+| **FDR (BH)** | False discovery | Balanced | Good power | `gwas.correction.fdr_correction` |
+| **Genomic Control** | Inflation correction | Adaptive | Medium power | `gwas.correction.genomic_control` |
+
+#### GWAS Workflow Decision Tree
+
+```mermaid
+graph TD
+    A[GWAS Analysis] --> B{Trait Type?}
+    B -->|Quantitative| C[Linear Regression]
+    B -->|Binary| D[Logistic Regression]
+
+    C --> E{Population Structure?}
+    D --> E
+
+    E -->|Simple| F[PCA Correction]
+    E -->|Complex| G[Mixed Linear Model]
+
+    F --> H{Multiple Testing?}
+    G --> H
+
+    H -->|Stringent| I[Bonferroni Correction]
+    H -->|Balanced| J[FDR Correction]
+    H -->|Adaptive| K[Genomic Control]
+
+    I --> L[metainformant.gwas.workflow.run_gwas]
+    J --> L
+    K --> L
+```
+
+### 6. Information Theory Measures
+
+Compare different information-theoretic approaches to biological data analysis.
+
+#### Entropy Measures
+
+| Measure | Formula | Interpretation | Best For |
+|---------|---------|----------------|----------|
+| **Shannon Entropy** | H(X) = -Σ p(x) log p(x) | Information content | Sequence complexity |
+| **Rényi Entropy** | H_α(X) = (1/(1-α)) log Σ p(x)^α | Generalized entropy | Fractal analysis |
+| **Tsallis Entropy** | S_q(X) = (1/(q-1)) (Σ p(x)^q - 1) | Non-extensive entropy | Complex systems |
+
+#### Mutual Information Measures
+
+| Measure | Properties | Use Case | Implementation |
+|---------|------------|----------|----------------|
+| **MI** | Symmetric, non-negative | Feature selection | `information.syntactic.mutual_information` |
+| **CMI** | Conditional independence | Causal inference | `information.syntactic.conditional_mutual_information` |
+| **Normalized MI** | Bounded [0,1] | Similarity comparison | `information.syntactic.normalized_mutual_information` |
+
+#### Usage Comparison
+
+```python
+from metainformant.information import syntactic
+
+# Compare entropy measures
+sequence = "ATCGATCGATCGATCG"
+prob_dist = [0.25, 0.25, 0.25, 0.25]  # Uniform
+
+shannon = syntactic.shannon_entropy(prob_dist)
+renyi = syntactic.renyi_entropy(prob_dist, alpha=2.0)
+tsallis = syntactic.tsallis_entropy(prob_dist, q=2.0)
+
+print(f"Shannon entropy: {shannon:.3f}")
+print(f"Rényi entropy (α=2): {renyi:.3f}")
+print(f"Tsallis entropy (q=2): {tsallis:.3f}")
+
+# Compare MI measures
+x = [1, 0, 1, 0, 1]  # Binary variable 1
+y = [1, 1, 0, 0, 1]  # Binary variable 2
+z = [0, 1, 0, 1, 0]  # Conditional variable
+
+mi = syntactic.mutual_information(x, y)
+cmi = syntactic.conditional_mutual_information(x, y, z)
+nmi = syntactic.normalized_mutual_information(x, y)
+
+print(f"Mutual Information: {mi:.3f}")
+print(f"Conditional MI: {cmi:.3f}")
+print(f"Normalized MI: {nmi:.3f}")
+```
+
+### 7. Network Analysis Methods
+
+Compare graph algorithms for biological network analysis.
+
+#### Community Detection
+
+| Algorithm | Method | Strengths | Weaknesses | Implementation |
+|-----------|--------|-----------|------------|----------------|
+| **Louvain** | Modularity optimization | Fast, hierarchical | Resolution limit | `networks.community.louvain_communities` |
+| **Leiden** | Louvain improvement | Faster, more accurate | Less established | `networks.community.leiden_communities` |
+| **Girvan-Newman** | Edge betweenness | Intuitive | Slow, no hierarchy | `networks.community.girvan_newman` |
+
+#### Centrality Measures
+
+| Measure | Calculates | Best For | Example Use |
+|---------|------------|----------|-------------|
+| **Degree** | Node connectivity | Hub identification | Protein interaction hubs |
+| **Betweenness** | Bridge importance | Information flow | Key regulatory genes |
+| **Closeness** | Average distance | Efficiency | Central metabolites |
+| **Eigenvector** | Influence importance | Prestige | Important pathways |
+
+#### Network Construction Methods
+
+| Method | Data Source | Properties | Use Case |
+|--------|-------------|------------|----------|
+| **PPI Networks** | Protein interactions | Undirected, weighted | Functional modules |
+| **Regulatory Networks** | TF-target relationships | Directed, signed | Gene regulation |
+| **Co-expression** | Correlation networks | Undirected, weighted | Expression modules |
+| **Metabolic Networks** | Biochemical reactions | Directed, bipartite | Pathway analysis |
+
+### 8. Multi-Omics Integration Methods
+
+Compare approaches for combining multiple biological data types.
+
+#### Integration Strategies
+
+| Strategy | Method | Advantages | Disadvantages | Implementation |
+|----------|--------|------------|---------------|----------------|
+| **Early Integration** | Concatenation | Simple, preserves features | High dimensionality | `multiomics.integration.concatenate` |
+| **Intermediate** | Joint dimensionality reduction | Balances complexity | Information loss | `multiomics.integration.joint_pca` |
+| **Late Integration** | Separate models + ensemble | Preserves data types | Complex optimization | `multiomics.integration.ensemble_integration` |
+
+#### Dimensionality Reduction
+
+| Method | Properties | Best For | Implementation |
+|--------|------------|----------|----------------|
+| **PCA** | Linear, unsupervised | Global structure | `multiomics.integration.pca_integration` |
+| **CCA** | Linear, supervised | Cross-modal correlation | `multiomics.integration.cca_integration` |
+| **NMF** | Parts-based | Non-negative data | `multiomics.integration.nmf_integration` |
+| **Autoencoders** | Non-linear | Complex relationships | `multiomics.integration.ae_integration` |
+
+## Performance Comparison Tables
+
+### Computational Complexity
+
+| Method | Time Complexity | Space Complexity | Scalability |
+|--------|-----------------|------------------|-------------|
+| Sequence alignment | O(n×m) | O(n×m) | Low (1000s bp) |
+| GWAS association | O(n×p) | O(n×p) | Medium (10^5 SNPs) |
+| Network analysis | O(v+e) | O(v+e) | High (10^4 nodes) |
+| ML classification | O(n×f) | O(n×f) | High (10^6 samples) |
+| Information theory | O(n) | O(n) | Very high |
+
+### Memory Requirements
+
+| Analysis Type | Minimum RAM | Recommended RAM | Example Dataset |
+|---------------|-------------|-----------------|-----------------|
+| DNA alignment | 1GB | 4GB | 100 sequences × 10kb |
+| GWAS | 8GB | 32GB | 10^4 samples × 10^6 SNPs |
+| RNA-seq | 16GB | 64GB | 100 samples × 50M reads |
+| Single-cell | 32GB | 128GB | 10^4 cells × 20K genes |
+| Network analysis | 4GB | 16GB | 10^4 nodes × 10^5 edges |
+
+## Decision Frameworks
+
+### Data Size Decision Tree
+
+```mermaid
+graph TD
+    A[Analysis Needed] --> B{Data Size?}
+    B -->|Small < 1000| C[Use exact methods]
+    B -->|Medium 1000-10000| D[Use efficient approximations]
+    B -->|Large > 10000| E[Use sampling/scaling methods]
+
+    C --> F[metainformant.core.parallel disabled]
+    D --> G[metainformant.core.parallel enabled]
+    E --> H[Use distributed processing]
+
+    F --> I[Standard implementations]
+    G --> J[Vectorized NumPy implementations]
+    H --> K[Chunked/streaming processing]
+```
+
+### Accuracy vs Speed Trade-off
+
+```mermaid
+graph TD
+    A[Choose Method] --> B{Accuracy Priority?}
+    B -->|High accuracy| C[Exact methods]
+    B -->|Balanced| D[Approximation methods]
+    B -->|High speed| E[Heuristic methods]
+
+    C --> F[Examples: Full dynamic programming]
+    D --> G[Examples: MCMC sampling, EM algorithm]
+    E --> H[Examples: Greedy algorithms, heuristics]
+
+    F --> I[Slower, more accurate]
+    G --> J[Balanced performance]
+    H --> K[Faster, less accurate]
+```
+
+## Best Practices
+
+### Method Selection Guidelines
+
+1. **Start Simple**: Begin with basic methods to establish baseline results
+2. **Validate Assumptions**: Ensure your data meets method assumptions
+3. **Compare Methods**: Use multiple approaches to validate findings
+4. **Consider Scale**: Choose methods appropriate for your data size
+5. **Validate Results**: Cross-check results with known biological expectations
+
+### Performance Optimization
+
+1. **Profile First**: Identify bottlenecks before optimizing
+2. **Use Appropriate Data Structures**: Choose efficient representations
+3. **Leverage Parallelization**: Use multiple cores when possible
+4. **Implement Caching**: Cache expensive computations
+5. **Consider Streaming**: Process large files incrementally
+
+### Result Validation
+
+1. **Biological Plausibility**: Do results make biological sense?
+2. **Statistical Rigor**: Are p-values and confidence intervals appropriate?
+3. **Reproducibility**: Can results be reproduced with different methods?
+4. **Sensitivity Analysis**: How robust are results to parameter changes?
+
+---
+
+These comparison guides help users make informed decisions about which METAINFORMANT methods to use for their specific biological analysis needs.

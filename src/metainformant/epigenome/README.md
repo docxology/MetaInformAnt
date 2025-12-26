@@ -47,17 +47,116 @@ graph TB
 ### Epigenome Analysis Workflow
 
 ```mermaid
-flowchart LR
-    Start[Raw Data] --> Type{Data Type?}
-    Type -->|Methylation| Methyl[Process Methylation]
-    Type -->|ChIP-seq| ChIP[Process ChIP-seq]
-    Type -->|ATAC-seq| ATAC[Process ATAC-seq]
-    Methyl --> QC[Quality Control]
-    ChIP --> QC
-    ATAC --> QC
-    QC --> Analyze[Analysis]
-    Analyze --> Integrate[Integration]
-    Integrate --> Output[Results]
+graph TD
+    A[Raw Epigenomic Data] --> B{Data Type}
+    B -->|Bisulfite-seq| C[Methylation Analysis]
+    B -->|ChIP-seq| D[ChIP-seq Analysis]
+    B -->|ATAC-seq| E[ATAC-seq Analysis]
+    B -->|BedGraph| F[Track Processing]
+
+    C --> G[Load CpG Data]
+    G --> H[Compute Beta Values]
+    H --> I[Differential Methylation]
+    I --> J[mQTL Analysis]
+
+    D --> K[Peak Calling]
+    K --> L[Peak Analysis]
+    L --> M[Motif Enrichment]
+
+    E --> N[Open Chromatin Analysis]
+    N --> O[Tn5 Integration Sites]
+    O --> P[Accessibility Analysis]
+
+    F --> Q[Track Loading]
+    Q --> R[Genome Browser Tracks]
+
+    J --> S[Integration]
+    M --> S
+    P --> S
+    R --> S
+
+    S --> T[Multi-Omics Integration]
+    T --> U[Output Results]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style S fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style U fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Quality Control"
+        V[Data Validation] -.-> C
+        V -.-> D
+        V -.-> E
+        V -.-> F
+    end
+
+    subgraph "Statistical Analysis"
+        W[Differential Analysis] -.-> I
+        X[Enrichment Analysis] -.-> M
+        Y[Peak Overlap] -.-> L
+    end
+```
+
+### Methylation Analysis Pipeline
+
+```mermaid
+graph TD
+    A[CpG Methylation Data] --> B[Load CpG Table]
+    B --> C[Validate Data Format]
+    C --> D[Compute Beta Values]
+    D --> E[Beta Value Summary]
+
+    E --> F{Differential Analysis?}
+    F -->|Yes| G[Group Comparison]
+    F -->|No| H[Descriptive Statistics]
+
+    G --> I[Statistical Testing]
+    I --> J[Multiple Testing Correction]
+    J --> K[DMR Identification]
+
+    H --> L[Genome-wide Patterns]
+    K --> L
+
+    L --> M{mQTL Analysis?}
+    M -->|Yes| N[Genotype-Phenotype Association]
+    M -->|No| O[Finalize Results]
+
+    N --> P[mQTL Results]
+    P --> O
+    H --> O
+
+    O --> Q[Output Reports]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style I fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style Q fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+```
+
+### ChIP-seq Analysis Pipeline
+
+```mermaid
+graph TD
+    A[ChIP-seq Data] --> B[Quality Control]
+    B --> C[Peak Calling]
+    C --> D[Peak Filtering]
+
+    D --> E{Peak Analysis}
+    E --> F[Peak Overlap Analysis]
+    E --> G[Motif Enrichment]
+    E --> H[Functional Annotation]
+
+    F --> I[Peak Set Comparison]
+    G --> J[TF Binding Sites]
+    H --> K[Gene Target Prediction]
+
+    I --> L[Integration]
+    J --> L
+    K --> L
+
+    L --> M[ChIP-seq Results]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style E fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style M fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 ```
 
 ## Submodules

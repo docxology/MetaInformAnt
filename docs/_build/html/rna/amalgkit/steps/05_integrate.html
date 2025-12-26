@@ -1,0 +1,609 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>amalgkit integrate: Local FASTQ Integration &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">amalgkit integrate: Local FASTQ Integration</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/rna/amalgkit/steps/05_integrate.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="amalgkit-integrate-local-fastq-integration">
+<h1>amalgkit integrate: Local FASTQ Integration<a class="headerlink" href="#amalgkit-integrate-local-fastq-integration" title="Link to this heading"></a></h1>
+<section id="purpose">
+<h2>Purpose<a class="headerlink" href="#purpose" title="Link to this heading"></a></h2>
+<p>Appends local FASTQ file information to existing metadata tables, enabling amalgkit to work with locally available FASTQ files without re-downloading from SRA. This step <strong>integrates</strong> local sequencing data into the amalgkit workflow.</p>
+</section>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">integrate</span></code> step:</p>
+<ul class="simple">
+<li><p>Scans a directory for existing FASTQ files</p></li>
+<li><p>Extracts file statistics (size, read count, read length)</p></li>
+<li><p>Appends FASTQ information to the metadata table</p></li>
+<li><p>Enables workflow continuation without SRA downloads</p></li>
+<li><p>Validates FASTQ file integrity</p></li>
+</ul>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
+<section id="basic-usage">
+<h3>Basic Usage<a class="headerlink" href="#basic-usage" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>amalgkit<span class="w"> </span>integrate<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--fastq_dir<span class="w"> </span>output/amalgkit/fastq<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--metadata<span class="w"> </span>output/amalgkit/work/metadata/metadata.tsv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--threads<span class="w"> </span><span class="m">6</span>
+</pre></div>
+</div>
+</section>
+<section id="python-api">
+<h3>Python API<a class="headerlink" href="#python-api" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna</span><span class="w"> </span><span class="kn">import</span> <span class="n">amalgkit</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">amalgkit</span><span class="o">.</span><span class="n">integrate</span><span class="p">(</span>
+    <span class="n">out_dir</span><span class="o">=</span><span class="s2">&quot;output/amalgkit/work&quot;</span><span class="p">,</span>
+    <span class="n">fastq_dir</span><span class="o">=</span><span class="s2">&quot;output/amalgkit/fastq&quot;</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="s2">&quot;output/amalgkit/work/metadata/metadata.tsv&quot;</span><span class="p">,</span>
+    <span class="n">threads</span><span class="o">=</span><span class="mi">6</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="configuration-file">
+<h3>Configuration File<a class="headerlink" href="#configuration-file" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">integrate</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/amellifera/work</span>
+<span class="w">    </span><span class="nt">fastq_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/amellifera/fastq</span>
+<span class="w">    </span><span class="nt">metadata</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/amellifera/work/metadata/metadata.tsv</span>
+<span class="w">    </span><span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6</span>
+<span class="w">    </span><span class="nt">accurate_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">yes</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="parameters">
+<h2>Parameters<a class="headerlink" href="#parameters" title="Link to this heading"></a></h2>
+<section id="required-parameters">
+<h3>Required Parameters<a class="headerlink" href="#required-parameters" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--fastq_dir</span></code></p></td>
+<td><p>PATH</p></td>
+<td><p><strong>Required</strong>. Directory containing FASTQ files (.fq, .fastq, .fq.gz, .fastq.gz).</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="optional-parameters">
+<h3>Optional Parameters<a class="headerlink" href="#optional-parameters" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Parameter</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Default</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--out_dir</span></code></p></td>
+<td><p>PATH</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">./</span></code></p></td>
+<td><p>Directory for intermediate and output files.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--metadata</span></code></p></td>
+<td><p>PATH</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">inferred</span></code></p></td>
+<td><p>Path to metadata.tsv. Default: <code class="docutils literal notranslate"><span class="pre">out_dir/metadata/metadata.tsv</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--threads</span></code></p></td>
+<td><p>INT</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">1</span></code></p></td>
+<td><p>Number of threads for parallel processing.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--getfastq_dir</span></code></p></td>
+<td><p>PATH</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">None</span></code></p></td>
+<td><p>Path to getfastq output directory (if non-standard location).</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--remove_tmp</span></code></p></td>
+<td><p>yes/no</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">yes</span></code></p></td>
+<td><p>Remove temporary files after completion.</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--accurate_size</span></code></p></td>
+<td><p>yes/no</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">yes</span></code></p></td>
+<td><p><strong>For .gz files</strong>: If <code class="docutils literal notranslate"><span class="pre">yes</span></code>, process entire file (slow but accurate). If <code class="docutils literal notranslate"><span class="pre">no</span></code>, sample first 1000 sequences (fast estimate).</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="input-requirements">
+<h2>Input Requirements<a class="headerlink" href="#input-requirements" title="Link to this heading"></a></h2>
+<section id="prerequisites">
+<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>FASTQ Directory</strong>: Directory containing FASTQ files</p></li>
+<li><p><strong>Metadata Table</strong>: Existing <code class="docutils literal notranslate"><span class="pre">metadata.tsv</span></code> from <code class="docutils literal notranslate"><span class="pre">amalgkit</span> <span class="pre">metadata</span></code></p></li>
+<li><p><strong>seqkit</strong>: Installed and available on PATH</p></li>
+</ul>
+</section>
+<section id="fastq-file-naming">
+<h3>FASTQ File Naming<a class="headerlink" href="#fastq-file-naming" title="Link to this heading"></a></h3>
+<p>Expected patterns:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">SRR12345678_1</span><span class="o">.</span><span class="n">fastq</span><span class="o">.</span><span class="n">gz</span>
+<span class="n">SRR12345678_2</span><span class="o">.</span><span class="n">fastq</span><span class="o">.</span><span class="n">gz</span>
+<span class="n">SRR12345678</span><span class="o">.</span><span class="n">fastq</span><span class="o">.</span><span class="n">gz</span>          <span class="c1"># Single-end</span>
+<span class="n">sample_name_R1</span><span class="o">.</span><span class="n">fastq</span><span class="o">.</span><span class="n">gz</span>        <span class="c1"># Custom naming</span>
+<span class="n">sample_name_R2</span><span class="o">.</span><span class="n">fastq</span><span class="o">.</span><span class="n">gz</span>
+</pre></div>
+</div>
+</section>
+<section id="system-dependencies">
+<h3>System Dependencies<a class="headerlink" href="#system-dependencies" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>seqkit</strong>: For FASTQ statistics extraction</p></li>
+<li><p><strong>Disk Space</strong>: Adequate for temporary file generation</p></li>
+</ul>
+</section>
+</section>
+<section id="output-files">
+<h2>Output Files<a class="headerlink" href="#output-files" title="Link to this heading"></a></h2>
+<section id="modified-metadata">
+<h3>Modified Metadata<a class="headerlink" href="#modified-metadata" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>out_dir/metadata/
+├── metadata.tsv                     # Updated with FASTQ info
+└── metadata.filtered.tissue.tsv     # Filtered version with FASTQ data
+</pre></div>
+</div>
+</section>
+<section id="added-columns">
+<h3>Added Columns<a class="headerlink" href="#added-columns" title="Link to this heading"></a></h3>
+<p>The metadata table gains additional columns:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">local_fastq_path</span></code> - Full path to FASTQ file(s)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">local_file_size</span></code> - File size in bytes</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">local_read_count</span></code> - Number of reads/read pairs</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">local_avg_length</span></code> - Average read length</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">local_layout</span></code> - SINGLE or PAIRED layout</p></li>
+</ul>
+</section>
+</section>
+<section id="workflow-integration">
+<h2>Workflow Integration<a class="headerlink" href="#workflow-integration" title="Link to this heading"></a></h2>
+<section id="position-in-pipeline">
+<h3>Position in Pipeline<a class="headerlink" href="#position-in-pipeline" title="Link to this heading"></a></h3>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart LR
+    A[metadata] --&gt; B[integrate]
+    C[Local FASTQs] --&gt; B
+    B --&gt; D[quant]
+</pre></div>
+</div>
+<p><strong>integrate</strong> runs <strong>after getfastq</strong> OR <strong>instead of getfastq</strong> when local data exists.</p>
+</section>
+<section id="use-cases">
+<h3>Use Cases<a class="headerlink" href="#use-cases" title="Link to this heading"></a></h3>
+<p><strong>Case 1: Already Downloaded FASTQs</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>metadata → integrate → quant → merge
+(Skip getfastq - use local files)
+</pre></div>
+</div>
+<p><strong>Case 2: Mix of SRA + Local Data</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>metadata → getfastq → integrate → quant
+(Download some, integrate others)
+</pre></div>
+</div>
+</section>
+</section>
+<section id="common-use-cases">
+<h2>Common Use Cases<a class="headerlink" href="#common-use-cases" title="Link to this heading"></a></h2>
+<section id="integrate-downloaded-fastqs">
+<h3>1. Integrate Downloaded FASTQs<a class="headerlink" href="#integrate-downloaded-fastqs" title="Link to this heading"></a></h3>
+<p>After running <code class="docutils literal notranslate"><span class="pre">getfastq</span></code>, integrate the downloaded files:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># First, download FASTQs</span>
+amalgkit<span class="w"> </span>getfastq<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--metadata<span class="w"> </span>output/amalgkit/work/metadata/pivot_qualified.tsv
+
+<span class="c1"># Then integrate them</span>
+amalgkit<span class="w"> </span>integrate<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--fastq_dir<span class="w"> </span>output/amalgkit/fastq<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--threads<span class="w"> </span><span class="m">8</span>
+</pre></div>
+</div>
+</section>
+<section id="use-pre-existing-local-data">
+<h3>2. Use Pre-existing Local Data<a class="headerlink" href="#use-pre-existing-local-data" title="Link to this heading"></a></h3>
+<p>Skip SRA downloads entirely:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Integrate existing FASTQs from previous project</span>
+amalgkit<span class="w"> </span>integrate<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/new_analysis/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--fastq_dir<span class="w"> </span>/path/to/existing/fastqs<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--metadata<span class="w"> </span>output/new_analysis/work/metadata/metadata.tsv<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--accurate_size<span class="w"> </span>yes
+</pre></div>
+</div>
+</section>
+<section id="fast-estimate-mode-large-files">
+<h3>3. Fast Estimate Mode (Large Files)<a class="headerlink" href="#fast-estimate-mode-large-files" title="Link to this heading"></a></h3>
+<p>For quick integration of large .gz files:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>amalgkit<span class="w"> </span>integrate<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--fastq_dir<span class="w"> </span>output/amalgkit/fastq<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--accurate_size<span class="w"> </span>no<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--threads<span class="w"> </span><span class="m">16</span>
+</pre></div>
+</div>
+<p><strong>Runtime</strong>: ~10x faster, 95%+ accurate for most metrics</p>
+</section>
+</section>
+<section id="performance-considerations">
+<h2>Performance Considerations<a class="headerlink" href="#performance-considerations" title="Link to this heading"></a></h2>
+<section id="runtime">
+<h3>Runtime<a class="headerlink" href="#runtime" title="Link to this heading"></a></h3>
+<p><strong>Accurate Mode</strong> (<code class="docutils literal notranslate"><span class="pre">--accurate_size</span> <span class="pre">yes</span></code>):</p>
+<ul class="simple">
+<li><p><strong>Small files</strong> (&lt;1GB each): 1-2 minutes per file</p></li>
+<li><p><strong>Medium files</strong> (1-5GB each): 5-10 minutes per file</p></li>
+<li><p><strong>Large files</strong> (&gt;5GB each): 10-30 minutes per file</p></li>
+</ul>
+<p><strong>Fast Mode</strong> (<code class="docutils literal notranslate"><span class="pre">--accurate_size</span> <span class="pre">no</span></code>):</p>
+<ul class="simple">
+<li><p><strong>All files</strong>: &lt;1 minute per file regardless of size</p></li>
+<li><p><strong>Trade-off</strong>: ~5% margin of error on statistics</p></li>
+</ul>
+</section>
+<section id="parallelization">
+<h3>Parallelization<a class="headerlink" href="#parallelization" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Optimal threading for most systems</span>
+--threads<span class="w"> </span><span class="m">8</span>
+
+<span class="c1"># Maximum parallelization (if enough CPU cores)</span>
+--threads<span class="w"> </span><span class="m">16</span>
+</pre></div>
+</div>
+<p><strong>Memory Usage</strong>: ~100-500MB per thread</p>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="issue-path-to-fastq-directory-does-not-exist">
+<h3>Issue: “PATH to fastq directory does not exist”<a class="headerlink" href="#issue-path-to-fastq-directory-does-not-exist" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ne">ValueError</span><span class="p">:</span> <span class="n">PATH</span> <span class="n">to</span> <span class="n">fastq</span> <span class="n">directory</span> <span class="n">does</span> <span class="ow">not</span> <span class="n">exist</span><span class="p">:</span> <span class="n">output</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">/</span><span class="n">fastq</span>
+</pre></div>
+</div>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic">
+<li><p>Verify directory exists:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ls<span class="w"> </span>-la<span class="w"> </span>output/amalgkit/fastq
+</pre></div>
+</div>
+</li>
+<li><p>Create directory if missing:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir<span class="w"> </span>-p<span class="w"> </span>output/amalgkit/fastq
+</pre></div>
+</div>
+</li>
+<li><p>Use absolute path:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--fastq_dir<span class="w"> </span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>/output/amalgkit/fastq
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="issue-seqkit-command-not-found">
+<h3>Issue: “seqkit: command not found”<a class="headerlink" href="#issue-seqkit-command-not-found" title="Link to this heading"></a></h3>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic">
+<li><p>Install seqkit:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Via conda</span>
+<span class="c1"># System tool installation (seqkit)</span>
+conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>bioconda<span class="w"> </span>seqkit
+<span class="c1"># Or using system package manager:</span>
+sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>seqkit
+
+<span class="c1"># Note: For Python packages, use uv pip install (primary method)</span>
+
+<span class="c1"># Via homebrew (macOS)</span>
+brew<span class="w"> </span>install<span class="w"> </span>seqkit
+</pre></div>
+</div>
+</li>
+<li><p>Verify installation:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>which<span class="w"> </span>seqkit
+seqkit<span class="w"> </span>version
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="issue-no-fastqs-found-in-directory">
+<h3>Issue: No FASTQs found in directory<a class="headerlink" href="#issue-no-fastqs-found-in-directory" title="Link to this heading"></a></h3>
+<p><strong>Diagnosis</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check for FASTQ files</span>
+find<span class="w"> </span>output/amalgkit/fastq<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*.fastq*&quot;</span><span class="w"> </span>-o<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*.fq*&quot;</span>
+</pre></div>
+</div>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic simple">
+<li><p>Verify files have correct extensions (<code class="docutils literal notranslate"><span class="pre">.fq</span></code>, <code class="docutils literal notranslate"><span class="pre">.fastq</span></code>, <code class="docutils literal notranslate"><span class="pre">.fq.gz</span></code>, <code class="docutils literal notranslate"><span class="pre">.fastq.gz</span></code>)</p></li>
+<li><p>Check file permissions (must be readable)</p></li>
+<li><p>Ensure files aren’t corrupted (test with <code class="docutils literal notranslate"><span class="pre">seqkit</span> <span class="pre">stats</span></code>)</p></li>
+</ol>
+</section>
+<section id="issue-integration-very-slow">
+<h3>Issue: Integration very slow<a class="headerlink" href="#issue-integration-very-slow" title="Link to this heading"></a></h3>
+<p><strong>Diagnosis</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check if using accurate mode on large .gz files</span>
+ls<span class="w"> </span>-lh<span class="w"> </span>output/amalgkit/fastq/*.gz
+</pre></div>
+</div>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic">
+<li><p>Switch to fast mode:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--accurate_size<span class="w"> </span>no
+</pre></div>
+</div>
+</li>
+<li><p>Increase threads:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--threads<span class="w"> </span><span class="m">16</span>
+</pre></div>
+</div>
+</li>
+<li><p>Process in batches if memory constrained</p></li>
+</ol>
+</section>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<section id="use-accurate-mode-for-publication">
+<h3>1. Use Accurate Mode for Publication<a class="headerlink" href="#use-accurate-mode-for-publication" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># For final analyses: complete accuracy</span>
+--accurate_size<span class="w"> </span>yes
+</pre></div>
+</div>
+</section>
+<section id="use-fast-mode-for-development">
+<h3>2. Use Fast Mode for Development<a class="headerlink" href="#use-fast-mode-for-development" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># For testing workflows: quick estimates</span>
+--accurate_size<span class="w"> </span>no
+</pre></div>
+</div>
+</section>
+<section id="optimize-thread-count">
+<h3>3. Optimize Thread Count<a class="headerlink" href="#optimize-thread-count" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Match available CPU cores</span>
+--threads<span class="w"> </span><span class="k">$(</span>nproc<span class="k">)</span><span class="w">  </span><span class="c1"># Linux</span>
+--threads<span class="w"> </span><span class="k">$(</span>sysctl<span class="w"> </span>-n<span class="w"> </span>hw.ncpu<span class="k">)</span><span class="w">  </span><span class="c1"># macOS</span>
+</pre></div>
+</div>
+</section>
+<section id="verify-integration-success">
+<h3>4. Verify Integration Success<a class="headerlink" href="#verify-integration-success" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check metadata was updated</span>
+head<span class="w"> </span>output/amalgkit/work/metadata/metadata.tsv
+
+<span class="c1"># Verify new columns exist</span>
+head<span class="w"> </span>-1<span class="w"> </span>output/amalgkit/work/metadata/metadata.tsv<span class="w"> </span><span class="p">|</span><span class="w"> </span>tr<span class="w"> </span><span class="s1">&#39;\t&#39;</span><span class="w"> </span><span class="s1">&#39;\n&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="nb">local</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="real-world-examples">
+<h2>Real-World Examples<a class="headerlink" href="#real-world-examples" title="Link to this heading"></a></h2>
+<section id="example-1-post-getfastq-integration">
+<h3>Example 1: Post-getfastq Integration<a class="headerlink" href="#example-1-post-getfastq-integration" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># After downloading FASTQs</span>
+amalgkit<span class="w"> </span>integrate<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/amellifera/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--fastq_dir<span class="w"> </span>output/amalgkit/amellifera/fastq<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--threads<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--accurate_size<span class="w"> </span>yes
+</pre></div>
+</div>
+<p><strong>Result</strong>: Integrated 6,606 FASTQ files, added file statistics to metadata</p>
+</section>
+<section id="example-2-using-symlinked-fastqs">
+<h3>Example 2: Using Symlinked FASTQs<a class="headerlink" href="#example-2-using-symlinked-fastqs" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Link FASTQs from shared storage</span>
+ln<span class="w"> </span>-s<span class="w"> </span>/shared/data/sra_fastqs/*<span class="w"> </span>output/amalgkit/fastq/
+
+<span class="c1"># Integrate linked files</span>
+amalgkit<span class="w"> </span>integrate<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/work<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--fastq_dir<span class="w"> </span>output/amalgkit/fastq<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--threads<span class="w"> </span><span class="m">12</span>
+</pre></div>
+</div>
+<p><strong>Result</strong>: Successfully integrated symlinked files, no data duplication</p>
+</section>
+</section>
+<section id="integration-with-metainformant-workflow">
+<h2>Integration with METAINFORMANT Workflow<a class="headerlink" href="#integration-with-metainformant-workflow" title="Link to this heading"></a></h2>
+<section id="automatic-integration">
+<h3>Automatic Integration<a class="headerlink" href="#automatic-integration" title="Link to this heading"></a></h3>
+<p>In the METAINFORMANT workflow, <code class="docutils literal notranslate"><span class="pre">integrate</span></code> runs automatically after <code class="docutils literal notranslate"><span class="pre">getfastq</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">execute_workflow</span><span class="p">,</span> <span class="n">load_workflow_config</span>
+
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">load_workflow_config</span><span class="p">(</span><span class="s2">&quot;config/amalgkit_amellifera.yaml&quot;</span><span class="p">)</span>
+<span class="n">execute_workflow</span><span class="p">(</span><span class="n">cfg</span><span class="p">)</span>  <span class="c1"># integrate runs after getfastq automatically</span>
+</pre></div>
+</div>
+</section>
+<section id="workflow-order">
+<h3>Workflow Order<a class="headerlink" href="#workflow-order" title="Link to this heading"></a></h3>
+<p>The workflow ensures correct ordering:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Correct order enforced by workflow.py</span>
+<span class="n">ordered</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;metadata&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;config&quot;</span><span class="p">,</span> 
+    <span class="s2">&quot;select&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;getfastq&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;integrate&quot;</span><span class="p">,</span>  <span class="c1"># ← Runs after getfastq</span>
+    <span class="s2">&quot;quant&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;merge&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="skipping-integration">
+<h3>Skipping Integration<a class="headerlink" href="#skipping-integration" title="Link to this heading"></a></h3>
+<p>If no FASTQs exist, integrate is skipped gracefully:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># No FASTQs available yet</span>
+amalgkit<span class="w"> </span>integrate<span class="w"> </span>--fastq_dir<span class="w"> </span>output/fastq
+<span class="c1"># Returns: No FASTQ files found, skipping integration</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>seqkit Documentation</strong>: https://bioinf.shenwei.me/seqkit/</p></li>
+<li><p><strong>FASTQ Format</strong>: https://en.wikipedia.org/wiki/FASTQ_format</p></li>
+<li><p><strong>METAINFORMANT Workflow</strong>: <code class="docutils literal notranslate"><span class="pre">docs/rna/workflow.md</span></code></p></li>
+</ul>
+</section>
+<section id="see-also">
+<h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Previous Step</strong>: <a class="reference internal" href="#getfastq.md"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">getfastq.md</span></code></span></a> - Downloading FASTQ files</p></li>
+<li><p><strong>Next Step</strong>: <a class="reference internal" href="#quant.md"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">quant.md</span></code></span></a> - Transcript quantification</p></li>
+<li><p><strong>Workflow Overview</strong>: <a class="reference internal" href="../amalgkit.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">../amalgkit.md</span></code></span></a></p></li>
+<li><p><strong>Testing</strong>: <code class="docutils literal notranslate"><span class="pre">tests/test_rna_amalgkit_steps.py::test_integrate_basic_execution</span></code></p></li>
+</ul>
+<hr class="docutils" />
+<p><strong>Last Updated</strong>: October 29, 2025<br />
+<strong>AMALGKIT Version</strong>: 0.12.19<br />
+<strong>Status</strong>: ✅ Production-ready, comprehensively tested</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

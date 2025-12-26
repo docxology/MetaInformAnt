@@ -237,6 +237,105 @@ This RNA module integrates with:
 
 ---
 
+## Complete Function Signatures
+
+### Amalgkit CLI Integration (`amalgkit.py`)
+- `build_cli_args(params: AmalgkitParams | None, *, for_cli: bool = False) -> list[str]`
+- `build_amalgkit_command(subcommand: str, params: AmalgkitParams | None = None) -> list[str]`
+- `check_cli_available() -> tuple[bool, str]`
+- `ensure_cli_available(*, auto_install: bool = False) -> tuple[bool, str, dict | None]`
+- `run_amalgkit(subcommand: str, params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
+- `metadata(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
+- `integrate(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
+- `config(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
+- `select(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
+- `getfastq(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
+- `quant(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
+- `merge(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
+- `cstmm(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
+- `curate(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
+- `csca(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
+- `sanity(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
+
+### Workflow Orchestration (`workflow.py`)
+- `apply_step_defaults(config: AmalgkitWorkflowConfig) -> AmalgkitWorkflowConfig`
+- `plan_workflow(config: AmalgkitWorkflowConfig) -> list[tuple[str, AmalgkitParams]]`
+- `plan_workflow_with_params(config: AmalgkitWorkflowConfig, **param_overrides: Any) -> list[tuple[str, AmalgkitParams]]`
+- `sanitize_params_for_cli(subcommand: str, params: Mapping[str, Any]) -> dict[str, Any]`
+- `execute_workflow(config: AmalgkitWorkflowConfig, *, check: bool = False, walk: bool = False, progress: bool = True, show_commands: bool = False) -> list[int]`
+- `load_workflow_config(config_file: str | Path) -> AmalgkitWorkflowConfig`
+
+### Configuration Management (`configs.py`)
+- `create_layout_from_config(config: dict[str, Any], work_dir: Path) -> dict[str, Path]`
+- `validate_config_schema(config: dict[str, Any]) -> list[str]`
+- `apply_config_defaults(config: dict[str, Any]) -> dict[str, Any]`
+- `resolve_config_paths(config: dict[str, Any], base_path: Path) -> dict[str, Any]`
+
+### Dependency Management (`deps.py`)
+- `check_amalgkit_version() -> tuple[bool, str]`
+- `validate_environment() -> dict[str, Any]`
+- `get_dependency_status() -> dict[str, bool]`
+- `suggest_installation_fixes(missing_deps: list[str]) -> list[str]`
+
+### Workflow Steps (Individual Modules in `steps/`)
+
+#### Config Step (`steps/config.py`)
+- `run_config(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
+
+#### Metadata Step (`steps/metadata.py`)
+- `run_metadata(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
+
+#### Select Step (`steps/select.py`)
+- `run_select(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
+
+#### GetFastq Step (`steps/getfastq.py`)
+- `run_getfastq(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
+
+#### Integrate Step (`steps/integrate.py`)
+- `run_integrate(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
+
+#### Quant Step (`steps/quant.py`)
+- `run_quant(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
+
+#### Merge Step (`steps/merge.py`)
+- `run_merge(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
+
+#### CSTMM Step (`steps/cstmm.py`)
+- `run_cstmm(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
+
+#### Curate Step (`steps/curate.py`)
+- `run_curate(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
+
+#### CSCA Step (`steps/csca.py`)
+- `run_csca(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
+
+#### Sanity Step (`steps/sanity.py`)
+- `run_sanity(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
+
+#### Sample Processing (`steps/process_samples.py`)
+- `run_download_quant_workflow(config: AmalgkitWorkflowConfig, *, num_workers: int = 1, progress: bool = True) -> list[int]`
+
+### Data Classes and Types
+
+#### AmalgkitWorkflowConfig
+Configuration dataclass with fields:
+- `work_dir: Path`
+- `threads: int`
+- `species_list: list[str]`
+- `search_string: str | None`
+- `max_samples: int | None`
+- `genome: dict[str, Any]`
+- `steps: dict[str, Any]`
+
+#### AmalgkitParams
+Parameter dataclass for individual workflow steps with fields:
+- `work_dir: Path`
+- `threads: int`
+- `species_list: list[str]`
+- Plus step-specific parameters
+
+---
+
 *This comprehensive RNA analysis infrastructure demonstrates effective collaboration between AI assistance and bioinformatics expertise, resulting in production-ready transcriptomic workflow capabilities that handle large-scale multi-species comparative analyses.*
 
 **Last Updated**: November 1, 2025  

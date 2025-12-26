@@ -1,0 +1,556 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RNA Module Architecture &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">RNA Module Architecture</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/rna/ARCHITECTURE.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="rna-module-architecture">
+<h1>RNA Module Architecture<a class="headerlink" href="#rna-module-architecture" title="Link to this heading"></a></h1>
+<p>This document provides a comprehensive overview of the METAINFORMANT RNA module architecture, explaining how components interact and how to extend the system.</p>
+<section id="table-of-contents">
+<h2>Table of Contents<a class="headerlink" href="#table-of-contents" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><a class="reference internal" href="#module-structure">Module Structure</a></p></li>
+<li><p><a class="reference internal" href="#processing-workflows">Processing Workflows</a></p></li>
+<li><p><a class="reference internal" href="#step-runner-pattern">Step Runner Pattern</a></p></li>
+<li><p><a class="reference internal" href="#integration-points">Integration Points</a></p></li>
+<li><p><a class="reference internal" href="#data-flow">Data Flow</a></p></li>
+<li><p><a class="reference internal" href="#decision-tree">Decision Tree</a></p></li>
+</ol>
+</section>
+<section id="module-structure">
+<h2>Module Structure<a class="headerlink" href="#module-structure" title="Link to this heading"></a></h2>
+<section id="directory-layout">
+<h3>Directory Layout<a class="headerlink" href="#directory-layout" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>src/metainformant/rna/
+├── __init__.py              # Public API exports
+├── workflow.py              # Main workflow orchestration
+├── orchestration.py         # High-level workflow execution
+├── amalgkit.py              # Amalgkit CLI wrapper
+├── genome_prep.py           # Genome preparation utilities
+├── configs.py               # Configuration management
+├── steps/                   # Step implementations
+│   ├── __init__.py          # Step runner registry
+│   ├── metadata.py          # Step 1: Metadata retrieval
+│   ├── config.py            # Step 2: Config generation
+│   ├── select.py            # Step 3: Sample selection
+│   ├── getfastq.py          # Step 4: FASTQ download
+│   ├── integrate.py         # Step 5: FASTQ integration
+│   ├── quant.py             # Step 6: Quantification
+│   ├── merge.py             # Step 7: Result merging
+│   ├── cstmm.py             # Step 8: Cross-species normalization
+│   ├── curate.py            # Step 9: Quality curation
+│   ├── csca.py              # Step 10: Correlation analysis
+│   ├── sanity.py            # Step 11: Final validation
+│   ├── process_samples.py   # Unified download-quantify workflow
+│   └── download_progress.py # Progress tracking
+└── ...
+</pre></div>
+</div>
+</section>
+<section id="component-responsibilities">
+<h3>Component Responsibilities<a class="headerlink" href="#component-responsibilities" title="Link to this heading"></a></h3>
+<section id="core-orchestration">
+<h4>Core Orchestration<a class="headerlink" href="#core-orchestration" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">workflow.py</span></code></strong>: Plans and executes complete workflows based on configuration</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">orchestration.py</span></code></strong>: High-level functions for running workflows for species</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">amalgkit.py</span></code></strong>: Low-level wrapper for <code class="docutils literal notranslate"><span class="pre">amalgkit</span></code> CLI commands</p></li>
+</ul>
+</section>
+<section id="step-runners">
+<h4>Step Runners<a class="headerlink" href="#step-runners" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>11 step modules</strong>: Thin wrappers around <code class="docutils literal notranslate"><span class="pre">amalgkit</span></code> subcommands</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">process_samples.py</span></code></strong>: Unified workflow for download-quantify-delete operations</p></li>
+<li><p>Each step is independent and can be run standalone or as part of a workflow</p></li>
+</ul>
+</section>
+<section id="utilities">
+<h4>Utilities<a class="headerlink" href="#utilities" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">genome_prep.py</span></code></strong>: Downloads and indexes reference genomes</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">configs.py</span></code></strong>: Loads and validates workflow configurations</p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">download_progress.py</span></code></strong>: Real-time progress tracking</p></li>
+</ul>
+</section>
+</section>
+</section>
+<section id="processing-workflows">
+<h2>Processing Workflows<a class="headerlink" href="#processing-workflows" title="Link to this heading"></a></h2>
+<p>The RNA module supports two processing modes for handling large cohorts:</p>
+<section id="sequential-mode-num-workers-1">
+<h3>Sequential Mode (<code class="docutils literal notranslate"><span class="pre">num_workers=1</span></code>)<a class="headerlink" href="#sequential-mode-num-workers-1" title="Link to this heading"></a></h3>
+<p><strong>Architecture</strong>: One sample at a time</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">For</span> <span class="n">each</span> <span class="n">sample</span><span class="p">:</span>
+  <span class="mf">1.</span> <span class="n">Download</span> <span class="n">FASTQ</span> <span class="p">(</span><span class="n">getfastq</span><span class="p">)</span>
+  <span class="mf">2.</span> <span class="n">Wait</span> <span class="k">for</span> <span class="n">conversion</span> <span class="n">to</span> <span class="n">complete</span>
+  <span class="mf">3.</span> <span class="n">Quantify</span> <span class="p">(</span><span class="n">quant</span><span class="p">)</span>
+  <span class="mf">4.</span> <span class="n">Delete</span> <span class="n">FASTQ</span> <span class="n">files</span>
+  <span class="mf">5.</span> <span class="n">Next</span> <span class="n">sample</span>
+</pre></div>
+</div>
+<p><strong>Characteristics</strong>:</p>
+<ul class="simple">
+<li><p>Maximum disk efficiency: only one sample’s FASTQs exist at a time</p></li>
+<li><p>Lower throughput: samples processed sequentially</p></li>
+<li><p>Best for: Limited disk space, small cohorts, or when disk space is critical</p></li>
+</ul>
+<p><strong>Use Case</strong>: When disk space is very limited or you want maximum control over resource usage.</p>
+</section>
+<section id="parallel-mode-num-workers-1">
+<h3>Parallel Mode (<code class="docutils literal notranslate"><span class="pre">num_workers&gt;1</span></code>)<a class="headerlink" href="#parallel-mode-num-workers-1" title="Link to this heading"></a></h3>
+<p><strong>Architecture</strong>: Producer-consumer pattern</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">N</span> <span class="n">download</span> <span class="n">workers</span> <span class="p">(</span><span class="n">parallel</span><span class="p">):</span>
+  <span class="o">-</span> <span class="n">Download</span> <span class="n">FASTQ</span> <span class="n">files</span> <span class="n">concurrently</span>
+  <span class="o">-</span> <span class="n">Place</span> <span class="n">completed</span> <span class="n">downloads</span> <span class="ow">in</span> <span class="n">queue</span>
+
+<span class="mi">1</span> <span class="n">quantification</span> <span class="n">worker</span> <span class="p">(</span><span class="n">sequential</span><span class="p">):</span>
+  <span class="o">-</span> <span class="n">Processes</span> <span class="n">downloads</span> <span class="kn">from</span><span class="w"> </span><span class="nn">queue</span>
+  <span class="o">-</span> <span class="n">Quantifies</span> <span class="n">one</span> <span class="n">at</span> <span class="n">a</span> <span class="n">time</span>
+  <span class="o">-</span> <span class="n">Deletes</span> <span class="n">FASTQ</span> <span class="n">after</span> <span class="n">quantification</span>
+</pre></div>
+</div>
+<p><strong>Characteristics</strong>:</p>
+<ul class="simple">
+<li><p>Higher throughput: multiple downloads in parallel</p></li>
+<li><p>Sequential quantification prevents disk exhaustion</p></li>
+<li><p>Best for: Large cohorts, sufficient disk space, faster processing</p></li>
+</ul>
+<p><strong>Use Case</strong>: When you have sufficient disk space and want to maximize download throughput.</p>
+</section>
+<section id="unified-implementation">
+<h3>Unified Implementation<a class="headerlink" href="#unified-implementation" title="Link to this heading"></a></h3>
+<p>Both modes are implemented in a single function: <code class="docutils literal notranslate"><span class="pre">run_download_quant_workflow()</span></code> in <code class="docutils literal notranslate"><span class="pre">process_samples.py</span></code>. The <code class="docutils literal notranslate"><span class="pre">num_workers</span></code> parameter controls the mode:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna.steps</span><span class="w"> </span><span class="kn">import</span> <span class="n">run_download_quant_workflow</span>
+
+<span class="c1"># Sequential mode</span>
+<span class="n">stats</span> <span class="o">=</span> <span class="n">run_download_quant_workflow</span><span class="p">(</span>
+    <span class="n">metadata_path</span><span class="o">=</span><span class="s2">&quot;metadata.tsv&quot;</span><span class="p">,</span>
+    <span class="n">getfastq_params</span><span class="o">=</span><span class="p">{</span><span class="o">...</span><span class="p">},</span>
+    <span class="n">quant_params</span><span class="o">=</span><span class="p">{</span><span class="o">...</span><span class="p">},</span>
+    <span class="n">num_workers</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>  <span class="c1"># Sequential</span>
+<span class="p">)</span>
+
+<span class="c1"># Parallel mode</span>
+<span class="n">stats</span> <span class="o">=</span> <span class="n">run_download_quant_workflow</span><span class="p">(</span>
+    <span class="n">metadata_path</span><span class="o">=</span><span class="s2">&quot;metadata.tsv&quot;</span><span class="p">,</span>
+    <span class="n">getfastq_params</span><span class="o">=</span><span class="p">{</span><span class="o">...</span><span class="p">},</span>
+    <span class="n">quant_params</span><span class="o">=</span><span class="p">{</span><span class="o">...</span><span class="p">},</span>
+    <span class="n">num_workers</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>  <span class="c1"># 8 parallel download workers</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="step-runner-pattern">
+<h2>Step Runner Pattern<a class="headerlink" href="#step-runner-pattern" title="Link to this heading"></a></h2>
+<section id="design-principles">
+<h3>Design Principles<a class="headerlink" href="#design-principles" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Thin Wrappers</strong>: Step modules are thin wrappers around <code class="docutils literal notranslate"><span class="pre">amalgkit</span></code> CLI commands</p></li>
+<li><p><strong>Uniform Interface</strong>: All steps follow the same function signature</p></li>
+<li><p><strong>Isolation</strong>: Step-specific logic is isolated from orchestration</p></li>
+<li><p><strong>Composability</strong>: Steps can be run individually or as part of workflows</p></li>
+</ol>
+</section>
+<section id="step-interface">
+<h3>Step Interface<a class="headerlink" href="#step-interface" title="Link to this heading"></a></h3>
+<p>All step runners follow this pattern:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span>
+    <span class="n">params</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="o">*</span><span class="p">,</span>
+    <span class="n">work_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">log_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="n">Path</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">check</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">CompletedProcess</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run amalgkit step.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        params: Step-specific parameters</span>
+<span class="sd">        work_dir: Working directory</span>
+<span class="sd">        log_dir: Log directory</span>
+<span class="sd">        check: Raise on failure</span>
+<span class="sd">        </span>
+<span class="sd">    Returns:</span>
+<span class="sd">        CompletedProcess with return code and output</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">..amalgkit</span><span class="w"> </span><span class="kn">import</span> <span class="n">step_name</span> <span class="k">as</span> <span class="n">_step</span>
+    <span class="k">return</span> <span class="n">_step</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">work_dir</span><span class="o">=</span><span class="n">work_dir</span><span class="p">,</span> <span class="n">log_dir</span><span class="o">=</span><span class="n">log_dir</span><span class="p">,</span> <span class="n">step_name</span><span class="o">=</span><span class="s2">&quot;step_name&quot;</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="n">check</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="step-registry">
+<h3>Step Registry<a class="headerlink" href="#step-registry" title="Link to this heading"></a></h3>
+<p>Steps are registered in <code class="docutils literal notranslate"><span class="pre">steps/__init__.py</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">STEP_RUNNERS</span><span class="p">:</span> <span class="nb">dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="nb">object</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="n">run_metadata</span><span class="p">,</span>
+    <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="n">run_config</span><span class="p">,</span>
+    <span class="s2">&quot;select&quot;</span><span class="p">:</span> <span class="n">run_select</span><span class="p">,</span>
+    <span class="s2">&quot;getfastq&quot;</span><span class="p">:</span> <span class="n">run_getfastq</span><span class="p">,</span>
+    <span class="s2">&quot;integrate&quot;</span><span class="p">:</span> <span class="n">run_integrate</span><span class="p">,</span>
+    <span class="s2">&quot;quant&quot;</span><span class="p">:</span> <span class="n">run_quant</span><span class="p">,</span>
+    <span class="s2">&quot;merge&quot;</span><span class="p">:</span> <span class="n">run_merge</span><span class="p">,</span>
+    <span class="s2">&quot;cstmm&quot;</span><span class="p">:</span> <span class="n">run_cstmm</span><span class="p">,</span>
+    <span class="s2">&quot;curate&quot;</span><span class="p">:</span> <span class="n">run_curate</span><span class="p">,</span>
+    <span class="s2">&quot;csca&quot;</span><span class="p">:</span> <span class="n">run_csca</span><span class="p">,</span>
+    <span class="s2">&quot;sanity&quot;</span><span class="p">:</span> <span class="n">run_sanity</span><span class="p">,</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p>This registry allows workflows to dynamically call steps by name.</p>
+</section>
+</section>
+<section id="integration-points">
+<h2>Integration Points<a class="headerlink" href="#integration-points" title="Link to this heading"></a></h2>
+<section id="scripts-source-amalgkit">
+<h3>Scripts → Source → Amalgkit<a class="headerlink" href="#scripts-source-amalgkit" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>scripts/rna/run_workflow.py
+    ↓
+src/metainformant/rna/workflow.py
+    ↓
+src/metainformant/rna/steps/*.py
+    ↓
+src/metainformant/rna/amalgkit.py
+    ↓
+amalgkit CLI (subprocess)
+</pre></div>
+</div>
+</section>
+<section id="configuration-flow">
+<h3>Configuration Flow<a class="headerlink" href="#configuration-flow" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>config/amalgkit/species.yaml
+    ↓
+metainformant.core.config.load_workflow_config()
+    ↓
+AmalgkitWorkflowConfig
+    ↓
+workflow.py:plan_workflow() / execute_workflow()
+    ↓
+Step runners
+</pre></div>
+</div>
+</section>
+<section id="data-flow">
+<h3>Data Flow<a class="headerlink" href="#data-flow" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>Metadata TSV
+    ↓
+Step 1: metadata → metadata.tsv
+    ↓
+Step 2: config → .config files
+    ↓
+Step 3: select → filtered metadata
+    ↓
+Step 4: getfastq → FASTQ files
+    ↓
+Step 5: integrate → metadata with FASTQ paths
+    ↓
+Step 6: quant → abundance.tsv per sample
+    ↓
+Step 7: merge → expression matrix
+    ↓
+Step 8-11: Statistical analysis
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id1">
+<h2>Data Flow<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<section id="workflow-execution-flow">
+<h3>Workflow Execution Flow<a class="headerlink" href="#workflow-execution-flow" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>1. Load Configuration
+   └─&gt; config/amalgkit/species.yaml
+       └─&gt; AmalgkitWorkflowConfig
+
+2. Plan Workflow
+   └─&gt; workflow.py:plan_workflow()
+       └─&gt; Returns list of step names
+
+3. Execute Steps
+   └─&gt; workflow.py:execute_workflow()
+       ├─&gt; For each step:
+       │   ├─&gt; Get step runner from STEP_RUNNERS
+       │   ├─&gt; Prepare step parameters
+       │   ├─&gt; Call step runner
+       │   └─&gt; Handle errors
+       │
+       └─&gt; Special handling for getfastq+quant:
+           └─&gt; process_samples.py:run_download_quant_workflow()
+               ├─&gt; Sequential mode (num_workers=1)
+               └─&gt; Parallel mode (num_workers&gt;1)
+</pre></div>
+</div>
+</section>
+<section id="file-system-structure">
+<h3>File System Structure<a class="headerlink" href="#file-system-structure" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>output/amalgkit/&lt;species&gt;/
+├── work/
+│   ├── metadata/
+│   │   └── metadata.tsv
+│   ├── config/
+│   │   └── *.config
+│   └── index/
+│       └── kallisto.idx
+├── fastq/
+│   └── getfastq/
+│       └── &lt;SRR&gt;/
+│           └── *.fastq.gz
+├── quant/
+│   └── &lt;SRR&gt;/
+│       └── abundance.tsv
+├── merged/
+│   └── expression_matrix.tsv
+└── logs/
+    └── *.log
+</pre></div>
+</div>
+</section>
+</section>
+<section id="decision-tree">
+<h2>Decision Tree<a class="headerlink" href="#decision-tree" title="Link to this heading"></a></h2>
+<section id="when-to-use-sequential-mode">
+<h3>When to Use Sequential Mode<a class="headerlink" href="#when-to-use-sequential-mode" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>Do you have limited disk space?
+├─&gt; Yes → Use sequential mode (num_workers=1)
+│   └─&gt; Only one sample&#39;s FASTQs exist at a time
+│
+└─&gt; No → Continue to next question
+
+Is your cohort small (&lt;50 samples)?
+├─&gt; Yes → Sequential mode is fine
+│   └─&gt; Simpler, easier to debug
+│
+└─&gt; No → Consider parallel mode
+
+Do you need maximum throughput?
+├─&gt; Yes → Use parallel mode (num_workers=4-8)
+│   └─&gt; Multiple downloads in parallel
+│
+└─&gt; No → Sequential mode is sufficient
+</pre></div>
+</div>
+</section>
+<section id="when-to-use-parallel-mode">
+<h3>When to Use Parallel Mode<a class="headerlink" href="#when-to-use-parallel-mode" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>Do you have sufficient disk space?
+├─&gt; No → Use sequential mode
+│
+└─&gt; Yes → Continue
+
+Is your cohort large (&gt;50 samples)?
+├─&gt; No → Sequential mode is fine
+│
+└─&gt; Yes → Use parallel mode
+
+How many workers?
+├─&gt; Limited bandwidth → 2-4 workers
+├─&gt; Good bandwidth → 4-8 workers
+└─&gt; Excellent bandwidth → 8-16 workers
+    (Note: More workers = more disk space needed)
+</pre></div>
+</div>
+</section>
+<section id="step-selection">
+<h3>Step Selection<a class="headerlink" href="#step-selection" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>What do you want to do?
+├─&gt; Start from scratch
+│   └─&gt; Steps: metadata, config, select, getfastq, quant, merge
+│
+├─&gt; Already have metadata
+│   └─&gt; Steps: config, select, getfastq, quant, merge
+│
+├─&gt; Already have FASTQ files
+│   └─&gt; Steps: integrate, quant, merge
+│
+├─&gt; Already have quantifications
+│   └─&gt; Steps: merge, cstmm, curate, csca, sanity
+│
+└─&gt; Complete workflow
+    └─&gt; Steps: metadata, config, select, getfastq, quant, merge, cstmm, curate, csca, sanity
+</pre></div>
+</div>
+</section>
+</section>
+<section id="extending-the-system">
+<h2>Extending the System<a class="headerlink" href="#extending-the-system" title="Link to this heading"></a></h2>
+<section id="adding-a-new-step">
+<h3>Adding a New Step<a class="headerlink" href="#adding-a-new-step" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Create step module</strong> (<code class="docutils literal notranslate"><span class="pre">steps/new_step.py</span></code>):</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">..amalgkit</span><span class="w"> </span><span class="kn">import</span> <span class="n">new_step</span> <span class="k">as</span> <span class="n">_new_step</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">work_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">log_dir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Run amalgkit new_step.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">_new_step</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">work_dir</span><span class="o">=</span><span class="n">work_dir</span><span class="p">,</span> <span class="n">log_dir</span><span class="o">=</span><span class="n">log_dir</span><span class="p">,</span> <span class="n">step_name</span><span class="o">=</span><span class="s2">&quot;new_step&quot;</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="n">check</span><span class="p">)</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="2">
+<li><p><strong>Register in <code class="docutils literal notranslate"><span class="pre">steps/__init__.py</span></code></strong>:</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">.new_step</span><span class="w"> </span><span class="kn">import</span> <span class="n">run</span> <span class="k">as</span> <span class="n">run_new_step</span>
+
+<span class="n">STEP_RUNNERS</span><span class="p">[</span><span class="s2">&quot;new_step&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">run_new_step</span>
+<span class="n">__all__</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;run_new_step&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="3">
+<li><p><strong>Add to workflow planning</strong> (if needed):</p></li>
+</ol>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># In workflow.py:plan_workflow()</span>
+<span class="k">if</span> <span class="s2">&quot;new_step&quot;</span> <span class="ow">in</span> <span class="n">config</span><span class="o">.</span><span class="n">steps</span><span class="p">:</span>
+    <span class="n">planned_steps</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;new_step&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<ol class="arabic simple" start="4">
+<li><p><strong>Add documentation</strong>:</p>
+<ul class="simple">
+<li><p>Update <code class="docutils literal notranslate"><span class="pre">docs/rna/amalgkit/steps/README.md</span></code></p></li>
+<li><p>Create <code class="docutils literal notranslate"><span class="pre">docs/rna/amalgkit/steps/new_step.md</span></code></p></li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="modifying-processing-logic">
+<h3>Modifying Processing Logic<a class="headerlink" href="#modifying-processing-logic" title="Link to this heading"></a></h3>
+<p>The unified processing function (<code class="docutils literal notranslate"><span class="pre">process_samples.py</span></code>) can be extended:</p>
+<ul class="simple">
+<li><p><strong>Custom progress tracking</strong>: Pass custom <code class="docutils literal notranslate"><span class="pre">DownloadProgressMonitor</span></code></p></li>
+<li><p><strong>Custom error handling</strong>: Modify worker functions</p></li>
+<li><p><strong>Custom cleanup</strong>: Modify <code class="docutils literal notranslate"><span class="pre">_delete_fastq_for_sample()</span></code></p></li>
+</ul>
+</section>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="workflow.html"><span class="std std-doc">Workflow Guide</span></a> - Workflow planning and execution</p></li>
+<li><p><a class="reference internal" href="amalgkit/steps/README.html"><span class="std std-doc">Step Documentation</span></a> - Individual step guides</p></li>
+<li><p><a class="reference internal" href="CONFIGURATION.html"><span class="std std-doc">Configuration Guide</span></a> - Configuration management</p></li>
+<li><p><a class="reference internal" href="API.html"><span class="std std-doc">API Reference</span></a> - Complete function documentation</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

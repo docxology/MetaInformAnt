@@ -1,0 +1,353 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Core: Logging Framework &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Core: Logging Framework</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/core/logging.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="core-logging-framework">
+<h1>Core: Logging Framework<a class="headerlink" href="#core-logging-framework" title="Link to this heading"></a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">logging</span></code> module provides consistent, structured logging across all METAINFORMANT modules with support for console and file output.</p>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<section id="logger-creation">
+<h3>Logger Creation<a class="headerlink" href="#logger-creation" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">get_logger(name)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">logging.Logger</span></code></p>
+<ul>
+<li><p>Get or create a logger with console output</p></li>
+<li><p>Automatic handler setup if none exists</p></li>
+<li><p>Default INFO level formatting</p></li>
+</ul>
+</li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">get_logger_with_level(name,</span> <span class="pre">level=None)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">logging.Logger</span></code></p>
+<ul>
+<li><p>Get or create a logger with specified log level</p></li>
+<li><p>Reads <code class="docutils literal notranslate"><span class="pre">CORE_LOG_LEVEL</span></code> environment variable if level is None</p></li>
+<li><p>Supports string levels (“DEBUG”, “INFO”, etc.) or integer levels</p></li>
+</ul>
+</li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">setup_logger(name,</span> <span class="pre">log_file=None,</span> <span class="pre">level=&quot;INFO&quot;)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">logging.Logger</span></code></p>
+<ul>
+<li><p>Create logger with console and optional file output</p></li>
+<li><p>Configurable logging level</p></li>
+<li><p>Automatic directory creation for log files</p></li>
+</ul>
+</li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">configure_logging_from_env(default_level=&quot;INFO&quot;)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+<ul>
+<li><p>Configure root logger from <code class="docutils literal notranslate"><span class="pre">CORE_LOG_LEVEL</span></code> environment variable</p></li>
+<li><p>Affects all loggers that inherit from root</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="structured-logging">
+<h3>Structured Logging<a class="headerlink" href="#structured-logging" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">log_with_metadata(logger,</span> <span class="pre">message,</span> <span class="pre">metadata,</span> <span class="pre">*,</span> <span class="pre">level=&quot;INFO&quot;,</span> <span class="pre">structured=False)</span></code></strong> → <code class="docutils literal notranslate"><span class="pre">None</span></code></p>
+<ul>
+<li><p>Log messages with structured JSON metadata</p></li>
+<li><p>Useful for adding context to log entries</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">level</span></code>: Log level to use (“DEBUG”, “INFO”, “WARNING”, “ERROR”, “CRITICAL”)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">structured</span></code>: If True, writes metadata as separate JSON entry for structured logging systems</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="usage-examples">
+<h2>Usage Examples<a class="headerlink" href="#usage-examples" title="Link to this heading"></a></h2>
+<section id="basic-logging">
+<h3>Basic Logging<a class="headerlink" href="#basic-logging" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">logging</span>
+
+<span class="c1"># Simple logger creation</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">get_logger</span><span class="p">(</span><span class="s2">&quot;metainformant.dna&quot;</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Starting sequence analysis&quot;</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Low quality sequence detected&quot;</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s2">&quot;Failed to parse FASTA file&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="advanced-logger-setup">
+<h3>Advanced Logger Setup<a class="headerlink" href="#advanced-logger-setup" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">logging</span>
+
+<span class="c1"># Logger with file output</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">setup_logger</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;metainformant.rna.pipeline&quot;</span><span class="p">,</span>
+    <span class="n">log_file</span><span class="o">=</span><span class="s2">&quot;output/logs/rna_pipeline.log&quot;</span><span class="p">,</span>
+    <span class="n">level</span><span class="o">=</span><span class="s2">&quot;DEBUG&quot;</span>
+<span class="p">)</span>
+
+<span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Pipeline started&quot;</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Processing 1000 samples&quot;</span><span class="p">)</span>
+<span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Some samples failed quality control&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="structured-logging-with-metadata">
+<h3>Structured Logging with Metadata<a class="headerlink" href="#structured-logging-with-metadata" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">logging</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">setup_logger</span><span class="p">(</span><span class="s2">&quot;metainformant.analysis&quot;</span><span class="p">)</span>
+
+<span class="c1"># Log with structured metadata</span>
+<span class="n">analysis_metadata</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;sample_count&quot;</span><span class="p">:</span> <span class="mi">500</span><span class="p">,</span>
+    <span class="s2">&quot;genes_analyzed&quot;</span><span class="p">:</span> <span class="mi">25000</span><span class="p">,</span>
+    <span class="s2">&quot;computation_time&quot;</span><span class="p">:</span> <span class="mf">45.2</span><span class="p">,</span>
+    <span class="s2">&quot;memory_peak&quot;</span><span class="p">:</span> <span class="s2">&quot;2.1GB&quot;</span>
+<span class="p">}</span>
+
+<span class="n">logging</span><span class="o">.</span><span class="n">log_with_metadata</span><span class="p">(</span>
+    <span class="n">logger</span><span class="p">,</span>
+    <span class="s2">&quot;Differential expression analysis completed&quot;</span><span class="p">,</span>
+    <span class="n">analysis_metadata</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="log-format">
+<h2>Log Format<a class="headerlink" href="#log-format" title="Link to this heading"></a></h2>
+<p>All log messages use a consistent format:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="mi">2024</span><span class="o">-</span><span class="mi">01</span><span class="o">-</span><span class="mi">15</span> <span class="mi">14</span><span class="p">:</span><span class="mi">30</span><span class="p">:</span><span class="mi">25</span> <span class="o">|</span> <span class="n">INFO</span> <span class="o">|</span> <span class="n">metainformant</span><span class="o">.</span><span class="n">dna</span><span class="o">.</span><span class="n">alignment</span> <span class="o">|</span> <span class="n">Alignment</span> <span class="n">completed</span> <span class="k">for</span> <span class="mi">100</span> <span class="n">sequences</span>
+</pre></div>
+</div>
+<p>Format components:</p>
+<ul class="simple">
+<li><p><strong>Timestamp</strong>: YYYY-MM-DD HH:MM:SS format</p></li>
+<li><p><strong>Level</strong>: INFO, WARNING, ERROR, DEBUG</p></li>
+<li><p><strong>Logger Name</strong>: Hierarchical module naming</p></li>
+<li><p><strong>Message</strong>: Log message content</p></li>
+</ul>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<section id="logger-naming">
+<h3>Logger Naming<a class="headerlink" href="#logger-naming" title="Link to this heading"></a></h3>
+<p>Use hierarchical naming that reflects the module structure:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Good</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">get_logger</span><span class="p">(</span><span class="s2">&quot;metainformant.dna.alignment&quot;</span><span class="p">)</span>
+
+<span class="c1"># Avoid</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">get_logger</span><span class="p">(</span><span class="s2">&quot;my_script&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="log-levels">
+<h3>Log Levels<a class="headerlink" href="#log-levels" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>DEBUG</strong>: Detailed diagnostic information</p></li>
+<li><p><strong>INFO</strong>: General information about program execution</p></li>
+<li><p><strong>WARNING</strong>: Potential issues that don’t stop execution</p></li>
+<li><p><strong>ERROR</strong>: Serious problems that may affect results</p></li>
+</ul>
+</section>
+<section id="structured-metadata">
+<h3>Structured Metadata<a class="headerlink" href="#structured-metadata" title="Link to this heading"></a></h3>
+<p>Use <code class="docutils literal notranslate"><span class="pre">log_with_metadata</span></code> for machine-readable log entries:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Good for monitoring/analysis</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">log_with_metadata</span><span class="p">(</span><span class="n">logger</span><span class="p">,</span> <span class="s2">&quot;Batch processed&quot;</span><span class="p">,</span> <span class="p">{</span>
+    <span class="s2">&quot;batch_id&quot;</span><span class="p">:</span> <span class="s2">&quot;batch_001&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;records_processed&quot;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
+    <span class="s2">&quot;processing_time&quot;</span><span class="p">:</span> <span class="mf">15.3</span><span class="p">,</span>
+    <span class="s2">&quot;success_rate&quot;</span><span class="p">:</span> <span class="mf">0.95</span>
+<span class="p">})</span>
+
+<span class="c1"># With structured logging (separate metadata entry)</span>
+<span class="n">logging</span><span class="o">.</span><span class="n">log_with_metadata</span><span class="p">(</span><span class="n">logger</span><span class="p">,</span> <span class="s2">&quot;Batch processed&quot;</span><span class="p">,</span> <span class="p">{</span>
+    <span class="s2">&quot;batch_id&quot;</span><span class="p">:</span> <span class="s2">&quot;batch_001&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;records_processed&quot;</span><span class="p">:</span> <span class="mi">1000</span>
+<span class="p">},</span> <span class="n">structured</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="environment-based-configuration">
+<h3>Environment-Based Configuration<a class="headerlink" href="#environment-based-configuration" title="Link to this heading"></a></h3>
+<p>Configure logging level via environment variable:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set CORE_LOG_LEVEL environment variable</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;CORE_LOG_LEVEL&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;DEBUG&quot;</span>
+
+<span class="c1"># Configure root logger</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">configure_logging_from_env</span>
+<span class="n">configure_logging_from_env</span><span class="p">()</span>
+
+<span class="c1"># Or use get_logger_with_level which reads env automatically</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_logger_with_level</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger_with_level</span><span class="p">(</span><span class="s2">&quot;my.module&quot;</span><span class="p">)</span>  <span class="c1"># Uses CORE_LOG_LEVEL if set</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="file-output">
+<h2>File Output<a class="headerlink" href="#file-output" title="Link to this heading"></a></h2>
+<p>When using <code class="docutils literal notranslate"><span class="pre">setup_logger</span></code> with a log file:</p>
+<ul class="simple">
+<li><p>Parent directories are created automatically</p></li>
+<li><p>Log files are appended (not overwritten)</p></li>
+<li><p>Both console and file get the same formatted output</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Logs to both console and file</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">setup_logger</span><span class="p">(</span>
+    <span class="s2">&quot;metainformant.workflow&quot;</span><span class="p">,</span>
+    <span class="n">log_file</span><span class="o">=</span><span class="s2">&quot;output/workflow.log&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="integration-with-other-modules">
+<h2>Integration with Other Modules<a class="headerlink" href="#integration-with-other-modules" title="Link to this heading"></a></h2>
+<p>The logging module is designed to integrate seamlessly:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core</span><span class="w"> </span><span class="kn">import</span> <span class="n">logging</span><span class="p">,</span> <span class="n">io</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">setup_logger</span><span class="p">(</span><span class="s2">&quot;metainformant.export&quot;</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="c1"># Some operation</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">io</span><span class="o">.</span><span class="n">load_json</span><span class="p">(</span><span class="s2">&quot;input/data.json&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loaded </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span><span class="si">}</span><span class="s2"> records&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Export operation</span>
+    <span class="n">io</span><span class="o">.</span><span class="n">dump_json</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s2">&quot;output/processed.json&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Export completed successfully&quot;</span><span class="p">)</span>
+
+<span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Export failed: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">raise</span>
+</pre></div>
+</div>
+</section>
+<section id="dependencies">
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Required</strong>: Standard library <code class="docutils literal notranslate"><span class="pre">logging</span></code> module</p></li>
+<li><p><strong>Optional</strong>: None (all functionality uses stdlib)</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

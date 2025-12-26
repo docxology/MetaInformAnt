@@ -1,0 +1,611 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>METAINFORMANT Documentation &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/custom.css" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="DNA: Overview" href="dna/index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="#" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="#">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="#" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">METAINFORMANT Documentation</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/index.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="metainformant-documentation">
+<h1>METAINFORMANT Documentation<a class="headerlink" href="#metainformant-documentation" title="Link to this heading"></a></h1>
+<p>METAINFORMANT analyzes biological data across genomics, transcriptomics, proteomics, epigenomics, and systems biology. Built with Python, it provides bioinformatics research tools.</p>
+<section id="system-architecture">
+<h2>System Architecture<a class="headerlink" href="#system-architecture" title="Link to this heading"></a></h2>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TB
+    %% Core Infrastructure
+    subgraph &quot;Core Infrastructure&quot;
+        CORE[Core Utilities&lt;br/&gt;I/O • Config • Logging&lt;br/&gt;Parallel • Paths • Cache]
+    end
+
+    %% Molecular Analysis
+    subgraph &quot;Molecular Analysis&quot;
+        DNA[DNA Analysis&lt;br/&gt;Sequences • Alignment&lt;br/&gt;Phylogeny • Population]
+        RNA[RNA Analysis&lt;br/&gt;RNA-seq • Amalgkit&lt;br/&gt;Transcriptomics • Quantification]
+        PROT[Protein Analysis&lt;br/&gt;Sequences • Structure&lt;br/&gt;AlphaFold • Proteomics]
+        EPI[Epigenome&lt;br/&gt;Methylation • ChIP-seq&lt;br/&gt;ATAC-seq • Chromatin]
+    end
+
+    %% Statistical &amp; ML Methods
+    subgraph &quot;Statistical &amp; ML&quot;
+        GWAS[GWAS&lt;br/&gt;Association • QC&lt;br/&gt;Visualization • SRA]
+        MATH[Math Biology&lt;br/&gt;Population Genetics&lt;br/&gt;Coalescent • Selection]
+        ML[Machine Learning&lt;br/&gt;Classification • Regression&lt;br/&gt;Feature Selection]
+        INFO[Information Theory&lt;br/&gt;Entropy • MI • Similarity&lt;br/&gt;Semantic Measures]
+    end
+
+    %% Systems Biology
+    subgraph &quot;Systems Biology&quot;
+        NET[Networks&lt;br/&gt;PPI • Pathways&lt;br/&gt;Community Detection]
+        MULTI[Multi-Omics&lt;br/&gt;Integration • Harmonization&lt;br/&gt;Joint Analysis]
+        SC[Single-Cell&lt;br/&gt;Preprocessing • Clustering&lt;br/&gt;Trajectory • DE]
+        SIM[Simulation&lt;br/&gt;Sequence • Ecosystem&lt;br/&gt;Agent-based • Evolution]
+    end
+
+    %% Annotation &amp; Metadata
+    subgraph &quot;Annotation &amp; Metadata&quot;
+        ONT[Ontology&lt;br/&gt;Gene Ontology&lt;br/&gt;Functional Annotation]
+        PHEN[Phenotype&lt;br/&gt;Trait Analysis&lt;br/&gt;Life Course • AntWiki]
+        ECO[Ecology&lt;br/&gt;Community • Diversity&lt;br/&gt;Environmental Analysis]
+        LE[Life Events&lt;br/&gt;Event Sequences&lt;br/&gt;Embeddings • Prediction]
+    end
+
+    %% Utilities
+    subgraph &quot;Utilities&quot;
+        QUAL[Quality Control&lt;br/&gt;FASTQ • Assembly&lt;br/&gt;Metrics • Validation]
+        VIZ[Visualization&lt;br/&gt;Plots • Animations&lt;br/&gt;Trees • Networks]
+    end
+
+    %% Data Flow
+    CORE --&gt; DNA
+    CORE --&gt; RNA
+    CORE --&gt; PROT
+    CORE --&gt; EPI
+    CORE --&gt; GWAS
+    CORE --&gt; MATH
+    CORE --&gt; ML
+    CORE --&gt; INFO
+    CORE --&gt; NET
+    CORE --&gt; MULTI
+    CORE --&gt; SC
+    CORE --&gt; SIM
+    CORE --&gt; ONT
+    CORE --&gt; PHEN
+    CORE --&gt; ECO
+    CORE --&gt; LE
+    CORE --&gt; QUAL
+    CORE --&gt; VIZ
+
+    %% Module Integration Paths
+    DNA --&gt; RNA
+    DNA --&gt; PROT
+    DNA --&gt; GWAS
+    DNA --&gt; MATH
+    RNA --&gt; SC
+    RNA --&gt; MULTI
+    PROT --&gt; NET
+    PROT --&gt; ONT
+    EPI --&gt; DNA
+    EPI --&gt; NET
+    ONT --&gt; MULTI
+    PHEN --&gt; GWAS
+    PHEN --&gt; LE
+    ECO --&gt; NET
+    MATH --&gt; GWAS
+    MATH --&gt; DNA
+    INFO --&gt; NET
+    INFO --&gt; ONT
+    NET --&gt; MULTI
+    SC --&gt; MULTI
+    QUAL --&gt; ALL_MODULES[All Modules]
+    VIZ --&gt; ALL_MODULES
+
+    %% External Dependencies
+    RNA -.-&gt;|&quot;Amalgkit CLI&quot;| RNA
+    GWAS -.-&gt;|&quot;bcftools, GATK&quot;| GWAS
+    SC -.-&gt;|&quot;scanpy, anndata&quot;| SC
+    PROT -.-&gt;|&quot;AlphaFold&quot;| PROT
+
+    %% Data Sources
+    NCBI[(NCBI&lt;br/&gt;Genomes)] --&gt; DNA
+    SRA[(SRA&lt;br/&gt;Sequencing)] --&gt; RNA
+    SRA --&gt; SC
+    SRA --&gt; GWAS
+    PDB[(PDB&lt;br/&gt;Structures)] --&gt; PROT
+    GEO[(GEO&lt;br/&gt;Expression)] --&gt; RNA
+    GO[(Gene&lt;br/&gt;Ontology)] --&gt; ONT
+
+    %% Output Formats
+    DNA -.-&gt;|FASTA/FASTQ| OUTPUT[Output Formats]
+    RNA -.-&gt;|Count Matrices| OUTPUT
+    PROT -.-&gt;|PDB/PDBx| OUTPUT
+    GWAS -.-&gt;|Manhattan Plots| OUTPUT
+    NET -.-&gt;|GraphML| OUTPUT
+    VIZ -.-&gt;|PNG/SVG/PDF| OUTPUT
+
+    %% Styling
+    classDef core fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef molecular fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef stats fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef systems fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef annotation fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef utility fill:#f9fbe7,stroke:#827717,stroke-width:2px
+    classDef external fill:#fafafa,stroke:#424242,stroke-width:1px
+
+    class CORE core
+    class DNA,RNA,PROT,EPI molecular
+    class GWAS,MATH,ML,INFO stats
+    class NET,MULTI,SC,SIM systems
+    class ONT,PHEN,ECO,LE annotation
+    class QUAL,VIZ utility
+    class NCBI,SRA,PDB,GEO,GO,RNA,GWAS,SC,PROT external
+</pre></div>
+</div>
+</section>
+<section id="key-features">
+<h2>Key Features<a class="headerlink" href="#key-features" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Multi-Omic Analysis</strong>: DNA, RNA, protein, and epigenome data</p></li>
+<li><p><strong>Statistical &amp; ML Methods</strong>: GWAS, population genetics, machine learning</p></li>
+<li><p><strong>Single-Cell Genomics</strong>: scRNA-seq workflows</p></li>
+<li><p><strong>Network Analysis</strong>: Biological networks, pathways, community detection</p></li>
+<li><p><strong>Visualizations</strong>: Plots and animations</p></li>
+<li><p><strong>Modular Architecture</strong>: Individual modules or complete workflows</p></li>
+<li><p><strong>Documentation</strong>: 70+ README files</p></li>
+<li><p><strong>Real Implementation Testing</strong>: No mocks - real methods in tests</p></li>
+</ul>
+</section>
+<section id="quick-start">
+<h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h2>
+<section id="prerequisites">
+<h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Python 3.11+</strong></p></li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">uv</span></code></strong> - Fast Python package manager (<strong>REQUIRED</strong>)</p>
+<ul>
+<li><p>Install: <code class="docutils literal notranslate"><span class="pre">curl</span> <span class="pre">-LsSf</span> <span class="pre">https://astral.sh/uv/install.sh</span> <span class="pre">|</span> <span class="pre">sh</span></code></p></li>
+<li><p>Verify: <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">--version</span></code></p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="id1">
+<h1><a class="headerlink" href="#id1" title="Link to this heading"></a></h1>
+<section id="id2">
+<h2>Quick Start<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+<section id="installation">
+<h3>Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h3>
+<p>METAINFORMANT can be installed via pip, uv, or from source:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Via pip</span>
+pip<span class="w"> </span>install<span class="w"> </span>metainformant
+
+<span class="c1"># Via uv (recommended)</span>
+uv<span class="w"> </span>add<span class="w"> </span>metainformant
+
+<span class="c1"># From source</span>
+git<span class="w"> </span>clone<span class="w"> </span>https://github.com/your-org/metainformant.git
+<span class="nb">cd</span><span class="w"> </span>metainformant
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+</pre></div>
+</div>
+</section>
+<section id="basic-usage">
+<h3>Basic Usage<a class="headerlink" href="#basic-usage" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">metainformant</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mi</span>
+
+<span class="c1"># DNA sequence analysis</span>
+<span class="n">seq</span> <span class="o">=</span> <span class="s2">&quot;ATCGATCGATCG&quot;</span>
+<span class="n">gc_content</span> <span class="o">=</span> <span class="n">mi</span><span class="o">.</span><span class="n">dna</span><span class="o">.</span><span class="n">composition</span><span class="o">.</span><span class="n">gc_content</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;GC content: </span><span class="si">{</span><span class="n">gc_content</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># RNA-seq workflow</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">metainformant.rna.workflow</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">rna_workflow</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">rna_workflow</span><span class="o">.</span><span class="n">AmalgkitWorkflowConfig</span><span class="p">(</span>
+    <span class="n">work_dir</span><span class="o">=</span><span class="s2">&quot;output/rna_analysis&quot;</span><span class="p">,</span>
+    <span class="n">species_list</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Apis_mellifera&quot;</span><span class="p">]</span>
+<span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">rna_workflow</span><span class="o">.</span><span class="n">execute_amalgkit_workflow</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="command-line-interface">
+<h3>Command Line Interface<a class="headerlink" href="#command-line-interface" title="Link to this heading"></a></h3>
+<p>METAINFORMANT provides a comprehensive CLI:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Show help</span>
+metainformant<span class="w"> </span>--help
+
+<span class="c1"># DNA analysis</span>
+metainformant<span class="w"> </span>dna<span class="w"> </span>gc-content<span class="w"> </span>--sequence<span class="w"> </span>ATCGATCG
+
+<span class="c1"># RNA workflow</span>
+metainformant<span class="w"> </span>rna<span class="w"> </span>run<span class="w"> </span>--config<span class="w"> </span>config/rna_config.yaml
+
+<span class="c1"># GWAS analysis</span>
+metainformant<span class="w"> </span>gwas<span class="w"> </span>run<span class="w"> </span>--config<span class="w"> </span>config/gwas_config.yaml
+</pre></div>
+</div>
+</section>
+</section>
+<section id="documentation-contents">
+<h2>Documentation Contents<a class="headerlink" href="#documentation-contents" title="Link to this heading"></a></h2>
+<section id="user-guides">
+<h3>User Guides<a class="headerlink" href="#user-guides" title="Link to this heading"></a></h3>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+<section id="api-reference">
+<h3>API Reference<a class="headerlink" href="#api-reference" title="Link to this heading"></a></h3>
+<div class="toctree-wrapper compound">
+</div>
+</section>
+<section id="module-documentation">
+<h3>Module Documentation<a class="headerlink" href="#module-documentation" title="Link to this heading"></a></h3>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="dna/index.html">DNA: Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="dna/index.html#core-modules">Core Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dna/index.html#analysis-modules">Analysis Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dna/index.html#sequence-features">Sequence Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="dna/index.html#external-data">External Data</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="rna/index.html">RNA: Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="rna/index.html#quick-links">Quick Links</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rna/index.html#transcriptomic-meta-analysis-concept">Transcriptomic meta-analysis (concept)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rna/index.html#mapping-to-the-amalgkit-based-workflow">Mapping to the amalgkit-based workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="rna/index.html#see-also">See Also</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gwas/index.html">GWAS (Genome-Wide Association Studies)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="gwas/index.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gwas/index.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gwas/index.html#command-line">Command Line</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gwas/index.html#workflow-steps">Workflow Steps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gwas/index.html#configuration">Configuration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gwas/index.html#module-components">Module Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gwas/index.html#output-structure">Output Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gwas/index.html#input-file-formats">Input File Formats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gwas/index.html#api-reference">API Reference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gwas/index.html#related-modules">Related Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gwas/index.html#documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gwas/index.html#references">References</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gwas/index.html#limitations-and-known-gaps">Limitations and Known Gaps</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gwas/index.html#performance-considerations">Performance Considerations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="gwas/index.html#integration-examples">Integration Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#key-components">Key Components</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="epigenome/index.html#dna-methylation-analysis">DNA Methylation Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="epigenome/index.html#chromatin-accessibility">Chromatin Accessibility</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#analysis-workflows">Analysis Workflows</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="epigenome/index.html#methylation-analysis-pipeline">Methylation Analysis Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="epigenome/index.html#chromatin-accessibility-pipeline">Chromatin Accessibility Pipeline</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ontology/index.html">Ontology Module Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ontology/index.html#features">Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ontology/index.html#documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ontology/index.html#module-reference">Module Reference</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#key-components">Key Components</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ecology/index.html#community-ecology-analysis">Community Ecology Analysis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ecology/index.html#community-composition">Community Composition</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ecology/index.html#environmental-integration">Environmental Integration</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#analysis-workflows">Analysis Workflows</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ecology/index.html#biodiversity-assessment">Biodiversity Assessment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ecology/index.html#community-comparison">Community Comparison</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ecology/index.html#environmental-correlations">Environmental Correlations</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#integration-with-other-modules">Integration with Other Modules</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ecology/index.html#with-phenotype-data">With Phenotype Data</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ecology/index.html#with-statistical-analysis">With Statistical Analysis</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ml/index.html">Machine Learning: Biological Data Analysis</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ml/index.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ml/index.html#core-components">Core Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ml/index.html#architecture">Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ml/index.html#key-features">Key Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ml/index.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ml/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ml/index.html#performance-features">Performance Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ml/index.html#model-interpretability">Model Interpretability</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ml/index.html#advanced-workflows">Advanced Workflows</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ml/index.html#testing">Testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ml/index.html#related-documentation">Related Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="networks/index.html">Networks: Biological Network Analysis</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="networks/index.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="networks/index.html#core-components">Core Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="networks/index.html#architecture">Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="networks/index.html#key-features">Key Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="networks/index.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="networks/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="networks/index.html#performance-features">Performance Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="networks/index.html#testing">Testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="networks/index.html#related-documentation">Related Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="singlecell/index.html">Single-Cell Genomics</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="singlecell/index.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="singlecell/index.html#architecture">Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="singlecell/index.html#key-features">Key Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="singlecell/index.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="singlecell/index.html#file-format-support">File Format Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="singlecell/index.html#integration-with-other-tools">Integration with Other Tools</a></li>
+<li class="toctree-l2"><a class="reference internal" href="singlecell/index.html#module-structure">Module Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="singlecell/index.html#dependencies">Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="singlecell/index.html#performance-considerations">Performance Considerations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="singlecell/index.html#best-practices">Best Practices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="singlecell/index.html#examples-and-tutorials">Examples and Tutorials</a></li>
+<li class="toctree-l2"><a class="reference internal" href="singlecell/index.html#related-documentation">Related Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="quality/index.html">Quality Control</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="quality/index.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quality/index.html#architecture">Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quality/index.html#key-features">Key Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quality/index.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quality/index.html#analysis-modules">Analysis Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quality/index.html#module-structure">Module Structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quality/index.html#additional-modules">Additional Modules</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quality/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quality/index.html#file-format-support">File Format Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quality/index.html#integration-with-analysis-pipelines">Integration with Analysis Pipelines</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quality/index.html#output-formats">Output Formats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quality/index.html#performance-characteristics">Performance Characteristics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quality/index.html#best-practices">Best Practices</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quality/index.html#dependencies">Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quality/index.html#testing">Testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="quality/index.html#related-documentation">Related Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="visualization/index.html">Visualization: Overview</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="visualization/index.html#module-organization">Module Organization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visualization/index.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="visualization/index.html#documentation">Documentation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="life_events/index.html">Life Events Module</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="life_events/index.html#overview">Overview</a></li>
+<li class="toctree-l2"><a class="reference internal" href="life_events/index.html#key-features">Key Features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="life_events/index.html#documentation">Documentation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="life_events/index.html#quick-start">Quick Start</a></li>
+<li class="toctree-l2"><a class="reference internal" href="life_events/index.html#core-components">Core Components</a></li>
+<li class="toctree-l2"><a class="reference internal" href="life_events/index.html#integration">Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="life_events/index.html#related-documentation">Related Documentation</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+<section id="development">
+<h3>Development<a class="headerlink" href="#development" title="Link to this heading"></a></h3>
+<div class="toctree-wrapper compound">
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="testing.html">Testing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="testing.html#testing-policy-strictly-no-mocks-fakes">Testing Policy (STRICTLY NO MOCKS/FAKES)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="testing.html#uv-based-testing-workflow">UV-Based Testing Workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="testing.html#test-structure-and-organization">Test Structure and Organization</a></li>
+<li class="toctree-l2"><a class="reference internal" href="testing.html#network-and-external-tool-testing">Network and External Tool Testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="testing.html#environment-variables">Environment Variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="testing.html#test-data-management">Test Data Management</a></li>
+<li class="toctree-l2"><a class="reference internal" href="testing.html#continuous-integration">Continuous Integration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="testing.html#performance-considerations">Performance Considerations</a></li>
+<li class="toctree-l2"><a class="reference internal" href="testing.html#development-workflow">Development Workflow</a></li>
+<li class="toctree-l2"><a class="reference internal" href="testing.html#troubleshooting">Troubleshooting</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</section>
+</section>
+<section id="id3">
+<h2>Key Features<a class="headerlink" href="#id3" title="Link to this heading"></a></h2>
+<section id="comprehensive-domain-coverage">
+<h3>🔬 <strong>Comprehensive Domain Coverage</strong><a class="headerlink" href="#comprehensive-domain-coverage" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>DNA Analysis</strong>: Sequence composition, alignments, phylogenetics, population genetics</p></li>
+<li><p><strong>RNA Analysis</strong>: Transcriptome quantification, differential expression, cross-species analysis</p></li>
+<li><p><strong>Protein Analysis</strong>: Structure prediction, domain analysis, functional annotation</p></li>
+<li><p><strong>GWAS</strong>: Genome-wide association studies with population structure correction</p></li>
+<li><p><strong>Epigenomics</strong>: DNA methylation analysis, chromatin accessibility</p></li>
+<li><p><strong>Systems Biology</strong>: Network analysis, pathway enrichment, multi-omics integration</p></li>
+</ul>
+</section>
+<section id="production-ready">
+<h3>🚀 <strong>Production Ready</strong><a class="headerlink" href="#production-ready" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Real Implementations</strong>: No mocks or fakes - actual external API calls and tool integration</p></li>
+<li><p><strong>Scalable</strong>: Parallel processing, memory-efficient algorithms for large datasets</p></li>
+<li><p><strong>Robust</strong>: Comprehensive error handling and validation</p></li>
+<li><p><strong>Tested</strong>: Extensive test suite with real-world validation</p></li>
+</ul>
+</section>
+<section id="developer-friendly">
+<h3>🛠 <strong>Developer Friendly</strong><a class="headerlink" href="#developer-friendly" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Type Hints</strong>: Full type annotation throughout codebase</p></li>
+<li><p><strong>Documentation</strong>: Comprehensive docstrings and API documentation</p></li>
+<li><p><strong>CLI</strong>: Intuitive command-line interface with subcommands</p></li>
+<li><p><strong>Modular</strong>: Clean separation of concerns, easy to extend</p></li>
+</ul>
+</section>
+<section id="research-grade">
+<h3>📊 <strong>Research Grade</strong><a class="headerlink" href="#research-grade" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Scientific Rigor</strong>: Algorithms validated against established methods</p></li>
+<li><p><strong>Reproducible</strong>: Version-controlled configurations and deterministic workflows</p></li>
+<li><p><strong>Standards Compliant</strong>: Follows bioinformatics best practices and data formats</p></li>
+</ul>
+</section>
+</section>
+<section id="architecture">
+<h2>Architecture<a class="headerlink" href="#architecture" title="Link to this heading"></a></h2>
+</section>
+<section id="getting-help">
+<h2>Getting Help<a class="headerlink" href="#getting-help" title="Link to this heading"></a></h2>
+<section id="community-support">
+<h3>Community Support<a class="headerlink" href="#community-support" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>GitHub Issues</strong>: Report bugs and request features</p></li>
+<li><p><strong>Discussions</strong>: Ask questions and share ideas</p></li>
+<li><p><strong>Documentation</strong>: Comprehensive guides and API reference</p></li>
+</ul>
+</section>
+<section id="id4">
+<h3>Development<a class="headerlink" href="#id4" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Contributing Guide</strong>: How to contribute to METAINFORMANT</p></li>
+<li><p><strong>Development Setup</strong>: Setting up development environment</p></li>
+<li><p><strong>Testing Guide</strong>: Running and writing tests</p></li>
+<li><p><strong>API Design</strong>: Understanding the codebase architecture</p></li>
+</ul>
+<hr class="docutils" />
+<p><strong>METAINFORMANT</strong> is a comprehensive bioinformatics toolkit designed for modern multi-omics research. Whether you’re analyzing genomes, transcriptomes, proteomes, or integrating multi-omics datasets, METAINFORMANT provides the tools and workflows you need.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="dna/index.html" class="btn btn-neutral float-right" title="DNA: Overview" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

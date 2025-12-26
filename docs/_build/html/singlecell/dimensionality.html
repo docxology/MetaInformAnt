@@ -1,0 +1,598 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Single-Cell Dimensionality Reduction &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Single-Cell Dimensionality Reduction</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/singlecell/dimensionality.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="single-cell-dimensionality-reduction">
+<h1>Single-Cell Dimensionality Reduction<a class="headerlink" href="#single-cell-dimensionality-reduction" title="Link to this heading"></a></h1>
+<p>The dimensionality module provides tools for reducing the complexity of high-dimensional single-cell expression data while preserving biological signal.</p>
+<section id="highly-variable-genes-hvgs">
+<h2>Highly Variable Genes (HVGs)<a class="headerlink" href="#highly-variable-genes-hvgs" title="Link to this heading"></a></h2>
+<section id="select-hvgs">
+<h3>select_hvgs()<a class="headerlink" href="#select-hvgs" title="Link to this heading"></a></h3>
+<p>Identify genes with high biological variability across cells:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.dimensionality</span><span class="w"> </span><span class="kn">import</span> <span class="n">select_hvgs</span>
+
+<span class="c1"># Seurat-style HVG selection (default)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">select_hvgs</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">n_top_genes</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s1">&#39;seurat&#39;</span><span class="p">,</span>
+    <span class="n">min_mean</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>      <span class="c1"># Minimum mean expression</span>
+    <span class="n">max_mean</span><span class="o">=</span><span class="mf">8.0</span><span class="p">,</span>       <span class="c1"># Maximum mean expression</span>
+    <span class="n">min_disp</span><span class="o">=</span><span class="mf">0.5</span>        <span class="c1"># Minimum dispersion</span>
+<span class="p">)</span>
+
+<span class="c1"># Variance-based selection</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">select_hvgs</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">n_top_genes</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;variance&#39;</span><span class="p">)</span>
+
+<span class="c1"># Cell Ranger-style selection</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">select_hvgs</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">n_top_genes</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;cellranger&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Methods:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">'seurat'</span></code>: Fits variance-mean relationship, selects genes with high residuals</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'variance'</span></code>: Selects genes with highest variance</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'cellranger'</span></code>: Uses standardized variance similar to 10X Cell Ranger</p></li>
+</ul>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">n_top_genes</span></code>: Number of HVGs to select</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">method</span></code>: HVG selection method</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">min_mean</span></code>, <code class="docutils literal notranslate"><span class="pre">max_mean</span></code>: Mean expression thresholds</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">min_disp</span></code>: Minimum dispersion threshold</p></li>
+</ul>
+<p><strong>Adds to data:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">data.var['highly_variable']</span></code>: Boolean mask for selected genes</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data.var['means']</span></code>: Mean expression per gene</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data.var['dispersions']</span></code>: Dispersion values</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data.var['dispersions_norm']</span></code>: Normalized dispersions</p></li>
+</ul>
+</section>
+</section>
+<section id="principal-component-analysis-pca">
+<h2>Principal Component Analysis (PCA)<a class="headerlink" href="#principal-component-analysis-pca" title="Link to this heading"></a></h2>
+<section id="compute-pca">
+<h3>compute_pca()<a class="headerlink" href="#compute-pca" title="Link to this heading"></a></h3>
+<p>Perform PCA on expression data:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.dimensionality</span><span class="w"> </span><span class="kn">import</span> <span class="n">compute_pca</span>
+
+<span class="c1"># Standard PCA</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">compute_pca</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">n_components</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>           <span class="c1"># Number of components</span>
+    <span class="n">use_highly_variable</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>  <span class="c1"># Use only HVGs</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span>
+<span class="p">)</span>
+
+<span class="c1"># Access results</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;PC loadings shape: </span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">varm</span><span class="p">[</span><span class="s1">&#39;PCs&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Explained variance: </span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">uns</span><span class="p">[</span><span class="s1">&#39;pca&#39;</span><span class="p">][</span><span class="s1">&#39;variance_ratio&#39;</span><span class="p">][:</span><span class="mi">5</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">n_components</span></code>: Number of principal components to compute</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">use_highly_variable</span></code>: Whether to use only highly variable genes</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">random_state</span></code>: Random seed for reproducibility</p></li>
+</ul>
+<p><strong>Adds to data:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">data.obsm['X_pca']</span></code>: Cell coordinates in PC space</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data.varm['PCs']</span></code>: Gene loadings for each PC</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data.uns['pca']['variance']</span></code>: Explained variance per PC</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data.uns['pca']['variance_ratio']</span></code>: Explained variance ratio per PC</p></li>
+</ul>
+</section>
+<section id="choosing-number-of-components">
+<h3>Choosing Number of Components<a class="headerlink" href="#choosing-number-of-components" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+<span class="c1"># Plot explained variance</span>
+<span class="n">variance_ratio</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">uns</span><span class="p">[</span><span class="s1">&#39;pca&#39;</span><span class="p">][</span><span class="s1">&#39;variance_ratio&#39;</span><span class="p">]</span>
+<span class="n">cumsum_var</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">variance_ratio</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">variance_ratio</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">variance_ratio</span><span class="p">,</span> <span class="s1">&#39;bo-&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Principal Component&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Explained Variance Ratio&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Scree Plot&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">cumsum_var</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">cumsum_var</span><span class="p">,</span> <span class="s1">&#39;ro-&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Principal Component&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Cumulative Explained Variance&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Cumulative Variance&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">axhline</span><span class="p">(</span><span class="n">y</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">linestyle</span><span class="o">=</span><span class="s1">&#39;--&#39;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="neighbor-graph-construction">
+<h2>Neighbor Graph Construction<a class="headerlink" href="#neighbor-graph-construction" title="Link to this heading"></a></h2>
+<section id="compute-neighbors">
+<h3>compute_neighbors()<a class="headerlink" href="#compute-neighbors" title="Link to this heading"></a></h3>
+<p>Build k-nearest neighbor graph for downstream analysis:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.dimensionality</span><span class="w"> </span><span class="kn">import</span> <span class="n">compute_neighbors</span>
+
+<span class="c1"># Compute neighbor graph</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">compute_neighbors</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">n_neighbors</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>        <span class="c1"># Number of neighbors</span>
+    <span class="n">n_pcs</span><span class="o">=</span><span class="mi">40</span><span class="p">,</span>             <span class="c1"># Number of PCs to use</span>
+    <span class="n">method</span><span class="o">=</span><span class="s1">&#39;umap&#39;</span><span class="p">,</span>        <span class="c1"># Distance metric</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">n_neighbors</span></code>: Number of nearest neighbors</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n_pcs</span></code>: Number of principal components to use</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">method</span></code>: Algorithm (‘umap’ or ‘gauss’)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">metric</span></code>: Distance metric (‘euclidean’, ‘cosine’, etc.)</p></li>
+</ul>
+<p><strong>Adds to data:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">data.obsp['distances']</span></code>: Distance matrix (sparse)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data.obsp['connectivities']</span></code>: Connectivity matrix (sparse)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data.uns['neighbors']</span></code>: Neighbor graph parameters</p></li>
+</ul>
+</section>
+</section>
+<section id="umap">
+<h2>UMAP<a class="headerlink" href="#umap" title="Link to this heading"></a></h2>
+<section id="compute-umap">
+<h3>compute_umap()<a class="headerlink" href="#compute-umap" title="Link to this heading"></a></h3>
+<p>Uniform Manifold Approximation and Projection for non-linear dimensionality reduction:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.dimensionality</span><span class="w"> </span><span class="kn">import</span> <span class="n">compute_umap</span>
+
+<span class="c1"># Standard UMAP</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">compute_umap</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>        <span class="c1"># Usually 2 or 3 for visualization</span>
+    <span class="n">n_neighbors</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>        <span class="c1"># Local neighborhood size</span>
+    <span class="n">min_dist</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>          <span class="c1"># Minimum distance in embedding</span>
+    <span class="n">spread</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>            <span class="c1"># Scale of embedded points</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span>
+<span class="p">)</span>
+
+<span class="c1"># Access UMAP coordinates</span>
+<span class="n">umap_coords</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s1">&#39;X_umap&#39;</span><span class="p">]</span>  <span class="c1"># Shape: (n_cells, n_components)</span>
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">n_components</span></code>: Dimensionality of embedding (2 or 3)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n_neighbors</span></code>: Size of local neighborhood</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">min_dist</span></code>: Controls how tightly points are packed</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">spread</span></code>: Effective scale of embedded points</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">metric</span></code>: Distance metric (‘euclidean’, ‘cosine’, ‘correlation’)</p></li>
+</ul>
+<p><strong>Note:</strong> Requires the optional <code class="docutils literal notranslate"><span class="pre">umap-learn</span></code> package:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>umap-learn
+</pre></div>
+</div>
+</section>
+</section>
+<section id="t-sne">
+<h2>t-SNE<a class="headerlink" href="#t-sne" title="Link to this heading"></a></h2>
+<section id="compute-tsne">
+<h3>compute_tsne()<a class="headerlink" href="#compute-tsne" title="Link to this heading"></a></h3>
+<p>t-distributed Stochastic Neighbor Embedding:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.dimensionality</span><span class="w"> </span><span class="kn">import</span> <span class="n">compute_tsne</span>
+
+<span class="c1"># Standard t-SNE</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">compute_tsne</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>        <span class="c1"># Usually 2 for visualization</span>
+    <span class="n">perplexity</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>         <span class="c1"># Local neighborhood size</span>
+    <span class="n">max_iter</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>         <span class="c1"># Maximum iterations</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span>
+<span class="p">)</span>
+
+<span class="c1"># Access t-SNE coordinates</span>
+<span class="n">tsne_coords</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s1">&#39;X_tsne&#39;</span><span class="p">]</span>  <span class="c1"># Shape: (n_cells, 2)</span>
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">n_components</span></code>: Dimensionality of embedding (2 or 3)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">perplexity</span></code>: Balance between local and global structure</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max_iter</span></code>: Maximum number of optimization iterations</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">learning_rate</span></code>: Step size for gradient descent</p></li>
+</ul>
+</section>
+</section>
+<section id="diffusion-maps">
+<h2>Diffusion Maps<a class="headerlink" href="#diffusion-maps" title="Link to this heading"></a></h2>
+<section id="compute-diffusion-map">
+<h3>compute_diffusion_map()<a class="headerlink" href="#compute-diffusion-map" title="Link to this heading"></a></h3>
+<p>Diffusion maps for trajectory analysis and pseudotime inference:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.dimensionality</span><span class="w"> </span><span class="kn">import</span> <span class="n">compute_diffusion_map</span>
+
+<span class="c1"># Compute diffusion components</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">compute_diffusion_map</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">n_components</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span>       <span class="c1"># Number of diffusion components</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>             <span class="c1"># Normalization parameter</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span>
+<span class="p">)</span>
+
+<span class="c1"># Access diffusion coordinates</span>
+<span class="n">dc_coords</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s1">&#39;X_diffusion&#39;</span><span class="p">]</span>  <span class="c1"># Diffusion coordinates</span>
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">n_components</span></code>: Number of diffusion components to compute</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">alpha</span></code>: Determines the influence of data density (0=geometric, 1=diffusion)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n_neighbors</span></code>: Number of neighbors for graph construction</p></li>
+</ul>
+<p><strong>Adds to data:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">data.obsm['X_diffusion']</span></code>: Diffusion map coordinates</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">data.uns['diffusion']</span></code>: Eigenvalues and other metadata</p></li>
+</ul>
+</section>
+</section>
+<section id="visualization-integration">
+<h2>Visualization Integration<a class="headerlink" href="#visualization-integration" title="Link to this heading"></a></h2>
+<section id="plotting-embeddings">
+<h3>Plotting Embeddings<a class="headerlink" href="#plotting-embeddings" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+<span class="c1"># Plot UMAP colored by cell type</span>
+<span class="k">if</span> <span class="s1">&#39;cell_type&#39;</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">cell_type</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;cell_type&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">():</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;cell_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">cell_type</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s1">&#39;X_umap&#39;</span><span class="p">][</span><span class="n">mask</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="n">data</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s1">&#39;X_umap&#39;</span><span class="p">][</span><span class="n">mask</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+            <span class="n">label</span><span class="o">=</span><span class="n">cell_type</span><span class="p">,</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span>
+        <span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;UMAP 1&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;UMAP 2&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;UMAP by Cell Type&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="c1"># Plot t-SNE colored by total counts</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+<span class="n">scatter</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+    <span class="n">data</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s1">&#39;X_tsne&#39;</span><span class="p">][:,</span> <span class="mi">0</span><span class="p">],</span>
+    <span class="n">data</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s1">&#39;X_tsne&#39;</span><span class="p">][:,</span> <span class="mi">1</span><span class="p">],</span>
+    <span class="n">c</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;total_counts&#39;</span><span class="p">],</span>
+    <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;viridis&#39;</span><span class="p">,</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span>
+<span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">scatter</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Total Counts&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;t-SNE 1&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;t-SNE 2&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;t-SNE by Total Counts&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="parameter-guidelines">
+<h2>Parameter Guidelines<a class="headerlink" href="#parameter-guidelines" title="Link to this heading"></a></h2>
+<section id="hvg-selection">
+<h3>HVG Selection<a class="headerlink" href="#hvg-selection" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>2000-3000 genes</strong>: Good balance for most datasets</p></li>
+<li><p><strong>More genes (5000+)</strong>: For very heterogeneous datasets</p></li>
+<li><p><strong>Fewer genes (1000)</strong>: For homogeneous populations</p></li>
+</ul>
+</section>
+<section id="pca">
+<h3>PCA<a class="headerlink" href="#pca" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>50 components</strong>: Standard for most analyses</p></li>
+<li><p><strong>Use scree plot</strong>: To determine optimal number</p></li>
+<li><p><strong>80% variance</strong>: Common cutoff for cumulative variance</p></li>
+</ul>
+</section>
+<section id="umap-parameters">
+<h3>UMAP Parameters<a class="headerlink" href="#umap-parameters" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>n_neighbors</strong>:</p>
+<ul>
+<li><p>15-50 for most datasets</p></li>
+<li><p>Higher for smoother embeddings</p></li>
+<li><p>Lower for more local structure</p></li>
+</ul>
+</li>
+<li><p><strong>min_dist</strong>:</p>
+<ul>
+<li><p>0.1-0.5 for tight clusters</p></li>
+<li><p>0.5-1.0 for spread-out visualization</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="t-sne-parameters">
+<h3>t-SNE Parameters<a class="headerlink" href="#t-sne-parameters" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>perplexity</strong>:</p>
+<ul>
+<li><p>30-50 for most datasets</p></li>
+<li><p>Scale with dataset size: ~sqrt(n_cells)</p></li>
+<li><p>Multiple perplexities to check robustness</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="memory-and-performance">
+<h2>Memory and Performance<a class="headerlink" href="#memory-and-performance" title="Link to this heading"></a></h2>
+<section id="large-dataset-considerations">
+<h3>Large Dataset Considerations<a class="headerlink" href="#large-dataset-considerations" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># For datasets &gt; 100k cells</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">select_hvgs</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">n_top_genes</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>  <span class="c1"># Fewer HVGs</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">compute_pca</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>   <span class="c1"># Fewer PCs</span>
+
+<span class="c1"># Use incremental PCA for very large datasets</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.decomposition</span><span class="w"> </span><span class="kn">import</span> <span class="n">IncrementalPCA</span>
+<span class="c1"># (Custom implementation may be needed)</span>
+</pre></div>
+</div>
+</section>
+<section id="gpu-acceleration">
+<h3>GPU Acceleration<a class="headerlink" href="#gpu-acceleration" title="Link to this heading"></a></h3>
+<p>For datasets &gt; 1M cells, consider:</p>
+<ul class="simple">
+<li><p>Rapids cuML for GPU-accelerated UMAP</p></li>
+<li><p>scanpy with GPU support</p></li>
+<li><p>Specialized single-cell GPU tools</p></li>
+</ul>
+</section>
+</section>
+<section id="common-workflows">
+<h2>Common Workflows<a class="headerlink" href="#common-workflows" title="Link to this heading"></a></h2>
+<section id="standard-dimensionality-reduction-pipeline">
+<h3>Standard Dimensionality Reduction Pipeline<a class="headerlink" href="#standard-dimensionality-reduction-pipeline" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Complete dimensionality reduction workflow</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.dimensionality</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+
+<span class="c1"># 1. Select highly variable genes</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">select_hvgs</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">n_top_genes</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;seurat&#39;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Selected </span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">var</span><span class="p">[</span><span class="s1">&#39;highly_variable&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="si">}</span><span class="s2"> HVGs&quot;</span><span class="p">)</span>
+
+<span class="c1"># 2. Principal component analysis</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">compute_pca</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">use_highly_variable</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Explained variance (first 10 PCs): &quot;</span>
+      <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">uns</span><span class="p">[</span><span class="s1">&#39;pca&#39;</span><span class="p">][</span><span class="s1">&#39;variance_ratio&#39;</span><span class="p">][:</span><span class="mi">10</span><span class="p">]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># 3. Neighbor graph for clustering</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">compute_neighbors</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">n_neighbors</span><span class="o">=</span><span class="mi">15</span><span class="p">,</span> <span class="n">n_pcs</span><span class="o">=</span><span class="mi">40</span><span class="p">)</span>
+
+<span class="c1"># 4. UMAP embedding</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">compute_umap</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">min_dist</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+
+<span class="c1"># 5. t-SNE for comparison</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">compute_tsne</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">perplexity</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Dimensionality reduction complete!&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Available embeddings: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">obsm</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="trajectory-analysis-preparation">
+<h3>Trajectory Analysis Preparation<a class="headerlink" href="#trajectory-analysis-preparation" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># For trajectory/pseudotime analysis</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">compute_pca</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">compute_diffusion_map</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">compute_neighbors</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">n_neighbors</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>  <span class="c1"># More neighbors for trajectories</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="quality-assessment">
+<h2>Quality Assessment<a class="headerlink" href="#quality-assessment" title="Link to this heading"></a></h2>
+<section id="embedding-quality-metrics">
+<h3>Embedding Quality Metrics<a class="headerlink" href="#embedding-quality-metrics" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check for overclustering in UMAP</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.spatial.distance</span><span class="w"> </span><span class="kn">import</span> <span class="n">pdist</span><span class="p">,</span> <span class="n">squareform</span>
+
+<span class="c1"># Local neighborhood preservation</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">local_preservation</span><span class="p">(</span><span class="n">X_orig</span><span class="p">,</span> <span class="n">X_embed</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">15</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Measure how well local neighborhoods are preserved.&quot;&quot;&quot;</span>
+    <span class="c1"># Implementation for neighborhood preservation metric</span>
+    <span class="k">pass</span>
+
+<span class="c1"># Global structure preservation</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">global_preservation</span><span class="p">(</span><span class="n">X_orig</span><span class="p">,</span> <span class="n">X_embed</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Measure how well global structure is preserved.&quot;&quot;&quot;</span>
+    <span class="n">dist_orig</span> <span class="o">=</span> <span class="n">pdist</span><span class="p">(</span><span class="n">X_orig</span><span class="p">[:</span><span class="mi">1000</span><span class="p">])</span>  <span class="c1"># Sample for speed</span>
+    <span class="n">dist_embed</span> <span class="o">=</span> <span class="n">pdist</span><span class="p">(</span><span class="n">X_embed</span><span class="p">[:</span><span class="mi">1000</span><span class="p">])</span>
+    <span class="n">correlation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">corrcoef</span><span class="p">(</span><span class="n">dist_orig</span><span class="p">,</span> <span class="n">dist_embed</span><span class="p">)[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">correlation</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="error-handling">
+<h2>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading"></a></h2>
+<section id="common-issues">
+<h3>Common Issues<a class="headerlink" href="#common-issues" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">compute_umap</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;umap-learn not installed. Install with: uv pip install umap-learn&quot;</span><span class="p">)</span>
+    <span class="c1"># Fall back to t-SNE</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">compute_tsne</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+<span class="c1"># Handle cases with too few genes</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">select_hvgs</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">n_top_genes</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="c1"># Reduce number of requested HVGs</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">select_hvgs</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">n_top_genes</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="n">data</span><span class="o">.</span><span class="n">n_vars</span> <span class="o">//</span> <span class="mi">2</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="integration-with-clustering">
+<h2>Integration with Clustering<a class="headerlink" href="#integration-with-clustering" title="Link to this heading"></a></h2>
+<p>The dimensionality reduction results are used by clustering algorithms:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.clustering</span><span class="w"> </span><span class="kn">import</span> <span class="n">leiden_clustering</span>
+
+<span class="c1"># Use neighbor graph for clustering</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">leiden_clustering</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+
+<span class="c1"># Or use PCA coordinates directly</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">leiden_clustering</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">use_rep</span><span class="o">=</span><span class="s1">&#39;X_pca&#39;</span><span class="p">,</span> <span class="n">resolution</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="testing">
+<h2>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h2>
+<p>Dimensionality reduction tests are available in <code class="docutils literal notranslate"><span class="pre">tests/test_singlecell_dimensionality.py</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run dimensionality reduction tests</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_singlecell_dimensionality.py<span class="w"> </span>-v
+</pre></div>
+</div>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="preprocessing.html"><span class="std std-doc">Preprocessing</span></a>: For data preparation before dimensionality reduction</p></li>
+<li><p><a class="reference internal" href="clustering.html"><span class="std std-doc">Clustering</span></a>: For using dimensionality reduction results in clustering</p></li>
+<li><p><a class="reference internal" href="visualization.html"><span class="std std-doc">Visualization</span></a>: For plotting embeddings</p></li>
+<li><p><a class="reference internal" href="trajectory.html"><span class="std std-doc">Trajectory</span></a>: For pseudotime analysis using diffusion maps</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

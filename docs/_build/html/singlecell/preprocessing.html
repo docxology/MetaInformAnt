@@ -1,0 +1,489 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Single-Cell Preprocessing &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Single-Cell Preprocessing</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/singlecell/preprocessing.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="single-cell-preprocessing">
+<h1>Single-Cell Preprocessing<a class="headerlink" href="#single-cell-preprocessing" title="Link to this heading"></a></h1>
+<p>The preprocessing module provides the foundational tools for loading, cleaning, and preparing single-cell RNA-seq data for analysis.</p>
+<section id="singlecelldata-class">
+<h2>SingleCellData Class<a class="headerlink" href="#singlecelldata-class" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">SingleCellData</span></code> class is the central data structure for single-cell analysis, providing an AnnData-like interface:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">SingleCellData</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Container for single-cell expression data and metadata.</span>
+<span class="sd">    </span>
+<span class="sd">    Attributes:</span>
+<span class="sd">        X: Expression matrix (cells × genes), can be sparse or dense</span>
+<span class="sd">        obs: Cell metadata (DataFrame with cell_id as index)</span>
+<span class="sd">        var: Gene metadata (DataFrame with gene_id as index)</span>
+<span class="sd">        obsm: Multi-dimensional cell annotations (dict of arrays)</span>
+<span class="sd">        varm: Multi-dimensional gene annotations (dict of arrays)</span>
+<span class="sd">        uns: Unstructured annotations (dict)</span>
+<span class="sd">        n_obs: Number of cells</span>
+<span class="sd">        n_vars: Number of genes</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</pre></div>
+</div>
+<section id="initialization">
+<h3>Initialization<a class="headerlink" href="#initialization" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">SingleCellData</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="c1"># Create from arrays</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">poisson</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">1000</span><span class="p">))</span>  <span class="c1"># 100 cells, 1000 genes</span>
+<span class="n">obs</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;cell_type&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;TypeA&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">50</span> <span class="o">+</span> <span class="p">[</span><span class="s1">&#39;TypeB&#39;</span><span class="p">]</span> <span class="o">*</span> <span class="mi">50</span><span class="p">})</span>
+<span class="n">var</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s1">&#39;gene_name&#39;</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;Gene_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">)]})</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="n">SingleCellData</span><span class="p">(</span><span class="n">X</span><span class="o">=</span><span class="n">X</span><span class="p">,</span> <span class="n">obs</span><span class="o">=</span><span class="n">obs</span><span class="p">,</span> <span class="n">var</span><span class="o">=</span><span class="n">var</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="data-loading">
+<h2>Data Loading<a class="headerlink" href="#data-loading" title="Link to this heading"></a></h2>
+<section id="load-count-matrix">
+<h3>load_count_matrix()<a class="headerlink" href="#load-count-matrix" title="Link to this heading"></a></h3>
+<p>Load count matrices from various file formats:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_count_matrix</span>
+
+<span class="c1"># From CSV (genes as rows, cells as columns)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">load_count_matrix</span><span class="p">(</span><span class="s2">&quot;counts.csv&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;csv&quot;</span><span class="p">)</span>
+
+<span class="c1"># From TSV with transposition (cells as rows, genes as columns)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">load_count_matrix</span><span class="p">(</span><span class="s2">&quot;counts.tsv&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;tsv&quot;</span><span class="p">,</span> <span class="n">transpose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># From Matrix Market format</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">load_count_matrix</span><span class="p">(</span><span class="s2">&quot;matrix.mtx&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;mtx&quot;</span><span class="p">)</span>
+
+<span class="c1"># From HDF5 (requires h5py)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">load_count_matrix</span><span class="p">(</span><span class="s2">&quot;counts.h5&quot;</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;h5&quot;</span><span class="p">,</span> <span class="n">h5_key</span><span class="o">=</span><span class="s2">&quot;matrix&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">file_path</span></code>: Path to the count matrix file</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">format</span></code>: File format (“csv”, “tsv”, “mtx”, “h5”)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">transpose</span></code>: Whether to transpose the matrix (default: False)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">h5_key</span></code>: HDF5 dataset key (for H5 format)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sep</span></code>: Delimiter for CSV/TSV files</p></li>
+</ul>
+<p><strong>Returns:</strong> <code class="docutils literal notranslate"><span class="pre">SingleCellData</span></code> object with loaded expression matrix</p>
+</section>
+</section>
+<section id="quality-control">
+<h2>Quality Control<a class="headerlink" href="#quality-control" title="Link to this heading"></a></h2>
+<section id="calculate-qc-metrics">
+<h3>calculate_qc_metrics()<a class="headerlink" href="#calculate-qc-metrics" title="Link to this heading"></a></h3>
+<p>Calculate standard quality control metrics for cells:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">calculate_qc_metrics</span>
+
+<span class="c1"># Calculate QC metrics</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">calculate_qc_metrics</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+<span class="c1"># Access calculated metrics</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>  <span class="c1"># [&#39;total_counts&#39;, &#39;n_genes&#39;, &#39;pct_mt&#39;, &#39;pct_ribo&#39;]</span>
+</pre></div>
+</div>
+<p><strong>Calculated metrics:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">total_counts</span></code>: Total UMI/read counts per cell</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n_genes</span></code>: Number of detected genes per cell</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pct_mt</span></code>: Percentage of mitochondrial gene expression</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pct_ribo</span></code>: Percentage of ribosomal gene expression</p></li>
+</ul>
+<p><strong>Mitochondrial genes:</strong> Identified by gene names starting with “MT-”, “mt-”, or “Mt-”
+<strong>Ribosomal genes:</strong> Identified by gene names starting with “RPS”, “RPL”, “rps”, or “rpl”</p>
+</section>
+</section>
+<section id="filtering">
+<h2>Filtering<a class="headerlink" href="#filtering" title="Link to this heading"></a></h2>
+<section id="filter-cells">
+<h3>filter_cells()<a class="headerlink" href="#filter-cells" title="Link to this heading"></a></h3>
+<p>Filter cells based on QC metrics:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">filter_cells</span>
+
+<span class="c1"># Filter cells with basic thresholds</span>
+<span class="n">data_filtered</span> <span class="o">=</span> <span class="n">filter_cells</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">min_genes</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>      <span class="c1"># Minimum genes detected</span>
+    <span class="n">max_genes</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span>     <span class="c1"># Maximum genes detected</span>
+    <span class="n">min_counts</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>    <span class="c1"># Minimum total counts</span>
+    <span class="n">max_counts</span><span class="o">=</span><span class="mi">50000</span><span class="p">,</span>   <span class="c1"># Maximum total counts</span>
+    <span class="n">max_pct_mt</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>      <span class="c1"># Maximum mitochondrial percentage</span>
+    <span class="n">max_pct_ribo</span><span class="o">=</span><span class="kc">None</span>   <span class="c1"># Maximum ribosomal percentage (optional)</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">min_genes</span></code>: Minimum number of genes per cell</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max_genes</span></code>: Maximum number of genes per cell</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">min_counts</span></code>: Minimum total counts per cell</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max_counts</span></code>: Maximum total counts per cell</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max_pct_mt</span></code>: Maximum mitochondrial gene percentage</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max_pct_ribo</span></code>: Maximum ribosomal gene percentage</p></li>
+</ul>
+</section>
+<section id="filter-genes">
+<h3>filter_genes()<a class="headerlink" href="#filter-genes" title="Link to this heading"></a></h3>
+<p>Filter genes based on detection across cells:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">filter_genes</span>
+
+<span class="c1"># Filter rarely expressed genes</span>
+<span class="n">data_filtered</span> <span class="o">=</span> <span class="n">filter_genes</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">min_cells</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>        <span class="c1"># Gene must be expressed in at least 3 cells</span>
+    <span class="n">min_counts</span><span class="o">=</span><span class="kc">None</span>     <span class="c1"># Optional minimum total counts per gene</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="normalization">
+<h2>Normalization<a class="headerlink" href="#normalization" title="Link to this heading"></a></h2>
+<section id="normalize-counts">
+<h3>normalize_counts()<a class="headerlink" href="#normalize-counts" title="Link to this heading"></a></h3>
+<p>Normalize count data to account for differences in sequencing depth:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">normalize_counts</span>
+
+<span class="c1"># Total count normalization (most common)</span>
+<span class="n">data_norm</span> <span class="o">=</span> <span class="n">normalize_counts</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">target_sum</span><span class="o">=</span><span class="mf">1e4</span><span class="p">,</span>           <span class="c1"># Scale to 10,000 counts per cell</span>
+    <span class="n">method</span><span class="o">=</span><span class="s1">&#39;total_count&#39;</span>      <span class="c1"># Normalization method</span>
+<span class="p">)</span>
+
+<span class="c1"># Median normalization</span>
+<span class="n">data_norm</span> <span class="o">=</span> <span class="n">normalize_counts</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;median&#39;</span><span class="p">)</span>
+
+<span class="c1"># Custom scaling factors</span>
+<span class="n">scaling_factors</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;total_counts&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">median</span><span class="p">()</span> <span class="o">/</span> <span class="n">data</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;total_counts&#39;</span><span class="p">]</span>
+<span class="n">data_norm</span> <span class="o">=</span> <span class="n">normalize_counts</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">scaling_factors</span><span class="o">=</span><span class="n">scaling_factors</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Methods:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">'total_count'</span></code>: Scale each cell to <code class="docutils literal notranslate"><span class="pre">target_sum</span></code> total counts</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">'median'</span></code>: Scale each cell to the median total count across all cells</p></li>
+<li><p>Custom: Provide scaling factors directly</p></li>
+</ul>
+</section>
+<section id="log-transform">
+<h3>log_transform()<a class="headerlink" href="#log-transform" title="Link to this heading"></a></h3>
+<p>Apply log transformation to normalized counts:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">log_transform</span>
+
+<span class="c1"># Log2 transformation with pseudocount</span>
+<span class="n">data_log</span> <span class="o">=</span> <span class="n">log_transform</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">pseudocount</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="c1"># Natural log transformation</span>
+<span class="n">data_log</span> <span class="o">=</span> <span class="n">log_transform</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="s1">&#39;e&#39;</span><span class="p">)</span>
+
+<span class="c1"># Log10 transformation</span>
+<span class="n">data_log</span> <span class="o">=</span> <span class="n">log_transform</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">base</span></code>: Logarithm base (2, 10, ‘e’)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pseudocount</span></code>: Value added before log transformation</p></li>
+</ul>
+</section>
+</section>
+<section id="scaling">
+<h2>Scaling<a class="headerlink" href="#scaling" title="Link to this heading"></a></h2>
+<section id="scale-data">
+<h3>scale_data()<a class="headerlink" href="#scale-data" title="Link to this heading"></a></h3>
+<p>Z-score standardization of expression data:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="n">scale_data</span>
+
+<span class="c1"># Standard z-score scaling (mean=0, std=1)</span>
+<span class="n">data_scaled</span> <span class="o">=</span> <span class="n">scale_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># Center only (mean=0)</span>
+<span class="n">data_centered</span> <span class="o">=</span> <span class="n">scale_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">scale</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="c1"># Scale to specific genes only (e.g., highly variable genes)</span>
+<span class="n">hvg_indices</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">var</span><span class="p">[</span><span class="s1">&#39;highly_variable&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+<span class="n">data_scaled</span> <span class="o">=</span> <span class="n">scale_data</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">gene_subset</span><span class="o">=</span><span class="n">hvg_indices</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">center</span></code>: Whether to center data (subtract mean)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">scale</span></code>: Whether to scale data (divide by standard deviation)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gene_subset</span></code>: Boolean array to select specific genes</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max_value</span></code>: Clip scaled values to this maximum (default: 10)</p></li>
+</ul>
+</section>
+</section>
+<section id="complete-preprocessing-pipeline">
+<h2>Complete Preprocessing Pipeline<a class="headerlink" href="#complete-preprocessing-pipeline" title="Link to this heading"></a></h2>
+<p>Here’s a typical preprocessing workflow:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">load_count_matrix</span><span class="p">,</span> <span class="n">calculate_qc_metrics</span><span class="p">,</span> <span class="n">filter_cells</span><span class="p">,</span> 
+    <span class="n">filter_genes</span><span class="p">,</span> <span class="n">normalize_counts</span><span class="p">,</span> <span class="n">log_transform</span><span class="p">,</span> <span class="n">scale_data</span>
+<span class="p">)</span>
+
+<span class="c1"># 1. Load data</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">load_count_matrix</span><span class="p">(</span><span class="s2">&quot;raw_counts.csv&quot;</span><span class="p">,</span> <span class="n">transpose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loaded: </span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">n_obs</span><span class="si">}</span><span class="s2"> cells × </span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">n_vars</span><span class="si">}</span><span class="s2"> genes&quot;</span><span class="p">)</span>
+
+<span class="c1"># 2. Calculate QC metrics</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">calculate_qc_metrics</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+<span class="c1"># 3. Filter cells and genes</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Before filtering:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Cells: </span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">n_obs</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Genes: </span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">n_vars</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="n">filter_cells</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">min_genes</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">max_genes</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span> <span class="n">max_pct_mt</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">filter_genes</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">min_cells</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;After filtering:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Cells: </span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">n_obs</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Genes: </span><span class="si">{</span><span class="n">data</span><span class="o">.</span><span class="n">n_vars</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># 4. Normalize and transform</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">normalize_counts</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">target_sum</span><span class="o">=</span><span class="mf">1e4</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;total_count&#39;</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">log_transform</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">base</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="c1"># 5. Scale data (typically done after HVG selection)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">scale_data</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Preprocessing complete!&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="data-format-compatibility">
+<h2>Data Format Compatibility<a class="headerlink" href="#data-format-compatibility" title="Link to this heading"></a></h2>
+<section id="input-formats">
+<h3>Input Formats<a class="headerlink" href="#input-formats" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>CSV/TSV files</strong>: Standard text files with headers</p></li>
+<li><p><strong>Matrix Market</strong>: <code class="docutils literal notranslate"><span class="pre">.mtx</span></code> files (sparse format)</p></li>
+<li><p><strong>HDF5</strong>: Binary format for large datasets</p></li>
+<li><p><strong>Gzip compressed</strong>: Automatic detection and decompression</p></li>
+</ul>
+</section>
+<section id="expected-structure">
+<h3>Expected Structure<a class="headerlink" href="#expected-structure" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Genes as rows, cells as columns</strong> (default)</p></li>
+<li><p><strong>Cells as rows, genes as columns</strong> (use <code class="docutils literal notranslate"><span class="pre">transpose=True</span></code>)</p></li>
+<li><p><strong>Gene names</strong>: Should be in first column or as row indices</p></li>
+<li><p><strong>Cell names</strong>: Should be in first row or as column headers</p></li>
+</ul>
+</section>
+</section>
+<section id="memory-management">
+<h2>Memory Management<a class="headerlink" href="#memory-management" title="Link to this heading"></a></h2>
+<section id="sparse-matrix-support">
+<h3>Sparse Matrix Support<a class="headerlink" href="#sparse-matrix-support" title="Link to this heading"></a></h3>
+<p>The module automatically handles sparse matrices to reduce memory usage:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">scipy.sparse</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">sparse</span>
+
+<span class="c1"># Create sparse matrix</span>
+<span class="n">X_sparse</span> <span class="o">=</span> <span class="n">sparse</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">(</span><span class="n">X_dense</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">SingleCellData</span><span class="p">(</span><span class="n">X</span><span class="o">=</span><span class="n">X_sparse</span><span class="p">,</span> <span class="n">obs</span><span class="o">=</span><span class="n">obs</span><span class="p">,</span> <span class="n">var</span><span class="o">=</span><span class="n">var</span><span class="p">)</span>
+
+<span class="c1"># Check if matrix is sparse</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Matrix is sparse: </span><span class="si">{</span><span class="n">sparse</span><span class="o">.</span><span class="n">issparse</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">X</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="memory-efficient-operations">
+<h3>Memory-Efficient Operations<a class="headerlink" href="#memory-efficient-operations" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Filtering operations preserve sparsity</p></li>
+<li><p>Normalization can work in-place to save memory</p></li>
+<li><p>Large datasets automatically use sparse representations</p></li>
+</ul>
+</section>
+</section>
+<section id="error-handling">
+<h2>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading"></a></h2>
+<p>Common issues and solutions:</p>
+<section id="file-loading-issues">
+<h3>File Loading Issues<a class="headerlink" href="#file-loading-issues" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">load_count_matrix</span><span class="p">(</span><span class="s2">&quot;counts.csv&quot;</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Count matrix file not found&quot;</span><span class="p">)</span>
+<span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid file format: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="filtering-edge-cases">
+<h3>Filtering Edge Cases<a class="headerlink" href="#filtering-edge-cases" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check for empty results after filtering</span>
+<span class="n">data_filtered</span> <span class="o">=</span> <span class="n">filter_cells</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">min_genes</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+<span class="k">if</span> <span class="n">data_filtered</span><span class="o">.</span><span class="n">n_obs</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning: No cells passed filtering criteria&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="integration-with-core-utilities">
+<h2>Integration with Core Utilities<a class="headerlink" href="#integration-with-core-utilities" title="Link to this heading"></a></h2>
+<p>The preprocessing module integrates with METAINFORMANT’s core utilities:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core.io</span><span class="w"> </span><span class="kn">import</span> <span class="n">ensure_directory</span>
+
+<span class="c1"># Use core I/O utilities for output paths</span>
+<span class="n">output_dir</span> <span class="o">=</span> <span class="n">ensure_directory</span><span class="p">(</span><span class="s2">&quot;output/singlecell_analysis&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="performance-tips">
+<h2>Performance Tips<a class="headerlink" href="#performance-tips" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Use sparse matrices</strong> for large, sparse datasets</p></li>
+<li><p><strong>Filter early</strong> to reduce computational burden</p></li>
+<li><p><strong>Batch processing</strong> for very large datasets</p></li>
+<li><p><strong>Memory monitoring</strong> for datasets &gt; 50k cells</p></li>
+</ol>
+</section>
+<section id="testing">
+<h2>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h2>
+<p>Preprocessing tests are available in <code class="docutils literal notranslate"><span class="pre">tests/test_singlecell_preprocessing.py</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run preprocessing tests</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_singlecell_preprocessing.py<span class="w"> </span>-v
+</pre></div>
+</div>
+</section>
+<section id="related-functions">
+<h2>Related Functions<a class="headerlink" href="#related-functions" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="dimensionality.html"><span class="std std-doc">Dimensionality Reduction</span></a>: For HVG selection and PCA</p></li>
+<li><p><a class="reference internal" href="../quality/fastq.html"><span class="std std-doc">Quality Control</span></a>: For raw sequencing QC</p></li>
+<li><p><a class="reference internal" href="../core/io.html"><span class="std std-doc">Core I/O</span></a>: For file handling utilities</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

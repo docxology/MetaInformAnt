@@ -546,3 +546,4 @@ __all__ = [
 - **Logging**: `metainformant.core.logging.get_logger(__name__)`
 - **Tests**: Use `tmp_path` fixture, write to `output/`, no mocks
 - **Docs**: Update `docs/<domain>/<topic>.md`, never root-level
+

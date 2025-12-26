@@ -1,0 +1,345 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Agents in GWAS Module Development &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">AI Agents in GWAS Module Development</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/gwas/AGENTS.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="ai-agents-in-gwas-module-development">
+<h1>AI Agents in GWAS Module Development<a class="headerlink" href="#ai-agents-in-gwas-module-development" title="Link to this heading"></a></h1>
+<p>This document outlines AI assistance in creating and maintaining the METAINFORMANT GWAS (Genome-Wide Association Studies) module.</p>
+<section id="ai-contributions">
+<h2>AI Contributions<a class="headerlink" href="#ai-contributions" title="Link to this heading"></a></h2>
+<section id="module-design-and-architecture">
+<h3>Module Design and Architecture<a class="headerlink" href="#module-design-and-architecture" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> designed:</p>
+<ul class="simple">
+<li><p>Complete GWAS workflow pipeline from variant acquisition to visualization</p></li>
+<li><p>Modular architecture with separate components for QC, structure, association, correction, and visualization</p></li>
+<li><p>Integration with existing DNA and math modules</p></li>
+<li><p>Flexible configuration system supporting YAML/TOML/JSON</p></li>
+</ul>
+</section>
+<section id="implementation">
+<h3>Implementation<a class="headerlink" href="#implementation" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> implemented:</p>
+<ul class="simple">
+<li><p>Variant data acquisition (VCF parsing, database downloads, variant calling)</p></li>
+<li><p>Quality control filters (MAF, missingness, HWE, quality scores)</p></li>
+<li><p>Population structure analysis (PCA, kinship matrix computation)</p></li>
+<li><p>Association testing (linear and logistic regression with covariate adjustment)</p></li>
+<li><p>Multiple testing correction methods (Bonferroni, FDR, genomic control)</p></li>
+<li><p>Visualization functions (Manhattan plots, Q-Q plots, regional plots)</p></li>
+</ul>
+</section>
+<section id="documentation">
+<h3>Documentation<a class="headerlink" href="#documentation" title="Link to this heading"></a></h3>
+<p><strong>Documentation Agent</strong> created:</p>
+<ul class="simple">
+<li><p>Comprehensive module README with features and quick start</p></li>
+<li><p>Step-by-step workflow guide</p></li>
+<li><p>Detailed configuration reference</p></li>
+<li><p>Example configurations (including P. barbatus real-world example)</p></li>
+<li><p>Verification and validation report</p></li>
+<li><p>API documentation for all public functions</p></li>
+</ul>
+</section>
+<section id="testing">
+<h3>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> contributed:</p>
+<ul class="simple">
+<li><p>Real implementation testing (NO_MOCKING_POLICY compliance)</p></li>
+<li><p>Integration tests with DNA and math modules</p></li>
+<li><p>Configuration validation tests</p></li>
+<li><p>End-to-end workflow tests</p></li>
+<li><p>Performance and scalability tests</p></li>
+</ul>
+</section>
+</section>
+<section id="design-decisions">
+<h2>Design Decisions<a class="headerlink" href="#design-decisions" title="Link to this heading"></a></h2>
+<section id="modular-architecture">
+<h3>Modular Architecture<a class="headerlink" href="#modular-architecture" title="Link to this heading"></a></h3>
+<p>The GWAS module is organized into focused submodules:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">quality.py</span></code> - Quality control filters</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">structure.py</span></code> - Population structure analysis</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">association.py</span></code> - Association testing</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">correction.py</span></code> - Multiple testing correction</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">visualization.py</span></code> - Result visualization</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">calling.py</span></code> - Variant calling integration</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">download.py</span></code> - Data acquisition</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">config.py</span></code> - Configuration management</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">workflow.py</span></code> - Workflow orchestration</p></li>
+</ul>
+</section>
+<section id="integration-with-existing-modules">
+<h3>Integration with Existing Modules<a class="headerlink" href="#integration-with-existing-modules" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Leverages <code class="docutils literal notranslate"><span class="pre">dna.variants</span></code> for VCF parsing</p></li>
+<li><p>Uses <code class="docutils literal notranslate"><span class="pre">dna.population</span></code> for population genetics statistics</p></li>
+<li><p>Integrates <code class="docutils literal notranslate"><span class="pre">math.popgen</span></code> for theoretical calculations</p></li>
+<li><p>Uses <code class="docutils literal notranslate"><span class="pre">ml.regression</span></code> for regression models</p></li>
+<li><p>Employs <code class="docutils literal notranslate"><span class="pre">visualization.plots</span></code> for plotting utilities</p></li>
+</ul>
+</section>
+<section id="configuration-driven-design">
+<h3>Configuration-Driven Design<a class="headerlink" href="#configuration-driven-design" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>YAML/TOML/JSON configuration support</p></li>
+<li><p>Environment variable overrides</p></li>
+<li><p>Flexible workflow customization</p></li>
+<li><p>Default parameters for common use cases</p></li>
+</ul>
+</section>
+</section>
+<section id="scientific-validation">
+<h2>Scientific Validation<a class="headerlink" href="#scientific-validation" title="Link to this heading"></a></h2>
+<section id="algorithm-implementation">
+<h3>Algorithm Implementation<a class="headerlink" href="#algorithm-implementation" title="Link to this heading"></a></h3>
+<p>All GWAS algorithms follow established scientific methods:</p>
+<ul class="simple">
+<li><p>PCA uses standard eigendecomposition for population stratification</p></li>
+<li><p>Kinship matrices follow VanRaden (2008) and Astle-Balding methods</p></li>
+<li><p>Association testing implements standard linear/logistic regression</p></li>
+<li><p>Multiple testing correction uses Bonferroni and Benjamini-Hochberg FDR</p></li>
+</ul>
+</section>
+<section id="validation-strategy">
+<h3>Validation Strategy<a class="headerlink" href="#validation-strategy" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Comparison with established GWAS tools (PLINK, GCTA)</p></li>
+<li><p>Synthetic data testing with known associations</p></li>
+<li><p>Real-world dataset validation (P. barbatus example)</p></li>
+<li><p>Performance benchmarking on large-scale datasets</p></li>
+</ul>
+</section>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<section id="code-quality">
+<h3>Code Quality<a class="headerlink" href="#code-quality" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Type hints throughout for static analysis</p></li>
+<li><p>Comprehensive docstrings following numpy style</p></li>
+<li><p>Modular functions with single responsibilities</p></li>
+<li><p>Consistent error handling and logging</p></li>
+</ul>
+</section>
+<section id="performance-optimization">
+<h3>Performance Optimization<a class="headerlink" href="#performance-optimization" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Efficient matrix operations using NumPy</p></li>
+<li><p>Parallel processing support for association testing</p></li>
+<li><p>Memory-efficient VCF parsing for large files</p></li>
+<li><p>Optional sparse matrix support for large-scale studies</p></li>
+</ul>
+</section>
+<section id="testing-standards">
+<h3>Testing Standards<a class="headerlink" href="#testing-standards" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Real implementation testing (no mocks)</p></li>
+<li><p>Integration tests with related modules</p></li>
+<li><p>Edge case and error condition testing</p></li>
+<li><p>Performance regression testing</p></li>
+</ul>
+</section>
+</section>
+<section id="future-enhancements">
+<h2>Future Enhancements<a class="headerlink" href="#future-enhancements" title="Link to this heading"></a></h2>
+<section id="planned-features">
+<h3>Planned Features<a class="headerlink" href="#planned-features" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Mixed linear model (MLM) association testing</p></li>
+<li><p>Gene-based and pathway-based tests</p></li>
+<li><p>Polygenic risk score (PRS) calculation</p></li>
+<li><p>Conditional analysis for fine-mapping</p></li>
+<li><p>Meta-analysis across multiple studies</p></li>
+</ul>
+</section>
+<section id="performance-improvements">
+<h3>Performance Improvements<a class="headerlink" href="#performance-improvements" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>GPU acceleration for large-scale analysis</p></li>
+<li><p>Distributed computing support for biobank-scale data</p></li>
+<li><p>Streaming VCF processing for memory efficiency</p></li>
+<li><p>Optimized kinship matrix computation</p></li>
+</ul>
+</section>
+<section id="integration-enhancements">
+<h3>Integration Enhancements<a class="headerlink" href="#integration-enhancements" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Direct integration with public GWAS catalogs</p></li>
+<li><p>Automated functional annotation of significant variants</p></li>
+<li><p>Integration with gene expression data (eQTL analysis)</p></li>
+<li><p>Multi-trait GWAS analysis</p></li>
+</ul>
+</section>
+</section>
+<section id="references-and-resources">
+<h2>References and Resources<a class="headerlink" href="#references-and-resources" title="Link to this heading"></a></h2>
+<section id="scientific-literature">
+<h3>Scientific Literature<a class="headerlink" href="#scientific-literature" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p>Price et al. (2006). Principal components analysis corrects for stratification</p></li>
+<li><p>VanRaden (2008). Efficient methods to compute genomic predictions</p></li>
+<li><p>Benjamini &amp; Hochberg (1995). Controlling the false discovery rate</p></li>
+<li><p>Yang et al. (2011). GCTA: A tool for genome-wide complex trait analysis</p></li>
+</ol>
+</section>
+<section id="external-tools">
+<h3>External Tools<a class="headerlink" href="#external-tools" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>PLINK - Whole genome association analysis toolset</p></li>
+<li><p>GCTA - Genome-wide Complex Trait Analysis</p></li>
+<li><p>bcftools - Utilities for variant calling and manipulation</p></li>
+<li><p>GATK - Genome Analysis Toolkit for variant discovery</p></li>
+</ul>
+</section>
+</section>
+<section id="quality-assurance">
+<h2>Quality Assurance<a class="headerlink" href="#quality-assurance" title="Link to this heading"></a></h2>
+<section id="human-oversight">
+<h3>Human Oversight<a class="headerlink" href="#human-oversight" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Expert review of scientific algorithms</p></li>
+<li><p>Validation against published methods</p></li>
+<li><p>Code review by bioinformatics specialists</p></li>
+<li><p>Testing on real-world datasets</p></li>
+</ul>
+</section>
+<section id="continuous-improvement">
+<h3>Continuous Improvement<a class="headerlink" href="#continuous-improvement" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Regular updates based on scientific literature</p></li>
+<li><p>Performance monitoring and optimization</p></li>
+<li><p>Community feedback integration</p></li>
+<li><p>Documentation updates with new features</p></li>
+</ul>
+<hr class="docutils" />
+<p>This module demonstrates responsible AI assistance in scientific software development, combining automated implementation with human expertise and validation to ensure accurate, reliable, and performant GWAS analysis.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

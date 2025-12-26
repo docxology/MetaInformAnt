@@ -53,15 +53,236 @@ graph TB
     QC_Mod --> Quality
 ```
 
-### GWAS Workflow Pipeline
+### Complete GWAS Pipeline
 
 ```mermaid
-flowchart TD
-    Start[Start] --> Config[Load Config]
-    Config --> Download{Download Data?}
-    Download -->|Yes| SRA[Download SRA]
-    Download -->|No| Load[Load VCF]
-    SRA --> Calling[Variant Calling]
+graph TD
+    A[Input Data] --> B{Data Source}
+    B -->|VCF File| C[Parse VCF]
+    B -->|BAM Files| D[Variant Calling]
+    B -->|SRA Accession| E[SRA Download]
+
+    C --> F[Quality Control]
+    D --> F
+    E --> D
+
+    F --> G[QC Filtering]
+    G --> H[Population Structure]
+
+    H --> I[PCA Analysis]
+    H --> J[Kinship Matrix]
+
+    I --> K[Association Testing]
+    J --> K
+
+    K --> L{Model Type}
+    L -->|Linear| M[Linear Regression]
+    L -->|Logistic| N[Logistic Regression]
+
+    M --> O[Multiple Testing Correction]
+    N --> O
+
+    O --> P{Bonferroni}
+    O --> Q{FDR}
+    O --> R{Genomic Control}
+
+    P --> S[Visualization Suite]
+    Q --> S
+    R --> S
+
+    S --> T[32 Visualization Types]
+    T --> U[Results Output]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style K fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style S fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Quality Control"
+        V[MAF Filter] -.-> G
+        W[Missingness] -.-> G
+        X[HWE Test] -.-> G
+    end
+
+    subgraph "Covariates"
+        Y[PCs] -.-> K
+        Z[Kinship] -.-> K
+        AA[Other Covs] -.-> K
+    end
+```
+
+### 32 GWAS Visualization Types
+
+```mermaid
+graph TD
+    A[GWAS Results] --> B{Population Structure}
+    A --> C{Variant Effects}
+    A --> D{Genome-wide Views}
+    A --> E{Regional Analysis}
+    A --> F{Statistical Validation}
+    A --> G{Comparison Views}
+    A --> H{Variant-level Analysis}
+
+    B --> I[PCA Plot]
+    B --> J[Kinship Heatmap]
+    B --> K[Population Admixture]
+    B --> L[Structure Plot]
+
+    C --> M[Effect Size Distribution]
+    C --> N[Odds Ratio Plot]
+    C --> O[Allele Frequency vs Effect]
+    C --> P[Beta Coefficient Plot]
+
+    D --> Q[Manhattan Plot]
+    D --> R[QQ Plot]
+    D --> S[Genome-wide Significance]
+    D --> T[P-value Histogram]
+
+    E --> U[Regional Manhattan]
+    E --> V[Regional Association]
+    E --> W[Linkage Disequilibrium]
+    E --> X[Recombination Rate]
+
+    F --> Y[Genomic Inflation Factor]
+    F --> Z[Lambda GC Plot]
+    F --> AA[P-value Distribution]
+    F --> BB[Power Analysis]
+
+    G --> CC[Meta-analysis Plot]
+    G --> DD[Cross-study Comparison]
+    G --> EE[Cohort Effect Sizes]
+    G --> FF[Replication Analysis]
+
+    H --> GG[Variant Annotation]
+    H --> HH[Functional Impact]
+    H --> II[Conservation Scores]
+    H --> JJ[Expression QTL]
+
+    I --> KK[Output Suite]
+    J --> KK
+    K --> KK
+    L --> KK
+    M --> KK
+    N --> KK
+    O --> KK
+    P --> KK
+    Q --> KK
+    R --> KK
+    S --> KK
+    T --> KK
+    U --> KK
+    V --> KK
+    W --> KK
+    X --> KK
+    Y --> KK
+    Z --> KK
+    AA --> KK
+    BB --> KK
+    CC --> KK
+    DD --> KK
+    EE --> KK
+    FF --> KK
+    GG --> KK
+    HH --> KK
+    II --> KK
+    JJ --> KK
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style KK fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+```
+
+### Population Structure Analysis
+
+```mermaid
+graph TD
+    A[Genotype Matrix] --> B[Quality Filtering]
+    B --> C[Missing Data Imputation]
+    C --> D[MAF Filtering]
+
+    D --> E{Structure Method}
+    E -->|PCA| F[Principal Component Analysis]
+    E -->|Kinship| G[Kinship Matrix Computation]
+    E -->|Admixture| H[Admixture Analysis]
+
+    F --> I[PCA Components]
+    G --> J[Kinship Matrix]
+    H --> K[Ancestry Proportions]
+
+    I --> L[Covariates for Association]
+    J --> L
+    K --> L
+
+    L --> M[Association Testing]
+    M --> N[Population-corrected Results]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style L fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style N fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Methods"
+        O[VanRaden] -.-> G
+        P[Centered IBS] -.-> G
+        Q[GCTA] -.-> G
+    end
+
+    subgraph "PCA Details"
+        R[SVD Decomposition] -.-> F
+        S[Eigenvalue Analysis] -.-> F
+        T[Component Selection] -.-> F
+    end
+```
+
+### SRA Download to GWAS Pipeline
+
+```mermaid
+graph TD
+    A[SRA Accession] --> B[ENA Direct Download]
+    B --> C[FASTQ Files]
+
+    C --> D{Alignment Method}
+    D -->|BWA| E[BWA Alignment]
+    D -->|Bowtie2| F[Bowtie2 Alignment]
+    D -->|STAR| G[STAR Alignment]
+
+    E --> H[BAM Files]
+    F --> H
+    G --> H
+
+    H --> I[Variant Calling]
+    I --> J{bcftools}
+    I --> K{GATK}
+
+    J --> L[VCF Files]
+    K --> L
+
+    L --> M[VCF Parsing]
+    M --> N[Quality Control]
+
+    N --> O[MAF Filter]
+    N --> P[Missingness Filter]
+    N --> Q[HWE Test]
+
+    O --> R[Filtered VCF]
+    P --> R
+    Q --> R
+
+    R --> S[Population Structure]
+    S --> T[PCA/Kinship]
+
+    T --> U[Association Testing]
+    U --> V[Linear/Logistic Regression]
+
+    V --> W[Multiple Testing Correction]
+    W --> X[Bonferroni/FDR]
+
+    X --> Y[Visualization Suite]
+    Y --> Z[32 Plot Types]
+
+    Z --> AA[GWAS Results]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style U fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style AA fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+```
     Calling --> Load
     Load --> QC[Quality Control]
     QC --> Filter[Filter Variants]
@@ -78,9 +299,9 @@ flowchart TD
 - **structure.py** - Population structure analysis (PCA, kinship matrices)
 - **association.py** - Association testing (linear/logistic regression)
 - **correction.py** - Multiple testing correction (Bonferroni, FDR, genomic control)
-- **visualization.py** - Result visualization (Manhattan plots, Q-Q plots)
+- **visualization.py** - Comprehensive GWAS visualization suite (population structure, effects, comparisons, reports)
 - **calling.py** - Variant calling integration (bcftools, GATK) ✅ Integrated into workflow
-- **download.py** - Data acquisition (reference genomes ✅, variant databases ⚠️ placeholder)
+- **download.py** - Data acquisition (reference genomes ✅, variant databases ⚠️ partial implementation)
 - **config.py** - Configuration management and validation
 - **workflow.py** - Complete workflow orchestration
 
@@ -239,56 +460,50 @@ cv_results = cross_validate_biological(
 )
 ```
 
-### With Visualization Module
+### GWAS Visualization Suite
 ```python
-from metainformant.gwas import association_test_linear, parse_vcf_full
-from metainformant.visualization import manhattan_plot, qq_plot, regional_plot
+from metainformant.gwas import visualization as gwas_viz
 
-# Comprehensive GWAS visualization
-# Run association testing
-association_results = association_test_linear(
-    genotype_matrix,
-    phenotypes,
-    covariates=covariates
-)
+# Population structure visualization
+pca_result = gwas_viz.compute_pca(genotype_matrix, n_components=10)
+gwas_viz.pca_plot(pca_result, output_path="output/gwas/pca_plot.png")
+gwas_viz.pca_scree_plot(pca_result, output_path="output/gwas/pca_scree.png")
 
-# Manhattan plot for genome-wide results
-ax = manhattan_plot(
-    association_results["chromosome"],
-    association_results["position"],
-    association_results["p_value"],
-    title="GWAS Manhattan Plot",
-    xlabel="Chromosome",
-    ylabel="-log10(p-value)"
-)
+# Kinship and admixture analysis
+kinship_matrix = gwas_viz.compute_kinship_matrix(genotype_matrix)
+gwas_viz.kinship_heatmap(kinship_matrix, output_path="output/gwas/kinship.png")
+gwas_viz.admixture_plot(admixture_results, output_path="output/gwas/admixture.png")
+gwas_viz.population_tree(kinship_matrix, output_path="output/gwas/tree.png")
 
-# Q-Q plot for p-value distribution
-ax = qq_plot(
-    association_results["p_value"],
-    title="GWAS Q-Q Plot",
-    xlabel="Expected -log10(p)",
-    ylabel="Observed -log10(p)"
-)
+# Variant analysis plots
+gwas_viz.allele_frequency_spectrum(vcf_data, output_path="output/gwas/afs.png")
+gwas_viz.effect_size_distribution(association_results, output_path="output/gwas/effect_dist.png")
 
-# Regional plot for specific locus
-significant_variant = association_results.loc[
-    association_results["p_value"].idxmin()
-]
-ax = regional_plot(
-    chromosome=significant_variant["chromosome"],
-    start=significant_variant["position"] - 500000,
-    end=significant_variant["position"] + 500000,
+# Effect visualization
+gwas_viz.effect_size_plot(association_results, output_path="output/gwas/effects.png")
+gwas_viz.odds_ratio_plot(association_results, output_path="output/gwas/odds_ratios.png")
+gwas_viz.qq_plot(association_results, output_path="output/gwas/qq_plot.png")
+
+# Comparative analysis
+gwas_viz.study_comparison_plot([study1_results, study2_results], output_path="output/gwas/comparison.png")
+gwas_viz.meta_analysis_plot(meta_results, output_path="output/gwas/meta.png")
+
+# Complete GWAS report generation
+gwas_viz.generate_gwas_report(
     association_results=association_results,
-    title="Regional Association Plot"
+    pca_results=pca_result,
+    kinship_matrix=kinship_matrix,
+    output_dir="output/gwas/report/",
+    significance_threshold=5e-8
 )
 
-# Effect size visualization
-ax = scatter_plot(
-    association_results["beta"],
-    -np.log10(association_results["p_value"]),
-    xlabel="Effect Size (β)",
-    ylabel="-log10(p-value)",
-    title="Effect Size vs Significance"
+# All-in-one visualization suite
+gwas_viz.plot_gwas_suite(
+    association_results=association_results,
+    pca_results=pca_result,
+    kinship_matrix=kinship_matrix,
+    output_dir="output/gwas/complete/",
+    significance_threshold=5e-8
 )
 ```
 

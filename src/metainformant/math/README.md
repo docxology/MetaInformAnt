@@ -47,11 +47,214 @@ graph TB
     Info_Mod --> PopGen
 ```
 
-### Mathematical Biology Workflow
+### Population Genetics Theory Framework
 
 ```mermaid
-flowchart LR
-    Start[Input] --> Type{Analysis Type?}
+graph TD
+    A[Population Data] --> B{Genetic Data Type}
+    B -->|Allele Frequencies| C[Hardy-Weinberg Equilibrium]
+    B -->|Genotype Matrix| D[Population Structure Analysis]
+    B -->|Sequences| E[Evolutionary Parameters]
+
+    C --> F[Expected Heterozygosity]
+    D --> G[PCA Decomposition]
+    E --> H[Mutation Rate Estimation]
+
+    F --> I[Genetic Diversity Metrics]
+    G --> J[Population Differentiation]
+    H --> K[Selection Analysis]
+
+    I --> L[Conservation Assessment]
+    J --> M[Migration Patterns]
+    K --> N[Adaptive Evolution]
+
+    L --> O[Results]
+    M --> O
+    N --> O
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style I fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style O fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Theoretical Models"
+        P[Neutral Theory] -.-> E
+        Q[Selection Models] -.-> K
+        R[Drift Models] -.-> D
+    end
+
+    subgraph "Statistical Tests"
+        S[F_ST Tests] -.-> J
+        T[Tajima's D] -.-> K
+        U[Fisher's Exact] -.-> I
+    end
+```
+
+### Coalescent Theory Simulation
+
+```mermaid
+graph TD
+    A[Population Parameters] --> B[Effective Population Size Ne]
+    A --> C[Sample Size n]
+    A --> D[Mutation Rate μ]
+
+    B --> E[Coalescent Tree Simulation]
+    C --> E
+    D --> E
+
+    E --> F[Genealogy Construction]
+    F --> G[Branch Length Calculation]
+
+    G --> H[TMRCA Estimation]
+    G --> I[Tree Statistics]
+
+    H --> J[Temporal Analysis]
+    I --> K[Tree Shape Analysis]
+
+    J --> L[Evolutionary Inference]
+    K --> L
+
+    L --> M[Results]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style G fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style M fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Coalescent Events"
+        N[Coalescence] -.-> F
+        O[Mutation] -.-> G
+        P[Recombination] -.-> G
+    end
+
+    subgraph "Applications"
+        Q[Demographic History] -.-> J
+        R[Selection Scans] -.-> K
+        S[Phylogenetic Inference] -.-> L
+    end
+```
+
+### Selection Theory Framework
+
+```mermaid
+graph TD
+    A[Selection Data] --> B{Selection Type}
+    B -->|Natural Selection| C[Fitness Measurements]
+    B -->|Sexual Selection| D[Mate Choice Data]
+    B -->|Kin Selection| E[Relatedness Coefficients]
+
+    C --> F[Selection Coefficient s]
+    D --> G[Preference Functions]
+    E --> H[Hamilton's Rule]
+
+    F --> I[Selection Strength Analysis]
+    G --> J[Mate Choice Evolution]
+    H --> K[Inclusive Fitness]
+
+    I --> L[Evolutionary Dynamics]
+    J --> L
+    K --> L
+
+    L --> M[Results]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style L fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style M fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Mathematical Models"
+        N[Price Equation] -.-> L
+        O[Quantitative Genetics] -.-> I
+        P[Behavioral Ecology] -.-> J
+    end
+
+    subgraph "Kin Selection"
+        Q[Direct Fitness] -.-> H
+        R[Indirect Fitness] -.-> H
+        S[Cost-Benefit Analysis] -.-> H
+    end
+```
+
+### Drift-Diffusion Decision Making
+
+```mermaid
+graph TD
+    A[Sensory Input] --> B[Evidence Accumulation]
+    B --> C[Drift Process]
+    B --> D[Diffusion Noise]
+
+    C --> E[Decision Threshold]
+    D --> E
+
+    E --> F{Threshold Reached?}
+    F -->|Yes| G[Decision Made]
+    F -->|No| H[Continue Accumulation]
+
+    H --> C
+    G --> I[Response Time]
+    G --> J[Decision Accuracy]
+
+    I --> K[Performance Analysis]
+    J --> K
+
+    K --> L[Results]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style E fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style L fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Model Parameters"
+        M[Drift Rate v] -.-> C
+        N[Boundary Separation a] -.-> E
+        O[Starting Point z] -.-> B
+        P[Non-decision Time t0] -.-> I
+    end
+
+    subgraph "Applications"
+        Q[Behavioral Experiments] -.-> K
+        R[Neural Decision Making] -.-> K
+        S[Economic Choices] -.-> K
+    end
+```
+
+### Linkage Disequilibrium Analysis
+
+```mermaid
+graph TD
+    A[Genotype Data] --> B[Locus Pair Selection]
+    B --> C[Haplotype Frequency Estimation]
+
+    C --> D[D' Calculation]
+    C --> E[r² Calculation]
+    C --> F[LOD Score]
+
+    D --> G[Linkage Disequilibrium Measures]
+    E --> G
+    F --> G
+
+    G --> H{Recombination?}
+    H -->|Yes| I[Historical Recombination]
+    H -->|No| J[Linkage Conservation]
+
+    I --> K[Population History]
+    J --> L[Functional Constraints]
+
+    K --> M[Analysis Results]
+    L --> M
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style G fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style M fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "LD Measures"
+        N[D' (Lewontin)] -.-> D
+        O[r² (Hill-Bulmer)] -.-> E
+        P[LOD (Morton)] -.-> F
+    end
+
+    subgraph "Applications"
+        Q[Association Mapping] -.-> M
+        R[Admixture Mapping] -.-> K
+        S[Fine-mapping] -.-> L
+    end
+```
     Type -->|Population| PopGen[Population Genetics]
     Type -->|Selection| Selection[Selection Analysis]
     Type -->|Coalescent| Coalescent[Coalescent Analysis]
@@ -251,6 +454,8 @@ The Price equation provides a general framework for understanding evolutionary c
 ```
 Where Δ̄z is the change in average trait value, Cov(w, z) represents natural selection, and E(wΔz) represents transmission bias.
 
+**Reference**: Price, G.R. (1970). Selection and covariance. Nature, 227(5257), 520-521. https://doi.org/10.1038/227520a0
+
 ### Kin Selection
 Hamilton's rule states that a trait will be favored by selection when:
 ```
@@ -258,8 +463,12 @@ rB > C
 ```
 Where r is the genetic relatedness, B is the benefit to the recipient, and C is the cost to the actor.
 
+**Reference**: Hamilton, W.D. (1964). The genetical evolution of social behaviour. Journal of Theoretical Biology, 7(1), 1-16. https://doi.org/10.1016/0022-5193(64)90038-4
+
 ### Drift-Diffusion Models
 DDMs model decision-making as a stochastic process where evidence accumulates over time until a threshold is reached.
+
+**Reference**: Ratcliff, R., & McKoon, G. (2008). The diffusion decision model: Theory and data for two-choice decision tasks. Neural Computation, 20(4), 873-922. https://doi.org/10.1162/neco.2008.12-06-420
 
 ## Integration with Other Modules
 
@@ -396,5 +605,59 @@ results = simulate_generations(
 correlation = results.correlation_s_q()
 selection_gradient = results.selection_gradient()
 ```
+
+## Troubleshooting
+
+### Common Issues
+
+#### NumPy/SciPy Import Errors
+**Problem**: Functions fail with import errors for numpy or scipy.
+
+**Solution**:
+```bash
+# Install scientific dependencies
+pip install metainformant[scientific]
+
+# Or install individually
+pip install numpy scipy matplotlib
+```
+
+#### Zero Variance Errors
+**Problem**: Functions return 0.0 or NaN for correlation/linear regression.
+
+**Cause**: Input data has zero variance (all values identical).
+
+**Solution**: Check input data for constant values. Add small noise if appropriate for analysis.
+
+#### Large Dataset Performance
+**Problem**: Functions are slow with large datasets.
+
+**Solution**: Use numpy arrays instead of lists, consider sampling, or use parallel processing options.
+
+#### Memory Issues with Linkage Disequilibrium
+**Problem**: LD calculations fail with large genotype matrices.
+
+**Solution**: Process data in chunks or use sparse matrix representations.
+
+### Error Messages
+
+#### "Lists must have same length"
+**Cause**: Input arrays have different lengths.
+**Fix**: Ensure all input lists/arrays have identical lengths.
+
+#### "Lists must have at least 2 elements"
+**Cause**: Insufficient data points for statistical calculations.
+**Fix**: Provide more data points or use alternative methods for small datasets.
+
+#### "Invalid allele frequency"
+**Cause**: Allele frequencies outside [0, 1] range.
+**Fix**: Check input data and normalize frequencies.
+
+### Performance Optimization
+
+- Use numpy arrays for large datasets
+- Pre-compute expensive operations when possible
+- Consider parallel processing for independent calculations
+- Use appropriate data structures (e.g., pandas for tabular data)
 
 This module provides rigorous mathematical tools for theoretical biology, enabling quantitative analysis of evolutionary and behavioral processes.

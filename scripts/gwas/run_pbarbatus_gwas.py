@@ -42,7 +42,7 @@ from metainformant.core.io import dump_json, ensure_directory
 # Import enhanced visualization functions
 import sys
 sys.path.insert(0, str(Path(__file__).parent))
-from enhanced_visualizations import (
+from visualizations import (
     plot_kinship_heatmap,
     plot_pca_scatter,
     plot_pca_scree,

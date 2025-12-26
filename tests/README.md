@@ -3,6 +3,158 @@
 ## Overview
 Comprehensive test suite for the METAINFORMANT bioinformatics toolkit. This document provides a complete mapping of test files to their corresponding source modules, coverage analysis, and testing guidelines for a growing fractal codebase.
 
+## Testing Architecture
+
+```mermaid
+graph TD
+    A[Test Categories] --> B[Unit Tests]
+    A --> C[Integration Tests]
+    A --> D[End-to-End Tests]
+
+    B --> E[Function Testing]
+    B --> F[Module Testing]
+    C --> G[Workflow Testing]
+    C --> H[API Testing]
+    D --> I[Full Pipeline Testing]
+
+    E --> J[pytest Execution]
+    F --> J
+    G --> J
+    H --> J
+    I --> J
+
+    J --> K[Coverage Analysis]
+    K --> L[Report Generation]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style J fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style L fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Test Organization"
+        M[tests/test_*.py] -.-> B
+        N[tests/integration/] -.-> C
+        O[scripts/test_*.py] -.-> D
+    end
+
+    subgraph "Test Principles"
+        P[Real Data Only] -.-> B
+        Q[No Mocks] -.-> B
+        R[Real Implementations] -.-> B
+    end
+
+    subgraph "Coverage Goals"
+        S[Core Utilities] -.-> K
+        T[Domain Modules] -.-> K
+        U[Workflow Integration] -.-> K
+    end
+```
+
+### Test Execution Pipeline
+
+```mermaid
+graph TD
+    A[Test Invocation] --> B[pytest Discovery]
+    B --> C[Test Collection]
+
+    C --> D{Test Type}
+    D -->|Unit| E[Function Tests]
+    D -->|Integration| F[Workflow Tests]
+    D -->|E2E| G[Pipeline Tests]
+
+    E --> H[Execution Environment]
+    F --> H
+    G --> H
+
+    H --> I[Real Data Setup]
+    I --> J[Dependency Verification]
+
+    J --> K[Test Execution]
+    K --> L[Result Collection]
+
+    L --> M{Success?}
+    M -->|Yes| N[Coverage Analysis]
+    M -->|No| O[Failure Analysis]
+
+    N --> P[Report Generation]
+    O --> Q[Error Reporting]
+
+    P --> R[Test Complete]
+    Q --> R
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style K fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Execution Phases"
+        S[Setup] -.-> I
+        T[Run] -.-> K
+        U[Teardown] -.-> L
+    end
+
+    subgraph "Quality Gates"
+        V[Code Coverage] -.-> N
+        W[Error Handling] -.-> N
+        X[Performance] -.-> N
+    end
+
+    subgraph "Failure Modes"
+        Y[Assertion Errors] -.-> O
+        Z[Import Errors] -.-> O
+        AA[Timeout Errors] -.-> O
+    end
+```
+
+### Test Organization Framework
+
+```mermaid
+graph TD
+    A[Tests Directory] --> B[Core Tests]
+    A --> C[Domain Tests]
+    A --> D[Integration Tests]
+
+    B --> E[test_core_*.py]
+    C --> F[test_dna_*.py]
+    C --> G[test_rna_*.py]
+    C --> H[test_gwas_*.py]
+
+    D --> I[test_workflow_*.py]
+    D --> J[test_integration_*.py]
+
+    E --> K[Unit Test Execution]
+    F --> K
+    G --> K
+    H --> K
+    I --> K
+    J --> K
+
+    K --> L[Coverage Collection]
+    L --> M[Quality Metrics]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style K fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style M fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Test Categories"
+        N[Unit Tests] -.-> E
+        O[Module Tests] -.-> F
+        P[Workflow Tests] -.-> I
+        Q[Integration Tests] -.-> J
+    end
+
+    subgraph "Naming Convention"
+        R[test_<module>_<component>.py] -.-> E
+        S[test_<domain>_<function>.py] -.-> F
+        T[test_workflow_<workflow>.py] -.-> I
+        U[test_integration_<feature>.py] -.-> J
+    end
+
+    subgraph "Quality Standards"
+        V[Real Data Only] -.-> N
+        W[Comprehensive Coverage] -.-> N
+        X[Performance Benchmarks] -.-> N
+    end
+```
+
 ## Test Environment Status
 **Current Status**: ~580+ test functions across 160+ test files
 **Last Updated**: 2025-12-17 (Major test suite improvements and fixes)
@@ -539,3 +691,4 @@ As the METAINFORMANT codebase expands:
 *This comprehensive test suite enhancement ensures robust, reliable, and maintainable testing infrastructure for METAINFORMANT's continued fractal growth. All improvements follow industry best practices and eliminate common testing anti-patterns.*
 
 **Last comprehensive enhancement: 2025-12-17**
+

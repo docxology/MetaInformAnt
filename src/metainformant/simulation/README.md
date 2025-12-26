@@ -48,20 +48,264 @@ graph TB
     SimPop --> All
 ```
 
-### Simulation Workflow
+### Sequence Simulation Framework
 
 ```mermaid
-flowchart LR
-    Start[Parameters] --> Type{Simulation Type?}
-    Type -->|Sequences| Seq[Generate Sequences]
-    Type -->|RNA| RNA[Generate RNA Counts]
-    Type -->|Agents| Agent[Run Agent Model]
-    Type -->|PopGen| Pop[Population Simulation]
-    Seq --> Validate[Validate Output]
-    RNA --> Validate
-    Agent --> Validate
-    Pop --> Validate
-    Validate --> Output[Output Data]
+graph TD
+    A[Biological Sequence Type] --> B{Sequence Model}
+    B -->|Markov Chain| C[Order-k Markov Chain]
+    B -->|PWM| D[Position Weight Matrix]
+    B -->|HMM| E[Hidden Markov Model]
+    B -->|Evolutionary| F[Evolutionary Model]
+
+    C --> G[Transition Matrix]
+    D --> H[Position-specific Scores]
+    E --> I[Emission/Transition Probabilities]
+    F --> J[Mutation/Selection Parameters]
+
+    G --> K[Sequence Generation]
+    H --> K
+    I --> K
+    J --> K
+
+    K --> L[Sequence Properties]
+    L --> M{Validation}
+    M -->|Valid| N[Final Sequences]
+    M -->|Invalid| O[Parameter Adjustment]
+
+    O --> K
+    N --> P[Output Formats]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style K fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style P fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Sequence Types"
+        Q[DNA Sequences] -.-> A
+        R[RNA Sequences] -.-> A
+        S[Protein Sequences] -.-> A
+        T[Regulatory Sequences] -.-> A
+    end
+
+    subgraph "Quality Metrics"
+        U[GC Content] -.-> L
+        V[Complexity] -.-> L
+        W[Motif Content] -.-> L
+        X[Conservation] -.-> L
+    end
+```
+
+### Expression Data Simulation
+
+```mermaid
+graph TD
+    A[Expression Data Type] --> B{Simulation Model}
+    B -->|Negative Binomial| C[RNA-seq Count Model]
+    B -->|Log-normal| D[Microarray Expression]
+    B -->|Poisson| E[Simple Count Data]
+    B -->|Gamma| F[Protein Abundance]
+
+    C --> G[Mean Expression]
+    C --> H[Dispersion Parameters]
+    D --> I[Location/Scale Parameters]
+    E --> J[Rate Parameters]
+    F --> K[Shape/Scale Parameters]
+
+    G --> L[Technical Variation]
+    H --> L
+    I --> L
+    J --> L
+    K --> L
+
+    L --> M[Biological Variation]
+    M --> N[Sample-specific Effects]
+    M --> O[Condition-specific Effects]
+    M --> P[Batch Effects]
+
+    N --> Q[Data Generation]
+    O --> Q
+    P --> Q
+
+    Q --> R[Expression Matrix]
+    R --> S[Add Noise]
+    S --> T[Final Dataset]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style Q fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style T fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "RNA-seq Models"
+        U[Technical Noise] -.-> L
+        V[Biological Variation] -.-> M
+        W[Library Size] -.-> N
+        X[GC Bias] -.-> N
+    end
+
+    subgraph "Experimental Design"
+        Y[Sample Groups] -.-> O
+        Z[Treatment Effects] -.-> O
+        AA[Confounding Factors] -.-> P
+    end
+```
+
+### Agent-Based Ecosystem Modeling
+
+```mermaid
+graph TD
+    A[Ecosystem Parameters] --> B[Agent Types]
+    B --> C[Producer Agents]
+    B --> D[Consumer Agents]
+    B --> E[Decomposer Agents]
+    B --> F[Environmental Agents]
+
+    C --> G[Agent Properties]
+    D --> G
+    E --> G
+    F --> G
+
+    G --> H[Behavior Rules]
+    H --> I[Interaction Rules]
+    H --> J[Movement Rules]
+    H --> K[Reproduction Rules]
+
+    I --> L[Simulation Engine]
+    J --> L
+    K --> L
+
+    L --> M[Time Step Execution]
+    M --> N[Agent Updates]
+    N --> O[Interaction Resolution]
+    O --> P[Population Dynamics]
+
+    P --> Q[Data Collection]
+    Q --> R[Simulation Metrics]
+    R --> S{Ecosystem Stable?}
+
+    S -->|Yes| T[Final State]
+    S -->|No| U[Continue Simulation]
+
+    U --> M
+    T --> V[Analysis Results]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style L fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style V fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Agent Properties"
+        W[Energy Level] -.-> G
+        X[Position] -.-> G
+        Y[Age] -.-> G
+        Z[Fitness] -.-> G
+    end
+
+    subgraph "Simulation Metrics"
+        AA[Population Sizes] -.-> R
+        BB[Diversity Indices] -.-> R
+        CC[Energy Flow] -.-> R
+        DD[Stability Measures] -.-> R
+    end
+```
+
+### Population Genetics Simulation
+
+```mermaid
+graph TD
+    A[Population Parameters] --> B[Initial Population]
+    B --> C[Genotypes]
+    B --> D[Allele Frequencies]
+
+    C --> E[Evolutionary Forces]
+    D --> E
+
+    E --> F{Force Type}
+    F -->|Mutation| G[Mutation Events]
+    F -->|Selection| H[Selection Pressure]
+    F -->|Drift| I[Genetic Drift]
+    F -->|Migration| J[Gene Flow]
+
+    G --> K[Allele Changes]
+    H --> K
+    I --> K
+    J --> K
+
+    K --> L[Generation Update]
+    L --> M[New Population]
+    M --> N[Genetic Diversity]
+    M --> O[Allele Frequencies]
+
+    N --> P{Equilibrium?}
+    O --> P
+
+    P -->|No| Q[Continue Evolution]
+    P -->|Yes| R[Final Population]
+
+    Q --> E
+    R --> S[Simulation Results]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style E fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style S fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Evolutionary Models"
+        T[Neutral Theory] -.-> E
+        U[Selection Models] -.-> H
+        V[Island Model] -.-> J
+        W[Stepping Stone] -.-> J
+    end
+
+    subgraph "Output Metrics"
+        X[π Diversity] -.-> N
+        Y[Tajima's D] -.-> N
+        Z[F_ST] -.-> O
+        AA[Hardy-Weinberg] -.-> O
+    end
+```
+
+### Validation and Calibration Framework
+
+```mermaid
+graph TD
+    A[Simulation Parameters] --> B[Run Simulation]
+    B --> C[Generate Data]
+
+    C --> D[Real Data Comparison]
+    D --> E{Statistical Tests}
+    E -->|KS Test| F[Distribution Similarity]
+    E -->|Correlation| G[Feature Correlation]
+    E -->|MI| H[Mutual Information]
+    E -->|Earth Mover| I[Distribution Distance]
+
+    F --> J[Goodness of Fit]
+    G --> J
+    H --> J
+    I --> J
+
+    J --> K{Acceptable Fit?}
+    K -->|Yes| L[Validated Simulation]
+    K -->|No| M[Parameter Adjustment]
+
+    M --> N[Update Parameters]
+    N --> B
+
+    L --> O[Simulation Validation]
+    O --> P[Use for Analysis]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style B fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style P fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Validation Metrics"
+        Q[P-value] -.-> J
+        R[R² Score] -.-> J
+        S[RMSE] -.-> J
+        T[MAE] -.-> J
+    end
+
+    subgraph "Calibration Methods"
+        U[Grid Search] -.-> N
+        V[Bayesian Optimization] -.-> N
+        W[Gradient Descent] -.-> N
+    end
 ```
 
 ## Submodules

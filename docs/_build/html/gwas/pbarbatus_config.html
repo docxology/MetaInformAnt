@@ -1,0 +1,304 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GWAS Configuration for Pogonomyrmex barbatus &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">GWAS Configuration for Pogonomyrmex barbatus</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/gwas/pbarbatus_config.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="gwas-configuration-for-pogonomyrmex-barbatus">
+<h1>GWAS Configuration for Pogonomyrmex barbatus<a class="headerlink" href="#gwas-configuration-for-pogonomyrmex-barbatus" title="Link to this heading"></a></h1>
+<p>This document describes the GWAS configuration setup for <em>Pogonomyrmex barbatus</em> (Red Harvester Ant).</p>
+<section id="configuration-file">
+<h2>Configuration File<a class="headerlink" href="#configuration-file" title="Link to this heading"></a></h2>
+<p><strong>Location</strong>: <code class="docutils literal notranslate"><span class="pre">config/gwas/gwas_pbarbatus.yaml</span></code></p>
+</section>
+<section id="species-information">
+<h2>Species Information<a class="headerlink" href="#species-information" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Species</strong>: <em>Pogonomyrmex barbatus</em> (Red Harvester Ant)</p></li>
+<li><p><strong>NCBI Taxonomy ID</strong>: 144034</p></li>
+<li><p><strong>Reference Assembly</strong>: GCF_000187915.1 (Pbar_UMD_V03)</p></li>
+<li><p><strong>FTP URL</strong>: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/187/915/GCF_000187915.1_Pbar_UMD_V03/</p></li>
+</ul>
+</section>
+<section id="configuration-overview">
+<h2>Configuration Overview<a class="headerlink" href="#configuration-overview" title="Link to this heading"></a></h2>
+<p>The configuration file follows the GWAS template structure and includes:</p>
+<section id="reference-genome">
+<h3>1. Reference Genome<a class="headerlink" href="#reference-genome" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">genome</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">accession</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">GCF_000187915.1</span>
+<span class="w">  </span><span class="nt">dest_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/gwas/pbarbatus/genome</span>
+<span class="w">  </span><span class="nt">include</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">genome</span><span class="w">         </span><span class="c1"># Genomic sequences (FASTA)</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gff3</span><span class="w">          </span><span class="c1"># Gene annotations</span>
+<span class="w">  </span><span class="nt">ftp_url</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/187/915/GCF_000187915.1_Pbar_UMD_V03/</span>
+</pre></div>
+</div>
+</section>
+<section id="variant-data-sources">
+<h3>2. Variant Data Sources<a class="headerlink" href="#variant-data-sources" title="Link to this heading"></a></h3>
+<p>The configuration supports three options for variant data:</p>
+<ul class="simple">
+<li><p><strong>Pre-called VCF files</strong>: Specify paths in <code class="docutils literal notranslate"><span class="pre">variants.vcf_files</span></code></p></li>
+<li><p><strong>Download from database</strong>: Configure <code class="docutils literal notranslate"><span class="pre">variants.download</span></code> section</p></li>
+<li><p><strong>Variant calling</strong>: Use <code class="docutils literal notranslate"><span class="pre">variants.calling</span></code> section with BAM/CRAM files</p></li>
+</ul>
+</section>
+<section id="quality-control">
+<h3>3. Quality Control<a class="headerlink" href="#quality-control" title="Link to this heading"></a></h3>
+<p>Default QC parameters:</p>
+<ul class="simple">
+<li><p>MAF threshold: 0.01</p></li>
+<li><p>Max missing: 0.05</p></li>
+<li><p>Min call rate: 0.95</p></li>
+<li><p>HWE p-value: 1e-6</p></li>
+<li><p>Exclude indels: true</p></li>
+<li><p>Min quality: 30.0</p></li>
+</ul>
+</section>
+<section id="population-structure">
+<h3>4. Population Structure<a class="headerlink" href="#population-structure" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>PCA computation enabled</p></li>
+<li><p>10 principal components</p></li>
+<li><p>Kinship matrix computation (VanRaden method)</p></li>
+</ul>
+</section>
+<section id="association-testing">
+<h3>5. Association Testing<a class="headerlink" href="#association-testing" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Model: Linear regression</p></li>
+<li><p>Trait: <code class="docutils literal notranslate"><span class="pre">trait1</span></code> (specify in phenotype file)</p></li>
+<li><p>Min sample size: 50</p></li>
+</ul>
+</section>
+<section id="multiple-testing-correction">
+<h3>6. Multiple Testing Correction<a class="headerlink" href="#multiple-testing-correction" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Method: Bonferroni</p></li>
+<li><p>Alpha: 0.05</p></li>
+</ul>
+</section>
+</section>
+<section id="usage">
+<h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
+<section id="configuration-validation">
+<h3>Configuration Validation<a class="headerlink" href="#configuration-validation" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>metainformant<span class="w"> </span>gwas<span class="w"> </span>run<span class="w"> </span>--config<span class="w"> </span>config/gwas/gwas_pbarbatus.yaml<span class="w"> </span>--check
+</pre></div>
+</div>
+</section>
+<section id="full-workflow-execution">
+<h3>Full Workflow Execution<a class="headerlink" href="#full-workflow-execution" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python<span class="w"> </span>-m<span class="w"> </span>metainformant<span class="w"> </span>gwas<span class="w"> </span>run<span class="w"> </span>--config<span class="w"> </span>config/gwas/gwas_pbarbatus.yaml
+</pre></div>
+</div>
+</section>
+<section id="python-api">
+<h3>Python API<a class="headerlink" href="#python-api" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.gwas</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_gwas_config</span><span class="p">,</span> <span class="n">execute_gwas_workflow</span>
+
+<span class="c1"># Load configuration</span>
+<span class="n">cfg</span> <span class="o">=</span> <span class="n">load_gwas_config</span><span class="p">(</span><span class="s2">&quot;config/gwas_pbarbatus.yaml&quot;</span><span class="p">)</span>
+
+<span class="c1"># Validate configuration</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">execute_gwas_workflow</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># Execute workflow</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">execute_gwas_workflow</span><span class="p">(</span><span class="n">cfg</span><span class="p">,</span> <span class="n">check</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="required-data-files">
+<h2>Required Data Files<a class="headerlink" href="#required-data-files" title="Link to this heading"></a></h2>
+<p>Before running the full workflow, ensure you have:</p>
+<ol class="arabic">
+<li><p><strong>Phenotype file</strong> (<code class="docutils literal notranslate"><span class="pre">data/phenotypes/pbarbatus/phenotypes.tsv</span></code>):</p>
+<ul>
+<li><p>TSV format with <code class="docutils literal notranslate"><span class="pre">sample_id</span></code> and trait columns</p></li>
+<li><p>Example:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sample_id</span>	<span class="n">trait1</span>	<span class="n">trait2</span>
+<span class="n">S1</span>	<span class="mf">10.5</span>	<span class="mf">15.2</span>
+<span class="n">S2</span>	<span class="mf">11.0</span>	<span class="mf">16.0</span>
+</pre></div>
+</div>
+</li>
+</ul>
+</li>
+<li><p><strong>Variant data</strong> (one of):</p>
+<ul class="simple">
+<li><p>VCF file(s) specified in <code class="docutils literal notranslate"><span class="pre">variants.vcf_files</span></code></p></li>
+<li><p>Or BAM/CRAM files for variant calling in <code class="docutils literal notranslate"><span class="pre">variants.calling.bam_files</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>Covariates file</strong> (optional):</p>
+<ul class="simple">
+<li><p>TSV format with <code class="docutils literal notranslate"><span class="pre">sample_id</span></code> and covariate columns</p></li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="workflow-steps">
+<h2>Workflow Steps<a class="headerlink" href="#workflow-steps" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Genome Download</strong>: Downloads P. barbatus reference genome from NCBI</p></li>
+<li><p><strong>Variant Acquisition</strong>: Uses pre-existing VCF, downloads, or calls variants</p></li>
+<li><p><strong>Quality Control</strong>: Filters variants based on QC parameters</p></li>
+<li><p><strong>Population Structure</strong>: Computes PCA and kinship matrices</p></li>
+<li><p><strong>Association Testing</strong>: Performs GWAS with specified model</p></li>
+<li><p><strong>Multiple Testing Correction</strong>: Applies correction methods</p></li>
+<li><p><strong>Visualization</strong>: Generates Manhattan plots, Q-Q plots, etc.</p></li>
+<li><p><strong>Results Export</strong>: Writes results to output directories</p></li>
+</ol>
+</section>
+<section id="output-directories">
+<h2>Output Directories<a class="headerlink" href="#output-directories" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Work directory</strong>: <code class="docutils literal notranslate"><span class="pre">output/gwas/pbarbatus/work</span></code></p></li>
+<li><p><strong>Genome</strong>: <code class="docutils literal notranslate"><span class="pre">output/gwas/pbarbatus/genome</span></code></p></li>
+<li><p><strong>Variants</strong>: <code class="docutils literal notranslate"><span class="pre">output/gwas/pbarbatus/variants</span></code></p></li>
+<li><p><strong>Results</strong>: <code class="docutils literal notranslate"><span class="pre">output/gwas/pbarbatus/results</span></code></p></li>
+<li><p><strong>Plots</strong>: <code class="docutils literal notranslate"><span class="pre">output/gwas/pbarbatus/plots</span></code></p></li>
+<li><p><strong>Logs</strong>: <code class="docutils literal notranslate"><span class="pre">output/gwas/pbarbatus/logs</span></code></p></li>
+</ul>
+</section>
+<section id="testing">
+<h2>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h2>
+<p>Run configuration tests:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pytest<span class="w"> </span>tests/test_gwas_config_pbarbatus.py<span class="w"> </span>-v
+</pre></div>
+</div>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="#../config/gwas_template.yaml"><span class="xref myst">GWAS Configuration Template</span></a></p></li>
+<li><p><a class="reference internal" href="workflow.html"><span class="std std-doc">GWAS Workflow Documentation</span></a></p></li>
+<li><p><a class="reference internal" href="config.html"><span class="std std-doc">GWAS Configuration Guide</span></a></p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

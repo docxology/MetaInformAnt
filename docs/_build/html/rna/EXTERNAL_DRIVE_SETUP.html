@@ -1,0 +1,616 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>External Drive Setup and Filesystem Considerations &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">External Drive Setup and Filesystem Considerations</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/rna/EXTERNAL_DRIVE_SETUP.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="external-drive-setup-and-filesystem-considerations">
+<h1>External Drive Setup and Filesystem Considerations<a class="headerlink" href="#external-drive-setup-and-filesystem-considerations" title="Link to this heading"></a></h1>
+<p>This document covers setup considerations, known issues, and solutions when running METAINFORMANT RNA workflows on external drives or filesystems with limitations (e.g., exFAT without symlink support).</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>METAINFORMANT is designed to work seamlessly on external drives, but some filesystems (particularly <strong>exFAT</strong>) have limitations that require special handling. This guide documents all known issues and their solutions.</p>
+</section>
+<section id="filesystem-limitations">
+<h2>Filesystem Limitations<a class="headerlink" href="#filesystem-limitations" title="Link to this heading"></a></h2>
+<section id="symlink-support">
+<h3>Symlink Support<a class="headerlink" href="#symlink-support" title="Link to this heading"></a></h3>
+<p><strong>Issue</strong>: Some filesystems (e.g., <strong>exFAT</strong>, <strong>FAT32</strong>) don’t support symlinks, which causes failures when:</p>
+<ul class="simple">
+<li><p>Creating virtual environments (Python venv requires symlinks)</p></li>
+<li><p>Using <code class="docutils literal notranslate"><span class="pre">uv</span></code> package manager cache</p></li>
+<li><p>Building Python packages</p></li>
+</ul>
+<p><strong>Current Mount Example</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>/dev/sdb2<span class="w"> </span>on<span class="w"> </span>/media/q/ext6<span class="w"> </span><span class="nb">type</span><span class="w"> </span>exfat<span class="w"> </span><span class="o">(</span>rw,nosuid,nodev,relatime,...<span class="o">)</span>
+</pre></div>
+</div>
+<p>Note: The <code class="docutils literal notranslate"><span class="pre">/media/q/ext6</span></code> path name doesn’t indicate the filesystem type - this drive is <strong>exFAT</strong>.</p>
+<p><strong>Symptoms</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Operation</span> <span class="ow">not</span> <span class="n">permitted</span> <span class="p">(</span><span class="n">os</span> <span class="n">error</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">failed</span> <span class="n">to</span> <span class="n">symlink</span> <span class="n">file</span> <span class="kn">from</span><span class="w"> </span><span class="nn">...</span> <span class="n">to</span> <span class="o">...</span>
+<span class="n">Failed</span> <span class="n">to</span> <span class="n">create</span> <span class="n">virtual</span> <span class="n">environment</span>
+</pre></div>
+</div>
+</section>
+<section id="filesystem-comparison">
+<h3>Filesystem Comparison<a class="headerlink" href="#filesystem-comparison" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Filesystem</p></th>
+<th class="head"><p>Symlinks</p></th>
+<th class="head"><p>Linux</p></th>
+<th class="head"><p>Windows</p></th>
+<th class="head"><p>macOS</p></th>
+<th class="head"><p>Best For</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>ext4</strong></p></td>
+<td><p>✅ Yes</p></td>
+<td><p>Native</p></td>
+<td><p>❌ No*</p></td>
+<td><p>❌ No*</p></td>
+<td><p>Linux-only drives</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>NTFS</strong></p></td>
+<td><p>✅ Yes</p></td>
+<td><p>✅ Yes**</p></td>
+<td><p>Native</p></td>
+<td><p>Read-only***</p></td>
+<td><p>Cross-platform</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>exFAT</strong></p></td>
+<td><p>❌ No</p></td>
+<td><p>✅ Yes</p></td>
+<td><p>✅ Yes</p></td>
+<td><p>✅ Yes</p></td>
+<td><p>Simple file transfer</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Btrfs</strong></p></td>
+<td><p>✅ Yes</p></td>
+<td><p>Native</p></td>
+<td><p>❌ No</p></td>
+<td><p>❌ No</p></td>
+<td><p>Advanced Linux</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>APFS</strong></p></td>
+<td><p>✅ Yes</p></td>
+<td><p>❌ No</p></td>
+<td><p>❌ No</p></td>
+<td><p>Native</p></td>
+<td><p>macOS only</p></td>
+</tr>
+</tbody>
+</table>
+<p>* Requires third-party tools<br />
+** Via ntfs-3g driver<br />
+*** Requires third-party drivers for write access</p>
+</section>
+<section id="recommended-solutions">
+<h3>Recommended Solutions<a class="headerlink" href="#recommended-solutions" title="Link to this heading"></a></h3>
+<section id="option-1-reformat-to-ext4-best-for-linux">
+<h4>Option 1: Reformat to ext4 (Best for Linux)<a class="headerlink" href="#option-1-reformat-to-ext4-best-for-linux" title="Link to this heading"></a></h4>
+<p><strong>Advantages</strong>:</p>
+<ul class="simple">
+<li><p>Full symlink support</p></li>
+<li><p>Native Linux filesystem - no drivers needed</p></li>
+<li><p>Excellent performance</p></li>
+<li><p>Journaling for crash protection</p></li>
+</ul>
+<p><strong>Disadvantages</strong>:</p>
+<ul class="simple">
+<li><p>Not readable on Windows/macOS without third-party tools</p></li>
+</ul>
+<p><strong>How to Format</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># ⚠️ BACKUP DATA FIRST - THIS ERASES THE DRIVE! ⚠️</span>
+
+<span class="c1"># Unmount the drive</span>
+sudo<span class="w"> </span>umount<span class="w"> </span>/dev/sdb2
+
+<span class="c1"># Format to ext4</span>
+sudo<span class="w"> </span>mkfs.ext4<span class="w"> </span>-L<span class="w"> </span><span class="s2">&quot;MetaInformAnt&quot;</span><span class="w"> </span>/dev/sdb2
+
+<span class="c1"># Remount</span>
+sudo<span class="w"> </span>mount<span class="w"> </span>/dev/sdb2<span class="w"> </span>/media/q/ext6
+</pre></div>
+</div>
+</section>
+<section id="option-2-reformat-to-ntfs-best-for-cross-platform">
+<h4>Option 2: Reformat to NTFS (Best for Cross-Platform)<a class="headerlink" href="#option-2-reformat-to-ntfs-best-for-cross-platform" title="Link to this heading"></a></h4>
+<p><strong>Advantages</strong>:</p>
+<ul class="simple">
+<li><p>Full symlink support</p></li>
+<li><p>Works on Windows, Linux (via ntfs-3g), macOS (read-only)</p></li>
+<li><p>Good for mixed OS environments</p></li>
+</ul>
+<p><strong>Disadvantages</strong>:</p>
+<ul class="simple">
+<li><p>Slightly slower on Linux than ext4</p></li>
+<li><p>Requires ntfs-3g on Linux</p></li>
+</ul>
+<p><strong>How to Format</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># ⚠️ BACKUP DATA FIRST - THIS ERASES THE DRIVE! ⚠️</span>
+
+<span class="c1"># Install ntfs-3g if not already installed</span>
+sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>ntfs-3g
+
+<span class="c1"># Unmount the drive</span>
+sudo<span class="w"> </span>umount<span class="w"> </span>/dev/sdb2
+
+<span class="c1"># Format to NTFS</span>
+sudo<span class="w"> </span>mkfs.ntfs<span class="w"> </span>-f<span class="w"> </span>-L<span class="w"> </span><span class="s2">&quot;MetaInformAnt&quot;</span><span class="w"> </span>/dev/sdb2
+
+<span class="c1"># Remount</span>
+sudo<span class="w"> </span>mount<span class="w"> </span>-t<span class="w"> </span>ntfs-3g<span class="w"> </span>/dev/sdb2<span class="w"> </span>/media/q/ext6
+</pre></div>
+</div>
+</section>
+<section id="option-3-workaround-use-tmp-for-virtual-environment-no-reformatting">
+<h4>Option 3: Workaround - Use /tmp for Virtual Environment (No Reformatting)<a class="headerlink" href="#option-3-workaround-use-tmp-for-virtual-environment-no-reformatting" title="Link to this heading"></a></h4>
+<p><strong>Solution</strong>: The codebase automatically handles this by:</p>
+<ol class="arabic simple">
+<li><p>Using alternative venv location (<code class="docutils literal notranslate"><span class="pre">/tmp/metainformant_venv</span></code>) when repo <code class="docutils literal notranslate"><span class="pre">.venv</span></code> fails</p></li>
+<li><p>Using <code class="docutils literal notranslate"><span class="pre">/tmp/uv-cache</span></code> for uv cache directory instead of <code class="docutils literal notranslate"><span class="pre">output/.uv-cache</span></code></p></li>
+<li><p>Detecting filesystem capabilities and falling back gracefully</p></li>
+</ol>
+</section>
+</section>
+<section id="virtual-environment-location">
+<h3>Virtual Environment Location<a class="headerlink" href="#virtual-environment-location" title="Link to this heading"></a></h3>
+<p><strong>Automatic Detection</strong>: The setup utilities (<code class="docutils literal notranslate"><span class="pre">scripts/rna/_setup_utils.py</span></code>) automatically:</p>
+<ol class="arabic simple">
+<li><p>Try to create <code class="docutils literal notranslate"><span class="pre">.venv</span></code> in repo root first</p></li>
+<li><p>If that fails due to symlink issues, use <code class="docutils literal notranslate"><span class="pre">/tmp/metainformant_venv</span></code></p></li>
+<li><p>Log which location is being used</p></li>
+</ol>
+<p><strong>Manual Override</strong>: You can set the venv location via environment variable:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">METAINFORMANT_VENV</span><span class="o">=</span>/path/to/your/venv
+</pre></div>
+</div>
+</section>
+</section>
+<section id="uv-package-manager-configuration">
+<h2>UV Package Manager Configuration<a class="headerlink" href="#uv-package-manager-configuration" title="Link to this heading"></a></h2>
+<section id="cache-directory">
+<h3>Cache Directory<a class="headerlink" href="#cache-directory" title="Link to this heading"></a></h3>
+<p><strong>Issue</strong>: <code class="docutils literal notranslate"><span class="pre">uv</span></code> requires symlink support for its cache directory. On ext6 filesystems, using <code class="docutils literal notranslate"><span class="pre">output/.uv-cache</span></code> fails.</p>
+<p><strong>Solution</strong>: The setup utilities automatically use <code class="docutils literal notranslate"><span class="pre">/tmp/uv-cache</span></code> for uv cache:</p>
+<ul class="simple">
+<li><p>Set via <code class="docutils literal notranslate"><span class="pre">UV_CACHE_DIR=/tmp/uv-cache</span></code> environment variable</p></li>
+<li><p>Automatically configured in <code class="docutils literal notranslate"><span class="pre">_setup_utils.py</span></code></p></li>
+</ul>
+<p><strong>Manual Override</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">UV_CACHE_DIR</span><span class="o">=</span>/tmp/uv-cache
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>&lt;package&gt;<span class="w"> </span>--python<span class="w"> </span>/path/to/venv/bin/python3
+</pre></div>
+</div>
+</section>
+<section id="installing-dependencies">
+<h3>Installing Dependencies<a class="headerlink" href="#installing-dependencies" title="Link to this heading"></a></h3>
+<p>When installing packages with <code class="docutils literal notranslate"><span class="pre">uv</span></code>, always use the cache directory that supports symlinks:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Correct: Use /tmp/uv-cache</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">UV_CACHE_DIR</span><span class="o">=</span>/tmp/uv-cache
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>biopython<span class="w"> </span>--python<span class="w"> </span>/tmp/metainformant_venv/bin/python3
+
+<span class="c1"># Incorrect: Will fail on ext6</span>
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>biopython<span class="w"> </span>--python<span class="w"> </span>/tmp/metainformant_venv/bin/python3
+<span class="c1"># (without UV_CACHE_DIR set, defaults to output/.uv-cache which may fail)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="temporary-directory-selection">
+<h2>Temporary Directory Selection<a class="headerlink" href="#temporary-directory-selection" title="Link to this heading"></a></h2>
+<section id="automatic-selection">
+<h3>Automatic Selection<a class="headerlink" href="#automatic-selection" title="Link to this heading"></a></h3>
+<p>The codebase uses <code class="docutils literal notranslate"><span class="pre">get_recommended_temp_dir()</span></code> from <code class="docutils literal notranslate"><span class="pre">metainformant.core.disk</span></code> to:</p>
+<ol class="arabic simple">
+<li><p>Check if <code class="docutils literal notranslate"><span class="pre">TMPDIR</span></code> environment variable is set (use that)</p></li>
+<li><p>Check if <code class="docutils literal notranslate"><span class="pre">output/</span></code> directory is on a large/medium drive (use <code class="docutils literal notranslate"><span class="pre">output/.tmp</span></code>)</p></li>
+<li><p>Fall back to system temp directory (<code class="docutils literal notranslate"><span class="pre">/tmp</span></code>)</p></li>
+</ol>
+</section>
+<section id="manual-override">
+<h3>Manual Override<a class="headerlink" href="#manual-override" title="Link to this heading"></a></h3>
+<p>Set <code class="docutils literal notranslate"><span class="pre">TMPDIR</span></code> environment variable:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">TMPDIR</span><span class="o">=</span>/path/to/large/temp/directory
+</pre></div>
+</div>
+</section>
+</section>
+<section id="known-issues-and-solutions">
+<h2>Known Issues and Solutions<a class="headerlink" href="#known-issues-and-solutions" title="Link to this heading"></a></h2>
+<section id="issue-1-biopython-not-available-warning">
+<h3>Issue 1: Biopython Not Available Warning<a class="headerlink" href="#issue-1-biopython-not-available-warning" title="Link to this heading"></a></h3>
+<p><strong>Symptom</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">WARNING</span> <span class="o">|</span> <span class="n">metainformant</span><span class="o">.</span><span class="n">rna</span><span class="o">.</span><span class="n">discovery</span> <span class="o">|</span> <span class="n">Biopython</span> <span class="ow">not</span> <span class="n">available</span> <span class="o">-</span> <span class="n">discovery</span> <span class="n">functions</span> <span class="n">will</span> <span class="n">be</span> <span class="n">limited</span>
+</pre></div>
+</div>
+<p><strong>Cause</strong>: Biopython is listed in <code class="docutils literal notranslate"><span class="pre">pyproject.toml</span></code> but wasn’t installed in the virtual environment, often due to:</p>
+<ul class="simple">
+<li><p>Venv created before biopython was added to dependencies</p></li>
+<li><p>Installation failed due to symlink issues</p></li>
+</ul>
+<p><strong>Solution</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install biopython in venv using proper cache location</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">UV_CACHE_DIR</span><span class="o">=</span>/tmp/uv-cache
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>biopython<span class="w"> </span>--python<span class="w"> </span>/tmp/metainformant_venv/bin/python3
+
+<span class="c1"># Or reinstall metainformant with all dependencies</span>
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="w"> </span>--python<span class="w"> </span>/tmp/metainformant_venv/bin/python3
+</pre></div>
+</div>
+</section>
+<section id="issue-2-ncbi-datasets-library-not-available">
+<h3>Issue 2: NCBI Datasets Library Not Available<a class="headerlink" href="#issue-2-ncbi-datasets-library-not-available" title="Link to this heading"></a></h3>
+<p><strong>Symptom</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">WARNING</span> <span class="o">|</span> <span class="n">metainformant</span><span class="o">.</span><span class="n">rna</span><span class="o">.</span><span class="n">discovery</span> <span class="o">|</span> <span class="n">ncbi</span><span class="o">-</span><span class="n">datasets</span><span class="o">-</span><span class="n">pylib</span> <span class="ow">not</span> <span class="n">available</span> <span class="o">-</span> <span class="n">genome</span> <span class="n">info</span> <span class="n">will</span> <span class="n">be</span> <span class="n">limited</span>
+</pre></div>
+</div>
+<p><strong>Solution</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">UV_CACHE_DIR</span><span class="o">=</span>/tmp/uv-cache
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>ncbi-datasets-pylib<span class="w"> </span>--python<span class="w"> </span>/tmp/metainformant_venv/bin/python3
+</pre></div>
+</div>
+</section>
+<section id="issue-3-uv-cache-symlink-errors">
+<h3>Issue 3: UV Cache Symlink Errors<a class="headerlink" href="#issue-3-uv-cache-symlink-errors" title="Link to this heading"></a></h3>
+<p><strong>Symptom</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>× Failed to download `biopython==1.86`
+├─▶ Failed to read from the distribution cache
+╰─▶ failed to symlink file from ... to ...
+   Operation not permitted (os error 1)
+</pre></div>
+</div>
+<p><strong>Solution</strong>: Set <code class="docutils literal notranslate"><span class="pre">UV_CACHE_DIR</span></code> to a location that supports symlinks:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">UV_CACHE_DIR</span><span class="o">=</span>/tmp/uv-cache
+</pre></div>
+</div>
+</section>
+<section id="issue-4-virtual-environment-creation-fails">
+<h3>Issue 4: Virtual Environment Creation Fails<a class="headerlink" href="#issue-4-virtual-environment-creation-fails" title="Link to this heading"></a></h3>
+<p><strong>Symptom</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Failed</span> <span class="n">to</span> <span class="n">create</span> <span class="n">venv</span> <span class="n">at</span> <span class="o">.</span><span class="n">venv</span><span class="p">:</span> <span class="n">Operation</span> <span class="ow">not</span> <span class="n">permitted</span>
+</pre></div>
+</div>
+<p><strong>Solution</strong>: The codebase automatically falls back to <code class="docutils literal notranslate"><span class="pre">/tmp/metainformant_venv</span></code>. This is handled transparently.</p>
+</section>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<section id="environment-setup">
+<h3>1. Environment Setup<a class="headerlink" href="#environment-setup" title="Link to this heading"></a></h3>
+<p>Always use the provided setup utilities which handle filesystem limitations automatically:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run environment check (auto-handles venv setup)</span>
+python3<span class="w"> </span>scripts/rna/check_environment.py
+
+<span class="c1"># Run workflow (auto-handles all setup)</span>
+python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>config/amalgkit/amalgkit_&lt;species&gt;.yaml
+</pre></div>
+</div>
+</section>
+<section id="manual-package-installation">
+<h3>2. Manual Package Installation<a class="headerlink" href="#manual-package-installation" title="Link to this heading"></a></h3>
+<p>When manually installing packages, always set the cache directory:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">UV_CACHE_DIR</span><span class="o">=</span>/tmp/uv-cache
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>&lt;package&gt;<span class="w"> </span>--python<span class="w"> </span>/tmp/metainformant_venv/bin/python3
+</pre></div>
+</div>
+</section>
+<section id="temporary-directory">
+<h3>3. Temporary Directory<a class="headerlink" href="#temporary-directory" title="Link to this heading"></a></h3>
+<p>For large workflows, ensure sufficient space:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check available space</span>
+df<span class="w"> </span>-h<span class="w"> </span>/tmp
+df<span class="w"> </span>-h<span class="w"> </span>/media/q/ext6/github/MetaInformAnt/output
+
+<span class="c1"># Set TMPDIR if needed</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">TMPDIR</span><span class="o">=</span>/path/to/large/drive/tmp
+</pre></div>
+</div>
+</section>
+<section id="disk-space-management">
+<h3>4. Disk Space Management<a class="headerlink" href="#disk-space-management" title="Link to this heading"></a></h3>
+<p>RNA-seq workflows can use significant disk space:</p>
+<ul class="simple">
+<li><p>Genome downloads: 100MB - 5GB per species</p></li>
+<li><p>FASTQ files: 1-10GB per sample</p></li>
+<li><p>Quantification results: 50-500MB per sample</p></li>
+</ul>
+<p><strong>Recommendation</strong>: Use <code class="docutils literal notranslate"><span class="pre">keep_fastq:</span> <span class="pre">no</span></code> in config to delete FASTQ files after quantification.</p>
+</section>
+</section>
+<section id="configuration-examples">
+<h2>Configuration Examples<a class="headerlink" href="#configuration-examples" title="Link to this heading"></a></h2>
+<section id="standard-configuration-works-on-any-filesystem">
+<h3>Standard Configuration (Works on Any Filesystem)<a class="headerlink" href="#standard-configuration-works-on-any-filesystem" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># config/amalgkit/amalgkit_species.yaml</span>
+<span class="nt">work_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/species/work</span>
+<span class="nt">log_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/species/logs</span>
+<span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">12</span>
+
+<span class="c1"># Automatically handles external drive issues</span>
+<span class="nt">auto_install_amalgkit</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">getfastq</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">keep_fastq</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">no</span><span class="w">  </span><span class="c1"># Delete FASTQ after quantification to save space</span>
+<span class="w">  </span><span class="nt">quant</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">keep_fastq</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">no</span>
+</pre></div>
+</div>
+</section>
+<section id="large-dataset-configuration">
+<h3>Large Dataset Configuration<a class="headerlink" href="#large-dataset-configuration" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># For workflows with many samples on external drive</span>
+<span class="nt">work_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/species/work</span>
+<span class="nt">log_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/species/logs</span>
+<span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">24</span>
+
+<span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">getfastq</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">num_download_workers</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10</span><span class="w">  </span><span class="c1"># Parallel downloads</span>
+<span class="w">    </span><span class="nt">keep_fastq</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">no</span><span class="w">  </span><span class="c1"># Critical for disk space</span>
+<span class="w">  </span><span class="nt">quant</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">keep_fastq</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">no</span>
+<span class="w">    </span><span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">24</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="verification">
+<h2>Verification<a class="headerlink" href="#verification" title="Link to this heading"></a></h2>
+<section id="check-environment">
+<h3>Check Environment<a class="headerlink" href="#check-environment" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Verify all dependencies including biopython</span>
+python3<span class="w"> </span>scripts/rna/check_environment.py
+</pre></div>
+</div>
+</section>
+<section id="verify-virtual-environment">
+<h3>Verify Virtual Environment<a class="headerlink" href="#verify-virtual-environment" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check venv location</span>
+/tmp/metainformant_venv/bin/python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import sys; print(sys.prefix)&quot;</span>
+
+<span class="c1"># Check biopython</span>
+/tmp/metainformant_venv/bin/python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;from Bio import Entrez; print(&#39;✓ biopython available&#39;)&quot;</span>
+
+<span class="c1"># Check ncbi-datasets</span>
+/tmp/metainformant_venv/bin/python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;from ncbi.datasets import GenomeApi; print(&#39;✓ ncbi-datasets available&#39;)&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="verify-uv-cache">
+<h3>Verify UV Cache<a class="headerlink" href="#verify-uv-cache" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check cache location</span>
+<span class="nb">echo</span><span class="w"> </span><span class="nv">$UV_CACHE_DIR</span>
+<span class="c1"># Should be: /tmp/uv-cache</span>
+
+<span class="c1"># Verify cache is writable</span>
+ls<span class="w"> </span>-la<span class="w"> </span>/tmp/uv-cache
+</pre></div>
+</div>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="problem-workflow-fails-with-symlink-errors">
+<h3>Problem: Workflow fails with symlink errors<a class="headerlink" href="#problem-workflow-fails-with-symlink-errors" title="Link to this heading"></a></h3>
+<p><strong>Solution</strong>: Ensure <code class="docutils literal notranslate"><span class="pre">UV_CACHE_DIR</span></code> is set:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">UV_CACHE_DIR</span><span class="o">=</span>/tmp/uv-cache
+</pre></div>
+</div>
+</section>
+<section id="problem-virtual-environment-not-found">
+<h3>Problem: Virtual environment not found<a class="headerlink" href="#problem-virtual-environment-not-found" title="Link to this heading"></a></h3>
+<p><strong>Solution</strong>: The setup utilities automatically create it. Check:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ls<span class="w"> </span>-la<span class="w"> </span>/tmp/metainformant_venv/bin/python3
+</pre></div>
+</div>
+</section>
+<section id="problem-out-of-disk-space">
+<h3>Problem: Out of disk space<a class="headerlink" href="#problem-out-of-disk-space" title="Link to this heading"></a></h3>
+<p><strong>Solution</strong>:</p>
+<ol class="arabic simple">
+<li><p>Check space: <code class="docutils literal notranslate"><span class="pre">df</span> <span class="pre">-h</span></code></p></li>
+<li><p>Clean up old outputs: <code class="docutils literal notranslate"><span class="pre">rm</span> <span class="pre">-rf</span> <span class="pre">output/amalgkit/old_species/</span></code></p></li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">keep_fastq:</span> <span class="pre">no</span></code> in config</p></li>
+<li><p>Set <code class="docutils literal notranslate"><span class="pre">TMPDIR</span></code> to a drive with more space</p></li>
+</ol>
+</section>
+<section id="problem-packages-not-installing">
+<h3>Problem: Packages not installing<a class="headerlink" href="#problem-packages-not-installing" title="Link to this heading"></a></h3>
+<p><strong>Solution</strong>:</p>
+<ol class="arabic simple">
+<li><p>Set <code class="docutils literal notranslate"><span class="pre">UV_CACHE_DIR=/tmp/uv-cache</span></code></p></li>
+<li><p>Verify venv Python: <code class="docutils literal notranslate"><span class="pre">/tmp/metainformant_venv/bin/python3</span> <span class="pre">--version</span></code></p></li>
+<li><p>Try manual install: <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">pip</span> <span class="pre">install</span> <span class="pre">&lt;package&gt;</span> <span class="pre">--python</span> <span class="pre">/tmp/metainformant_venv/bin/python3</span></code></p></li>
+</ol>
+</section>
+</section>
+<section id="implementation-details">
+<h2>Implementation Details<a class="headerlink" href="#implementation-details" title="Link to this heading"></a></h2>
+<section id="automatic-handling">
+<h3>Automatic Handling<a class="headerlink" href="#automatic-handling" title="Link to this heading"></a></h3>
+<p>The following files automatically handle external drive issues:</p>
+<ol class="arabic simple">
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">scripts/rna/_setup_utils.py</span></code></strong>:</p>
+<ul class="simple">
+<li><p>Detects filesystem limitations</p></li>
+<li><p>Uses alternative venv location when needed</p></li>
+<li><p>Sets <code class="docutils literal notranslate"><span class="pre">UV_CACHE_DIR</span></code> to <code class="docutils literal notranslate"><span class="pre">/tmp/uv-cache</span></code></p></li>
+<li><p>Handles symlink failures gracefully</p></li>
+</ul>
+</li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">src/metainformant/core/disk.py</span></code></strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">get_recommended_temp_dir()</span></code>: Selects best temp directory</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">detect_drive_size_category()</span></code>: Detects drive size for optimization</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">get_recommended_batch_size()</span></code>: Optimizes batch processing</p></li>
+</ul>
+</li>
+<li><p><strong><code class="docutils literal notranslate"><span class="pre">src/metainformant/rna/discovery.py</span></code></strong>:</p>
+<ul class="simple">
+<li><p>Gracefully handles missing biopython/ncbi-datasets</p></li>
+<li><p>Logs warnings but continues operation</p></li>
+<li><p>Functions degrade gracefully when optional deps missing</p></li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="code-locations">
+<h3>Code Locations<a class="headerlink" href="#code-locations" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Venv location detection: <code class="docutils literal notranslate"><span class="pre">scripts/rna/_setup_utils.py::_find_venv_location()</span></code></p></li>
+<li><p>UV cache configuration: <code class="docutils literal notranslate"><span class="pre">scripts/rna/_setup_utils.py::setup_venv_and_dependencies()</span></code></p></li>
+<li><p>Temp directory selection: <code class="docutils literal notranslate"><span class="pre">src/metainformant/core/disk.py::get_recommended_temp_dir()</span></code></p></li>
+</ul>
+</section>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="GETTING_STARTED.html"><span class="std std-doc">RNA Getting Started Guide</span></a> - Initial setup instructions</p></li>
+<li><p><a class="reference internal" href="CONFIGURATION.html"><span class="std std-doc">RNA Configuration Guide</span></a> - Configuration options</p></li>
+<li><p><a class="reference internal" href="workflow.html"><span class="std std-doc">RNA Workflow Guide</span></a> - Workflow execution</p></li>
+<li><p><a class="reference internal" href="../core/paths.html"><span class="std std-doc">Core Path Management</span></a> - Path handling utilities</p></li>
+</ul>
+</section>
+<section id="summary">
+<h2>Summary<a class="headerlink" href="#summary" title="Link to this heading"></a></h2>
+<p>METAINFORMANT automatically handles external drive and filesystem limitations:</p>
+<p>✅ <strong>Automatic venv location selection</strong> - Falls back to <code class="docutils literal notranslate"><span class="pre">/tmp/metainformant_venv</span></code> when needed<br />
+✅ <strong>Automatic UV cache configuration</strong> - Uses <code class="docutils literal notranslate"><span class="pre">/tmp/uv-cache</span></code> to avoid symlink issues<br />
+✅ <strong>Automatic temp directory selection</strong> - Chooses best location based on drive size<br />
+✅ <strong>Graceful degradation</strong> - Optional dependencies (biopython, ncbi-datasets) are optional<br />
+✅ <strong>Comprehensive error handling</strong> - Clear messages and automatic fallbacks</p>
+<p>No manual configuration needed - the system handles everything automatically!</p>
+<hr class="docutils" />
+<p><em>Last Updated: November 2025</em><br />
+<em>Tested on: ext6 filesystem, external drives, standard Linux filesystems</em></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

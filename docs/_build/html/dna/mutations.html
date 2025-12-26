@@ -1,0 +1,183 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DNA: Mutations &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">DNA: Mutations</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/dna/mutations.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="dna-mutations">
+<h1>DNA: Mutations<a class="headerlink" href="#dna-mutations" title="Link to this heading"></a></h1>
+<p>Functions: <code class="docutils literal notranslate"><span class="pre">apply_point_mutations</span></code>, <code class="docutils literal notranslate"><span class="pre">hamming_distance</span></code>, <code class="docutils literal notranslate"><span class="pre">random_point_mutations</span></code></p>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart TD
+  A[Original Sequence] --&gt; B[apply_point_mutations]
+  C[Mutation Map] --&gt; B
+  B --&gt; D[Mutated Sequence]
+  
+  E[Sequence 1] &amp; F[Sequence 2] --&gt; G[hamming_distance]
+  
+  H[Original Sequence] --&gt; I[random_point_mutations]
+  J[Number &amp; Seed] --&gt; I
+  I --&gt; K[Randomly Mutated Sequence]
+</pre></div>
+</div>
+<p>Example</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.dna</span><span class="w"> </span><span class="kn">import</span> <span class="n">mutations</span>
+
+<span class="c1"># Apply specific point mutations</span>
+<span class="n">seq</span> <span class="o">=</span> <span class="s2">&quot;ATCGATCG&quot;</span>
+<span class="n">changes</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span> <span class="s2">&quot;G&quot;</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span> <span class="s2">&quot;A&quot;</span><span class="p">}</span>  <span class="c1"># Position -&gt; new base</span>
+<span class="n">mutated</span> <span class="o">=</span> <span class="n">mutations</span><span class="o">.</span><span class="n">apply_point_mutations</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="n">changes</span><span class="p">)</span>  <span class="c1"># &quot;GTCAATCG&quot;</span>
+
+<span class="c1"># Calculate Hamming distance</span>
+<span class="n">seq1</span> <span class="o">=</span> <span class="s2">&quot;ATCG&quot;</span>
+<span class="n">seq2</span> <span class="o">=</span> <span class="s2">&quot;ATGG&quot;</span> 
+<span class="n">dist</span> <span class="o">=</span> <span class="n">mutations</span><span class="o">.</span><span class="n">hamming_distance</span><span class="p">(</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">)</span>  <span class="c1"># 1</span>
+
+<span class="c1"># Generate random mutations</span>
+<span class="n">seq</span> <span class="o">=</span> <span class="s2">&quot;ATCGATCGATCG&quot;</span>
+<span class="n">random_mutated</span> <span class="o">=</span> <span class="n">mutations</span><span class="o">.</span><span class="n">random_point_mutations</span><span class="p">(</span>
+    <span class="n">seq</span><span class="p">,</span> 
+    <span class="n">num_mutations</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> 
+    <span class="n">seed</span><span class="o">=</span><span class="mi">42</span>  <span class="c1"># For reproducibility</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>Features:</p>
+<ul class="simple">
+<li><p><strong>Precise mutations</strong>: Apply specific changes at defined positions</p></li>
+<li><p><strong>Distance calculation</strong>: Hamming distance between sequences</p></li>
+<li><p><strong>Random mutagenesis</strong>: Introduce controlled random mutations</p></li>
+<li><p><strong>Case preservation</strong>: Maintains original case when possible</p></li>
+<li><p><strong>Unique positions</strong>: Random mutations avoid duplicate positions</p></li>
+<li><p><strong>Reproducible</strong>: Seeded random number generation</p></li>
+</ul>
+<p>Mutation types:</p>
+<ul class="simple">
+<li><p><strong>Point mutations</strong>: Single nucleotide changes</p></li>
+<li><p><strong>Substitutions</strong>: Replace existing base with different base</p></li>
+<li><p><strong>Random selection</strong>: Avoids changing to same base when possible</p></li>
+</ul>
+<p>Related: Used in evolutionary analyses and <a class="reference internal" href="phylogeny.html"><span class="std std-doc">phylogeny</span></a> simulations.</p>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

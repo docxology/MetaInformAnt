@@ -1,0 +1,367 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Disk Space Management Guide &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/custom.css" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Disk Space Management Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/DISK_SPACE_MANAGEMENT.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="disk-space-management-guide">
+<h1>Disk Space Management Guide<a class="headerlink" href="#disk-space-management-guide" title="Link to this heading"></a></h1>
+<p>Critical guide for managing temporary files and disk space when running METAINFORMANT, especially on external drives.</p>
+<section id="the-problem">
+<h2>The Problem<a class="headerlink" href="#the-problem" title="Link to this heading"></a></h2>
+<p>On external drives or systems with limited <code class="docutils literal notranslate"><span class="pre">/tmp</span></code> space, the default system temporary directory may:</p>
+<ul class="simple">
+<li><p>Be a small RAM-based filesystem (tmpfs)</p></li>
+<li><p>Fill up quickly during large data processing</p></li>
+<li><p>Cause “No space left on device” errors</p></li>
+<li><p>Interrupt long-running workflows</p></li>
+</ul>
+</section>
+<section id="solution-repository-local-temp-directories">
+<h2>Solution: Repository-Local Temp Directories<a class="headerlink" href="#solution-repository-local-temp-directories" title="Link to this heading"></a></h2>
+<p>METAINFORMANT uses repository-local temp directories instead of system <code class="docutils literal notranslate"><span class="pre">/tmp</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>metainformant/
+├── .tmp/              # Repository-local temp directory
+│   ├── python/        # Python tempfile operations
+│   └── bash/          # Shell script heredocs and temp files
+├── .cache/            # Cache directory for expensive operations
+└── output/            # All program outputs
+</pre></div>
+</div>
+</section>
+<section id="configuration">
+<h2>Configuration<a class="headerlink" href="#configuration" title="Link to this heading"></a></h2>
+<section id="environment-variables">
+<h3>Environment Variables<a class="headerlink" href="#environment-variables" title="Link to this heading"></a></h3>
+<p>Set these before running any METAINFORMANT commands:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Add to ~/.bashrc or ~/.zshrc for persistence</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">TMPDIR</span><span class="o">=</span><span class="s2">&quot;</span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span><span class="s2">/.tmp/bash&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">TEMP</span><span class="o">=</span><span class="nv">$TMPDIR</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">TMP</span><span class="o">=</span><span class="nv">$TMPDIR</span>
+
+<span class="c1"># Create directories</span>
+mkdir<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TMPDIR</span><span class="s2">&quot;</span>
+
+<span class="c1"># Verify configuration</span>
+<span class="nb">echo</span><span class="w"> </span><span class="nv">$TMPDIR</span>
+<span class="c1"># Should show: /path/to/metainformant/.tmp/bash</span>
+</pre></div>
+</div>
+</section>
+<section id="python-configuration">
+<h3>Python Configuration<a class="headerlink" href="#python-configuration" title="Link to this heading"></a></h3>
+<p>For Python scripts, configure at the start of your script:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">tempfile</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="c1"># Set temp directory to repository root</span>
+<span class="n">REPO_ROOT</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">parent</span>
+<span class="n">TEMP_DIR</span> <span class="o">=</span> <span class="n">REPO_ROOT</span> <span class="o">/</span> <span class="s2">&quot;.tmp&quot;</span> <span class="o">/</span> <span class="s2">&quot;python&quot;</span>
+<span class="n">TEMP_DIR</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">parents</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="c1"># Override Python temp directory</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;TMPDIR&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">TEMP_DIR</span><span class="p">)</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;TEMP&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">TEMP_DIR</span><span class="p">)</span>
+<span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="p">[</span><span class="s2">&quot;TMP&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">TEMP_DIR</span><span class="p">)</span>
+<span class="n">tempfile</span><span class="o">.</span><span class="n">tempdir</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="n">TEMP_DIR</span><span class="p">)</span>
+
+<span class="c1"># Now all temp operations use the repository temp directory</span>
+<span class="k">with</span> <span class="n">tempfile</span><span class="o">.</span><span class="n">NamedTemporaryFile</span><span class="p">()</span> <span class="k">as</span> <span class="n">tmp</span><span class="p">:</span>
+    <span class="c1"># tmp.name is in .tmp/python/</span>
+    <span class="k">pass</span>
+</pre></div>
+</div>
+</section>
+<section id="shell-script-pattern">
+<h3>Shell Script Pattern<a class="headerlink" href="#shell-script-pattern" title="Link to this heading"></a></h3>
+<p>For shell scripts, add this at the start:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+<span class="c1"># At start of every shell script:</span>
+
+<span class="c1"># Get repository root from script location</span>
+<span class="nv">SCRIPT_DIR</span><span class="o">=</span><span class="s2">&quot;</span><span class="k">$(</span><span class="nb">cd</span><span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>dirname<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">BASH_SOURCE</span><span class="p">[0]</span><span class="si">}</span><span class="s2">&quot;</span><span class="k">)</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">pwd</span><span class="k">)</span><span class="s2">&quot;</span>
+<span class="nv">REPO_ROOT</span><span class="o">=</span><span class="s2">&quot;</span><span class="k">$(</span><span class="nb">cd</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$SCRIPT_DIR</span><span class="s2">/../..&quot;</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">pwd</span><span class="k">)</span><span class="s2">&quot;</span>
+
+<span class="c1"># Set temp directory to external drive</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">TMPDIR</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$REPO_ROOT</span><span class="s2">/.tmp/bash&quot;</span>
+mkdir<span class="w"> </span>-p<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$TMPDIR</span><span class="s2">&quot;</span>
+
+<span class="c1"># Now all bash operations use external drive temp</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="git-configuration">
+<h2>Git Configuration<a class="headerlink" href="#git-configuration" title="Link to this heading"></a></h2>
+<p>Ensure <code class="docutils literal notranslate"><span class="pre">.tmp/</span></code> and <code class="docutils literal notranslate"><span class="pre">.cache/</span></code> are ignored by git:</p>
+<div class="highlight-gitignore notranslate"><div class="highlight"><pre><span></span># Temporary files (repository-local)
+.tmp/
+.cache/
+*.tmp
+*.temp
+</pre></div>
+</div>
+<p>These should already be in the repository <code class="docutils literal notranslate"><span class="pre">.gitignore</span></code>.</p>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="error-no-space-left-on-device">
+<h3>Error: “No space left on device”<a class="headerlink" href="#error-no-space-left-on-device" title="Link to this heading"></a></h3>
+<p><strong>Cause</strong>: System <code class="docutils literal notranslate"><span class="pre">/tmp</span></code> is full or too small.</p>
+<p><strong>Solution</strong>:</p>
+<ol class="arabic simple">
+<li><p>Set <code class="docutils literal notranslate"><span class="pre">TMPDIR</span></code> environment variable as described above</p></li>
+<li><p>Verify: <code class="docutils literal notranslate"><span class="pre">echo</span> <span class="pre">$TMPDIR</span></code> should show repository path</p></li>
+<li><p>Clear old temp files: <code class="docutils literal notranslate"><span class="pre">rm</span> <span class="pre">-rf</span> <span class="pre">.tmp/*</span> <span class="pre">.cache/*</span></code></p></li>
+<li><p>Restart your workflow</p></li>
+</ol>
+</section>
+<section id="error-temp-files-in-wrong-location">
+<h3>Error: Temp files in wrong location<a class="headerlink" href="#error-temp-files-in-wrong-location" title="Link to this heading"></a></h3>
+<p><strong>Cause</strong>: Environment variables not set correctly.</p>
+<p><strong>Diagnosis</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check current temp directory</span>
+python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import tempfile; print(tempfile.gettempdir())&quot;</span>
+
+<span class="c1"># Should show: /path/to/metainformant/.tmp/python</span>
+<span class="c1"># NOT: /tmp or /var/tmp</span>
+</pre></div>
+</div>
+<p><strong>Solution</strong>: Ensure environment variables are set before running Python.</p>
+</section>
+<section id="error-permission-denied-on-temp-directory">
+<h3>Error: Permission denied on temp directory<a class="headerlink" href="#error-permission-denied-on-temp-directory" title="Link to this heading"></a></h3>
+<p><strong>Cause</strong>: Incorrect permissions on <code class="docutils literal notranslate"><span class="pre">.tmp/</span></code> directory.</p>
+<p><strong>Solution</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>chmod<span class="w"> </span>-R<span class="w"> </span><span class="m">755</span><span class="w"> </span>.tmp/
+chmod<span class="w"> </span>-R<span class="w"> </span><span class="m">755</span><span class="w"> </span>.cache/
+</pre></div>
+</div>
+</section>
+<section id="large-temporary-files-accumulating">
+<h3>Large temporary files accumulating<a class="headerlink" href="#large-temporary-files-accumulating" title="Link to this heading"></a></h3>
+<p><strong>Cause</strong>: Failed workflows leave behind temp files.</p>
+<p><strong>Solution</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check temp directory size</span>
+du<span class="w"> </span>-sh<span class="w"> </span>.tmp/
+
+<span class="c1"># Clean up safely (preserves directory structure)</span>
+find<span class="w"> </span>.tmp/<span class="w"> </span>-type<span class="w"> </span>f<span class="w"> </span>-mtime<span class="w"> </span>+1<span class="w"> </span>-delete
+find<span class="w"> </span>.cache/<span class="w"> </span>-type<span class="w"> </span>f<span class="w"> </span>-mtime<span class="w"> </span>+7<span class="w"> </span>-delete
+</pre></div>
+</div>
+</section>
+</section>
+<section id="disk-space-monitoring">
+<h2>Disk Space Monitoring<a class="headerlink" href="#disk-space-monitoring" title="Link to this heading"></a></h2>
+<section id="check-available-space">
+<h3>Check available space<a class="headerlink" href="#check-available-space" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># On external drive</span>
+df<span class="w"> </span>-h<span class="w"> </span>/path/to/metainformant
+
+<span class="c1"># Check temp directory usage</span>
+du<span class="w"> </span>-sh<span class="w"> </span>.tmp/<span class="w"> </span>.cache/<span class="w"> </span>output/
+</pre></div>
+</div>
+</section>
+<section id="automated-cleanup-script">
+<h3>Automated cleanup script<a class="headerlink" href="#automated-cleanup-script" title="Link to this heading"></a></h3>
+<p>Add to <code class="docutils literal notranslate"><span class="pre">scripts/core/cleanup_temp.sh</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
+<span class="c1"># Clean temporary files older than 1 day</span>
+
+<span class="nv">SCRIPT_DIR</span><span class="o">=</span><span class="s2">&quot;</span><span class="k">$(</span><span class="nb">cd</span><span class="w"> </span><span class="s2">&quot;</span><span class="k">$(</span>dirname<span class="w"> </span><span class="s2">&quot;</span><span class="si">${</span><span class="nv">BASH_SOURCE</span><span class="p">[0]</span><span class="si">}</span><span class="s2">&quot;</span><span class="k">)</span><span class="s2">&quot;</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">pwd</span><span class="k">)</span><span class="s2">&quot;</span>
+<span class="nv">REPO_ROOT</span><span class="o">=</span><span class="s2">&quot;</span><span class="k">$(</span><span class="nb">cd</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$SCRIPT_DIR</span><span class="s2">/../..&quot;</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">pwd</span><span class="k">)</span><span class="s2">&quot;</span>
+
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Cleaning temp files in </span><span class="nv">$REPO_ROOT</span><span class="s2">...&quot;</span>
+
+<span class="c1"># Clean Python temp (files older than 1 day)</span>
+find<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$REPO_ROOT</span><span class="s2">/.tmp/python&quot;</span><span class="w"> </span>-type<span class="w"> </span>f<span class="w"> </span>-mtime<span class="w"> </span>+1<span class="w"> </span>-delete<span class="w"> </span><span class="m">2</span>&gt;/dev/null
+
+<span class="c1"># Clean bash temp (files older than 1 day)</span>
+find<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$REPO_ROOT</span><span class="s2">/.tmp/bash&quot;</span><span class="w"> </span>-type<span class="w"> </span>f<span class="w"> </span>-mtime<span class="w"> </span>+1<span class="w"> </span>-delete<span class="w"> </span><span class="m">2</span>&gt;/dev/null
+
+<span class="c1"># Clean cache (files older than 7 days)</span>
+find<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$REPO_ROOT</span><span class="s2">/.cache&quot;</span><span class="w"> </span>-type<span class="w"> </span>f<span class="w"> </span>-mtime<span class="w"> </span>+7<span class="w"> </span>-delete<span class="w"> </span><span class="m">2</span>&gt;/dev/null
+
+<span class="c1"># Report remaining usage</span>
+<span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;Remaining usage:&quot;</span>
+du<span class="w"> </span>-sh<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$REPO_ROOT</span><span class="s2">/.tmp&quot;</span><span class="w"> </span><span class="s2">&quot;</span><span class="nv">$REPO_ROOT</span><span class="s2">/.cache&quot;</span><span class="w"> </span><span class="m">2</span>&gt;/dev/null
+</pre></div>
+</div>
+</section>
+</section>
+<section id="external-drive-setup">
+<h2>External Drive Setup<a class="headerlink" href="#external-drive-setup" title="Link to this heading"></a></h2>
+<p>For best results on external drives:</p>
+<section id="fat-exfat-filesystems">
+<h3>FAT/exFAT Filesystems<a class="headerlink" href="#fat-exfat-filesystems" title="Link to this heading"></a></h3>
+<p>FAT filesystems don’t support symlinks, which affects <code class="docutils literal notranslate"><span class="pre">uv</span></code> virtual environments.</p>
+<p><strong>Solution</strong>: Use the automated setup script:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bash<span class="w"> </span>scripts/package/setup.sh
+</pre></div>
+</div>
+<p>This automatically:</p>
+<ul class="simple">
+<li><p>Detects FAT filesystem</p></li>
+<li><p>Sets <code class="docutils literal notranslate"><span class="pre">UV_CACHE_DIR=/tmp/uv-cache</span></code></p></li>
+<li><p>Creates venv at <code class="docutils literal notranslate"><span class="pre">/tmp/metainformant_venv</span></code></p></li>
+</ul>
+<p><strong>Note</strong>: The <code class="docutils literal notranslate"><span class="pre">/tmp</span></code> venv is deleted on reboot. Re-run setup after restart.</p>
+</section>
+<section id="better-alternative-reformat-drive">
+<h3>Better Alternative: Reformat Drive<a class="headerlink" href="#better-alternative-reformat-drive" title="Link to this heading"></a></h3>
+<p>For best compatibility, reformat your external drive to:</p>
+<ul class="simple">
+<li><p><strong>ext4</strong> (Linux-only, best performance)</p></li>
+<li><p><strong>NTFS</strong> (cross-platform, Windows-compatible)</p></li>
+</ul>
+<p>These filesystems support symlinks natively.</p>
+</section>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Always set TMPDIR</strong> before running long workflows</p></li>
+<li><p><strong>Monitor disk space</strong> during large data processing</p></li>
+<li><p><strong>Clean temp files regularly</strong> to prevent accumulation</p></li>
+<li><p><strong>Use output/ for results</strong>, not temp directories</p></li>
+<li><p><strong>Never store important data</strong> in <code class="docutils literal notranslate"><span class="pre">.tmp/</span></code> or <code class="docutils literal notranslate"><span class="pre">.cache/</span></code></p></li>
+<li><p><strong>Reformat FAT drives</strong> to ext4/NTFS if possible</p></li>
+</ol>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong><a class="reference internal" href="UV_SETUP.html"><span class="std std-doc">UV Setup Guide</span></a></strong> - Package management and virtual environment setup</p></li>
+<li><p><strong><a class="reference internal" href="rna/EXTERNAL_DRIVE_SETUP.html"><span class="std std-doc">External Drive Setup</span></a></strong> - RNA workflow setup on external drives</p></li>
+<li><p><strong><a class="reference internal" href="architecture.html"><span class="std std-doc">Architecture</span></a></strong> - Directory structure and conventions</p></li>
+</ul>
+<hr class="docutils" />
+<p><em>Proper temp directory management ensures reliable execution of METAINFORMANT workflows on any system configuration.</em></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

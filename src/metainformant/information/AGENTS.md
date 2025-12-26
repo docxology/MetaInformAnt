@@ -88,10 +88,31 @@ This document outlines AI assistance in developing the METAINFORMANT information
 
 ### Workflow Functions (`workflows.py`)
 **Code Assistant Agent** created:
-- Batch entropy analysis for multiple sequences
+- Batch entropy analysis for multiple sequences with progress tracking
 - Complete information workflow function
 - Dataset comparison using information measures
 - Comprehensive report generation (JSON, Markdown, text formats)
+- Performance optimizations with caching for expensive computations
+
+### Recent Functional Improvements (December 2024)
+
+**Code Assistant Agent** implemented comprehensive enhancements:
+
+#### Code Quality Improvements
+- **Modern Type Hints**: Updated all type annotations to use `|` union syntax
+- **Input Validation**: Added comprehensive validation using `metainformant.core.validation`
+- **Error Handling**: Standardized error messages and exception handling
+- **Documentation**: Enhanced docstrings with examples, references, and performance notes
+
+#### Performance Optimizations
+- **Vectorized Operations**: Improved mathematical computations using NumPy
+- **Memory Efficiency**: Optimized large dataset processing
+- **Caching Integration**: Enhanced caching for expensive entropy calculations
+
+#### Testing Enhancements
+- **Edge Case Testing**: Added comprehensive tests for error conditions
+- **Validation Testing**: Verified input validation and error handling
+- **Integration Testing**: Cross-module functionality validation
 
 ### Integration Module (`integration.py`)
 **Code Assistant Agent** implemented:
@@ -101,7 +122,7 @@ This document outlines AI assistance in developing the METAINFORMANT information
 - Multi-omics integration functions
 - ML feature selection integration
 
-### Enhanced Visualization (`visualization.py`)
+### Visualization (`visualization.py`)
 **Code Assistant Agent** added:
 - Rényi entropy spectrum plotting
 - Information network visualization
@@ -114,7 +135,7 @@ This document outlines AI assistance in developing the METAINFORMANT information
 - Comprehensive README with API reference, performance considerations, best practices
 - EXAMPLES.md with real-world use cases
 - WORKFLOWS.md with step-by-step workflow guides
-- Enhanced AGENTS.md with testing strategy and integration patterns
+- Updated AGENTS.md with testing strategy and integration patterns
 
 ### Testing
 **Code Assistant Agent** created:
@@ -220,3 +241,68 @@ All implementations follow established information theory literature:
 
 This module provides a comprehensive foundation for information-theoretic analysis of biological data.
 
+## Complete Function Signatures
+
+### Syntactic Information Theory (`syntactic.py`)
+- `shannon_entropy(probs: Sequence[float], base: float = 2.0) -> float`
+- `shannon_entropy_from_counts(counts: Sequence[int] | dict[Any, int]) -> float`
+- `joint_entropy(x: Sequence[Any], y: Sequence[Any], base: float = 2.0) -> float`
+- `conditional_entropy(x: Sequence[Any], y: Sequence[Any], base: float = 2.0) -> float`
+- `mutual_information(x: Sequence[Any], y: Sequence[Any], base: float = 2.0) -> float`
+- `conditional_mutual_information(x: Sequence[Any], y: Sequence[Any], z: Sequence[Any], base: float = 2.0) -> float`
+- `kl_divergence(p: Sequence[float], q: Sequence[float], base: float = 2.0) -> float`
+- `cross_entropy(p: Sequence[float], q: Sequence[float], base: float = 2.0) -> float`
+- `jensen_shannon_divergence(p: Sequence[float], q: Sequence[float], base: float = 2.0) -> float`
+- `total_correlation(variables: list[Sequence[Any]], base: float = 2.0) -> float`
+- `transfer_entropy(x: Sequence[Any], y: Sequence[Any], lag: int = 1, base: float = 2.0) -> float`
+- `renyi_entropy(probs: Sequence[float], alpha: float = 2.0, base: float = 2.0) -> float`
+- `tsallis_entropy(probs: Sequence[float], q: float = 2.0, base: float = 2.0) -> float`
+- `normalized_mutual_information(x: Sequence[Any], y: Sequence[Any], method: str = "arithmetic", base: float = 2.0) -> float`
+- `information_coefficient(x: Sequence[Any], y: Sequence[Any], base: float = 2.0) -> float`
+
+### Semantic Information Theory (`semantic.py`)
+- `information_content(term_frequencies: dict[str, int], term: str, total_terms: int | None = None) -> float`
+- `information_content_from_annotations(annotations: dict[str, set[str]], term: str) -> float`
+- `semantic_entropy(term_annotations: dict[str, set[str]], base: float = 2.0) -> float`
+- `semantic_similarity(term1: str, term2: str, term_ic: dict[str, float], hierarchy: dict[str, set[str]], method: str = "resnik") -> float`
+- `semantic_similarity_matrix(terms: list[str], term_ic: dict[str, float], hierarchy: dict[str, set[str]], method: str = "resnik") -> np.ndarray`
+
+### Analysis Functions (`analysis.py`)
+- `information_profile(sequences: list[str], k: int = 1) -> dict[str, Any]`
+- `information_signature(data: np.ndarray | list[list[float]], method: str = "entropy") -> dict[str, Any]`
+- `analyze_sequence_information(sequence: str, k_values: list[int] | None = None) -> dict[str, Any]`
+- `compare_sequences_information(seq1: str, seq2: str, k: int = 1) -> dict[str, Any]`
+
+### Continuous Information Theory (`continuous.py`)
+- `differential_entropy(samples: np.ndarray, method: str = "histogram", bins: int | None = None) -> float`
+- `mutual_information_continuous(x: np.ndarray, y: np.ndarray, method: str = "histogram", bins: int | None = None) -> float`
+- `kl_divergence_continuous(p_samples: np.ndarray, q_samples: np.ndarray, method: str = "histogram", bins: int | None = None) -> float`
+- `entropy_estimation(samples: np.ndarray, method: str = "histogram", bins: int | None = None) -> float`
+
+### Estimation Methods (`estimation.py`)
+- `entropy_estimator(counts: dict[Any, int] | list[int], method: str = "plugin", bias_correction: bool = True) -> float`
+- `mutual_information_estimator(x: list[Any], y: list[Any], method: str = "plugin", bias_correction: bool = True) -> float`
+- `kl_divergence_estimator(p: list[Any], q: list[Any], method: str = "plugin", bias_correction: bool = True) -> float`
+- `bias_correction(entropy: float, sample_size: int, alphabet_size: int) -> float`
+
+### Workflow Functions (`workflows.py`)
+- `batch_entropy_analysis(sequences: list[str], k: int = 1, output_dir: Path | None = None) -> dict[str, Any]`
+- `information_workflow(sequences: list[str], k_values: list[int] | None = None, output_dir: Path | None = None) -> dict[str, Any]`
+- `compare_datasets(dataset1: list[str], dataset2: list[str], k: int = 1, output_dir: Path | None = None) -> dict[str, Any]`
+- `information_report(results: dict[str, Any], output_path: Path | None = None) -> None`
+
+### Network Information (`networks.py`)
+- `network_entropy(graph: Any, attribute: str | None = None) -> float`
+- `information_flow(graph: Any, source_nodes: list[str] | None = None, target_nodes: list[str] | None = None) -> dict[str, Any]`
+
+### Integration Functions (`integration.py`)
+- `dna_entropy_analysis(sequences: list[str], k_values: list[int] | None = None) -> dict[str, Any]`
+- `rna_expression_entropy(expression_matrix: pd.DataFrame) -> dict[str, Any]`
+- `singlecell_entropy_analysis(adata: Any) -> dict[str, Any]`
+- `multiomics_information_integration(omics_data: dict[str, Any]) -> dict[str, Any]`
+
+### Visualization Functions (`visualization.py`)
+- `plot_entropy_distribution(entropies: list[float], labels: list[str] | None = None, output_path: str | Path | None = None) -> matplotlib.figure.Figure`
+- `plot_mutual_information_matrix(mi_matrix: np.ndarray, labels: list[str] | None = None, output_path: str | Path | None = None) -> matplotlib.figure.Figure`
+- `plot_information_profile(profile: dict[str, Any], output_path: str | Path | None = None) -> matplotlib.figure.Figure`
+- `plot_semantic_similarity_matrix(similarity_matrix: np.ndarray, terms: list[str], output_path: str | Path | None = None) -> matplotlib.figure.Figure`

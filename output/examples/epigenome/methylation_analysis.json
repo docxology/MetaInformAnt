@@ -1,0 +1,25 @@
+{
+  "epigenome_analysis": {
+    "differential_methylation": {
+      "comparison": "samples_1-10_vs_11-20",
+      "dm_percentage": 0.3,
+      "dm_sites_found": 3,
+      "max_difference": 0.21696706690371842
+    },
+    "global_methylation": {
+      "mean": 0.28443284727233886,
+      "median": 0.26401942556282,
+      "range": [
+        0.0007225889464269,
+        0.8598580415161658
+      ]
+    },
+    "samples_analyzed": 20,
+    "site_classification": {
+      "hyper_methylated_sites": 0,
+      "hypo_methylated_sites": 9,
+      "intermediate_sites": 991
+    },
+    "sites_analyzed": 1000
+  }
+}

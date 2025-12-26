@@ -39,3 +39,15 @@ This document outlines AI assistance in developing METAINFORMANT's multi-omic da
 - Comprehensive testing validates multi-omic functionality
 
 This multi-omic infrastructure provides a solid foundation for integrated biological data analysis.
+
+## Complete Function Signatures
+
+### Data Integration (`integration.py`)
+- `integrate_omics_data(dna_data: pd.DataFrame | None = None, rna_data: pd.DataFrame | None = None, protein_data: pd.DataFrame | None = None, epigenome_data: pd.DataFrame | None = None, metabolomics_data: pd.DataFrame | None = None, **kwargs) -> Dict[str, Any]`
+- `joint_pca(omics_data: Dict[str, pd.DataFrame], n_components: int = 50, **kwargs) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray], np.ndarray]`
+- `joint_nmf(omics_data: Dict[str, pd.DataFrame], n_components: int = 50, max_iter: int = 200, **kwargs) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray], np.ndarray]`
+- `canonical_correlation(omics_data: Dict[str, pd.DataFrame], n_components: int = 10, **kwargs) -> Tuple[Dict[str, np.ndarray], Dict[str, np.ndarray], np.ndarray]`
+- `from_dna_variants(vcf_data: dict[str, Any], sample_ids: List[str] | None = None) -> pd.DataFrame`
+- `from_rna_expression(expression_matrix: pd.DataFrame, normalize: bool = True) -> pd.DataFrame`
+- `from_protein_abundance(protein_matrix: pd.DataFrame, normalize: bool = True) -> pd.DataFrame`
+- `from_metabolomics(metabolite_matrix: pd.DataFrame, normalize: bool = True) -> pd.DataFrame`

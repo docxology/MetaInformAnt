@@ -51,19 +51,79 @@ graph TB
 ### Protein Analysis Workflow
 
 ```mermaid
-flowchart TD
-    Start[Input] --> InputType{Input Type?}
-    InputType -->|Sequence| Seq[Sequence Analysis]
-    InputType -->|Accession| Fetch[Fetch from DB]
-    Fetch --> Seq
-    Seq --> Annotate[Functional Annotation]
-    Annotate --> Structure{Structure?}
-    Structure -->|Yes| AnalyzeStruct[Structure Analysis]
-    Structure -->|No| Predict[Structure Prediction]
-    Predict --> AnalyzeStruct
-    AnalyzeStruct --> Domains[Domain Identification]
-    Domains --> Networks[Network Analysis]
-    Networks --> Output[Results]
+graph TD
+    A[Protein Input] --> B{Input Type}
+    B -->|FASTA| C[Parse Sequences]
+    B -->|PDB| D[Load Structures]
+    B -->|UniProt ID| E[Fetch from UniProt]
+
+    C --> F[Sequence Analysis]
+    D --> G[Structure Analysis]
+    E --> F
+
+    F --> H[Sequence Alignment]
+    F --> I[Domain Prediction]
+    F --> J[Functional Annotation]
+
+    G --> K[3D Structure Analysis]
+    G --> L[Contact Analysis]
+    G --> M[Secondary Structure]
+
+    H --> N[Phylogenetic Analysis]
+    I --> O[GO Enrichment]
+    J --> O
+
+    K --> P[PPI Prediction]
+    L --> P
+    M --> P
+
+    N --> Q[Comparative Analysis]
+    O --> Q
+    P --> Q
+
+    Q --> R[Output Results]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style F fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Databases"
+        S[UniProt] -.-> E
+        T[InterPro] -.-> I
+        U[PDB] -.-> D
+        V[AlphaFold] -.-> G
+    end
+```
+
+### AlphaFold Integration Pipeline
+
+```mermaid
+graph TD
+    A[Protein Sequence] --> B[Check AlphaFold DB]
+    B --> C{Structure Available?}
+    C -->|Yes| D[Download AlphaFold Structure]
+    C -->|No| E[Submit to AlphaFold]
+    E --> F[Wait for Prediction]
+    F --> D
+
+    D --> G[Parse PDB Structure]
+    G --> H[Quality Assessment]
+    H --> I[Structure Analysis]
+
+    I --> J[Contact Map Generation]
+    I --> K[Secondary Structure Prediction]
+    I --> L[Domain Identification]
+
+    J --> M[Interaction Prediction]
+    K --> M
+    L --> M
+
+    M --> N[Functional Annotation]
+    N --> O[Output Results]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style H fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style O fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 ```
 
 ## Submodules

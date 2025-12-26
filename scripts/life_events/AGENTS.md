@@ -18,7 +18,7 @@ This document outlines AI assistance in developing METAINFORMANT's life course e
 - `learn_embeddings.py`: Sequence embedding learning (Word2Vec)
 - `train_model.py`: Predictive model training
 - `predict_outcomes.py`: Outcome prediction and interpretation
-- `generate_all_visualizations.py`: Comprehensive visualization suite
+- `generate_visualizations.py`: Visualization suite
 - `generate_statistical_summary.py`: Statistical analysis and reporting
 
 ### User Experience
@@ -55,7 +55,7 @@ This document outlines AI assistance in developing METAINFORMANT's life course e
 ### Analysis and Visualization
 **Code Assistant Agent** contributed:
 - `generate_statistical_summary.py`: Comprehensive statistical analysis
-- `generate_all_visualizations.py`: Complete visualization suite
+- `generate_visualizations.py`: Visualization suite
 - `analyze_intervention.py`: Intervention impact analysis
 - `compare_groups.py`: Group comparison utilities
 

@@ -98,3 +98,16 @@ This document outlines AI assistance in developing METAINFORMANT's phenotypic tr
 - Handle empty sequences and invalid inputs gracefully
 
 This phenotype infrastructure provides a solid foundation for phenotypic trait analysis with proper error handling, validation, and integration with core utilities.
+
+## Complete Function Signatures
+
+### AntWiki Data Loading (`antwiki.py`)
+- `load_antwiki_json(path: Path, validate: bool = True) -> list[dict[str, Any]]`
+
+### AntWiki Web Scraping (`scraper.py`)
+- `load_scraper_config(config_path: Path | None = None) -> AntWikiScraperConfig`
+
+### Life Course Analysis (`life_course.py`)
+- `extract_phenotypes_from_events(event_sequence: Any, trait_mapping: dict[str, list[str]] | None = None) -> dict[str, Any]`
+- `aggregate_temporal_phenotypes(sequences: list[Any], time_windows: list[tuple[float, float]], trait_categories: list[str]) -> dict[str, Any]`
+- `map_events_to_traits(event_sequence: Any, trait_definitions: dict[str, list[str]]) -> dict[str, list[Any]]`

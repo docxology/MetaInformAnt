@@ -1,0 +1,28 @@
+{
+  "quality_control": {
+    "overall_assessment": "pass",
+    "qc_metrics": {
+      "biological_qc": {
+        "contamination_estimate": 0.01,
+        "gender_consistency": true,
+        "genes_detected": 15000,
+        "housekeeping_gene_coverage": 0.98
+      },
+      "data_completeness": {
+        "duplication_rate": 0.15,
+        "mapped_reads": 950000,
+        "mapping_rate": 0.95,
+        "total_reads": 1000000
+      },
+      "sequencing_quality": {
+        "adapter_contamination": 0.02,
+        "bases_above_q30": 0.92,
+        "mean_phred_score": 35.2,
+        "status": "good"
+      }
+    },
+    "recommendations": [
+      "Data quality is acceptable for downstream analysis"
+    ]
+  }
+}

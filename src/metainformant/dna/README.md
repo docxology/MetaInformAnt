@@ -83,6 +83,45 @@ flowchart TD
 ### Sequence I/O (`sequences.py`)
 Core sequence reading, writing, and manipulation utilities.
 
+#### Sequence Processing Pipeline
+
+```mermaid
+graph TD
+    A[Input File] --> B{Format Type}
+    B -->|FASTA| C[Parse FASTA Headers]
+    B -->|FASTQ| D[Parse FASTQ Quality]
+
+    C --> E[Extract Sequences]
+    D --> E
+
+    E --> F[Validate DNA Alphabet]
+    F --> G{Clean Sequences?}
+    G -->|Yes| H[Remove Non-DNA Chars]
+    G -->|No| I[Keep Original]
+
+    H --> J[Sequence Operations]
+    I --> J
+
+    J --> K{Operation Type}
+    K -->|Basic| L[Length, GC Content, Reverse Complement]
+    K -->|Advanced| M[K-mers, Complexity, ORF Finding]
+    K -->|Quality| N[Quality Scores, Filtering]
+
+    L --> O[Output Results]
+    M --> O
+    N --> O
+
+    O --> P[Write Output]
+    P --> Q{Output Format}
+    Q -->|FASTA| R[Write FASTA]
+    Q -->|FASTQ| S[Write FASTQ]
+    Q -->|JSON| T[Write JSON]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style F fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style O fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+```
+
 **Key Features:**
 - FASTA/FASTQ format support
 - Sequence validation and quality control
@@ -374,6 +413,34 @@ mutation_types = mutations.classify_mutations(reference, query)
 spectrum = mutations.mutation_spectrum(mutation_data)
 ```
 
+## Examples
+
+The DNA module includes comprehensive examples demonstrating all major functionality. See [`examples/dna/`](../../examples/dna/) for detailed examples:
+
+### Sequence Processing Basics
+```bash
+# Learn FASTA reading, reverse complement, GC content
+python examples/dna/example_sequences.py
+```
+
+### Sequence Alignment
+```bash
+# Understand pairwise sequence alignment
+python examples/dna/example_alignment.py
+```
+
+### Phylogenetic Analysis
+```bash
+# Build neighbor-joining phylogenetic trees
+python examples/dna/example_phylogeny.py
+```
+
+### Population Genetics
+```bash
+# Calculate nucleotide diversity and Tajima's D
+python examples/dna/example_population.py
+```
+
 ## Integration with Other Modules
 
 The DNA module integrates seamlessly with other METAINFORMANT modules:
@@ -631,6 +698,43 @@ tree = phylogeny.neighbor_joining_tree(seq_dict)
 newick_str = phylogeny.to_newick(tree)
 with open("output.nwk", "w") as f:
     f.write(newick_str)
+```
+
+#### Population Genetics Workflow
+
+```mermaid
+graph TD
+    A[DNA Sequences] --> B[Load Sequences]
+    B --> C[Calculate Diversity Metrics]
+
+    C --> D{Nucleotide Diversity π}
+    C --> E{Segregating Sites}
+    C --> F{Watterson's θ}
+
+    D --> G[Neutrality Tests]
+    E --> G
+    F --> G
+
+    G --> H[Tajima's D]
+    G --> I{Fu & Li Tests}
+    G --> J{Fay & Wu H}
+
+    H --> K[Demographic Inference]
+    I --> K
+    J --> K
+
+    A --> L[Multiple Populations]
+    L --> M[Calculate F_ST]
+    M --> N[Genetic Differentiation]
+
+    K --> O[Selection Analysis]
+    N --> O
+
+    O --> P[Output Results]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style G fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style O fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 ```
 
 ### Population Genetic Analysis

@@ -42,24 +42,352 @@ graph TB
     All --> Animation
 ```
 
-### Visualization Workflow
+### Visualization Pipeline Framework
 
 ```mermaid
-flowchart LR
-    Start[Data] --> Prepare[Prepare Data]
-    Prepare --> Type{Plot Type?}
-    Type -->|Basic| Basic[Basic Plot]
-    Type -->|Statistical| Stats[Statistical Plot]
-    Type -->|Tree| Tree[Tree Plot]
-    Type -->|Network| Network[Network Plot]
-    Type -->|Animation| Anim[Animation]
-    Basic --> Style[Apply Styling]
-    Stats --> Style
-    Tree --> Style
-    Network --> Style
-    Anim --> Style
-    Style --> Save[Save Figure]
-    Save --> Output[Output]
+graph TD
+    A[Biological Data] --> B[Data Processing]
+    B --> C[Format Conversion]
+
+    C --> D{Visualization Category}
+    D -->|Basic| E[Line/Scatter/Bar Plots]
+    D -->|Statistical| F[Distribution/Comparison Plots]
+    D -->|Genomic| G[Manhattan/Volcano Plots]
+    D -->|Expression| H[Heatmaps/Enrichment Plots]
+    D -->|Dimension Reduction| I[PCA/UMAP/t-SNE]
+    D -->|Network| J[Graph/Network Visualization]
+    D -->|Time Series| K[Time Series Analysis]
+    D -->|Multi-dimensional| L[Parallel Coordinates/3D]
+    D -->|Quality Control| M[QC Metrics Plots]
+    D -->|Information Theory| N[Entropy/MI Networks]
+
+    E --> O[Plot Generation]
+    F --> O
+    G --> O
+    H --> O
+    I --> O
+    J --> O
+    K --> O
+    L --> O
+    M --> O
+    N --> O
+
+    O --> P[Styling & Customization]
+    P --> Q[Color Schemes]
+    P --> R[Layout & Annotations]
+    P --> S[Font & Size Settings]
+
+    Q --> T[Figure Assembly]
+    R --> T
+    S --> T
+
+    T --> U{Output Format}
+    U -->|Static| V[PNG/PDF/SVG]
+    U -->|Interactive| W[HTML/JavaScript]
+    U -->|Animation| X[GIF/MP4]
+
+    V --> Y[Publication Quality]
+    W --> Z[Web Integration]
+    X --> AA[Dynamic Visualization]
+
+    Y --> BB[Final Output]
+    Z --> BB
+    AA --> BB
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style O fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style BB fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Data Types"
+        CC[Genomic] -.-> A
+        DD[Transcriptomic] -.-> A
+        EE[Proteomic] -.-> A
+        FF[Phenotypic] -.-> A
+        GG[Network] -.-> A
+    end
+
+    subgraph "Visualization Categories"
+        HH[20+ Specialized Modules] -.-> D
+        II[100+ Plot Functions] -.-> O
+        JJ[Domain Integrations] -.-> O
+    end
+```
+
+### GWAS Visualization Suite
+
+```mermaid
+graph TD
+    A[GWAS Results] --> B[Manhattan Plot]
+    B --> C[Genome-wide Significance]
+
+    A --> D[Q-Q Plot]
+    D --> E[P-value Distribution]
+
+    A --> F[Regional Plot]
+    F --> G[Locus Zoom]
+
+    A --> H[PCA Plot]
+    H --> I[Population Structure]
+
+    A --> J[Kinship Heatmap]
+    J --> K[Relatedness Matrix]
+
+    C --> L[Visualization Suite]
+    E --> L
+    G --> L
+    I --> L
+    K --> L
+
+    L --> M{Additional Analysis}
+    M -->|Yes| N[Forest Plot]
+    M -->|No| O[Complete Suite]
+
+    N --> P[Meta-analysis]
+    P --> O
+
+    O --> Q[Publication Figures]
+    Q --> R[Interactive Exploration]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style L fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Core GWAS Plots"
+        S[Manhattan] -.-> B
+        T[Q-Q] -.-> D
+        U[Regional/LocusZoom] -.-> F
+        V[Population Structure] -.-> H
+    end
+
+    subgraph "Advanced Plots"
+        W[Forest] -.-> N
+        X[Locus Compare] -.-> M
+        Y[Functional Enrichment] -.-> M
+        Z[Replication] -.-> M
+    end
+```
+
+### Single-Cell Visualization Framework
+
+```mermaid
+graph TD
+    A[Single-Cell Data] --> B[Quality Control Plots]
+    B --> C[Library Size Distribution]
+
+    A --> D[Preprocessing Visualization]
+    D --> E[Gene Detection vs UMIs]
+
+    A --> F[Dimensionality Reduction]
+    F --> G[PCA/UMAP/t-SNE Plots]
+
+    A --> H[Clustering Results]
+    H --> I[Cluster Visualization]
+
+    A --> J[Differential Expression]
+    J --> K[Volcano Plots]
+
+    A --> L[Trajectory Analysis]
+    L --> M[Pseudotime Plots]
+
+    C --> N[Visualization Dashboard]
+    E --> N
+    G --> N
+    I --> N
+    K --> N
+    M --> N
+
+    N --> O[Interactive Exploration]
+    O --> P[Cell Type Annotation]
+    P --> Q[Marker Gene Expression]
+
+    Q --> R[Publication Figures]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style N fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "QC Visualizations"
+        S[Library Size] -.-> B
+        T[Gene Detection] -.-> B
+        U[MT Content] -.-> B
+        V[Complexity] -.-> B
+    end
+
+    subgraph "Analysis Plots"
+        W[DR Embeddings] -.-> F
+        X[Cluster Markers] -.-> H
+        Y[DE Volcano] -.-> J
+        Z[Trajectory] -.-> L
+    end
+```
+
+### Information Theory Visualization
+
+```mermaid
+graph TD
+    A[Information Data] --> B[Entropy Profiles]
+    B --> C[Shannon Entropy Plot]
+
+    A --> D[Mutual Information]
+    D --> E[MI Heatmap/Network]
+
+    A --> F[Complexity Measures]
+    F --> G[Rényi Spectra]
+
+    A --> H[Sequence Analysis]
+    H --> I[Information Landscapes]
+
+    A --> J[Network Information]
+    J --> K[Information Flow Networks]
+
+    C --> L[Information Visualization Suite]
+    E --> L
+    G --> L
+    I --> L
+    K --> L
+
+    L --> M[Statistical Significance]
+    M --> N[Information Landscapes]
+
+    N --> O[Publication Quality]
+    O --> P[Interactive Exploration]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style L fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style P fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Syntactic Information"
+        Q[Shannon Entropy] -.-> B
+        R[Joint Entropy] -.-> B
+        S[Mutual Information] -.-> D
+        T[Transfer Entropy] -.-> D
+    end
+
+    subgraph "Semantic Information"
+        U[Information Content] -.-> F
+        V[Semantic Similarity] -.-> F
+        W[Semantic Entropy] -.-> F
+    end
+
+    subgraph "Visualization Types"
+        X[Heatmaps] -.-> L
+        Y[Networks] -.-> L
+        Z[Profiles] -.-> L
+        AA[Landscapes] -.-> N
+    end
+```
+
+### Animation and Time Series Framework
+
+```mermaid
+graph TD
+    A[Time Series Data] --> B[Data Preparation]
+    B --> C[Temporal Ordering]
+
+    C --> D{Animation Type}
+    D -->|Evolution| E[Progressive Changes]
+    D -->|Clustering| F[Cluster Dynamics]
+    D -->|Network| G[Network Evolution]
+    D -->|Trajectory| H[Cell Trajectories]
+
+    E --> I[Frame Generation]
+    F --> I
+    G --> I
+    H --> I
+
+    I --> J[Animation Parameters]
+    J --> K[Frame Rate]
+    J --> L[Transition Effects]
+    J --> M[Color Schemes]
+
+    K --> N[Animation Assembly]
+    L --> N
+    M --> N
+
+    N --> O{Output Format}
+    O -->|GIF| P[GIF Animation]
+    O -->|MP4| Q[Video Format]
+    O -->|HTML| R[Interactive Animation]
+
+    P --> S[Static Sharing]
+    Q --> S
+    R --> T[Web Integration]
+
+    S --> U[Complete Animation]
+    T --> U
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style I fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style U fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Time Series Types"
+        V[Genomic Evolution] -.-> A
+        W[Gene Expression] -.-> A
+        X[Cell Differentiation] -.-> A
+        Y[Population Dynamics] -.-> A
+    end
+
+    subgraph "Animation Categories"
+        Z[Progressive] -.-> D
+        AA[Dynamic] -.-> D
+        BB[Temporal] -.-> D
+        CC[Spatial] -.-> D
+    end
+```
+
+### Multi-Panel Figure Layout System
+
+```mermaid
+graph TD
+    A[Multiple Plots] --> B[Layout Design]
+    B --> C[Grid Specification]
+
+    A --> D[Plot Integration]
+    D --> E[Shared Axes]
+    D --> F[Common Legends]
+
+    C --> G[Figure Assembly]
+    E --> G
+    F --> G
+
+    G --> H[Styling Consistency]
+    H --> I[Font Sizes]
+    H --> J[Color Palettes]
+    H --> K[Line Styles]
+
+    I --> L[Final Layout]
+    J --> L
+    K --> L
+
+    L --> M{Export Format}
+    M -->|Single Figure| N[Publication Layout]
+    M -->|Multi-Panel| O[Complex Visualization]
+    M -->|Interactive| P[Dashboard Style]
+
+    N --> Q[Journal Submission]
+    O --> Q
+    P --> R[Web Presentation]
+
+    Q --> S[Complete Visualization]
+    R --> S
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style G fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style S fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Layout Types"
+        T[Grid Layout] -.-> B
+        U[Free-form] -.-> B
+        V[Subplot Mosaic] -.-> B
+        W[Nested Layouts] -.-> B
+    end
+
+    subgraph "Integration Features"
+        X[Shared Legends] -.-> D
+        Y[Common Scales] -.-> D
+        Z[Coordinated Zoom] -.-> D
+        AA[Linked Brushing] -.-> P
+    end
 ```
 
 ## Module Organization

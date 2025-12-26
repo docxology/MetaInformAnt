@@ -1,0 +1,586 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Simulation: Population Genetics &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Simulation: Population Genetics</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/simulation/popgen.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="simulation-population-genetics">
+<h1>Simulation: Population Genetics<a class="headerlink" href="#simulation-population-genetics" title="Link to this heading"></a></h1>
+<p>Synthetic data generation for population genetics analysis.</p>
+<p><strong>Functions</strong>: <code class="docutils literal notranslate"><span class="pre">generate_population_sequences</span></code>, <code class="docutils literal notranslate"><span class="pre">generate_two_populations</span></code>, <code class="docutils literal notranslate"><span class="pre">generate_genotype_matrix</span></code>, <code class="docutils literal notranslate"><span class="pre">simulate_bottleneck_population</span></code>, <code class="docutils literal notranslate"><span class="pre">simulate_population_expansion</span></code>, <code class="docutils literal notranslate"><span class="pre">generate_site_frequency_spectrum</span></code>, <code class="docutils literal notranslate"><span class="pre">generate_linkage_disequilibrium_data</span></code>.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>This module provides comprehensive synthetic data generation for population genetics analysis. You can generate:</p>
+<ul class="simple">
+<li><p><strong>Sequences with specified diversity</strong> (π, θ_W)</p></li>
+<li><p><strong>Two populations with specified Fst</strong></p></li>
+<li><p><strong>Genotype matrices</strong> with Hardy-Weinberg equilibrium</p></li>
+<li><p><strong>Demographic scenarios</strong> (bottlenecks, expansions)</p></li>
+<li><p><strong>Site frequency spectra</strong> under neutral models</p></li>
+<li><p><strong>Linkage disequilibrium</strong> data</p></li>
+</ul>
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<section id="generate-population-sequences-n-sequences-sequence-length">
+<h3><code class="docutils literal notranslate"><span class="pre">generate_population_sequences(n_sequences,</span> <span class="pre">sequence_length,</span> <span class="pre">...)</span></code><a class="headerlink" href="#generate-population-sequences-n-sequences-sequence-length" title="Link to this heading"></a></h3>
+<p>Generate a population of sequences with specified diversity.</p>
+<p><strong>Parameters</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">n_sequences</span></code>: Number of sequences to generate</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sequence_length</span></code>: Length of each sequence</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nucleotide_diversity</span></code>: Target π (average pairwise differences per site)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">wattersons_theta</span></code>: Target θ_W (Watterson’s estimator)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">reference_sequence</span></code>: Starting sequence (optional)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mutation_rate</span></code>: Per-site mutation rate</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">gc_content</span></code>: GC content for reference sequence</p></li>
+</ul>
+<p><strong>Returns</strong>: List of sequences</p>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.simulation.popgen</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_population_sequences</span>
+
+<span class="c1"># Generate 10 sequences with π = 0.01</span>
+<span class="n">sequences</span> <span class="o">=</span> <span class="n">generate_population_sequences</span><span class="p">(</span>
+    <span class="n">n_sequences</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">sequence_length</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">nucleotide_diversity</span><span class="o">=</span><span class="mf">0.01</span>
+<span class="p">)</span>
+
+<span class="c1"># Analyze the generated data</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.dna.population</span><span class="w"> </span><span class="kn">import</span> <span class="n">nucleotide_diversity</span>
+<span class="n">pi</span> <span class="o">=</span> <span class="n">nucleotide_diversity</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Observed π: </span><span class="si">{</span><span class="n">pi</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="generate-two-populations-n-pop1-n-pop2-sequence-length-fst-0-1">
+<h3><code class="docutils literal notranslate"><span class="pre">generate_two_populations(n_pop1,</span> <span class="pre">n_pop2,</span> <span class="pre">sequence_length,</span> <span class="pre">fst=0.1,</span> <span class="pre">...)</span></code><a class="headerlink" href="#generate-two-populations-n-pop1-n-pop2-sequence-length-fst-0-1" title="Link to this heading"></a></h3>
+<p>Generate two populations with specified Fst.</p>
+<p><strong>Parameters</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">n_pop1</span></code>: Number of sequences in population 1</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n_pop2</span></code>: Number of sequences in population 2</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sequence_length</span></code>: Length of each sequence</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">fst</span></code>: Target Fst value (0-1, higher = more differentiation)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">within_pop_diversity</span></code>: Target nucleotide diversity within each population</p></li>
+</ul>
+<p><strong>Returns</strong>: Tuple of (pop1_sequences, pop2_sequences)</p>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.simulation.popgen</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_two_populations</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.dna.population</span><span class="w"> </span><span class="kn">import</span> <span class="n">hudson_fst</span>
+
+<span class="c1"># Generate two populations with Fst = 0.2</span>
+<span class="n">pop1</span><span class="p">,</span> <span class="n">pop2</span> <span class="o">=</span> <span class="n">generate_two_populations</span><span class="p">(</span>
+    <span class="n">n_pop1</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">n_pop2</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">sequence_length</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">fst</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
+    <span class="n">within_pop_diversity</span><span class="o">=</span><span class="mf">0.01</span>
+<span class="p">)</span>
+
+<span class="c1"># Verify Fst</span>
+<span class="n">fst_observed</span> <span class="o">=</span> <span class="n">hudson_fst</span><span class="p">(</span><span class="n">pop1</span><span class="p">,</span> <span class="n">pop2</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Observed Fst: </span><span class="si">{</span><span class="n">fst_observed</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="generate-genotype-matrix-n-individuals-n-sites">
+<h3><code class="docutils literal notranslate"><span class="pre">generate_genotype_matrix(n_individuals,</span> <span class="pre">n_sites,</span> <span class="pre">...)</span></code><a class="headerlink" href="#generate-genotype-matrix-n-individuals-n-sites" title="Link to this heading"></a></h3>
+<p>Generate a genotype matrix with specified allele frequencies.</p>
+<p><strong>Parameters</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">n_individuals</span></code>: Number of individuals (rows)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n_sites</span></code>: Number of sites (columns)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">allele_frequencies</span></code>: Optional list of allele frequencies per site</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">min_maf</span></code>: Minimum minor allele frequency</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">max_maf</span></code>: Maximum minor allele frequency</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">hwe</span></code>: If True, genotypes follow Hardy-Weinberg equilibrium</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">ploidy</span></code>: Ploidy level (2 for diploid, 1 for haploid)</p></li>
+</ul>
+<p><strong>Returns</strong>: Genotype matrix (list of lists). For diploid: 0=AA, 1=AB, 2=BB.</p>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.simulation.popgen</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_genotype_matrix</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.dna.population</span><span class="w"> </span><span class="kn">import</span> <span class="n">allele_frequencies</span>
+
+<span class="c1"># Generate genotypes with specified frequencies</span>
+<span class="n">genotypes</span> <span class="o">=</span> <span class="n">generate_genotype_matrix</span><span class="p">(</span>
+    <span class="n">n_individuals</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">n_sites</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">allele_frequencies</span><span class="o">=</span><span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">],</span>
+    <span class="n">hwe</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+
+<span class="c1"># Verify frequencies</span>
+<span class="n">freqs</span> <span class="o">=</span> <span class="n">allele_frequencies</span><span class="p">(</span><span class="n">genotypes</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Allele frequencies: </span><span class="si">{</span><span class="n">freqs</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="simulate-bottleneck-population-n-sequences-sequence-length">
+<h3><code class="docutils literal notranslate"><span class="pre">simulate_bottleneck_population(n_sequences,</span> <span class="pre">sequence_length,</span> <span class="pre">...)</span></code><a class="headerlink" href="#simulate-bottleneck-population-n-sequences-sequence-length" title="Link to this heading"></a></h3>
+<p>Simulate a population that went through a bottleneck.</p>
+<p><strong>Parameters</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">n_sequences</span></code>: Number of sequences to generate</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sequence_length</span></code>: Length of each sequence</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pre_bottleneck_diversity</span></code>: Nucleotide diversity before bottleneck</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bottleneck_size</span></code>: Effective population size during bottleneck</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bottleneck_duration</span></code>: Number of generations at bottleneck size</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">recovery_generations</span></code>: Number of generations since bottleneck</p></li>
+</ul>
+<p><strong>Returns</strong>: List of sequences reflecting bottleneck signature</p>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.simulation.popgen</span><span class="w"> </span><span class="kn">import</span> <span class="n">simulate_bottleneck_population</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.dna.population</span><span class="w"> </span><span class="kn">import</span> <span class="n">nucleotide_diversity</span><span class="p">,</span> <span class="n">tajimas_d</span>
+
+<span class="c1"># Simulate bottleneck: 10000 → 5 → recovery</span>
+<span class="n">sequences</span> <span class="o">=</span> <span class="n">simulate_bottleneck_population</span><span class="p">(</span>
+    <span class="n">n_sequences</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">sequence_length</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">pre_bottleneck_diversity</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+    <span class="n">bottleneck_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">bottleneck_duration</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">recovery_generations</span><span class="o">=</span><span class="mi">20</span>
+<span class="p">)</span>
+
+<span class="c1"># Bottleneck creates negative Tajima&#39;s D</span>
+<span class="n">pi</span> <span class="o">=</span> <span class="n">nucleotide_diversity</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span>
+<span class="n">d</span> <span class="o">=</span> <span class="n">tajimas_d</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;π: </span><span class="si">{</span><span class="n">pi</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">, Tajima&#39;s D: </span><span class="si">{</span><span class="n">d</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># D should be negative</span>
+</pre></div>
+</div>
+</section>
+<section id="simulate-population-expansion-n-sequences-sequence-length">
+<h3><code class="docutils literal notranslate"><span class="pre">simulate_population_expansion(n_sequences,</span> <span class="pre">sequence_length,</span> <span class="pre">...)</span></code><a class="headerlink" href="#simulate-population-expansion-n-sequences-sequence-length" title="Link to this heading"></a></h3>
+<p>Simulate a population that underwent recent expansion.</p>
+<p><strong>Parameters</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">n_sequences</span></code>: Number of sequences to generate</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sequence_length</span></code>: Length of each sequence</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">initial_diversity</span></code>: Nucleotide diversity in small ancestral population</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">expansion_factor</span></code>: How much population grew (e.g., 10x)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">growth_rate</span></code>: Per-generation growth rate</p></li>
+</ul>
+<p><strong>Returns</strong>: List of sequences reflecting expansion signature</p>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.simulation.popgen</span><span class="w"> </span><span class="kn">import</span> <span class="n">simulate_population_expansion</span>
+
+<span class="c1"># Simulate 10x expansion</span>
+<span class="n">sequences</span> <span class="o">=</span> <span class="n">simulate_population_expansion</span><span class="p">(</span>
+    <span class="n">n_sequences</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">sequence_length</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">expansion_factor</span><span class="o">=</span><span class="mf">10.0</span><span class="p">,</span>
+    <span class="n">growth_rate</span><span class="o">=</span><span class="mf">0.1</span>
+<span class="p">)</span>
+
+<span class="c1"># Expansion also creates negative Tajima&#39;s D</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.dna.population</span><span class="w"> </span><span class="kn">import</span> <span class="n">tajimas_d</span>
+<span class="n">d</span> <span class="o">=</span> <span class="n">tajimas_d</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tajima&#39;s D: </span><span class="si">{</span><span class="n">d</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Should be negative</span>
+</pre></div>
+</div>
+</section>
+<section id="generate-site-frequency-spectrum-sample-size-n-sites">
+<h3><code class="docutils literal notranslate"><span class="pre">generate_site_frequency_spectrum(sample_size,</span> <span class="pre">n_sites,</span> <span class="pre">...)</span></code><a class="headerlink" href="#generate-site-frequency-spectrum-sample-size-n-sites" title="Link to this heading"></a></h3>
+<p>Generate a site frequency spectrum with specified properties.</p>
+<p><strong>Parameters</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">sample_size</span></code>: Number of sampled sequences (n)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n_sites</span></code>: Number of polymorphic sites to generate</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">theta</span></code>: Population mutation parameter θ</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">folded</span></code>: If True, return folded SFS (minor allele frequencies only)</p></li>
+</ul>
+<p><strong>Returns</strong>: List of counts per frequency bin</p>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.simulation.popgen</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_site_frequency_spectrum</span>
+
+<span class="c1"># Generate folded SFS for 10 samples, 100 sites</span>
+<span class="n">sfs</span> <span class="o">=</span> <span class="n">generate_site_frequency_spectrum</span><span class="p">(</span>
+    <span class="n">sample_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">n_sites</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">theta</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+    <span class="n">folded</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+
+<span class="c1"># SFS should have more rare alleles (first bins)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;SFS: </span><span class="si">{</span><span class="n">sfs</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># Should show excess of rare alleles</span>
+</pre></div>
+</div>
+</section>
+<section id="generate-linkage-disequilibrium-data-n-individuals-n-sites">
+<h3><code class="docutils literal notranslate"><span class="pre">generate_linkage_disequilibrium_data(n_individuals,</span> <span class="pre">n_sites,</span> <span class="pre">...)</span></code><a class="headerlink" href="#generate-linkage-disequilibrium-data-n-individuals-n-sites" title="Link to this heading"></a></h3>
+<p>Generate genotype data with specified linkage disequilibrium.</p>
+<p><strong>Parameters</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">n_individuals</span></code>: Number of individuals</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n_sites</span></code>: Number of sites</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">r_squared_target</span></code>: Target r² value (LD measure)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">recombination_rate</span></code>: Recombination rate between sites</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">allele_frequencies</span></code>: Optional allele frequencies per site</p></li>
+</ul>
+<p><strong>Returns</strong>: Genotype matrix with specified LD patterns</p>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.simulation.popgen</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_linkage_disequilibrium_data</span>
+
+<span class="c1"># Generate genotypes with LD</span>
+<span class="n">genotypes</span> <span class="o">=</span> <span class="n">generate_linkage_disequilibrium_data</span><span class="p">(</span>
+    <span class="n">n_individuals</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">n_sites</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">r_squared_target</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">recombination_rate</span><span class="o">=</span><span class="mf">0.01</span>
+<span class="p">)</span>
+
+<span class="c1"># Analyze LD</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.math.ld</span><span class="w"> </span><span class="kn">import</span> <span class="n">r_squared</span>
+<span class="c1"># Calculate LD between adjacent sites</span>
+<span class="n">ld</span> <span class="o">=</span> <span class="n">r_squared</span><span class="p">([</span><span class="n">row</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">genotypes</span><span class="p">],</span> <span class="p">[</span><span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">genotypes</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Observed r²: </span><span class="si">{</span><span class="n">ld</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="use-cases">
+<h2>Use Cases<a class="headerlink" href="#use-cases" title="Link to this heading"></a></h2>
+<section id="testing-population-genetics-methods">
+<h3>1. Testing Population Genetics Methods<a class="headerlink" href="#testing-population-genetics-methods" title="Link to this heading"></a></h3>
+<p>Generate synthetic data to test analysis methods:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.simulation.popgen</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_population_sequences</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.dna.population_analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">calculate_summary_statistics</span>
+
+<span class="c1"># Generate data with known properties</span>
+<span class="n">sequences</span> <span class="o">=</span> <span class="n">generate_population_sequences</span><span class="p">(</span>
+    <span class="n">n_sequences</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">sequence_length</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">nucleotide_diversity</span><span class="o">=</span><span class="mf">0.01</span>
+<span class="p">)</span>
+
+<span class="c1"># Test analysis methods</span>
+<span class="n">stats</span> <span class="o">=</span> <span class="n">calculate_summary_statistics</span><span class="p">(</span><span class="n">sequences</span><span class="o">=</span><span class="n">sequences</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;π: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;nucleotide_diversity&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;S: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;segregating_sites&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;θ_W: </span><span class="si">{</span><span class="n">stats</span><span class="p">[</span><span class="s1">&#39;wattersons_theta&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="comparing-demographic-models">
+<h3>2. Comparing Demographic Models<a class="headerlink" href="#comparing-demographic-models" title="Link to this heading"></a></h3>
+<p>Compare different demographic scenarios:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.simulation.popgen</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">simulate_bottleneck_population</span><span class="p">,</span>
+    <span class="n">simulate_population_expansion</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.dna.population_analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">neutrality_test_suite</span>
+
+<span class="c1"># Bottleneck scenario</span>
+<span class="n">bottleneck_seqs</span> <span class="o">=</span> <span class="n">simulate_bottleneck_population</span><span class="p">(</span>
+    <span class="n">n_sequences</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">sequence_length</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">bottleneck_size</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">bottleneck_duration</span><span class="o">=</span><span class="mi">10</span>
+<span class="p">)</span>
+
+<span class="c1"># Expansion scenario</span>
+<span class="n">expansion_seqs</span> <span class="o">=</span> <span class="n">simulate_population_expansion</span><span class="p">(</span>
+    <span class="n">n_sequences</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">sequence_length</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">expansion_factor</span><span class="o">=</span><span class="mf">10.0</span>
+<span class="p">)</span>
+
+<span class="c1"># Compare neutrality tests</span>
+<span class="n">bottleneck_results</span> <span class="o">=</span> <span class="n">neutrality_test_suite</span><span class="p">(</span><span class="n">bottleneck_seqs</span><span class="p">)</span>
+<span class="n">expansion_results</span> <span class="o">=</span> <span class="n">neutrality_test_suite</span><span class="p">(</span><span class="n">expansion_seqs</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Bottleneck D: </span><span class="si">{</span><span class="n">bottleneck_results</span><span class="p">[</span><span class="s1">&#39;tajimas_d&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expansion D: </span><span class="si">{</span><span class="n">expansion_results</span><span class="p">[</span><span class="s1">&#39;tajimas_d&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="c1"># Both should be negative</span>
+</pre></div>
+</div>
+</section>
+<section id="generating-training-data">
+<h3>3. Generating Training Data<a class="headerlink" href="#generating-training-data" title="Link to this heading"></a></h3>
+<p>Create datasets for machine learning:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.simulation.popgen</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_genotype_matrix</span>
+
+<span class="c1"># Generate large genotype matrix</span>
+<span class="n">genotypes</span> <span class="o">=</span> <span class="n">generate_genotype_matrix</span><span class="p">(</span>
+    <span class="n">n_individuals</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">n_sites</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span>
+    <span class="n">min_maf</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+    <span class="n">max_maf</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">hwe</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+
+<span class="c1"># Use for GWAS simulation, PCA, etc.</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.gwas.structure</span><span class="w"> </span><span class="kn">import</span> <span class="n">compute_pca</span>
+<span class="n">pca_result</span> <span class="o">=</span> <span class="n">compute_pca</span><span class="p">(</span><span class="n">genotypes</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="simulating-fst-scenarios">
+<h3>4. Simulating Fst Scenarios<a class="headerlink" href="#simulating-fst-scenarios" title="Link to this heading"></a></h3>
+<p>Generate populations with different levels of differentiation:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.simulation.popgen</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_two_populations</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.dna.population</span><span class="w"> </span><span class="kn">import</span> <span class="n">hudson_fst</span>
+
+<span class="c1"># Low differentiation</span>
+<span class="n">pop1_low</span><span class="p">,</span> <span class="n">pop2_low</span> <span class="o">=</span> <span class="n">generate_two_populations</span><span class="p">(</span>
+    <span class="n">n_pop1</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">n_pop2</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">sequence_length</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">fst</span><span class="o">=</span><span class="mf">0.05</span>
+<span class="p">)</span>
+<span class="n">fst_low</span> <span class="o">=</span> <span class="n">hudson_fst</span><span class="p">(</span><span class="n">pop1_low</span><span class="p">,</span> <span class="n">pop2_low</span><span class="p">)</span>
+
+<span class="c1"># High differentiation</span>
+<span class="n">pop1_high</span><span class="p">,</span> <span class="n">pop2_high</span> <span class="o">=</span> <span class="n">generate_two_populations</span><span class="p">(</span>
+    <span class="n">n_pop1</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">n_pop2</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">sequence_length</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">fst</span><span class="o">=</span><span class="mf">0.5</span>
+<span class="p">)</span>
+<span class="n">fst_high</span> <span class="o">=</span> <span class="n">hudson_fst</span><span class="p">(</span><span class="n">pop1_high</span><span class="p">,</span> <span class="n">pop2_high</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Low Fst: </span><span class="si">{</span><span class="n">fst_low</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;High Fst: </span><span class="si">{</span><span class="n">fst_high</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="integration-with-analysis">
+<h2>Integration with Analysis<a class="headerlink" href="#integration-with-analysis" title="Link to this heading"></a></h2>
+<section id="full-workflow-example">
+<h3>Full Workflow Example<a class="headerlink" href="#full-workflow-example" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.simulation.popgen</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_two_populations</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.dna.population_analysis</span><span class="w"> </span><span class="kn">import</span> <span class="n">compare_populations</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.math.demography</span><span class="w"> </span><span class="kn">import</span> <span class="n">bottleneck_effective_size</span>
+
+<span class="c1"># Generate populations</span>
+<span class="n">pop1</span><span class="p">,</span> <span class="n">pop2</span> <span class="o">=</span> <span class="n">generate_two_populations</span><span class="p">(</span>
+    <span class="n">n_pop1</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">n_pop2</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">sequence_length</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">fst</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
+    <span class="n">within_pop_diversity</span><span class="o">=</span><span class="mf">0.01</span>
+<span class="p">)</span>
+
+<span class="c1"># Analyze</span>
+<span class="n">comparison</span> <span class="o">=</span> <span class="n">compare_populations</span><span class="p">(</span>
+    <span class="n">pop1_sequences</span><span class="o">=</span><span class="n">pop1</span><span class="p">,</span>
+    <span class="n">pop2_sequences</span><span class="o">=</span><span class="n">pop2</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Fst: </span><span class="si">{</span><span class="n">comparison</span><span class="p">[</span><span class="s1">&#39;fst&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Differentiation: </span><span class="si">{</span><span class="n">comparison</span><span class="p">[</span><span class="s1">&#39;differentiation&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Compare to demographic model</span>
+<span class="n">ne_bottleneck</span> <span class="o">=</span> <span class="n">bottleneck_effective_size</span><span class="p">(</span>
+    <span class="n">pre_bottleneck_size</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span>
+    <span class="n">bottleneck_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">bottleneck_duration</span><span class="o">=</span><span class="mi">5</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Effective size under bottleneck: </span><span class="si">{</span><span class="n">ne_bottleneck</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<section id="use-seeds-for-reproducibility">
+<h3>1. Use Seeds for Reproducibility<a class="headerlink" href="#use-seeds-for-reproducibility" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">random</span>
+
+<span class="n">rng</span> <span class="o">=</span> <span class="n">random</span><span class="o">.</span><span class="n">Random</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+
+<span class="n">sequences</span> <span class="o">=</span> <span class="n">generate_population_sequences</span><span class="p">(</span>
+    <span class="n">n_sequences</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">sequence_length</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">mutation_rate</span><span class="o">=</span><span class="mf">0.01</span><span class="p">,</span>
+    <span class="n">rng</span><span class="o">=</span><span class="n">rng</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="validate-generated-data">
+<h3>2. Validate Generated Data<a class="headerlink" href="#validate-generated-data" title="Link to this heading"></a></h3>
+<p>Always check that generated data matches expectations:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.simulation.popgen</span><span class="w"> </span><span class="kn">import</span> <span class="n">generate_population_sequences</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.dna.population</span><span class="w"> </span><span class="kn">import</span> <span class="n">nucleotide_diversity</span>
+
+<span class="n">sequences</span> <span class="o">=</span> <span class="n">generate_population_sequences</span><span class="p">(</span>
+    <span class="n">n_sequences</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">sequence_length</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">nucleotide_diversity</span><span class="o">=</span><span class="mf">0.01</span>
+<span class="p">)</span>
+
+<span class="c1"># Verify</span>
+<span class="n">pi_observed</span> <span class="o">=</span> <span class="n">nucleotide_diversity</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Target π: 0.01, Observed π: </span><span class="si">{</span><span class="n">pi_observed</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">assert</span> <span class="nb">abs</span><span class="p">(</span><span class="n">pi_observed</span> <span class="o">-</span> <span class="mf">0.01</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.005</span>  <span class="c1"># Allow small variance</span>
+</pre></div>
+</div>
+</section>
+<section id="combine-multiple-methods">
+<h3>3. Combine Multiple Methods<a class="headerlink" href="#combine-multiple-methods" title="Link to this heading"></a></h3>
+<p>Combine different simulation methods for complex scenarios:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Generate ancestral population</span>
+<span class="n">ancestral</span> <span class="o">=</span> <span class="n">generate_population_sequences</span><span class="p">(</span>
+    <span class="n">n_sequences</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">sequence_length</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">nucleotide_diversity</span><span class="o">=</span><span class="mf">0.01</span>
+<span class="p">)</span>
+
+<span class="c1"># Create bottleneck</span>
+<span class="n">bottleneck</span> <span class="o">=</span> <span class="n">simulate_bottleneck_population</span><span class="p">(</span>
+    <span class="n">n_sequences</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+    <span class="n">sequence_length</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">reference_sequence</span><span class="o">=</span><span class="n">ancestral</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+    <span class="n">bottleneck_size</span><span class="o">=</span><span class="mi">5</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="limitations">
+<h2>Limitations<a class="headerlink" href="#limitations" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Simplified models</strong>: These simulations use simplified models. For publication-quality analysis, consider more sophisticated simulators (e.g., msprime, simuPOP).</p></li>
+<li><p><strong>Coalescent approximation</strong>: The sequence generation uses approximate coalescent models. Exact coalescent simulations may give different results.</p></li>
+<li><p><strong>Linkage</strong>: LD simulation is simplified. For realistic LD patterns, use specialized tools.</p></li>
+<li><p><strong>Selection</strong>: Current implementation focuses on neutral evolution. Selection scenarios require additional parameters.</p></li>
+</ol>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Hudson, R. R. (2002)</strong>. Generating samples under a Wright-Fisher neutral model of genetic variation. <em>Bioinformatics</em>, 18(2), 337-338.</p></li>
+<li><p><strong>Hernandez, R. D. (2008)</strong>. A flexible forward simulator for populations subject to selection and demography. <em>Bioinformatics</em>, 24(23), 2786-2787.</p></li>
+<li><p><strong>Kelleher, J., et al. (2016)</strong>. Efficient coalescent simulation and genealogical analysis for large sample sizes. <em>PLoS Computational Biology</em>, 12(5), e1004842.</p></li>
+</ul>
+</section>
+<section id="see-also">
+<h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="../dna/population.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">dna.population</span></code></span></a> - Population genetics analysis</p></li>
+<li><p><a class="reference internal" href="../dna/population_workflows.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">dna.population_analysis</span></code></span></a> - Analysis workflows</p></li>
+<li><p><a class="reference internal" href="sequences.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">simulation.sequences</span></code></span></a> - Basic sequence generation</p></li>
+<li><p><a class="reference internal" href="../math/demography.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">math.demography</span></code></span></a> - Demographic models</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,42 @@
+{
+  "ontology_analysis": {
+    "gene_annotations": {
+      "gene1": [
+        "GO:0008150",
+        "GO:0009987"
+      ],
+      "gene2": [
+        "GO:0009987",
+        "GO:0003674"
+      ],
+      "gene3": [
+        "GO:0003674",
+        "GO:0003824"
+      ]
+    },
+    "go_terms": {
+      "GO:0003674": {
+        "name": "molecular_function",
+        "namespace": "molecular_function"
+      },
+      "GO:0003824": {
+        "name": "catalytic_activity",
+        "namespace": "molecular_function"
+      },
+      "GO:0008150": {
+        "name": "biological_process",
+        "namespace": "biological_process"
+      },
+      "GO:0009987": {
+        "name": "cellular_process",
+        "namespace": "biological_process"
+      }
+    },
+    "term_counts": {
+      "GO:0003674": 2,
+      "GO:0003824": 1,
+      "GO:0008150": 1,
+      "GO:0009987": 2
+    }
+  }
+}

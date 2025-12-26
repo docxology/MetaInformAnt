@@ -215,6 +215,117 @@ This DNA module integrates with:
 
 ---
 
+## Complete Function Signatures
+
+### Sequence Processing (`sequences.py`)
+- `read_fasta(path: str | Path) -> Dict[str, str]`
+- `reverse_complement(seq: str) -> str`
+- `gc_content(seq: str) -> float`
+- `kmer_counts(seq: str, k: int) -> Dict[str, int]`
+- `kmer_frequencies(seq: str, k: int) -> Dict[str, float]`
+- `sequence_length(seq: str) -> int`
+- `validate_dna_sequence(seq: str) -> bool`
+- `dna_complementarity_score(seq1: str, seq2: str) -> float`
+- `find_repeats(seq: str, min_length: int = 3) -> Dict[str, list[int]]`
+- `find_motifs(seq: str, motif_patterns: list[str]) -> Dict[str, list[int]]`
+- `calculate_sequence_complexity(seq: str) -> float`
+- `find_orfs(seq: str, min_length: int = 30) -> list[tuple[int, int, str]]`
+- `calculate_sequence_entropy(seq: str, k: int = 1) -> float`
+- `detect_sequence_bias(seq: str) -> Dict[str, float]`
+- `calculate_gc_skew(seq: str) -> float`
+- `calculate_at_skew(seq: str) -> float`
+- `find_palindromes(seq: str, min_length: int = 4) -> list[tuple[str, int, int]]`
+- `calculate_melting_temperature(seq: str, method: str = "wallace") -> float`
+- `calculate_codon_usage(seq: str) -> dict[str, float]`
+- `find_start_codons(seq: str) -> list[int]`
+- `find_stop_codons(seq: str) -> list[int]`
+
+### Sequence Alignment (`alignment.py`)
+- `global_align(seq1: str, seq2: str, match: int = 1, mismatch: int = -1, gap: int = -2) -> AlignmentResult`
+- `local_align(seq1: str, seq2: str) -> AlignmentResult`
+- `calculate_alignment_identity(alignment: AlignmentResult) -> float`
+- `find_conserved_regions(alignment: AlignmentResult, min_length: int = 5) -> list[tuple[str, int, int]]`
+- `alignment_statistics(alignment: AlignmentResult) -> dict[str, float]`
+
+### Phylogenetics (`phylogeny.py`)
+- `neighbor_joining_tree(id_to_seq: Dict[str, str]) -> Tree`
+- `upgma_tree(id_to_seq: Dict[str, str]) -> Tree`
+- `to_newick(tree) -> str`
+- `bootstrap_support(tree: Tree, sequences: Dict[str, str], n_replicates: int = 100, method: str = "nj") -> Tree`
+- `to_ascii(tree) -> str`
+- `basic_tree_stats(tree) -> Dict[str, int]`
+- `nj_tree_from_kmer(id_to_seq: Dict[str, str], *, k: int = 3, metric: str = "cosine") -> Tree`
+
+### Population Genetics (`population.py`)
+- `allele_frequencies(genotype_matrix: Sequence[Sequence[int]]) -> list[float]`
+- `observed_heterozygosity(genotypes: Iterable[tuple[int, int]]) -> float`
+- `nucleotide_diversity(seqs: Sequence[str]) -> float`
+- `tajimas_d(seqs: Sequence[str]) -> float`
+- `hudson_fst(pop1: Sequence[str], pop2: Sequence[str]) -> float`
+- `fu_and_li_d_star_from_sequences(seqs: Sequence[str]) -> float`
+- `fu_and_li_f_star_from_sequences(seqs: Sequence[str]) -> float`
+- `fay_wu_h_from_sequences(seqs: Sequence[str]) -> float`
+- `segregating_sites(seqs: Sequence[str]) -> int`
+- `wattersons_theta(seqs: Sequence[str]) -> float`
+
+### Composition Analysis (`composition.py`)
+- `gc_skew(seq: str) -> float`
+- `cumulative_gc_skew(seq: str) -> List[float]`
+- `melting_temperature(seq: str) -> float`
+
+### Evolutionary Distances (`distances.py`)
+- `jukes_cantor_distance(seq1: str, seq2: str) -> float`
+- `kimura_distance(seq1: str, seq2: str) -> float`
+- `p_distance(seq1: str, seq2: str) -> float`
+- `distance_matrix(sequences: Dict[str, str], method: str = "jukes_cantor") -> pd.DataFrame`
+
+### Codon Analysis (`codon.py`)
+- `codon_usage(seq: str) -> dict[str, float]`
+- `cai(sequence: str, reference_usage: dict[str, float] | None = None) -> float`
+- `gc_content_codon_positions(seq: str) -> dict[str, float]`
+
+### Transcription & Translation (`transcription.py`, `translation.py`)
+- `transcribe(dna_seq: str) -> str`
+- `translate(rna_seq: str, genetic_code: int = 1) -> str`
+- `translate_dna(dna_seq: str, genetic_code: int = 1) -> str`
+- `find_orfs(dna_seq: str, min_length: int = 30) -> list[tuple[int, int, str]]`
+
+### FASTQ Processing (`fastq.py`)
+- `read_fastq(path: str | Path) -> Dict[str, tuple[str, str]]`
+- `write_fastq(sequences: Dict[str, tuple[str, str]], path: str | Path) -> None`
+- `assess_quality(fastq_path: str | Path) -> Dict[str, Any]`
+- `filter_reads(fastq_path: str | Path, min_quality: int = 20) -> Iterator[str]`
+
+### Motif Discovery (`motifs.py`)
+- `find_motif_positions(seq: str, motif: str) -> list[int]`
+- `create_pwm(sequences: list[str]) -> pd.DataFrame`
+- `score_sequence_pwm(sequence: str, pwm: pd.DataFrame) -> list[float]`
+
+### Restriction Enzymes (`restriction.py`)
+- `find_restriction_sites(seq: str, enzymes: dict[str, str]) -> dict[str, list[int]]`
+- `virtual_digest(seq: str, enzyme_patterns: dict[str, str]) -> dict[str, list[str]]`
+
+### Mutation Analysis (`mutations.py`)
+- `hamming_distance(seq1: str, seq2: str) -> int`
+- `calculate_mutation_rate(ancestral: str, derived: str) -> float`
+- `classify_mutations(ancestral: str, derived: str) -> dict[str, int]`
+
+### Consensus Sequences (`consensus.py`)
+- `generate_consensus(sequences: list[str], threshold: float = 0.5) -> str`
+- `consensus_with_ambiguity(sequences: list[str]) -> str`
+
+### Variant Analysis (`variants.py`)
+- `parse_vcf(path: str | Path) -> dict[str, Any]`
+- `call_variants_from_alignment(alignment: AlignmentResult) -> list[dict[str, Any]]`
+
+### Genomic Data Retrieval (`genomes.py`, `ncbi.py`)
+- `download_genome_package(accession: str, output_dir: str | Path, include: list[str] | None = None) -> Path`
+- `download_genome_package_best_effort(accession: str, output_dir: str | Path, include: list[str] | None = None, ftp_url: str | None = None) -> Path`
+- `validate_accession(accession: str) -> bool`
+- `get_genome_metadata(accession: str) -> dict[str, Any]`
+
+---
+
 *This comprehensive DNA analysis infrastructure demonstrates effective collaboration between AI assistance and domain expertise, resulting in production-ready genomic analysis capabilities that serve as a foundation for METAINFORMANT's multi-omic integration.*
 
 **Last Updated**: October 29, 2025  

@@ -1,0 +1,291 @@
+{
+  "dna_phylogeny_analysis": {
+    "functions_demonstrated": [
+      "neighbor_joining_tree",
+      "upgma_tree",
+      "to_newick",
+      "to_ascii",
+      "basic_tree_stats",
+      "bootstrap_support",
+      "nj_tree_from_kmer"
+    ],
+    "input_sequences": {
+      "ancestral": "ATCGATCGATCGATCGATCG",
+      "outgroup": "GCTAGCTAGCTAGCTAGCTA",
+      "species_a": "ATCGATCGATCGATCGATCA",
+      "species_b": "ATCGATCGATCGATCGATCG",
+      "species_c": "ATCGATCGATCGATCGTTTG",
+      "species_d": "GTCGATCGATCGATCGATCG",
+      "species_e": "ATCGATCGATCGATCGATCG",
+      "species_f": "ATCGATCGATCGATCGAAAA"
+    },
+    "key_insights": [
+      "Different tree construction methods can yield different topologies",
+      "Neighbor-joining is more flexible than UPGMA for varying evolutionary rates",
+      "K-mer based methods scale better for large sequence datasets",
+      "Bootstrap support helps assess tree reliability",
+      "Sequence similarity analysis complements tree reconstruction"
+    ],
+    "results": {
+      "bootstrap_analysis": {
+        "newick_string": null,
+        "performed": false,
+        "replicates": 0
+      },
+      "kmer_trees": {
+        "k2": {
+          "newick": "((ancestral:0.00000,((species_d:0.00615,((outgroup:0.96101,species_f:0.03899)Inner1:0.02118,species_c:0.03645)Inner2:0.00669)Inner3:0.00508,species_a:0.01042)Inner4:0.00003)Inner5:0.00000,species_b:0.00000,species_e:0.00000)Inner6:0.00000;\n",
+          "stats": {
+            "num_clades": 14,
+            "num_terminals": 8
+          }
+        },
+        "k3": {
+          "newick": "(((ancestral:-0.00008,(((outgroup:0.97223,species_f:0.02777)Inner1:0.01183,species_c:0.03018)Inner2:0.00731,species_a:0.01089)Inner3:0.00158)Inner4:0.00006,species_b:-0.00006)Inner5:0.00006,species_d:0.01158,species_e:-0.00006)Inner6:0.00000;\n",
+          "stats": {
+            "num_clades": 14,
+            "num_terminals": 8
+          }
+        },
+        "k4": {
+          "newick": "((ancestral:0.00000,((species_f:0.02687,(outgroup:0.97262,species_c:0.02738)Inner1:0.01230)Inner2:0.00722,(species_d:0.00769,species_a:0.00769)Inner3:0.00326)Inner4:0.00188)Inner5:0.00000,species_b:0.00000,species_e:0.00000)Inner6:0.00000;\n",
+          "stats": {
+            "num_clades": 14,
+            "num_terminals": 8
+          }
+        },
+        "k5": {
+          "newick": "(((ancestral:-0.00059,((species_f:0.03313,(outgroup:0.96865,species_c:0.03135)Inner1:0.01228)Inner2:0.00743,species_a:0.01198)Inner3:0.00395)Inner4:0.00044,species_b:-0.00044)Inner5:0.00044,species_d:0.01564,species_e:-0.00044)Inner6:0.00000;\n",
+          "stats": {
+            "num_clades": 14,
+            "num_terminals": 8
+          }
+        }
+      },
+      "neighbor_joining": {
+        "ascii_visualization": " , ancestral\n |\n |__ species_d\n |\n | _____ species_c\n ||\n ||    _____________________________________________________________ outgroup\n ||  _|\n_||_| |____ species_f\n |  |\n |  | species_a\n |\n | species_b\n |\n | species_e\n\n",
+        "newick_string": "((ancestral:0.00000,(species_d:0.04375,(species_c:0.07812,((outgroup:0.88333,species_f:0.06667)Inner1:0.03500,species_a:0.01500)Inner2:0.02188)Inner3:0.01875)Inner4:0.00625)Inner5:0.00000,species_b:0.00000,species_e:0.00000)Inner6:0.00000;\n",
+        "statistics": {
+          "num_clades": 14,
+          "num_terminals": 8
+        }
+      },
+      "sequence_relationships": {
+        "all_distances": {
+          "ancestral_vs_outgroup": {
+            "distance": 20,
+            "normalized_distance": 1.0,
+            "similarity": 0.0
+          },
+          "ancestral_vs_species_a": {
+            "distance": 1,
+            "normalized_distance": 0.05,
+            "similarity": 0.95
+          },
+          "ancestral_vs_species_b": {
+            "distance": 0,
+            "normalized_distance": 0.0,
+            "similarity": 1.0
+          },
+          "ancestral_vs_species_c": {
+            "distance": 2,
+            "normalized_distance": 0.1,
+            "similarity": 0.9
+          },
+          "ancestral_vs_species_d": {
+            "distance": 1,
+            "normalized_distance": 0.05,
+            "similarity": 0.95
+          },
+          "ancestral_vs_species_e": {
+            "distance": 0,
+            "normalized_distance": 0.0,
+            "similarity": 1.0
+          },
+          "ancestral_vs_species_f": {
+            "distance": 3,
+            "normalized_distance": 0.15,
+            "similarity": 0.85
+          },
+          "species_a_vs_outgroup": {
+            "distance": 19,
+            "normalized_distance": 0.95,
+            "similarity": 0.050000000000000044
+          },
+          "species_a_vs_species_b": {
+            "distance": 1,
+            "normalized_distance": 0.05,
+            "similarity": 0.95
+          },
+          "species_a_vs_species_c": {
+            "distance": 3,
+            "normalized_distance": 0.15,
+            "similarity": 0.85
+          },
+          "species_a_vs_species_d": {
+            "distance": 2,
+            "normalized_distance": 0.1,
+            "similarity": 0.9
+          },
+          "species_a_vs_species_e": {
+            "distance": 1,
+            "normalized_distance": 0.05,
+            "similarity": 0.95
+          },
+          "species_a_vs_species_f": {
+            "distance": 2,
+            "normalized_distance": 0.1,
+            "similarity": 0.9
+          },
+          "species_b_vs_outgroup": {
+            "distance": 20,
+            "normalized_distance": 1.0,
+            "similarity": 0.0
+          },
+          "species_b_vs_species_c": {
+            "distance": 2,
+            "normalized_distance": 0.1,
+            "similarity": 0.9
+          },
+          "species_b_vs_species_d": {
+            "distance": 1,
+            "normalized_distance": 0.05,
+            "similarity": 0.95
+          },
+          "species_b_vs_species_e": {
+            "distance": 0,
+            "normalized_distance": 0.0,
+            "similarity": 1.0
+          },
+          "species_b_vs_species_f": {
+            "distance": 3,
+            "normalized_distance": 0.15,
+            "similarity": 0.85
+          },
+          "species_c_vs_outgroup": {
+            "distance": 19,
+            "normalized_distance": 0.95,
+            "similarity": 0.050000000000000044
+          },
+          "species_c_vs_species_d": {
+            "distance": 3,
+            "normalized_distance": 0.15,
+            "similarity": 0.85
+          },
+          "species_c_vs_species_e": {
+            "distance": 2,
+            "normalized_distance": 0.1,
+            "similarity": 0.9
+          },
+          "species_c_vs_species_f": {
+            "distance": 4,
+            "normalized_distance": 0.2,
+            "similarity": 0.8
+          },
+          "species_d_vs_outgroup": {
+            "distance": 19,
+            "normalized_distance": 0.95,
+            "similarity": 0.050000000000000044
+          },
+          "species_d_vs_species_e": {
+            "distance": 1,
+            "normalized_distance": 0.05,
+            "similarity": 0.95
+          },
+          "species_d_vs_species_f": {
+            "distance": 4,
+            "normalized_distance": 0.2,
+            "similarity": 0.8
+          },
+          "species_e_vs_outgroup": {
+            "distance": 20,
+            "normalized_distance": 1.0,
+            "similarity": 0.0
+          },
+          "species_e_vs_species_f": {
+            "distance": 3,
+            "normalized_distance": 0.15,
+            "similarity": 0.85
+          },
+          "species_f_vs_outgroup": {
+            "distance": 19,
+            "normalized_distance": 0.95,
+            "similarity": 0.050000000000000044
+          }
+        },
+        "most_dissimilar_pair": {
+          "distance": 20,
+          "pair": "ancestral_vs_outgroup",
+          "similarity": 0.0
+        },
+        "most_similar_pair": {
+          "distance": 0,
+          "pair": "ancestral_vs_species_b",
+          "similarity": 1.0
+        }
+      },
+      "tree_comparison": {
+        "neighbor_joining": {
+          "newick_length": 240,
+          "stats": {
+            "num_clades": 14,
+            "num_terminals": 8
+          },
+          "topology_summary": "Distance-based method assuming molecular clock"
+        },
+        "topology_difference": "Trees have different topologies",
+        "upgma": {
+          "newick_length": 256,
+          "stats": {
+            "num_clades": 15,
+            "num_terminals": 8
+          },
+          "topology_summary": "Assumes constant molecular clock rate"
+        }
+      },
+      "upgma": {
+        "ascii_visualization": "  __________________________________________________________________ outgroup\n |\n_|                                                       ___________ species_c\n |                                                      |\n |______________________________________________________|  _________ species_f\n                                                        | |\n                                                        |_|    _____ species_a\n                                                          |   |\n                                                          |___|  ___ species_d\n                                                              | |\n                                                              |_|   , species_e\n                                                                |   |\n                                                                |___| species_b\n                                                                    |\n                                                                    | ancestral\n\n",
+        "newick_string": "(outgroup:0.47656,(species_c:0.08437,(species_f:0.06875,(species_a:0.03750,(species_d:0.02500,((species_e:0.00000,species_b:0.00000)Inner1:0.00000,ancestral:0.00000)Inner2:0.02500)Inner3:0.01250)Inner4:0.03125)Inner5:0.01562)Inner6:0.39219)Inner7:0.00000;\n",
+        "statistics": {
+          "num_clades": 15,
+          "num_terminals": 8
+        }
+      }
+    },
+    "summary_metrics": {
+      "bootstrap_replicates": 10,
+      "k_values_tested": 4,
+      "most_dissimilar_sequences": "ancestral_vs_outgroup",
+      "most_similar_sequences": "ancestral_vs_species_b",
+      "output_files_generated": [
+        "neighbor_joining_tree.newick",
+        "upgma_tree.newick",
+        "bootstrap_tree.newick",
+        "kmer_tree_k2.newick",
+        "kmer_tree_k3.newick",
+        "kmer_tree_k4.newick",
+        "kmer_tree_k5.newick"
+      ],
+      "sequences_analyzed": 8,
+      "tree_methods_tested": 3
+    },
+    "timestamp": "2024-12-26T10:00:00Z",
+    "tree_construction_methods": {
+      "kmer_based": {
+        "algorithm": "Neighbor-joining with k-mer distances",
+        "description": "Uses k-mer frequencies for distance calculation",
+        "use_case": "Large datasets where full alignment is expensive"
+      },
+      "neighbor_joining": {
+        "algorithm": "Saitou and Nei (1987)",
+        "description": "Distance-based method that doesn't assume molecular clock",
+        "use_case": "General phylogenetic reconstruction"
+      },
+      "upgma": {
+        "algorithm": "Sokal and Michener (1958)",
+        "description": "Assumes constant rate of evolution (molecular clock)",
+        "use_case": "When evolutionary rates are expected to be constant"
+      }
+    }
+  }
+}

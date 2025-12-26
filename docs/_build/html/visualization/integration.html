@@ -1,0 +1,224 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Domain Integration &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Domain Integration</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/visualization/integration.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="domain-integration">
+<h1>Domain Integration<a class="headerlink" href="#domain-integration" title="Link to this heading"></a></h1>
+<p>The visualization module integrates with domain-specific modules to provide unified access to specialized visualization functions.</p>
+<section id="gwas-integration">
+<h2>GWAS Integration<a class="headerlink" href="#gwas-integration" title="Link to this heading"></a></h2>
+<p>Access GWAS visualization functions through the integration module:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.visualization.gwas_integration</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">manhattan_plot</span><span class="p">,</span>
+    <span class="n">circular_manhattan_plot</span><span class="p">,</span>
+    <span class="n">qq_plot_stratified</span><span class="p">,</span>
+    <span class="n">regional_plot_detailed</span><span class="p">,</span>
+    <span class="n">pca_plot_gwas</span><span class="p">,</span>
+    <span class="n">GWAS_VISUALIZATION_AVAILABLE</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="single-cell-integration">
+<h2>Single-Cell Integration<a class="headerlink" href="#single-cell-integration" title="Link to this heading"></a></h2>
+<p>Access single-cell visualization functions:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.visualization.singlecell_integration</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">plot_qc_metrics</span><span class="p">,</span>
+    <span class="n">plot_embedding</span><span class="p">,</span>
+    <span class="n">plot_gene_expression</span><span class="p">,</span>
+    <span class="n">SINGLECELL_VISUALIZATION_AVAILABLE</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="information-theory-integration">
+<h2>Information Theory Integration<a class="headerlink" href="#information-theory-integration" title="Link to this heading"></a></h2>
+<p>Access information theory visualization functions:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.visualization.information_integration</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">plot_entropy_distribution</span><span class="p">,</span>
+    <span class="n">plot_mutual_information_matrix</span><span class="p">,</span>
+    <span class="n">plot_information_profile</span><span class="p">,</span>
+    <span class="n">INFORMATION_VISUALIZATION_AVAILABLE</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="life-events-integration">
+<h2>Life Events Integration<a class="headerlink" href="#life-events-integration" title="Link to this heading"></a></h2>
+<p>Access life events visualization functions:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.visualization.life_events_integration</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">plot_event_timeline</span><span class="p">,</span>
+    <span class="n">plot_event_embeddings</span><span class="p">,</span>
+    <span class="n">plot_attention_heatmap</span><span class="p">,</span>
+    <span class="n">LIFE_EVENTS_VISUALIZATION_AVAILABLE</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="layout-utilities">
+<h2>Layout Utilities<a class="headerlink" href="#layout-utilities" title="Link to this heading"></a></h2>
+<section id="create-subplot-grid-n-plots-ncols-3-figsize-none-sharex-false-sharey-false">
+<h3><code class="docutils literal notranslate"><span class="pre">create_subplot_grid(n_plots,</span> <span class="pre">ncols=3,</span> <span class="pre">*,</span> <span class="pre">figsize=None,</span> <span class="pre">sharex=False,</span> <span class="pre">sharey=False)</span></code><a class="headerlink" href="#create-subplot-grid-n-plots-ncols-3-figsize-none-sharex-false-sharey-false" title="Link to this heading"></a></h3>
+<p>Create a subplot grid for multiple plots.</p>
+</section>
+<section id="create-multi-panel-n-panels-layout-grid-figsize-none-kwargs">
+<h3><code class="docutils literal notranslate"><span class="pre">create_multi_panel(n_panels,</span> <span class="pre">layout='grid',</span> <span class="pre">*,</span> <span class="pre">figsize=None,</span> <span class="pre">**kwargs)</span></code><a class="headerlink" href="#create-multi-panel-n-panels-layout-grid-figsize-none-kwargs" title="Link to this heading"></a></h3>
+<p>Create a multi-panel figure layout.</p>
+</section>
+<section id="add-shared-axis-labels-fig-xlabel-none-ylabel-none">
+<h3><code class="docutils literal notranslate"><span class="pre">add_shared_axis_labels(fig,</span> <span class="pre">xlabel=None,</span> <span class="pre">ylabel=None)</span></code><a class="headerlink" href="#add-shared-axis-labels-fig-xlabel-none-ylabel-none" title="Link to this heading"></a></h3>
+<p>Add shared axis labels to a multi-panel figure.</p>
+</section>
+</section>
+<section id="export-utilities">
+<h2>Export Utilities<a class="headerlink" href="#export-utilities" title="Link to this heading"></a></h2>
+<section id="save-figure-fig-path-dpi-300-bbox-inches-tight-format-none-kwargs">
+<h3><code class="docutils literal notranslate"><span class="pre">save_figure(fig,</span> <span class="pre">path,</span> <span class="pre">*,</span> <span class="pre">dpi=300,</span> <span class="pre">bbox_inches='tight',</span> <span class="pre">format=None,</span> <span class="pre">**kwargs)</span></code><a class="headerlink" href="#save-figure-fig-path-dpi-300-bbox-inches-tight-format-none-kwargs" title="Link to this heading"></a></h3>
+<p>Save a figure with high-resolution settings.</p>
+</section>
+<section id="save-figure-multiformat-fig-base-path-formats-png-pdf-svg-dpi-300-kwargs">
+<h3><code class="docutils literal notranslate"><span class="pre">save_figure_multiformat(fig,</span> <span class="pre">base_path,</span> <span class="pre">*,</span> <span class="pre">formats=('png',</span> <span class="pre">'pdf',</span> <span class="pre">'svg'),</span> <span class="pre">dpi=300,</span> <span class="pre">**kwargs)</span></code><a class="headerlink" href="#save-figure-multiformat-fig-base-path-formats-png-pdf-svg-dpi-300-kwargs" title="Link to this heading"></a></h3>
+<p>Save a figure in multiple formats.</p>
+</section>
+<section id="batch-export-figures-figures-output-dir-formats-png-dpi-300-kwargs">
+<h3><code class="docutils literal notranslate"><span class="pre">batch_export_figures(figures,</span> <span class="pre">output_dir,</span> <span class="pre">*,</span> <span class="pre">formats=('png',),</span> <span class="pre">dpi=300,</span> <span class="pre">**kwargs)</span></code><a class="headerlink" href="#batch-export-figures-figures-output-dir-formats-png-dpi-300-kwargs" title="Link to this heading"></a></h3>
+<p>Batch export multiple figures.</p>
+</section>
+</section>
+<section id="interactive-plots">
+<h2>Interactive Plots<a class="headerlink" href="#interactive-plots" title="Link to this heading"></a></h2>
+<section id="create-interactive-scatter-x-y-labels-none-colors-none-title-interactive-scatter-plot-kwargs">
+<h3><code class="docutils literal notranslate"><span class="pre">create_interactive_scatter(x,</span> <span class="pre">y,</span> <span class="pre">*,</span> <span class="pre">labels=None,</span> <span class="pre">colors=None,</span> <span class="pre">title='Interactive</span> <span class="pre">Scatter</span> <span class="pre">Plot',</span> <span class="pre">**kwargs)</span></code><a class="headerlink" href="#create-interactive-scatter-x-y-labels-none-colors-none-title-interactive-scatter-plot-kwargs" title="Link to this heading"></a></h3>
+<p>Create an interactive scatter plot using Plotly (optional dependency).</p>
+</section>
+<section id="create-interactive-heatmap-data-x-labels-none-y-labels-none-title-interactive-heatmap-kwargs">
+<h3><code class="docutils literal notranslate"><span class="pre">create_interactive_heatmap(data,</span> <span class="pre">*,</span> <span class="pre">x_labels=None,</span> <span class="pre">y_labels=None,</span> <span class="pre">title='Interactive</span> <span class="pre">Heatmap',</span> <span class="pre">**kwargs)</span></code><a class="headerlink" href="#create-interactive-heatmap-data-x-labels-none-y-labels-none-title-interactive-heatmap-kwargs" title="Link to this heading"></a></h3>
+<p>Create an interactive heatmap using Plotly.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

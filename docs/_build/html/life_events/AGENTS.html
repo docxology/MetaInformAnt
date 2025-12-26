@@ -1,0 +1,458 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Agents in Life Events Module Development &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">AI Agents in Life Events Module Development</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/life_events/AGENTS.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="ai-agents-in-life-events-module-development">
+<h1>AI Agents in Life Events Module Development<a class="headerlink" href="#ai-agents-in-life-events-module-development" title="Link to this heading"></a></h1>
+<p>This document outlines AI assistance in developing METAINFORMANT’s life course and event sequence analysis capabilities.</p>
+<section id="ai-contributions">
+<h2>AI Contributions<a class="headerlink" href="#ai-contributions" title="Link to this heading"></a></h2>
+<section id="event-data-structures-events-py">
+<h3>Event Data Structures (<code class="docutils literal notranslate"><span class="pre">events.py</span></code>)<a class="headerlink" href="#event-data-structures-events-py" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> (grok-code-fast-1) implemented:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Event</span></code> dataclass for individual life events with temporal and domain information</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">EventSequence</span></code> class for temporal event sequences with filtering and querying</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">EventDatabase</span></code> class for collections of sequences with batch processing</p></li>
+<li><p>Temporal filtering and domain-based filtering methods</p></li>
+<li><p>JSON serialization/deserialization for data persistence</p></li>
+<li><p>DataFrame conversion for integration with pandas workflows</p></li>
+</ul>
+</section>
+<section id="event-embeddings-embeddings-py">
+<h3>Event Embeddings (<code class="docutils literal notranslate"><span class="pre">embeddings.py</span></code>)<a class="headerlink" href="#event-embeddings-embeddings-py" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> developed:</p>
+<ul class="simple">
+<li><p>Word2Vec-style embedding learning for events</p></li>
+<li><p>Skip-gram and CBOW implementation for event context learning</p></li>
+<li><p>Sequence embedding aggregation methods (mean, sum, max, attention)</p></li>
+<li><p>Domain-specific embedding spaces for different life domains</p></li>
+<li><p>Temporal weighting for sequence embeddings</p></li>
+<li><p>Efficient NumPy-based implementations</p></li>
+<li><p>Enhanced input validation and error handling</p></li>
+<li><p>Progress logging support for large datasets (verbose mode)</p></li>
+</ul>
+</section>
+<section id="prediction-models-models-py">
+<h3>Prediction Models (<code class="docutils literal notranslate"><span class="pre">models.py</span></code>)<a class="headerlink" href="#prediction-models-models-py" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> created:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">EventSequencePredictor</span></code> class with multiple model types (embedding, simple, LSTM)</p></li>
+<li><p>Classification and regression support</p></li>
+<li><p>Integration with existing ML module infrastructure</p></li>
+<li><p>LSTM sequence model with fallback mechanisms</p></li>
+<li><p>Model persistence: <code class="docutils literal notranslate"><span class="pre">save_model()</span></code> and <code class="docutils literal notranslate"><span class="pre">load_model()</span></code> methods for saving/loading trained models</p></li>
+<li><p>Comprehensive serialization of model state (embeddings, vocabulary, classifier/regressor parameters)</p></li>
+<li><p>Probability prediction for classification tasks</p></li>
+<li><p>Robust error handling for model loading and validation</p></li>
+</ul>
+</section>
+<section id="configuration-management-config-py">
+<h3>Configuration Management (<code class="docutils literal notranslate"><span class="pre">config.py</span></code>)<a class="headerlink" href="#configuration-management-config-py" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> developed:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">LifeEventsWorkflowConfig</span></code> dataclass following METAINFORMANT configuration patterns</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">load_life_events_config()</span></code> function with environment variable override support</p></li>
+<li><p>Integration with <code class="docutils literal notranslate"><span class="pre">core.config</span></code> utilities for YAML/TOML/JSON loading</p></li>
+<li><p>Environment variable prefix support (LE_) for runtime configuration overrides</p></li>
+<li><p>Structured configuration sections for embedding, model, workflow, and output settings</p></li>
+</ul>
+</section>
+<section id="workflow-functions-workflow-py">
+<h3>Workflow Functions (<code class="docutils literal notranslate"><span class="pre">workflow.py</span></code>)<a class="headerlink" href="#workflow-functions-workflow-py" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> implemented:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">analyze_life_course</span></code>: Complete end-to-end analysis pipeline</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">compare_populations</span></code>: Cross-group event pattern comparison</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">intervention_analysis</span></code>: Pre/post intervention effect analysis</p></li>
+<li><p>Configuration-driven processing with validation (supports both config objects and dicts)</p></li>
+<li><p>Automatic model saving in workflow pipelines</p></li>
+<li><p>Comprehensive error handling and logging</p></li>
+<li><p>Statistical analysis integration (t-tests, correlations)</p></li>
+<li><p>Backward compatibility with existing dict-based configuration</p></li>
+</ul>
+</section>
+<section id="enhanced-simulation-utils-py">
+<h3>Enhanced Simulation (<code class="docutils literal notranslate"><span class="pre">utils.py</span></code>)<a class="headerlink" href="#enhanced-simulation-utils-py" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> (grok-code-fast-1) implemented:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">generate_realistic_life_events</span></code>: Advanced synthetic generation with temporal dependencies, event chains, co-occurrence patterns, seasonal variations, and rare events</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">generate_event_chain</span></code>: Markov chain-based causally linked event sequence generation</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">add_temporal_noise</span></code>: Realistic temporal noise injection with configurable missing data</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">generate_cohort_sequences</span></code>: Population-level sequence generation with cohort-specific patterns</p></li>
+<li><p>Transition probability matrices for domain transitions</p></li>
+<li><p>Co-occurrence pattern modeling</p></li>
+<li><p>Seasonal/cyclical temporal pattern support</p></li>
+<li><p>Rare event injection mechanisms</p></li>
+<li><p>Configurable noise and missing data parameters</p></li>
+</ul>
+</section>
+<section id="advanced-prediction-models-models-py">
+<h3>Advanced Prediction Models (<code class="docutils literal notranslate"><span class="pre">models.py</span></code>)<a class="headerlink" href="#advanced-prediction-models-models-py" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> developed:</p>
+<ul class="simple">
+<li><p>Complete <code class="docutils literal notranslate"><span class="pre">LSTMSequenceModel</span></code>: Full PyTorch implementation with batching, padding, and GPU support</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">GRUSequenceModel</span></code>: GRU-based sequence model with similar capabilities to LSTM</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">EnsemblePredictor</span></code>: Weighted ensemble of multiple models for improved predictions</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">SurvivalPredictor</span></code>: Time-to-event prediction with Cox proportional hazards and survival function estimation</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">MultiTaskPredictor</span></code>: Multi-task learning for predicting multiple outcomes simultaneously</p></li>
+<li><p>Comprehensive model interfaces with consistent fit/predict patterns</p></li>
+<li><p>Defensive handling of optional PyTorch dependencies with fallback mechanisms</p></li>
+<li><p>Model state management and serialization support</p></li>
+</ul>
+</section>
+<section id="comprehensive-visualization-suite-visualization-py">
+<h3>Comprehensive Visualization Suite (<code class="docutils literal notranslate"><span class="pre">visualization.py</span></code>)<a class="headerlink" href="#comprehensive-visualization-suite-visualization-py" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> built:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_domain_distribution</span></code>: Domain frequency visualization (bar/pie charts)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_temporal_density</span></code>: Temporal event density histograms</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_event_cooccurrence</span></code>: Heatmap of event co-occurrence patterns</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_outcome_distribution</span></code>: Outcome distribution visualization (histogram/boxplot)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_sequence_similarity</span></code>: Sequence similarity matrix heatmap</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_transition_network</span></code>: Network graph of event transitions (requires networkx)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_domain_timeline</span></code>: Multi-domain timeline (Gantt-style) for multiple sequences</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_prediction_accuracy</span></code>: ROC curves, confusion matrices, and regression scatter plots</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_temporal_patterns</span></code>: Time-based importance visualization</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_population_comparison</span></code>: Side-by-side comparison of two population groups</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_intervention_effects</span></code>: Before/after intervention visualization</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_embedding_clusters</span></code>: Clustered embedding visualization with optional cluster coloring</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_sequence_length_distribution</span></code>: Histogram of sequence lengths</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_event_frequency_heatmap</span></code>: Temporal frequency heatmap by domain</p></li>
+<li><p>Integration with existing visualization module patterns</p></li>
+<li><p>Defensive handling of optional dependencies (matplotlib, networkx, sklearn)</p></li>
+<li><p>Consistent output path handling and figure saving</p></li>
+</ul>
+</section>
+<section id="modular-scripts-scripts-life-events">
+<h3>Modular Scripts (<code class="docutils literal notranslate"><span class="pre">scripts/life_events/</span></code>)<a class="headerlink" href="#modular-scripts-scripts-life-events" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> created:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">generate_synthetic_data.py</span></code>: Standalone synthetic data generation script with realistic options</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">learn_embeddings.py</span></code>: Embedding learning script with configurable parameters</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">train_model.py</span></code>: Model training script supporting all model types</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">predict_outcomes.py</span></code>: Prediction script with probability support</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">visualize_sequences.py</span></code>: Visualization-only script with multiple plot types</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">compare_groups.py</span></code>: Population comparison script with visualization</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">analyze_intervention.py</span></code>: Intervention analysis script with before/after comparison</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">interpret_predictions.py</span></code>: Model interpretation script with importance analysis</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">export_embeddings.py</span></code>: Embedding export script supporting CSV, Word2Vec, and NumPy formats</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">validate_data.py</span></code>: Data validation script with comprehensive reporting</p></li>
+<li><p>Consistent argparse-based CLI interfaces</p></li>
+<li><p>Integration with configuration system and environment variable overrides</p></li>
+<li><p>Comprehensive error handling and logging</p></li>
+<li><p>Output directory management following project conventions</p></li>
+</ul>
+</section>
+<section id="visualization-visualization-py">
+<h3>Visualization (<code class="docutils literal notranslate"><span class="pre">visualization.py</span></code>)<a class="headerlink" href="#visualization-visualization-py" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> built:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_event_timeline</span></code>: Individual life course timeline visualization</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_event_embeddings</span></code>: 2D/3D embedding space visualization</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_attention_heatmap</span></code>: Attention pattern visualization</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">plot_prediction_importance</span></code>: Event importance bar charts</p></li>
+<li><p>Integration with existing visualization module</p></li>
+<li><p>Defensive handling of optional matplotlib dependencies</p></li>
+</ul>
+</section>
+<section id="model-interpretation-interpretability-py">
+<h3>Model Interpretation (<code class="docutils literal notranslate"><span class="pre">interpretability.py</span></code>)<a class="headerlink" href="#model-interpretation-interpretability-py" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> developed:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">event_importance</span></code>: Permutation-based event importance ranking</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">temporal_patterns</span></code>: Critical time period identification</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">feature_attribution</span></code>: SHAP-style feature attribution (with fallback)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">attention_weights</span></code>: Attention extraction (placeholder for transformers)</p></li>
+<li><p>Comprehensive input validation and error handling</p></li>
+<li><p>Integration with prediction models</p></li>
+</ul>
+</section>
+<section id="code-generation">
+<h3>Code Generation<a class="headerlink" href="#code-generation" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Algorithm implementation: Event embedding methods adapted from NLP techniques</p></li>
+<li><p>API design: Consistent interface patterns matching existing modules</p></li>
+<li><p>Data structures: Efficient, type-hinted data classes for event representation</p></li>
+<li><p>Integration patterns: Seamless connection with ML, visualization, and phenotype modules</p></li>
+<li><p>Error handling: Comprehensive validation and descriptive error messages</p></li>
+</ul>
+</section>
+<section id="quality-assurance">
+<h3>Quality Assurance<a class="headerlink" href="#quality-assurance" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Type hints throughout for type safety</p></li>
+<li><p>Comprehensive docstrings with examples</p></li>
+<li><p>Error handling for edge cases</p></li>
+<li><p>Validation of event data structures</p></li>
+<li><p>Defensive imports for optional dependencies</p></li>
+<li><p>Input validation in all workflow functions</p></li>
+</ul>
+</section>
+</section>
+<section id="development-approach">
+<h2>Development Approach<a class="headerlink" href="#development-approach" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Modular Design</strong>: Each component is self-contained with clear interfaces</p></li>
+<li><p><strong>Real Implementations</strong>: All algorithms use real computational methods without mocking</p></li>
+<li><p><strong>Integration Focus</strong>: Designed to work seamlessly with existing METAINFORMANT modules</p></li>
+<li><p><strong>Extensibility</strong>: Architecture supports future additions (transformers, advanced LSTM)</p></li>
+<li><p><strong>Robustness</strong>: Comprehensive validation and error handling throughout</p></li>
+</ul>
+</section>
+<section id="integration-with-other-modules">
+<h2>Integration with Other Modules<a class="headerlink" href="#integration-with-other-modules" title="Link to this heading"></a></h2>
+<section id="phenotype-module">
+<h3>Phenotype Module<a class="headerlink" href="#phenotype-module" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Life course phenotype extraction functions</p></li>
+<li><p>Temporal phenotype aggregation</p></li>
+<li><p>Event-to-trait mapping utilities</p></li>
+</ul>
+</section>
+<section id="ml-module">
+<h3>ML Module<a class="headerlink" href="#ml-module" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Reuse of classification and regression infrastructure</p></li>
+<li><p>Embedding visualization using dimensionality reduction</p></li>
+<li><p>Feature importance analysis</p></li>
+</ul>
+</section>
+<section id="visualization-module">
+<h3>Visualization Module<a class="headerlink" href="#visualization-module" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Integration with existing plotting infrastructure</p></li>
+<li><p>Consistent plotting style and interface</p></li>
+</ul>
+</section>
+<section id="multi-omics-module">
+<h3>Multi-omics Module<a class="headerlink" href="#multi-omics-module" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Event sequences as one data layer</p></li>
+<li><p>Joint analysis with genomic/transcriptomic data</p></li>
+</ul>
+</section>
+<section id="cli-integration-main-py">
+<h3>CLI Integration (<code class="docutils literal notranslate"><span class="pre">__main__.py</span></code>)<a class="headerlink" href="#cli-integration-main-py" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> implemented:</p>
+<ul class="simple">
+<li><p>Complete <code class="docutils literal notranslate"><span class="pre">predict</span></code> command with model loading and prediction output</p></li>
+<li><p>Complete <code class="docutils literal notranslate"><span class="pre">interpret</span></code> command with interpretation report generation</p></li>
+<li><p>Comprehensive error handling and user-friendly error messages</p></li>
+<li><p>Prediction summaries with statistics for both classification and regression</p></li>
+<li><p>Automatic visualization generation when matplotlib is available</p></li>
+<li><p>Integration with model persistence for seamless workflow</p></li>
+</ul>
+</section>
+<section id="id1">
+<h3>Code Generation<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Algorithm implementation: Event embedding methods adapted from NLP techniques</p></li>
+<li><p>API design: Consistent interface patterns matching existing modules</p></li>
+<li><p>Data structures: Efficient, type-hinted data classes for event representation</p></li>
+<li><p>Integration patterns: Seamless connection with ML, visualization, and phenotype modules</p></li>
+<li><p>Error handling: Comprehensive validation and descriptive error messages</p></li>
+<li><p>Model persistence: JSON-based serialization for human-readable model storage</p></li>
+<li><p>Configuration management: Structured config classes following project patterns</p></li>
+</ul>
+</section>
+<section id="testing-tests">
+<h3>Testing (<code class="docutils literal notranslate"><span class="pre">tests/</span></code>)<a class="headerlink" href="#testing-tests" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> developed:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">test_life_events_simulation_advanced.py</span></code>: Comprehensive tests for enhanced simulation functions</p>
+<ul>
+<li><p>Event chain generation with transition probabilities</p></li>
+<li><p>Temporal noise injection</p></li>
+<li><p>Realistic life events generation with all advanced features</p></li>
+<li><p>Cohort sequence generation</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">test_life_events_models_advanced.py</span></code>: Tests for advanced prediction models</p>
+<ul>
+<li><p>LSTM and GRU sequence models</p></li>
+<li><p>Ensemble predictor</p></li>
+<li><p>Survival predictor</p></li>
+<li><p>Multi-task predictor</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">test_life_events_visualization_extended.py</span></code>: Tests for all new visualization functions</p>
+<ul>
+<li><p>All 14 new visualization types</p></li>
+<li><p>Output file validation</p></li>
+<li><p>Figure object validation</p></li>
+<li><p>Defensive handling of optional dependencies</p></li>
+</ul>
+</li>
+<li><p>All tests use real implementations without mocks</p></li>
+<li><p>Comprehensive coverage of edge cases and error conditions</p></li>
+</ul>
+</section>
+<section id="documentation-updates">
+<h3>Documentation Updates<a class="headerlink" href="#documentation-updates" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> enhanced:</p>
+<ul class="simple">
+<li><p>Comprehensive README.md updates with examples for all new functions</p></li>
+<li><p>Complete documentation for enhanced simulation features</p></li>
+<li><p>Detailed examples for all advanced prediction models</p></li>
+<li><p>Comprehensive visualization suite documentation with usage examples</p></li>
+<li><p>Modular scripts documentation with command-line examples</p></li>
+<li><p>Integration examples showing cross-module usage</p></li>
+<li><p>Updated <code class="docutils literal notranslate"><span class="pre">__init__.py</span></code> exports for all new functionality</p></li>
+</ul>
+</section>
+</section>
+<section id="future-ai-integration">
+<h2>Future AI Integration<a class="headerlink" href="#future-ai-integration" title="Link to this heading"></a></h2>
+<section id="completed-enhancements-2024">
+<h3>Completed Enhancements (2024)<a class="headerlink" href="#completed-enhancements-2024" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>✅ Enhanced realistic simulation with temporal dependencies and patterns</p></li>
+<li><p>✅ Complete LSTM and GRU sequence model implementations</p></li>
+<li><p>✅ Ensemble and multi-task prediction models</p></li>
+<li><p>✅ Survival analysis models</p></li>
+<li><p>✅ Comprehensive visualization suite (14 new visualization types)</p></li>
+<li><p>✅ Modular command-line scripts for all major tasks</p></li>
+<li><p>✅ Comprehensive test coverage for all new functionality</p></li>
+</ul>
+</section>
+<section id="planned-enhancements">
+<h3>Planned Enhancements<a class="headerlink" href="#planned-enhancements" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Full transformer-based sequence models with attention mechanisms</p></li>
+<li><p>Complete SHAP integration for advanced attribution</p></li>
+<li><p>Additional visualization types (Sankey diagrams, interactive plots)</p></li>
+<li><p>Enhanced cross-module integration workflows</p></li>
+<li><p>Performance optimizations for very large datasets (streaming, incremental learning)</p></li>
+<li><p>Real-time prediction APIs</p></li>
+</ul>
+<hr class="docutils" />
+<p><em>AI assistance has been instrumental in developing this module while maintaining the highest standards of scientific rigor and code quality.</em></p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

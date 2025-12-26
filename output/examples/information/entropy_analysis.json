@@ -1,0 +1,47 @@
+{
+  "information_analysis": {
+    "entropy_measures": {
+      "complex": {
+        "complexity_rank": "high",
+        "entropies": {
+          "k1": 2.0,
+          "k2": 2.7321588913645702,
+          "k3": 3.321928094887362
+        },
+        "length": 12,
+        "sequence": "ATCGCGTATAGC"
+      },
+      "mixed": {
+        "complexity_rank": "high",
+        "entropies": {
+          "k1": 1.95006375643621,
+          "k2": 3.084962500721156,
+          "k3": 3.277613436819116
+        },
+        "length": 13,
+        "sequence": "ATGCGTACGTTAG"
+      },
+      "repetitive": {
+        "complexity_rank": "low",
+        "entropies": {
+          "k1": 0.0,
+          "k2": 0.0,
+          "k3": 0.0
+        },
+        "length": 12,
+        "sequence": "AAAAAAAAAAAA"
+      },
+      "uniform": {
+        "complexity_rank": "high",
+        "entropies": {
+          "k1": 2.0,
+          "k2": 1.9808259362290785,
+          "k3": 1.9709505944546686
+        },
+        "length": 12,
+        "sequence": "ATCGATCGATCG"
+      }
+    },
+    "sequences_analyzed": 4
+  }
+}

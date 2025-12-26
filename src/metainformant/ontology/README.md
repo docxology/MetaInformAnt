@@ -39,21 +39,257 @@ graph TB
     GO --> Info_Mod
 ```
 
-### Ontology Analysis Workflow
+### Ontology Parsing and Loading
 
 ```mermaid
-flowchart TD
-    Start[OBO File] --> Load[Load Ontology]
-    Load --> Validate[Validate Structure]
-    Validate --> Query{Query Type?}
-    Query -->|Term Info| TermInfo[Get Term Info]
-    Query -->|Ancestors| Ancestors[Get Ancestors]
-    Query -->|Descendants| Descendants[Get Descendants]
-    Query -->|Enrichment| Enrich[Enrichment Analysis]
-    TermInfo --> Results[Results]
-    Ancestors --> Results
-    Descendants --> Results
-    Enrich --> Results
+graph TD
+    A[OBO File] --> B[Parse Header]
+    B --> C[Extract Ontology Metadata]
+
+    A --> D[Parse Terms]
+    D --> E[Term Definitions]
+    E --> F[Term Relationships]
+    F --> G[Synonyms & Cross-references]
+
+    A --> H[Parse Typedefs]
+    H --> I[Relationship Types]
+    I --> J[Relationship Properties]
+
+    C --> K[Ontology Graph]
+    F --> K
+    I --> K
+
+    K --> L[Validation]
+    L --> M{Valid Structure?}
+
+    M -->|Yes| N[Build NetworkX Graph]
+    M -->|No| O[Error Reporting]
+
+    N --> P[Index Terms]
+    P --> Q[Term Lookup Tables]
+    Q --> R[Ready for Queries]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style K fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "OBO Components"
+        S[Header Section] -.-> B
+        T[Term Stanzas] -.-> D
+        U[Typedef Stanzas] -.-> H
+        V[Instance Stanzas] -.-> D
+    end
+
+    subgraph "Relationship Types"
+        W[is_a] -.-> F
+        X[part_of] -.-> F
+        Y[regulates] -.-> F
+        Z[has_part] -.-> F
+    end
+```
+
+### Semantic Similarity Analysis
+
+```mermaid
+graph TD
+    A[Two GO Terms] --> B[Information Content]
+    A --> C[Common Ancestors]
+
+    B --> D[Term IC Calculation]
+    C --> E[Lowest Common Ancestor]
+
+    D --> F[Similarity Method]
+    E --> F
+
+    F --> G{Similarity Measure}
+    G -->|Resnik| H[Shared IC]
+    G -->|Lin| I[Shared IC / Average IC]
+    G -->|Jiang-Conrath| J[1 - Shared IC Distance]
+    G -->|Wang| K[Semantic Contribution]
+
+    H --> L[Similarity Score]
+    I --> L
+    J --> L
+    K --> L
+
+    L --> M[Threshold Comparison]
+    M --> N{Similar?}
+
+    N -->|Yes| O[Functional Relationship]
+    N -->|No| P[Different Functions]
+
+    O --> Q[Annotation Transfer]
+    P --> R[Distinct Functions]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style F fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style Q fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "IC Calculation"
+        S[Term Frequency] -.-> D
+        T[Corpus Size] -.-> D
+        U[Annotation Corpus] -.-> D
+    end
+
+    subgraph "Applications"
+        V[Gene Clustering] -.-> O
+        W[Function Prediction] -.-> O
+        X[Ortholog Detection] -.-> O
+    end
+```
+
+### Functional Enrichment Analysis
+
+```mermaid
+graph TD
+    A[Gene List] --> B[Background Genes]
+    B --> C[GO Annotations]
+
+    A --> D[Annotated Genes]
+    D --> E[Term Counts]
+
+    C --> F[Background Counts]
+    F --> G[Term Statistics]
+
+    E --> H{Enrichment Test}
+    H -->|Fisher's Exact| I[Hypergeometric Test]
+    H -->|Chi-square| J[Chi-square Test]
+    H -->|Binomial| K[Binomial Test]
+
+    I --> L[P-value Calculation]
+    J --> L
+    K --> L
+
+    L --> M[Multiple Testing Correction]
+    M --> N{Method}
+    N -->|Bonferroni| O[Family-wise Error]
+    N -->|BH FDR| P[False Discovery Rate]
+    N -->|Holm| Q[Step-down Bonferroni]
+
+    O --> R[Adjusted P-values]
+    P --> R
+    Q --> R
+
+    R --> S[Significant Terms]
+    S --> T[Enrichment Results]
+
+    T --> U[Pathway Visualization]
+    U --> V[Biological Insights]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style H fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style V fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Contingency Table"
+        W[Annotated in List] -.-> E
+        X[Not in List] -.-> E
+        Y[Annotated in Background] -.-> F
+        Z[Not Annotated] -.-> F
+    end
+
+    subgraph "GO Aspects"
+        AA[Biological Process] -.-> C
+        BB[Molecular Function] -.-> C
+        CC[Cellular Component] -.-> C
+    end
+```
+
+### Ontology-Based Clustering
+
+```mermaid
+graph TD
+    A[Gene Set] --> B[GO Annotations]
+    B --> C[Semantic Similarity Matrix]
+
+    C --> D{Clustering Method}
+    D -->|Hierarchical| E[Agglomerative Clustering]
+    D -->|K-means| F[K-means on Similarity]
+    D -->|Community| G[Community Detection]
+
+    E --> H[Distance Matrix]
+    F --> I[Centroid-based]
+    G --> J[Modularity Optimization]
+
+    H --> K[Cluster Assignments]
+    I --> K
+    J --> K
+
+    K --> L[Cluster Validation]
+    L --> M[Silhouette Score]
+    L --> N[Adjusted Rand Index]
+
+    M --> O[Optimal Clustering]
+    N --> O
+
+    O --> P[Functional Interpretation]
+    P --> Q[Cluster Enrichment]
+    Q --> R[GO Term Summaries]
+
+    R --> S[Cluster Characterization]
+    S --> T[Gene Function Groups]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style D fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style T fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Similarity Measures"
+        U[Resnik] -.-> C
+        V[Lin] -.-> C
+        W[Jiang-Conrath] -.-> C
+        X[Wang] -.-> C
+    end
+
+    subgraph "Distance Metrics"
+        Y[1 - Similarity] -.-> H
+        Z[Euclidean] -.-> H
+        AA[Manhattan] -.-> H
+    end
+```
+
+### Ontology Integration Framework
+
+```mermaid
+graph TD
+    A[Multiple Ontologies] --> B[Ontology Mapping]
+    B --> C[Term Alignment]
+    C --> D[Cross-ontology Relationships]
+
+    A --> E[Integrated Graph]
+    D --> E
+
+    E --> F[Unified Queries]
+    F --> G[Term Resolution]
+    G --> H[Annotation Integration]
+
+    H --> I[Unified Enrichment]
+    I --> J[Cross-ontology Analysis]
+
+    J --> K[Comprehensive Annotations]
+    K --> L[Enhanced Biological Insights]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style E fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style L fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Ontology Sources"
+        M[Gene Ontology] -.-> A
+        N[Human Disease] -.-> A
+        O[Plant Ontology] -.-> A
+        P[Cell Ontology] -.-> A
+    end
+
+    subgraph "Mapping Methods"
+        Q[Exact Match] -.-> C
+        R[Semantic Similarity] -.-> C
+        S[Manual Curation] -.-> C
+        T[Machine Learning] -.-> C
+    end
+
+    subgraph "Integration Benefits"
+        U[Broader Coverage] -.-> K
+        V[Contextual Information] -.-> K
+        W[Cross-domain Insights] -.-> K
+    end
 ```
 
 ## Key Components

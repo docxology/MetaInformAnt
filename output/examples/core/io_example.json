@@ -1,0 +1,32 @@
+{
+  "analysis": {
+    "timestamp": "2024-12-26T10:00:00Z",
+    "type": "dna_sequence_analysis",
+    "version": "1.0"
+  },
+  "sequences": [
+    {
+      "gc_content": 0.5,
+      "id": "seq1",
+      "length": 8,
+      "sequence": "ATCGATCG"
+    },
+    {
+      "gc_content": 0.5,
+      "id": "seq2",
+      "length": 8,
+      "sequence": "GCTAGCTA"
+    },
+    {
+      "gc_content": 0.0,
+      "id": "seq3",
+      "length": 8,
+      "sequence": "TTTTAAAA"
+    }
+  ],
+  "statistics": {
+    "average_gc": 0.333,
+    "average_length": 8.0,
+    "total_sequences": 3
+  }
+}

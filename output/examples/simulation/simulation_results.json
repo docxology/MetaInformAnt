@@ -1,0 +1,26 @@
+{
+  "biological_simulation": {
+    "expression_stability": 0.6895363157578324,
+    "final_mean_expression": 1.2568128178301072,
+    "generations": 10,
+    "genes": 50,
+    "initial_mean_expression": 1.2270663992744755,
+    "simulation_type": "gene_expression_evolution",
+    "trajectory_summary": {
+      "end": [
+        1.1614733190088624,
+        1.2217310702216486,
+        1.846180579866224,
+        3.6108872857078764,
+        0.7081855911980357
+      ],
+      "start": [
+        1.6433127155860012,
+        0.8708684897640193,
+        1.9111182426600926,
+        4.586099388741997,
+        0.7912404503034572
+      ]
+    }
+  }
+}

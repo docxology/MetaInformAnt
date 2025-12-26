@@ -1,0 +1,240 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Math: F-statistics &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Math: F-statistics</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/math/fst.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="math-f-statistics">
+<h1>Math: F-statistics<a class="headerlink" href="#math-f-statistics" title="Link to this heading"></a></h1>
+<p>F-statistics for measuring population differentiation and inbreeding.</p>
+<p><strong>Functions</strong>: <code class="docutils literal notranslate"><span class="pre">fst_from_heterozygosity</span></code>, <code class="docutils literal notranslate"><span class="pre">fst_from_allele_freqs</span></code>.</p>
+</section>
+<section id="overview">
+<h1>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h1>
+<p>F-statistics (Fst) measure the proportion of genetic diversity that is between
+subpopulations rather than within them. High Fst indicates strong population
+differentiation, while low Fst suggests gene flow between populations.</p>
+</section>
+<section id="functions">
+<h1>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h1>
+<section id="fst-from-heterozygosity-hs-ht">
+<h2><code class="docutils literal notranslate"><span class="pre">fst_from_heterozygosity(Hs,</span> <span class="pre">Ht)</span></code><a class="headerlink" href="#fst-from-heterozygosity-hs-ht" title="Link to this heading"></a></h2>
+<p>Calculate Wright’s Fst from heterozygosity values.</p>
+<p><strong>Parameters</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Hs</span></code>: Average heterozygosity within subpopulations</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Ht</span></code>: Total heterozygosity in the entire population</p></li>
+</ul>
+<p><strong>Returns</strong>: Fst value in [0, 1]. Returns 0.0 if Ht &lt;= 0.</p>
+<p><strong>Formula</strong>: Fst = (Ht - Hs) / Ht</p>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.math</span><span class="w"> </span><span class="kn">import</span> <span class="n">fst_from_heterozygosity</span>
+
+<span class="c1"># Within-population heterozygosity</span>
+<span class="n">Hs</span> <span class="o">=</span> <span class="mf">0.3</span>
+<span class="c1"># Total population heterozygosity</span>
+<span class="n">Ht</span> <span class="o">=</span> <span class="mf">0.4</span>
+<span class="n">fst</span> <span class="o">=</span> <span class="n">fst_from_heterozygosity</span><span class="p">(</span><span class="n">Hs</span><span class="p">,</span> <span class="n">Ht</span><span class="p">)</span>
+<span class="c1"># Returns: 0.25 (25% of diversity is between populations)</span>
+</pre></div>
+</div>
+</section>
+<section id="fst-from-allele-freqs-subpop-allele-freqs">
+<h2><code class="docutils literal notranslate"><span class="pre">fst_from_allele_freqs(subpop_allele_freqs)</span></code><a class="headerlink" href="#fst-from-allele-freqs-subpop-allele-freqs" title="Link to this heading"></a></h2>
+<p>Compute Fst for a biallelic locus from subpopulation allele frequencies.</p>
+<p><strong>Parameters</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">subpop_allele_freqs</span></code>: Iterable of allele A frequencies (one per subpopulation)</p></li>
+</ul>
+<p><strong>Returns</strong>: Fst value in [0, 1]</p>
+<p><strong>Formula</strong>:</p>
+<ul class="simple">
+<li><p>Hs = mean(2p(1-p)) across subpopulations</p></li>
+<li><p>Ht = 2p̄(1-p̄) where p̄ is the mean allele frequency</p></li>
+<li><p>Fst = (Ht - Hs) / Ht</p></li>
+</ul>
+<p><strong>Note</strong>: This function assumes biallelic loci.</p>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.math</span><span class="w"> </span><span class="kn">import</span> <span class="n">fst_from_allele_freqs</span>
+
+<span class="c1"># Allele frequencies in 4 subpopulations</span>
+<span class="n">subpop_freqs</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.28</span><span class="p">]</span>
+<span class="n">fst</span> <span class="o">=</span> <span class="n">fst_from_allele_freqs</span><span class="p">(</span><span class="n">subpop_freqs</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="interpretation">
+<h1>Interpretation<a class="headerlink" href="#interpretation" title="Link to this heading"></a></h1>
+<ul class="simple">
+<li><p><strong>Fst = 0</strong>: No differentiation (populations panmictic)</p></li>
+<li><p><strong>Fst = 0.01-0.05</strong>: Low differentiation (moderate gene flow)</p></li>
+<li><p><strong>Fst = 0.05-0.15</strong>: Moderate differentiation</p></li>
+<li><p><strong>Fst = 0.15-0.25</strong>: Large differentiation</p></li>
+<li><p><strong>Fst &gt; 0.25</strong>: Very large differentiation (little gene flow)</p></li>
+<li><p><strong>Fst = 1</strong>: Complete differentiation (fixed differences)</p></li>
+</ul>
+</section>
+<section id="usage-examples">
+<h1>Usage Examples<a class="headerlink" href="#usage-examples" title="Link to this heading"></a></h1>
+<section id="basic-fst-calculation">
+<h2>Basic Fst Calculation<a class="headerlink" href="#basic-fst-calculation" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.math</span><span class="w"> </span><span class="kn">import</span> <span class="n">fst_from_heterozygosity</span><span class="p">,</span> <span class="n">fst_from_allele_freqs</span>
+
+<span class="c1"># Method 1: From heterozygosity values</span>
+<span class="n">fst1</span> <span class="o">=</span> <span class="n">fst_from_heterozygosity</span><span class="p">(</span><span class="n">Hs</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">Ht</span><span class="o">=</span><span class="mf">0.4</span><span class="p">)</span>
+
+<span class="c1"># Method 2: From allele frequencies</span>
+<span class="n">subpop_freqs</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.28</span><span class="p">]</span>
+<span class="n">fst2</span> <span class="o">=</span> <span class="n">fst_from_allele_freqs</span><span class="p">(</span><span class="n">subpop_freqs</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="integration-with-dna-module">
+<h2>Integration with DNA Module<a class="headerlink" href="#integration-with-dna-module" title="Link to this heading"></a></h2>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.dna</span><span class="w"> </span><span class="kn">import</span> <span class="n">population</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.math</span><span class="w"> </span><span class="kn">import</span> <span class="n">fst_from_heterozygosity</span>
+
+<span class="c1"># Calculate heterozygosity within populations</span>
+<span class="n">pop1</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;AAAA&quot;</span><span class="p">,</span> <span class="s2">&quot;AAAT&quot;</span><span class="p">,</span> <span class="s2">&quot;AAAA&quot;</span><span class="p">]</span>
+<span class="n">pop2</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;TTTT&quot;</span><span class="p">,</span> <span class="s2">&quot;TTTA&quot;</span><span class="p">,</span> <span class="s2">&quot;TTTT&quot;</span><span class="p">]</span>
+
+<span class="c1"># Calculate Fst using DNA module</span>
+<span class="n">fst_dna</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">hudson_fst</span><span class="p">(</span><span class="n">pop1</span><span class="p">,</span> <span class="n">pop2</span><span class="p">)</span>
+
+<span class="c1"># Or calculate from heterozygosity values</span>
+<span class="c1"># (requires calculating heterozygosity separately)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="references">
+<h1>References<a class="headerlink" href="#references" title="Link to this heading"></a></h1>
+<ul class="simple">
+<li><p>Wright, S. (1949). The genetical structure of populations. <em>Annals of Eugenics</em>, 15(1), 323-354.</p></li>
+<li><p>Weir, B. S., &amp; Cockerham, C. C. (1984). Estimating F-statistics for the analysis of population structure. <em>Evolution</em>, 38(6), 1358-1370.</p></li>
+</ul>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

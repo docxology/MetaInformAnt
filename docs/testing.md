@@ -1,5 +1,118 @@
 # Testing
 
+## Quality Assurance Framework
+
+METAINFORMANT implements a comprehensive quality assurance framework combining automated testing, code quality checks, and validation processes.
+
+### Quality Assurance Architecture
+
+```mermaid
+graph TD
+    A[Code Development] --> B[Static Analysis]
+    B --> C[Type Checking]
+    C --> D[Linting]
+
+    D --> E[Unit Testing]
+    E --> F[Integration Testing]
+    F --> G[End-to-End Testing]
+
+    G --> H[Performance Testing]
+    H --> I[Load Testing]
+
+    I --> J[Quality Gates]
+    J --> K{All Passed?}
+
+    K -->|Yes| L[Release Ready]
+    K -->|No| M[Issue Resolution]
+
+    M --> A
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style E fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style L fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Automated Checks"
+        N[mypy] -.-> C
+        O[ruff] -.-> D
+        P[black] -.-> D
+        Q[isort] -.-> D
+    end
+
+    subgraph "Test Categories"
+        R[pytest] -.-> E
+        S[Real Data Only] -.-> E
+        T[No Mocks] -.-> E
+        U[Integration] -.-> F
+    end
+
+    subgraph "Quality Metrics"
+        V[Coverage >90%] -.-> J
+        W[Zero Critical Issues] -.-> J
+        X[Performance Benchmarks] -.-> J
+        Y[Documentation Complete] -.-> J
+    end
+```
+
+### Test Execution Pipeline
+
+```mermaid
+graph TD
+    A[Test Suite] --> B[Environment Setup]
+    B --> C[Dependency Verification]
+
+    C --> D[Test Discovery]
+    D --> E[Test Collection]
+
+    E --> F{Test Category}
+    F -->|Unit| G[Fast Execution]
+    F -->|Integration| H[Workflow Testing]
+    F -->|E2E| I[Full Pipeline]
+
+    G --> J[Parallel Execution]
+    H --> J
+    I --> J
+
+    J --> K[Result Collection]
+    K --> L[Coverage Analysis]
+
+    L --> M[Report Generation]
+    M --> N{Quality Standards Met?}
+
+    N -->|Yes| O[Quality Assurance Pass]
+    N -->|No| P[Failure Analysis]
+
+    P --> Q[Issue Classification]
+    Q --> R[Fix Implementation]
+
+    R --> S[Re-testing]
+    S --> N
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style J fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style O fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Execution Environment"
+        T[uv venv] -.-> B
+        U[Dependencies] -.-> C
+        V[Test Data] -.-> C
+        W[External Tools] -.-> C
+    end
+
+    subgraph "Test Organization"
+        X[tests/test_*.py] -.-> D
+        Y[Domain-specific] -.-> F
+        Z[Integration Tests] -.-> F
+        AA[E2E Tests] -.-> F
+    end
+
+    subgraph "Quality Metrics"
+        BB[Line Coverage] -.-> L
+        CC[Branch Coverage] -.-> L
+        DD[Mutation Testing] -.-> L
+        EE[Performance Benchmarks] -.-> L
+    end
+```
+
 ## Testing Policy (STRICTLY NO MOCKS/FAKES)
 
 **ABSOLUTE PROHIBITION**: Never use fake/mocked/stubbed methods, objects, or network shims in code or tests.
@@ -296,7 +409,7 @@ export NCBI_EMAIL="your.email@example.com"
 export TEST_DATABASE_URL="sqlite:///output/test.db"
 
 # Run tests with environment
-./scripts/run_tests.sh --network
+./scripts/package/test.sh --mode network
 ```
 
 ## Test Data Management
@@ -343,14 +456,14 @@ The test suite is designed for CI/CD environments:
 ```yaml
 # Example GitHub Actions
 - name: Run fast tests
-  run: ./scripts/run_tests.sh --fast
+  run: ./scripts/package/test.sh --mode fast
 
-- name: Run network tests  
-  run: ./scripts/run_tests.sh --network
+- name: Run network tests
+  run: ./scripts/package/test.sh --mode network
   if: env.ENABLE_NETWORK_TESTS == 'true'
 
 - name: Generate coverage report
-  run: ./scripts/run_tests.sh --coverage
+  run: ./scripts/package/test.sh --mode coverage
 ```
 
 ### Test Selection

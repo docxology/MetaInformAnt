@@ -1,0 +1,23 @@
+{
+  "multiomics_integration": {
+    "correlations": {
+      "dna_methylation_vs_protein_abundance": 0.12297303795243114,
+      "dna_methylation_vs_rna_expression": 0.0757804340133033,
+      "rna_expression_vs_protein_abundance": 0.09227780883028311
+    },
+    "integration_summary": {
+      "correlation_pairs": 3,
+      "layers_integrated": 3,
+      "strongest_correlation": [
+        "dna_methylation_vs_protein_abundance",
+        0.12297303795243114
+      ]
+    },
+    "omics_layers": [
+      "dna_methylation",
+      "rna_expression",
+      "protein_abundance"
+    ],
+    "samples": 50
+  }
+}

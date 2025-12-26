@@ -40,7 +40,7 @@ This document outlines AI assistance in developing METAINFORMANT's genome-wide a
 ### Real Data Acquisition
 **Code Assistant Agent** implemented:
 - `download_genome_scale_data.sh`: Real A. mellifera data download
-- `download_real_honeybee_variants.py`: Variant data integration guide
+- `download_honeybee_variants.py`: Variant data integration guide
 - `query_bioproject_metadata.py`: NCBI metadata queries
 - Automated FASTQ processing and validation
 
@@ -53,7 +53,7 @@ This document outlines AI assistance in developing METAINFORMANT's genome-wide a
 
 ### Visualization Suite
 **Code Assistant Agent** contributed:
-- `enhanced_visualizations.py`: Advanced plotting utilities
+- `visualizations.py`: Plotting utilities
 - `generate_missing_plots.py`: Plot regeneration utility
 - Manhattan plots with gene annotations
 - Q-Q plots with inflation factors

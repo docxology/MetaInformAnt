@@ -32,6 +32,255 @@ scripts/
 └── AGENTS.md      # AI agent contribution documentation
 ```
 
+## Orchestration Architecture
+
+METAINFORMANT follows a layered orchestration architecture where scripts serve as **thin wrappers** around domain workflow functions. This design ensures:
+
+- **Logic centralization** in `src/metainformant/` (not scripts)
+- **Testability** of workflow functions independent of CLI
+- **Reusability** across different entry points (CLI, scripts, programmatic)
+- **Maintainability** with single source of truth
+
+### Orchestration Layers
+
+```mermaid
+graph TD
+    A[User Interface] --> B{CLI Commands}
+    A --> C{Script Orchestrators}
+    A --> D{API Integration}
+
+    B --> E[metainformant CLI]
+    C --> F[Domain Scripts]
+    D --> G[Python API]
+
+    E --> H[Workflow Functions]
+    F --> H
+    G --> H
+
+    H --> I[Core Utilities]
+    I --> J[Execution Results]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style H fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style J fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Entry Points"
+        K[Command Line] -.-> B
+        L[Batch Processing] -.-> C
+        M[Interactive Analysis] -.-> D
+    end
+
+    subgraph "Domain Modules"
+        N[RNA Workflows] -.-> F
+        O[GWAS Pipelines] -.-> F
+        P[Multi-omics] -.-> F
+        Q[All Domains] -.-> F
+    end
+
+    subgraph "Core Infrastructure"
+        R[Configuration] -.-> I
+        S[Logging] -.-> I
+        T[Parallel Processing] -.-> I
+        U[Path Management] -.-> I
+    end
+```
+
+### Script Organization Framework
+
+```mermaid
+graph TD
+    A[Scripts Directory] --> B[Package Management]
+    A --> C[Core Utilities]
+    A --> D[Domain Orchestrators]
+
+    B --> E[setup.sh]
+    B --> F[test.sh]
+    B --> G[verify.sh]
+
+    C --> H[run_demo.py]
+    C --> I[fix_disk_space.sh]
+
+    D --> J[RNA Scripts]
+    D --> K[GWAS Scripts]
+    D --> L[Analysis Scripts]
+
+    J --> M[run_workflow.py]
+    J --> N[discover_species.py]
+
+    K --> O[run_genome_scale_gwas.py]
+    K --> P[run_pbarbatus_gwas.py]
+
+    L --> Q[20+ Domain Scripts]
+    L --> R[Thin Orchestrators]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style D fill:#fff3e0,stroke:#e65100,stroke-width:2px
+
+    subgraph "Script Categories"
+        S[Infrastructure] -.-> B
+        T[Development] -.-> C
+        U[Analysis] -.-> D
+    end
+
+    subgraph "Key Principles"
+        V[Thin Wrappers] -.-> R
+        W[Logic in src/] -.-> R
+        X[Consistent CLI] -.-> R
+        Y[Output to output/] -.-> R
+    end
+```
+
+### Development Workflow Integration
+
+```mermaid
+graph TD
+    A[Development Tasks] --> B{Task Type}
+
+    B -->|Setup| C[Package Scripts]
+    B -->|Testing| D[Test Scripts]
+    B -->|Analysis| E[Domain Scripts]
+    B -->|Deployment| F[Infrastructure Scripts]
+
+    C --> G[setup.sh]
+    C --> H[verify.sh]
+
+    D --> I[run_tests.sh]
+    D --> J[quality_checks.sh]
+
+    E --> K[RNA Workflows]
+    E --> L[GWAS Pipelines]
+    E --> M[Multi-omic Analysis]
+
+    F --> N[Documentation]
+    F --> O[Environment Setup]
+
+    G --> P[Ready Environment]
+    I --> P
+    K --> P
+    N --> P
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style C fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style P fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Setup Phase"
+        Q[Clone Repository] -.-> G
+        R[Install Dependencies] -.-> G
+        S[Configure Environment] -.-> G
+    end
+
+    subgraph "Development Phase"
+        T[Run Tests] -.-> I
+        U[Code Quality] -.-> J
+        V[Documentation] -.-> N
+    end
+
+    subgraph "Analysis Phase"
+        W[RNA-seq Processing] -.-> K
+        X[Genome-scale GWAS] -.-> L
+        Y[Systems Biology] -.-> M
+    end
+```
+
+### Script Execution Pipeline
+
+```mermaid
+graph TD
+    A[Script Invocation] --> B[Argument Parsing]
+    B --> C[Configuration Loading]
+
+    C --> D[Environment Setup]
+    D --> E[Path Resolution]
+
+    E --> F[Workflow Function Call]
+    F --> G[Progress Monitoring]
+
+    G --> H{Execution Status}
+    H -->|Success| I[Result Processing]
+    H -->|Error| J[Error Handling]
+
+    I --> K[Output Generation]
+    J --> L[Error Reporting]
+
+    K --> M[Script Complete]
+    L --> M
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style F fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style M fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Standard Pipeline"
+        N[CLI Parsing] -.-> B
+        O[Config Validation] -.-> C
+        P[Working Directory] -.-> D
+        Q[Output Paths] -.-> E
+    end
+
+    subgraph "Execution Control"
+        R[Logging Setup] -.-> F
+        S[Resource Limits] -.-> F
+        T[Timeout Handling] -.-> F
+        U[Interrupt Handling] -.-> G
+    end
+
+    subgraph "Result Management"
+        V[File Outputs] -.-> K
+        W[Console Reports] -.-> K
+        X[Error Logs] -.-> L
+        Y[Exit Codes] -.-> M
+    end
+```
+
+    CLI --> CoreOrch[Core Orchestration<br/>core.workflow.BaseWorkflowOrchestrator]
+    Scripts --> CoreOrch
+    API --> CoreOrch
+
+    CoreOrch --> DomainOrch[Domain Workflows<br/>domain.workflow.execute_*]
+    DomainOrch --> Steps[Step Functions<br/>domain.steps.run_*]
+    Steps --> Utils[Core Utilities<br/>core.*]
+```
+
+### Script Design Pattern
+
+All domain scripts follow the **thin wrapper pattern**:
+
+```python
+#!/usr/bin/env python3
+"""Thin wrapper script for domain workflow orchestration."""
+
+# 1. Parse arguments
+parser = argparse.ArgumentParser()
+parser.add_argument("--config", required=True)
+args = parser.parse_args()
+
+# 2. Call domain workflow (ALL logic in src/)
+from metainformant.domain.workflow import execute_domain_workflow
+results = execute_domain_workflow(config_path=args.config)
+
+# 3. Handle results and exit codes
+if results.get("status") == "failed":
+    print(f"Workflow failed: {results.get('errors', [])}")
+    exit(1)
+```
+
+### When to Use Scripts vs Other Layers
+
+| Layer | When to Use | Example |
+|-------|-------------|---------|
+| **Scripts** | Production workflows, automation, batch processing | `python3 scripts/rna/run_workflow.py --config config.yaml` |
+| **CLI** | Interactive exploration, quick commands, learning | `uv run metainformant rna run --config config.yaml` |
+| **Direct API** | Programmatic integration, custom workflows | `from metainformant.rna.workflow import execute_workflow` |
+
+### Script Categories by Purpose
+
+| Category | Purpose | Key Features |
+|----------|---------|--------------|
+| **Production** | End-to-end workflows with config | Error handling, logging, status reporting |
+| **Development** | Testing, validation, utilities | Comprehensive checks, debugging output |
+| **Infrastructure** | Setup, testing, quality | Environment management, CI/CD integration |
+
+See **[Orchestration Guide](../docs/ORCHESTRATION.md)** for complete workflow architecture documentation.
+
 ## Template Files
 
 - **`_template_working.py`**: Reference template demonstrating proper script structure, imports, configuration, and output handling. Useful for creating new orchestrator scripts.
@@ -174,11 +423,11 @@ Genome-wide association study workflows with comprehensive visualization.
   - **Example**: `python scripts/gwas/run_genome_scale_gwas.py --config config/gwas/gwas_amellifera.yaml`
 
 ### Data Acquisition
-- **`download_real_honeybee_variants.py`**: Real *Apis mellifera* data guide
+- **`download_honeybee_variants.py`**: *Apis mellifera* data guide
   - Lists key BioProjects (PRJNA292680, PRJNA392242, PRJNA13343)
   - SRA Toolkit instructions
   - Complete workflow documentation
-  - **Usage**: `python scripts/gwas/download_real_honeybee_variants.py`
+  - **Usage**: `python scripts/gwas/download_honeybee_variants.py`
 
 - **`download_genome_scale_data.sh`**: Batch SRA download script
   - Downloads 3 samples from PRJNA292680
@@ -349,6 +598,54 @@ Genome-wide association study workflows with comprehensive visualization.
     # Generate all visualizations
     python3 scripts/life_events/run_life_events_analysis.py --synthetic --all-visualizations
     ```
+
+## Learning Resources
+
+METAINFORMANT provides both **production scripts** (this directory) and **educational examples** for learning. Use examples to understand concepts before using production scripts.
+
+### Educational Examples (`examples/`)
+
+The `examples/` directory contains focused, runnable demonstrations of METAINFORMANT concepts:
+
+#### Core Concepts
+- **`examples/core/`**: Configuration, I/O, logging, path management
+  ```bash
+  python examples/core/example_config.py    # Learn configuration management
+  python examples/core/example_io.py        # Master file operations
+  python examples/core/example_logging.py   # Set up structured logging
+  ```
+
+#### Domain-Specific Learning
+- **`examples/dna/`**: DNA sequence analysis, alignment, phylogenetics, population genetics
+- **`examples/rna/`**: RNA-seq workflows, expression quantification
+- **`examples/gwas/`**: Association testing, Manhattan/QQ plots
+- **`examples/[domain]/`**: Examples for all METAINFORMANT modules
+
+#### Integration Examples
+- **`examples/integration/`**: Cross-domain workflows and multi-omics analysis
+  ```bash
+  python examples/integration/example_dna_rna.py        # DNA-RNA integration
+  python examples/integration/example_multiomics.py     # Multi-omics correlation
+  python examples/integration/example_complete_workflow.py # End-to-end pipeline
+  ```
+
+### Examples vs Scripts
+
+| Aspect | Examples (`examples/`) | Scripts (`scripts/`) |
+|--------|----------------------|---------------------|
+| **Purpose** | Learning concepts | Production workflows |
+| **Scope** | Single concepts | Complete pipelines |
+| **Data** | Simulated/demo data | Real biological data |
+| **Output** | `output/examples/` | `output/[domain]/` |
+| **Dependencies** | Minimal | Full environment |
+| **Use Case** | Understanding APIs | Running analyses |
+
+### Learning Path
+
+1. **Start with Core**: `examples/core/` - Learn METAINFORMANT fundamentals
+2. **Explore Domains**: `examples/[domain]/` - Understand specific analyses
+3. **Integration**: `examples/integration/` - See cross-domain workflows
+4. **Production**: `scripts/` - Run real analyses with production scripts
 
 ## Usage Guidelines
 

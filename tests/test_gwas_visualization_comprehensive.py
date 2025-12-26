@@ -1,4 +1,4 @@
-"""Comprehensive tests for all GWAS visualization modules.
+"""Tests for all GWAS visualization modules.
 
 Tests all visualization modules in gwas/visualization_*.py following NO_MOCKING policy.
 """
@@ -186,7 +186,7 @@ class TestComparisonVisualization:
             assert isinstance(result, dict)
 
 
-class TestEnhancedVisualization:
+class TestVisualization:
     """Tests for visualization_enhanced.py module."""
 
     def test_enhanced_plot(self, tmp_path):

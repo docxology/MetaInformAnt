@@ -1,0 +1,458 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>METAINFORMANT Orchestration Guide &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/custom.css" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">METAINFORMANT Orchestration Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/ORCHESTRATION.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="metainformant-orchestration-guide">
+<h1>METAINFORMANT Orchestration Guide<a class="headerlink" href="#metainformant-orchestration-guide" title="Link to this heading"></a></h1>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>METAINFORMANT provides a layered orchestration architecture for running bioinformatics workflows across multiple domains. This guide explains the orchestration paradigm and when to use each layer.</p>
+</section>
+<section id="orchestration-layers">
+<h2>Orchestration Layers<a class="headerlink" href="#orchestration-layers" title="Link to this heading"></a></h2>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart TB
+    subgraph &quot;User Interfaces&quot;
+        CLI[CLI Interface&lt;br/&gt;metainformant command]
+        Scripts[Script Orchestrators&lt;br/&gt;scripts/*/run_*.py]
+    end
+
+    subgraph &quot;Orchestration Framework&quot;
+        CoreOrch[BaseWorkflowOrchestrator&lt;br/&gt;core.workflow]
+        DomainOrch[Domain Workflows&lt;br/&gt;domain.workflow]
+    end
+
+    subgraph &quot;Execution Layer&quot;
+        Steps[Step Functions&lt;br/&gt;domain.steps]
+        Utils[Core Utilities&lt;br/&gt;core.*]
+    end
+
+    CLI --&gt; Scripts
+    Scripts --&gt; CoreOrch
+    Scripts --&gt; DomainOrch
+    CoreOrch --&gt; DomainOrch
+    DomainOrch --&gt; Steps
+    Steps --&gt; Utils
+
+    DomainOrch --&gt; RNA[RNA Workflow&lt;br/&gt;rna.workflow]
+    DomainOrch --&gt; GWAS[GWAS Workflow&lt;br/&gt;gwas.workflow]
+    DomainOrch --&gt; EPI[Epigenome&lt;br/&gt;epigenome.workflow]
+    DomainOrch --&gt; ECO[Ecology&lt;br/&gt;ecology.workflow]
+    DomainOrch --&gt; SIM[Simulation&lt;br/&gt;simulation.workflow]
+</pre></div>
+</div>
+</section>
+<section id="when-to-use-each-layer">
+<h2>When to Use Each Layer<a class="headerlink" href="#when-to-use-each-layer" title="Link to this heading"></a></h2>
+<section id="decision-tree">
+<h3>Decision Tree<a class="headerlink" href="#decision-tree" title="Link to this heading"></a></h3>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart TD
+    A[Need to run workflow?] --&gt; B{What level of control?}
+    B --&gt; C[Full programmatic control&lt;br/&gt;Direct API calls]
+    B --&gt; D[Config-driven automation&lt;br/&gt;Domain workflows]
+    B --&gt; E[Command-line convenience&lt;br/&gt;Script orchestrators]
+    B --&gt; F[Interactive exploration&lt;br/&gt;CLI interface]
+
+    C --&gt; G[Use domain.workflow&lt;br/&gt;execute_* functions]
+    D --&gt; H[Use scripts/*/run_*.py&lt;br/&gt;with config files]
+    E --&gt; I[Use metainformant CLI&lt;br/&gt;with subcommands]
+    F --&gt; J[Use metainformant CLI&lt;br/&gt;interactive mode]
+</pre></div>
+</div>
+</section>
+<section id="layer-descriptions">
+<h3>Layer Descriptions<a class="headerlink" href="#layer-descriptions" title="Link to this heading"></a></h3>
+<section id="cli-interface-metainformant">
+<h4>1. CLI Interface (<code class="docutils literal notranslate"><span class="pre">metainformant</span></code>)<a class="headerlink" href="#cli-interface-metainformant" title="Link to this heading"></a></h4>
+<p><strong>Purpose</strong>: Interactive exploration and quick commands</p>
+<p><strong>When to use:</strong></p>
+<ul class="simple">
+<li><p>Ad-hoc analysis and exploration</p></li>
+<li><p>Learning API patterns</p></li>
+<li><p>Quick one-off operations</p></li>
+<li><p>Interactive debugging</p></li>
+</ul>
+<p><strong>Examples:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Quick DNA analysis</span>
+uv<span class="w"> </span>run<span class="w"> </span>metainformant<span class="w"> </span>dna<span class="w"> </span>fetch<span class="w"> </span>--assembly<span class="w"> </span>GCF_000001405.40
+
+<span class="c1"># GWAS visualization</span>
+uv<span class="w"> </span>run<span class="w"> </span>metainformant<span class="w"> </span>gwas<span class="w"> </span>plot<span class="w"> </span>--input<span class="w"> </span>results.csv<span class="w"> </span>--type<span class="w"> </span>manhattan
+
+<span class="c1"># Check workflow status</span>
+uv<span class="w"> </span>run<span class="w"> </span>metainformant<span class="w"> </span>rna<span class="w"> </span>status<span class="w"> </span>--config<span class="w"> </span>config/amalgkit/species.yaml
+</pre></div>
+</div>
+</section>
+<section id="script-orchestrators-scripts-run-py">
+<h4>2. Script Orchestrators (<code class="docutils literal notranslate"><span class="pre">scripts/*/run_*.py</span></code>)<a class="headerlink" href="#script-orchestrators-scripts-run-py" title="Link to this heading"></a></h4>
+<p><strong>Purpose</strong>: Production-ready workflow automation</p>
+<p><strong>When to use:</strong></p>
+<ul class="simple">
+<li><p>End-to-end workflows with configuration</p></li>
+<li><p>Batch processing and automation</p></li>
+<li><p>Production deployments</p></li>
+<li><p>CI/CD integration</p></li>
+<li><p>Reproducible research pipelines</p></li>
+</ul>
+<p><strong>Examples:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Full RNA-seq workflow</span>
+python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>--config<span class="w"> </span>config/amalgkit/species.yaml
+
+<span class="c1"># GWAS analysis pipeline</span>
+python3<span class="w"> </span>scripts/gwas/run_genome_scale_gwas.py<span class="w"> </span>--config<span class="w"> </span>config/gwas/species.yaml
+
+<span class="c1"># Multi-omics integration</span>
+python3<span class="w"> </span>scripts/multiomics/run_multiomics_integration.py<span class="w"> </span>--input<span class="w"> </span>data/<span class="w"> </span>--output<span class="w"> </span>output/
+</pre></div>
+</div>
+</section>
+<section id="baseworkfloworchestrator-core-workflow">
+<h4>3. BaseWorkflowOrchestrator (<code class="docutils literal notranslate"><span class="pre">core.workflow</span></code>)<a class="headerlink" href="#baseworkfloworchestrator-core-workflow" title="Link to this heading"></a></h4>
+<p><strong>Purpose</strong>: Framework for building complex workflows</p>
+<p><strong>When to use:</strong></p>
+<ul class="simple">
+<li><p>Building new workflow orchestrators</p></li>
+<li><p>Custom workflow logic beyond domain defaults</p></li>
+<li><p>Research workflows with custom steps</p></li>
+<li><p>Integration of multiple domains</p></li>
+</ul>
+<p><strong>Pattern:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseWorkflowOrchestrator</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">CustomWorkflow</span><span class="p">(</span><span class="n">BaseWorkflowOrchestrator</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_steps</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="s2">&quot;preprocess&quot;</span><span class="p">,</span> <span class="s2">&quot;analyze&quot;</span><span class="p">,</span> <span class="s2">&quot;postprocess&quot;</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">execute_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">step_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">step_config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="c1"># Custom step logic</span>
+        <span class="k">pass</span>
+
+<span class="n">workflow</span> <span class="o">=</span> <span class="n">CustomWorkflow</span><span class="p">(</span><span class="s2">&quot;custom&quot;</span><span class="p">,</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;output/custom&quot;</span><span class="p">))</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">workflow</span><span class="o">.</span><span class="n">run_workflow</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+<section id="domain-workflows-domain-workflow">
+<h4>4. Domain Workflows (<code class="docutils literal notranslate"><span class="pre">domain.workflow</span></code>)<a class="headerlink" href="#domain-workflows-domain-workflow" title="Link to this heading"></a></h4>
+<p><strong>Purpose</strong>: Domain-specific workflow execution</p>
+<p><strong>When to use:</strong></p>
+<ul class="simple">
+<li><p>Direct programmatic control over domain workflows</p></li>
+<li><p>Custom workflow modifications</p></li>
+<li><p>Integration into larger systems</p></li>
+<li><p>Fine-grained control over workflow execution</p></li>
+</ul>
+<p><strong>Examples:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">execute_amalgkit_workflow</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.gwas.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">execute_gwas_workflow</span>
+
+<span class="c1"># RNA-seq workflow with custom config</span>
+<span class="n">rna_results</span> <span class="o">=</span> <span class="n">execute_amalgkit_workflow</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">work_dir</span><span class="o">=</span><span class="s2">&quot;output/rna&quot;</span><span class="p">)</span>
+
+<span class="c1"># GWAS with custom parameters</span>
+<span class="n">gwas_results</span> <span class="o">=</span> <span class="n">execute_gwas_workflow</span><span class="p">(</span><span class="n">vcf_path</span><span class="p">,</span> <span class="n">phenotype_path</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="thin-script-wrapper-pattern">
+<h2>Thin Script Wrapper Pattern<a class="headerlink" href="#thin-script-wrapper-pattern" title="Link to this heading"></a></h2>
+<section id="id1">
+<h3>Overview<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<p>Most script orchestrators follow a “thin wrapper” pattern: they parse arguments and call domain workflow functions with minimal logic.</p>
+</section>
+<section id="pattern-structure">
+<h3>Pattern Structure<a class="headerlink" href="#pattern-structure" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="sd">&quot;&quot;&quot;Thin wrapper script for domain workflow orchestration.&quot;&quot;&quot;</span>
+
+<span class="c1"># 1. Setup imports and environment</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">argparse</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.domain.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">execute_domain_workflow</span>
+
+<span class="c1"># 2. Parse arguments (config, output dir, etc.)</span>
+<span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">()</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--config&quot;</span><span class="p">,</span> <span class="n">required</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--output&quot;</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;output/domain&quot;</span><span class="p">)</span>
+<span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+<span class="c1"># 3. Call domain workflow (all logic in src/)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">execute_domain_workflow</span><span class="p">(</span>
+    <span class="n">config_path</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">config</span><span class="p">,</span>
+    <span class="n">output_dir</span><span class="o">=</span><span class="n">args</span><span class="o">.</span><span class="n">output</span><span class="p">,</span>
+    <span class="c1"># Other parameters...</span>
+<span class="p">)</span>
+
+<span class="c1"># 4. Handle results and exit codes</span>
+<span class="k">if</span> <span class="n">results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;status&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="s2">&quot;failed&quot;</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Workflow failed: </span><span class="si">{</span><span class="n">results</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;errors&#39;</span><span class="p">,</span><span class="w"> </span><span class="p">[])</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="benefits">
+<h3>Benefits<a class="headerlink" href="#benefits" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Logic Centralization</strong>: All workflow logic in <code class="docutils literal notranslate"><span class="pre">src/metainformant/</span></code></p></li>
+<li><p><strong>Testability</strong>: Domain functions can be tested independently</p></li>
+<li><p><strong>Reusability</strong>: Same logic usable from scripts, CLI, or direct API calls</p></li>
+<li><p><strong>Maintainability</strong>: Changes in one place affect all entry points</p></li>
+</ul>
+</section>
+</section>
+<section id="step-function-standards">
+<h2>Step Function Standards<a class="headerlink" href="#step-function-standards" title="Link to this heading"></a></h2>
+<section id="signature-pattern">
+<h3>Signature Pattern<a class="headerlink" href="#signature-pattern" title="Link to this heading"></a></h3>
+<p>All step functions follow a consistent signature:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">run_step_name</span><span class="p">(</span><span class="n">config</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Execute step_name workflow step.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        config: Step configuration dictionary</span>
+<span class="sd">        **kwargs: Additional parameters</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        Dictionary with step results:</span>
+<span class="sd">        {</span>
+<span class="sd">            &quot;status&quot;: &quot;completed|failed|skipped&quot;,</span>
+<span class="sd">            &quot;output&quot;: {...},  # Step-specific results</span>
+<span class="sd">            &quot;errors&quot;: [...],  # Error messages if failed</span>
+<span class="sd">            &quot;warnings&quot;: [...], # Warning messages</span>
+<span class="sd">            &quot;metadata&quot;: {...} # Additional metadata</span>
+<span class="sd">        }</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="error-handling">
+<h3>Error Handling<a class="headerlink" href="#error-handling" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Return <code class="docutils literal notranslate"><span class="pre">{&quot;status&quot;:</span> <span class="pre">&quot;failed&quot;,</span> <span class="pre">&quot;errors&quot;:</span> <span class="pre">[&quot;error</span> <span class="pre">message&quot;]}</span></code> on failure</p></li>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">{&quot;status&quot;:</span> <span class="pre">&quot;skipped&quot;,</span> <span class="pre">&quot;reason&quot;:</span> <span class="pre">&quot;reason</span> <span class="pre">message&quot;}</span></code> for conditional skips</p></li>
+<li><p>Include <code class="docutils literal notranslate"><span class="pre">warnings</span></code> for non-fatal issues</p></li>
+<li><p>Log progress with <code class="docutils literal notranslate"><span class="pre">metainformant.core.logging</span></code></p></li>
+</ul>
+</section>
+<section id="result-structure">
+<h3>Result Structure<a class="headerlink" href="#result-structure" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+    <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;completed&quot;</span><span class="p">,</span>  <span class="c1"># &quot;completed&quot; | &quot;failed&quot; | &quot;skipped&quot;</span>
+    <span class="s2">&quot;output&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;files_created&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;path/to/output.txt&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;metrics&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;accuracy&quot;</span><span class="p">:</span> <span class="mf">0.95</span><span class="p">},</span>
+        <span class="c1"># Step-specific results</span>
+    <span class="p">},</span>
+    <span class="s2">&quot;errors&quot;</span><span class="p">:</span> <span class="p">[],</span>  <span class="c1"># List of error messages</span>
+    <span class="s2">&quot;warnings&quot;</span><span class="p">:</span> <span class="p">[],</span>  <span class="c1"># List of warning messages</span>
+    <span class="s2">&quot;metadata&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;execution_time&quot;</span><span class="p">:</span> <span class="mf">45.2</span><span class="p">,</span>
+        <span class="s2">&quot;memory_used&quot;</span><span class="p">:</span> <span class="s2">&quot;1.2GB&quot;</span><span class="p">,</span>
+        <span class="c1"># Additional metadata</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="configuration-patterns">
+<h2>Configuration Patterns<a class="headerlink" href="#configuration-patterns" title="Link to this heading"></a></h2>
+<section id="config-loading-hierarchy">
+<h3>Config Loading Hierarchy<a class="headerlink" href="#config-loading-hierarchy" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Base config</strong>: <code class="docutils literal notranslate"><span class="pre">config/domain/default.yaml</span></code></p></li>
+<li><p><strong>Environment overrides</strong>: <code class="docutils literal notranslate"><span class="pre">DOMAIN_*</span></code> environment variables</p></li>
+<li><p><strong>User config</strong>: <code class="docutils literal notranslate"><span class="pre">--config</span> <span class="pre">path/to/config.yaml</span></code></p></li>
+<li><p><strong>Command-line overrides</strong>: <code class="docutils literal notranslate"><span class="pre">--param</span> <span class="pre">value</span></code></p></li>
+</ol>
+</section>
+<section id="config-structure">
+<h3>Config Structure<a class="headerlink" href="#config-structure" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="c1"># config/domain/workflow.yaml</span>
+<span class="nt">work_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/domain/workflow</span>
+<span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
+<span class="nt">verbose</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+
+<span class="nt">domain_specific</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">parameter1</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">value1</span>
+<span class="w">  </span><span class="nt">parameter2</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">value2</span>
+
+<span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">step1</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">true</span>
+<span class="w">    </span><span class="nt">config</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nv">...</span><span class="p p-Indicator">}</span>
+<span class="w">  </span><span class="nt">step2</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">enabled</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span>
+<span class="w">    </span><span class="nt">config</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nv">...</span><span class="p p-Indicator">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<section id="script-development">
+<h3>Script Development<a class="headerlink" href="#script-development" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Keep scripts thin</strong>: Parse args, call domain functions</p></li>
+<li><p><strong>Use core utilities</strong>: Import from <code class="docutils literal notranslate"><span class="pre">metainformant.core.*</span></code></p></li>
+<li><p><strong>Handle errors gracefully</strong>: Check return status, log appropriately</p></li>
+<li><p><strong>Document usage</strong>: Include comprehensive <code class="docutils literal notranslate"><span class="pre">--help</span></code> text</p></li>
+</ol>
+</section>
+<section id="workflow-development">
+<h3>Workflow Development<a class="headerlink" href="#workflow-development" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Inherit from BaseWorkflowOrchestrator</strong>: For complex workflows</p></li>
+<li><p><strong>Follow step standards</strong>: Consistent signatures and return values</p></li>
+<li><p><strong>Use core logging</strong>: <code class="docutils literal notranslate"><span class="pre">get_logger(__name__)</span></code> for all logging</p></li>
+<li><p><strong>Validate inputs</strong>: Check config and file paths early</p></li>
+</ol>
+</section>
+<section id="integration">
+<h3>Integration<a class="headerlink" href="#integration" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Cross-domain calls</strong>: Use domain workflow functions directly</p></li>
+<li><p><strong>Shared utilities</strong>: Leverage <code class="docutils literal notranslate"><span class="pre">core.*</span></code> modules for common tasks</p></li>
+<li><p><strong>Config patterns</strong>: Follow established config loading patterns</p></li>
+<li><p><strong>Error propagation</strong>: Maintain error context across layers</p></li>
+</ol>
+</section>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong><a class="reference internal" href="core/workflow.html"><span class="std std-doc">Core Workflow Guide</span></a></strong> - BaseWorkflowOrchestrator details</p></li>
+<li><p><strong><a class="reference internal" href="rna/workflow.html"><span class="std std-doc">Domain Workflows</span></a></strong> - RNA workflow orchestration</p></li>
+<li><p><strong><a class="reference internal" href="core/config.html"><span class="std std-doc">Configuration Guide</span></a></strong> - Configuration management</p></li>
+<li><p><strong><a class="reference internal" href="cli.html"><span class="std std-doc">CLI Reference</span></a></strong> - Command-line interface</p></li>
+<li><p><strong><a class="reference internal" href="testing.html"><span class="std std-doc">Testing Guide</span></a></strong> - Workflow testing patterns</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

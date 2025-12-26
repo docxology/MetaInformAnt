@@ -1,0 +1,168 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Quality Control Plots &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Quality Control Plots</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/visualization/quality.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="quality-control-plots">
+<h1>Quality Control Plots<a class="headerlink" href="#quality-control-plots" title="Link to this heading"></a></h1>
+<p>Quality control visualization functions for quality control metrics including QC metrics plots, quality score plots, per-base quality plots, adapter content plots, and sequence length distributions.</p>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<section id="qc-metrics-plot-metrics-ncols-3-figsize-none-kwargs">
+<h3><code class="docutils literal notranslate"><span class="pre">qc_metrics_plot(metrics,</span> <span class="pre">*,</span> <span class="pre">ncols=3,</span> <span class="pre">figsize=None,</span> <span class="pre">**kwargs)</span></code><a class="headerlink" href="#qc-metrics-plot-metrics-ncols-3-figsize-none-kwargs" title="Link to this heading"></a></h3>
+<p>Plot multiple quality control metrics.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">qc_metrics_plot</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="n">metrics</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;total_counts&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">poisson</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span>
+    <span class="s1">&#39;n_genes&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">poisson</span><span class="p">(</span><span class="mi">2000</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span>
+    <span class="s1">&#39;pct_mt&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+<span class="p">}</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">qc_metrics_plot</span><span class="p">(</span><span class="n">metrics</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="quality-score-plot-quality-scores-ax-none-title-quality-score-distribution-kwargs">
+<h3><code class="docutils literal notranslate"><span class="pre">quality_score_plot(quality_scores,</span> <span class="pre">*,</span> <span class="pre">ax=None,</span> <span class="pre">title='Quality</span> <span class="pre">Score</span> <span class="pre">Distribution',</span> <span class="pre">**kwargs)</span></code><a class="headerlink" href="#quality-score-plot-quality-scores-ax-none-title-quality-score-distribution-kwargs" title="Link to this heading"></a></h3>
+<p>Plot distribution of quality scores.</p>
+</section>
+<section id="per-base-quality-plot-positions-quality-scores-ax-none-title-per-base-quality-scores-kwargs">
+<h3><code class="docutils literal notranslate"><span class="pre">per_base_quality_plot(positions,</span> <span class="pre">quality_scores,</span> <span class="pre">*,</span> <span class="pre">ax=None,</span> <span class="pre">title='Per-Base</span> <span class="pre">Quality</span> <span class="pre">Scores',</span> <span class="pre">**kwargs)</span></code><a class="headerlink" href="#per-base-quality-plot-positions-quality-scores-ax-none-title-per-base-quality-scores-kwargs" title="Link to this heading"></a></h3>
+<p>Plot quality scores across read positions.</p>
+</section>
+<section id="adapter-content-plot-positions-adapter-content-threshold-0-1-ax-none-title-adapter-content-kwargs">
+<h3><code class="docutils literal notranslate"><span class="pre">adapter_content_plot(positions,</span> <span class="pre">adapter_content,</span> <span class="pre">*,</span> <span class="pre">threshold=0.1,</span> <span class="pre">ax=None,</span> <span class="pre">title='Adapter</span> <span class="pre">Content',</span> <span class="pre">**kwargs)</span></code><a class="headerlink" href="#adapter-content-plot-positions-adapter-content-threshold-0-1-ax-none-title-adapter-content-kwargs" title="Link to this heading"></a></h3>
+<p>Plot adapter content across read positions.</p>
+</section>
+<section id="sequence-length-distribution-lengths-ax-none-title-sequence-length-distribution-kwargs">
+<h3><code class="docutils literal notranslate"><span class="pre">sequence_length_distribution(lengths,</span> <span class="pre">*,</span> <span class="pre">ax=None,</span> <span class="pre">title='Sequence</span> <span class="pre">Length</span> <span class="pre">Distribution',</span> <span class="pre">**kwargs)</span></code><a class="headerlink" href="#sequence-length-distribution-lengths-ax-none-title-sequence-length-distribution-kwargs" title="Link to this heading"></a></h3>
+<p>Plot distribution of sequence lengths.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

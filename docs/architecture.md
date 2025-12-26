@@ -1,6 +1,308 @@
 # Architecture
 
-High-level architecture of METAINFORMANT.
+Comprehensive system architecture of METAINFORMANT, showing the modular design, data flow patterns, and integration relationships across all biological domains.
+
+## System Overview
+
+METAINFORMANT is a comprehensive bioinformatics toolkit designed for multi-omic data analysis. The architecture follows a modular, domain-driven design with clear separation of concerns and extensive integration capabilities.
+
+### Core Design Principles
+
+- **Modular Architecture**: Each biological domain is self-contained with well-defined interfaces
+- **Data Flow Integration**: Seamless data exchange between modules through standardized formats
+- **Quality Assurance**: Comprehensive validation and error handling throughout
+- **Extensibility**: Easy addition of new analysis methods and data types
+- **Performance**: Optimized algorithms for large-scale biological data processing
+
+## Module Architecture
+
+```mermaid
+graph TB
+    %% Core Infrastructure Layer
+    subgraph "Core Infrastructure"
+        CORE[Core Utilities<br/>config • io • logging<br/>parallel • paths • cache<br/>workflow • validation]
+    end
+
+    %% Data Processing Layer
+    subgraph "Data Processing"
+        DNA[DNA Module<br/>sequences • alignment<br/>phylogeny • population]
+        RNA[RNA Module<br/>amalgkit • quantification<br/>transcriptomics • workflow]
+        PROTEIN[Protein Module<br/>sequences • structure<br/>AlphaFold • analysis]
+        EPIGENOME[Epigenome Module<br/>methylation • ChIP-seq<br/>ATAC-seq • chromatin]
+    end
+
+    %% Analysis Layer
+    subgraph "Analysis Methods"
+        GWAS[GWAS Module<br/>association • QC<br/>population • visualization]
+        MATH[Math Module<br/>population genetics<br/>coalescent • selection]
+        ML[ML Module<br/>classification • regression<br/>feature selection]
+        INFO[Info Theory Module<br/>entropy • MI • similarity<br/>semantic measures]
+    end
+
+    %% Systems Biology Layer
+    subgraph "Systems Biology"
+        NETWORKS[Networks Module<br/>PPI • pathways<br/>community detection]
+        MULTIOMICS[Multi-Omics Module<br/>integration • harmonization<br/>joint analysis]
+        SINGLECELL[Single-Cell Module<br/>preprocessing • clustering<br/>trajectory • DE]
+        SIMULATION[Simulation Module<br/>sequences • ecosystems<br/>agent-based • evolution]
+    end
+
+    %% Knowledge Layer
+    subgraph "Knowledge & Metadata"
+        ONTOLOGY[Ontology Module<br/>GO • functional annotation<br/>semantic similarity]
+        PHENOTYPE[Phenotype Module<br/>traits • life course<br/>AntWiki • curation]
+        ECOLOGY[Ecology Module<br/>communities • diversity<br/>environmental analysis]
+        LIFEEVENTS[Life Events Module<br/>sequences • embeddings<br/>temporal prediction]
+    end
+
+    %% Utilities Layer
+    subgraph "Utilities"
+        QUALITY[Quality Module<br/>FASTQ • assembly<br/>metrics • validation]
+        VISUALIZATION[Visualization Module<br/>plots • animations<br/>trees • networks]
+    end
+
+    %% Data Flow
+    CORE --> DNA
+    CORE --> RNA
+    CORE --> PROTEIN
+    CORE --> EPIGENOME
+    CORE --> GWAS
+    CORE --> MATH
+    CORE --> ML
+    CORE --> INFO
+    CORE --> NETWORKS
+    CORE --> MULTIOMICS
+    CORE --> SINGLECELL
+    CORE --> SIMULATION
+    CORE --> ONTOLOGY
+    CORE --> PHENOTYPE
+    CORE --> ECOLOGY
+    CORE --> LIFEEVENTS
+    CORE --> QUALITY
+    CORE --> VISUALIZATION
+
+    DNA --> RNA
+    DNA --> PROTEIN
+    DNA --> GWAS
+    RNA --> SINGLECELL
+    RNA --> MULTIOMICS
+    PROTEIN --> NETWORKS
+    PROTEIN --> ONTOLOGY
+    EPIGENOME --> DNA
+    EPIGENOME --> NETWORKS
+    ONTOLOGY --> MULTIOMICS
+    PHENOTYPE --> GWAS
+    PHENOTYPE --> LIFEEVENTS
+    ECOLOGY --> NETWORKS
+    MATH --> GWAS
+    MATH --> DNA
+    INFO --> NETWORKS
+    INFO --> ONTOLOGY
+    NETWORKS --> MULTIOMICS
+    SINGLECELL --> MULTIOMICS
+    QUALITY --> ALL_MODULES[All Analysis Modules]
+    VISUALIZATION --> ALL_MODULES
+
+    %% External Dependencies
+    RNA -.->|"Amalgkit CLI"| RNA
+    SINGLECELL -.->|"scanpy, anndata"| SINGLECELL
+    PROTEIN -.->|"AlphaFold"| PROTEIN
+    GWAS -.->|"bcftools, GATK"| GWAS
+
+    %% Data Sources
+    NCBI[(NCBI Genomes)] --> DNA
+    SRA[(SRA Sequences)] --> RNA
+    SRA --> SINGLECELL
+    SRA --> GWAS
+    PDB[(PDB Structures)] --> PROTEIN
+    GEO[(GEO Expression)] --> RNA
+    GO[(Gene Ontology)] --> ONTOLOGY
+
+    %% Styling
+    classDef core fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    classDef data fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    classDef analysis fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    classDef systems fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    classDef knowledge fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    classDef utility fill:#f9fbe7,stroke:#827717,stroke-width:2px
+    classDef external fill:#fafafa,stroke:#424242,stroke-width:1px
+
+    class CORE core
+    class DNA,RNA,PROTEIN,EPIGENOME data
+    class GWAS,MATH,ML,INFO analysis
+    class NETWORKS,MULTIOMICS,SINGLECELL,SIMULATION systems
+    class ONTOLOGY,PHENOTYPE,ECOLOGY,LIFEEVENTS knowledge
+    class QUALITY,VISUALIZATION utility
+    class NCBI,SRA,PDB,GEO,GO external
+```
+
+### Data Flow Architecture
+
+```mermaid
+graph TD
+    A[Raw Biological Data] --> B[Ingestion Layer]
+    B --> C[Format Detection]
+    C --> D[Data Validation]
+
+    D --> E{Data Type}
+    E -->|Genomic| F[DNA Processing Pipeline]
+    E -->|Transcriptomic| G[RNA Processing Pipeline]
+    E -->|Proteomic| H[Protein Processing Pipeline]
+    E -->|Epigenomic| I[Epigenome Processing Pipeline]
+
+    F --> J[Quality Control]
+    G --> J
+    H --> J
+    I --> J
+
+    J --> K[Feature Extraction]
+    K --> L[Statistical Analysis]
+
+    L --> M{Integration Strategy}
+    M -->|Single-omic| N[Individual Analysis]
+    M -->|Multi-omic| O[Joint Analysis]
+
+    N --> P[Domain-Specific Results]
+    O --> Q[Systems-Level Results]
+
+    P --> R[Visualization]
+    Q --> R
+
+    R --> S[Publication Figures]
+    S --> T[Scientific Insights]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style K fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style T fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Data Sources"
+        U[NCBI] -.-> F
+        V[SRA] -.-> G
+        W[PDB] -.-> H
+        X[ENCODE] -.-> I
+    end
+
+    subgraph "Processing Stages"
+        Y[Normalization] -.-> K
+        Z[Transformation] -.-> K
+        AA[Filtering] -.-> K
+        BB[Scaling] -.-> K
+    end
+
+    subgraph "Analysis Types"
+        CC[Differential Expression] -.-> L
+        DD[Association Testing] -.-> L
+        EE[Network Inference] -.-> L
+        FF[Clustering] -.-> L
+    end
+```
+
+### Integration Framework
+
+```mermaid
+graph TD
+    A[Module Interfaces] --> B[Standardized APIs]
+    B --> C[Data Format Standards]
+
+    C --> D[Interoperability Layer]
+    D --> E[Cross-Module Communication]
+
+    E --> F{Integration Pattern}
+    F -->|Pipeline| G[Sequential Processing]
+    F -->|Workflow| H[Orchestrated Execution]
+    F -->|Joint| I[Simultaneous Analysis]
+
+    G --> J[Result Aggregation]
+    H --> J
+    I --> J
+
+    J --> K[Unified Output]
+    K --> L[Quality Assurance]
+
+    L --> M[Final Results]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style D fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style M fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "API Standards"
+        N[Function Signatures] -.-> B
+        O[Parameter Types] -.-> B
+        P[Return Formats] -.-> B
+        Q[Error Handling] -.-> B
+    end
+
+    subgraph "Data Standards"
+        R[FASTA Format] -.-> C
+        S[Count Matrices] -.-> C
+        T[Pandas DataFrames] -.-> C
+        U[NetworkX Graphs] -.-> C
+    end
+
+    subgraph "Integration Mechanisms"
+        V[Core Utilities] -.-> D
+        W[Config Files] -.-> D
+        X[Workflow Orchestration] -.-> D
+        Y[Event System] -.-> D
+    end
+```
+
+### Quality Assurance Architecture
+
+```mermaid
+graph TD
+    A[Code Development] --> B[Static Analysis]
+    B --> C[Type Checking]
+    C --> D[Linting]
+
+    D --> E[Unit Testing]
+    E --> F[Integration Testing]
+    F --> G[Performance Testing]
+
+    G --> H[Documentation]
+    H --> I[Validation]
+
+    I --> J{Standards Met?}
+    J -->|Yes| K[Release Ready]
+    J -->|No| L[Issue Resolution]
+
+    L --> A
+
+    K --> M[Deployment]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style E fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style M fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Code Quality"
+        N[mypy] -.-> C
+        O[ruff] -.-> D
+        P[black] -.-> D
+        Q[isort] -.-> D
+    end
+
+    subgraph "Testing Framework"
+        R[pytest] -.-> E
+        S[Real Data] -.-> E
+        T[No Mocks] -.-> E
+        U[Integration] -.-> F
+    end
+
+    subgraph "Performance"
+        V[Benchmarks] -.-> G
+        W[Memory Profiling] -.-> G
+        X[Scalability Tests] -.-> G
+    end
+
+    subgraph "Documentation"
+        Y[README Files] -.-> H
+        Z[API Docs] -.-> H
+        AA[Examples] -.-> H
+        BB[Guides] -.-> H
+    end
+```
+
+## Detailed Module Relationships
 
 ```mermaid
 flowchart LR

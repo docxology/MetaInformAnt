@@ -1,0 +1,470 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Single-Cell Trajectory Analysis &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Single-Cell Trajectory Analysis</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/singlecell/trajectory.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="single-cell-trajectory-analysis">
+<h1>Single-Cell Trajectory Analysis<a class="headerlink" href="#single-cell-trajectory-analysis" title="Link to this heading"></a></h1>
+<p>The trajectory module provides tools for inferring developmental trajectories and pseudotime ordering of cells.</p>
+<section id="pseudotime-inference">
+<h2>Pseudotime Inference<a class="headerlink" href="#pseudotime-inference" title="Link to this heading"></a></h2>
+<section id="compute-pseudotime">
+<h3>compute_pseudotime()<a class="headerlink" href="#compute-pseudotime" title="Link to this heading"></a></h3>
+<p>Infer pseudotime using diffusion maps:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.trajectory</span><span class="w"> </span><span class="kn">import</span> <span class="n">compute_pseudotime</span>
+
+<span class="c1"># Compute pseudotime from diffusion components</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">compute_pseudotime</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">root_cells</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>           <span class="c1"># Auto-detect or specify root cells</span>
+    <span class="n">n_dcs</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>                  <span class="c1"># Number of diffusion components</span>
+    <span class="n">use_rep</span><span class="o">=</span><span class="s1">&#39;X_diffusion&#39;</span>      <span class="c1"># Use diffusion map coordinates</span>
+<span class="p">)</span>
+
+<span class="c1"># Access pseudotime values</span>
+<span class="n">pseudotime</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;pseudotime&#39;</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Pseudotime range: </span><span class="si">{</span><span class="n">pseudotime</span><span class="o">.</span><span class="n">min</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> - </span><span class="si">{</span><span class="n">pseudotime</span><span class="o">.</span><span class="n">max</span><span class="p">()</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">root_cells</span></code>: Indices of root cells (if None, auto-detected)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">n_dcs</span></code>: Number of diffusion components to use</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">use_rep</span></code>: Representation to use for trajectory inference</p></li>
+</ul>
+</section>
+</section>
+<section id="trajectory-analysis">
+<h2>Trajectory Analysis<a class="headerlink" href="#trajectory-analysis" title="Link to this heading"></a></h2>
+<section id="id1">
+<h3>trajectory_analysis()<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<p>Perform comprehensive trajectory analysis:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.trajectory</span><span class="w"> </span><span class="kn">import</span> <span class="n">trajectory_analysis</span>
+
+<span class="c1"># Run full trajectory analysis</span>
+<span class="n">trajectory_results</span> <span class="o">=</span> <span class="n">trajectory_analysis</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">groupby</span><span class="o">=</span><span class="s1">&#39;leiden&#39;</span><span class="p">,</span>          <span class="c1"># Cluster column for trajectory</span>
+    <span class="n">method</span><span class="o">=</span><span class="s1">&#39;mst&#39;</span><span class="p">,</span>              <span class="c1"># Minimum spanning tree</span>
+    <span class="n">root_cluster</span><span class="o">=</span><span class="s1">&#39;0&#39;</span>           <span class="c1"># Starting cluster</span>
+<span class="p">)</span>
+
+<span class="c1"># Results include:</span>
+<span class="c1"># - Trajectory graph</span>
+<span class="c1"># - Branch assignments</span>
+<span class="c1"># - Milestone connections</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="gene-expression-trends">
+<h2>Gene Expression Trends<a class="headerlink" href="#gene-expression-trends" title="Link to this heading"></a></h2>
+<section id="compute-gene-trends">
+<h3>compute_gene_trends()<a class="headerlink" href="#compute-gene-trends" title="Link to this heading"></a></h3>
+<p>Identify genes with significant expression changes along trajectories:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.trajectory</span><span class="w"> </span><span class="kn">import</span> <span class="n">compute_gene_trends</span>
+
+<span class="c1"># Find genes that change along pseudotime</span>
+<span class="n">trends</span> <span class="o">=</span> <span class="n">compute_gene_trends</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">pseudotime_col</span><span class="o">=</span><span class="s1">&#39;pseudotime&#39;</span><span class="p">,</span>
+    <span class="n">n_genes</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>               <span class="c1"># Top variable genes</span>
+    <span class="n">method</span><span class="o">=</span><span class="s1">&#39;gam&#39;</span>               <span class="c1"># Generalized additive models</span>
+<span class="p">)</span>
+
+<span class="c1"># Access trending genes</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Found </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">trends</span><span class="p">)</span><span class="si">}</span><span class="s2"> genes with significant trends&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="lineage-analysis">
+<h2>Lineage Analysis<a class="headerlink" href="#lineage-analysis" title="Link to this heading"></a></h2>
+<section id="identify-lineages">
+<h3>identify_lineages()<a class="headerlink" href="#identify-lineages" title="Link to this heading"></a></h3>
+<p>Identify distinct developmental lineages:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.trajectory</span><span class="w"> </span><span class="kn">import</span> <span class="n">identify_lineages</span>
+
+<span class="c1"># Find developmental lineages</span>
+<span class="n">lineages</span> <span class="o">=</span> <span class="n">identify_lineages</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">trajectory_graph</span><span class="p">,</span>          <span class="c1"># From trajectory_analysis</span>
+    <span class="n">n_lineages</span><span class="o">=</span><span class="mi">3</span>              <span class="c1"># Expected number of lineages</span>
+<span class="p">)</span>
+
+<span class="c1"># Add lineage assignments to data</span>
+<span class="n">data</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;lineage&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">lineages</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="branch-point-analysis">
+<h2>Branch Point Analysis<a class="headerlink" href="#branch-point-analysis" title="Link to this heading"></a></h2>
+<section id="find-branch-genes">
+<h3>find_branch_genes()<a class="headerlink" href="#find-branch-genes" title="Link to this heading"></a></h3>
+<p>Identify genes associated with trajectory branch points:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.trajectory</span><span class="w"> </span><span class="kn">import</span> <span class="n">find_branch_genes</span>
+
+<span class="c1"># Find branch-associated genes</span>
+<span class="n">branch_genes</span> <span class="o">=</span> <span class="n">find_branch_genes</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">branch_point_cells</span><span class="p">,</span>        <span class="c1"># Cells at branch points</span>
+    <span class="n">lineage_assignments</span><span class="p">,</span>       <span class="c1"># Cell lineage assignments</span>
+    <span class="n">min_fold_change</span><span class="o">=</span><span class="mf">2.0</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="visualization">
+<h2>Visualization<a class="headerlink" href="#visualization" title="Link to this heading"></a></h2>
+<section id="trajectory-visualization">
+<h3>Trajectory Visualization<a class="headerlink" href="#trajectory-visualization" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+<span class="c1"># Plot pseudotime on UMAP</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">5</span><span class="p">))</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">scatter</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+    <span class="n">data</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s1">&#39;X_umap&#39;</span><span class="p">][:,</span> <span class="mi">0</span><span class="p">],</span>
+    <span class="n">data</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s1">&#39;X_umap&#39;</span><span class="p">][:,</span> <span class="mi">1</span><span class="p">],</span>
+    <span class="n">c</span><span class="o">=</span><span class="n">data</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;pseudotime&#39;</span><span class="p">],</span>
+    <span class="n">cmap</span><span class="o">=</span><span class="s1">&#39;viridis&#39;</span><span class="p">,</span>
+    <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span>
+<span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">colorbar</span><span class="p">(</span><span class="n">scatter</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;Pseudotime&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;UMAP 1&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;UMAP 2&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Pseudotime on UMAP&#39;</span><span class="p">)</span>
+
+<span class="c1"># Plot gene expression along pseudotime</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+<span class="n">gene_of_interest</span> <span class="o">=</span> <span class="s1">&#39;GENE1&#39;</span>  <span class="c1"># Replace with actual gene</span>
+<span class="k">if</span> <span class="n">gene_of_interest</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
+    <span class="n">gene_expr</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">X</span><span class="p">[:,</span> <span class="n">data</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">index</span> <span class="o">==</span> <span class="n">gene_of_interest</span><span class="p">]</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;pseudotime&#39;</span><span class="p">],</span> <span class="n">gene_expr</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Pseudotime&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">gene_of_interest</span><span class="si">}</span><span class="s1"> Expression&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Gene Expression vs Pseudotime&#39;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="integration-with-other-modules">
+<h2>Integration with Other Modules<a class="headerlink" href="#integration-with-other-modules" title="Link to this heading"></a></h2>
+<section id="preprocessing-for-trajectory-analysis">
+<h3>Preprocessing for Trajectory Analysis<a class="headerlink" href="#preprocessing-for-trajectory-analysis" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Recommended preprocessing for trajectory analysis</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.dimensionality</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+
+<span class="c1"># 1. Standard preprocessing</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">calculate_qc_metrics</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">filter_cells</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">min_genes</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">max_pct_mt</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">normalize_counts</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;total_count&#39;</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">log_transform</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+<span class="c1"># 2. Feature selection and dimensionality reduction</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">select_hvgs</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">n_top_genes</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">compute_pca</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+
+<span class="c1"># 3. Diffusion maps for trajectory analysis</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">compute_diffusion_map</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">compute_neighbors</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">n_neighbors</span><span class="o">=</span><span class="mi">30</span><span class="p">)</span>  <span class="c1"># More neighbors for trajectories</span>
+
+<span class="c1"># 4. Trajectory inference</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">compute_pseudotime</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="advanced-trajectory-methods">
+<h2>Advanced Trajectory Methods<a class="headerlink" href="#advanced-trajectory-methods" title="Link to this heading"></a></h2>
+<section id="multiple-trajectory-algorithms">
+<h3>Multiple Trajectory Algorithms<a class="headerlink" href="#multiple-trajectory-algorithms" title="Link to this heading"></a></h3>
+<p>The module supports multiple trajectory inference methods:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Different trajectory methods</span>
+<span class="n">methods</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;diffusion&#39;</span><span class="p">,</span> <span class="s1">&#39;mst&#39;</span><span class="p">,</span> <span class="s1">&#39;force_directed&#39;</span><span class="p">]</span>
+
+<span class="k">for</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">methods</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;diffusion&#39;</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">compute_pseudotime</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;diffusion&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;mst&#39;</span><span class="p">:</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">trajectory_analysis</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;mst&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;force_directed&#39;</span><span class="p">:</span>
+        <span class="n">results</span> <span class="o">=</span> <span class="n">trajectory_analysis</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;force_directed&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="common-trajectory-patterns">
+<h2>Common Trajectory Patterns<a class="headerlink" href="#common-trajectory-patterns" title="Link to this heading"></a></h2>
+<section id="linear-trajectories">
+<h3>Linear Trajectories<a class="headerlink" href="#linear-trajectories" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># For simple linear differentiation</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">compute_pseudotime</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">n_dcs</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>  <span class="c1"># Fewer components for linear</span>
+</pre></div>
+</div>
+</section>
+<section id="branching-trajectories">
+<h3>Branching Trajectories<a class="headerlink" href="#branching-trajectories" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># For complex branching processes</span>
+<span class="n">data</span> <span class="o">=</span> <span class="n">compute_pseudotime</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">n_dcs</span><span class="o">=</span><span class="mi">15</span><span class="p">)</span>  <span class="c1"># More components for complexity</span>
+<span class="n">lineages</span> <span class="o">=</span> <span class="n">identify_lineages</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">n_lineages</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="cyclic-trajectories">
+<h3>Cyclic Trajectories<a class="headerlink" href="#cyclic-trajectories" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># For cell cycle or other periodic processes</span>
+<span class="c1"># Use circular embedding or specialized methods</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="quality-control">
+<h2>Quality Control<a class="headerlink" href="#quality-control" title="Link to this heading"></a></h2>
+<section id="trajectory-quality-assessment">
+<h3>Trajectory Quality Assessment<a class="headerlink" href="#trajectory-quality-assessment" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">assess_trajectory_quality</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Assess quality of inferred trajectory.&quot;&quot;&quot;</span>
+    
+    <span class="c1"># 1. Pseudotime distribution</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+    
+    <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;pseudotime&#39;</span><span class="p">],</span> <span class="n">bins</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.7</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Pseudotime&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Number of Cells&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Pseudotime Distribution&#39;</span><span class="p">)</span>
+    
+    <span class="c1"># 2. Pseudotime vs clusters</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">cluster</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;leiden&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">():</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;leiden&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">cluster</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="n">mask</span><span class="p">][</span><span class="s1">&#39;pseudotime&#39;</span><span class="p">],</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;Cluster </span><span class="si">{</span><span class="n">cluster</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Pseudotime&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Density&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Pseudotime by Cluster&#39;</span><span class="p">)</span>
+    
+    <span class="c1"># 3. Known marker genes</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">subplot</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+    <span class="c1"># Plot known early vs late markers if available</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s1">&#39;Pseudotime&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s1">&#39;Expression&#39;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s1">&#39;Marker Gene Expression&#39;</span><span class="p">)</span>
+    
+    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+
+<span class="n">assess_trajectory_quality</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="applications">
+<h2>Applications<a class="headerlink" href="#applications" title="Link to this heading"></a></h2>
+<section id="developmental-biology">
+<h3>Developmental Biology<a class="headerlink" href="#developmental-biology" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Embryonic development</strong>: Track cell fate decisions</p></li>
+<li><p><strong>Organogenesis</strong>: Understand tissue formation</p></li>
+<li><p><strong>Stem cell differentiation</strong>: Map lineage relationships</p></li>
+</ul>
+</section>
+<section id="disease-studies">
+<h3>Disease Studies<a class="headerlink" href="#disease-studies" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Cancer progression</strong>: Tumor evolution trajectories</p></li>
+<li><p><strong>Drug response</strong>: Time-course treatment effects</p></li>
+<li><p><strong>Immune responses</strong>: T cell activation dynamics</p></li>
+</ul>
+</section>
+<section id="method-comparison">
+<h3>Method Comparison<a class="headerlink" href="#method-comparison" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Compare different pseudotime methods</span>
+<span class="n">methods</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;diffusion&#39;</span><span class="p">,</span> <span class="s1">&#39;force_directed&#39;</span><span class="p">]</span>
+<span class="n">correlations</span> <span class="o">=</span> <span class="p">{}</span>
+
+<span class="k">for</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">methods</span><span class="p">:</span>
+    <span class="c1"># Compute pseudotime with different methods</span>
+    <span class="n">data_temp</span> <span class="o">=</span> <span class="n">compute_pseudotime</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">)</span>
+    <span class="n">correlations</span><span class="p">[</span><span class="n">method</span><span class="p">]</span> <span class="o">=</span> <span class="n">data_temp</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;pseudotime&#39;</span><span class="p">]</span>
+
+<span class="c1"># Calculate correlation between methods</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="n">correlation_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">corrcoef</span><span class="p">([</span>
+    <span class="n">correlations</span><span class="p">[</span><span class="n">method</span><span class="p">]</span> <span class="k">for</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">methods</span>
+<span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Method correlation matrix:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">correlation_matrix</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Quality control</strong>: Ensure good quality cells before trajectory analysis</p></li>
+<li><p><strong>Sufficient coverage</strong>: Need adequate cells along trajectory</p></li>
+<li><p><strong>Appropriate markers</strong>: Validate with known developmental markers</p></li>
+<li><p><strong>Multiple methods</strong>: Compare results from different algorithms</p></li>
+<li><p><strong>Biological validation</strong>: Confirm with experimental validation</p></li>
+</ol>
+</section>
+<section id="limitations">
+<h2>Limitations<a class="headerlink" href="#limitations" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Requires prior knowledge</strong>: Need to know expected trajectory structure</p></li>
+<li><p><strong>Assumes continuity</strong>: May not work for discrete state transitions</p></li>
+<li><p><strong>Sample coverage</strong>: Sparse sampling can miss intermediate states</p></li>
+<li><p><strong>Technical noise</strong>: Sensitive to technical artifacts</p></li>
+</ul>
+</section>
+<section id="testing">
+<h2>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h2>
+<p>Trajectory analysis functionality is tested as part of the single-cell test suite:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run single-cell tests (includes trajectory examples)</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_singlecell_*.py<span class="w"> </span>-v
+</pre></div>
+</div>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="dimensionality.html"><span class="std std-doc">Dimensionality Reduction</span></a>: For diffusion maps and PCA</p></li>
+<li><p><a class="reference internal" href="clustering.html"><span class="std std-doc">Clustering</span></a>: For identifying cell populations</p></li>
+<li><p><a class="reference internal" href="visualization.html"><span class="std std-doc">Visualization</span></a>: For trajectory plotting</p></li>
+<li><p><a class="reference internal" href="preprocessing.html"><span class="std std-doc">Preprocessing</span></a>: For data preparation</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

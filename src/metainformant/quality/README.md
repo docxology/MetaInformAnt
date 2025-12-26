@@ -38,18 +38,314 @@ graph TB
     All --> Metrics
 ```
 
-### Quality Control Workflow
+### FASTQ Quality Assessment Pipeline
 
 ```mermaid
-flowchart TD
-    Start[Input Data] --> Assess[Assess Quality]
-    Assess --> Metrics[Calculate Metrics]
-    Metrics --> Filter{Quality OK?}
-    Filter -->|Yes| Pass[Pass Data]
-    Filter -->|No| Clean[Clean/Filter]
-    Clean --> Reassess[Reassess]
-    Reassess --> Filter
-    Pass --> Output[Output]
+graph TD
+    A[Raw FASTQ Files] --> B[Per-Base Quality Scores]
+    B --> C[Quality Distribution Analysis]
+
+    A --> D[Read Length Distribution]
+    D --> E[Length Statistics]
+
+    A --> F[Base Composition Analysis]
+    F --> G[GC Content & Bias]
+
+    A --> H[Adapter Content Detection]
+    H --> I[Adapter Trimming Assessment]
+
+    A --> J[Duplicate Read Analysis]
+    J --> K[PCR Duplicate Estimation]
+
+    C --> L[Quality Metrics Aggregation]
+    E --> L
+    G --> L
+    I --> L
+    K --> L
+
+    L --> M{Overall Quality}
+    M -->|High| N[Pass Quality Control]
+    M -->|Medium| O[Flag for Review]
+    M -->|Low| P[Fail Quality Control]
+
+    N --> Q[Proceed to Analysis]
+    O --> R[Manual Inspection]
+    P --> S[Data Rejection]
+
+    R --> T{Acceptable?}
+    T -->|Yes| Q
+    T -->|No| S
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style L fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style Q fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Quality Dimensions"
+        U[Per-Base Quality] -.-> B
+        V[Per-Sequence Quality] -.-> C
+        W[Sequence Length] -.-> D
+        X[Base Content] -.-> F
+        Y[Sequence Duplication] -.-> J
+    end
+
+    subgraph "Assessment Criteria"
+        Z[Mean Quality Score] -.-> M
+        AA[Quality Score Distribution] -.-> M
+        BB[Adapter Content %] -.-> M
+        CC[GC Content Range] -.-> M
+        DD[Duplicate Rate] -.-> M
+    end
+```
+
+### Multi-Omics Data Quality Framework
+
+```mermaid
+graph TD
+    A[Multi-Omics Datasets] --> B{Data Type}
+    B -->|Genomic| C[Variant Quality Control]
+    B -->|Transcriptomic| D[Expression Quality Control]
+    B -->|Proteomic| E[Protein Quality Control]
+    B -->|Epigenomic| F[Methylation Quality Control]
+
+    C --> G[Genotype Calling Quality]
+    C --> H[Missing Data Analysis]
+    C --> I[Allele Frequency Checks]
+
+    D --> J[Library Size Normalization]
+    D --> K[Gene Detection Rate]
+    D --> L[Expression Distribution]
+
+    E --> M[Peptide Identification]
+    E --> N[Protein Quantification]
+    E --> O[Contamination Assessment]
+
+    F --> P[Methylation Beta Values]
+    F --> Q[Detection P-values]
+    F --> R[Probe Performance]
+
+    G --> S[Quality Metrics]
+    H --> S
+    I --> S
+    J --> S
+    K --> S
+    L --> S
+    M --> S
+    N --> S
+    O --> S
+    P --> S
+    Q --> S
+    R --> S
+
+    S --> T[Platform-Specific QC]
+    S --> U[Cross-Platform QC]
+
+    T --> V[Intra-Platform Assessment]
+    U --> W[Inter-Platform Assessment]
+
+    V --> X[Platform-Specific Filters]
+    W --> Y[Harmonization Adjustments]
+
+    X --> Z[Filtered Datasets]
+    Y --> Z
+
+    Z --> AA[Integrated Quality Report]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style S fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style AA fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "QC Metrics Categories"
+        BB[Technical Metrics] -.-> S
+        CC[Biological Metrics] -.-> S
+        DD[Platform-Specific] -.-> T
+        EE[Cross-Platform] -.-> U
+    end
+
+    subgraph "Quality Control Actions"
+        FF[Filter Low-Quality Data] -.-> X
+        GG[Batch Effect Correction] -.-> Y
+        HH[Normalization] -.-> Y
+        II[Imputation] -.-> Y
+    end
+```
+
+### Assembly Quality Assessment
+
+```mermaid
+graph TD
+    A[Genome/Transcriptome Assembly] --> B[N50 Statistics]
+    B --> C[Contig Length Distribution]
+
+    A --> D[Coverage Analysis]
+    D --> E[Read Mapping Statistics]
+
+    A --> F[Completeness Assessment]
+    F --> G[BUSCO Analysis]
+    F --> H[Core Gene Coverage]
+
+    A --> I[Contamination Screening]
+    I --> J[Foreign Sequence Detection]
+
+    A --> K[Structural Validation]
+    K --> L[Synteny Analysis]
+    K --> M[Gene Model Quality]
+
+    C --> N[Assembly Metrics]
+    E --> N
+    G --> N
+    J --> N
+    L --> N
+    M --> N
+
+    N --> O{Assembly Quality}
+    O -->|High| P[Publishable Assembly]
+    O -->|Medium| Q[Improved Assembly Needed]
+    O -->|Low| R[Re-assembly Required]
+
+    P --> S[Downstream Analysis]
+    Q --> T[Gap Filling]
+    R --> U[Additional Sequencing]
+
+    T --> V{Re-assembly?}
+    V -->|Yes| R
+    V -->|No| S
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style N fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style S fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Assembly Statistics"
+        W[Total Length] -.-> B
+        X[Number of Contigs] -.-> B
+        Y[Largest Contig] -.-> B
+        Z[GC Content] -.-> C
+    end
+
+    subgraph "Validation Methods"
+        AA[Read Alignment] -.-> D
+        BB[Reference Comparison] -.-> F
+        CC[BLAST Searches] -.-> I
+        DD[Ortholog Detection] -.-> K
+    end
+```
+
+### Batch Effect Detection and Correction
+
+```mermaid
+graph TD
+    A[Multi-Batch Dataset] --> B[Principal Component Analysis]
+    B --> C[Batch Effect Visualization]
+
+    A --> D[Differential Expression Analysis]
+    D --> E[Batch-Associated Genes]
+
+    A --> F[Correlation Analysis]
+    F --> G[Batch Correlation Patterns]
+
+    A --> H[Clustering Analysis]
+    H --> I[Batch-Specific Clusters]
+
+    C --> J[Batch Effect Assessment]
+    E --> J
+    G --> J
+    I --> J
+
+    J --> K{Batch Effects Present?}
+    K -->|Strong| L[Correction Required]
+    K -->|Moderate| M[Optional Correction]
+    K -->|None| N[Proceed to Analysis]
+
+    L --> O{Correction Method}
+    M --> O
+
+    O -->|ComBat| P[Empirical Bayes Framework]
+    O -->|limma| Q[Linear Mixed Models]
+    O -->|PEER| R[Probabilistic Estimation]
+    O -->|SVA| Q
+
+    P --> S[Corrected Data]
+    Q --> S
+    R --> S
+
+    S --> T[Post-Correction Validation]
+    T --> U{Correction Successful?}
+
+    U -->|Yes| V[Analysis Ready]
+    U -->|No| W[Alternative Method]
+    W --> O
+
+    N --> V
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style J fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style V fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Detection Methods"
+        X[PCA Visualization] -.-> C
+        Y[Heatmaps] -.-> C
+        Z[ANOVA] -.-> E
+        AA[Spearman Correlation] -.-> G
+    end
+
+    subgraph "Correction Approaches"
+        BB[Location/Scale Adjustment] -.-> P
+        CC[Regression-Based] -.-> Q
+        DD[Factor Analysis] -.-> R
+    end
+```
+
+### Quality Control Reporting Framework
+
+```mermaid
+graph TD
+    A[Quality Assessment Results] --> B[Metric Summarization]
+    B --> C[Quality Score Calculation]
+
+    A --> D[Visualization Generation]
+    D --> E[Quality Plots]
+    D --> F[Summary Statistics]
+
+    A --> G[Threshold Evaluation]
+    G --> H[Pass/Fail Criteria]
+
+    C --> I[Quality Report]
+    E --> I
+    F --> I
+    H --> I
+
+    I --> J{Report Format}
+    J -->|HTML| K[Interactive Report]
+    J -->|PDF| L[Static Report]
+    J -->|JSON| M[Structured Data]
+    J -->|MultiQC| N[Multi-Sample Report]
+
+    K --> O[Web-Based QC Review]
+    L --> P[Archival Documentation]
+    M --> Q[Programmatic Access]
+    N --> R[Batch Processing Results]
+
+    O --> S[Quality Assurance Complete]
+    P --> S
+    Q --> S
+    R --> S
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style I fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style S fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Report Components"
+        T[Executive Summary] -.-> I
+        U[Detailed Metrics] -.-> I
+        V[Visualizations] -.-> I
+        W[Recommendations] -.-> I
+    end
+
+    subgraph "Quality Metrics"
+        X[Pass Rate %] -.-> C
+        Y[Mean Quality Score] -.-> C
+        Z[Failure Reasons] -.-> H
+        AA[Improvement Suggestions] -.-> H
+    end
 ```
 
 ## Submodules

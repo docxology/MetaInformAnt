@@ -207,7 +207,7 @@ class TestAmalgkitEndToEnd:
         print("\n✅ Mini workflow completed successfully!")
 
 
-class TestCompleteWorkflowAllSteps:
+class TestWorkflowAllSteps:
     """Test complete workflow with all 11 steps in order."""
 
     def setup_method(self):

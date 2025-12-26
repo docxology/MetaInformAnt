@@ -82,29 +82,29 @@ jobs:
     - name: Setup test environment
       run: |
         echo "Setting up test environment for type: ${{ matrix.test-type }}"
-        bash scripts/package/uv_test_setup.sh --test-type ${{ matrix.test-type }}
+        bash scripts/package/setup.sh
 
     - name: Verify test setup
       run: |
-        bash scripts/package/uv_test_setup.sh --verify-only
+        bash scripts/package/verify.sh --mode setup
 
     - name: Run tests
       run: |
         case "${{ matrix.test-type }}" in
           "fast")
-            bash scripts/package/uv_test_optimized.sh fast
+            bash scripts/package/test.sh --mode fast
             ;;
           "network")
-            bash scripts/package/uv_test.sh network
+            bash scripts/package/test.sh --mode network
             ;;
           "external")
-            bash scripts/package/uv_test.sh external
+            bash scripts/package/test.sh --mode external
             ;;
           "all")
-            bash scripts/package/uv_test.sh coverage
+            bash scripts/package/test.sh --mode coverage
             ;;
           *)
-            bash scripts/package/uv_test.sh all
+            bash scripts/package/test.sh --mode all
             ;;
         esac
 
@@ -142,7 +142,7 @@ jobs:
       run: uv python install 3.12
 
     - name: Setup test environment
-      run: bash scripts/package/uv_test_setup.sh --test-type fast
+      run: bash scripts/package/setup.sh
 
     - name: Test test infrastructure
       run: uv run pytest tests/test_test_infrastructure.py -v
@@ -162,7 +162,7 @@ jobs:
       run: uv python install 3.12
 
     - name: Setup development environment
-      run: bash scripts/package/uv_dev_setup.sh
+      run: bash scripts/package/setup.sh --dev
 
     - name: Run code quality checks
       run: |
@@ -175,6 +175,46 @@ jobs:
       run: |
         uv run bandit -r src/ -f json -o output/security_report.json || true
         uv run safety check --output json > output/safety_report.json || true
+
+  test-examples:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+        enable-cache: true
+        cache-dependency-glob: "uv.lock"
+
+    - name: Set up Python 3.12
+      run: uv python install 3.12
+
+    - name: Setup test environment
+      run: bash scripts/package/setup.sh
+
+    - name: Run example tests
+      run: |
+        uv run python scripts/test_examples.py --continue-on-error --junit-xml
+
+    - name: Publish Test Results
+      uses: EnricoMi/publish-unit-test-result-action@v2
+      if: always()
+      with:
+        files: output/examples/junit_report.xml
+
+    - name: Upload example test artifacts
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: example-test-results-${{ github.run_id }}
+        path: |
+          output/examples/
+          !output/examples/**/*.png
+          !output/examples/**/*.pdf
+        retention-days: 7
 
   fat-filesystem-test:
     runs-on: ubuntu-latest
@@ -208,8 +248,8 @@ jobs:
     - name: Test on simulated FAT filesystem
       run: |
         cd /tmp/fat_test
-        bash scripts/package/uv_test_setup.sh --test-type fast
-        bash scripts/package/uv_test_optimized.sh fast
+        bash scripts/package/setup.sh
+        bash scripts/package/test.sh --mode fast
 
   summary:
     runs-on: ubuntu-latest

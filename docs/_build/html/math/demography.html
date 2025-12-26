@@ -1,0 +1,380 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Math: Demographic Models &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Math: Demographic Models</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/math/demography.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="math-demographic-models">
+<h1>Math: Demographic Models<a class="headerlink" href="#math-demographic-models" title="Link to this heading"></a></h1>
+<p>Demographic models for population genetics analysis.</p>
+<p><strong>Functions</strong>: <code class="docutils literal notranslate"><span class="pre">exponential_growth_effective_size</span></code>, <code class="docutils literal notranslate"><span class="pre">bottleneck_effective_size</span></code>, <code class="docutils literal notranslate"><span class="pre">two_epoch_effective_size</span></code>.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>Demographic history (population size changes) affects genetic diversity and the distribution of polymorphisms. This module provides basic demographic models to estimate effective population size under different demographic scenarios.</p>
+</section>
+<section id="functions">
+<h2>Functions<a class="headerlink" href="#functions" title="Link to this heading"></a></h2>
+<section id="exponential-growth-effective-size-current-size-growth-rate-generations">
+<h3><code class="docutils literal notranslate"><span class="pre">exponential_growth_effective_size(current_size,</span> <span class="pre">growth_rate,</span> <span class="pre">generations)</span></code><a class="headerlink" href="#exponential-growth-effective-size-current-size-growth-rate-generations" title="Link to this heading"></a></h3>
+<p>Calculate effective population size under exponential growth.</p>
+<p><strong>Parameters</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">current_size</span></code>: Current population size (N_t)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">growth_rate</span></code>: Per-generation growth rate ®. Positive for growth, negative for decline</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">generations</span></code>: Number of generations over which to calculate harmonic mean</p></li>
+</ul>
+<p><strong>Returns</strong>: Effective population size (harmonic mean)</p>
+<p><strong>Formula</strong>: Under exponential growth N(t) = N₀ × e^(r×t), the effective size is the harmonic mean: Ne = t / Σ(1/N_i)</p>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.math.demography</span><span class="w"> </span><span class="kn">import</span> <span class="n">exponential_growth_effective_size</span>
+
+<span class="c1"># Population growing from ~1000 to 10000 over 10 generations</span>
+<span class="n">ne</span> <span class="o">=</span> <span class="n">exponential_growth_effective_size</span><span class="p">(</span>
+    <span class="n">current_size</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span>
+    <span class="n">growth_rate</span><span class="o">=</span><span class="mf">0.23</span><span class="p">,</span>  <span class="c1"># ~23% per generation</span>
+    <span class="n">generations</span><span class="o">=</span><span class="mi">10</span>
+<span class="p">)</span>
+<span class="c1"># Returns: ~4342 (harmonic mean of sizes over time)</span>
+</pre></div>
+</div>
+</section>
+<section id="bottleneck-effective-size-pre-bottleneck-size-bottleneck-size-bottleneck-duration-recovery-generations-0">
+<h3><code class="docutils literal notranslate"><span class="pre">bottleneck_effective_size(pre_bottleneck_size,</span> <span class="pre">bottleneck_size,</span> <span class="pre">bottleneck_duration,</span> <span class="pre">recovery_generations=0)</span></code><a class="headerlink" href="#bottleneck-effective-size-pre-bottleneck-size-bottleneck-size-bottleneck-duration-recovery-generations-0" title="Link to this heading"></a></h3>
+<p>Calculate effective population size through a bottleneck.</p>
+<p><strong>Parameters</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">pre_bottleneck_size</span></code>: Population size before bottleneck</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bottleneck_size</span></code>: Population size during bottleneck</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">bottleneck_duration</span></code>: Number of generations at bottleneck size</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">recovery_generations</span></code>: Number of generations after bottleneck (default: 0)</p></li>
+</ul>
+<p><strong>Returns</strong>: Effective population size (harmonic mean)</p>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.math.demography</span><span class="w"> </span><span class="kn">import</span> <span class="n">bottleneck_effective_size</span>
+
+<span class="c1"># Severe bottleneck: 10000 → 100 for 5 generations</span>
+<span class="n">ne</span> <span class="o">=</span> <span class="n">bottleneck_effective_size</span><span class="p">(</span>
+    <span class="n">pre_bottleneck_size</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span>
+    <span class="n">bottleneck_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">bottleneck_duration</span><span class="o">=</span><span class="mi">5</span>
+<span class="p">)</span>
+<span class="c1"># Returns: ~109 (heavily weighted by bottleneck)</span>
+
+<span class="c1"># With recovery to original size over 10 generations</span>
+<span class="n">ne_recovery</span> <span class="o">=</span> <span class="n">bottleneck_effective_size</span><span class="p">(</span>
+    <span class="n">pre_bottleneck_size</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span>
+    <span class="n">bottleneck_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">bottleneck_duration</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">recovery_generations</span><span class="o">=</span><span class="mi">10</span>
+<span class="p">)</span>
+<span class="c1"># Returns: ~200 (recovery improves effective size)</span>
+</pre></div>
+</div>
+</section>
+<section id="two-epoch-effective-size-ancient-size-current-size-time-since-change">
+<h3><code class="docutils literal notranslate"><span class="pre">two_epoch_effective_size(ancient_size,</span> <span class="pre">current_size,</span> <span class="pre">time_since_change)</span></code><a class="headerlink" href="#two-epoch-effective-size-ancient-size-current-size-time-since-change" title="Link to this heading"></a></h3>
+<p>Calculate effective population size for two-epoch model.</p>
+<p><strong>Parameters</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ancient_size</span></code>: Population size before change</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">current_size</span></code>: Population size after change</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">time_since_change</span></code>: Number of generations since size change</p></li>
+</ul>
+<p><strong>Returns</strong>: Effective population size (harmonic mean)</p>
+<p><strong>Example</strong>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.math.demography</span><span class="w"> </span><span class="kn">import</span> <span class="n">two_epoch_effective_size</span>
+
+<span class="c1"># Population expansion: 1000 → 10000, 50 generations ago</span>
+<span class="n">ne</span> <span class="o">=</span> <span class="n">two_epoch_effective_size</span><span class="p">(</span>
+    <span class="n">ancient_size</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">current_size</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span>
+    <span class="n">time_since_change</span><span class="o">=</span><span class="mi">50</span>
+<span class="p">)</span>
+<span class="c1"># Returns: ~1960 (harmonic mean of 1000 and 10000)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="use-cases">
+<h2>Use Cases<a class="headerlink" href="#use-cases" title="Link to this heading"></a></h2>
+<section id="interpreting-genetic-diversity">
+<h3>1. Interpreting Genetic Diversity<a class="headerlink" href="#interpreting-genetic-diversity" title="Link to this heading"></a></h3>
+<p>Effective population size affects genetic diversity:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.math.demography</span><span class="w"> </span><span class="kn">import</span> <span class="n">exponential_growth_effective_size</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.dna.population</span><span class="w"> </span><span class="kn">import</span> <span class="n">nucleotide_diversity</span>
+
+<span class="c1"># Calculate diversity</span>
+<span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;AAAA&quot;</span><span class="p">,</span> <span class="s2">&quot;AAAT&quot;</span><span class="p">,</span> <span class="s2">&quot;AATT&quot;</span><span class="p">]</span>
+<span class="n">pi</span> <span class="o">=</span> <span class="n">nucleotide_diversity</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span>
+
+<span class="c1"># Estimate effective size from growth model</span>
+<span class="n">ne</span> <span class="o">=</span> <span class="n">exponential_growth_effective_size</span><span class="p">(</span>
+    <span class="n">current_size</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span>
+    <span class="n">growth_rate</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
+    <span class="n">generations</span><span class="o">=</span><span class="mi">100</span>
+<span class="p">)</span>
+
+<span class="c1"># Compare observed diversity to expected under model</span>
+<span class="c1"># (requires mutation rate)</span>
+</pre></div>
+</div>
+</section>
+<section id="modeling-population-history">
+<h3>2. Modeling Population History<a class="headerlink" href="#modeling-population-history" title="Link to this heading"></a></h3>
+<p>Combine multiple demographic events:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.math.demography</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">bottleneck_effective_size</span><span class="p">,</span>
+    <span class="n">exponential_growth_effective_size</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Model: Bottleneck, then recovery and growth</span>
+<span class="c1"># Step 1: Bottleneck</span>
+<span class="n">ne_bottleneck</span> <span class="o">=</span> <span class="n">bottleneck_effective_size</span><span class="p">(</span>
+    <span class="n">pre_bottleneck_size</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span>
+    <span class="n">bottleneck_size</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span>
+    <span class="n">bottleneck_duration</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">recovery_generations</span><span class="o">=</span><span class="mi">10</span>
+<span class="p">)</span>
+
+<span class="c1"># Step 2: Growth after recovery</span>
+<span class="n">ne_growth</span> <span class="o">=</span> <span class="n">exponential_growth_effective_size</span><span class="p">(</span>
+    <span class="n">current_size</span><span class="o">=</span><span class="mi">10000</span><span class="p">,</span>
+    <span class="n">growth_rate</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+    <span class="n">generations</span><span class="o">=</span><span class="mi">50</span>
+<span class="p">)</span>
+
+<span class="c1"># Overall effective size is dominated by bottleneck</span>
+</pre></div>
+</div>
+</section>
+<section id="comparing-demographic-models">
+<h3>3. Comparing Demographic Models<a class="headerlink" href="#comparing-demographic-models" title="Link to this heading"></a></h3>
+<p>Compare different demographic scenarios:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.math.demography</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+    <span class="n">exponential_growth_effective_size</span><span class="p">,</span>
+    <span class="n">two_epoch_effective_size</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Model 1: Exponential growth</span>
+<span class="n">ne_exp</span> <span class="o">=</span> <span class="n">exponential_growth_effective_size</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+
+<span class="c1"># Model 2: Two-epoch (sudden change)</span>
+<span class="n">ne_epoch</span> <span class="o">=</span> <span class="n">two_epoch_effective_size</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">10000</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>
+
+<span class="c1"># Compare effective sizes</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Exponential growth Ne: </span><span class="si">{</span><span class="n">ne_exp</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Two-epoch Ne: </span><span class="si">{</span><span class="n">ne_epoch</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="theory">
+<h2>Theory<a class="headerlink" href="#theory" title="Link to this heading"></a></h2>
+<section id="harmonic-mean">
+<h3>Harmonic Mean<a class="headerlink" href="#harmonic-mean" title="Link to this heading"></a></h3>
+<p>Effective population size under changing population size is the harmonic mean:</p>
+<p>Ne = t / (1/N₁ + 1/N₂ + … + 1/Nₜ)</p>
+<p>This reflects that coalescence rates are inversely proportional to population size, so periods of small population size dominate the effective size.</p>
+</section>
+<section id="exponential-growth">
+<h3>Exponential Growth<a class="headerlink" href="#exponential-growth" title="Link to this heading"></a></h3>
+<p>Under exponential growth: N(t) = N₀ × e^(r×t)</p>
+<p>The effective size is less than the current size because the harmonic mean is weighted by the smaller historical sizes.</p>
+</section>
+<section id="bottlenecks">
+<h3>Bottlenecks<a class="headerlink" href="#bottlenecks" title="Link to this heading"></a></h3>
+<p>Bottlenecks dramatically reduce effective population size because:</p>
+<ol class="arabic simple">
+<li><p>Small population sizes during bottleneck dominate harmonic mean</p></li>
+<li><p>Genetic drift is much stronger during bottleneck</p></li>
+<li><p>Recovery period may not fully compensate</p></li>
+</ol>
+</section>
+</section>
+<section id="limitations">
+<h2>Limitations<a class="headerlink" href="#limitations" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Deterministic models</strong>: These models assume deterministic population size changes. Stochastic fluctuations are not modeled.</p></li>
+<li><p><strong>Simple scenarios</strong>: Complex demographic histories (multiple bottlenecks, migration, etc.) require more sophisticated models.</p></li>
+<li><p><strong>No migration</strong>: Models assume isolated populations. Migration would require additional parameters.</p></li>
+<li><p><strong>No selection</strong>: Models assume neutral evolution. Selection would affect genetic diversity differently.</p></li>
+</ol>
+</section>
+<section id="integration-with-other-modules">
+<h2>Integration with Other Modules<a class="headerlink" href="#integration-with-other-modules" title="Link to this heading"></a></h2>
+<section id="with-coalescent-theory">
+<h3>With Coalescent Theory<a class="headerlink" href="#with-coalescent-theory" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.math.demography</span><span class="w"> </span><span class="kn">import</span> <span class="n">exponential_growth_effective_size</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.math.coalescent</span><span class="w"> </span><span class="kn">import</span> <span class="n">expected_segregating_sites</span>
+
+<span class="c1"># Calculate expected diversity under demographic model</span>
+<span class="n">ne</span> <span class="o">=</span> <span class="n">exponential_growth_effective_size</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+<span class="n">theta</span> <span class="o">=</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">ne</span> <span class="o">*</span> <span class="mf">0.0001</span>  <span class="c1"># Assuming mutation rate μ = 0.0001</span>
+<span class="n">S_expected</span> <span class="o">=</span> <span class="n">expected_segregating_sites</span><span class="p">(</span>
+    <span class="n">sample_size</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">theta</span><span class="o">=</span><span class="n">theta</span><span class="p">,</span>
+    <span class="n">sequence_length</span><span class="o">=</span><span class="mi">1000</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="with-effective-size-estimators">
+<h3>With Effective Size Estimators<a class="headerlink" href="#with-effective-size-estimators" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.math.demography</span><span class="w"> </span><span class="kn">import</span> <span class="n">bottleneck_effective_size</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.math.popgen</span><span class="w"> </span><span class="kn">import</span> <span class="n">effective_population_size_from_heterozygosity</span>
+
+<span class="c1"># Estimate Ne from observed heterozygosity</span>
+<span class="n">observed_H</span> <span class="o">=</span> <span class="mf">0.3</span>
+<span class="n">mutation_rate</span> <span class="o">=</span> <span class="mf">0.0001</span>
+<span class="n">ne_estimated</span> <span class="o">=</span> <span class="n">effective_population_size_from_heterozygosity</span><span class="p">(</span>
+    <span class="n">observed_heterozygosity</span><span class="o">=</span><span class="n">observed_H</span><span class="p">,</span>
+    <span class="n">mutation_rate</span><span class="o">=</span><span class="n">mutation_rate</span><span class="p">,</span>
+    <span class="n">ploidy</span><span class="o">=</span><span class="mi">2</span>
+<span class="p">)</span>
+
+<span class="c1"># Compare to demographic model</span>
+<span class="n">ne_model</span> <span class="o">=</span> <span class="n">bottleneck_effective_size</span><span class="p">(</span><span class="mi">10000</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="references">
+<h2>References<a class="headerlink" href="#references" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Nei, M., Maruyama, T., &amp; Chakraborty, R. (1975)</strong>. The bottleneck effect and genetic variability in populations. <em>Evolution</em>, 29(1), 1-10.</p></li>
+<li><p><strong>Maruyama, T., &amp; Fuerst, P. A. (1984)</strong>. Population bottlenecks and nonequilibrium models in population genetics. I. Allele numbers when populations evolve from zero variability. <em>Genetics</em>, 108(3), 745-763.</p></li>
+<li><p><strong>Slatkin, M., &amp; Hudson, R. R. (1991)</strong>. Pairwise comparisons of mitochondrial DNA sequences in stable and exponentially growing populations. <em>Genetics</em>, 129(2), 555-562.</p></li>
+</ul>
+</section>
+<section id="see-also">
+<h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="effective_size.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">math.effective_size</span></code></span></a> - Effective population size estimators</p></li>
+<li><p><a class="reference internal" href="coalescent.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">math.coalescent</span></code></span></a> - Coalescent theory and expected diversity</p></li>
+<li><p><a class="reference internal" href="popgen.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">math.popgen</span></code></span></a> - Population genetics models</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,238 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Installing Bioinformatics Tools for Genome-Scale GWAS &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Installing Bioinformatics Tools for Genome-Scale GWAS</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/gwas/INSTALL_TOOLS.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="installing-bioinformatics-tools-for-genome-scale-gwas">
+<h1>Installing Bioinformatics Tools for Genome-Scale GWAS<a class="headerlink" href="#installing-bioinformatics-tools-for-genome-scale-gwas" title="Link to this heading"></a></h1>
+<section id="required-tools">
+<h2>Required Tools<a class="headerlink" href="#required-tools" title="Link to this heading"></a></h2>
+<p>To process genome-scale data from SRA to variants, you need:</p>
+<ol class="arabic simple">
+<li><p><strong>BWA</strong> (Burrows-Wheeler Aligner) - Read alignment</p></li>
+<li><p><strong>SAMtools</strong> - BAM file manipulation</p></li>
+<li><p><strong>bcftools</strong> - Variant calling and VCF processing</p></li>
+</ol>
+</section>
+<section id="installation-instructions">
+<h2>Installation Instructions<a class="headerlink" href="#installation-instructions" title="Link to this heading"></a></h2>
+<section id="ubuntu-debian">
+<h3>Ubuntu/Debian<a class="headerlink" href="#ubuntu-debian" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt-get<span class="w"> </span>update
+sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>bwa<span class="w"> </span>samtools<span class="w"> </span>bcftools
+</pre></div>
+</div>
+</section>
+<section id="macos-homebrew">
+<h3>macOS (Homebrew)<a class="headerlink" href="#macos-homebrew" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>brew<span class="w"> </span>install<span class="w"> </span>bwa<span class="w"> </span>samtools<span class="w"> </span>bcftools
+</pre></div>
+</div>
+</section>
+<section id="conda-cross-platform">
+<h3>Conda (Cross-platform)<a class="headerlink" href="#conda-cross-platform" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>bioconda<span class="w"> </span>bwa<span class="w"> </span>samtools<span class="w"> </span>bcftools
+</pre></div>
+</div>
+</section>
+<section id="verify-installation">
+<h3>Verify Installation<a class="headerlink" href="#verify-installation" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bwa<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-3
+samtools<span class="w"> </span>--version
+bcftools<span class="w"> </span>--version
+</pre></div>
+</div>
+<p>Expected output should show version information for each tool.</p>
+</section>
+</section>
+<section id="tool-versions-tested">
+<h2>Tool Versions Tested<a class="headerlink" href="#tool-versions-tested" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>BWA: v0.7.17 or higher</p></li>
+<li><p>SAMtools: v1.15 or higher</p></li>
+<li><p>bcftools: v1.15 or higher</p></li>
+</ul>
+</section>
+<section id="disk-space-requirements">
+<h2>Disk Space Requirements<a class="headerlink" href="#disk-space-requirements" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Raw FASTQ: ~10-15 GB (3-5 samples)</p></li>
+<li><p>Aligned BAM: ~4-8 GB</p></li>
+<li><p>Variant VCF: ~500 MB - 1 GB</p></li>
+<li><p><strong>Total</strong>: ~20-30 GB for complete workflow</p></li>
+<li><p><strong>Recommended</strong>: 50-100 GB free space</p></li>
+</ul>
+</section>
+<section id="memory-requirements">
+<h2>Memory Requirements<a class="headerlink" href="#memory-requirements" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>Alignment (BWA): 4-8 GB RAM</p></li>
+<li><p>Variant calling (bcftools): 2-4 GB RAM</p></li>
+<li><p>GWAS analysis: 2-8 GB RAM</p></li>
+</ul>
+</section>
+<section id="alternative-docker-container">
+<h2>Alternative: Docker Container<a class="headerlink" href="#alternative-docker-container" title="Link to this heading"></a></h2>
+<p>If you prefer containerization:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker<span class="w"> </span>pull<span class="w"> </span>biocontainers/bwa:v0.7.17-3-deb_cv1
+docker<span class="w"> </span>pull<span class="w"> </span>biocontainers/samtools:v1.9-4-deb_cv1
+docker<span class="w"> </span>pull<span class="w"> </span>biocontainers/bcftools:v1.9-1-deb_cv1
+</pre></div>
+</div>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="command-not-found-errors">
+<h3>“Command not found” errors<a class="headerlink" href="#command-not-found-errors" title="Link to this heading"></a></h3>
+<p>Ensure tools are in your PATH:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:/usr/local/bin
+</pre></div>
+</div>
+</section>
+<section id="permission-denied">
+<h3>Permission denied<a class="headerlink" href="#permission-denied" title="Link to this heading"></a></h3>
+<p>Use sudo for installation or install to user directory with conda</p>
+</section>
+<section id="out-of-memory">
+<h3>Out of memory<a class="headerlink" href="#out-of-memory" title="Link to this heading"></a></h3>
+<p>Reduce thread count in scripts (use -t 4 instead of -t 8)</p>
+</section>
+</section>
+<section id="next-steps">
+<h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading"></a></h2>
+<p>After installation, verify with:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bash<span class="w"> </span>scripts/check_tools.sh
+</pre></div>
+</div>
+<p>Then proceed with genome-scale workflow:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bash<span class="w"> </span>scripts/download_genome_scale_data.sh<span class="w">  </span><span class="c1"># Already running</span>
+bash<span class="w"> </span>scripts/align_samples.sh
+bash<span class="w"> </span>scripts/call_variants.sh
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

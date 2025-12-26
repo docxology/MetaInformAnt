@@ -1,6 +1,129 @@
 # Configuration Directory
 
-This directory contains repository-level configuration files used by METAINFORMANT for various tools and workflows, with a focus on RNA-seq and GWAS analysis configurations for ant species.
+This directory contains repository-level configuration files used by METAINFORMANT for various tools and workflows, with a focus on RNA-seq and GWAS analysis configurations for ant species. The configuration system provides a flexible, hierarchical approach to managing complex bioinformatics workflows.
+
+## Configuration Architecture
+
+```mermaid
+graph TD
+    A[Configuration Sources] --> B[YAML Files]
+    B --> C[Environment Variables]
+    C --> D[Command Line Args]
+
+    D --> E[Config Processing]
+    E --> F[Validation]
+    F --> G[Type Coercion]
+
+    G --> H[Final Configuration]
+    H --> I[Workflow Execution]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style E fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style I fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Configuration Hierarchy"
+        J[Repository Defaults] -.-> B
+        K[User Overrides] -.-> C
+        L[Runtime Parameters] -.-> D
+    end
+
+    subgraph "Processing Pipeline"
+        M[Schema Validation] -.-> F
+        N[Parameter Merging] -.-> E
+        O[Type Conversion] -.-> G
+    end
+
+    subgraph "Workflow Integration"
+        P[RNA-seq Workflows] -.-> I
+        Q[GWAS Pipelines] -.-> I
+        R[Multi-omic Analysis] -.-> I
+    end
+```
+
+## Automated Species Discovery System
+
+```mermaid
+graph TD
+    A[Target Organism] --> B[SRA Search]
+    B --> C[RNA-seq Datasets]
+
+    A --> D[NCBI Assembly DB]
+    D --> E[Genome Assemblies]
+
+    C --> F[Sample Filtering]
+    F --> G[Quality Assessment]
+
+    E --> H[Assembly Ranking]
+    H --> I[Best Assembly Selection]
+
+    G --> J[Configuration Generation]
+    I --> J
+
+    J --> K[YAML Configuration]
+    K --> L[Workflow Ready]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style J fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style L fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Discovery Pipeline"
+        M[Taxonomy ID] -.-> B
+        N[Scientific Name] -.-> B
+        O[Common Name] -.-> B
+    end
+
+    subgraph "Quality Metrics"
+        P[Sample Count] -.-> G
+        Q[Read Length] -.-> G
+        R[Sequencing Tech] -.-> G
+    end
+
+    subgraph "Assembly Criteria"
+        S[RefSeq Status] -.-> H
+        T[Contiguity] -.-> H
+        U[Annotation] -.-> H
+        V[Completeness] -.-> H
+    end
+```
+
+## Configuration Template System
+
+```mermaid
+graph TD
+    A[Template YAML] --> B[Parameter Substitution]
+    B --> C[Species-specific Values]
+
+    C --> D[Validation]
+    D --> E[Final Configuration]
+
+    E --> F[Workflow Execution]
+    F --> G[Results]
+
+    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style D fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style G fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+
+    subgraph "Template Components"
+        H[Genome References] -.-> A
+        I[Workflow Parameters] -.-> A
+        J[Output Paths] -.-> A
+        K[Resource Settings] -.-> A
+    end
+
+    subgraph "Substitution Logic"
+        L[Taxonomy IDs] -.-> B
+        M[Assembly Accessions] -.-> B
+        N[FTP URLs] -.-> B
+        O[Species Names] -.-> B
+    end
+
+    subgraph "Validation Checks"
+        P[File Existence] -.-> D
+        Q[Parameter Types] -.-> D
+        R[URL Accessibility] -.-> D
+        S[Reference Integrity] -.-> D
+    end
+```
 
 ## Directory Structure
 

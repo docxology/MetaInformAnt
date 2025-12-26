@@ -1,0 +1,414 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Networks: Graph Analysis &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Networks: Graph Analysis</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/networks/graph.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="networks-graph-analysis">
+<h1>Networks: Graph Analysis<a class="headerlink" href="#networks-graph-analysis" title="Link to this heading"></a></h1>
+<p>The graph analysis module provides fundamental graph operations, metrics, and utilities for biological network analysis.</p>
+<section id="network-creation">
+<h2>Network Creation<a class="headerlink" href="#network-creation" title="Link to this heading"></a></h2>
+<section id="create-network">
+<h3>create_network()<a class="headerlink" href="#create-network" title="Link to this heading"></a></h3>
+<p>Create biological networks from various data sources:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.networks</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_network</span><span class="p">,</span> <span class="n">add_edges_from_interactions</span><span class="p">,</span> <span class="n">add_edges_from_correlation</span>
+
+<span class="c1"># Create from edge list</span>
+<span class="n">nodes</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;gene1&quot;</span><span class="p">,</span> <span class="s2">&quot;gene2&quot;</span><span class="p">,</span> <span class="s2">&quot;gene3&quot;</span><span class="p">]</span>
+<span class="n">network</span> <span class="o">=</span> <span class="n">create_network</span><span class="p">(</span><span class="n">nodes</span><span class="p">,</span> <span class="n">directed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="c1"># Add edges from interaction list</span>
+<span class="n">interactions</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s2">&quot;gene1&quot;</span><span class="p">,</span> <span class="s2">&quot;gene2&quot;</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;gene2&quot;</span><span class="p">,</span> <span class="s2">&quot;gene3&quot;</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;gene3&quot;</span><span class="p">,</span> <span class="s2">&quot;gene1&quot;</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">)</span>
+<span class="p">]</span>
+
+<span class="n">add_edges_from_interactions</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">interactions</span><span class="p">)</span>
+
+<span class="c1"># Create from correlation matrix</span>
+<span class="n">correlation_matrix</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+<span class="n">correlation_network</span> <span class="o">=</span> <span class="n">create_network</span><span class="p">(</span><span class="n">correlation_matrix</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+
+<span class="c1"># Add correlation-based edges</span>
+<span class="n">add_edges_from_correlation</span><span class="p">(</span>
+    <span class="n">correlation_network</span><span class="p">,</span>
+    <span class="n">correlation_matrix</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
+    <span class="n">correlation_matrix</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span>
+    <span class="n">threshold</span><span class="o">=</span><span class="mf">0.7</span>           <span class="c1"># Minimum correlation</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="add-edges-from-correlation">
+<h3>add_edges_from_correlation()<a class="headerlink" href="#add-edges-from-correlation" title="Link to this heading"></a></h3>
+<p>Add edges based on correlation between node features:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.networks</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_edges_from_correlation</span>
+
+<span class="c1"># Add correlation-based edges</span>
+<span class="n">add_edges_from_correlation</span><span class="p">(</span>
+    <span class="n">network</span><span class="p">,</span>
+    <span class="n">node_features</span><span class="p">,</span>           <span class="c1"># Feature matrix (nodes × features)</span>
+    <span class="n">threshold</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>          <span class="c1"># Minimum correlation</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;pearson&quot;</span><span class="p">,</span>       <span class="c1"># Correlation method</span>
+    <span class="n">max_edges</span><span class="o">=</span><span class="mi">1000</span>          <span class="c1"># Limit number of edges</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="add-edges-from-interactions">
+<h3>add_edges_from_interactions()<a class="headerlink" href="#add-edges-from-interactions" title="Link to this heading"></a></h3>
+<p>Add edges from known biological interactions:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.networks</span><span class="w"> </span><span class="kn">import</span> <span class="n">add_edges_from_interactions</span>
+
+<span class="c1"># Add known interactions</span>
+<span class="n">interactions</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="s2">&quot;TF1&quot;</span><span class="p">,</span> <span class="s2">&quot;target&quot;</span><span class="p">:</span> <span class="s2">&quot;gene1&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;regulation&quot;</span><span class="p">,</span> <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">},</span>
+    <span class="p">{</span><span class="s2">&quot;source&quot;</span><span class="p">:</span> <span class="s2">&quot;gene1&quot;</span><span class="p">,</span> <span class="s2">&quot;target&quot;</span><span class="p">:</span> <span class="s2">&quot;gene2&quot;</span><span class="p">,</span> <span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;interaction&quot;</span><span class="p">,</span> <span class="s2">&quot;confidence&quot;</span><span class="p">:</span> <span class="mf">0.7</span><span class="p">}</span>
+<span class="p">]</span>
+
+<span class="n">add_edges_from_interactions</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">interactions</span><span class="p">,</span> <span class="n">confidence_threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="network-metrics">
+<h2>Network Metrics<a class="headerlink" href="#network-metrics" title="Link to this heading"></a></h2>
+<section id="id1">
+<h3>network_metrics()<a class="headerlink" href="#id1" title="Link to this heading"></a></h3>
+<p>Calculate comprehensive network statistics:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.networks</span><span class="w"> </span><span class="kn">import</span> <span class="n">network_metrics</span>
+
+<span class="c1"># Get basic network metrics</span>
+<span class="n">metrics</span> <span class="o">=</span> <span class="n">network_metrics</span><span class="p">(</span><span class="n">network</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Nodes: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;n_nodes&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Edges: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;n_edges&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Average degree: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;avg_degree&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Density: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;density&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Clustering coefficient: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;clustering_coeff&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Available metrics:</strong></p>
+<ul class="simple">
+<li><p>Number of nodes and edges</p></li>
+<li><p>Average degree and degree distribution</p></li>
+<li><p>Network density</p></li>
+<li><p>Clustering coefficient</p></li>
+<li><p>Connected components</p></li>
+<li><p>Diameter (if connected)</p></li>
+<li><p>Average shortest path length</p></li>
+</ul>
+</section>
+<section id="centrality-measures">
+<h3>centrality_measures()<a class="headerlink" href="#centrality-measures" title="Link to this heading"></a></h3>
+<p>Calculate node centrality measures:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.networks</span><span class="w"> </span><span class="kn">import</span> <span class="n">centrality_measures</span>
+
+<span class="c1"># Calculate all centrality measures</span>
+<span class="n">centrality</span> <span class="o">=</span> <span class="n">centrality_measures</span><span class="p">(</span><span class="n">network</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Top 5 nodes by degree centrality:&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">node</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">centrality</span><span class="p">[</span><span class="s1">&#39;degree&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)[:</span><span class="mi">5</span><span class="p">]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">node</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">score</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Top 5 nodes by betweenness centrality:&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">node</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">centrality</span><span class="p">[</span><span class="s1">&#39;betweenness&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">(),</span> <span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="kc">True</span><span class="p">)[:</span><span class="mi">5</span><span class="p">]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">node</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">score</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Available measures:</strong></p>
+<ul class="simple">
+<li><p><strong>Degree centrality</strong>: Number of connections</p></li>
+<li><p><strong>Betweenness centrality</strong>: Control over information flow</p></li>
+<li><p><strong>Closeness centrality</strong>: Distance to other nodes</p></li>
+<li><p><strong>Eigenvector centrality</strong>: Influence in the network</p></li>
+<li><p><strong>PageRank</strong>: Importance based on link structure</p></li>
+</ul>
+</section>
+</section>
+<section id="shortest-paths">
+<h2>Shortest Paths<a class="headerlink" href="#shortest-paths" title="Link to this heading"></a></h2>
+<section id="id2">
+<h3>shortest_paths()<a class="headerlink" href="#id2" title="Link to this heading"></a></h3>
+<p>Find shortest paths between nodes:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.networks</span><span class="w"> </span><span class="kn">import</span> <span class="n">shortest_paths</span>
+
+<span class="c1"># Find shortest path between two nodes</span>
+<span class="n">path</span> <span class="o">=</span> <span class="n">shortest_paths</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;gene1&quot;</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="s2">&quot;gene5&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Shortest path: </span><span class="si">{</span><span class="s1">&#39; -&gt; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Find shortest paths from one node to all others</span>
+<span class="n">all_paths</span> <span class="o">=</span> <span class="n">shortest_paths</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">&quot;gene1&quot;</span><span class="p">)</span>
+
+<span class="c1"># Find shortest path lengths between all pairs</span>
+<span class="n">path_lengths</span> <span class="o">=</span> <span class="n">shortest_paths</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Parameters:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">source</span></code>: Source node (or None for all-pairs)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">target</span></code>: Target node (or None for single-source)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">weight</span></code>: Edge weight attribute for weighted shortest paths</p></li>
+</ul>
+</section>
+</section>
+<section id="network-manipulation">
+<h2>Network Manipulation<a class="headerlink" href="#network-manipulation" title="Link to this heading"></a></h2>
+<section id="network-filtering">
+<h3>Network Filtering<a class="headerlink" href="#network-filtering" title="Link to this heading"></a></h3>
+<p>Filter networks based on various criteria:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Filter by edge weight/confidence</span>
+<span class="n">filtered_network</span> <span class="o">=</span> <span class="n">network</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+<span class="n">edges_to_remove</span> <span class="o">=</span> <span class="p">[</span><span class="n">edge</span> <span class="k">for</span> <span class="n">edge</span><span class="p">,</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">filtered_network</span><span class="o">.</span><span class="n">edges</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">if</span> <span class="n">data</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;weight&#39;</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">]</span>
+<span class="n">filtered_network</span><span class="o">.</span><span class="n">remove_edges_from</span><span class="p">(</span><span class="n">edges_to_remove</span><span class="p">)</span>
+
+<span class="c1"># Filter by degree</span>
+<span class="n">high_degree_nodes</span> <span class="o">=</span> <span class="p">[</span><span class="n">node</span> <span class="k">for</span> <span class="n">node</span><span class="p">,</span> <span class="n">degree</span> <span class="ow">in</span> <span class="n">filtered_network</span><span class="o">.</span><span class="n">degree</span><span class="p">()</span> <span class="k">if</span> <span class="n">degree</span> <span class="o">&gt;</span> <span class="mi">5</span><span class="p">]</span>
+<span class="n">subgraph</span> <span class="o">=</span> <span class="n">filtered_network</span><span class="o">.</span><span class="n">subgraph</span><span class="p">(</span><span class="n">high_degree_nodes</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="network-components">
+<h3>Network Components<a class="headerlink" href="#network-components" title="Link to this heading"></a></h3>
+<p>Work with connected components:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Find connected components</span>
+<span class="n">components</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">connected_components</span><span class="p">(</span><span class="n">network</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Number of components: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">components</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Largest component</span>
+<span class="n">largest_component</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">components</span><span class="p">,</span> <span class="n">key</span><span class="o">=</span><span class="nb">len</span><span class="p">)</span>
+<span class="n">largest_subgraph</span> <span class="o">=</span> <span class="n">network</span><span class="o">.</span><span class="n">subgraph</span><span class="p">(</span><span class="n">largest_component</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Largest component size: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">largest_component</span><span class="p">)</span><span class="si">}</span><span class="s2"> nodes&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="integration-examples">
+<h2>Integration Examples<a class="headerlink" href="#integration-examples" title="Link to this heading"></a></h2>
+<section id="with-expression-data">
+<h3>With Expression Data<a class="headerlink" href="#with-expression-data" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.networks</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_network</span><span class="p">,</span> <span class="n">network_metrics</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="c1"># Create correlation network from expression data</span>
+<span class="n">expression_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s2">&quot;expression_matrix.csv&quot;</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+<span class="c1"># Calculate correlation matrix</span>
+<span class="n">correlation_matrix</span> <span class="o">=</span> <span class="n">expression_data</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">corr</span><span class="p">()</span>
+
+<span class="c1"># Create network</span>
+<span class="n">correlation_network</span> <span class="o">=</span> <span class="n">create_network</span><span class="p">(</span>
+    <span class="n">correlation_matrix</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s2">&quot;correlation&quot;</span><span class="p">,</span>
+    <span class="n">threshold</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+    <span class="n">directed</span><span class="o">=</span><span class="kc">False</span>
+<span class="p">)</span>
+
+<span class="c1"># Analyze network properties</span>
+<span class="n">metrics</span> <span class="o">=</span> <span class="n">network_metrics</span><span class="p">(</span><span class="n">correlation_network</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Correlated genes form </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;n_components&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> modules&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="with-genomic-data">
+<h3>With Genomic Data<a class="headerlink" href="#with-genomic-data" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.networks</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_network</span><span class="p">,</span> <span class="n">centrality_measures</span>
+
+<span class="c1"># Create interaction network from genomic coordinates</span>
+<span class="n">genomic_interactions</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s2">&quot;chr1:1000-2000&quot;</span><span class="p">,</span> <span class="s2">&quot;chr1:3000-4000&quot;</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">),</span>
+    <span class="p">(</span><span class="s2">&quot;chr2:5000-6000&quot;</span><span class="p">,</span> <span class="s2">&quot;chr2:7000-8000&quot;</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">)</span>
+<span class="p">]</span>
+
+<span class="n">genomic_network</span> <span class="o">=</span> <span class="n">create_network</span><span class="p">(</span><span class="n">genomic_interactions</span><span class="p">,</span> <span class="n">directed</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="c1"># Find hub regions</span>
+<span class="n">centrality</span> <span class="o">=</span> <span class="n">centrality_measures</span><span class="p">(</span><span class="n">genomic_network</span><span class="p">)</span>
+<span class="n">hub_regions</span> <span class="o">=</span> <span class="p">[</span><span class="n">node</span> <span class="k">for</span> <span class="n">node</span><span class="p">,</span> <span class="n">score</span> <span class="ow">in</span> <span class="n">centrality</span><span class="p">[</span><span class="s1">&#39;degree&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">score</span> <span class="o">&gt;</span> <span class="n">centrality</span><span class="p">[</span><span class="s1">&#39;degree&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">+</span> <span class="n">centrality</span><span class="p">[</span><span class="s1">&#39;degree&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">std</span><span class="p">()]</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="performance-considerations">
+<h2>Performance Considerations<a class="headerlink" href="#performance-considerations" title="Link to this heading"></a></h2>
+<section id="large-network-optimization">
+<h3>Large Network Optimization<a class="headerlink" href="#large-network-optimization" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Use sparse representations for large networks</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
+
+<span class="c1"># Convert to sparse format for memory efficiency</span>
+<span class="k">if</span> <span class="n">network</span><span class="o">.</span><span class="n">number_of_nodes</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">10000</span><span class="p">:</span>
+    <span class="c1"># Use adjacency matrix representation</span>
+    <span class="n">adjacency_matrix</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">adjacency_matrix</span><span class="p">(</span><span class="n">network</span><span class="p">)</span>
+    <span class="c1"># Process with sparse matrix operations</span>
+</pre></div>
+</div>
+</section>
+<section id="parallel-processing">
+<h3>Parallel Processing<a class="headerlink" href="#parallel-processing" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Parallel shortest path calculation</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">concurrent.futures</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProcessPoolExecutor</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">calculate_path_length</span><span class="p">(</span><span class="n">source_target</span><span class="p">):</span>
+    <span class="n">source</span><span class="p">,</span> <span class="n">target</span> <span class="o">=</span> <span class="n">source_target</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">nx</span><span class="o">.</span><span class="n">shortest_path_length</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">target</span><span class="p">)</span>
+    <span class="k">except</span> <span class="n">nx</span><span class="o">.</span><span class="n">NetworkXNoPath</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="s1">&#39;inf&#39;</span><span class="p">)</span>
+
+<span class="c1"># Calculate all pairwise distances in parallel</span>
+<span class="n">node_pairs</span> <span class="o">=</span> <span class="p">[(</span><span class="n">s</span><span class="p">,</span> <span class="n">t</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">network</span><span class="o">.</span><span class="n">nodes</span><span class="p">()</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">network</span><span class="o">.</span><span class="n">nodes</span><span class="p">()</span> <span class="k">if</span> <span class="n">s</span> <span class="o">!=</span> <span class="n">t</span><span class="p">]</span>
+
+<span class="k">with</span> <span class="n">ProcessPoolExecutor</span><span class="p">(</span><span class="n">max_workers</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span>
+    <span class="n">distances</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">executor</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">calculate_path_length</span><span class="p">,</span> <span class="n">node_pairs</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="testing">
+<h2>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h2>
+<p>Graph analysis functionality is tested in <code class="docutils literal notranslate"><span class="pre">tests/test_networks_graph.py</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run graph analysis tests</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_networks_graph.py<span class="w"> </span>-v
+
+<span class="c1"># Test specific functions</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_networks_graph.py::test_create_network<span class="w"> </span>-v
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_networks_graph.py::test_centrality_measures<span class="w"> </span>-v
+</pre></div>
+</div>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="index.html"><span class="std std-doc">Networks Overview</span></a>: Main networks module documentation</p></li>
+<li><p><a class="reference internal" href="community.html"><span class="std std-doc">Community Detection</span></a>: Community detection algorithms</p></li>
+<li><p><a class="reference internal" href="ppi.html"><span class="std std-doc">PPI Networks</span></a>: Protein-protein interaction analysis</p></li>
+<li><p><a class="reference internal" href="regulatory.html"><span class="std std-doc">Regulatory Networks</span></a>: Gene regulatory network analysis</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

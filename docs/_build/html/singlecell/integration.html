@@ -1,0 +1,672 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Single-Cell Data Integration &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Single-Cell Data Integration</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/singlecell/integration.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="single-cell-data-integration">
+<h1>Single-Cell Data Integration<a class="headerlink" href="#single-cell-data-integration" title="Link to this heading"></a></h1>
+<p>The integration module provides tools for combining multiple single-cell datasets and correcting for batch effects.</p>
+<section id="dataset-integration">
+<h2>Dataset Integration<a class="headerlink" href="#dataset-integration" title="Link to this heading"></a></h2>
+<section id="concatenate-datasets">
+<h3>concatenate_datasets()<a class="headerlink" href="#concatenate-datasets" title="Link to this heading"></a></h3>
+<p>Combine multiple datasets along the cell axis:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.integration</span><span class="w"> </span><span class="kn">import</span> <span class="n">concatenate_datasets</span>
+
+<span class="c1"># Combine datasets from different samples/experiments</span>
+<span class="n">datasets</span> <span class="o">=</span> <span class="p">[</span><span class="n">data1</span><span class="p">,</span> <span class="n">data2</span><span class="p">,</span> <span class="n">data3</span><span class="p">]</span>
+<span class="n">batch_labels</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Sample_1&#39;</span><span class="p">,</span> <span class="s1">&#39;Sample_2&#39;</span><span class="p">,</span> <span class="s1">&#39;Sample_3&#39;</span><span class="p">]</span>
+
+<span class="n">integrated_data</span> <span class="o">=</span> <span class="n">concatenate_datasets</span><span class="p">(</span>
+    <span class="n">datasets</span><span class="p">,</span>
+    <span class="n">batch_key</span><span class="o">=</span><span class="s1">&#39;batch&#39;</span><span class="p">,</span>      <span class="c1"># Column name for batch labels</span>
+    <span class="n">batch_categories</span><span class="o">=</span><span class="n">batch_labels</span><span class="p">,</span>
+    <span class="n">join</span><span class="o">=</span><span class="s1">&#39;outer&#39;</span>            <span class="c1"># &#39;inner&#39; for intersection, &#39;outer&#39; for union</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Integrated: </span><span class="si">{</span><span class="n">integrated_data</span><span class="o">.</span><span class="n">n_obs</span><span class="si">}</span><span class="s2"> cells × </span><span class="si">{</span><span class="n">integrated_data</span><span class="o">.</span><span class="n">n_vars</span><span class="si">}</span><span class="s2"> genes&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="intersect-datasets">
+<h3>intersect_datasets()<a class="headerlink" href="#intersect-datasets" title="Link to this heading"></a></h3>
+<p>Keep only genes present in all datasets:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.integration</span><span class="w"> </span><span class="kn">import</span> <span class="n">intersect_datasets</span>
+
+<span class="c1"># Find common genes across datasets</span>
+<span class="n">common_genes</span> <span class="o">=</span> <span class="n">intersect_datasets</span><span class="p">(</span><span class="n">datasets</span><span class="p">,</span> <span class="n">return_indices</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Common genes: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">common_genes</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Apply intersection</span>
+<span class="n">integrated_data</span> <span class="o">=</span> <span class="n">concatenate_datasets</span><span class="p">(</span>
+    <span class="n">datasets</span><span class="p">,</span> 
+    <span class="n">batch_categories</span><span class="o">=</span><span class="n">batch_labels</span><span class="p">,</span>
+    <span class="n">join</span><span class="o">=</span><span class="s1">&#39;inner&#39;</span>  <span class="c1"># Equivalent to intersection</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="union-datasets">
+<h3>union_datasets()<a class="headerlink" href="#union-datasets" title="Link to this heading"></a></h3>
+<p>Keep all genes, filling missing values with zeros:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.integration</span><span class="w"> </span><span class="kn">import</span> <span class="n">union_datasets</span>
+
+<span class="c1"># Union of all genes</span>
+<span class="n">all_genes</span> <span class="o">=</span> <span class="n">union_datasets</span><span class="p">(</span><span class="n">datasets</span><span class="p">,</span> <span class="n">return_indices</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Total genes: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">all_genes</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="n">integrated_data</span> <span class="o">=</span> <span class="n">concatenate_datasets</span><span class="p">(</span>
+    <span class="n">datasets</span><span class="p">,</span>
+    <span class="n">batch_categories</span><span class="o">=</span><span class="n">batch_labels</span><span class="p">,</span> 
+    <span class="n">join</span><span class="o">=</span><span class="s1">&#39;outer&#39;</span>  <span class="c1"># Equivalent to union</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="batch-correction">
+<h2>Batch Correction<a class="headerlink" href="#batch-correction" title="Link to this heading"></a></h2>
+<section id="batch-correction-scaling">
+<h3>batch_correction_scaling()<a class="headerlink" href="#batch-correction-scaling" title="Link to this heading"></a></h3>
+<p>Simple scaling-based batch correction:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.integration</span><span class="w"> </span><span class="kn">import</span> <span class="n">batch_correction_scaling</span>
+
+<span class="c1"># Scale-based batch correction</span>
+<span class="n">corrected_data</span> <span class="o">=</span> <span class="n">batch_correction_scaling</span><span class="p">(</span>
+    <span class="n">data</span><span class="p">,</span>
+    <span class="n">batch_key</span><span class="o">=</span><span class="s1">&#39;batch&#39;</span><span class="p">,</span>      <span class="c1"># Batch column in obs</span>
+    <span class="n">method</span><span class="o">=</span><span class="s1">&#39;standardize&#39;</span>    <span class="c1"># &#39;standardize&#39;, &#39;center&#39;, &#39;scale&#39;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="batch-correction-combat">
+<h3>batch_correction_combat()<a class="headerlink" href="#batch-correction-combat" title="Link to this heading"></a></h3>
+<p>ComBat batch correction (requires additional dependencies):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.integration</span><span class="w"> </span><span class="kn">import</span> <span class="n">batch_correction_combat</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="c1"># ComBat batch correction</span>
+    <span class="n">corrected_data</span> <span class="o">=</span> <span class="n">batch_correction_combat</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">,</span>
+        <span class="n">batch_key</span><span class="o">=</span><span class="s1">&#39;batch&#39;</span><span class="p">,</span>
+        <span class="n">covariates</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>       <span class="c1"># Optional covariates to preserve</span>
+        <span class="n">parametric</span><span class="o">=</span><span class="kc">True</span>        <span class="c1"># Parametric vs non-parametric</span>
+    <span class="p">)</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;ComBat not available. Install with: uv pip install combat&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="batch-correction-harmony">
+<h3>batch_correction_harmony()<a class="headerlink" href="#batch-correction-harmony" title="Link to this heading"></a></h3>
+<p>Harmony integration (requires harmony-pytorch):</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.integration</span><span class="w"> </span><span class="kn">import</span> <span class="n">batch_correction_harmony</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="c1"># Harmony batch correction</span>
+    <span class="n">corrected_data</span> <span class="o">=</span> <span class="n">batch_correction_harmony</span><span class="p">(</span>
+        <span class="n">data</span><span class="p">,</span>
+        <span class="n">batch_key</span><span class="o">=</span><span class="s1">&#39;batch&#39;</span><span class="p">,</span>
+        <span class="n">n_components</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>       <span class="c1"># Number of PCs to use</span>
+        <span class="n">theta</span><span class="o">=</span><span class="mf">2.0</span><span class="p">,</span>             <span class="c1"># Diversity clustering penalty</span>
+        <span class="n">sigma</span><span class="o">=</span><span class="mf">0.1</span>              <span class="c1"># Ridge regression penalty</span>
+    <span class="p">)</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Harmony not available. Install with: uv pip install harmony-pytorch&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="integration-workflows">
+<h2>Integration Workflows<a class="headerlink" href="#integration-workflows" title="Link to this heading"></a></h2>
+<section id="standard-integration-pipeline">
+<h3>Standard Integration Pipeline<a class="headerlink" href="#standard-integration-pipeline" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.preprocessing</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.dimensionality</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.integration</span><span class="w"> </span><span class="kn">import</span> <span class="o">*</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">integrate_datasets</span><span class="p">(</span><span class="n">datasets</span><span class="p">,</span> <span class="n">batch_labels</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;scaling&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Standard integration workflow.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        datasets: List of SingleCellData objects</span>
+<span class="sd">        batch_labels: List of batch identifiers  </span>
+<span class="sd">        method: Batch correction method</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c1"># 1. Concatenate datasets</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Concatenating datasets...&quot;</span><span class="p">)</span>
+    <span class="n">integrated</span> <span class="o">=</span> <span class="n">concatenate_datasets</span><span class="p">(</span>
+        <span class="n">datasets</span><span class="p">,</span>
+        <span class="n">batch_key</span><span class="o">=</span><span class="s1">&#39;batch&#39;</span><span class="p">,</span>
+        <span class="n">batch_categories</span><span class="o">=</span><span class="n">batch_labels</span>
+    <span class="p">)</span>
+    
+    <span class="c1"># 2. Standard preprocessing</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Preprocessing integrated dataset...&quot;</span><span class="p">)</span>
+    <span class="n">integrated</span> <span class="o">=</span> <span class="n">calculate_qc_metrics</span><span class="p">(</span><span class="n">integrated</span><span class="p">)</span>
+    <span class="n">integrated</span> <span class="o">=</span> <span class="n">filter_cells</span><span class="p">(</span><span class="n">integrated</span><span class="p">,</span> <span class="n">min_genes</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">max_pct_mt</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+    <span class="n">integrated</span> <span class="o">=</span> <span class="n">filter_genes</span><span class="p">(</span><span class="n">integrated</span><span class="p">,</span> <span class="n">min_cells</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+    <span class="n">integrated</span> <span class="o">=</span> <span class="n">normalize_counts</span><span class="p">(</span><span class="n">integrated</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;total_count&#39;</span><span class="p">)</span>
+    <span class="n">integrated</span> <span class="o">=</span> <span class="n">log_transform</span><span class="p">(</span><span class="n">integrated</span><span class="p">)</span>
+    
+    <span class="c1"># 3. Feature selection (on full dataset)</span>
+    <span class="n">integrated</span> <span class="o">=</span> <span class="n">select_hvgs</span><span class="p">(</span><span class="n">integrated</span><span class="p">,</span> <span class="n">n_top_genes</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span>
+    
+    <span class="c1"># 4. Batch correction</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Applying </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2"> batch correction...&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;scaling&#39;</span><span class="p">:</span>
+        <span class="n">integrated</span> <span class="o">=</span> <span class="n">batch_correction_scaling</span><span class="p">(</span><span class="n">integrated</span><span class="p">,</span> <span class="n">batch_key</span><span class="o">=</span><span class="s1">&#39;batch&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;combat&#39;</span><span class="p">:</span>
+        <span class="n">integrated</span> <span class="o">=</span> <span class="n">batch_correction_combat</span><span class="p">(</span><span class="n">integrated</span><span class="p">,</span> <span class="n">batch_key</span><span class="o">=</span><span class="s1">&#39;batch&#39;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s1">&#39;harmony&#39;</span><span class="p">:</span>
+        <span class="n">integrated</span> <span class="o">=</span> <span class="n">batch_correction_harmony</span><span class="p">(</span><span class="n">integrated</span><span class="p">,</span> <span class="n">batch_key</span><span class="o">=</span><span class="s1">&#39;batch&#39;</span><span class="p">)</span>
+    
+    <span class="c1"># 5. Dimensionality reduction</span>
+    <span class="n">integrated</span> <span class="o">=</span> <span class="n">compute_pca</span><span class="p">(</span><span class="n">integrated</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+    <span class="n">integrated</span> <span class="o">=</span> <span class="n">compute_neighbors</span><span class="p">(</span><span class="n">integrated</span><span class="p">)</span>
+    <span class="n">integrated</span> <span class="o">=</span> <span class="n">compute_umap</span><span class="p">(</span><span class="n">integrated</span><span class="p">)</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Integration complete!&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">integrated</span>
+
+<span class="c1"># Example usage</span>
+<span class="n">datasets</span> <span class="o">=</span> <span class="p">[</span><span class="n">sample1_data</span><span class="p">,</span> <span class="n">sample2_data</span><span class="p">,</span> <span class="n">sample3_data</span><span class="p">]</span>
+<span class="n">batch_labels</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Ctrl&#39;</span><span class="p">,</span> <span class="s1">&#39;Treated_1&#39;</span><span class="p">,</span> <span class="s1">&#39;Treated_2&#39;</span><span class="p">]</span>
+
+<span class="n">integrated_data</span> <span class="o">=</span> <span class="n">integrate_datasets</span><span class="p">(</span><span class="n">datasets</span><span class="p">,</span> <span class="n">batch_labels</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;scaling&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="quality-assessment">
+<h2>Quality Assessment<a class="headerlink" href="#quality-assessment" title="Link to this heading"></a></h2>
+<section id="integration-metrics">
+<h3>integration_metrics()<a class="headerlink" href="#integration-metrics" title="Link to this heading"></a></h3>
+<p>Assess integration quality:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.integration</span><span class="w"> </span><span class="kn">import</span> <span class="n">integration_metrics</span>
+
+<span class="c1"># Calculate integration metrics</span>
+<span class="n">metrics</span> <span class="o">=</span> <span class="n">integration_metrics</span><span class="p">(</span>
+    <span class="n">integrated_data</span><span class="p">,</span>
+    <span class="n">batch_key</span><span class="o">=</span><span class="s1">&#39;batch&#39;</span><span class="p">,</span>
+    <span class="n">label_key</span><span class="o">=</span><span class="s1">&#39;cell_type&#39;</span><span class="p">,</span>   <span class="c1"># Cell type labels (if available)</span>
+    <span class="n">embedding</span><span class="o">=</span><span class="s1">&#39;X_umap&#39;</span>       <span class="c1"># Embedding to evaluate</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Integration Quality Metrics:&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Batch mixing entropy: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;mixing_entropy&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Silhouette score: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;silhouette_score&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  ARI (batch vs clusters): </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;batch_ari&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="plot-integration-assessment">
+<h3>plot_integration_assessment()<a class="headerlink" href="#plot-integration-assessment" title="Link to this heading"></a></h3>
+<p>Visualize integration quality:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.singlecell.integration</span><span class="w"> </span><span class="kn">import</span> <span class="n">plot_integration_assessment</span>
+
+<span class="c1"># Before and after batch correction comparison</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plot_integration_assessment</span><span class="p">(</span>
+    <span class="n">data_before</span><span class="o">=</span><span class="n">uncorrected_data</span><span class="p">,</span>
+    <span class="n">data_after</span><span class="o">=</span><span class="n">corrected_data</span><span class="p">,</span>
+    <span class="n">batch_key</span><span class="o">=</span><span class="s1">&#39;batch&#39;</span><span class="p">,</span>
+    <span class="n">embedding</span><span class="o">=</span><span class="s1">&#39;umap&#39;</span>
+<span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="advanced-integration-methods">
+<h2>Advanced Integration Methods<a class="headerlink" href="#advanced-integration-methods" title="Link to this heading"></a></h2>
+<section id="multi-modal-integration">
+<h3>Multi-Modal Integration<a class="headerlink" href="#multi-modal-integration" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">integrate_multimodal_data</span><span class="p">(</span><span class="n">rna_data</span><span class="p">,</span> <span class="n">adt_data</span><span class="p">,</span> <span class="n">batch_key</span><span class="o">=</span><span class="s1">&#39;batch&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Integrate RNA and protein (ADT) data.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        rna_data: Gene expression data</span>
+<span class="sd">        adt_data: Antibody-derived tag data</span>
+<span class="sd">        batch_key: Batch column</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c1"># 1. Separate processing for each modality</span>
+    <span class="c1"># RNA processing</span>
+    <span class="n">rna_processed</span> <span class="o">=</span> <span class="n">normalize_counts</span><span class="p">(</span><span class="n">rna_data</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;total_count&#39;</span><span class="p">)</span>
+    <span class="n">rna_processed</span> <span class="o">=</span> <span class="n">log_transform</span><span class="p">(</span><span class="n">rna_processed</span><span class="p">)</span>
+    <span class="n">rna_processed</span> <span class="o">=</span> <span class="n">select_hvgs</span><span class="p">(</span><span class="n">rna_processed</span><span class="p">,</span> <span class="n">n_top_genes</span><span class="o">=</span><span class="mi">2000</span><span class="p">)</span>
+    
+    <span class="c1"># ADT processing (different normalization)</span>
+    <span class="n">adt_processed</span> <span class="o">=</span> <span class="n">normalize_counts</span><span class="p">(</span><span class="n">adt_data</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;centered_log_ratio&#39;</span><span class="p">)</span>
+    
+    <span class="c1"># 2. Dimensionality reduction per modality</span>
+    <span class="n">rna_processed</span> <span class="o">=</span> <span class="n">compute_pca</span><span class="p">(</span><span class="n">rna_processed</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+    <span class="n">adt_processed</span> <span class="o">=</span> <span class="n">compute_pca</span><span class="p">(</span><span class="n">adt_processed</span><span class="p">,</span> <span class="n">n_components</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+    
+    <span class="c1"># 3. Joint embedding (simplified - would use more sophisticated methods)</span>
+    <span class="c1"># Concatenate PCA coordinates</span>
+    <span class="n">joint_embedding</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span>
+        <span class="n">rna_processed</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s1">&#39;X_pca&#39;</span><span class="p">],</span>
+        <span class="n">adt_processed</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s1">&#39;X_pca&#39;</span><span class="p">]</span>
+    <span class="p">])</span>
+    
+    <span class="c1"># 4. Create integrated object</span>
+    <span class="n">integrated</span> <span class="o">=</span> <span class="n">rna_processed</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">integrated</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s1">&#39;X_joint&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">joint_embedding</span>
+    
+    <span class="k">return</span> <span class="n">integrated</span>
+</pre></div>
+</div>
+</section>
+<section id="cross-species-integration">
+<h3>Cross-Species Integration<a class="headerlink" href="#cross-species-integration" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">integrate_cross_species</span><span class="p">(</span><span class="n">human_data</span><span class="p">,</span> <span class="n">mouse_data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Integrate data across species using orthologous genes.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        human_data: Human single-cell data</span>
+<span class="sd">        mouse_data: Mouse single-cell data</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="c1"># 1. Load orthology mapping (simplified)</span>
+    <span class="n">ortholog_mapping</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;human_gene&#39;</span><span class="p">:</span> <span class="s1">&#39;mouse_gene&#39;</span><span class="p">,</span>
+        <span class="c1"># ... more mappings</span>
+    <span class="p">}</span>
+    
+    <span class="c1"># 2. Map mouse genes to human</span>
+    <span class="n">mouse_genes_mapped</span> <span class="o">=</span> <span class="p">[</span><span class="n">ortholog_mapping</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">g</span><span class="p">,</span> <span class="n">g</span><span class="p">)</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">mouse_data</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">index</span><span class="p">]</span>
+    <span class="n">mouse_data</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">mouse_genes_mapped</span>
+    
+    <span class="c1"># 3. Find common genes</span>
+    <span class="n">common_genes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="n">human_data</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">index</span><span class="p">)</span> <span class="o">&amp;</span> <span class="nb">set</span><span class="p">(</span><span class="n">mouse_data</span><span class="o">.</span><span class="n">var</span><span class="o">.</span><span class="n">index</span><span class="p">))</span>
+    
+    <span class="c1"># 4. Subset to common genes</span>
+    <span class="n">human_subset</span> <span class="o">=</span> <span class="n">human_data</span><span class="p">[:,</span> <span class="n">common_genes</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">mouse_subset</span> <span class="o">=</span> <span class="n">mouse_data</span><span class="p">[:,</span> <span class="n">common_genes</span><span class="p">]</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    
+    <span class="c1"># 5. Add species labels</span>
+    <span class="n">human_subset</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;species&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Human&#39;</span>
+    <span class="n">mouse_subset</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;species&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;Mouse&#39;</span>
+    
+    <span class="c1"># 6. Integrate</span>
+    <span class="n">integrated</span> <span class="o">=</span> <span class="n">concatenate_datasets</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">human_subset</span><span class="p">,</span> <span class="n">mouse_subset</span><span class="p">],</span>
+        <span class="n">batch_key</span><span class="o">=</span><span class="s1">&#39;species&#39;</span><span class="p">,</span>
+        <span class="n">batch_categories</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Human&#39;</span><span class="p">,</span> <span class="s1">&#39;Mouse&#39;</span><span class="p">]</span>
+    <span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">integrated</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="batch-effect-visualization">
+<h2>Batch Effect Visualization<a class="headerlink" href="#batch-effect-visualization" title="Link to this heading"></a></h2>
+<section id="before-after-comparison">
+<h3>Before/After Comparison<a class="headerlink" href="#before-after-comparison" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">plot_batch_effect_comparison</span><span class="p">(</span><span class="n">data_before</span><span class="p">,</span> <span class="n">data_after</span><span class="p">,</span> <span class="n">batch_key</span><span class="o">=</span><span class="s1">&#39;batch&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot batch effects before and after correction.&quot;&quot;&quot;</span>
+    
+    <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+    
+    <span class="c1"># Before correction - UMAP</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">data_before</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="n">batch_key</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">():</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">data_before</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="n">batch_key</span><span class="p">]</span> <span class="o">==</span> <span class="n">batch</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+            <span class="n">data_before</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s1">&#39;X_umap&#39;</span><span class="p">][</span><span class="n">mask</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="n">data_before</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s1">&#39;X_umap&#39;</span><span class="p">][</span><span class="n">mask</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> 
+            <span class="n">label</span><span class="o">=</span><span class="n">batch</span><span class="p">,</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span>
+        <span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Before Correction (UMAP)&#39;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    
+    <span class="c1"># After correction - UMAP</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">data_after</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="n">batch_key</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">():</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">data_after</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="n">batch_key</span><span class="p">]</span> <span class="o">==</span> <span class="n">batch</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+            <span class="n">data_after</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s1">&#39;X_umap&#39;</span><span class="p">][</span><span class="n">mask</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="n">data_after</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s1">&#39;X_umap&#39;</span><span class="p">][</span><span class="n">mask</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+            <span class="n">label</span><span class="o">=</span><span class="n">batch</span><span class="p">,</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span>
+        <span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;After Correction (UMAP)&#39;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    
+    <span class="c1"># Before correction - PCA</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">data_before</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="n">batch_key</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">():</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">data_before</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="n">batch_key</span><span class="p">]</span> <span class="o">==</span> <span class="n">batch</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+            <span class="n">data_before</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s1">&#39;X_pca&#39;</span><span class="p">][</span><span class="n">mask</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="n">data_before</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s1">&#39;X_pca&#39;</span><span class="p">][</span><span class="n">mask</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+            <span class="n">label</span><span class="o">=</span><span class="n">batch</span><span class="p">,</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span>
+        <span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;Before Correction (PCA)&#39;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    
+    <span class="c1"># After correction - PCA</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span> 
+    <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">data_after</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="n">batch_key</span><span class="p">]</span><span class="o">.</span><span class="n">unique</span><span class="p">():</span>
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">data_after</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="n">batch_key</span><span class="p">]</span> <span class="o">==</span> <span class="n">batch</span>
+        <span class="n">ax</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span>
+            <span class="n">data_after</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s1">&#39;X_pca&#39;</span><span class="p">][</span><span class="n">mask</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="n">data_after</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s1">&#39;X_pca&#39;</span><span class="p">][</span><span class="n">mask</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+            <span class="n">label</span><span class="o">=</span><span class="n">batch</span><span class="p">,</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="mf">0.6</span>
+        <span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s1">&#39;After Correction (PCA)&#39;</span><span class="p">)</span>
+    <span class="n">ax</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+    
+    <span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">fig</span>
+
+<span class="c1"># Usage</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plot_batch_effect_comparison</span><span class="p">(</span><span class="n">uncorrected_data</span><span class="p">,</span> <span class="n">corrected_data</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s1">&#39;output/batch_correction_comparison.pdf&#39;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="method-selection-guidelines">
+<h2>Method Selection Guidelines<a class="headerlink" href="#method-selection-guidelines" title="Link to this heading"></a></h2>
+<section id="choosing-integration-methods">
+<h3>Choosing Integration Methods<a class="headerlink" href="#choosing-integration-methods" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">recommend_integration_method</span><span class="p">(</span><span class="n">datasets</span><span class="p">,</span> <span class="n">batch_info</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Recommend integration method based on data characteristics.</span>
+<span class="sd">    </span>
+<span class="sd">    Args:</span>
+<span class="sd">        datasets: List of datasets</span>
+<span class="sd">        batch_info: Dictionary with batch information</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    
+    <span class="n">n_batches</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">datasets</span><span class="p">)</span>
+    <span class="n">total_cells</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">n_obs</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">datasets</span><span class="p">)</span>
+    
+    <span class="n">recommendations</span> <span class="o">=</span> <span class="p">[]</span>
+    
+    <span class="k">if</span> <span class="n">n_batches</span> <span class="o">&lt;=</span> <span class="mi">3</span> <span class="ow">and</span> <span class="n">total_cells</span> <span class="o">&lt;</span> <span class="mi">50000</span><span class="p">:</span>
+        <span class="n">recommendations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;scaling - Simple and fast&quot;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">n_batches</span> <span class="o">&gt;</span> <span class="mi">3</span> <span class="ow">or</span> <span class="n">total_cells</span> <span class="o">&gt;</span> <span class="mi">50000</span><span class="p">:</span>
+        <span class="n">recommendations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;harmony - Good for large datasets&quot;</span><span class="p">)</span> 
+    
+    <span class="k">if</span> <span class="n">batch_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;technical_replicates&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="n">recommendations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;combat - Good for technical batches&quot;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">batch_info</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;different_protocols&#39;</span><span class="p">,</span> <span class="kc">False</span><span class="p">):</span>
+        <span class="n">recommendations</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;harmony or combat - Handle protocol differences&quot;</span><span class="p">)</span>
+    
+    <span class="k">return</span> <span class="n">recommendations</span>
+
+<span class="c1"># Example usage</span>
+<span class="n">batch_info</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;technical_replicates&#39;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="s1">&#39;different_protocols&#39;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="s1">&#39;batch_confounded&#39;</span><span class="p">:</span> <span class="kc">False</span>
+<span class="p">}</span>
+
+<span class="n">methods</span> <span class="o">=</span> <span class="n">recommend_integration_method</span><span class="p">(</span><span class="n">datasets</span><span class="p">,</span> <span class="n">batch_info</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Recommended methods:&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">methods</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  - </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="common-integration-issues">
+<h2>Common Integration Issues<a class="headerlink" href="#common-integration-issues" title="Link to this heading"></a></h2>
+<section id="overcorrection-detection">
+<h3>Overcorrection Detection<a class="headerlink" href="#overcorrection-detection" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">detect_overcorrection</span><span class="p">(</span><span class="n">data_before</span><span class="p">,</span> <span class="n">data_after</span><span class="p">,</span> <span class="n">cell_type_key</span><span class="o">=</span><span class="s1">&#39;cell_type&#39;</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Detect if batch correction was too aggressive.&quot;&quot;&quot;</span>
+    
+    <span class="k">if</span> <span class="n">cell_type_key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">data_before</span><span class="o">.</span><span class="n">obs</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning: No cell type information for overcorrection assessment&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span>
+    
+    <span class="c1"># Calculate within-cell-type batch mixing before and after</span>
+    <span class="kn">from</span><span class="w"> </span><span class="nn">sklearn.metrics</span><span class="w"> </span><span class="kn">import</span> <span class="n">silhouette_score</span>
+    
+    <span class="c1"># Before correction</span>
+    <span class="n">sil_before</span> <span class="o">=</span> <span class="n">silhouette_score</span><span class="p">(</span>
+        <span class="n">data_before</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s1">&#39;X_pca&#39;</span><span class="p">],</span>
+        <span class="n">data_before</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;batch&#39;</span><span class="p">]</span>
+    <span class="p">)</span>
+    
+    <span class="c1"># After correction  </span>
+    <span class="n">sil_after</span> <span class="o">=</span> <span class="n">silhouette_score</span><span class="p">(</span>
+        <span class="n">data_after</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s1">&#39;X_pca&#39;</span><span class="p">],</span>
+        <span class="n">data_after</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="s1">&#39;batch&#39;</span><span class="p">]</span>
+    <span class="p">)</span>
+    
+    <span class="c1"># Cell type preservation</span>
+    <span class="n">ct_sil_before</span> <span class="o">=</span> <span class="n">silhouette_score</span><span class="p">(</span>
+        <span class="n">data_before</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s1">&#39;X_pca&#39;</span><span class="p">],</span>
+        <span class="n">data_before</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="n">cell_type_key</span><span class="p">]</span>
+    <span class="p">)</span>
+    
+    <span class="n">ct_sil_after</span> <span class="o">=</span> <span class="n">silhouette_score</span><span class="p">(</span>
+        <span class="n">data_after</span><span class="o">.</span><span class="n">obsm</span><span class="p">[</span><span class="s1">&#39;X_pca&#39;</span><span class="p">],</span> 
+        <span class="n">data_after</span><span class="o">.</span><span class="n">obs</span><span class="p">[</span><span class="n">cell_type_key</span><span class="p">]</span>
+    <span class="p">)</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Batch separation - Before: </span><span class="si">{</span><span class="n">sil_before</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, After: </span><span class="si">{</span><span class="n">sil_after</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Cell type separation - Before: </span><span class="si">{</span><span class="n">ct_sil_before</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, After: </span><span class="si">{</span><span class="n">ct_sil_after</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">sil_after</span> <span class="o">&lt;</span> <span class="mf">0.05</span> <span class="ow">and</span> <span class="p">(</span><span class="n">ct_sil_before</span> <span class="o">-</span> <span class="n">ct_sil_after</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mf">0.1</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Warning: Possible overcorrection detected&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">True</span>
+    
+    <span class="k">return</span> <span class="kc">False</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<section id="data-preparation">
+<h3>Data Preparation<a class="headerlink" href="#data-preparation" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Quality control first</strong>: Filter low-quality cells before integration</p></li>
+<li><p><strong>Consistent preprocessing</strong>: Use same normalization across datasets</p></li>
+<li><p><strong>Feature selection</strong>: Select HVGs on combined dataset</p></li>
+<li><p><strong>Documentation</strong>: Track all processing steps and batch information</p></li>
+</ol>
+</section>
+<section id="method-selection">
+<h3>Method Selection<a class="headerlink" href="#method-selection" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Start simple</strong>: Try scaling-based correction first</p></li>
+<li><p><strong>Validate results</strong>: Always assess integration quality</p></li>
+<li><p><strong>Preserve biology</strong>: Ensure cell types remain separable</p></li>
+<li><p><strong>Multiple methods</strong>: Compare different approaches</p></li>
+</ol>
+</section>
+<section id="validation">
+<h3>Validation<a class="headerlink" href="#validation" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Visual inspection</strong>: Plot embeddings colored by batch and cell type</p></li>
+<li><p><strong>Quantitative metrics</strong>: Calculate mixing entropy and silhouette scores</p></li>
+<li><p><strong>Biological validation</strong>: Check marker gene expression</p></li>
+<li><p><strong>Downstream analysis</strong>: Ensure clustering and trajectory results make sense</p></li>
+</ol>
+</section>
+</section>
+<section id="performance-tips">
+<h2>Performance Tips<a class="headerlink" href="#performance-tips" title="Link to this heading"></a></h2>
+<section id="large-dataset-integration">
+<h3>Large Dataset Integration<a class="headerlink" href="#large-dataset-integration" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># For very large datasets (&gt;500k cells)</span>
+<span class="c1"># 1. Subsample for method optimization</span>
+<span class="n">sample_size</span> <span class="o">=</span> <span class="mi">50000</span>
+<span class="n">indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">choice</span><span class="p">(</span><span class="n">total_cells</span><span class="p">,</span> <span class="n">sample_size</span><span class="p">,</span> <span class="n">replace</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<span class="c1"># 2. Optimize on subset</span>
+<span class="n">subset_integrated</span> <span class="o">=</span> <span class="n">integrate_datasets</span><span class="p">(</span>
+    <span class="p">[</span><span class="n">d</span><span class="p">[</span><span class="n">indices</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span><span class="n">indices</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">datasets</span><span class="p">)],</span>
+    <span class="n">batch_labels</span><span class="p">,</span>
+    <span class="n">method</span><span class="o">=</span><span class="s1">&#39;harmony&#39;</span>
+<span class="p">)</span>
+
+<span class="c1"># 3. Apply to full dataset with optimized parameters</span>
+<span class="n">full_integrated</span> <span class="o">=</span> <span class="n">integrate_datasets</span><span class="p">(</span><span class="n">datasets</span><span class="p">,</span> <span class="n">batch_labels</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;harmony&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="testing">
+<h2>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h2>
+<p>Integration functionality is tested as part of the single-cell test suite:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run single-cell tests (includes integration examples)</span>
+uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/test_singlecell_*.py<span class="w"> </span>-v
+</pre></div>
+</div>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><a class="reference internal" href="preprocessing.html"><span class="std std-doc">Preprocessing</span></a>: For data preparation before integration</p></li>
+<li><p><a class="reference internal" href="dimensionality.html"><span class="std std-doc">Dimensionality Reduction</span></a>: For post-integration analysis</p></li>
+<li><p><a class="reference internal" href="clustering.html"><span class="std std-doc">Clustering</span></a>: For clustering integrated data</p></li>
+<li><p><a class="reference internal" href="visualization.html"><span class="std std-doc">Visualization</span></a>: For plotting integration results</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

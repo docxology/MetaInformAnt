@@ -1,0 +1,792 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Getting Started with RNA-seq Analysis &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Getting Started with RNA-seq Analysis</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/rna/GETTING_STARTED.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="getting-started-with-rna-seq-analysis">
+<h1>Getting Started with RNA-seq Analysis<a class="headerlink" href="#getting-started-with-rna-seq-analysis" title="Link to this heading"></a></h1>
+<p>Complete guide for setting up and running RNA-seq workflows with METAINFORMANT, from single-species to multi-species production workflows.</p>
+<section id="quick-start">
+<h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h2>
+<section id="installation">
+<h3>1. Installation<a class="headerlink" href="#installation" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>/path/to/MetaInformAnt
+
+<span class="c1"># Create virtual environment</span>
+uv<span class="w"> </span>venv
+<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+
+<span class="c1"># Install metainformant</span>
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+
+<span class="c1"># Install amalgkit</span>
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>git+https://github.com/kfuku52/amalgkit
+
+<span class="c1"># Install system dependencies</span>
+sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>sra-toolkit<span class="w"> </span>kallisto<span class="w"> </span>fastp<span class="w"> </span>seqkit
+</pre></div>
+</div>
+</section>
+<section id="verify-installation">
+<h3>2. Verify Installation<a class="headerlink" href="#verify-installation" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check Python packages</span>
+python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import metainformant; print(&#39;✓ metainformant&#39;)&quot;</span>
+amalgkit<span class="w"> </span>--version
+
+<span class="c1"># Check command-line tools</span>
+<span class="nb">command</span><span class="w"> </span>-v<span class="w"> </span>amalgkit<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;✓ amalgkit CLI&quot;</span>
+<span class="nb">command</span><span class="w"> </span>-v<span class="w"> </span>fasterq-dump<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;✓ fasterq-dump&quot;</span>
+<span class="nb">command</span><span class="w"> </span>-v<span class="w"> </span>kallisto<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;✓ kallisto&quot;</span>
+
+<span class="c1"># Set NCBI email (required)</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">NCBI_EMAIL</span><span class="o">=</span><span class="s2">&quot;your.email@example.com&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="run-your-first-workflow">
+<h3>3. Run Your First Workflow<a class="headerlink" href="#run-your-first-workflow" title="Link to this heading"></a></h3>
+<p><strong>Recommended</strong>: Use <code class="docutils literal notranslate"><span class="pre">run_workflow.py</span></code> for complete end-to-end execution. The workflow automatically handles genome setup: if a genome configuration is provided in the YAML file, it will automatically download the genome, prepare the transcriptome, and build the kallisto index before starting sample processing.</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Full end-to-end workflow (all steps)</span>
+python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+
+<span class="c1"># Check status at any time</span>
+python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml<span class="w"> </span>--status
+</pre></div>
+</div>
+<p><strong>End-to-End Workflow</strong> (executed automatically):</p>
+<ol class="arabic simple">
+<li><p><strong>Automatic genome setup</strong> (if genome config exists): Download → Prepare transcriptome → Build kallisto index</p></li>
+<li><p><strong>Metadata retrieval</strong>: Download sample metadata from NCBI SRA</p></li>
+<li><p><strong>Per-sample processing</strong>: For each sample: download → quantify → delete FASTQ (as configured with <code class="docutils literal notranslate"><span class="pre">keep_fastq:</span> <span class="pre">no</span></code>)</p></li>
+<li><p><strong>Post-processing</strong>: Integrate, merge, cstmm, curate, csca, sanity</p></li>
+</ol>
+<p>See <span class="xref myst">scripts/rna/README.md</span> for complete usage documentation.</p>
+</section>
+</section>
+<section id="system-requirements">
+<h2>System Requirements<a class="headerlink" href="#system-requirements" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Python 3.11+</strong> with virtual environment (<code class="docutils literal notranslate"><span class="pre">.venv/</span></code> or <code class="docutils literal notranslate"><span class="pre">/tmp/metainformant_venv</span></code> on ext6 filesystems)</p></li>
+<li><p><strong>uv</strong> (Python package manager) - <strong>REQUIRED</strong> for all setup and package management</p></li>
+<li><p><strong>amalgkit</strong> (installed in venv via <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">pip</span> <span class="pre">install</span></code>)</p></li>
+<li><p><strong>wget</strong> (for ENA downloads) or <strong>SRA Toolkit</strong> (for SRA downloads)</p></li>
+<li><p><strong>kallisto</strong> or <strong>salmon</strong> (for quantification)</p></li>
+<li><p><strong>fastp</strong> and <strong>seqkit</strong> (for quality control)</p></li>
+</ul>
+<p><strong>Note</strong>: On external drives or filesystems with limitations (e.g., ext6 without symlink support), the system automatically handles setup. See <a class="reference internal" href="EXTERNAL_DRIVE_SETUP.html"><span class="std std-doc">External Drive Setup Guide</span></a> for details.</p>
+</section>
+<section id="detailed-setup">
+<h2>Detailed Setup<a class="headerlink" href="#detailed-setup" title="Link to this heading"></a></h2>
+<section id="python-environment-setup">
+<h3>Python Environment Setup<a class="headerlink" href="#python-environment-setup" title="Link to this heading"></a></h3>
+<p>The project uses <code class="docutils literal notranslate"><span class="pre">uv</span></code> for fast, reliable Python package management:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install uv if not already installed</span>
+curl<span class="w"> </span>-LsSf<span class="w"> </span>https://astral.sh/uv/install.sh<span class="w"> </span><span class="p">|</span><span class="w"> </span>sh
+
+<span class="c1"># Create virtual environment</span>
+<span class="nb">cd</span><span class="w"> </span>/path/to/MetaInformAnt
+uv<span class="w"> </span>venv
+
+<span class="c1"># Activate virtual environment</span>
+<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+
+<span class="c1"># Install metainformant in editable mode</span>
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.
+
+<span class="c1"># Install amalgkit</span>
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>git+https://github.com/kfuku52/amalgkit
+</pre></div>
+</div>
+<p><strong>Verification:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>-c<span class="w"> </span><span class="s2">&quot;import metainformant; print(&#39;metainformant OK&#39;)&quot;</span>
+amalgkit<span class="w"> </span>--version<span class="w">  </span><span class="c1"># Should show: amalgkit version 0.12.20 or higher</span>
+</pre></div>
+</div>
+</section>
+<section id="system-dependencies">
+<h3>System Dependencies<a class="headerlink" href="#system-dependencies" title="Link to this heading"></a></h3>
+<section id="sra-toolkit-for-sra-downloads">
+<h4>SRA Toolkit (for SRA downloads)<a class="headerlink" href="#sra-toolkit-for-sra-downloads" title="Link to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Debian/Ubuntu</span>
+sudo<span class="w"> </span>apt-get<span class="w"> </span>update
+sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>sra-toolkit
+
+<span class="c1"># Verify installation</span>
+fasterq-dump<span class="w"> </span>--version
+prefetch<span class="w"> </span>--version
+</pre></div>
+</div>
+</section>
+<section id="rna-seq-quantification-tools">
+<h4>RNA-seq Quantification Tools<a class="headerlink" href="#rna-seq-quantification-tools" title="Link to this heading"></a></h4>
+<p><strong>kallisto (Recommended):</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>kallisto
+kallisto<span class="w"> </span>version<span class="w">  </span><span class="c1"># Should show: kallisto, version 0.48.0 or higher</span>
+</pre></div>
+</div>
+<p><strong>salmon (Alternative):</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>wget<span class="w"> </span>https://github.com/COMBINE-lab/salmon/releases/download/v1.10.0/salmon-1.10.0_linux_x86_64.tar.gz
+tar<span class="w"> </span>-xzf<span class="w"> </span>salmon-1.10.0_linux_x86_64.tar.gz
+<span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:<span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span>/salmon-latest_linux_x86_64/bin
+salmon<span class="w"> </span>--version
+</pre></div>
+</div>
+</section>
+<section id="quality-control-tools">
+<h4>Quality Control Tools<a class="headerlink" href="#quality-control-tools" title="Link to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>fastp<span class="w"> </span>seqkit
+
+<span class="c1"># Verify installations</span>
+fastp<span class="w"> </span>--version<span class="w">  </span><span class="c1"># Should show 0.23.2 or higher</span>
+seqkit<span class="w"> </span>version<span class="w">   </span><span class="c1"># Should show 2.3.0 or higher</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="environment-configuration">
+<h3>Environment Configuration<a class="headerlink" href="#environment-configuration" title="Link to this heading"></a></h3>
+<section id="required-environment-variables">
+<h4>Required Environment Variables<a class="headerlink" href="#required-environment-variables" title="Link to this heading"></a></h4>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Add to ~/.bashrc or ~/.zshrc</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">NCBI_EMAIL</span><span class="o">=</span><span class="s2">&quot;your.email@example.com&quot;</span><span class="w">  </span><span class="c1"># Required for NCBI API</span>
+
+<span class="c1"># Optional: Configure data directories</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">METAINFORMANT_OUTPUT</span><span class="o">=</span><span class="s2">&quot;/path/to/MetaInformAnt/output&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">METAINFORMANT_DATA</span><span class="o">=</span><span class="s2">&quot;/path/to/MetaInformAnt/data&quot;</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="running-workflows">
+<h2>Running Workflows<a class="headerlink" href="#running-workflows" title="Link to this heading"></a></h2>
+<section id="single-species-end-to-end-workflow-recommended">
+<h3>Single Species End-to-End Workflow (Recommended)<a class="headerlink" href="#single-species-end-to-end-workflow-recommended" title="Link to this heading"></a></h3>
+<p><strong>Use <code class="docutils literal notranslate"><span class="pre">run_workflow.py</span></code> for complete end-to-end execution</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Full workflow (all 11 steps)</span>
+python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+
+<span class="c1"># Specific steps only</span>
+python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml<span class="w"> </span>--steps<span class="w"> </span>getfastq<span class="w"> </span>quant<span class="w"> </span>merge
+</pre></div>
+</div>
+<p><strong>Features:</strong></p>
+<ul class="simple">
+<li><p>Complete end-to-end execution via <code class="docutils literal notranslate"><span class="pre">execute_workflow()</span></code></p></li>
+<li><p>Automatic genome setup (if genome config exists)</p></li>
+<li><p>Per-sample processing: download → quantify → delete FASTQ</p></li>
+<li><p>All 11 amalgkit steps in correct order</p></li>
+<li><p>Status checking and cleanup operations</p></li>
+<li><p>Resume support (automatically skips completed steps)</p></li>
+</ul>
+</section>
+<section id="multi-species-workflows">
+<h3>Multi-Species Workflows<a class="headerlink" href="#multi-species-workflows" title="Link to this heading"></a></h3>
+<p><strong>For multiple species</strong>, run <code class="docutils literal notranslate"><span class="pre">run_workflow.py</span></code> separately for each species config:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Process each species separately with parallel downloads</span>
+python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>config/amalgkit/amalgkit_species1.yaml
+python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>config/amalgkit/amalgkit_species2.yaml
+python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>config/amalgkit/amalgkit_species3.yaml
+</pre></div>
+</div>
+<p><strong>Or run in parallel (background):</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>nohup<span class="w"> </span>python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>config/amalgkit/amalgkit_species1.yaml<span class="w"> </span>&gt;<span class="w"> </span>logs/species1.log<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">&amp;</span>
+nohup<span class="w"> </span>python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>config/amalgkit/amalgkit_species2.yaml<span class="w"> </span>&gt;<span class="w"> </span>logs/species2.log<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">&amp;</span>
+</pre></div>
+</div>
+<p><strong>Parallel downloads</strong> are controlled via <code class="docutils literal notranslate"><span class="pre">num_download_workers</span></code> in each config file:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">getfastq</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">num_download_workers</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16</span><span class="w">  </span><span class="c1"># Number of parallel download processes</span>
+<span class="w">    </span><span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">24</span>
+</pre></div>
+</div>
+<p><strong>Features:</strong></p>
+<ul class="simple">
+<li><p>✅ <strong>Immediate processing</strong>: Each sample: download → immediately quantify → immediately delete FASTQs</p></li>
+<li><p>✅ <strong>Parallel downloads</strong>: Configurable via <code class="docutils literal notranslate"><span class="pre">num_download_workers</span></code> in config file</p></li>
+<li><p>✅ <strong>Maximum disk efficiency</strong>: Only one sample’s FASTQs exist at a time</p></li>
+<li><p>✅ <strong>100% reliability</strong>: ENA-based downloads (vs ~0% for SRA Toolkit)</p></li>
+<li><p>✅ <strong>Virtual environment</strong>: Auto-activates if available</p></li>
+<li><p>✅ <strong>Cloud acceleration</strong>: AWS, GCP, NCBI enabled by default</p></li>
+<li><p>✅ <strong>Progress tracking</strong>: Status checking via <code class="docutils literal notranslate"><span class="pre">--status</span></code> flag</p></li>
+</ul>
+<p><strong>Configuration Options:</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">num_download_workers</span></code>: Number of parallel download processes per species (default: 16)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">threads</span></code>: Threads for quantification (default: 24)</p></li>
+</ul>
+<p><strong>Note</strong>: For multiple species, run <code class="docutils literal notranslate"><span class="pre">run_workflow.py</span></code> in parallel (using <code class="docutils literal notranslate"><span class="pre">nohup</span></code> or <code class="docutils literal notranslate"><span class="pre">screen</span></code>) or sequentially. Each workflow processes one species at a time with configurable parallelism.</p>
+</section>
+</section>
+<section id="monitoring-progress">
+<h2>Monitoring Progress<a class="headerlink" href="#monitoring-progress" title="Link to this heading"></a></h2>
+<section id="status-checking">
+<h3>Status Checking<a class="headerlink" href="#status-checking" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check workflow status</span>
+python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml<span class="w"> </span>--status
+
+<span class="c1"># Detailed status</span>
+python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml<span class="w"> </span>--status<span class="w"> </span>--detailed
+</pre></div>
+</div>
+</section>
+<section id="check-running-processes">
+<h3>Check Running Processes<a class="headerlink" href="#check-running-processes" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Count workflow processes</span>
+ps<span class="w"> </span>aux<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;run_workflow\|amalgkit&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span>grep
+
+<span class="c1"># Count active downloads</span>
+ps<span class="w"> </span>aux<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>wget<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span>grep<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l
+
+<span class="c1"># Show all RNA workflow processes</span>
+ps<span class="w"> </span>aux<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-E<span class="w"> </span><span class="s2">&quot;(run_workflow|amalgkit|wget)&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span>grep
+</pre></div>
+</div>
+</section>
+<section id="check-individual-species-logs">
+<h3>Check Individual Species Logs<a class="headerlink" href="#check-individual-species-logs" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Find latest logs</span>
+ls<span class="w"> </span>-lt<span class="w"> </span>output/workflow_*.log<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-4
+
+<span class="c1"># Tail specific species</span>
+tail<span class="w"> </span>-f<span class="w"> </span>output/workflow_cfloridanus_*.log
+tail<span class="w"> </span>-f<span class="w"> </span>output/workflow_pbarbatus_*.log
+
+<span class="c1"># Check for errors</span>
+grep<span class="w"> </span>-i<span class="w"> </span>error<span class="w"> </span>output/workflow_*.log
+grep<span class="w"> </span>-i<span class="w"> </span>failed<span class="w"> </span>output/workflow_*.log
+</pre></div>
+</div>
+</section>
+<section id="check-disk-usage">
+<h3>Check Disk Usage<a class="headerlink" href="#check-disk-usage" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Overall amalgkit directory</span>
+du<span class="w"> </span>-sh<span class="w"> </span>output/amalgkit/
+
+<span class="c1"># Per species</span>
+du<span class="w"> </span>-sh<span class="w"> </span>output/amalgkit/*/
+
+<span class="c1"># FASTQ directories (should stay small with immediate processing)</span>
+du<span class="w"> </span>-sh<span class="w"> </span>output/amalgkit/*/fastq/
+
+<span class="c1"># Quantification results</span>
+du<span class="w"> </span>-sh<span class="w"> </span>output/amalgkit/*/quant/
+</pre></div>
+</div>
+</section>
+</section>
+<section id="verification-status-checking">
+<h2>Verification &amp; Status Checking<a class="headerlink" href="#verification-status-checking" title="Link to this heading"></a></h2>
+<section id="quick-verification">
+<h3>Quick Verification<a class="headerlink" href="#quick-verification" title="Link to this heading"></a></h3>
+<p>Check workflow outputs manually:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>output/amalgkit/&lt;species_name&gt;
+
+<span class="c1"># Verify quantification results</span>
+ls<span class="w"> </span>-lh<span class="w"> </span>quant/*/abundance.tsv
+
+<span class="c1"># Verify merged expression matrix</span>
+ls<span class="w"> </span>-lh<span class="w"> </span>merged/*.tsv
+
+<span class="c1"># Check sanity check results</span>
+cat<span class="w"> </span>sanity/*.txt
+
+<span class="c1"># View curate QC reports</span>
+ls<span class="w"> </span>-lh<span class="w"> </span>curate/*.tsv
+</pre></div>
+</div>
+</section>
+<section id="sanity-check">
+<h3>Sanity Check<a class="headerlink" href="#sanity-check" title="Link to this heading"></a></h3>
+<p><strong>Purpose</strong>: Validate integrity of all workflow outputs</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>output/amalgkit/&lt;species_name&gt;
+amalgkit<span class="w"> </span>sanity<span class="w"> </span>--out_dir<span class="w"> </span>work<span class="w"> </span>--all
+</pre></div>
+</div>
+<p><strong>Expected Output</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Quant</span> <span class="n">outputs</span> <span class="n">found</span> <span class="k">for</span> <span class="nb">all</span> <span class="n">SRA</span> <span class="n">IDs</span> <span class="ow">in</span> <span class="o">--</span><span class="n">metadata</span> <span class="p">(</span><span class="n">inferred</span><span class="p">)</span>
+<span class="n">amalgkit</span> <span class="n">sanity</span><span class="p">:</span> <span class="n">end</span>
+</pre></div>
+</div>
+<p><strong>Exit Code</strong>: 0 (success)</p>
+<p><strong>Files Created</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">work/sanity/SRA_IDs_without_fastq.txt</span></code> - Lists samples without FASTQ files (expected if FASTQs deleted after quant)</p></li>
+<li><p>NO <code class="docutils literal notranslate"><span class="pre">SRA_IDs_without_quant.txt</span></code> file = all samples validated ✅</p></li>
+</ul>
+<p><strong>Verification</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Should NOT exist (or be empty) if all samples are good</span>
+ls<span class="w"> </span>work/sanity/SRA_IDs_without_quant.txt<span class="w"> </span><span class="m">2</span>&gt;/dev/null<span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;✅ All samples validated!&quot;</span>
+</pre></div>
+</div>
+</section>
+<section id="curate-step">
+<h3>Curate Step<a class="headerlink" href="#curate-step" title="Link to this heading"></a></h3>
+<p><strong>Purpose</strong>: Quality control, outlier removal, and visualization generation</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>output/amalgkit/&lt;species_name&gt;
+amalgkit<span class="w"> </span>curate<span class="w"> </span>--out_dir<span class="w"> </span>work<span class="w"> </span>--batch_effect_alg<span class="w"> </span>no
+</pre></div>
+</div>
+<p><strong>Why <code class="docutils literal notranslate"><span class="pre">--batch_effect_alg</span> <span class="pre">no</span></code>?</strong></p>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">sva</span></code> R package has system-level compilation issues</p></li>
+<li><p>Using <code class="docutils literal notranslate"><span class="pre">no</span></code> skips SVA batch correction but still generates all other outputs</p></li>
+<li><p>This is perfectly acceptable for most analyses</p></li>
+</ul>
+<p><strong>Expected Output</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Removing</span> <span class="n">samples</span> <span class="k">with</span> <span class="n">mapping</span> <span class="n">rate</span> <span class="n">of</span> <span class="mf">0.2</span>
+<span class="n">Mapping</span> <span class="n">rate</span> <span class="n">cutoff</span><span class="p">:</span> <span class="mi">20</span><span class="o">%</span>
+<span class="n">No</span> <span class="n">entry</span> <span class="n">removed</span> <span class="n">due</span> <span class="n">to</span> <span class="n">low</span> <span class="n">mapping</span> <span class="n">rate</span><span class="o">.</span>
+<span class="n">Iteratively</span> <span class="n">checking</span> <span class="n">within</span><span class="o">-</span><span class="n">sample_group</span> <span class="n">correlation</span>
+<span class="n">No</span> <span class="n">batch</span> <span class="n">effect</span> <span class="n">correction</span> <span class="n">was</span> <span class="n">performed</span><span class="o">.</span>
+<span class="n">Round</span><span class="p">:</span> <span class="mi">2</span> <span class="p">:</span> <span class="c1"># before = N : # after = N</span>
+<span class="n">Writing</span> <span class="n">summary</span> <span class="n">files</span> <span class="k">for</span> <span class="o">&lt;</span><span class="n">species_name</span><span class="o">&gt;</span>
+<span class="n">transcriptome_curation</span><span class="o">.</span><span class="n">r</span><span class="p">:</span> <span class="n">Completed</span><span class="o">.</span>
+</pre></div>
+</div>
+<p><strong>Files Created</strong> (17 total):</p>
+<section id="visualizations-6-pdfs">
+<h4>Visualizations (6 PDFs)<a class="headerlink" href="#visualizations-6-pdfs" title="Link to this heading"></a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>work/curate/&lt;species_name&gt;/plots/
+├── &lt;species_name&gt;.0.original.pdf
+├── &lt;species_name&gt;.0.original.no.pdf
+├── &lt;species_name&gt;.1.mapping_cutoff.pdf
+├── &lt;species_name&gt;.1.mapping_cutoff.no.pdf
+├── &lt;species_name&gt;.2.correlation_cutoff.pdf
+└── &lt;species_name&gt;.2.correlation_cutoff.no.pdf
+</pre></div>
+</div>
+<p>Each PDF contains:</p>
+<ul class="simple">
+<li><p>Hierarchical clustering dendrogram</p></li>
+<li><p>Correlation heatmap</p></li>
+<li><p>PCA plot</p></li>
+<li><p>QC metrics</p></li>
+</ul>
+</section>
+<section id="data-tables-7-tsv-files">
+<h4>Data Tables (7 TSV files)<a class="headerlink" href="#data-tables-7-tsv-files" title="Link to this heading"></a></h4>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>work/curate/&lt;species_name&gt;/tables/
+├── &lt;species_name&gt;.uncorrected.tc.tsv                    # Original expression matrix
+├── &lt;species_name&gt;.uncorrected.sample_group.mean.tsv     # Sample group means
+├── &lt;species_name&gt;.no.tc.tsv                             # Final curated expression (⭐ PRIMARY OUTPUT)
+├── &lt;species_name&gt;.no.sample_group.mean.tsv              # Final sample means
+├── &lt;species_name&gt;.no.tau.tsv                            # Tissue specificity scores
+├── &lt;species_name&gt;.no.correlation_statistics.tsv         # QC correlation statistics
+└── &lt;species_name&gt;.metadata.tsv                          # Sample metadata with QC metrics
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="understanding-the-output">
+<h2>Understanding the Output<a class="headerlink" href="#understanding-the-output" title="Link to this heading"></a></h2>
+<section id="directory-structure">
+<h3>Directory Structure<a class="headerlink" href="#directory-structure" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>output/amalgkit/
+├── {species}/
+│   ├── quant/              # Quantification results (~2 MB per sample)
+│   │   ├── SRR1234567/
+│   │   │   ├── abundance.tsv
+│   │   │   └── run_info.json
+│   │   └── ...
+│   ├── fastq/              # Temporary FASTQs (auto-deleted)
+│   ├── work/
+│   │   ├── metadata/
+│   │   └── index/          # Kallisto index
+│   └── logs/               # Workflow logs
+</pre></div>
+</div>
+</section>
+<section id="key-files">
+<h3>Key Files<a class="headerlink" href="#key-files" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Per-sample quantification</strong>: <code class="docutils literal notranslate"><span class="pre">output/amalgkit/{species}/quant/{SRR_ID}/abundance.tsv</span></code></p></li>
+<li><p><strong>Metadata</strong>: <code class="docutils literal notranslate"><span class="pre">output/amalgkit/{species}/work/metadata/metadata.tsv</span></code></p></li>
+<li><p><strong>Kallisto index</strong>: <code class="docutils literal notranslate"><span class="pre">output/amalgkit/{species}/work/index/transcriptome.idx</span></code></p></li>
+<li><p><strong>Logs</strong>: <code class="docutils literal notranslate"><span class="pre">output/amalgkit/{species}/logs/</span></code></p></li>
+</ul>
+</section>
+<section id="progress-indicators">
+<h3>Progress Indicators<a class="headerlink" href="#progress-indicators" title="Link to this heading"></a></h3>
+<p><strong>Completed sample:</strong></p>
+<ul class="simple">
+<li><p>Quantification directory exists: <code class="docutils literal notranslate"><span class="pre">output/amalgkit/{species}/quant/{SRR_ID}/</span></code></p></li>
+<li><p>Contains: <code class="docutils literal notranslate"><span class="pre">abundance.tsv</span></code> and <code class="docutils literal notranslate"><span class="pre">run_info.json</span></code></p></li>
+<li><p>FASTQ files deleted from <code class="docutils literal notranslate"><span class="pre">fastq/{SRR_ID}/</span></code></p></li>
+</ul>
+<p><strong>Downloading sample:</strong></p>
+<ul class="simple">
+<li><p>FASTQ directory exists: <code class="docutils literal notranslate"><span class="pre">output/amalgkit/{species}/fastq/{SRR_ID}/</span></code></p></li>
+<li><p>Contains <code class="docutils literal notranslate"><span class="pre">.fastq.gz</span></code> files (growing)</p></li>
+<li><p>wget process visible in <code class="docutils literal notranslate"><span class="pre">ps</span> <span class="pre">aux</span> <span class="pre">|</span> <span class="pre">grep</span> <span class="pre">wget</span></code></p></li>
+</ul>
+<p><strong>Failed sample:</strong></p>
+<ul class="simple">
+<li><p>Check logs: <code class="docutils literal notranslate"><span class="pre">grep</span> <span class="pre">{SRR_ID}</span> <span class="pre">output/workflow_{species}_*.log</span></code></p></li>
+<li><p>Workflow will retry automatically on restart</p></li>
+</ul>
+</section>
+</section>
+<section id="performance-characteristics">
+<h2>Performance Characteristics<a class="headerlink" href="#performance-characteristics" title="Link to this heading"></a></h2>
+<section id="expected-timeline">
+<h3>Expected Timeline<a class="headerlink" href="#expected-timeline" title="Link to this heading"></a></h3>
+<p><strong>Per sample:</strong></p>
+<ul class="simple">
+<li><p>Download: 2-8 minutes (varies by sample size, 1-4 GB)</p></li>
+<li><p>Quantification: 30-90 seconds (with kallisto, 12 threads)</p></li>
+<li><p>Cleanup: &lt;1 second</p></li>
+<li><p><strong>Total</strong>: ~7.5 minutes average</p></li>
+</ul>
+<p><strong>Full workflow:</strong></p>
+<ul class="simple">
+<li><p>Small species (50-100 samples): ~6-12 hours</p></li>
+<li><p>Medium species (100-300 samples): ~12-24 hours</p></li>
+<li><p>Large species (300+ samples): ~24-48 hours</p></li>
+</ul>
+</section>
+<section id="resource-usage">
+<h3>Resource Usage<a class="headerlink" href="#resource-usage" title="Link to this heading"></a></h3>
+<p><strong>CPU:</strong></p>
+<ul class="simple">
+<li><p>Parallel downloads: Configurable via <code class="docutils literal notranslate"><span class="pre">num_download_workers</span></code> (default: 16)</p></li>
+<li><p>Quantification: Configurable via <code class="docutils literal notranslate"><span class="pre">threads</span></code> (default: 24)</p></li>
+<li><p>Recommend: 64+ cores for smooth parallel processing of multiple species</p></li>
+</ul>
+<p><strong>RAM:</strong></p>
+<ul class="simple">
+<li><p>~4 GB per workflow</p></li>
+<li><p>~16 GB total for 4 parallel workflows</p></li>
+</ul>
+<p><strong>Disk:</strong></p>
+<ul class="simple">
+<li><p>Peak: ~2-10 GB per sample (only one sample’s FASTQs at a time with immediate processing)</p></li>
+<li><p>Total peak: ~50-100 GB (temporary, auto-cleaned per sample)</p></li>
+<li><p>Final: ~2-3 GB per species (quantification files only)</p></li>
+</ul>
+<p><strong>Network:</strong></p>
+<ul class="simple">
+<li><p>Bandwidth: ~40 GB downloading at any time</p></li>
+<li><p>ENA servers: highly reliable, automatic resume</p></li>
+</ul>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="amalgkit-command-not-found">
+<h3>“amalgkit: command not found”<a class="headerlink" href="#amalgkit-command-not-found" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Ensure virtual environment is activated</span>
+<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+
+<span class="c1"># Reinstall if needed with uv</span>
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>--force-reinstall<span class="w"> </span>git+https://github.com/kfuku52/amalgkit<span class="w"> </span>--python<span class="w"> </span>.venv/bin/python3
+</pre></div>
+</div>
+</section>
+<section id="fasterq-dump-command-not-found">
+<h3>“fasterq-dump: command not found”<a class="headerlink" href="#fasterq-dump-command-not-found" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install SRA Toolkit</span>
+sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>sra-toolkit
+
+<span class="c1"># Or add to PATH if manually installed</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:/path/to/sratoolkit/bin
+</pre></div>
+</div>
+</section>
+<section id="permission-denied-errors">
+<h3>“Permission denied” errors<a class="headerlink" href="#permission-denied-errors" title="Link to this heading"></a></h3>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Ensure output directory is writable</span>
+chmod<span class="w"> </span>-R<span class="w"> </span>u+w<span class="w"> </span>output/
+
+<span class="c1"># Run script from repository root</span>
+<span class="nb">cd</span><span class="w"> </span>/path/to/MetaInformAnt
+python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>...
+</pre></div>
+</div>
+</section>
+<section id="external-drive-and-filesystem-issues">
+<h3>External Drive and Filesystem Issues<a class="headerlink" href="#external-drive-and-filesystem-issues" title="Link to this heading"></a></h3>
+<p><strong>See <a class="reference internal" href="EXTERNAL_DRIVE_SETUP.html"><span class="std std-doc">External Drive Setup Guide</span></a> for comprehensive documentation.</strong></p>
+<p>Common issues on external drives (ext6 filesystems):</p>
+<ul class="simple">
+<li><p>Symlink errors when installing packages</p></li>
+<li><p>Virtual environment creation failures</p></li>
+<li><p>UV cache directory issues</p></li>
+</ul>
+<p><strong>All issues are automatically handled</strong> by the setup utilities, but see the guide for manual troubleshooting.</p>
+</section>
+<section id="pep-668-externally-managed-environment-error">
+<h3>PEP 668 “externally-managed-environment” error<a class="headerlink" href="#pep-668-externally-managed-environment-error" title="Link to this heading"></a></h3>
+<p>This is expected on modern Linux systems. Always use virtual environments with uv:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create venv with uv</span>
+uv<span class="w"> </span>venv
+
+<span class="c1"># Activate venv</span>
+<span class="nb">source</span><span class="w"> </span>.venv/bin/activate
+
+<span class="c1"># Install packages with uv (no activation needed if using --python flag)</span>
+uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>-e<span class="w"> </span>.<span class="w"> </span>--python<span class="w"> </span>.venv/bin/python3
+</pre></div>
+</div>
+</section>
+<section id="downloads-failing">
+<h3>Downloads Failing<a class="headerlink" href="#downloads-failing" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Check network connectivity: <code class="docutils literal notranslate"><span class="pre">ping</span> <span class="pre">-c</span> <span class="pre">4</span> <span class="pre">8.8.8.8</span></code></p></li>
+<li><p>Verify NCBI_EMAIL is set: <code class="docutils literal notranslate"><span class="pre">echo</span> <span class="pre">$NCBI_EMAIL</span></code></p></li>
+<li><p>Try reducing threads: set <code class="docutils literal notranslate"><span class="pre">threads:</span> <span class="pre">8</span></code> in the species config, or <code class="docutils literal notranslate"><span class="pre">export</span> <span class="pre">AK_THREADS=8</span></code></p></li>
+<li><p>Check disk space: <code class="docutils literal notranslate"><span class="pre">df</span> <span class="pre">-h</span> <span class="pre">/</span></code></p></li>
+<li><p>Test ENA connectivity: <code class="docutils literal notranslate"><span class="pre">wget</span> <span class="pre">--spider</span> <span class="pre">https://www.ebi.ac.uk/ena/</span></code></p></li>
+</ul>
+</section>
+<section id="disk-space-issues">
+<h3>Disk Space Issues<a class="headerlink" href="#disk-space-issues" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Clean up partial downloads: <code class="docutils literal notranslate"><span class="pre">python3</span> <span class="pre">scripts/rna/cleanup_partial_downloads.py</span> <span class="pre">--execute</span></code></p></li>
+<li><p>Reduce <code class="docutils literal notranslate"><span class="pre">num_download_workers</span></code> in config file for fewer parallel downloads</p></li>
+<li><p>Use immediate per-sample processing (default): only one sample’s FASTQs exist at a time</p></li>
+</ul>
+</section>
+<section id="workflow-not-starting">
+<h3>Workflow Not Starting<a class="headerlink" href="#workflow-not-starting" title="Link to this heading"></a></h3>
+<p><strong>Check virtual environment:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Verify venv exists (check both locations)</span>
+ls<span class="w"> </span>-la<span class="w"> </span>.venv/<span class="w"> </span><span class="o">||</span><span class="w"> </span>ls<span class="w"> </span>-la<span class="w"> </span>/tmp/metainformant_venv/
+
+<span class="c1"># Verify amalgkit installed</span>
+<span class="nb">source</span><span class="w"> </span>.venv/bin/activate<span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="nb">source</span><span class="w"> </span>/tmp/metainformant_venv/bin/activate
+amalgkit<span class="w"> </span>--version
+</pre></div>
+</div>
+<p><strong>Check dependencies:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Verify wget</span>
+which<span class="w"> </span>wget
+wget<span class="w"> </span>--version
+
+<span class="c1"># Verify kallisto</span>
+which<span class="w"> </span>kallisto
+kallisto<span class="w"> </span>version
+</pre></div>
+</div>
+</section>
+<section id="processes-stuck-or-hung">
+<h3>Processes Stuck or Hung<a class="headerlink" href="#processes-stuck-or-hung" title="Link to this heading"></a></h3>
+<p><strong>Kill and restart:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Find process IDs</span>
+ps<span class="w"> </span>aux<span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span><span class="s2">&quot;run_workflow\|amalgkit&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>grep<span class="w"> </span>-v<span class="w"> </span>grep
+
+<span class="c1"># Kill specific workflow</span>
+<span class="nb">kill</span><span class="w"> </span>&lt;PID&gt;
+
+<span class="c1"># Or kill all workflows (use with caution)</span>
+pkill<span class="w"> </span>-f<span class="w"> </span>run_workflow
+
+<span class="c1"># Restart (will resume from last completed sample)</span>
+nohup<span class="w"> </span>python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml<span class="w"> </span>&gt;<span class="w"> </span>logs/species.log<span class="w"> </span><span class="m">2</span>&gt;<span class="p">&amp;</span><span class="m">1</span><span class="w"> </span><span class="p">&amp;</span>
+</pre></div>
+</div>
+</section>
+<section id="quantification-failing">
+<h3>Quantification Failing<a class="headerlink" href="#quantification-failing" title="Link to this heading"></a></h3>
+<p><strong>Check kallisto index:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Verify index exists</span>
+ls<span class="w"> </span>-lh<span class="w"> </span>output/amalgkit/*/work/index/*.idx
+
+<span class="c1"># Rebuild if needed (automatic on first run)</span>
+<span class="c1"># Just restart the workflow</span>
+</pre></div>
+</div>
+<p><strong>Check FASTQ quality:</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># List downloaded FASTQs</span>
+ls<span class="w"> </span>-lh<span class="w"> </span>output/amalgkit/*/fastq/*/
+
+<span class="c1"># Check if files are complete (not 0 bytes)</span>
+find<span class="w"> </span>output/amalgkit/*/fastq<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*.fastq.gz&quot;</span><span class="w"> </span>-size<span class="w"> </span><span class="m">0</span>
+</pre></div>
+</div>
+</section>
+<section id="curate-completes-in-0-seconds">
+<h3>Curate completes in 0 seconds<a class="headerlink" href="#curate-completes-in-0-seconds" title="Link to this heading"></a></h3>
+<p><strong>Cause</strong>: Existing outputs detected, no reprocessing needed</p>
+<p><strong>Solution</strong>: This is normal! To regenerate:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>rm<span class="w"> </span>-rf<span class="w"> </span>work/curate/*
+amalgkit<span class="w"> </span>curate<span class="w"> </span>--out_dir<span class="w"> </span>work<span class="w"> </span>--batch_effect_alg<span class="w"> </span>no
+</pre></div>
+</div>
+</section>
+<section id="r-package-errors-rtsne-amap-vegan-sva-ruvseq">
+<h3>R package errors (Rtsne, amap, vegan, sva, RUVSeq)<a class="headerlink" href="#r-package-errors-rtsne-amap-vegan-sva-ruvseq" title="Link to this heading"></a></h3>
+<p><strong>Cause</strong>: System-level gcc compilation issues (documented)</p>
+<p><strong>Solution</strong>: Already handled via patches to <code class="docutils literal notranslate"><span class="pre">amalgkit/curate.r</span></code>:</p>
+<ul class="simple">
+<li><p>Changed <code class="docutils literal notranslate"><span class="pre">library()</span></code> to <code class="docutils literal notranslate"><span class="pre">require()</span></code> for graceful degradation</p></li>
+<li><p>Added fallbacks for missing functions</p></li>
+<li><p>Core visualizations still work perfectly ✅</p></li>
+</ul>
+<p><strong>Impact</strong>: Minimal - only advanced optional features affected</p>
+</section>
+</section>
+<section id="next-steps">
+<h2>Next Steps<a class="headerlink" href="#next-steps" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Learn about workflows</strong>: See <a class="reference internal" href="workflow.html"><span class="std std-doc">workflow.md</span></a> for planning and execution</p></li>
+<li><p><strong>Understand steps</strong>: See <a class="reference internal" href="amalgkit/steps/README.html"><span class="std std-doc">Step Documentation</span></a> for individual workflow steps</p></li>
+<li><p><strong>Configure workflows</strong>: See <a class="reference internal" href="CONFIGURATION.html"><span class="std std-doc">CONFIGURATION.md</span></a> for configuration options</p></li>
+<li><p><strong>Discover species</strong>: See <a class="reference internal" href="DISCOVERY.html"><span class="std std-doc">DISCOVERY.md</span></a> for species discovery</p></li>
+<li><p><strong>View examples</strong>: See <a class="reference internal" href="EXAMPLES.html"><span class="std std-doc">EXAMPLES.md</span></a> for real-world analysis examples</p></li>
+</ol>
+</section>
+<section id="getting-help">
+<h2>Getting Help<a class="headerlink" href="#getting-help" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Documentation</strong>: See <a class="reference internal" href="README.html"><span class="std std-doc">README.md</span></a> for navigation</p></li>
+<li><p><strong>Workflow Issues</strong>: See <a class="reference internal" href="workflow.html#common-issues-and-solutions"><span class="std std-ref">workflow.md</span></a></p></li>
+<li><p><strong>Orchestration</strong>: See <a class="reference internal" href="ORCHESTRATION.html"><span class="std std-doc">ORCHESTRATION.md</span></a></p></li>
+</ul>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong><a class="reference internal" href="workflow.html"><span class="std std-doc">workflow.md</span></a></strong>: Workflow planning and execution</p></li>
+<li><p><strong><a class="reference internal" href="amalgkit/steps/README.html"><span class="std std-doc">Step Documentation</span></a></strong>: Individual workflow steps</p></li>
+<li><p><strong><a class="reference internal" href="CONFIGURATION.html"><span class="std std-doc">CONFIGURATION.md</span></a></strong>: Configuration management</p></li>
+<li><p><strong><a class="reference internal" href="ORCHESTRATION.html"><span class="std std-doc">ORCHESTRATION.md</span></a></strong>: Orchestrator overview</p></li>
+<li><p><strong><a class="reference internal" href="DISCOVERY.html"><span class="std std-doc">DISCOVERY.md</span></a></strong>: Species discovery system</p></li>
+<li><p><strong><a class="reference internal" href="EXAMPLES.html"><span class="std std-doc">EXAMPLES.md</span></a></strong>: Real-world analysis examples</p></li>
+</ul>
+</section>
+<section id="see-also">
+<h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Source Code</strong>: <code class="docutils literal notranslate"><span class="pre">src/metainformant/rna/</span></code> - Implementation details</p></li>
+<li><p><strong>Module Documentation</strong>: <code class="docutils literal notranslate"><span class="pre">src/metainformant/rna/README.md</span></code> - API reference</p></li>
+<li><p><strong>Tests</strong>: <code class="docutils literal notranslate"><span class="pre">tests/test_rna_*.py</span></code> - Comprehensive test coverage</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

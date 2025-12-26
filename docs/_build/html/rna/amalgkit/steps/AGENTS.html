@@ -1,0 +1,324 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Agents in Amalgkit Steps Documentation Development &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/custom.css" />
+
+  
+      <script src="../../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">AI Agents in Amalgkit Steps Documentation Development</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../../_sources/rna/amalgkit/steps/AGENTS.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="ai-agents-in-amalgkit-steps-documentation-development">
+<h1>AI Agents in Amalgkit Steps Documentation Development<a class="headerlink" href="#ai-agents-in-amalgkit-steps-documentation-development" title="Link to this heading"></a></h1>
+<p>This document outlines AI assistance in creating comprehensive documentation for all amalgkit workflow steps.</p>
+<section id="ai-contributions">
+<h2>AI Contributions<a class="headerlink" href="#ai-contributions" title="Link to this heading"></a></h2>
+<section id="documentation-architecture">
+<h3>Documentation Architecture<a class="headerlink" href="#documentation-architecture" title="Link to this heading"></a></h3>
+<p><strong>Documentation Agent</strong> designed:</p>
+<ul class="simple">
+<li><p>Systematic 11-step documentation structure for complete amalgkit pipeline</p></li>
+<li><p>Consistent template format across all step documentation files</p></li>
+<li><p>Integration workflow diagrams and dependency mapping</p></li>
+<li><p>Parameter reference organization with usage examples</p></li>
+</ul>
+</section>
+<section id="content-generation">
+<h3>Content Generation<a class="headerlink" href="#content-generation" title="Link to this heading"></a></h3>
+<p><strong>Documentation Agent</strong> created:</p>
+<ul class="simple">
+<li><p>Complete step-by-step documentation for metadata, config, select, getfastq, integrate, quant, merge, cstmm, curate, csca, and sanity steps</p></li>
+<li><p>Detailed parameter references extracted from amalgkit CLI help</p></li>
+<li><p>Real-world usage examples from production workflows</p></li>
+<li><p>Troubleshooting guides based on actual workflow execution issues</p></li>
+<li><p>Integration patterns with METAINFORMANT’s Python API</p></li>
+</ul>
+</section>
+<section id="technical-writing">
+<h3>Technical Writing<a class="headerlink" href="#technical-writing" title="Link to this heading"></a></h3>
+<p><strong>Code Assistant Agent</strong> contributed to:</p>
+<ul class="simple">
+<li><p>CLI argument validation and documentation accuracy</p></li>
+<li><p>Python API integration examples and code snippets</p></li>
+<li><p>Performance optimization recommendations for each step</p></li>
+<li><p>File format specifications and output structure documentation</p></li>
+<li><p>Cross-step dependency and data flow documentation</p></li>
+</ul>
+</section>
+</section>
+<section id="documentation-strategy">
+<h2>Documentation Strategy<a class="headerlink" href="#documentation-strategy" title="Link to this heading"></a></h2>
+<section id="coverage">
+<h3>Coverage<a class="headerlink" href="#coverage" title="Link to this heading"></a></h3>
+<p>Every amalgkit step includes:</p>
+<ul class="simple">
+<li><p>✅ <strong>Purpose</strong>: Clear explanation of step functionality</p></li>
+<li><p>✅ <strong>Overview</strong>: Key features and capabilities</p></li>
+<li><p>✅ <strong>Usage</strong>: CLI, Python API, and configuration examples</p></li>
+<li><p>✅ <strong>Parameters</strong>: Complete parameter reference with types and defaults</p></li>
+<li><p>✅ <strong>Input Requirements</strong>: Prerequisites and dependencies</p></li>
+<li><p>✅ <strong>Output Files</strong>: All generated files with descriptions</p></li>
+<li><p>✅ <strong>Workflow Integration</strong>: Position in pipeline and data flow</p></li>
+<li><p>✅ <strong>Common Use Cases</strong>: Real-world application scenarios</p></li>
+<li><p>✅ <strong>Performance Considerations</strong>: Runtime and resource usage</p></li>
+<li><p>✅ <strong>Troubleshooting</strong>: Common issues and solutions</p></li>
+<li><p>✅ <strong>Best Practices</strong>: Recommended approaches</p></li>
+<li><p>✅ <strong>Real-World Examples</strong>: Production use cases</p></li>
+<li><p>✅ <strong>Integration</strong>: METAINFORMANT Python workflow integration</p></li>
+<li><p>✅ <strong>References</strong>: External documentation links</p></li>
+</ul>
+</section>
+<section id="quality-standards">
+<h3>Quality Standards<a class="headerlink" href="#quality-standards" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Technical Accuracy</strong>: All CLI commands and parameters verified against amalgkit 0.12.19</p></li>
+<li><p><strong>Practical Examples</strong>: Real command-line and Python code tested in production</p></li>
+<li><p><strong>Consistent Formatting</strong>: Unified structure across all 11 step documentation files</p></li>
+<li><p><strong>Cross-References</strong>: Comprehensive linking between related steps and documentation</p></li>
+</ul>
+</section>
+<section id="maintenance-approach">
+<h3>Maintenance Approach<a class="headerlink" href="#maintenance-approach" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Documentation evolves with amalgkit version updates</p></li>
+<li><p>AI assistance accelerates comprehensive content creation</p></li>
+<li><p>Human validation ensures biological and computational accuracy</p></li>
+<li><p>Production workflow feedback incorporated into troubleshooting sections</p></li>
+</ul>
+</section>
+</section>
+<section id="development-process">
+<h2>Development Process<a class="headerlink" href="#development-process" title="Link to this heading"></a></h2>
+<section id="step-documentation-creation">
+<h3>Step Documentation Creation<a class="headerlink" href="#step-documentation-creation" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>CLI Analysis</strong>: Extract all parameters from <code class="docutils literal notranslate"><span class="pre">amalgkit</span> <span class="pre">&lt;step&gt;</span> <span class="pre">--help</span></code></p></li>
+<li><p><strong>Workflow Context</strong>: Document step dependencies and data flow</p></li>
+<li><p><strong>Usage Examples</strong>: Create CLI, Python API, and configuration examples</p></li>
+<li><p><strong>File Specifications</strong>: Document all input/output file formats</p></li>
+<li><p><strong>Troubleshooting</strong>: Compile common issues from real workflow executions</p></li>
+<li><p><strong>Integration</strong>: Show METAINFORMANT Python API integration patterns</p></li>
+</ol>
+</section>
+<section id="testing-and-validation">
+<h3>Testing and Validation<a class="headerlink" href="#testing-and-validation" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>All code examples tested in real workflow environments</p></li>
+<li><p>Parameter specifications validated against actual amalgkit execution</p></li>
+<li><p>Output file formats documented from real workflow results</p></li>
+<li><p>Performance metrics gathered from production runs</p></li>
+</ul>
+</section>
+</section>
+<section id="ai-enhanced-features">
+<h2>AI-Enhanced Features<a class="headerlink" href="#ai-enhanced-features" title="Link to this heading"></a></h2>
+<section id="parameter-documentation">
+<h3>Parameter Documentation<a class="headerlink" href="#parameter-documentation" title="Link to this heading"></a></h3>
+<p>AI assistance enabled:</p>
+<ul class="simple">
+<li><p>Systematic extraction of all CLI parameters for 11 workflow steps</p></li>
+<li><p>Type annotations and default value documentation</p></li>
+<li><p>Usage pattern identification from production workflows</p></li>
+<li><p>Dependency mapping between step parameters</p></li>
+</ul>
+</section>
+<section id="real-world-integration">
+<h3>Real-World Integration<a class="headerlink" href="#real-world-integration" title="Link to this heading"></a></h3>
+<p>AI contributed to:</p>
+<ul class="simple">
+<li><p>Production workflow analysis and documentation</p></li>
+<li><p>Common error pattern identification and troubleshooting guides</p></li>
+<li><p>Performance optimization recommendations based on actual runs</p></li>
+<li><p>Multi-species comparative workflow documentation</p></li>
+</ul>
+</section>
+<section id="cross-reference-system">
+<h3>Cross-Reference System<a class="headerlink" href="#cross-reference-system" title="Link to this heading"></a></h3>
+<p>AI designed:</p>
+<ul class="simple">
+<li><p>Automatic linking between related step documentation</p></li>
+<li><p>Integration with broader METAINFORMANT documentation</p></li>
+<li><p>Reference to test coverage and validation documentation</p></li>
+<li><p>Connection to configuration templates and examples</p></li>
+</ul>
+</section>
+</section>
+<section id="documentation-impact">
+<h2>Documentation Impact<a class="headerlink" href="#documentation-impact" title="Link to this heading"></a></h2>
+<section id="user-benefits">
+<h3>User Benefits<a class="headerlink" href="#user-benefits" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Complete Reference</strong>: All 11 amalgkit steps comprehensively documented</p></li>
+<li><p><strong>Quick Start</strong>: Fast onboarding with practical examples</p></li>
+<li><p><strong>Troubleshooting</strong>: Solutions to common workflow issues</p></li>
+<li><p><strong>Integration</strong>: Seamless METAINFORMANT Python API usage</p></li>
+</ul>
+</section>
+<section id="developer-benefits">
+<h3>Developer Benefits<a class="headerlink" href="#developer-benefits" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Maintenance Guide</strong>: Clear structure for documentation updates</p></li>
+<li><p><strong>Testing Reference</strong>: Links to comprehensive test coverage</p></li>
+<li><p><strong>API Patterns</strong>: Python integration examples for all steps</p></li>
+<li><p><strong>Extension Framework</strong>: Template for documenting new workflow steps</p></li>
+</ul>
+</section>
+</section>
+<section id="continuous-improvement">
+<h2>Continuous Improvement<a class="headerlink" href="#continuous-improvement" title="Link to this heading"></a></h2>
+<section id="version-tracking">
+<h3>Version Tracking<a class="headerlink" href="#version-tracking" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Documentation versioned with amalgkit releases</p></li>
+<li><p>Breaking changes highlighted in update notes</p></li>
+<li><p>Backward compatibility documented where applicable</p></li>
+<li><p>Migration guides for version transitions</p></li>
+</ul>
+</section>
+<section id="community-feedback">
+<h3>Community Feedback<a class="headerlink" href="#community-feedback" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p>Production user feedback incorporated into troubleshooting</p></li>
+<li><p>Performance optimization recommendations updated regularly</p></li>
+<li><p>Real-world use cases added from community contributions</p></li>
+<li><p>Best practices refined based on large-scale deployments</p></li>
+</ul>
+</section>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading"></a></h2>
+<p>This step documentation integrates with:</p>
+<ul class="simple">
+<li><p><strong><a class="reference internal" href="../amalgkit.html"><span class="std std-doc">…/amalgkit.md</span></a></strong>: Complete pipeline overview</p></li>
+<li><p><strong><a class="reference internal" href="../amalgkit.html"><span class="std std-doc">…/amalgkit.md</span></a></strong>: Complete pipeline documentation (includes advanced usage)</p></li>
+<li><p><strong><a class="reference internal" href="../testing_coverage.html"><span class="std std-doc">…/testing_coverage.md</span></a></strong>: Test coverage and validation</p></li>
+<li><p><strong><a class="reference internal" href="../../workflow.html"><span class="std std-doc">…/…/workflow.md</span></a></strong>: RNA workflow orchestration</p></li>
+<li><p><strong><a class="reference internal" href="../../CONFIGURATION.html"><span class="std std-doc">…/…/CONFIGURATION.md</span></a></strong>: Configuration management</p></li>
+</ul>
+<hr class="docutils" />
+<p><em>This comprehensive step documentation demonstrates effective collaboration between AI assistance and domain expertise, resulting in production-ready documentation that serves both users and developers of METAINFORMANT’s RNA analysis capabilities.</em></p>
+<p><strong>Documentation Created</strong>: October 29, 2025<br />
+<strong>Amalgkit Version</strong>: 0.12.19<br />
+<strong>METAINFORMANT Version</strong>: 0.2.0<br />
+<strong>Status</strong>: ✅ Production-ready, comprehensively tested</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

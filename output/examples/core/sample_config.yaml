@@ -1,0 +1,9 @@
+analysis:
+  method: fast
+  quality_threshold: 0.95
+  save_intermediates: true
+debug: false
+log_dir: output/example_workflow/logs
+max_memory_gb: 8
+threads: 4
+work_dir: output/example_workflow

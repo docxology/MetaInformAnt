@@ -7,8 +7,6 @@ and use real implementations.
 
 from __future__ import annotations
 
-import json
-import tempfile
 from pathlib import Path
 
 import pytest
@@ -397,8 +395,8 @@ class TestCoreLogging:
         assert "samples" in log_output
 
 
-class TestEnhancedCoreMethods:
-    """Test all the new enhanced methods added to core modules."""
+class TestCoreMethods:
+    """Test all the new methods added to core modules."""
 
     def test_enhanced_hash_utilities(self, tmp_path):
         """Test enhanced hash utilities."""
