@@ -204,11 +204,27 @@ def load_domain_config(config_file: str | Path, prefix: str = "DOMAIN") -> Domai
 - Life Events: `LifeEventsWorkflowConfig` with prefix `"LE"`
 - Other modules: Follow pattern `{MODULE}_` prefix (e.g., `DNA_`, `PROT_`, `EPI_`, `ONT_`, `PHEN_`, `ECO_`, `MATH_`, `INFO_`, `VIZ_`, `SIM_`, `SC_`, `QC_`, `NET_`, `ML_`, `MULTI_`)
 
-## Testing Policy (STRICTLY NO MOCKS/FAKES)
+## Code Quality Policy (STRICTLY NO MOCKS/FAKES/PLACEHOLDERS)
 
 ### Absolute Prohibition
-- **NEVER use fake/mocked/stubbed methods, objects, or network shims** in code or tests.
-- **Real Implementation Only**: Tests must exercise real code paths and real external behavior without exceptions.
+- **NEVER use fake/mocked/stubbed methods, objects, or network shims** in **source code** or tests.
+- **Real Implementation Only**: All functions must perform real computations or make real API calls. **NO DUMMY DATA RETURNS**.
+- **Source Code Policy**: Applies to all production code, not just tests. Placeholder implementations are prohibited.
+- **Exception Handling**: When external dependencies are unavailable, raise appropriate errors or skip gracefully, **never return dummy data**.
+
+### Prohibited Patterns
+- ❌ `return [[0, 1, 2] * 100]` (dummy genotype data)
+- ❌ `return [1.0, 0.5, 1.2] * 100` (dummy phenotype data)
+- ❌ `return {'scientific_name': f"Species_{taxon_id}"}` (placeholder API responses)
+- ❌ `return None` (placeholder plot objects)
+- ❌ `return [1.0] * size` (dummy eigenvalues)
+
+### Required Patterns
+- ✅ Real VCF parsing and file I/O
+- ✅ Actual UniProt/PDB API calls with proper error handling
+- ✅ Real matplotlib figure generation
+- ✅ Proper dynamic programming algorithms (Needleman-Wunsch, Smith-Waterman)
+- ✅ Genuine external tool execution
 
 ### Test Patterns
 - **Networked tests**: Perform real HTTP requests with short timeouts. If offline, skip gracefully with clear messages.

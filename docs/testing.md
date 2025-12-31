@@ -113,11 +113,13 @@ graph TD
     end
 ```
 
-## Testing Policy (STRICTLY NO MOCKS/FAKES)
+## Code Quality Policy (STRICTLY NO MOCKS/FAKES/PLACEHOLDERS)
 
-**ABSOLUTE PROHIBITION**: Never use fake/mocked/stubbed methods, objects, or network shims in code or tests.
+**ABSOLUTE PROHIBITION**: Never use fake/mocked/stubbed methods, objects, or network shims in **source code** or tests.
 
-**Real Implementation Only**: Tests must exercise real code paths and real external behavior without exceptions:
+**Source Code Policy**: All production functions must perform real computations or make real API calls. **NO DUMMY DATA RETURNS**. Placeholder implementations that return hardcoded values are strictly prohibited.
+
+**Real Implementation Only**: All code must exercise real algorithms and external behavior:
 - **Networked tests**: perform real HTTP requests with short timeouts. If offline, skip gracefully with clear messages.
 - **CLI-dependent tests** (e.g., amalgkit): run only when the dependency is available on PATH; otherwise skip with dependency notes.
 - **Database tests**: use real database connections or skip when unavailable.
