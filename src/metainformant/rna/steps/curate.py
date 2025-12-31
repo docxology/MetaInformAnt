@@ -115,3 +115,5 @@ def curate_species_data(species: str, data: Dict[str, Any],
         'final_sample_count': 8,  # Simulated
         'status': 'completed'
     }
+
+

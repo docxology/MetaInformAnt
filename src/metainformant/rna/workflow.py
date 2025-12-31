@@ -456,3 +456,5 @@ def run_config_based_workflow(config_path: Union[str, Path], **kwargs: Any) -> D
         'return_codes': return_codes,
         'success': all(rc == 0 for rc in return_codes)
     }
+
+

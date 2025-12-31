@@ -693,4 +693,23 @@ Comprehensive tests cover:
 - Scanpy for core single-cell algorithms
 - Optional: scVelo for trajectory analysis, scikit-learn for additional ML methods
 
+## See Also
+
+- **[AGENTS.md](AGENTS.md)**: AI agent contributions and development details for the singlecell module
+
+## Related Modules
+
+The Single-cell module integrates with several other METAINFORMANT modules:
+
+- **RNA Module**: Single-cell RNA-seq data processing and analysis; foundation for scRNA-seq workflows
+- **Multi-omics Module**: Multi-omics single-cell data integration; spatial transcriptomics
+- **ML Module**: Machine learning analysis of single-cell data; clustering algorithms and feature selection
+- **Visualization Module**: Single-cell data visualization, dimensionality reduction plots, and trajectory inference diagrams
+- **Quality Module**: Single-cell data quality control and preprocessing; doublet detection and filtering
+- **Information Module**: Information-theoretic analysis of single-cell heterogeneity and cell state complexity
+- **Networks Module**: Cell-cell communication networks and regulatory network inference
+- **Simulation Module**: Synthetic single-cell data generation for method validation
+- **GWAS Module**: Single-cell eQTL analysis and cell-type specific association studies
+- **Ontology Module**: Cell type annotation and functional enrichment analysis
+
 This module provides a toolkit for single-cell transcriptomic analysis.

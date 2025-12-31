@@ -511,3 +511,5 @@ def download_annotation(accession: str, output_dir: str | Path) -> Path:
         annotation_dir.mkdir(exist_ok=True)
 
         return annotation_dir
+
+

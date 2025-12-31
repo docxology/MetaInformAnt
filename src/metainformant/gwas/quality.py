@@ -357,3 +357,5 @@ def write_filtered_vcf(filtered_data: Dict[str, Any], output_path: Union[str, Pa
             f.write("\n")
 
     logger.info(f"Filtered VCF written with {len(filtered_data.get('variants', []))} variants")
+
+

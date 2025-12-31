@@ -536,4 +536,30 @@ Quality assessment tools are tested with:
 - Biopython for sequence quality analysis
 - Optional: FastQC integration for detailed reports
 
+## See Also
+
+- **[AGENTS.md](AGENTS.md)**: AI agent contributions and development details for the quality module
+
+## Related Modules
+
+The Quality module integrates with all other METAINFORMANT modules:
+
+- **DNA Module**: DNA sequence quality assessment, FASTQ preprocessing, and variant calling validation
+- **RNA Module**: RNA-seq data quality control, adapter trimming, and expression data validation
+- **Protein Module**: Protein structure validation and sequence quality assessment
+- **Epigenome Module**: Epigenetic data quality control and preprocessing validation
+- **GWAS Module**: Genotype data quality control and population structure validation
+- **Multi-omics Module**: Cross-platform data quality assessment and integration validation
+- **Single-cell Module**: Single-cell data quality control and preprocessing standards
+- **Networks Module**: Network data validation and quality assessment
+- **ML Module**: Model validation and performance quality assessment
+- **Information Module**: Information quality measures and data integrity validation
+- **Visualization Module**: Quality metric visualization and validation reporting
+- **Simulation Module**: Synthetic data quality validation and method benchmarking
+- **Math Module**: Statistical quality control and validation methods
+- **Ontology Module**: Annotation quality assessment and validation
+- **Phenotype Module**: Phenotype data validation and measurement quality control
+- **Life Events Module**: Life course data quality assessment and validation
+- **Ecology Module**: Ecological data validation and biodiversity assessment standards
+
 This module ensures data integrity and quality across all biological data processing pipelines.

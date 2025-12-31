@@ -445,3 +445,5 @@ def validate_vcf(vcf_path: str | Path) -> Dict[str, Any]:
         validation['errors'].append(f"Validation failed: {str(e)}")
 
     return validation
+
+

@@ -609,7 +609,7 @@ cv_results = cross_validate_biological(classifier, X, y, cv=5)
 print(f"Mean CV accuracy: {np.mean(cv_results['test_score']):.3f}")
 print(f"Std CV accuracy: {np.std(cv_results['test_score']):.3f}")
 
-# Bootstrap validation for robust performance estimation
+# Bootstrap validation for performance estimation
 bootstrap_results = bootstrap_validate(classifier, X, y, n_bootstrap=100)
 print(f"Bootstrap mean accuracy: {bootstrap_results['mean_score']:.3f}")
 print(f"Bootstrap 95% CI: {bootstrap_results['ci_95']}")
@@ -627,5 +627,32 @@ print(f"Bootstrap 95% CI: {bootstrap_results['ci_95']}")
 - **Core**: scikit-learn for ML algorithms
 - **Optional**: xgboost, lightgbm for gradient boosting
 - **Deep Learning**: tensorflow/pytorch for neural networks (optional)
+
+## See Also
+
+- **[AGENTS.md](AGENTS.md)**: AI agent contributions and development details for the ml module
+
+## Related Modules
+
+The ML module integrates with all other METAINFORMANT modules:
+
+- **DNA Module**: Sequence classification, motif discovery, and genomic feature prediction
+- **RNA Module**: Gene expression prediction, differential expression analysis, and RNA-seq classification
+- **Protein Module**: Protein function prediction, structure classification, and sequence analysis
+- **Epigenome Module**: Epigenetic modification prediction and chromatin state classification
+- **GWAS Module**: Polygenic risk score calculation and trait prediction from genomic data
+- **Multi-omics Module**: Multi-omics data integration and systems-level prediction models
+- **Single-cell Module**: Single-cell clustering, trajectory inference, and cell type classification
+- **Networks Module**: Graph-based machine learning and network embedding algorithms
+- **Information Module**: Information-theoretic feature selection and complexity-based modeling
+- **Visualization Module**: Model performance visualization and feature importance plots
+- **Simulation Module**: Synthetic data generation for model training and validation
+- **Quality Module**: Machine learning-based quality assessment and anomaly detection
+- **Math Module**: Mathematical foundations for ML algorithms and statistical modeling
+- **Ontology Module**: Ontology-based feature engineering and hierarchical classification
+- **Phenotype Module**: Phenotype prediction from genomic and environmental data
+- **Life Events Module**: Life course prediction models and temporal sequence analysis
+- **Ecology Module**: Species distribution modeling and ecological prediction
+- **Core Module**: Cross-validation utilities and model evaluation frameworks
 
 This module provides a machine learning toolkit tailored for biological data analysis and interpretation.

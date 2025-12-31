@@ -323,10 +323,10 @@ python -m metainformant gwas run --config config/gwas/gwas_template.yaml
 
 ## Documentation
 
-Complete documentation available in [`docs/gwas/`](../../docs/gwas/):
-- [Overview](../../docs/gwas/index.md)
-- [Workflow Guide](../../docs/gwas/workflow.md)
-- [Configuration Reference](../../docs/gwas/config.md)
+Complete documentation available in [`docs/gwas/`](../../../docs/gwas/):
+- [Overview](../../../docs/gwas/index.md)
+- [Workflow Guide](../../../docs/gwas/workflow.md)
+- [Configuration Reference](../../../docs/gwas/config.md)
 
 ## Integration with Other Modules
 
@@ -443,7 +443,7 @@ logistic_results = association_test_logistic(
     covariates=covariates
 )
 
-# Use ML module for advanced regression
+# Use ML module for regression
 regressor = BiologicalRegressor(algorithm="lasso", alpha=0.01, random_state=42)
 # Fit regressor for each variant
 for variant_idx in range(genotype_matrix.shape[1]):

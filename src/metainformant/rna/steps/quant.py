@@ -320,3 +320,5 @@ def run_star_quantification(fastq_files: list[str], output_dir: Path, threads: i
         'output_files': [str(counts_file)],
         'estimated_counts': 20000  # Simulated
     }
+
+

@@ -234,18 +234,57 @@ def calculate_cai(sequence: str, reference_usage: Dict[str, float] = None) -> fl
 def optimize_codons(sequence: str, target_usage: Dict[str, float]) -> str:
     """Optimize codon usage for a DNA sequence.
 
+    This function optimizes codon usage by replacing synonymous codons
+    with the most frequently used codons in the target organism's genome.
+
     Args:
-        sequence: DNA sequence string
-        target_usage: Target codon usage frequencies
+        sequence: DNA sequence string (must be divisible by 3)
+        target_usage: Target codon usage frequencies (codon -> relative frequency)
 
     Returns:
-        Optimized DNA sequence
-    """
-    # This is a placeholder implementation
-    # Real codon optimization is complex and context-dependent
-    logger.warning("Codon optimization is a placeholder implementation")
+        Optimized DNA sequence with improved codon usage
 
-    return sequence  # Return unchanged for now
+    Raises:
+        ValueError: If sequence length not divisible by 3 or invalid codons
+    """
+    if len(sequence) % 3 != 0:
+        raise ValueError("Sequence length must be divisible by 3 for codon optimization")
+
+    # Get genetic code for codon -> amino acid mapping
+    genetic_code = get_genetic_code()
+
+    # Build codon preference map: amino_acid -> [(codon, frequency), ...]
+    codon_preferences = {}
+    for codon, aa in genetic_code.items():
+        if aa not in codon_preferences:
+            codon_preferences[aa] = []
+        # Use target usage if available, otherwise default to equal preference
+        freq = target_usage.get(codon, 1.0)
+        codon_preferences[aa].append((codon, freq))
+
+    # Sort codons by preference (highest frequency first)
+    for aa in codon_preferences:
+        codon_preferences[aa].sort(key=lambda x: x[1], reverse=True)
+
+    # Optimize sequence codon by codon
+    optimized = []
+    for i in range(0, len(sequence), 3):
+        codon = sequence[i:i+3].upper()
+
+        if codon not in genetic_code:
+            raise ValueError(f"Invalid codon '{codon}' at position {i}")
+
+        aa = genetic_code[codon]
+        preferred_codons = codon_preferences.get(aa, [(codon, 1.0)])
+
+        # Use the most preferred codon
+        optimized_codon = preferred_codons[0][0]
+        optimized.append(optimized_codon)
+
+    result = ''.join(optimized)
+
+    logger.info(f"Optimized codon usage for {len(sequence)//3} codons")
+    return result
 
 
 def get_genetic_code(code_id: int = 1) -> Dict[str, str]:
@@ -299,3 +338,5 @@ def back_translate(protein_seq: str, codon_usage: Dict[str, float] = None) -> st
 
 # Import re at module level for find_orfs function
 import re
+
+

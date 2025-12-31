@@ -388,3 +388,5 @@ def is_palindrome(seq: str) -> bool:
     reversed_complement = ''.join(complement.get(c, c) for c in reversed(seq_upper))
 
     return seq_upper == reversed_complement
+
+

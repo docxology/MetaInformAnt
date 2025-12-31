@@ -352,3 +352,5 @@ def tamura_nei_distance(seq1: str, seq2: str, kappa: float = 2.0) -> float:
         return distance
     except (ValueError, ZeroDivisionError):
         return float('inf')
+
+

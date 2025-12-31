@@ -40,41 +40,57 @@ This document outlines AI assistance in developing METAINFORMANT's functional an
 
 This ontology infrastructure provides a solid foundation for functional annotation analysis.
 
+## Implementation Status
+
+**Status**: ✅ **PARTIALLY IMPLEMENTED**
+- **Core functionality**: Implemented (types.py with Ontology/Term/Relationship classes)
+- **OBO parsing**: Implemented (obo.py with parse_obo function)
+- **Gene Ontology analysis**: Implemented (go.py with enrichment and semantic similarity)
+- **Ontology querying**: Implemented (query.py with traversal and statistics)
+- **Ontology serialization**: Implemented (serialize.py with JSON/OBO save/load)
+
 ## Complete Function Signatures
+
+### Ontology Types (`types.py`)
+- `create_term(id: str, name: str | None = None, definition: str | None = None, namespace: str | None = None, synonyms: List[str] | None = None, xrefs: List[str] | None = None, is_obsolete: bool = False, **metadata) -> Term`
+- `create_relationship(source: str, target: str, relation_type: str, **metadata) -> Relationship`
+- `create_ontology(terms: Dict[str, Term] | None = None, relationships: List[Relationship] | None = None, **metadata) -> Ontology`
 
 ### OBO Parsing (`obo.py`)
 - `parse_obo(path: str | Path) -> Ontology`
+- `_parse_stanza(lines: List[str]) -> Dict[str, Any]`
+- `_build_relationship_graph(terms: Dict[str, Term], relationships: List[Relationship]) -> nx.DiGraph`
 
 ### Gene Ontology Analysis (`go.py`)
-- `count_go_scripts(go_dir: Path) -> int`
 - `load_go_obo(path: str | Path) -> Ontology`
-- `write_go_summary(onto: Ontology, dest: str | Path | None = None) -> Path`
-- `validate_go_ontology(onto: Ontology) -> tuple[bool, List[str]]`
 - `enrich_genes(genes: List[str], background: List[str] | None, annotations: Dict[str, Set[str]], alpha: float = 0.05, method: str = "fisher") -> pd.DataFrame`
 - `semantic_similarity(term1: str, term2: str, term_ic: Dict[str, float], hierarchy: Dict[str, Set[str]], method: str = "resnik") -> float`
+- `write_go_summary(onto: Ontology, dest: str | Path | None = None) -> Path`
+- `validate_go_ontology(onto: Ontology) -> tuple[bool, List[str]]`
 
 ### Ontology Querying (`query.py`)
 - `clear_cache() -> None`
 - `set_cache_enabled(enabled: bool) -> None`
-- `set_cache_ttl(seconds: float) -> None`
-- `ancestors(onto: Ontology, term_id: str, use_cache: bool = True) -> Set[str]`
-- `descendants(onto: Ontology, term_id: str, use_cache: bool = True) -> Set[str]`
-- `subgraph(onto: Ontology, roots: Iterable[str]) -> Ontology`
-- `common_ancestors(onto: Ontology, term1: str, term2: str) -> Set[str]`
-- `path_to_root(onto: Ontology, term_id: str) -> List[str]`
-- `distance(onto: Ontology, term1: str, term2: str) -> int | None`
-- `find_term_by_name(onto: Ontology, name: str, namespace: str | None = None) -> List[str]`
-- `filter_by_namespace(onto: Ontology, namespace: str) -> Ontology`
-- `get_roots(onto: Ontology, namespace: str | None = None) -> Set[str]`
-- `get_leaves(onto: Ontology, namespace: str | None = None) -> Set[str]`
+- `ancestors(onto: Ontology, term_id: str, relation_type: str = "is_a") -> Set[str]`
+- `descendants(onto: Ontology, term_id: str, relation_type: str = "is_a") -> Set[str]`
+- `common_ancestors(onto: Ontology, term1: str, term2: str, relation_type: str = "is_a") -> Set[str]`
+- `most_informative_common_ancestor(onto: Ontology, term1: str, term2: str, ic_map: Dict[str, float], relation_type: str = "is_a") -> str`
+- `path_to_root(onto: Ontology, term_id: str, relation_type: str = "is_a") -> List[str]`
+- `shortest_path(onto: Ontology, term1: str, term2: str, relation_type: str = "is_a") -> List[str]`
+- `get_subontology(onto: Ontology, root_terms: Iterable[str], relation_type: str = "is_a") -> Ontology`
+- `find_terms_by_name(onto: Ontology, name_pattern: str, case_sensitive: bool = False) -> List[str]`
+- `find_terms_by_namespace(onto: Ontology, namespace: str) -> List[str]`
+- `get_roots(onto: Ontology, relation_type: str = "is_a") -> Set[str]`
+- `get_leaves(onto: Ontology, relation_type: str = "is_a") -> Set[str]`
+- `get_subontology_stats(onto: Ontology) -> Dict[str, Any]`
+- `validate_ontology_integrity(onto: Ontology) -> tuple[bool, List[str]]`
+- `information_content(onto: Ontology, term_id: str, corpus_size: int | None = None) -> float`
+- `calculate_ic_map(onto: Ontology, corpus_size: int | None = None) -> Dict[str, float]`
 
 ### Ontology Serialization (`serialize.py`)
 - `save_ontology(onto: Ontology, path: str | Path, format: str = "obo") -> None`
 - `load_ontology(path: str | Path, format: str = "obo") -> Ontology`
-- `ontology_to_graph(onto: Ontology) -> networkx.DiGraph`
-- `graph_to_ontology(graph: networkx.DiGraph, metadata: Dict[str, Any] | None = None) -> Ontology`
-
-### Ontology Types (`types.py`)
-- `create_term(id: str, name: str | None = None, definition: str | None = None, namespace: str | None = None, synonyms: List[str] | None = None, xrefs: List[str] | None = None, is_obsolete: bool = False) -> Term`
-- `create_relationship(source: str, target: str, relation_type: str) -> Relationship`
-- `create_ontology(terms: Dict[str, Term] | None = None, relationships: List[Relationship] | None = None, metadata: Dict[str, Any] | None = None) -> Ontology`
+- `ontology_to_graph(onto: Ontology) -> nx.DiGraph`
+- `graph_to_ontology(graph: nx.DiGraph, metadata: Dict[str, Any] | None = None) -> Ontology`
+- `export_ontology_stats(onto: Ontology, path: str | Path) -> None`
+- `merge_ontologies(*ontologies: Ontology, conflict_resolution: str = "first") -> Ontology`

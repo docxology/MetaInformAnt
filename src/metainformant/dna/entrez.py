@@ -398,3 +398,5 @@ def link_nucleotide_to_protein(accession: str, api_key: Optional[str] = None,
                         protein_ids.extend(linksetdb.get('links', []))
 
     return protein_ids
+
+

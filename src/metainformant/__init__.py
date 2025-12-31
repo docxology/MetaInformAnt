@@ -63,26 +63,6 @@ from . import (
     epigenome,
 )
 
-# Optional imports with graceful fallbacks for modules that may have dependencies
-try:
-    from . import rna
-except ImportError:
-    rna = None
-
-try:
-    from . import gwas
-except ImportError:
-    gwas = None
-
-try:
-    from . import singlecell
-except ImportError:
-    singlecell = None
-
-try:
-    from . import multiomics
-except ImportError:
-    multiomics = None
 
 # Type checking imports
 from typing import TYPE_CHECKING
@@ -127,3 +107,4 @@ __all__ = [
     "quality",
     "visualization",
 ]
+

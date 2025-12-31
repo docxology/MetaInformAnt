@@ -405,3 +405,5 @@ def cpg_islands(seq: str, min_length: int = 200, min_gc: float = 0.5,
         i = start + 1  # Slide window
 
     return islands
+
+

@@ -590,4 +590,23 @@ genes = ["GENE1", "GENE2"]
 - Core utilities: `metainformant.core` (io, logging, paths, errors, validation)
 - No external dependencies required for basic functionality
 
+## See Also
+
+- **[AGENTS.md](AGENTS.md)**: AI agent contributions and development details for the ontology module
+
+## Related Modules
+
+The Ontology module integrates with several other METAINFORMANT modules:
+
+- **Protein Module**: Gene Ontology (GO) term assignment to protein sequences; functional annotation and enrichment analysis
+- **Networks Module**: Ontology-based network construction, functional enrichment of network modules, and semantic similarity networks
+- **Information Module**: Information content calculations, semantic similarity measures, and ontology complexity analysis
+- **RNA Module**: Functional annotation of genes from RNA-seq data; pathway enrichment analysis
+- **GWAS Module**: Functional enrichment of GWAS results; gene set analysis using ontology hierarchies
+- **Multi-omics Module**: Cross-omics functional integration using ontology-based annotations
+- **Quality Module**: Validation of ontology annotations and enrichment analysis quality control
+- **Visualization Module**: Ontology hierarchy visualization, enrichment plot generation, and semantic similarity heatmaps
+- **ML Module**: Ontology-based feature engineering and functional prediction models
+- **Epigenome Module**: Functional annotation of epigenetic modifications and regulatory elements
+
 This module provides essential tools for ontology analysis and functional annotation in biological research.

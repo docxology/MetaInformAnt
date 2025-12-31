@@ -27,16 +27,7 @@ from . import (
 # Import steps submodule
 from . import steps
 
-# Optional imports with graceful fallbacks
-try:
-    from . import protein_integration
-except ImportError:
-    protein_integration = None
-
-try:
-    from . import discovery
-except ImportError:
-    discovery = None
+# All modules imported above are available
 
 # Type checking imports
 from typing import TYPE_CHECKING
@@ -69,3 +60,4 @@ __all__ = [
     "protein_integration",
     "discovery",
 ]
+

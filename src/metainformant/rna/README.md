@@ -562,4 +562,23 @@ results = execute_workflow(config)
 print("Workflow completed successfully!")
 ```
 
+## See Also
+
+- **[AGENTS.md](AGENTS.md)**: AI agent contributions and development details for the rna module
+
+## Related Modules
+
+The RNA module integrates with several other METAINFORMANT modules:
+
+- **DNA Module**: RNA sequences originate from DNA transcription; codon usage and translation efficiency analysis
+- **Single-cell Module**: Single-cell RNA-seq data processing and analysis; provides foundation for scRNA-seq workflows
+- **Multi-omics Module**: RNA expression data integration with DNA, protein, and epigenetic data
+- **Networks Module**: Gene regulatory networks and co-expression analysis from RNA-seq data
+- **Protein Module**: RNA translation produces protein sequences; ribosome profiling and translation efficiency
+- **Quality Module**: RNA-seq data quality assessment, adapter trimming, and preprocessing
+- **Visualization Module**: RNA expression visualization, heatmaps, and pathway analysis plots
+- **ML Module**: Machine learning analysis of RNA-seq data, including clustering and classification
+- **Information Module**: Information-theoretic analysis of RNA sequences and expression patterns
+- **GWAS Module**: Expression quantitative trait loci (eQTL) analysis connecting RNA expression to DNA variants
+
 This module provides a complete solution for transcriptomic analysis, from individual processing steps to complete workflow orchestration.

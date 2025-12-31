@@ -110,11 +110,12 @@ Centralized configuration management with environment variable overrides.
 from metainformant.core import config
 
 # Load configuration from file with environment overrides
-cfg = config.load_config("config.yaml")
+raw_config = config.load_mapping_from_file("config.yaml")
+cfg = config.apply_env_overrides(raw_config)
 
 # Access configuration values
-db_config = cfg.database
-threads = cfg.compute.threads
+db_config = cfg.get("database")
+threads = cfg.get("compute", {}).get("threads")
 
 # Validate configuration
 config.validate_config(cfg)
@@ -135,8 +136,8 @@ Robust file I/O utilities with support for multiple formats and compression.
 from metainformant.core import io
 
 # JSON operations
-data = io.read_json("data.json")
-io.write_json(data, "output.json")
+data = io.load_json("data.json")
+io.dump_json(data, "output.json")
 
 # CSV operations with type inference
 df = io.read_csv("data.csv")
@@ -869,6 +870,25 @@ print(f"Total size: {structure['total_size']} bytes")
 ```
 
 This ensures consistency and reduces code duplication across the entire codebase.
+
+## See Also
+
+- **[AGENTS.md](AGENTS.md)**: AI agent contributions and development details for the core module
+
+## Related Modules
+
+The core module provides foundational utilities used throughout METAINFORMANT:
+
+- **All Domain Modules**: DNA, RNA, Protein, GWAS, Epigenome, Ontology, Phenotype, Ecology, Math, Visualization, Simulation, Single-cell, Quality, Networks, ML, Multi-omics, Life Events, Information modules all use core utilities for configuration, I/O, logging, and path management
+- **Configuration Management**: All modules use `core.config` for loading YAML/TOML configs with environment overrides
+- **I/O Operations**: All modules use `core.io` for JSON/CSV/TSV file operations and downloads
+- **Logging**: All modules use `core.logging` for structured logging with context
+- **Path Management**: All modules use `core.paths` for safe path handling and containment checks
+- **Parallel Processing**: RNA, GWAS, and multi-omics modules use `core.parallel` for thread-based parallel execution
+- **Caching**: RNA and GWAS workflows use `core.cache` for intermediate result storage
+- **Validation**: All modules use `core.validation` for input validation and error handling
+- **Text Processing**: Ontology and phenotype modules use `core.text` for text normalization
+- **Discovery**: All modules can be analyzed using `core.discovery` and `core.symbols` for repository intelligence
 
 ## Workflow Orchestration Framework
 

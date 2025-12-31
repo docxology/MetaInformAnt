@@ -1608,8 +1608,29 @@ pytest tests/test_life_events_integration.py
 - `matplotlib>=3.5.0`: For visualization functions
 - `scikit-learn>=1.1.0`: For ML model evaluation metrics
 - `scipy>=1.9.0`: For statistical tests in intervention analysis
-- `shap>=0.40.0`: For advanced feature attribution (not yet fully integrated)
+- `shap>=0.40.0`: For feature attribution (not yet fully integrated)
 - `torch` or `tensorflow`: For future transformer/LSTM models (not yet fully implemented)
 
 All optional dependencies are handled defensively - the module will work without them, but some features may be limited.
+
+## See Also
+
+- **[AGENTS.md](AGENTS.md)**: AI agent contributions and development details for the life_events module
+
+## Related Modules
+
+The Life Events module integrates with several other METAINFORMANT modules:
+
+- **Phenotype Module**: Phenotype extraction from life course events and temporal trait analysis
+- **ML Module**: Machine learning prediction of life events and sequence modeling
+- **Information Module**: Information-theoretic analysis of life course complexity and temporal patterns
+- **Visualization Module**: Life course event visualization and temporal sequence plotting
+- **Simulation Module**: Synthetic life course data generation and temporal process modeling
+- **Quality Module**: Life course data validation and temporal data quality assessment
+- **Math Module**: Mathematical modeling of life course dynamics and temporal processes
+- **Networks Module**: Life event interaction networks and temporal relationship modeling
+- **GWAS Module**: Genetic associations with life course events and temporal trait analysis
+- **Multi-omics Module**: Multi-omics analysis of life course changes and temporal dynamics
+
+This module provides tools for analyzing life course events and temporal biological processes.
 

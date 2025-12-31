@@ -33,21 +33,7 @@ from . import (
     variants,
 )
 
-# Optional imports with graceful fallbacks
-try:
-    from . import population_analysis
-except ImportError:
-    population_analysis = None
-
-try:
-    from . import population_viz
-except ImportError:
-    population_viz = None
-
-try:
-    from . import rna_integration
-except ImportError:
-    rna_integration = None
+# All modules imported above are available
 
 # Type checking imports
 from typing import TYPE_CHECKING
@@ -88,3 +74,4 @@ __all__ = [
     "population_viz",
     "rna_integration",
 ]
+

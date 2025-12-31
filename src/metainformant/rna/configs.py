@@ -180,3 +180,5 @@ def get_config_template() -> Dict[str, Any]:
     }
 
     return template
+
+

@@ -496,4 +496,28 @@ uv run pytest tests/test_multiomics_*.py -v
 
 All outputs should be written to `output/multiomics/` directory by default. Use the `save()` method which automatically handles path creation and uses core.io for file operations.
 
+## See Also
+
+- **[AGENTS.md](AGENTS.md)**: AI agent contributions and development details for the multiomics module
+
+## Related Modules
+
+The Multi-omics module integrates with several other METAINFORMANT modules:
+
+- **DNA Module**: Genomic data integration and DNA sequence analysis in multi-omics context
+- **RNA Module**: Transcriptomic data integration and gene expression analysis
+- **Protein Module**: Proteomic data integration and protein abundance analysis
+- **Epigenome Module**: Epigenetic data integration and chromatin state analysis
+- **Single-cell Module**: Single-cell multi-omics data integration and analysis
+- **GWAS Module**: Multi-omics association studies and integrative genomics
+- **Networks Module**: Multi-omics network construction and systems-level analysis
+- **ML Module**: Machine learning integration of multi-omics data and predictive modeling
+- **Information Module**: Information-theoretic analysis of multi-omics data complexity
+- **Visualization Module**: Multi-omics data visualization and integrated plots
+- **Quality Module**: Multi-omics data quality assessment and integration validation
+- **Simulation Module**: Synthetic multi-omics data generation for method validation
+- **Math Module**: Statistical integration methods for multi-omics data
+- **Ontology Module**: Functional annotation integration across omics layers
+- **Phenotype Module**: Phenotype integration with multi-omics data
+
 This module enables systems biology analysis through multi-omic data integration.

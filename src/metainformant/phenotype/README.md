@@ -650,4 +650,23 @@ Comprehensive tests cover:
 - `metainformant.core` - Core utilities (io, logging, errors, paths)
 - `metainformant.life_events` - Optional dependency for life course functions
 
+## See Also
+
+- **[AGENTS.md](AGENTS.md)**: AI agent contributions and development details for the phenotype module
+
+## Related Modules
+
+The Phenotype module integrates with several other METAINFORMANT modules:
+
+- **Life Events Module**: Temporal phenotype analysis and life course event integration; longitudinal trait studies
+- **GWAS Module**: Phenotype data for genome-wide association studies; quantitative and qualitative trait analysis
+- **Networks Module**: Phenotype correlation networks, trait co-occurrence analysis, and morphological relationship modeling
+- **Multi-omics Module**: Phenotype integration with DNA, RNA, and protein data; systems-level trait analysis
+- **ML Module**: Machine learning prediction of phenotypes from genomic data; trait classification models
+- **Visualization Module**: Phenotype distribution plots, trait correlation heatmaps, and morphological data visualization
+- **Quality Module**: Phenotype data validation and quality control; trait measurement standardization
+- **Ontology Module**: Phenotype annotation using standardized vocabularies; trait classification systems
+- **Information Module**: Information-theoretic analysis of phenotype complexity and trait relationships
+- **Simulation Module**: Synthetic phenotype generation for statistical power analysis and method validation
+
 This module provides essential tools for phenotype-genotype association studies and morphological analysis.

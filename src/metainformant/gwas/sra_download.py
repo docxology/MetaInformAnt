@@ -446,3 +446,5 @@ def prefetch_sra_metadata(accessions: List[str]) -> Dict[str, Dict[str, Any]]:
         time.sleep(0.5)
 
     return metadata
+
+

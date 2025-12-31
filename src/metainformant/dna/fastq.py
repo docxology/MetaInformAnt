@@ -337,3 +337,5 @@ def calculate_per_base_quality(fastq_path: str | Path) -> Dict[int, Dict[str, fl
         del stats['qualities']
 
     return position_stats
+
+

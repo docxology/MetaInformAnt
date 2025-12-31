@@ -561,3 +561,5 @@ def calculate_method_power(method_results: Dict[str, Any]) -> Dict[str, Dict[str
         }
 
     return power_results
+
+

@@ -415,7 +415,7 @@ spectrum = mutations.mutation_spectrum(mutation_data)
 
 ## Examples
 
-The DNA module includes comprehensive examples demonstrating all major functionality. See [`examples/dna/`](../../examples/dna/) for detailed examples:
+The DNA module includes detailed examples demonstrating all major functionality. See [`examples/dna/`](../../examples/dna/) for detailed examples:
 
 ### Sequence Processing Basics
 ```bash
@@ -764,5 +764,24 @@ pop1 = ["AAAA", "AAAT"]
 pop2 = ["TTTT", "TTTA"]
 fst = population.hudson_fst(pop1, pop2)
 ```
+
+## Related Modules
+
+The DNA module integrates with several other METAINFORMANT modules:
+
+- **RNA Module**: DNA sequences serve as templates for transcription and RNA analysis; codon usage analysis connects DNA to RNA translation efficiency
+- **Protein Module**: DNA translation produces protein sequences for structural and functional analysis; genetic code and codon optimization
+- **GWAS Module**: DNA variants and population structure analysis; provides foundation for genome-wide association studies
+- **Math Module**: Population genetics theory, coalescent models, and statistical analysis of DNA sequence data
+- **Visualization Module**: DNA sequence visualization, phylogenetic trees, population structure plots, and genomic data visualization
+- **Multi-omics Module**: DNA sequence data integration with RNA, protein, and epigenetic data
+- **Information Module**: Information-theoretic analysis of DNA sequences, complexity measures, and semantic analysis
+- **Ecology Module**: DNA barcoding and biodiversity analysis using sequence data
+- **Quality Module**: DNA sequence quality assessment and preprocessing
+- **Simulation Module**: Synthetic DNA sequence generation and evolutionary simulation
+
+## See Also
+
+- **[AGENTS.md](AGENTS.md)**: AI agent contributions and development details for the DNA module
 
 This module provides a toolkit for DNA sequence analysis, from manipulation to evolutionary and population genetic analysis.

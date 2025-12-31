@@ -1,0 +1,570 @@
+"""Regulatory network analysis and modeling.
+
+This module provides tools for analyzing and modeling gene regulatory networks,
+including network inference, motif discovery, and dynamic analysis.
+"""
+
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
+
+from metainformant.core import logging
+
+logger = logging.get_logger(__name__)
+
+# Optional dependencies
+try:
+    import networkx as nx
+    HAS_NETWORKX = True
+except ImportError:
+    HAS_NETWORKX = False
+    logger.warning("networkx not available, regulatory network analysis disabled")
+
+try:
+    import numpy as np
+    HAS_NUMPY = True
+except ImportError:
+    HAS_NUMPY = False
+
+
+def construct_regulatory_network(
+    regulators: List[str],
+    targets: List[str],
+    interactions: List[Tuple[str, str, str]],
+    **kwargs: Any
+) -> Any:
+    """Construct a regulatory network from interaction data.
+
+    Args:
+        regulators: List of regulator genes/proteins
+        targets: List of target genes/proteins
+        interactions: List of (regulator, target, interaction_type) tuples
+        **kwargs: Additional network parameters
+
+    Returns:
+        NetworkX directed graph representing regulatory network
+
+    Raises:
+        ImportError: If networkx not available
+    """
+    if not HAS_NETWORKX:
+        raise ImportError("networkx required for regulatory network construction")
+
+    G = nx.DiGraph(**kwargs)
+
+    # Add nodes
+    all_nodes = set(regulators) | set(targets)
+    G.add_nodes_from(all_nodes)
+
+    # Add regulatory interactions
+    for regulator, target, interaction_type in interactions:
+        if regulator in all_nodes and target in all_nodes:
+            G.add_edge(regulator, target, interaction_type=interaction_type)
+
+    logger.info(f"Constructed regulatory network: {len(G.nodes())} nodes, {len(G.edges())} interactions")
+    return G
+
+
+def infer_regulatory_network_from_expression(
+    expression_data: Any,
+    regulators: List[str],
+    method: str = "correlation",
+    threshold: float = 0.5,
+    **kwargs: Any
+) -> Any:
+    """Infer regulatory network from gene expression data.
+
+    Args:
+        expression_data: pandas DataFrame with genes as rows, samples as columns
+        regulators: List of potential regulator genes
+        method: Inference method ('correlation', 'mutual_info', 'grnboost2')
+        threshold: Edge weight threshold
+        **kwargs: Additional inference parameters
+
+    Returns:
+        NetworkX regulatory network
+
+    Raises:
+        ImportError: If required packages not available
+    """
+    if not HAS_NETWORKX:
+        raise ImportError("networkx required for regulatory network inference")
+
+    try:
+        import pandas as pd
+    except ImportError:
+        raise ImportError("pandas required for expression data handling")
+
+    if not isinstance(expression_data, pd.DataFrame):
+        raise ValueError("expression_data must be a pandas DataFrame")
+
+    G = nx.DiGraph()
+
+    # Add regulator nodes
+    G.add_nodes_from(regulators)
+
+    # Add target nodes (all genes not in regulators)
+    targets = [gene for gene in expression_data.index if gene not in regulators]
+    G.add_nodes_from(targets)
+
+    if method == "correlation":
+        # Pearson correlation between regulators and targets
+        for regulator in regulators:
+            if regulator not in expression_data.index:
+                continue
+
+            reg_expr = expression_data.loc[regulator]
+
+            for target in targets:
+                if target not in expression_data.index:
+                    continue
+
+                target_expr = expression_data.loc[target]
+
+                # Calculate correlation
+                try:
+                    corr = reg_expr.corr(target_expr)
+                    if abs(corr) >= threshold:
+                        G.add_edge(regulator, target, weight=corr, method='correlation')
+                except:
+                    continue
+
+    elif method == "mutual_info":
+        # Mutual information between regulators and targets
+        try:
+            from sklearn.feature_selection import mutual_info_regression
+
+            # Transpose for sklearn format (samples x features)
+            expr_T = expression_data.T
+
+            for regulator in regulators:
+                if regulator not in expression_data.index:
+                    continue
+
+                reg_idx = expression_data.index.get_loc(regulator)
+                reg_expr = expr_T.iloc[:, reg_idx]
+
+                for target in targets:
+                    if target not in expression_data.index:
+                        continue
+
+                    target_idx = expression_data.index.get_loc(target)
+                    target_expr = expr_T.iloc[:, target_idx]
+
+                    # Calculate mutual information
+                    mi = mutual_info_regression(
+                        reg_expr.values.reshape(-1, 1),
+                        target_expr.values
+                    )[0]
+
+                    if mi >= threshold:
+                        G.add_edge(regulator, target, weight=mi, method='mutual_info')
+
+        except ImportError:
+            raise ImportError("scikit-learn required for mutual information inference")
+
+    elif method == "grnboost2":
+        # GRNBoost2 inference (would require arboreto package)
+        raise NotImplementedError("GRNBoost2 inference requires arboreto package")
+
+    else:
+        raise ValueError(f"Unknown inference method: {method}")
+
+    # Remove isolated nodes
+    isolated = list(nx.isolates(G))
+    G.remove_nodes_from(isolated)
+
+    logger.info(f"Inferred regulatory network: {len(G.nodes())} nodes, {len(G.edges())} edges")
+    return G
+
+
+def analyze_regulatory_motifs(
+    regulatory_graph: Any,
+    motif_types: Optional[List[str]] = None,
+    **kwargs: Any
+) -> Dict[str, Any]:
+    """Analyze regulatory motifs in the network.
+
+    Args:
+        regulatory_graph: NetworkX regulatory graph
+        motif_types: Types of motifs to analyze
+        **kwargs: Additional analysis parameters
+
+    Returns:
+        Dictionary with motif analysis results
+
+    Raises:
+        ImportError: If networkx not available
+    """
+    if not HAS_NETWORKX:
+        raise ImportError("networkx required for motif analysis")
+
+    if motif_types is None:
+        motif_types = ['feed_forward', 'feedback', 'cascade']
+
+    motifs = {}
+
+    # Feed-forward loop analysis
+    if 'feed_forward' in motif_types:
+        motifs['feed_forward_loops'] = _find_feed_forward_loops(regulatory_graph)
+
+    # Feedback loop analysis
+    if 'feedback' in motif_types:
+        motifs['feedback_loops'] = _find_feedback_loops(regulatory_graph)
+
+    # Cascade analysis
+    if 'cascade' in motif_types:
+        motifs['cascades'] = _find_regulatory_cascades(regulatory_graph)
+
+    return {
+        'motifs': motifs,
+        'network_size': len(regulatory_graph.nodes()),
+        'motif_types_analyzed': motif_types,
+    }
+
+
+def _find_feed_forward_loops(G: Any) -> List[List[str]]:
+    """Find feed-forward loop motifs in regulatory network."""
+    ffl_motifs = []
+
+    # FFL: A → B, A → C, B → C
+    for a in G.nodes():
+        for b in G.successors(a):
+            for c in G.successors(b):
+                if G.has_edge(a, c):
+                    # Check edge types (activation/repression)
+                    ab_type = G[a][b].get('interaction_type', 'activation')
+                    ac_type = G[a][c].get('interaction_type', 'activation')
+                    bc_type = G[b][c].get('interaction_type', 'activation')
+
+                    ffl_motifs.append({
+                        'nodes': [a, b, c],
+                        'edges': [(a, b, ab_type), (a, c, ac_type), (b, c, bc_type)],
+                        'type': 'feed_forward_loop'
+                    })
+
+    return ffl_motifs
+
+
+def _find_feedback_loops(G: Any) -> List[List[str]]:
+    """Find feedback loop motifs in regulatory network."""
+    feedback_motifs = []
+
+    # Simple feedback: A → B → A
+    for a in G.nodes():
+        for b in G.successors(a):
+            if G.has_edge(b, a):
+                ab_type = G[a][b].get('interaction_type', 'activation')
+                ba_type = G[b][a].get('interaction_type', 'activation')
+
+                feedback_motifs.append({
+                    'nodes': [a, b],
+                    'edges': [(a, b, ab_type), (b, a, ba_type)],
+                    'type': 'feedback_loop'
+                })
+
+    return feedback_motifs
+
+
+def _find_regulatory_cascades(G: Any, max_length: int = 5) -> List[List[str]]:
+    """Find regulatory cascades in the network."""
+    cascades = []
+
+    # Find paths of length 2 to max_length
+    for source in G.nodes():
+        for target in G.nodes():
+            if source != target:
+                try:
+                    # Find all simple paths
+                    paths = list(nx.all_simple_paths(G, source, target, cutoff=max_length))
+
+                    for path in paths:
+                        if len(path) >= 3:  # At least 3 nodes
+                            cascades.append({
+                                'nodes': path,
+                                'length': len(path) - 1,  # Number of edges
+                                'type': 'regulatory_cascade'
+                            })
+
+                except nx.NetworkXNoPath:
+                    continue
+
+    return cascades
+
+
+def calculate_regulatory_influence(
+    regulatory_graph: Any,
+    source_nodes: List[str],
+    **kwargs: Any
+) -> Dict[str, Any]:
+    """Calculate regulatory influence propagation in the network.
+
+    Args:
+        regulatory_graph: NetworkX regulatory graph
+        source_nodes: Source nodes for influence calculation
+        **kwargs: Additional calculation parameters
+
+    Returns:
+        Dictionary with influence analysis results
+
+    Raises:
+        ImportError: If networkx not available
+    """
+    if not HAS_NETWORKX:
+        raise ImportError("networkx required for influence calculation")
+
+    # Filter to valid source nodes
+    valid_sources = [n for n in source_nodes if n in regulatory_graph.nodes()]
+
+    if not valid_sources:
+        return {'error': 'No valid source nodes found'}
+
+    # Calculate influence using shortest paths or random walk
+    influence_scores = {}
+
+    for node in regulatory_graph.nodes():
+        total_influence = 0
+
+        for source in valid_sources:
+            if source == node:
+                total_influence += 1.0  # Self-influence
+            else:
+                try:
+                    # Use shortest path distance as influence measure
+                    distance = nx.shortest_path_length(regulatory_graph, source, node)
+                    # Influence decays with distance
+                    influence = 1.0 / (distance + 1)
+                    total_influence += influence
+                except nx.NetworkXNoPath:
+                    # No path, no influence
+                    pass
+
+        influence_scores[node] = total_influence
+
+    # Normalize influence scores
+    max_influence = max(influence_scores.values()) if influence_scores else 1.0
+    if max_influence > 0:
+        influence_scores = {node: score / max_influence
+                           for node, score in influence_scores.items()}
+
+    return {
+        'influence_scores': influence_scores,
+        'source_nodes': valid_sources,
+        'total_nodes': len(regulatory_graph.nodes()),
+        'method': 'shortest_path_decay',
+    }
+
+
+def analyze_regulatory_dynamics(
+    regulatory_graph: Any,
+    initial_states: Dict[str, float],
+    time_steps: int = 10,
+    **kwargs: Any
+) -> Dict[str, Any]:
+    """Simulate regulatory network dynamics.
+
+    Args:
+        regulatory_graph: NetworkX regulatory graph
+        initial_states: Initial expression states for nodes
+        time_steps: Number of simulation time steps
+        **kwargs: Additional simulation parameters
+
+    Returns:
+        Dictionary with dynamics simulation results
+
+    Raises:
+        ImportError: If networkx not available
+    """
+    if not HAS_NETWORKX:
+        raise ImportError("networkx required for dynamics simulation")
+
+    if not HAS_NUMPY:
+        raise ImportError("numpy required for dynamics simulation")
+
+    nodes = list(regulatory_graph.nodes())
+    n_nodes = len(nodes)
+
+    # Initialize state vector
+    states = np.zeros((time_steps + 1, n_nodes))
+
+    # Set initial states
+    for i, node in enumerate(nodes):
+        states[0, i] = initial_states.get(node, 0.0)
+
+    # Simple regulatory dynamics simulation
+    # Each node's state is influenced by its regulators
+    for t in range(1, time_steps + 1):
+        for i, node in enumerate(nodes):
+            regulators = list(regulatory_graph.predecessors(node))
+
+            if regulators:
+                # Simple averaging of regulator states
+                regulator_states = [states[t-1, nodes.index(reg)] for reg in regulators]
+                new_state = np.mean(regulator_states)
+
+                # Add some noise and decay
+                noise = np.random.normal(0, 0.1)
+                decay = 0.9
+
+                states[t, i] = decay * new_state + (1 - decay) * states[t-1, i] + noise
+            else:
+                # No regulators, maintain state with decay
+                states[t, i] = 0.9 * states[t-1, i]
+
+    # Convert to dictionary format
+    dynamics = {}
+    for i, node in enumerate(nodes):
+        dynamics[node] = {
+            'initial_state': float(states[0, i]),
+            'final_state': float(states[-1, i]),
+            'trajectory': states[:, i].tolist(),
+            'mean_state': float(np.mean(states[:, i])),
+            'state_variance': float(np.var(states[:, i])),
+        }
+
+    return {
+        'dynamics': dynamics,
+        'time_steps': time_steps,
+        'simulation_method': 'simple_regulatory_model',
+        'parameters': kwargs,
+    }
+
+
+def identify_regulatory_hubs(
+    regulatory_graph: Any,
+    direction: str = "out",
+    **kwargs: Any
+) -> List[Tuple[str, int]]:
+    """Identify regulatory hubs in the network.
+
+    Args:
+        regulatory_graph: NetworkX regulatory graph
+        direction: Direction for hub identification ('in', 'out', 'both')
+        **kwargs: Additional hub identification parameters
+
+    Returns:
+        List of (node, degree) tuples for hub nodes
+
+    Raises:
+        ImportError: If networkx not available
+    """
+    if not HAS_NETWORKX:
+        raise ImportError("networkx required for hub identification")
+
+    if direction == "out":
+        degrees = dict(regulatory_graph.out_degree())
+    elif direction == "in":
+        degrees = dict(regulatory_graph.in_degree())
+    elif direction == "both":
+        degrees = dict(regulatory_graph.degree())
+    else:
+        raise ValueError(f"Unknown direction: {direction}")
+
+    # Sort by degree
+    sorted_hubs = sorted(degrees.items(), key=lambda x: x[1], reverse=True)
+
+    # Return top hubs (e.g., top 10% or absolute threshold)
+    threshold = kwargs.get('threshold', 0.1)  # Top 10%
+    if isinstance(threshold, float) and threshold < 1:
+        n_hubs = max(1, int(len(sorted_hubs) * threshold))
+        return sorted_hubs[:n_hubs]
+    else:
+        # Absolute threshold
+        min_degree = threshold if isinstance(threshold, int) else 5
+        return [(node, deg) for node, deg in sorted_hubs if deg >= min_degree]
+
+
+def regulatory_network_stability_analysis(
+    regulatory_graph: Any,
+    **kwargs: Any
+) -> Dict[str, Any]:
+    """Analyze stability properties of regulatory network.
+
+    Args:
+        regulatory_graph: NetworkX regulatory graph
+        **kwargs: Additional analysis parameters
+
+    Returns:
+        Dictionary with stability analysis results
+
+    Raises:
+        ImportError: If networkx not available
+    """
+    if not HAS_NETWORKX:
+        raise ImportError("networkx required for stability analysis")
+
+    analysis = {
+        'structural_stability': {},
+        'dynamical_stability': {},
+    }
+
+    # Structural stability measures
+    if nx.is_weakly_connected(regulatory_graph):
+        analysis['structural_stability']['connected'] = True
+
+        # Average path length
+        try:
+            avg_path = nx.average_shortest_path_length(regulatory_graph.to_undirected())
+            analysis['structural_stability']['average_path_length'] = avg_path
+        except:
+            analysis['structural_stability']['average_path_length'] = None
+
+    else:
+        analysis['structural_stability']['connected'] = False
+        components = list(nx.weakly_connected_components(regulatory_graph))
+        analysis['structural_stability']['n_components'] = len(components)
+
+    # Feedback loops (indicate potential oscillations)
+    feedback_loops = _find_feedback_loops(regulatory_graph)
+    analysis['dynamical_stability']['n_feedback_loops'] = len(feedback_loops)
+
+    # Network motifs that affect stability
+    motifs = analyze_regulatory_motifs(regulatory_graph)
+    analysis['dynamical_stability']['motifs'] = motifs
+
+    return analysis
+
+
+def export_regulatory_network(
+    regulatory_graph: Any,
+    output_file: str,
+    format: str = "sif",
+    **kwargs: Any
+) -> None:
+    """Export regulatory network in various formats.
+
+    Args:
+        regulatory_graph: NetworkX regulatory graph
+        output_file: Output file path
+        format: Export format ('sif', 'dot', 'json')
+        **kwargs: Additional export parameters
+
+    Raises:
+        ImportError: If networkx not available
+    """
+    if not HAS_NETWORKX:
+        raise ImportError("networkx required for network export")
+
+    if format == "sif":
+        # Simple Interaction Format
+        with open(output_file, 'w') as f:
+            for u, v, data in regulatory_graph.edges(data=True):
+                interaction_type = data.get('interaction_type', 'regulates')
+                f.write(f"{u}\t{interaction_type}\t{v}\n")
+
+    elif format == "dot":
+        # GraphViz DOT format
+        from networkx.drawing.nx_pydot import write_dot
+        write_dot(regulatory_graph, output_file)
+
+    elif format == "json":
+        # Node-link JSON format
+        import json
+        data = nx.node_link_data(regulatory_graph)
+        with open(output_file, 'w') as f:
+            json.dump(data, f, indent=2)
+
+    else:
+        raise ValueError(f"Unsupported export format: {format}")
+
+    logger.info(f"Exported regulatory network to {output_file} ({format} format)")

@@ -573,3 +573,5 @@ def _variance_pi_theta(n: int, s: int) -> float:
     variance = e1 * s + e2 * s * (s - 1)
 
     return max(variance, 0.01)  # Avoid division by zero
+
+

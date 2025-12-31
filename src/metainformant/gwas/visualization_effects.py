@@ -429,3 +429,5 @@ def effect_size_qq(results: Any, output_file: Optional[str | Path] = None) -> Op
         logger.info(f"Saved effect size Q-Q plot to {output_file}")
 
     return plt.gcf()
+
+

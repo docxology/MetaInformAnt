@@ -40,34 +40,46 @@ This document outlines AI assistance in developing METAINFORMANT's data quality 
 
 This quality control infrastructure provides a solid foundation for data validation and preprocessing.
 
+## Implementation Status
+
+**Status**: ✅ **PARTIALLY IMPLEMENTED**
+- **Core functionality**: Implemented (comprehensive quality control framework)
+- **FASTQ analysis**: Implemented (complete FASTQ quality analysis with all metrics)
+- **Quality metrics**: Implemented (composite scoring, outlier detection, integrity checks)
+- **Contamination detection**: Implemented (microbial, cross-species, adapter, and duplication detection)
+
 ## Complete Function Signatures
 
 ### FASTQ Analysis (`fastq.py`)
+- `read_fastq_records(path: str | Path, max_records: int | None = None) -> Iterator[FastqRecord]`
 - `analyze_fastq_quality(fastq_path: str | Path, n_reads: int | None = None) -> Dict[str, Any]`
-- `basic_statistics(reads: List[FastqRecord]) -> Dict[str, Any]`
-- `per_base_quality(reads: List[FastqRecord]) -> Dict[str, Any]`
-- `per_sequence_quality(reads: List[FastqRecord]) -> Dict[str, Any]`
-- `sequence_length_distribution(reads: List[FastqRecord]) -> Dict[str, Any]`
-- `gc_content_distribution(reads: List[FastqRecord]) -> Dict[str, Any]`
-- `adapter_content(reads: List[FastqRecord], adapters: List[str]) -> Dict[str, Any]`
-- `overrepresented_sequences(reads: List[FastqRecord], min_length: int = 20) -> Dict[str, Any]`
-- `duplication_levels(reads: List[FastqRecord]) -> Dict[str, Any]`
-- `n_content_per_position(reads: List[FastqRecord]) -> Dict[str, Any]`
-- `quality_score_distribution(reads: List[FastqRecord]) -> Dict[str, Any]`
+- `basic_statistics(records: List[FastqRecord]) -> Dict[str, Any]`
+- `per_base_quality(records: List[FastqRecord]) -> Dict[str, Any]`
+- `per_sequence_quality(records: List[FastqRecord]) -> Dict[str, Any]`
+- `sequence_length_distribution(records: List[FastqRecord]) -> Dict[str, Any]`
+- `gc_content_distribution(records: List[FastqRecord]) -> Dict[str, Any]`
+- `adapter_content(records: List[FastqRecord], adapters: List[str] | None = None) -> Dict[str, Any]`
+- `overrepresented_sequences(records: List[FastqRecord], min_length: int = 20) -> Dict[str, Any]`
+- `duplication_levels(records: List[FastqRecord]) -> Dict[str, Any]`
+- `n_content_per_position(records: List[FastqRecord]) -> Dict[str, Any]`
+- `quality_score_distribution(records: List[FastqRecord]) -> Dict[str, Any]`
+- `filter_reads(fastq_path: str | Path, output_path: str | Path, min_quality: float = 20.0, min_length: int | None = None, max_n_bases: int = 0) -> Dict[str, Any]`
 
 ### Quality Metrics (`metrics.py`)
-- `calculate_quality_metrics(quality_scores: List[List[int]]) -> Dict[str, float]`
-- `calculate_gc_metrics(gc_content: List[float]) -> Dict[str, float]`
-- `calculate_length_metrics(sequence_lengths: List[int]) -> Dict[str, float]`
-- `calculate_duplication_metrics(duplication_levels: Dict[int, int]) -> Dict[str, float]`
-- `calculate_complexity_metrics(sequences: List[str]) -> Dict[str, float]`
-- `calculate_coverage_metrics(coverage_depths: List[float], target_coverage: float = 30.0) -> Dict[str, float]`
-- `generate_quality_report(quality_data: Dict[str, Dict[str, float]], output_path: str | Path | None = None) -> str`
+- `calculate_quality_score(data: Dict[str, Any], data_type: str = "fastq") -> Dict[str, Any]`
+- `detect_outliers(data: List[float], method: str = "iqr", threshold: float = 1.5) -> Dict[str, Any]`
+- `calculate_data_integrity_score(data: Dict[str, Any], data_type: str = "fastq") -> Dict[str, Any]`
+- `compare_quality_metrics(dataset1: Dict[str, Any], dataset2: Dict[str, Any], data_type: str = "fastq") -> Dict[str, Any]`
+- `generate_quality_report(quality_data: Dict[str, Any], data_type: str = "fastq", output_path: Optional[str | Path] = None) -> str`
+- `batch_quality_analysis(file_paths: List[str | Path], data_type: str = "fastq", n_reads: Optional[int] = None) -> Dict[str, Any]`
 
 ### Contamination Detection (`contamination.py`)
-- `detect_cross_species_contamination(sequences: List[str], reference_genomes: Dict[str, str]) -> Dict[str, Any]`
-- `detect_rrna_contamination(sequences: List[str], rrna_database: str | Path) -> Dict[str, Any]`
-- `detect_mycoplasma_contamination(sequences: List[str], mycoplasma_database: str | Path) -> Dict[str, Any]`
-- `detect_adapter_contamination(sequences: List[str], adapters: List[str]) -> Dict[str, Any]`
-- `detect_vector_contamination(sequences: List[str], vector_database: str | Path) -> Dict[str, Any]`
-- `generate_contamination_report(contamination_results: Dict[str, Any], output_path: str | Path | None = None) -> str`
+- `ContaminationDetector(reference_genomes: Optional[Dict[str, str]] = None)`
+- `ContaminationDetector.detect_microbial_contamination(sequences: List[str], threshold: float = 0.01) -> Dict[str, Any]`
+- `ContaminationDetector.detect_cross_species_contamination(sequences: List[str], target_species: str, other_species: List[str]) -> Dict[str, Any]`
+- `ContaminationDetector.detect_adapter_contamination(sequences: List[str], adapters: Optional[List[str]] = None) -> Dict[str, Any]`
+- `ContaminationDetector.detect_duplication_contamination(sequences: List[str], max_duplicates: int = 10) -> Dict[str, Any]`
+- `ContaminationDetector.comprehensive_contamination_analysis(sequences: List[str], target_species: Optional[str] = None) -> Dict[str, Any]`
+- `detect_rna_contamination(dna_sequences: List[str]) -> Dict[str, Any]`
+- `detect_vector_contamination(sequences: List[str], vector_sequences: Optional[List[str]] = None) -> Dict[str, Any]`
+- `generate_contamination_report(contamination_results: Dict[str, Any], output_path: Optional[str | Path] = None) -> str`

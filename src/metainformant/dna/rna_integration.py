@@ -373,3 +373,5 @@ def predict_gene_function_from_sequence(dna_sequence: str) -> Dict[str, any]:
         'regulatory_elements': regulatory,
         'predicted_function': 'unknown'  # Would need ML model for real prediction
     }
+
+

@@ -484,3 +484,5 @@ def plot_mutation_spectrum(mutation_counts: Dict[str, int], output_file: Optiona
         logger.info(f"Saved mutation spectrum plot to {output_file}")
 
     return plt.gcf()
+
+

@@ -761,10 +761,36 @@ Comprehensive tests ensure:
 
 - **Required**: matplotlib, numpy
 - **Optional**: 
-  - seaborn (enhanced styling)
+  - seaborn (additional plotting styles)
   - plotly (interactive plots)
   - networkx (network visualization)
   - scipy (statistical functions)
   - scikit-learn (machine learning plots)
+
+## See Also
+
+- **[AGENTS.md](AGENTS.md)**: AI agent contributions and development details for the visualization module
+
+## Related Modules
+
+The Visualization module integrates with all other METAINFORMANT modules:
+
+- **DNA Module**: Sequence visualization, phylogenetic trees, population structure plots, genomic data tracks
+- **RNA Module**: Expression heatmaps, transcriptomic data visualization, RNA-seq quality plots
+- **Protein Module**: Structure visualization, domain architecture plots, protein-protein interaction networks
+- **GWAS Module**: Manhattan plots, Q-Q plots, regional association plots, population structure visualization
+- **Epigenome Module**: Genome browser tracks, epigenetic modification heatmaps, chromatin state diagrams
+- **Multi-omics Module**: Integrated multi-omics data visualization and correlation plots
+- **Networks Module**: Biological network visualization, pathway diagrams, interaction graphs
+- **ML Module**: Model performance plots, feature importance visualization, clustering results
+- **Information Module**: Information landscape plots, complexity visualization, entropy diagrams
+- **Simulation Module**: Simulation results visualization, time-series plots, dynamic system diagrams
+- **Single-cell Module**: Single-cell data visualization, dimensionality reduction plots, trajectory inference
+- **Quality Module**: Quality control plots, data distribution visualization, validation reports
+- **Ontology Module**: Ontology hierarchy visualization, enrichment plot generation
+- **Phenotype Module**: Phenotype distribution plots, trait correlation heatmaps
+- **Life Events Module**: Life course event visualization, temporal sequence plots
+- **Ecology Module**: Biodiversity plots, community structure visualization, ecological networks
+- **Math Module**: Mathematical function plotting, statistical visualization, theoretical model diagrams
 
 This module provides a visualization toolkit for biological data analysis and figure generation.

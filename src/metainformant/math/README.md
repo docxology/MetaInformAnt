@@ -550,7 +550,7 @@ Comprehensive tests ensure mathematical correctness:
 - **numpy**: Required for `popgen_stats` module and various numerical computations
 
 ### Optional
-- **scipy**: Optional but recommended for advanced statistical functions:
+- **scipy**: Optional but recommended for statistical functions:
   - `hardy_weinberg_test()` - Chi-square test for Hardy-Weinberg equilibrium
   - `fisher_exact_test()` - Fisher's exact test for 2x2 contingency tables
   - `ewens_watterson_test()` - Ewens-Watterson test for neutrality
@@ -659,5 +659,24 @@ pip install numpy scipy matplotlib
 - Pre-compute expensive operations when possible
 - Consider parallel processing for independent calculations
 - Use appropriate data structures (e.g., pandas for tabular data)
+
+## See Also
+
+- **[AGENTS.md](AGENTS.md)**: AI agent contributions and development details for the math module
+
+## Related Modules
+
+The Math module integrates with several other METAINFORMANT modules:
+
+- **DNA Module**: Population genetics theory, coalescent models, and evolutionary distance calculations
+- **GWAS Module**: Statistical modeling for association testing, multiple testing correction, and population structure analysis
+- **Information Module**: Information theory foundations, entropy calculations, and complexity measures
+- **Networks Module**: Graph theory and network analysis algorithms
+- **ML Module**: Mathematical foundations for machine learning algorithms and statistical modeling
+- **Simulation Module**: Mathematical modeling for biological simulations and stochastic processes
+- **Visualization Module**: Mathematical plotting and statistical visualization
+- **Quality Module**: Statistical quality control and validation methods
+- **Multi-omics Module**: Statistical integration methods for multi-omics data
+- **Protein Module**: Structural mathematics and biophysical calculations
 
 This module provides rigorous mathematical tools for theoretical biology, enabling quantitative analysis of evolutionary and behavioral processes.

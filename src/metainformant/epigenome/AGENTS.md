@@ -43,29 +43,38 @@ This epigenome infrastructure provides a solid foundation for epigenetic analysi
 ## Complete Function Signatures
 
 ### Methylation Analysis (`methylation.py`)
-- `load_cpg_table(path: str | Path) -> pd.DataFrame`
-- `compute_beta_values(df: pd.DataFrame) -> pd.DataFrame`
-- `summarize_beta_by_chromosome(df_with_beta: pd.DataFrame) -> pd.DataFrame`
-- `differential_methylation(beta_df: pd.DataFrame, groups: List[str], alpha: float = 0.05, method: str = "t-test") -> pd.DataFrame`
-- `mqtl_analysis(methylation_df: pd.DataFrame, genotype_df: pd.DataFrame, covariates: pd.DataFrame | None = None) -> Dict[str, Any]`
+- `load_methylation_bedgraph(path: str | Path, min_coverage: int = 5) -> Dict[str, List[MethylationSite]]`
+- `load_methylation_cov(path: str | Path, min_coverage: int = 5) -> Dict[str, List[MethylationSite]]`
+- `calculate_methylation_statistics(methylation_data: Dict[str, List[MethylationSite]]) -> Dict[str, Any]`
+- `find_differentially_methylated_sites(sample1_sites: Dict[str, List[MethylationSite]], sample2_sites: Dict[str, List[MethylationSite]], threshold: float = 0.3) -> Dict[str, List[MethylationSite]]`
+- `generate_methylation_report(methylation_data: Dict[str, Dict[str, List[MethylationSite]]], output_path: str | Path | None = None) -> str`
 
 ### ChIP-seq Analysis (`chipseq.py`)
-- `call_peaks_simple(bam_path: str | Path, genome_size: str, output_dir: str | Path, *, qvalue: float = 0.05) -> str`
-- `analyze_peak_overlap(peak_files: List[str | Path], labels: List[str], *, min_overlap: int = 1) -> pd.DataFrame`
-- `peak_enrichment_analysis(peaks: pd.DataFrame, genome_annotation: pd.DataFrame, *, upstream: int = 2000, downstream: int = 2000) -> Dict[str, Any]`
+- `load_chip_peaks(path: str | Path, format: str = "narrowpeak") -> List[ChipPeak]`
+- `save_chip_peaks(peaks: List[ChipPeak], path: str | Path) -> None`
+- `filter_peaks_by_score(peaks: List[ChipPeak], min_score: float = 0.05) -> List[ChipPeak]`
+- `calculate_peak_statistics(peaks: List[ChipPeak]) -> Dict[str, Any]`
+- `find_peak_overlaps(peaks1: List[ChipPeak], peaks2: List[ChipPeak], min_overlap: int = 1) -> List[Tuple[ChipPeak, ChipPeak]]`
+- `generate_chip_report(peaks: List[ChipPeak], output_path: str | Path | None = None) -> str`
 
-### ATAC-seq Analysis (`atac.py`)
-- `call_tn5_sites(bam_path: str | Path, output_bed: str | Path, *, min_mapq: int = 30) -> None`
-- `analyze_open_chromatin(tn5_sites: pd.DataFrame, genome_annotation: pd.DataFrame) -> Dict[str, Any]`
-- `differential_accessibility(peaks_df: pd.DataFrame, groups: List[str], alpha: float = 0.05) -> pd.DataFrame`
+### ATAC-seq Analysis (`atacseq.py`)
+- `load_atac_peaks(path: str | Path, format: str = "narrowpeak") -> List[AtacPeak]`
+- `save_atac_peaks(peaks: List[AtacPeak], path: str | Path) -> None`
+- `filter_peaks_by_accessibility(peaks: List[AtacPeak], min_score: float = 0.05) -> List[AtacPeak]`
+- `calculate_atac_statistics(peaks: List[AtacPeak]) -> Dict[str, Any]`
+- `find_accessible_regions(peaks: List[AtacPeak], min_length: int = 100) -> List[AtacPeak]`
+- `generate_atac_report(peaks: List[AtacPeak], output_path: str | Path | None = None) -> str`
 
 ### Track Processing (`tracks.py`)
-- `read_bedgraph(path: str | Path) -> pd.DataFrame`
-- `write_bedgraph(df: pd.DataFrame, path: str | Path, *, track_name: str = "epigenome_track") -> None`
+- `load_bedgraph(path: str | Path) -> pd.DataFrame`
+- `save_bedgraph(df: pd.DataFrame, path: str | Path, track_name: str = "epigenome_track") -> None`
 - `merge_bedgraph_tracks(track_files: List[str | Path], output_path: str | Path) -> None`
+- `normalize_track_values(df: pd.DataFrame, method: str = "minmax") -> pd.DataFrame`
+- `calculate_track_statistics(df: pd.DataFrame) -> Dict[str, Any]`
 
 ### Workflow Orchestration (`workflow.py`)
-- `run_methylation_workflow(input_dir: str | Path, output_dir: str | Path, config: Dict[str, Any]) -> Dict[str, Any]`
-- `run_chipseq_workflow(input_dir: str | Path, output_dir: str | Path, config: Dict[str, Any]) -> Dict[str, Any]`
-- `run_atacseq_workflow(input_dir: str | Path, output_dir: str | Path, config: Dict[str, Any]) -> Dict[str, Any]`
-- `integrate_epigenome_results(results: Dict[str, Dict[str, Any]], output_dir: str | Path) -> Dict[str, Any]`
+- `load_epigenome_config(config_path: str | Path | None = None) -> EpigenomeConfig`
+- `run_methylation_workflow(input_dir: str | Path, output_dir: str | Path, config: EpigenomeConfig | None = None) -> Dict[str, Any]`
+- `run_chipseq_workflow(input_dir: str | Path, output_dir: str | Path, config: EpigenomeConfig | None = None) -> Dict[str, Any]`
+- `run_atacseq_workflow(input_dir: str | Path, output_dir: str | Path, config: EpigenomeConfig | None = None) -> Dict[str, Any]`
+- `integrate_epigenome_results(methylation_results: Dict[str, Any], chipseq_results: Dict[str, Any], atacseq_results: Dict[str, Any], output_dir: str | Path, config: EpigenomeConfig | None = None) -> Dict[str, Any]`

@@ -390,3 +390,5 @@ def analyze_mutation_spectrum(sequence: str, reference: str) -> Dict[str, any]:
     }
 
     return spectrum
+
+

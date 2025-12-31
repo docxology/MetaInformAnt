@@ -713,4 +713,30 @@ aln = alignment.global_pairwise(list(seqs.values())[:2])
 
 See `scripts/simulation/README.md` for detailed documentation and usage examples for each script.
 
+## See Also
+
+- **[AGENTS.md](AGENTS.md)**: AI agent contributions and development details for the simulation module
+
+## Related Modules
+
+The Simulation module integrates with all other METAINFORMANT modules:
+
+- **DNA Module**: Synthetic DNA sequence generation, evolutionary simulations, and mutation modeling
+- **RNA Module**: RNA-seq count simulation, expression pattern modeling, and transcriptomic data generation
+- **Protein Module**: Synthetic protein sequence generation and structure prediction validation
+- **Epigenome Module**: Epigenetic modification pattern simulation and chromatin state modeling
+- **GWAS Module**: Synthetic genotype-phenotype data generation for method validation
+- **Multi-omics Module**: Integrated multi-omics data simulation for systems biology studies
+- **Single-cell Module**: Single-cell data simulation and trajectory inference validation
+- **Networks Module**: Biological network simulation and dynamics modeling
+- **ML Module**: Synthetic data generation for machine learning model training and validation
+- **Information Module**: Information-theoretic analysis of simulated biological systems
+- **Quality Module**: Quality control method validation using synthetic data
+- **Visualization Module**: Simulation result visualization and dynamic system plotting
+- **Math Module**: Mathematical model validation and stochastic process simulation
+- **Ecology Module**: Ecosystem simulation and biodiversity modeling
+- **Phenotype Module**: Synthetic phenotype generation for statistical power analysis
+- **Life Events Module**: Life course simulation and temporal process modeling
+- **Ontology Module**: Synthetic annotation data for ontology validation
+
 This module provides tools for synthetic data generation and hypothesis testing, enabling researchers to explore biological systems in controlled computational environments.

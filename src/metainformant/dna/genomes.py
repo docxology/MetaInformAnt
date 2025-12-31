@@ -383,3 +383,5 @@ def validate_genome_files(genome_dir: str | Path) -> Dict[str, Any]:
         results['valid'] = False
 
     return results
+
+

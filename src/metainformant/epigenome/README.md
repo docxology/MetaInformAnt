@@ -261,4 +261,23 @@ Comprehensive tests cover:
 - PyBedTools for genomic interval operations
 - Optional: specialized epigenomic analysis packages
 
+## See Also
+
+- **[AGENTS.md](AGENTS.md)**: AI agent contributions and development details for the epigenome module
+
+## Related Modules
+
+The Epigenome module integrates with several other METAINFORMANT modules:
+
+- **DNA Module**: Epigenetic modifications mapped to genomic DNA sequences; CpG island identification and methylation pattern analysis
+- **Networks Module**: Chromatin interaction networks, enhancer-promoter regulatory networks, and epigenetic regulation modeling
+- **Multi-omics Module**: Epigenetic data integration with DNA, RNA, and protein data; regulatory analysis
+- **RNA Module**: Gene expression regulation by epigenetic modifications; transcription factor binding analysis
+- **Protein Module**: Histone modifications and chromatin-associated protein analysis
+- **Quality Module**: Epigenetic data quality assessment and preprocessing
+- **Visualization Module**: Genome browser tracks, epigenetic modification heatmaps, and chromatin state visualization
+- **ML Module**: Machine learning analysis of epigenetic patterns and regulatory predictions
+- **Information Module**: Information-theoretic analysis of epigenetic complexity and regulatory patterns
+- **GWAS Module**: Epigenetic modifications as quantitative traits; methylation quantitative trait loci (mQTL) analysis
+
 This module provides essential tools for epigenetic research and chromatin biology.

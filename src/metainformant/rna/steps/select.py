@@ -342,3 +342,5 @@ def validate_selection(selected_samples: Dict[str, Dict[str, Any]]) -> Dict[str,
                 validation['warnings'].append(f"Sample {sample_id} has no data source")
 
     return validation
+
+

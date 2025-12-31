@@ -1119,5 +1119,30 @@ real_profile = information_profile(real_sequences, k=3)
 - Tsallis, C. (1988). Possible generalization of Boltzmann-Gibbs statistics. Journal of Statistical Physics, 52(1-2), 479-487.
 - Lin, J. (1991). Divergence measures based on the Shannon entropy. IEEE Transactions on Information Theory, 37(1), 145-151.
 
+## See Also
+
+- **[AGENTS.md](AGENTS.md)**: AI agent contributions and development details for the information module
+
+## Related Modules
+
+The Information module integrates with several other METAINFORMANT modules:
+
+- **DNA Module**: Information-theoretic analysis of DNA sequences and genomic complexity
+- **Networks Module**: Information flow analysis in biological networks and network complexity measures
+- **Ontology Module**: Information content calculations and semantic similarity measures
+- **Multi-omics Module**: Information-theoretic analysis of multi-omics data integration and complexity
+- **RNA Module**: Information analysis of RNA sequences and expression pattern complexity
+- **Protein Module**: Information-theoretic analysis of protein sequences and structures
+- **Epigenome Module**: Information measures of epigenetic complexity and regulatory patterns
+- **Single-cell Module**: Information analysis of single-cell heterogeneity and cell state complexity
+- **GWAS Module**: Information-theoretic approaches to genetic association and complexity analysis
+- **ML Module**: Information-based feature selection and complexity measures for model evaluation
+- **Visualization Module**: Information landscape visualization and complexity plotting
+- **Simulation Module**: Information-theoretic analysis of simulated biological systems
+- **Math Module**: Mathematical foundations of information theory and entropy measures
+- **Ecology Module**: Information analysis of ecological complexity and biodiversity patterns
+- **Phenotype Module**: Information measures of phenotypic complexity and trait relationships
+- **Life Events Module**: Information-theoretic analysis of life course complexity and temporal patterns
+
 This module provides information-theoretic tools for analyzing biological data across multiple scales and domains.
 

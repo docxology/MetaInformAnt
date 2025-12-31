@@ -338,3 +338,5 @@ def sanity(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.Co
         CompletedProcess instance
     """
     return run_amalgkit('sanity', params, **kwargs)
+
+

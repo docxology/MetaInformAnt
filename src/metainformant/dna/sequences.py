@@ -597,3 +597,5 @@ def _is_palindromic(seq: str) -> bool:
     """
     complement = str.maketrans('ATCG', 'TAGC')
     return seq == seq.translate(complement)[::-1]
+
+

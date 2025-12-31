@@ -641,7 +641,7 @@ Comprehensive tests cover:
 
 **Community detection gives different results:**
 - Community detection algorithms are stochastic (use `seed` parameter for reproducibility)
-- Use `community_stability()` to assess robustness
+- Use `community_stability()` to assess stability
 - Try different resolution parameters with `optimize_resolution()`
 
 **Large network performance:**
@@ -658,7 +658,7 @@ Comprehensive tests cover:
 - numpy: Core numerical operations
 - pandas: Data manipulation (for STRING/CSV loading)
 - scipy: Hypergeometric test for enrichment (optional but recommended)
-- NetworkX: Optional, for advanced graph operations (not required)
+- NetworkX: Optional, for graph operations (not required)
 
 ## Performance Considerations
 
@@ -666,5 +666,27 @@ Comprehensive tests cover:
 - **Community detection**: Louvain is fastest, Leiden is most accurate
 - **Resolution optimization**: Use fewer points (n_points=10) for faster optimization
 - **Stability assessment**: Reduce n_runs for faster assessment on large networks
+
+## See Also
+
+- **[AGENTS.md](AGENTS.md)**: AI agent contributions and development details for the networks module
+
+## Related Modules
+
+The Networks module integrates with several other METAINFORMANT modules:
+
+- **Protein Module**: Protein-protein interaction networks, domain-domain interactions, and structural interaction analysis
+- **RNA Module**: Gene regulatory networks and co-expression analysis from RNA-seq data
+- **Ontology Module**: Ontology-based network construction, functional enrichment of network modules, and semantic similarity networks
+- **Information Module**: Information flow analysis in biological networks and network complexity measures
+- **Multi-omics Module**: Multi-omics network integration and systems-level regulatory networks
+- **Epigenome Module**: Chromatin interaction networks and epigenetic regulatory networks
+- **GWAS Module**: Gene-gene interaction networks and pathway-based association analysis
+- **ML Module**: Network-based machine learning and graph neural networks for biological data
+- **Visualization Module**: Biological network visualization and pathway diagram generation
+- **Simulation Module**: Network dynamics simulation and systems biology modeling
+- **Ecology Module**: Ecological interaction networks and food web analysis
+- **Phenotype Module**: Phenotype correlation networks and trait interaction analysis
+- **Math Module**: Graph theory algorithms and network analysis mathematics
 
 This module provides tools for biological network analysis and interpretation.

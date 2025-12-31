@@ -147,3 +147,5 @@ def discover_species_configs(config_dir: Path) -> List[Dict[str, Any]]:
     logger.info(f"Discovered {len(configs)} species configuration files")
 
     return configs
+
+

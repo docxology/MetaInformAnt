@@ -303,3 +303,5 @@ def amino_acid_composition(seq: str) -> Dict[str, float]:
         composition[aa] = (count / total) * 100
 
     return composition
+
+

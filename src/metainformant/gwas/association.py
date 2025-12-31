@@ -114,9 +114,11 @@ def association_test_logistic(genotypes: List[int], phenotypes: List[int],
             for j, cov in enumerate(covariates):
                 X[i].append(cov[i])
 
-    # Simple logistic regression (placeholder)
+    # Logistic regression with proper statistical inference
     try:
-        beta, se, z_stat, p_value = _simple_logistic_regression(X, phenotypes, max_iter)
+        X_array = np.array(X)
+        y_array = np.array(phenotypes)
+        beta, se, z_stat, p_value = _logistic_regression_with_stats(X_array, y_array, max_iter)
 
         result = {
             'beta': beta,
@@ -194,32 +196,61 @@ def _simple_linear_regression(X: List[List[float]], y: List[float]) -> Tuple[flo
     return 0.1, 0.05, 2.0, 0.05
 
 
-def _simple_logistic_regression(X: List[List[float]], y: List[int], max_iter: int) -> Tuple[float, float, float, float]:
-    """Simple logistic regression implementation.
+def _logistic_regression_with_stats(X: np.ndarray, y: np.ndarray, max_iter: int) -> Tuple[float, float, float, float]:
+    """Perform logistic regression using scikit-learn with statistical inference.
 
     Args:
-        X: Design matrix
+        X: Design matrix as numpy array
         y: Binary response variable
         max_iter: Maximum iterations
 
     Returns:
-        Tuple of (beta, se, z_stat, p_value)
+        Tuple of (beta, se, z_stat, p_value) for the genotype coefficient
     """
-    # Very simplified logistic regression
-    # In practice would use iterative optimization
+    from sklearn.linear_model import LogisticRegression
+    import scipy.stats as stats
 
-    # For single predictor case
-    if len(X[0]) == 2:
-        # Simple approximation
-        beta = 0.5  # Placeholder
-        se = 0.2    # Placeholder
-        z_stat = beta / se
-        p_value = 2 * (1 - _normal_cdf(abs(z_stat)))
+    # Fit logistic regression
+    lr = LogisticRegression(max_iter=max_iter, random_state=42)
+    lr.fit(X, y)
 
-        return beta, se, z_stat, p_value
+    # Get coefficients and intercept
+    coef = lr.coef_[0]  # First predictor coefficient (genotype)
+    intercept = lr.intercept_[0]
 
-    # Multi-predictor placeholder
-    return 0.3, 0.15, 2.0, 0.05
+    # For statistical inference, we need more sophisticated approach
+    # Using statsmodels for proper p-values if available
+    try:
+        import statsmodels.api as sm
+
+        # Add intercept to design matrix
+        X_with_intercept = sm.add_constant(X)
+
+        # Fit logistic regression with statsmodels
+        logit_model = sm.Logit(y, X_with_intercept)
+        result = logit_model.fit(disp=False, maxiter=max_iter)
+
+        # Get coefficient and p-value for genotype (second column, index 1)
+        beta = result.params[1]  # Genotype coefficient
+        p_value = result.pvalues[1]
+
+        # Calculate z-statistic
+        z_stat = beta / result.bse[1] if result.bse[1] != 0 else 0
+        se = result.bse[1]
+
+    except ImportError:
+        # Fallback to scikit-learn without proper statistics
+        logger.warning("statsmodels not available, using simplified statistics")
+        beta = float(coef)
+
+        # Rough approximation of standard error and p-value
+        # This is not statistically rigorous but better than placeholder
+        n = len(y)
+        se = 1.0 / np.sqrt(n)  # Rough approximation
+        z_stat = beta / se if se != 0 else 0
+        p_value = 2 * (1 - stats.norm.cdf(abs(z_stat)))
+
+    return beta, se, z_stat, p_value
 
 
 def _normal_cdf(x: float) -> float:
@@ -246,3 +277,5 @@ def _normal_cdf(x: float) -> float:
     y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * math.exp(-x * x)
 
     return 0.5 * (1 + sign * y)
+
+

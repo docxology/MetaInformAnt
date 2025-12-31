@@ -418,3 +418,5 @@ def simulate_cloning(seq: str, insert_enzyme1: str, insert_enzyme2: str,
         'compatible_enzymes': [insert_enzyme1, insert_enzyme2],
         'ligation_possible': len(insert_fragments) > 0
     }
+
+

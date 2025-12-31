@@ -481,3 +481,5 @@ def calculate_segregating_sites(sequences: List[str]) -> int:
     """Count segregating sites."""
     from . import population
     return population.segregating_sites(sequences)
+
+

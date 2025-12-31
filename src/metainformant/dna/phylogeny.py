@@ -551,3 +551,5 @@ def _calculate_tree_height(tree: Tree, node: str) -> int:
         max_child_height = max(max_child_height, child_height)
 
     return max_child_height + 1
+
+

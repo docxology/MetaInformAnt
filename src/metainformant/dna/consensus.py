@@ -441,3 +441,5 @@ def bootstrap_consensus(sequences: List[str], n_bootstraps: int = 100) -> Tuple[
     confidence = agreements / n_bootstraps
 
     return final_consensus, confidence
+
+

@@ -235,46 +235,35 @@ def _compute_covariance_matrix(matrix: List[List[float]]) -> List[List[float]]:
     return cov_matrix
 
 
-def _simple_eigen_decomposition(matrix: List[List[float]]) -> Tuple[List[float], List[List[float]]]:
-    """Simple eigen decomposition (placeholder - would use numpy in practice).
+def _eigen_decomposition(matrix: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """Perform eigen decomposition using numpy.
 
     Args:
-        matrix: Square matrix
+        matrix: Square matrix as numpy array
 
     Returns:
         Tuple of (eigenvalues, eigenvectors)
     """
-    # This is a placeholder implementation
-    # In practice, would use numpy.linalg.eig
-
-    size = len(matrix)
-    eigenvalues = [1.0] * size  # Placeholder eigenvalues
-    eigenvectors = []
-
-    for i in range(size):
-        eigenvector = [1.0 if j == i else 0.0 for j in range(size)]
-        eigenvectors.append(eigenvector)
-
+    eigenvalues, eigenvectors = np.linalg.eigh(matrix)
     return eigenvalues, eigenvectors
 
 
-def _simple_clustering(pc_scores: List[List[float]], k: int = 3) -> List[int]:
-    """Simple k-means clustering on principal component scores.
+def _kmeans_clustering(pc_scores: np.ndarray, k: int = 3) -> np.ndarray:
+    """Perform k-means clustering on principal component scores.
 
     Args:
-        pc_scores: Principal component scores (components x samples)
+        pc_scores: Principal component scores as numpy array (samples x components)
         k: Number of clusters
 
     Returns:
-        Cluster assignments for each sample
+        Cluster labels for each sample
     """
-    if not pc_scores or not pc_scores[0]:
-        return []
+    from sklearn.cluster import KMeans
 
-    n_samples = len(pc_scores[0])
-    clusters = [0] * n_samples  # Assign all to cluster 0 for now
+    kmeans = KMeans(n_clusters=k, random_state=42, n_init=10)
+    clusters = kmeans.fit_predict(pc_scores)
 
-    # Placeholder clustering - in practice would implement k-means
-    logger.info(f"Assigned {n_samples} samples to {k} clusters (simplified)")
-
+    logger.info(f"Performed k-means clustering: {len(pc_scores)} samples → {k} clusters")
     return clusters
+
+

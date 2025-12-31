@@ -344,3 +344,5 @@ def _parse_fasta(fasta_content: str) -> Dict[str, str]:
         sequences[current_id] = ''.join(current_seq)
 
     return sequences
+
+

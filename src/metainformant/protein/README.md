@@ -484,4 +484,23 @@ Comprehensive tests cover:
 - Biopython for sequence objects
 - Optional: UniProt API access, PDB parsing libraries
 
+## See Also
+
+- **[AGENTS.md](AGENTS.md)**: AI agent contributions and development details for the protein module
+
+## Related Modules
+
+The Protein module integrates with several other METAINFORMANT modules:
+
+- **DNA Module**: Protein sequences originate from DNA transcription and translation; genetic code and codon optimization analysis
+- **RNA Module**: Translation of RNA produces protein sequences; ribosome profiling and translation efficiency
+- **Networks Module**: Protein-protein interaction networks, domain-domain interactions, and structural interaction analysis
+- **Ontology Module**: Gene Ontology (GO) term assignment, functional annotation, and semantic similarity analysis
+- **Multi-omics Module**: Protein data integration with DNA, RNA, and epigenetic data; proteome-wide analysis
+- **Quality Module**: Protein structure validation, sequence quality assessment, and annotation verification
+- **Visualization Module**: Protein structure visualization, domain architecture plots, and interaction network graphs
+- **ML Module**: Machine learning analysis of protein sequences, structures, and functions
+- **Information Module**: Information-theoretic analysis of protein sequences and structures
+- **Simulation Module**: Synthetic protein sequence generation and structural modeling
+
 This module provides essential tools for protein sequence analysis and functional annotation.

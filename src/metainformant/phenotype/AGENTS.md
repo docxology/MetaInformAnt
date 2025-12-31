@@ -16,7 +16,7 @@ This document outlines AI assistance in developing METAINFORMANT's phenotypic tr
 
 #### AntWiki Integration (`antwiki.py`)
 - `load_antwiki_json()`: Loads and validates AntWiki JSON format data
-- Uses core.io utilities for robust file handling (gzip support, error handling)
+- Uses core.io utilities for file handling (gzip support, error handling)
 - Data validation for expected structure (species/taxon, measurements, traits)
 - Proper error handling with core.errors (IOError, ValidationError)
 - Logging integration with core.logging
@@ -99,15 +99,36 @@ This document outlines AI assistance in developing METAINFORMANT's phenotypic tr
 
 This phenotype infrastructure provides a solid foundation for phenotypic trait analysis with proper error handling, validation, and integration with core utilities.
 
+## Implementation Status
+
+**Status**: ✅ **PARTIALLY IMPLEMENTED**
+- **Core functionality**: Implemented (comprehensive phenotype analysis framework)
+- **AntWiki data loading**: Implemented (JSON loading, validation, filtering, similarity analysis)
+- **Web scraping**: Implemented (AntWiki scraper with configurable delays and retry logic)
+- **Life course analysis**: Implemented (event sequences, temporal phenotypes, trajectory analysis)
+
 ## Complete Function Signatures
 
 ### AntWiki Data Loading (`antwiki.py`)
-- `load_antwiki_json(path: Path, validate: bool = True) -> list[dict[str, Any]]`
+- `load_antwiki_json(path: str | Path, validate: bool = True) -> List[AntWikiRecord]`
+- `save_antwiki_json(records: List[AntWikiRecord], path: str | Path) -> None`
+- `filter_antwiki_records(records: List[AntWikiRecord], genus: str | None = None, subfamily: str | None = None, min_confidence: float = 0.0, required_phenotypes: List[str] | None = None) -> List[AntWikiRecord]`
+- `get_phenotype_distribution(records: List[AntWikiRecord], phenotype_name: str) -> Dict[str, Any]`
+- `find_similar_species(records: List[AntWikiRecord], target_record: AntWikiRecord, phenotype_weights: Dict[str, float] | None = None, top_k: int = 10) -> List[Tuple[AntWikiRecord, float]]`
+- `create_phenotype_matrix(records: List[AntWikiRecord], phenotype_names: List[str] | None = None) -> Tuple[List[str], List[str], List[List[Any]]]`
+- `generate_antwiki_report(records: List[AntWikiRecord], output_path: str | Path | None = None) -> str`
 
 ### AntWiki Web Scraping (`scraper.py`)
-- `load_scraper_config(config_path: Path | None = None) -> AntWikiScraperConfig`
+- `load_scraper_config(config_path: str | Path) -> AntWikiScraperConfig`
+- `create_default_scraper_config(output_path: str | Path) -> None`
+- `scrape_species_list(limit: int | None = None) -> Iterator[str]`
+- `bulk_scrape_species(species_urls: List[str], output_dir: str | Path) -> List[Dict[str, Any]]`
 
 ### Life Course Analysis (`life_course.py`)
-- `extract_phenotypes_from_events(event_sequence: Any, trait_mapping: dict[str, list[str]] | None = None) -> dict[str, Any]`
-- `aggregate_temporal_phenotypes(sequences: list[Any], time_windows: list[tuple[float, float]], trait_categories: list[str]) -> dict[str, Any]`
-- `map_events_to_traits(event_sequence: Any, trait_definitions: dict[str, list[str]]) -> dict[str, list[Any]]`
+- `extract_phenotypes_from_events(event_sequence: EventSequence, trait_mapping: Dict[str, List[str]] | None = None) -> Dict[str, Any]`
+- `aggregate_temporal_phenotypes(sequences: List[EventSequence], time_windows: List[Tuple[float, float]], trait_categories: List[str]) -> Dict[str, Any]`
+- `map_events_to_traits(event_sequence: EventSequence, trait_definitions: Dict[str, List[str]]) -> Dict[str, List[Event]]`
+- `analyze_life_course_trajectories(sequences: List[EventSequence], outcome_measures: List[str] | None = None) -> Dict[str, Any]`
+- `identify_critical_periods(sequences: List[EventSequence], age_ranges: List[Tuple[float, float]]) -> Dict[str, Any]`
+- `predict_life_course_outcomes(sequences: List[EventSequence], prediction_horizon: float = 5.0) -> Dict[str, Any]`
+- `create_life_course_report(sequences: List[EventSequence], output_path: str | Path | None = None) -> str`

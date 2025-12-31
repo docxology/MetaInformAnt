@@ -494,4 +494,23 @@ Comprehensive tests cover:
 - Pandas for data manipulation
 - Optional: specialized ecological packages
 
+## See Also
+
+- **[AGENTS.md](AGENTS.md)**: AI agent contributions and development details for the ecology module
+
+## Related Modules
+
+The Ecology module integrates with several other METAINFORMANT modules:
+
+- **Networks Module**: Ecological interaction networks, food web analysis, and community structure modeling
+- **DNA Module**: DNA barcoding for species identification; biodiversity assessment using sequence data
+- **Information Module**: Information-theoretic analysis of ecological complexity and biodiversity patterns
+- **Multi-omics Module**: Ecological multi-omics data integration; environmental metagenomics
+- **Visualization Module**: Ecological data visualization, diversity plots, and community structure diagrams
+- **ML Module**: Machine learning analysis of ecological data; species distribution modeling
+- **Quality Module**: Ecological data validation and quality control; biodiversity assessment standards
+- **Simulation Module**: Ecosystem simulation and modeling; virtual ecological experiments
+- **Math Module**: Mathematical modeling of population dynamics and ecological processes
+- **Phenotype Module**: Ecological trait analysis and morphological biodiversity studies
+
 This module provides essential tools for ecological data analysis and biodiversity research.
