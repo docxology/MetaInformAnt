@@ -182,3 +182,55 @@ def get_config_template() -> Dict[str, Any]:
     return template
 
 
+class RNAPipelineConfig:
+    """Configuration class for RNA-seq pipeline.
+
+    Provides a structured configuration object for RNA-seq analysis workflows.
+    """
+
+    def __init__(self, work_dir: str | Path, threads: int = 8,
+                 species_list: Optional[list[str]] = None,
+                 quantification_method: str = "kallisto",
+                 normalization_method: str = "cstmm",
+                 reference_genome_dir: Optional[str | Path] = None):
+        """Initialize RNA pipeline configuration.
+
+        Args:
+            work_dir: Working directory for the pipeline
+            threads: Number of threads to use
+            species_list: List of species to analyze
+            quantification_method: Method for quantification ('kallisto', 'salmon', etc.)
+            normalization_method: Method for normalization ('cstmm', 'tmm', etc.)
+            reference_genome_dir: Directory containing reference genomes
+        """
+        self.work_dir = Path(work_dir)
+        self.threads = threads
+        self.species_list = species_list or []
+        self.quantification_method = quantification_method
+        self.normalization_method = normalization_method
+        self.reference_genome_dir = Path(reference_genome_dir) if reference_genome_dir else None
+
+        # Ensure work directory exists
+        self.work_dir.mkdir(parents=True, exist_ok=True)
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert configuration to dictionary."""
+        return {
+            'work_dir': str(self.work_dir),
+            'threads': self.threads,
+            'species_list': self.species_list,
+            'quantification_method': self.quantification_method,
+            'normalization_method': self.normalization_method,
+            'reference_genome_dir': str(self.reference_genome_dir) if self.reference_genome_dir else None,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> RNAPipelineConfig:
+        """Create configuration from dictionary."""
+        return cls(**data)
+
+    def __str__(self) -> str:
+        return f"RNAPipelineConfig(work_dir={self.work_dir}, threads={self.threads}, species={len(self.species_list)})"
+
+
+

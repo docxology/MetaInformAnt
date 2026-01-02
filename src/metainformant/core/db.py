@@ -311,6 +311,104 @@ class PostgresConnection:
             logger.info("Closed PostgreSQL connection pool")
 
 
+def build_postgres_url(
+    host: str,
+    port: int,
+    database: str,
+    user: str,
+    password: str,
+) -> str:
+    """Build PostgreSQL connection URL.
+
+    Args:
+        host: Database host
+        port: Database port
+        database: Database name
+        user: Database user
+        password: Database password
+
+    Returns:
+        PostgreSQL connection URL string
+
+    Example:
+        >>> build_postgres_url("localhost", 5432, "mydb", "user", "pass")
+        'postgresql://user:pass@localhost:5432/mydb'
+    """
+    return f"postgresql://{user}:{password}@{host}:{port}/{database}"
+
+
+def get_db_client(
+    host: str = "localhost",
+    port: int = 5432,
+    database: str = "metainformant",
+    user: str = "postgres",
+    password: str = "",
+    **kwargs: Any,
+) -> PostgresConnection:
+    """Get database client instance.
+
+    Args:
+        host: Database host
+        port: Database port
+        database: Database name
+        user: Database user
+        password: Database password
+        **kwargs: Additional connection parameters
+
+    Returns:
+        PostgresConnection instance
+
+    Raises:
+        ImportError: If psycopg2 is not available
+    """
+    if not HAS_PSYCOPG2:
+        raise ImportError("psycopg2 required for database operations")
+
+    return PostgresConnection(
+        host=host,
+        port=port,
+        database=database,
+        user=user,
+        password=password,
+        **kwargs
+    )
+
+
+def sanitize_connection_params(params: Dict[str, Any]) -> Dict[str, Any]:
+    """Sanitize database connection parameters to prevent SQL injection.
+
+    Args:
+        params: Dictionary of connection parameters
+
+    Returns:
+        Sanitized parameter dictionary
+
+    Example:
+        >>> params = {"user": "test; DROP TABLE", "host": "localhost"}
+        >>> sanitize_connection_params(params)
+        {'user': 'test', 'host': 'localhost'}
+    """
+    sanitized = {}
+
+    for key, value in params.items():
+        if isinstance(value, str):
+            # Remove potentially dangerous SQL characters
+            clean_value = value.replace("'", "").replace(";", "").replace("--", "")
+            # Remove SQL keywords that could be used for injection
+            dangerous_patterns = [
+                "DROP", "DELETE", "UPDATE", "INSERT", "ALTER",
+                "CREATE", "TRUNCATE", "EXEC", "EXECUTE"
+            ]
+            for pattern in dangerous_patterns:
+                clean_value = clean_value.replace(pattern, "")
+            sanitized[key] = clean_value
+        else:
+            # Keep non-string values as-is
+            sanitized[key] = value
+
+    return sanitized
+
+
 @contextlib.contextmanager
 def get_connection(
     host: str = "localhost",
@@ -352,3 +450,4 @@ def get_connection(
     finally:
         if conn:
             conn.close()
+

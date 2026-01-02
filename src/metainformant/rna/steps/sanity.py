@@ -148,3 +148,5 @@ def check_data_consistency(work_dir: Path) -> Dict[str, Any]:
     return results
 
 
+
+run_sanity = run_step

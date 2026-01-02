@@ -494,3 +494,4 @@ def generate_antwiki_report(records: List[AntWikiRecord],
         logger.info(f"AntWiki report saved to {output_path}")
 
     return report
+

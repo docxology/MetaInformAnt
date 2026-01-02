@@ -552,3 +552,4 @@ class TestLeveragePlot:
 
         with pytest.raises(ImportError, match="scikit-learn required"):
             leverage_plot(X, y)
+

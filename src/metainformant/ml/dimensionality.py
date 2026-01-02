@@ -502,3 +502,155 @@ def biological_dimensionality_analysis(
     )
 
     return results
+
+
+def biological_embedding(
+    sequences: List[Any],
+    embedding_dim: int = 100,
+    method: str = "pca",
+    **kwargs: Any
+) -> np.ndarray:
+    """Create biological embeddings from sequences or features.
+
+    Args:
+        sequences: List of sequences or feature vectors
+        embedding_dim: Dimension of the embedding
+        method: Embedding method ('pca', 'umap', 'tsne')
+        **kwargs: Additional arguments for the embedding method
+
+    Returns:
+        Embedding matrix
+    """
+    if not sequences:
+        raise ValueError("No sequences provided")
+
+    # Convert sequences to feature matrix
+    if isinstance(sequences[0], str):
+        # If sequences are strings, convert to basic features
+        # This is a simplified implementation - in practice you'd use more sophisticated methods
+        features = []
+        for seq in sequences:
+            # Simple k-mer counting (k=1,2,3)
+            features.append(_sequence_to_features(seq))
+        X = np.array(features)
+    else:
+        # Assume sequences are already feature vectors
+        X = np.array(sequences)
+
+    if X.shape[0] == 0:
+        raise ValueError("No valid features extracted")
+
+    # Apply dimensionality reduction
+    if method == "pca":
+        return reduce_dimensions_pca(X, n_components=embedding_dim, **kwargs)
+    elif method == "umap" and HAS_UMAP:
+        return reduce_dimensions_umap(X, n_components=embedding_dim, **kwargs)
+    elif method == "tsne" and HAS_TSNE:
+        return reduce_dimensions_tsne(X, n_components=embedding_dim, **kwargs)
+    else:
+        raise ValueError(f"Unsupported embedding method: {method}")
+
+
+def reduce_dimensions_pca(
+    X: np.ndarray,
+    n_components: int | None = None,
+    scale_data: bool = True,
+    **kwargs: Any
+) -> np.ndarray:
+    """Reduce dimensions using PCA.
+
+    Args:
+        X: Input data matrix
+        n_components: Number of components to keep
+        scale_data: Whether to scale data before PCA
+        **kwargs: Additional arguments for PCA
+
+    Returns:
+        Reduced dimensionality data
+    """
+    if not HAS_SKLEARN:
+        raise ImportError("scikit-learn required for PCA")
+
+    if n_components is None:
+        n_components = min(X.shape[0], X.shape[1], 50)
+
+    X_reduced, _ = pca_reduction(X, n_components=n_components, scale_data=scale_data, **kwargs)
+    return X_reduced
+
+
+def reduce_dimensions_tsne(
+    X: np.ndarray,
+    n_components: int = 2,
+    perplexity: float = 30.0,
+    **kwargs: Any
+) -> np.ndarray:
+    """Reduce dimensions using t-SNE.
+
+    Args:
+        X: Input data matrix
+        n_components: Number of components to keep
+        perplexity: t-SNE perplexity parameter
+        **kwargs: Additional arguments for t-SNE
+
+    Returns:
+        Reduced dimensionality data
+    """
+    if not HAS_TSNE:
+        raise ImportError("scikit-learn required for t-SNE")
+
+    X_reduced, _ = tsne_reduction(X, n_components=n_components, perplexity=perplexity, **kwargs)
+    return X_reduced
+
+
+def reduce_dimensions_umap(
+    X: np.ndarray,
+    n_components: int = 2,
+    n_neighbors: int = 15,
+    **kwargs: Any
+) -> np.ndarray:
+    """Reduce dimensions using UMAP.
+
+    Args:
+        X: Input data matrix
+        n_components: Number of components to keep
+        n_neighbors: UMAP n_neighbors parameter
+        **kwargs: Additional arguments for UMAP
+
+    Returns:
+        Reduced dimensionality data
+    """
+    if not HAS_UMAP:
+        raise ImportError("umap-learn required for UMAP")
+
+    X_reduced = umap_reduction(X, n_components=n_components, n_neighbors=n_neighbors, **kwargs)
+    return X_reduced
+
+
+def _sequence_to_features(sequence: str) -> List[float]:
+    """Convert a sequence to basic feature vector.
+
+    This is a simplified implementation for demonstration.
+    In practice, you'd use more sophisticated sequence embeddings.
+    """
+    if not sequence:
+        return [0.0] * 20  # Basic amino acid features
+
+    # Simple k-mer frequencies (k=1)
+    features = []
+    sequence = sequence.upper()
+
+    # Nucleotide/amino acid counts
+    bases = 'ATCG' if all(c in 'ATCGN' for c in sequence) else 'ACDEFGHIKLMNPQRSTVWY'
+    for base in bases:
+        features.append(sequence.count(base) / len(sequence))
+
+    # Sequence length
+    features.append(len(sequence))
+
+    # GC content (if DNA)
+    if all(c in 'ATCGN' for c in sequence):
+        gc_count = sequence.count('G') + sequence.count('C')
+        features.append(gc_count / len(sequence) if sequence else 0)
+
+    return features
+

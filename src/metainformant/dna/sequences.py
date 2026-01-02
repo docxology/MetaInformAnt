@@ -156,9 +156,9 @@ def sequence_length(seq: str) -> int:
         seq: DNA sequence string
 
     Returns:
-        Sequence length
+        Sequence length (ignoring whitespace)
     """
-    return len(seq)
+    return len(seq.replace(" ", "").replace("\t", "").replace("\n", "").replace("\r", ""))
 
 
 def validate_dna_sequence(seq: str) -> bool:
@@ -211,18 +211,28 @@ def find_repeats(seq: str, min_length: int = 3) -> Dict[str, List[int]]:
     Returns:
         Dictionary mapping repeat sequences to lists of start positions
     """
-    repeats = {}
+    from collections import defaultdict
 
-    # Simple repeat finding - look for exact repeats
+    repeats = defaultdict(list)
     seq_upper = seq.upper()
+
+    # Find all occurrences of each possible repeat
     for i in range(len(seq_upper) - min_length + 1):
         repeat_seq = seq_upper[i:i + min_length]
-        if repeat_seq in seq_upper[i + min_length:]:
-            if repeat_seq not in repeats:
-                repeats[repeat_seq] = []
-            repeats[repeat_seq].append(i)
+        # Count how many times this repeat appears in the entire sequence
+        count = seq_upper.count(repeat_seq)
+        if count > 1:  # Only include repeats that appear more than once
+            # Find all positions of this repeat
+            pos = 0
+            while True:
+                pos = seq_upper.find(repeat_seq, pos)
+                if pos == -1:
+                    break
+                repeats[repeat_seq].append(pos)
+                pos += 1  # Move to next position (allow overlapping)
 
-    return repeats
+    # Only return repeats that appear more than once
+    return {k: v for k, v in repeats.items() if len(v) > 1}
 
 
 def calculate_sequence_complexity(seq: str) -> float:
@@ -277,8 +287,9 @@ def find_orfs(seq: str, min_length: int = 30) -> List[Tuple[int, int, str]]:
             # Forward strand
             search_seq = seq_upper[frame:]
         else:
-            # Reverse strand
-            search_seq = reverse_complement(seq_upper)[frame - 3:]
+            # Reverse strand - use reverse complement and adjust frame
+            rev_comp = reverse_complement(seq_upper)
+            search_seq = rev_comp[frame - 3:]
 
         # Find start codons
         start_positions = []
@@ -378,30 +389,27 @@ def detect_sequence_bias(seq: str) -> Dict[str, float]:
         seq: DNA sequence string
 
     Returns:
-        Dictionary with bias metrics for each nucleotide
+        Dictionary with composition metrics
     """
     if not seq:
-        return {'A': 0.0, 'T': 0.0, 'G': 0.0, 'C': 0.0}
+        return {'gc_content': 0.0, 'at_content': 0.0, 'total_bases': 0}
 
     seq_upper = seq.upper()
     length = len(seq_upper)
 
-    counts = {
-        'A': seq_upper.count('A') / length,
-        'T': seq_upper.count('T') / length,
-        'G': seq_upper.count('G') / length,
-        'C': seq_upper.count('C') / length,
+    g_count = seq_upper.count('G')
+    c_count = seq_upper.count('C')
+    a_count = seq_upper.count('A')
+    t_count = seq_upper.count('T')
+
+    gc_content = (g_count + c_count) / length if length > 0 else 0.0
+    at_content = (a_count + t_count) / length if length > 0 else 0.0
+
+    return {
+        'gc_content': gc_content,
+        'at_content': at_content,
+        'total_bases': length
     }
-
-    # Expected frequency for no bias
-    expected = 0.25
-
-    # Calculate bias as deviation from expected
-    biases = {}
-    for nuc, freq in counts.items():
-        biases[nuc] = abs(freq - expected)
-
-    return biases
 
 
 def calculate_gc_skew(seq: str) -> float:
@@ -502,8 +510,16 @@ def calculate_melting_temperature(seq: str, method: str = "wallace") -> float:
         if length == 0:
             return 0.0
         return 64.9 + 41 * (gc_count - 16.4) / length
+    elif method.lower() == "enhanced":
+        # Enhanced method: Tm = 81.5 + 0.41*(%GC) - 675/N + correction
+        gc_count = seq.upper().count('G') + seq.upper().count('C')
+        length = len(seq)
+        if length == 0:
+            return 0.0
+        gc_percent = (gc_count / length) * 100
+        return 81.5 + 0.41 * gc_percent - 675 / length
     else:
-        raise ValueError(f"Unsupported method: {method}. Use 'wallace' or 'gc'")
+        raise ValueError(f"Unsupported method: {method}. Use 'wallace', 'gc', or 'enhanced'")
 
 
 def calculate_codon_usage(seq: str) -> Dict[str, float]:
@@ -546,7 +562,8 @@ def dna_complementarity_score(seq1: str, seq2: str) -> float:
         Complementarity score (0.0 to 1.0)
     """
     if len(seq1) != len(seq2):
-        raise ValueError("Sequences must be the same length")
+        from metainformant.core import errors
+        raise errors.ValidationError("Sequences must be the same length")
 
     complement_map = str.maketrans('ATCG', 'TAGC')
     seq2_complement = seq2.upper().translate(complement_map)
@@ -597,5 +614,6 @@ def _is_palindromic(seq: str) -> bool:
     """
     complement = str.maketrans('ATCG', 'TAGC')
     return seq == seq.translate(complement)[::-1]
+
 
 

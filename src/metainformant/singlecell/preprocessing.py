@@ -678,3 +678,4 @@ def remove_batch_effects(data: SingleCellData, batch_key: str,
 
     logger.info("Batch effect correction completed")
     return result
+

@@ -637,3 +637,162 @@ def simulate_competition(ecosystem: Ecosystem, n_steps: int, *,
 
     logger.info("Competition simulation completed")
     return snapshots
+
+
+class GridWorld:
+    """A grid-based world for agent-based simulations.
+
+    This class provides a 2D grid environment where agents can move,
+    interact, and evolve according to specified rules.
+    """
+
+    def __init__(self, width: int, height: int, num_agents: int,
+                 rng: Optional[Any] = None, **kwargs: Any):
+        """Initialize the grid world.
+
+        Args:
+            width: Width of the grid
+            height: Height of the grid
+            num_agents: Number of agents to create
+            rng: Random number generator (optional)
+            **kwargs: Additional parameters
+        """
+        self.width = width
+        self.height = height
+        self.agents = []
+
+        # Initialize random number generator
+        if rng is None:
+            import random
+            self.rng = random.Random()
+        else:
+            self.rng = rng
+
+        # Create agents
+        for i in range(num_agents):
+            agent = Agent(
+                agent_id=i,
+                x=self.rng.randint(0, width - 1),
+                y=self.rng.randint(0, height - 1),
+                energy=100.0
+            )
+            self.agents.append(agent)
+
+        # Simulation state
+        self.time_step = 0
+
+    def step(self) -> Dict[str, Any]:
+        """Execute one simulation step.
+
+        Returns:
+            Dictionary with step results
+        """
+        # Move agents randomly
+        for agent in self.agents:
+            # Random movement
+            dx = self.rng.choice([-1, 0, 1])
+            dy = self.rng.choice([-1, 0, 1])
+
+            agent.x = max(0, min(self.width - 1, agent.x + dx))
+            agent.y = max(0, min(self.height - 1, agent.y + dy))
+
+            # Decrease energy slightly
+            agent.energy -= 0.1
+
+            # Ensure minimum energy
+            agent.energy = max(0, agent.energy)
+
+        self.time_step += 1
+
+        return {
+            'time_step': self.time_step,
+            'num_agents': len(self.agents),
+            'agent_positions': [(a.x, a.y) for a in self.agents],
+            'total_energy': sum(a.energy for a in self.agents)
+        }
+
+    def get_agent_positions(self) -> List[Tuple[int, int]]:
+        """Get current positions of all agents.
+
+        Returns:
+            List of (x, y) coordinate tuples
+        """
+        return [(agent.x, agent.y) for agent in self.agents]
+
+    def get_agent_energies(self) -> List[float]:
+        """Get current energy levels of all agents.
+
+        Returns:
+            List of energy values
+        """
+        return [agent.energy for agent in self.agents]
+
+    def add_agent(self, x: Optional[int] = None, y: Optional[int] = None,
+                  energy: float = 100.0) -> Agent:
+        """Add a new agent to the world.
+
+        Args:
+            x: X coordinate (random if None)
+            y: Y coordinate (random if None)
+            energy: Initial energy level
+
+        Returns:
+            The newly created agent
+        """
+        if x is None:
+            x = self.rng.randint(0, self.width - 1)
+        if y is None:
+            y = self.rng.randint(0, self.height - 1)
+
+        agent = Agent(
+            agent_id=len(self.agents),
+            x=x,
+            y=y,
+            energy=energy
+        )
+        self.agents.append(agent)
+        return agent
+
+    def remove_agent(self, agent: Agent) -> None:
+        """Remove an agent from the world.
+
+        Args:
+            agent: Agent to remove
+        """
+        if agent in self.agents:
+            self.agents.remove(agent)
+
+    def get_neighbors(self, agent: Agent, radius: int = 1) -> List[Agent]:
+        """Get neighboring agents within a given radius.
+
+        Args:
+            agent: Reference agent
+            radius: Search radius
+
+        Returns:
+            List of neighboring agents
+        """
+        neighbors = []
+        for other in self.agents:
+            if other is agent:
+                continue
+            distance = abs(other.x - agent.x) + abs(other.y - agent.y)
+            if distance <= radius:
+                neighbors.append(other)
+        return neighbors
+
+    def run_simulation(self, num_steps: int) -> List[Dict[str, Any]]:
+        """Run simulation for multiple steps.
+
+        Args:
+            num_steps: Number of steps to run
+
+        Returns:
+            List of step results
+        """
+        results = []
+        for _ in range(num_steps):
+            step_result = self.step()
+            results.append(step_result)
+        return results
+

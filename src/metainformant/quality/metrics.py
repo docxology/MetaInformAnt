@@ -472,3 +472,72 @@ def batch_quality_analysis(file_paths: List[str | Path], data_type: str = "fastq
         "results": results,
         "summary": summary,
     }
+
+
+def calculate_complexity_metrics(sequences: List[str]) -> Dict[str, Any]:
+    """Calculate sequence complexity metrics.
+
+    Args:
+        sequences: List of DNA/RNA/protein sequences
+
+    Returns:
+        Dictionary with complexity metrics
+    """
+    if not sequences:
+        return {"error": "No sequences provided"}
+
+    metrics = {
+        "total_sequences": len(sequences),
+        "average_length": sum(len(seq) for seq in sequences) / len(sequences),
+    }
+
+    # Linguistic complexity (Shannon entropy of k-mers)
+    k = 2  # Use dinucleotides for complexity
+    all_kmers = []
+    for seq in sequences:
+        if len(seq) >= k:
+            kmers = [seq[i:i+k] for i in range(len(seq) - k + 1)]
+            all_kmers.extend(kmers)
+
+    if all_kmers:
+        from collections import Counter
+        kmer_counts = Counter(all_kmers)
+        total_kmers = len(all_kmers)
+
+        # Shannon entropy
+        entropy = 0
+        for count in kmer_counts.values():
+            p = count / total_kmers
+            entropy -= p * math.log2(p)
+
+        # Normalized entropy (0-1 scale)
+        max_entropy = math.log2(len(kmer_counts))
+        normalized_entropy = entropy / max_entropy if max_entropy > 0 else 0
+
+        metrics["kmer_entropy"] = entropy
+        metrics["normalized_kmer_entropy"] = normalized_entropy
+        metrics["unique_kmers"] = len(kmer_counts)
+        metrics["total_kmers"] = total_kmers
+
+        # Complexity score (combination of uniqueness and entropy)
+        uniqueness = len(kmer_counts) / total_kmers
+        metrics["complexity_score"] = (uniqueness + normalized_entropy) / 2
+
+    # Sequence diversity (proportion of unique sequences)
+    unique_sequences = len(set(sequences))
+    metrics["sequence_diversity"] = unique_sequences / len(sequences)
+
+    # GC content complexity (deviation from 0.5)
+    gc_contents = []
+    for seq in sequences:
+        gc_count = seq.upper().count('G') + seq.upper().count('C')
+        gc_content = gc_count / len(seq) if seq else 0
+        gc_contents.append(gc_content)
+
+    if gc_contents:
+        avg_gc = sum(gc_contents) / len(gc_contents)
+        gc_complexity = 1 - abs(avg_gc - 0.5) * 2  # Higher when closer to 0.5
+        metrics["gc_complexity"] = gc_complexity
+
+    return metrics
+

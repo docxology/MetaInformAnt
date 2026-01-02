@@ -139,3 +139,5 @@ def perform_cstmm_normalization(species: str, reference_species: str,
     }
 
 
+
+run_cstmm = run_step

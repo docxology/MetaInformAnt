@@ -401,6 +401,11 @@ def validate_configuration(config: Dict[str, Any]) -> Dict[str, Any]:
                 validation['issues'].append(f"Sample {sample_id} missing accession")
                 validation['is_valid'] = False
 
-    return validation
+        return validation
+
+
+# Alias for backward compatibility
+run_config = run_step
+
 
 

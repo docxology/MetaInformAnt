@@ -608,3 +608,4 @@ def leverage_plot(
         logger.info(f"Leverage plot saved to {output_path}")
 
     return ax
+

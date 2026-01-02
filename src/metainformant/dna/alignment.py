@@ -412,3 +412,4 @@ def _traceback_local(seq1: str, seq2: str, traceback_matrix: np.ndarray, start_i
     return ''.join(aligned_seq1), ''.join(aligned_seq2), (start_pos_seq1, start_pos_seq2)
 
 
+

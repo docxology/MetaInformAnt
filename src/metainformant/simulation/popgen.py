@@ -658,3 +658,4 @@ def simulate_selection(genotype_matrix: np.ndarray, fitness_effects: np.ndarray,
         "generations": generations,
         "selection_strength": selection_strength,
     }
+

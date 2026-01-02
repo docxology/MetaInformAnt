@@ -375,3 +375,4 @@ def predict_gene_function_from_sequence(dna_sequence: str) -> Dict[str, any]:
     }
 
 
+

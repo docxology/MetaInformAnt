@@ -509,3 +509,4 @@ def information_flow_network(
                 flow_matrix[i, j] = te
 
     return flow_matrix
+

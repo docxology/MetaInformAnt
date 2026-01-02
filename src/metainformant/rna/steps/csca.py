@@ -119,3 +119,8 @@ def perform_csca_analysis(curated_data: Dict[str, Any], method: str,
     }
 
 
+# Alias for backward compatibility
+run_csca = run_step
+
+
+

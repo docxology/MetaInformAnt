@@ -20,6 +20,11 @@ try:
 except ImportError:
     contamination = None
 
+# Direct imports of commonly used functions
+from .contamination import ContaminationDetector
+from .fastq import FastqRecord
+from .metrics import calculate_complexity_metrics
+
 # Type checking imports
 from typing import TYPE_CHECKING
 
@@ -33,6 +38,12 @@ __all__ = [
 
     # Specialized analysis
     "contamination",
+
+    # Direct exports
+    "FastqRecord",
+    "ContaminationDetector",
+    "calculate_complexity_metrics",
 ]
+
 
 

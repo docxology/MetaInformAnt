@@ -494,3 +494,4 @@ def variant_plot(
         logger.info(f"Variant plot saved to {output_path}")
 
     return ax
+

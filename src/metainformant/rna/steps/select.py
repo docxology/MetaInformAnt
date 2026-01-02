@@ -344,3 +344,5 @@ def validate_selection(selected_samples: Dict[str, Dict[str, Any]]) -> Dict[str,
     return validation
 
 
+
+run_select = run_step

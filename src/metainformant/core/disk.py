@@ -387,3 +387,4 @@ def safe_remove_directory(
     except Exception as e:
         logger.error(f"Failed to remove directory {directory}: {e}")
         return False
+

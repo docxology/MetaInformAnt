@@ -274,3 +274,4 @@ def create_ontology(
         relationships=relationships or [],
         metadata=metadata
     )
+

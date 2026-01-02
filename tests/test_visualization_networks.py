@@ -259,3 +259,4 @@ class TestPlotCommunityNetwork:
 
         with pytest.raises(ImportError, match="NetworkX required"):
             plot_community_network(fake_graph, communities)
+

@@ -395,3 +395,111 @@ def validate_uniprot_accession(accession: str) -> bool:
     ]
 
     return any(re.match(pattern, accession) for pattern in patterns)
+
+
+def map_ids_uniprot(protein_ids: List[str], source_db: str = "auto",
+                   target_format: str = "accession") -> Dict[str, str]:
+    """Map protein identifiers to UniProt identifiers.
+
+    Args:
+        protein_ids: List of protein identifiers to map
+        source_db: Source database ('auto', 'ensembl', 'refseq', 'pdb', etc.)
+        target_format: Target format ('accession', 'entry_name', 'id')
+
+    Returns:
+        Dictionary mapping input IDs to UniProt IDs
+
+    Raises:
+        ValueError: If parameters are invalid
+
+    Example:
+        >>> ids = ["ENSP00000389680", "NP_001005484"]
+        >>> mapping = map_ids_uniprot(ids, source_db="ensembl")
+        >>> # Returns mapping to UniProt accessions
+    """
+    if not protein_ids:
+        return {}
+
+    if target_format not in ['accession', 'entry_name', 'id']:
+        raise ValueError(f"Invalid target format: {target_format}")
+
+    # UniProt ID mapping API endpoint
+    base_url = "https://www.uniprot.org/uploadlists/"
+
+    # Prepare the request data
+    ids_string = ' '.join(protein_ids)
+
+    # Determine source database
+    if source_db == "auto":
+        # Try to auto-detect based on ID patterns
+        if protein_ids and protein_ids[0].startswith('ENSP'):
+            from_db = 'ENSEMBL_PRO_ID'
+        elif protein_ids and protein_ids[0].startswith('NP_'):
+            from_db = 'RefSeq_Protein'
+        elif protein_ids and protein_ids[0].startswith('P'):
+            from_db = 'UniProtKB_AC-ID'
+        else:
+            from_db = 'UniProtKB_AC-ID'  # Default fallback
+    else:
+        # Map database names to UniProt API codes
+        db_mapping = {
+            'ensembl': 'ENSEMBL_PRO_ID',
+            'refseq': 'RefSeq_Protein',
+            'pdb': 'PDB',
+            'geneid': 'GeneID',
+            'uniprot': 'UniProtKB_AC-ID',
+        }
+        from_db = db_mapping.get(source_db.lower())
+        if from_db is None:
+            raise ValueError(f"Unsupported source database: {source_db}")
+
+    # Map target format to UniProt API codes
+    to_db = {
+        'accession': 'UniProtKB',
+        'entry_name': 'UniProtKB',
+        'id': 'UniProtKB'
+    }[target_format]
+
+    try:
+        # Make the API request
+        response = requests.post(
+            base_url,
+            data={
+                'from': from_db,
+                'to': to_db,
+                'format': 'tab',
+                'query': ids_string
+            },
+            timeout=60
+        )
+        response.raise_for_status()
+
+        # Parse the tab-separated response
+        lines = response.text.strip().split('\n')
+        if len(lines) < 2:  # No mappings found
+            logger.warning(f"No mappings found for {len(protein_ids)} IDs")
+            return {}
+
+        # Skip header line and parse mappings
+        mapping = {}
+        for line in lines[1:]:
+            if '\t' in line:
+                parts = line.split('\t')
+                if len(parts) >= 2:
+                    input_id, uniprot_id = parts[0], parts[1]
+
+                    if target_format == 'accession':
+                        # Extract just the accession part
+                        uniprot_id = uniprot_id.split('_')[0] if '_' in uniprot_id else uniprot_id
+
+                    mapping[input_id] = uniprot_id
+
+        logger.info(f"Successfully mapped {len(mapping)} out of {len(protein_ids)} IDs")
+        return mapping
+
+    except requests.RequestException as e:
+        logger.error(f"UniProt ID mapping failed: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in ID mapping: {e}")
+        raise

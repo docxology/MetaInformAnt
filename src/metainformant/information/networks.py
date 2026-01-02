@@ -619,3 +619,4 @@ def information_graph_distance(
 
     else:
         raise ValueError(f"Unknown distance method: {method}")
+

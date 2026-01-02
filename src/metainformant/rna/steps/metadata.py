@@ -287,3 +287,5 @@ def validate_metadata(metadata: Dict[str, Any]) -> Dict[str, Any]:
     return validation_results
 
 
+
+run_metadata = run_step

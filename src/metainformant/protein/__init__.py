@@ -61,10 +61,12 @@ __all__ = [
     # Functional annotation and databases
     "interpro",
     "uniprot",
+    "map_ids_uniprot",
     "pdb",
 
     # Proteome analysis
     "proteomes",
 ]
+
 
 

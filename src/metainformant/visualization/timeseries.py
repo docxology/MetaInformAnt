@@ -330,3 +330,4 @@ def plot_trend_analysis(
         logger.info(f"Trend analysis plot saved to {output_path}")
 
     return ax
+

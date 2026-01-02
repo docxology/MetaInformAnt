@@ -16,6 +16,10 @@ from . import (
     workflow,
 )
 
+# Direct imports of commonly used functions
+from .methylation import compute_beta_values, load_cpg_table, summarize_beta_by_chromosome
+from .tracks import load_bedgraph_track as read_bedgraph
+
 # Optional imports with graceful fallbacks
 try:
     from . import workflow
@@ -43,5 +47,6 @@ __all__ = [
     "tracks",
     "workflow",
 ]
+
 
 

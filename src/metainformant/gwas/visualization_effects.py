@@ -431,3 +431,101 @@ def effect_size_qq(results: Any, output_file: Optional[str | Path] = None) -> Op
     return plt.gcf()
 
 
+def effect_size_forest_plot(effect_data: Dict[str, Any],
+                           output_file: Optional[str | Path] = None,
+                           title: str = "Effect Size Forest Plot") -> Optional[Any]:
+    """Create a forest plot showing effect sizes and confidence intervals.
+
+    Args:
+        effect_data: Dictionary containing effect size data with keys:
+                    'variants': list of variant names
+                    'effects': list of effect sizes
+                    'lower_ci': list of lower confidence interval bounds
+                    'upper_ci': list of upper confidence interval bounds
+        output_file: Optional output file path
+        title: Plot title
+
+    Returns:
+        Plot object if matplotlib available, None otherwise
+
+    Example:
+        >>> data = {
+        ...     'variants': ['rs123', 'rs456', 'rs789'],
+        ...     'effects': [0.1, 0.05, 0.15],
+        ...     'lower_ci': [0.05, 0.02, 0.08],
+        ...     'upper_ci': [0.15, 0.08, 0.22]
+        ... }
+        >>> plot = effect_size_forest_plot(data)
+    """
+    try:
+        import matplotlib.pyplot as plt
+        import matplotlib.patches as patches
+    except ImportError:
+        logger.warning("matplotlib not available for forest plot")
+        return None
+
+    # Validate input data
+    required_keys = ['variants', 'effects', 'lower_ci', 'upper_ci']
+    missing_keys = [key for key in required_keys if key not in effect_data]
+    if missing_keys:
+        logger.error(f"Missing required keys in effect_data: {missing_keys}")
+        return None
+
+    variants = effect_data['variants']
+    effects = effect_data['effects']
+    lower_ci = effect_data['lower_ci']
+    upper_ci = effect_data['upper_ci']
+
+    if not (len(variants) == len(effects) == len(lower_ci) == len(upper_ci)):
+        logger.error("All effect data arrays must have the same length")
+        return None
+
+    fig, ax = plt.subplots(1, 1, figsize=(10, max(6, len(variants) * 0.3)))
+
+    # Plot effect sizes and confidence intervals
+    y_positions = range(len(variants))
+
+    # Plot confidence intervals
+    for i, (effect, lower, upper, variant) in enumerate(zip(effects, lower_ci, upper_ci, variants)):
+        # Confidence interval line
+        ax.plot([lower, upper], [i, i], 'k-', linewidth=2, alpha=0.8)
+
+        # Effect size point
+        ax.plot(effect, i, 'ro', markersize=8, alpha=0.8)
+
+        # Add variant label
+        ax.text(-0.02, i, variant, ha='right', va='center', fontsize=10)
+
+    # Add vertical line at zero effect
+    ax.axvline(x=0, color='gray', linestyle='--', alpha=0.7)
+
+    # Add vertical line at reference effect (e.g., 1 for OR, 0 for beta)
+    if all(isinstance(e, (int, float)) and e > 0 for e in effects):
+        # Likely odds ratios - add reference line at 1
+        ax.axvline(x=1, color='blue', linestyle='-', alpha=0.5, label='Reference (OR=1)')
+        ax.legend()
+
+    # Format plot
+    ax.set_xlabel('Effect Size', fontsize=12)
+    ax.set_title(title, fontsize=14, pad=20)
+    ax.set_yticks(y_positions)
+    ax.set_yticklabels([''] * len(variants))  # Hide y-tick labels (we use text labels)
+    ax.grid(True, alpha=0.3, axis='x')
+
+    # Add summary statistics
+    mean_effect = np.mean(effects)
+    ax.text(0.02, 0.98, f'Mean Effect: {mean_effect:.3f}',
+            transform=ax.transAxes, fontsize=11,
+            verticalalignment='top',
+            bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+
+    plt.tight_layout()
+
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        logger.info(f"Saved forest plot to {output_file}")
+
+    return plt.gcf()
+
+
+

@@ -495,3 +495,4 @@ def generate_contamination_report(contamination_results: Dict[str, Any],
         logger.info(f"Contamination report saved to {output_path}")
 
     return report
+

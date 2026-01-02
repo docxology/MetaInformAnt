@@ -132,6 +132,32 @@ def download_genome_package_best_effort(accession: str, output_dir: str | Path,
         return fallback_dir
 
 
+def is_valid_assembly_accession(accession: str) -> bool:
+    """Validate NCBI assembly accession format.
+
+    Args:
+        accession: Assembly accession string
+
+    Returns:
+        True if accession has valid NCBI assembly format
+
+    Example:
+        >>> is_valid_assembly_accession("GCF_000001405.39")
+        True
+        >>> is_valid_assembly_accession("GCA_000001405")
+        True
+        >>> is_valid_assembly_accession("invalid")
+        False
+    """
+    import re
+
+    # NCBI assembly accession patterns
+    # GCF_##########.## or GCA_##########
+    pattern = r'^(GCF|GCA)_[0-9]{9,}(\.[0-9]+)?$'
+
+    return bool(re.match(pattern, accession))
+
+
 def validate_accession(accession: str) -> bool:
     """Validate genome accession format.
 
@@ -383,5 +409,6 @@ def validate_genome_files(genome_dir: str | Path) -> Dict[str, Any]:
         results['valid'] = False
 
     return results
+
 
 

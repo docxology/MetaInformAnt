@@ -448,3 +448,165 @@ def prefetch_sra_metadata(accessions: List[str]) -> Dict[str, Dict[str, Any]]:
     return metadata
 
 
+def check_sra_tools_available() -> bool:
+    """Check if SRA tools (fasterq-dump, prefetch, etc.) are available.
+
+    Returns:
+        True if SRA tools are available and executable
+    """
+    import shutil
+
+    # Check for common SRA tools
+    sra_tools = ['fasterq-dump', 'prefetch', 'fastq-dump']
+
+    available_tools = []
+    for tool in sra_tools:
+        if shutil.which(tool):
+            available_tools.append(tool)
+
+    if available_tools:
+        logger.info(f"SRA tools available: {', '.join(available_tools)}")
+        return True
+    else:
+        logger.warning("No SRA tools found. Install SRA Toolkit from NCBI")
+        return False
+
+
+def download_sra_project(project_id: str, output_dir: str | Path,
+                        threads: int = 1) -> List[Path]:
+    """Download all experiments/runs from an SRA project.
+
+    Args:
+        project_id: SRA project ID (PRJNA...)
+        output_dir: Output directory
+        threads: Number of threads for download
+
+    Returns:
+        List of paths to downloaded run directories
+    """
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Get experiments for this project
+    experiment_accessions = _get_project_experiments(project_id)
+
+    if not experiment_accessions:
+        logger.warning(f"No experiments found for project {project_id}")
+        return []
+
+    downloaded_runs = []
+
+    for exp_acc in experiment_accessions:
+        try:
+            # Download all runs from this experiment
+            run_paths = download_sra_experiment(exp_acc, output_dir, threads)
+            downloaded_runs.extend(run_paths)
+            logger.info(f"Downloaded {len(run_paths)} runs from experiment {exp_acc}")
+        except Exception as e:
+            logger.error(f"Failed to download experiment {exp_acc}: {e}")
+            continue
+
+    logger.info(f"Downloaded {len(downloaded_runs)} total runs from project {project_id}")
+    return downloaded_runs
+
+
+def _get_project_experiments(project_id: str) -> List[str]:
+    """Get experiment accessions for an SRA project.
+
+    Args:
+        project_id: SRA project ID
+
+    Returns:
+        List of experiment accessions
+    """
+    # This would typically query NCBI's Entrez API
+    # For now, return empty list (placeholder implementation)
+    logger.warning("Project experiment lookup not implemented - requires NCBI API integration")
+    return []
+
+
+def download_sra_run(sra_accession: str, output_dir: str | Path,
+                    threads: int = 1) -> Path:
+    """Download a single SRA run.
+
+    Args:
+        sra_accession: SRA run accession (SRR...)
+        output_dir: Output directory
+        threads: Number of threads for download
+
+    Returns:
+        Path to downloaded run directory
+    """
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    run_dir = output_dir / sra_accession
+    run_dir.mkdir(exist_ok=True)
+
+    # Check if SRA tools are available
+    if not check_sra_tools_available():
+        logger.warning("SRA tools not available, download may fail")
+        return run_dir
+
+    try:
+        # Use fasterq-dump if available, otherwise fastq-dump
+        import subprocess
+
+        cmd = ["fasterq-dump", "--split-files", "--threads", str(threads),
+               "--outdir", str(run_dir), sra_accession]
+
+        # Try fasterq-dump first
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=3600)
+            if result.returncode == 0:
+                logger.info(f"Downloaded SRA run {sra_accession} using fasterq-dump")
+                return run_dir
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            pass
+
+        # Fall back to fastq-dump
+        cmd = ["fastq-dump", "--split-files", "--gzip", sra_accession]
+        result = subprocess.run(cmd, cwd=run_dir, capture_output=True, text=True, timeout=3600)
+
+        if result.returncode == 0:
+            logger.info(f"Downloaded SRA run {sra_accession} using fastq-dump")
+            return run_dir
+        else:
+            logger.error(f"Failed to download {sra_accession}: {result.stderr}")
+            return run_dir
+
+    except Exception as e:
+        logger.error(f"Error downloading SRA run {sra_accession}: {e}")
+        return run_dir
+
+
+def search_sra_for_organism(organism: str, max_results: int = 100) -> List[Dict[str, Any]]:
+    """Search SRA for experiments from a specific organism.
+
+    Args:
+        organism: Organism name to search for
+        max_results: Maximum number of results to return
+
+    Returns:
+        List of dictionaries with experiment information
+    """
+    # This would typically query NCBI's Entrez API
+    # For now, return mock data structure for testing
+    logger.warning("SRA search not fully implemented - requires NCBI API integration")
+
+    # Return mock results for testing
+    mock_results = []
+    for i in range(min(max_results, 10)):
+        mock_results.append({
+            'accession': f'SRX000{i:04d}',
+            'title': f'{organism} experiment {i}',
+            'organism': organism,
+            'runs': [f'SRR000{i:04d}'],
+            'platform': 'ILLUMINA',
+            'library_strategy': 'RNA-Seq'
+        })
+
+    return mock_results
+
+
+

@@ -390,3 +390,4 @@ def is_palindrome(seq: str) -> bool:
     return seq_upper == reversed_complement
 
 
+

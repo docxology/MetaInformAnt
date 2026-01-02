@@ -677,3 +677,350 @@ def _compute_trustworthiness_continuity(original_distances: np.ndarray,
         'continuity': float(continuity),
         'neighborhood_size': k,
     }
+
+
+# Check for sklearn availability
+try:
+    import sklearn
+    SKLEARN_AVAILABLE = True
+except ImportError:
+    SKLEARN_AVAILABLE = False
+
+
+def run_pca(data: SingleCellData, n_components: int = 50,
+           random_state: int | None = None, scale_data: bool = True) -> SingleCellData:
+    """Alias for pca_reduction - run PCA dimensionality reduction.
+
+    Args:
+        data: SingleCellData object
+        n_components: Number of components
+        random_state: Random seed
+        scale_data: Whether to scale data
+
+    Returns:
+        SingleCellData with PCA results
+    """
+    return pca_reduction(data, n_components, random_state, scale_data)
+
+
+def run_tsne(data: SingleCellData, n_components: int = 2, perplexity: float = 30.0,
+            random_state: int | None = None, learning_rate: float = 200.0,
+            max_iter: int = 1000) -> SingleCellData:
+    """Alias for tsne_reduction - run t-SNE dimensionality reduction.
+
+    Args:
+        data: SingleCellData object
+        n_components: Number of components
+        perplexity: t-SNE perplexity
+        random_state: Random seed
+        learning_rate: Learning rate
+        max_iter: Maximum iterations
+
+    Returns:
+        SingleCellData with t-SNE results
+    """
+    return tsne_reduction(data, n_components, perplexity, random_state,
+                         learning_rate, max_iter)
+
+
+def run_umap(data: SingleCellData, n_components: int = 2, n_neighbors: int = 15,
+            min_dist: float = 0.1, random_state: int | None = None,
+            metric: str = "euclidean") -> SingleCellData:
+    """Alias for umap_reduction - run UMAP dimensionality reduction.
+
+    Args:
+        data: SingleCellData object
+        n_components: Number of components
+        n_neighbors: Number of neighbors
+        min_dist: Minimum distance
+        random_state: Random seed
+        metric: Distance metric
+
+    Returns:
+        SingleCellData with UMAP results
+    """
+    return umap_reduction(data, n_components, n_neighbors, min_dist,
+                         random_state, metric)
+
+
+def compute_pca(data: SingleCellData, n_components: int = 50,
+               random_state: int | None = None, scale_data: bool = True) -> SingleCellData:
+    """Compute PCA dimensionality reduction (alias for pca_reduction).
+
+    Args:
+        data: SingleCellData object
+        n_components: Number of components
+        random_state: Random seed
+        scale_data: Whether to scale data
+
+    Returns:
+        SingleCellData with PCA results
+    """
+    return pca_reduction(data, n_components, random_state, scale_data)
+
+
+def compute_tsne(data: SingleCellData, n_components: int = 2, perplexity: float = 30.0,
+                random_state: int | None = None, learning_rate: float = 200.0,
+                max_iter: int = 1000) -> SingleCellData:
+    """Compute t-SNE dimensionality reduction (alias for tsne_reduction).
+
+    Args:
+        data: SingleCellData object
+        n_components: Number of components
+        perplexity: t-SNE perplexity
+        random_state: Random seed
+        learning_rate: Learning rate
+        max_iter: Maximum iterations
+
+    Returns:
+        SingleCellData with t-SNE results
+    """
+    return tsne_reduction(data, n_components, perplexity, random_state,
+                         learning_rate, max_iter)
+
+
+def compute_umap(data: SingleCellData, n_components: int = 2, n_neighbors: int = 15,
+                min_dist: float = 0.1, random_state: int | None = None,
+                metric: str = "euclidean") -> SingleCellData:
+    """Compute UMAP dimensionality reduction (alias for umap_reduction).
+
+    Args:
+        data: SingleCellData object
+        n_components: Number of components
+        n_neighbors: Number of neighbors
+        min_dist: Minimum distance
+        random_state: Random seed
+        metric: Distance metric
+
+    Returns:
+        SingleCellData with UMAP results
+    """
+    return umap_reduction(data, n_components, n_neighbors, min_dist,
+                         random_state, metric)
+
+
+def compute_neighbors(data: SingleCellData, n_neighbors: int = 15,
+                     metric: str = "euclidean", use_rep: str = "X_pca") -> SingleCellData:
+    """Compute neighbor graph for single-cell data.
+
+    Args:
+        data: SingleCellData object
+        n_neighbors: Number of neighbors
+        metric: Distance metric
+        use_rep: Representation to use for neighbor calculation
+
+    Returns:
+        SingleCellData with neighbor graph
+    """
+    if not SKLEARN_AVAILABLE:
+        raise ImportError("scikit-learn required for neighbor computation")
+
+    from sklearn.neighbors import NearestNeighbors
+
+    # Get the representation to use
+    if use_rep == "X_pca" and hasattr(data, 'obsm') and 'X_pca' in data.obsm:
+        X = data.obsm['X_pca']
+    elif hasattr(data, 'X'):
+        X = data.X
+    else:
+        raise ValueError(f"Representation {use_rep} not found in data")
+
+    # Compute neighbors
+    nbrs = NearestNeighbors(n_neighbors=n_neighbors, metric=metric)
+    nbrs.fit(X)
+
+    distances, indices = nbrs.kneighbors(X)
+
+    # Store results
+    data.uns['neighbors'] = {
+        'indices': indices,
+        'distances': distances,
+        'params': {
+            'n_neighbors': n_neighbors,
+            'metric': metric,
+            'use_rep': use_rep
+        }
+    }
+
+    logger.info(f"Computed neighbor graph with {n_neighbors} neighbors for {len(X)} cells")
+    return data
+
+
+def compute_diffusion_map(data: SingleCellData, n_components: int = 10,
+                         n_neighbors: int = 15, alpha: float = 1.0) -> SingleCellData:
+    """Compute diffusion map for single-cell data.
+
+    Args:
+        data: SingleCellData object
+        n_components: Number of diffusion components
+        n_neighbors: Number of neighbors for graph construction
+        alpha: Normalization parameter
+
+    Returns:
+        SingleCellData with diffusion map coordinates
+    """
+    if not SKLEARN_AVAILABLE:
+        raise ImportError("scikit-learn required for diffusion maps")
+
+    # First compute neighbors if not already done
+    if 'neighbors' not in data.uns:
+        data = compute_neighbors(data, n_neighbors)
+
+    # Get neighbor information
+    indices = data.uns['neighbors']['indices']
+    distances = data.uns['neighbors']['distances']
+
+    n_cells = len(data)
+    # Create adjacency matrix from neighbors
+    from scipy import sparse
+
+    rows, cols = [], []
+    data_weights = []
+
+    for i in range(n_cells):
+        for j_idx, j in enumerate(indices[i]):
+            if i != j:  # Exclude self
+                rows.append(i)
+                cols.append(j)
+                # Use distance-based weights
+                weight = 1.0 / (1.0 + distances[i, j_idx])
+                data_weights.append(weight)
+
+    # Create symmetric adjacency matrix
+    adjacency = sparse.csr_matrix((data_weights + data_weights,
+                                  (rows + cols, cols + rows)),
+                                 shape=(n_cells, n_cells))
+
+    # Normalize adjacency matrix (create diffusion operator)
+    degrees = np.array(adjacency.sum(axis=1)).flatten()
+    degrees[degrees == 0] = 1  # Avoid division by zero
+
+    if alpha == 0:
+        # Unnormalized Laplacian
+        diffusion_operator = adjacency
+    elif alpha == 1:
+        # Normalized Laplacian
+        D_inv_sqrt = sparse.diags(1.0 / np.sqrt(degrees))
+        diffusion_operator = D_inv_sqrt @ adjacency @ D_inv_sqrt
+    else:
+        # Generalized normalization
+        D_alpha = sparse.diags(degrees ** (-alpha))
+        diffusion_operator = D_alpha @ adjacency @ D_alpha
+
+    # Compute eigenvectors (diffusion components)
+    from scipy.sparse.linalg import eigsh
+    eigenvalues, eigenvectors = eigsh(diffusion_operator, k=n_components + 1,
+                                     which='LM', sigma=1.0)
+
+    # Sort by eigenvalue magnitude (largest first)
+    idx = np.argsort(np.abs(eigenvalues))[::-1]
+    eigenvalues = eigenvalues[idx]
+    eigenvectors = eigenvectors[:, idx]
+
+    # Store results (skip first eigenvector which is constant)
+    data.obsm['X_diffmap'] = eigenvectors[:, 1:n_components + 1]
+    data.uns['diffmap'] = {
+        'eigenvalues': eigenvalues[1:n_components + 1],
+        'params': {
+            'n_components': n_components,
+            'n_neighbors': n_neighbors,
+            'alpha': alpha
+        }
+    }
+
+    logger.info(f"Computed diffusion map with {n_components} components")
+    return data
+
+
+def select_hvgs(data: SingleCellData, n_top_genes: int = 2000,
+               flavor: str = "seurat") -> SingleCellData:
+    """Select highly variable genes from single-cell data.
+
+    Args:
+        data: SingleCellData object
+        n_top_genes: Number of top variable genes to select
+        flavor: Method for HVG selection ('seurat', 'cell_ranger', 'seurat_v3')
+
+    Returns:
+        SingleCellData with highly variable genes marked
+    """
+    if not hasattr(data, 'X') or data.X is None:
+        raise ValueError("Data must contain expression matrix X")
+
+    X = data.X
+    if hasattr(X, 'toarray'):  # sparse matrix
+        X = X.toarray()
+
+    n_cells, n_genes = X.shape
+
+    if flavor == "seurat":
+        # Seurat-style HVG selection
+        # Calculate mean and variance for each gene
+        gene_means = np.mean(X, axis=0)
+        gene_vars = np.var(X, axis=0)
+
+        # Fit curve: variance = a * mean^b
+        # Use only genes with mean > 0 for fitting
+        nonzero_mask = gene_means > 0
+        if np.sum(nonzero_mask) < 10:
+            # Fallback: just select by variance
+            top_indices = np.argsort(gene_vars)[::-1][:n_top_genes]
+        else:
+            log_means = np.log10(gene_means[nonzero_mask])
+            log_vars = np.log10(gene_vars[nonzero_mask])
+
+            # Simple linear fit
+            coeffs = np.polyfit(log_means, log_vars, 1)
+            predicted_vars = 10 ** (coeffs[0] * np.log10(gene_means) + coeffs[1])
+
+            # Calculate standardized variance
+            standardized_vars = gene_vars / predicted_vars
+
+            # Select top genes by standardized variance
+            valid_mask = gene_means > 0
+            valid_std_vars = standardized_vars[valid_mask]
+            sorted_indices = np.argsort(valid_std_vars)[::-1]
+
+            # Map back to original gene indices
+            valid_gene_indices = np.where(valid_mask)[0]
+            top_indices = valid_gene_indices[sorted_indices[:n_top_genes]]
+
+    elif flavor == "cell_ranger":
+        # Cell Ranger-style HVG selection
+        # Use coefficient of variation squared
+        gene_means = np.mean(X, axis=0)
+        gene_vars = np.var(X, axis=0)
+
+        # Avoid division by zero
+        gene_means = np.maximum(gene_means, 1e-10)
+
+        cv_squared = gene_vars / (gene_means ** 2)
+
+        # Select top genes by CV²
+        top_indices = np.argsort(cv_squared)[::-1][:n_top_genes]
+
+    else:
+        raise ValueError(f"Unknown flavor: {flavor}. Use 'seurat' or 'cell_ranger'")
+
+    # Mark highly variable genes
+    highly_variable = np.zeros(n_genes, dtype=bool)
+    highly_variable[top_indices] = True
+
+    if hasattr(data, 'var') and data.var is not None:
+        data.var['highly_variable'] = highly_variable
+    else:
+        # Create var dataframe if it doesn't exist
+        import pandas as pd
+        var_df = pd.DataFrame(index=range(n_genes))
+        var_df['highly_variable'] = highly_variable
+        data.var = var_df
+
+    data.uns['hvg'] = {
+        'flavor': flavor,
+        'n_top_genes': n_top_genes,
+        'n_selected': len(top_indices)
+    }
+
+    logger.info(f"Selected {len(top_indices)} highly variable genes using {flavor} method")
+    return data
+

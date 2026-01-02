@@ -132,7 +132,7 @@ def melting_temperature(seq: str) -> float:
     gc_count = seq_upper.count('G') + seq_upper.count('C')
     at_count = seq_upper.count('A') + seq_upper.count('T')
 
-    return 4 * gc_count + 2 * at_count
+    return float(4 * gc_count + 2 * at_count)
 
 
 def nucleotide_frequencies(seq: str) -> dict[str, float]:
@@ -405,5 +405,6 @@ def cpg_islands(seq: str, min_length: int = 200, min_gc: float = 0.5,
         i = start + 1  # Slide window
 
     return islands
+
 
 

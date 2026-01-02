@@ -235,3 +235,4 @@ class TestPlotDifferentialExpression:
 
         with pytest.raises(ValueError, match="must contain an adjusted p-value column"):
             plot_differential_expression(de_data)
+

@@ -607,3 +607,4 @@ def _generate_text_report(results: Dict[str, Any]) -> str:
             lines.append("")
 
     return "\n".join(lines)
+

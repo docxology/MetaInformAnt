@@ -644,3 +644,4 @@ def generate_chip_report(peaks: List[ChIPPeak], output_path: Optional[str | Path
         logger.info(f"ChIP-seq report saved to {output_path}")
 
     return report
+

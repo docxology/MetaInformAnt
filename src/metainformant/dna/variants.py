@@ -456,3 +456,4 @@ def calculate_allele_frequency(vcf_data: Dict[str, Any], variant_index: int) -> 
     return frequencies
 
 
+

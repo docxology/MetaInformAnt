@@ -345,3 +345,4 @@ def get_obo_statistics(path: str | Path) -> Dict[str, Any]:
                 stats['relationship_count'] += 1
 
     return stats
+

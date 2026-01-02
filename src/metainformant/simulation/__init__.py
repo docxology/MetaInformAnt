@@ -27,6 +27,9 @@ try:
 except ImportError:
     workflow = None
 
+# Direct imports of commonly used classes
+from .agents import Agent, GridWorld
+
 # Type checking imports
 from typing import TYPE_CHECKING
 
@@ -44,6 +47,11 @@ __all__ = [
 
     # Workflow and testing
     "workflow",
+
+    # Direct exports
+    "Agent",
+    "GridWorld",
 ]
+
 
 

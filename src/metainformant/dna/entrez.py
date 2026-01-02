@@ -400,3 +400,4 @@ def link_nucleotide_to_protein(accession: str, api_key: Optional[str] = None,
     return protein_ids
 
 
+

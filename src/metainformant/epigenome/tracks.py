@@ -674,3 +674,4 @@ def generate_track_report(track: GenomicTrack, output_path: Optional[str | Path]
         logger.info(f"Track report saved to {output_path}")
 
     return report
+

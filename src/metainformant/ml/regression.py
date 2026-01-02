@@ -510,3 +510,4 @@ def analyze_prediction_uncertainty(
         'ci_upper_95': ci_upper.tolist(),
         'prediction_ranges': (ci_upper - ci_lower).tolist(),
     }
+

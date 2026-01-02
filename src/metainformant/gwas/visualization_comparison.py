@@ -563,3 +563,324 @@ def calculate_method_power(method_results: Dict[str, Any]) -> Dict[str, Dict[str
     return power_results
 
 
+def miami_plot(study1_results: Any, study2_results: Any,
+               study1_name: str = "Study 1", study2_name: str = "Study 2",
+               output_file: Optional[str | Path] = None,
+               significance_threshold: float = 5e-8) -> Optional[Any]:
+    """Create a Miami plot comparing two GWAS studies.
+
+    Args:
+        study1_results: Results from first GWAS study (DataFrame)
+        study2_results: Results from second GWAS study (DataFrame)
+        study1_name: Name for first study
+        study2_name: Name for second study
+        output_file: Optional output file path
+        significance_threshold: P-value threshold for significance
+
+    Returns:
+        Plot object if matplotlib available, None otherwise
+
+    Example:
+        >>> plot = miami_plot(df1, df2, "European", "African")
+    """
+    try:
+        import matplotlib.pyplot as plt
+        import matplotlib.patches as patches
+    except ImportError:
+        logger.warning("matplotlib not available for Miami plot")
+        return None
+
+    # Validate input data
+    if not hasattr(study1_results, 'columns') or not hasattr(study2_results, 'columns'):
+        logger.error("Input data must be DataFrames with appropriate columns")
+        return None
+
+    required_cols = ['CHR', 'BP', 'P']
+    for df, name in [(study1_results, study1_name), (study2_results, study2_name)]:
+        missing_cols = [col for col in required_cols if col not in df.columns]
+        if missing_cols:
+            logger.error(f"Missing required columns in {name}: {missing_cols}")
+            return None
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
+
+    # Color scheme for chromosomes
+    chrom_colors = ['#1f77b4', '#ff7f0e']  # Blue, Orange
+    chroms = sorted(study1_results['CHR'].unique())
+
+    # Plot study 1 (top panel)
+    plot_manhattan_with_colors(ax1, study1_results, chrom_colors, significance_threshold, chroms)
+    ax1.set_title(f'{study1_name} GWAS Results', fontsize=14)
+    ax1.set_ylabel('-log₁₀(P-value)', fontsize=12)
+
+    # Plot study 2 (bottom panel, inverted)
+    plot_manhattan_with_colors(ax2, study2_results, chrom_colors, significance_threshold, chroms)
+    ax2.invert_yaxis()  # Flip the y-axis
+    ax2.set_title(f'{study2_name} GWAS Results', fontsize=14)
+    ax2.set_ylabel('-log₁₀(P-value)', fontsize=12)
+    ax2.set_xlabel('Chromosome Position', fontsize=12)
+
+    # Add chromosome labels
+    chrom_positions = []
+    chrom_labels = []
+    current_pos = 0
+
+    for chrom in chroms:
+        chrom_data = study1_results[study1_results['CHR'] == chrom]
+        if not chrom_data.empty:
+            chrom_start = current_pos
+            chrom_end = current_pos + chrom_data['BP'].max()
+            chrom_center = (chrom_start + chrom_end) / 2
+            chrom_positions.append(chrom_center)
+            chrom_labels.append(str(chrom))
+            current_pos = chrom_end
+
+    plt.xticks(chrom_positions, chrom_labels)
+
+    # Overall title
+    fig.suptitle(f'Miami Plot: {study1_name} vs {study2_name}', fontsize=16, y=0.95)
+
+    plt.tight_layout()
+
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        logger.info(f"Saved Miami plot to {output_file}")
+
+    return plt.gcf()
+
+
+def plot_manhattan_with_colors(ax, results_df, colors, threshold, chroms):
+    """Helper function to plot Manhattan plot with alternating colors."""
+    current_pos = 0
+    color_idx = 0
+
+    for chrom in chroms:
+        chrom_data = results_df[results_df['CHR'] == chrom].copy()
+        if chrom_data.empty:
+            continue
+
+        # Adjust positions for chromosome
+        chrom_data['adjusted_bp'] = chrom_data['BP'] + current_pos
+
+        # Plot points
+        ax.scatter(chrom_data['adjusted_bp'], -np.log10(chrom_data['P']),
+                  c=colors[color_idx % len(colors)], s=2, alpha=0.7)
+
+        # Add significance line
+        max_pos = chrom_data['adjusted_bp'].max()
+        ax.axhline(y=-np.log10(threshold), color='red', linestyle='--', alpha=0.7)
+
+        current_pos = max_pos
+        color_idx += 1
+
+
+def multi_trait_manhattan(trait_results: Dict[str, Dict[str, Any]],
+                         output_file: Optional[str | Path] = None,
+                         significance_threshold: float = 5e-8,
+                         title: str = "Multi-Trait Manhattan Plot") -> Optional[Any]:
+    """Create Manhattan plots for multiple traits side-by-side.
+
+    Args:
+        trait_results: Dictionary mapping trait names to GWAS results
+        output_file: Optional output file path
+        significance_threshold: P-value threshold for significance line
+        title: Plot title
+
+    Returns:
+        Plot object if matplotlib available, None otherwise
+    """
+    try:
+        import matplotlib.pyplot as plt
+        import pandas as pd
+    except ImportError:
+        logger.warning("matplotlib or pandas not available for multi-trait Manhattan plot")
+        return None
+
+    if not trait_results:
+        logger.error("No trait results provided")
+        return None
+
+    n_traits = len(trait_results)
+    if n_traits > 6:
+        logger.warning(f"Many traits ({n_traits}), plot may be crowded")
+
+    # Create subplots
+    n_cols = min(3, n_traits)
+    n_rows = (n_traits + n_cols - 1) // n_cols
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(6*n_cols, 4*n_rows),
+                           squeeze=False, sharey=True)
+    fig.suptitle(title, fontsize=16, y=0.95)
+
+    # Colors for chromosomes
+    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b']
+
+    trait_names = list(trait_results.keys())
+
+    for i, trait_name in enumerate(trait_names):
+        row = i // n_cols
+        col = i % n_cols
+        ax = axes[row, col]
+
+        results = trait_results[trait_name]
+
+        # Convert to DataFrame if needed
+        if isinstance(results, dict):
+            if 'results' in results:
+                df = results['results']
+            else:
+                # Assume it's a dict with required columns
+                df = pd.DataFrame(results)
+        elif hasattr(results, 'to_dict'):  # DataFrame-like
+            df = results
+        else:
+            logger.error(f"Unsupported results format for trait {trait_name}")
+            continue
+
+        if df.empty:
+            ax.text(0.5, 0.5, f'No data for\n{trait_name}',
+                   ha='center', va='center', transform=ax.transAxes)
+            continue
+
+        # Ensure required columns exist
+        required_cols = ['CHR', 'BP', 'P']
+        missing_cols = [col for col in required_cols if col not in df.columns]
+        if missing_cols:
+            logger.error(f"Missing required columns {missing_cols} for trait {trait_name}")
+            continue
+
+        # Get unique chromosomes and sort
+        chroms = sorted(df['CHR'].unique(),
+                       key=lambda x: int(x) if str(x).isdigit() else float('inf'))
+
+        # Plot Manhattan for this trait
+        plot_manhattan_with_colors(ax, df, colors, significance_threshold, chroms)
+
+        ax.set_title(f'{trait_name}', fontsize=12, pad=10)
+        if col == 0:  # Leftmost column
+            ax.set_ylabel('-log₁₀(p-value)', fontsize=10)
+        ax.set_xlabel('Chromosome', fontsize=10)
+
+        # Set chromosome labels at chromosome centers
+        current_pos = 0
+        chrom_centers = []
+        chrom_names = []
+
+        for chrom in chroms:
+            chrom_data = df[df['CHR'] == chrom]
+            if not chrom_data.empty:
+                chrom_start = current_pos
+                chrom_end = current_pos + chrom_data['BP'].max()
+                chrom_centers.append((chrom_start + chrom_end) / 2)
+                chrom_names.append(str(chrom))
+                current_pos = chrom_end
+
+        if chrom_centers:
+            ax.set_xticks(chrom_centers)
+            ax.set_xticklabels(chrom_names, rotation=45, ha='right')
+
+    # Hide unused subplots
+    for i in range(n_traits, n_rows * n_cols):
+        row = i // n_cols
+        col = i % n_cols
+        axes[row, col].set_visible(False)
+
+    plt.tight_layout()
+
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        logger.info(f"Saved multi-trait Manhattan plot to {output_file}")
+
+    return fig
+
+
+def cross_cohort_forest(cohort_results: Dict[str, Dict[str, Any]],
+                       trait_name: str, output_file: Optional[str | Path] = None,
+                       title: str = "Cross-Cohort Forest Plot") -> Optional[Any]:
+    """Create a forest plot comparing effect sizes across cohorts.
+
+    Args:
+        cohort_results: Dictionary mapping cohort names to GWAS results
+        trait_name: Name of the trait being analyzed
+        output_file: Optional output file path
+        title: Plot title
+
+    Returns:
+        Plot object if matplotlib available, None otherwise
+    """
+    try:
+        import matplotlib.pyplot as plt
+        import numpy as np
+    except ImportError:
+        logger.warning("matplotlib not available for cross-cohort forest plot")
+        return None
+
+    if not cohort_results:
+        logger.error("No cohort results provided")
+        return None
+
+    fig, ax = plt.subplots(figsize=(10, len(cohort_results) * 0.5 + 2))
+
+    cohorts = list(cohort_results.keys())
+    effect_sizes = []
+    errors = []
+    valid_cohorts = []
+
+    # Extract effect sizes and confidence intervals
+    for cohort in cohorts:
+        results = cohort_results[cohort]
+        if isinstance(results, dict) and 'effect_size' in results:
+            effect_sizes.append(results['effect_size'])
+            # Calculate error bars (assume 95% CI if available)
+            if 'ci_lower' in results and 'ci_upper' in results:
+                error_lower = results['effect_size'] - results['ci_lower']
+                error_upper = results['ci_upper'] - results['effect_size']
+                errors.append([error_lower, error_upper])
+            else:
+                # Default error bars
+                errors.append([0.1, 0.1])
+            valid_cohorts.append(cohort)
+        else:
+            logger.warning(f"No effect size found for cohort {cohort}")
+
+    if not valid_cohorts:
+        logger.error("No valid effect sizes found")
+        return None
+
+    # Plot forest plot
+    y_positions = range(len(valid_cohorts))
+
+    # Plot error bars
+    for i, (cohort, effect_size, error) in enumerate(zip(valid_cohorts, effect_sizes, errors)):
+        ax.errorbar(effect_size, i, xerr=np.array(error).reshape(2, 1),
+                   fmt='o', color='blue', capsize=3, markersize=6)
+
+    # Add vertical line at zero effect
+    ax.axvline(x=0, color='red', linestyle='--', alpha=0.7, label='No effect')
+
+    # Add vertical line at overall effect (simple average)
+    overall_effect = np.mean(effect_sizes)
+    ax.axvline(x=overall_effect, color='green', linestyle='-', alpha=0.7,
+              label=f'Overall effect: {overall_effect:.3f}')
+
+    ax.set_yticks(y_positions)
+    ax.set_yticklabels(valid_cohorts)
+    ax.set_xlabel('Effect Size', fontsize=12)
+    ax.set_title(f'{title} - {trait_name}', fontsize=14, pad=20)
+    ax.grid(True, alpha=0.3, axis='x')
+    ax.legend()
+
+    # Add effect size values as text
+    for i, (effect_size, error) in enumerate(zip(effect_sizes, errors)):
+        ax.text(effect_size + max(error) + 0.01, i,
+               f'{effect_size:.3f}', va='center', fontsize=9)
+
+    plt.tight_layout()
+
+    if output_file:
+        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        logger.info(f"Saved cross-cohort forest plot to {output_file}")
+
+    return fig
+
+
+

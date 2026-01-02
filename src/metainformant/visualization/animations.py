@@ -449,3 +449,4 @@ def animate_trajectory(
         logger.info(f"Trajectory animation saved to {output_path}")
 
     return fig, anim
+

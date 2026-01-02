@@ -264,3 +264,4 @@ class JsonCache:
                 'cache_dir': str(self.cache_dir),
                 'default_ttl': self.default_ttl,
             }
+

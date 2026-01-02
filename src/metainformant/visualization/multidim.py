@@ -292,3 +292,4 @@ def plot_3d_scatter(
         logger.info(f"3D scatter plot saved to {output_path}")
 
     return ax
+

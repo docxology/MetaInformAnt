@@ -575,3 +575,80 @@ def create_life_course_report(sequences: List[EventSequence],
         logger.info(f"Life course report saved to {output_path}")
 
     return report
+
+
+def analyze_life_course(sequences: List[EventSequence], outcomes: List[str] | None = None) -> Dict[str, Any]:
+    """Comprehensive analysis of life course trajectories.
+
+    Args:
+        sequences: List of event sequences to analyze
+        outcomes: Optional list of outcome measures to analyze
+
+    Returns:
+        Dictionary containing comprehensive life course analysis
+    """
+    if not sequences:
+        return {'error': 'No sequences provided'}
+
+    results = {
+        'n_sequences': len(sequences),
+        'analysis_timestamp': statistics.mean([seq.duration for seq in sequences if seq.events]) if sequences else 0,
+        'components': {}
+    }
+
+    # Basic statistics
+    durations = [seq.duration for seq in sequences if seq.events]
+    if durations:
+        results['duration_stats'] = {
+            'mean': statistics.mean(durations),
+            'median': statistics.median(durations),
+            'min': min(durations),
+            'max': max(durations),
+            'std': statistics.stdev(durations) if len(durations) > 1 else 0
+        }
+
+    # Event frequency analysis
+    all_events = []
+    for seq in sequences:
+        all_events.extend([event.event_type for event in seq.events])
+
+    if all_events:
+        event_counts = defaultdict(int)
+        for event in all_events:
+            event_counts[event] += 1
+
+        results['event_frequency'] = dict(event_counts)
+
+    # Sequence complexity analysis
+    complexities = []
+    for seq in sequences:
+        if seq.events:
+            # Simple complexity measure: number of unique event types / total events
+            unique_events = len(set(event.event_type for event in seq.events))
+            total_events = len(seq.events)
+            complexity = unique_events / total_events if total_events > 0 else 0
+            complexities.append(complexity)
+
+    if complexities:
+        results['complexity_stats'] = {
+            'mean': statistics.mean(complexities),
+            'median': statistics.median(complexities),
+            'min': min(complexities),
+            'max': max(complexities)
+        }
+
+    # Outcome analysis (placeholder)
+    if outcomes:
+        results['outcome_analysis'] = {}
+        for outcome in outcomes:
+            # This would integrate with predictive models
+            results['outcome_analysis'][outcome] = {
+                'n_with_outcome': sum(1 for seq in sequences if outcome in seq.metadata.get('outcomes', [])),
+                'prevalence': sum(1 for seq in sequences if outcome in seq.metadata.get('outcomes', [])) / len(sequences)
+            }
+
+    # Trajectory patterns
+    results['trajectory_patterns'] = identify_trajectory_patterns(sequences)
+
+    return results
+

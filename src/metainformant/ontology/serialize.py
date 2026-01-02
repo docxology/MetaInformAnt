@@ -431,3 +431,4 @@ def merge_ontologies(*ontologies: Ontology, conflict_resolution: str = "first") 
 
     logger.info(f"Merged {len(ontologies)} ontologies into one with {len(merged_onto)} terms")
     return merged_onto
+

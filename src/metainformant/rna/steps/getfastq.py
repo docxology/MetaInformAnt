@@ -277,3 +277,5 @@ def download_from_sra(accession: str, output_dir: Path, threads: int) -> Dict[st
         }
 
 
+
+run_getfastq = run_step

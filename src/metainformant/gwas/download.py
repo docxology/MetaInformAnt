@@ -513,3 +513,121 @@ def download_annotation(accession: str, output_dir: str | Path) -> Path:
         return annotation_dir
 
 
+def download_variant_data(study_accession: str, output_dir: str | Path,
+                         data_type: str = "vcf") -> Path:
+    """Download variant data for a GWAS study.
+
+    Args:
+        study_accession: GWAS study accession (e.g., GCST123456)
+        output_dir: Output directory for downloaded files
+        data_type: Type of data to download ('vcf', 'summary_stats', 'both')
+
+    Returns:
+        Path to downloaded data directory
+
+    Raises:
+        ValueError: If study accession is invalid
+        requests.RequestException: If download fails
+    """
+    output_dir = Path(output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    study_dir = output_dir / study_accession
+    study_dir.mkdir(exist_ok=True)
+
+    logger.info(f"Downloading variant data for {study_accession}")
+
+    try:
+        # Try GWAS Catalog API first
+        gwas_api_url = f"https://www.ebi.ac.uk/gwas/rest/api/studies/{study_accession}"
+
+        response = requests.get(gwas_api_url, timeout=30)
+        response.raise_for_status()
+
+        study_data = response.json()
+
+        # Extract relevant information
+        pubmed_id = study_data.get('publicationInfo', {}).get('pubmedId')
+        trait = study_data.get('diseaseTrait', {}).get('traitName')
+
+        logger.info(f"Study {study_accession}: {trait} (PMID: {pubmed_id})")
+
+        downloaded_files = []
+
+        # Download summary statistics if requested
+        if data_type in ['summary_stats', 'both']:
+            # Try to get summary statistics URL
+            associations_url = f"{gwas_api_url}/associations"
+            assoc_response = requests.get(associations_url, timeout=30)
+
+            if assoc_response.status_code == 200:
+                associations = assoc_response.json().get('_embedded', {}).get('associations', [])
+
+                # Save summary statistics
+                stats_file = study_dir / f"{study_accession}_summary_stats.tsv"
+                with open(stats_file, 'w') as f:
+                    f.write("variant\trisk_allele\tp_value\todds_ratio\tbeta\n")
+                    for assoc in associations[:1000]:  # Limit to avoid huge files
+                        variant = assoc.get('loci', [{}])[0].get('strongestRiskAlleles', [{}])[0]
+                        p_value = assoc.get('pvalueMantissa', '') + 'e' + str(assoc.get('pvalueExponent', ''))
+                        odds_ratio = assoc.get('orPerCopyNum', '')
+                        beta = assoc.get('betaNum', '')
+
+                        f.write(f"{variant}\t\t{p_value}\t{odds_ratio}\t{beta}\n")
+
+                downloaded_files.append(stats_file)
+                logger.info(f"Downloaded summary statistics to {stats_file}")
+
+        # For VCF files, try dbSNP or other sources
+        if data_type in ['vcf', 'both']:
+            # This would typically involve downloading from dbSNP or study-specific repositories
+            # For now, create a placeholder structure
+            vcf_dir = study_dir / "vcf"
+            vcf_dir.mkdir(exist_ok=True)
+
+            # Create a README explaining how to obtain VCF files
+            readme_file = vcf_dir / "README.md"
+            with open(readme_file, 'w') as f:
+                f.write(f"""# VCF Data for {study_accession}
+
+This study contains GWAS variants that may be available in dbSNP or other repositories.
+
+To obtain VCF files:
+1. Check the original publication (PMID: {pubmed_id}) for data availability
+2. Look for data on GWAS Catalog FTP: ftp://ftp.ebi.ac.uk/pub/databases/gwas/
+3. Search dbSNP for the reported variants
+4. Contact the study authors for raw data
+
+Study information:
+- Accession: {study_accession}
+- Trait: {trait}
+- Publication: https://pubmed.ncbi.nlm.nih.gov/{pubmed_id}/
+""")
+
+            downloaded_files.append(vcf_dir)
+            logger.info(f"Created VCF directory structure at {vcf_dir}")
+
+        # Save study metadata
+        metadata_file = study_dir / f"{study_accession}_metadata.json"
+        with open(metadata_file, 'w') as f:
+            import json
+            json.dump({
+                'accession': study_accession,
+                'trait': trait,
+                'pubmed_id': pubmed_id,
+                'downloaded_files': [str(f) for f in downloaded_files],
+                'download_date': str(pd.Timestamp.now())
+            }, f, indent=2)
+
+        logger.info(f"Downloaded variant data to {study_dir}")
+        return study_dir
+
+    except requests.RequestException as e:
+        logger.error(f"Failed to download variant data for {study_accession}: {e}")
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error downloading variant data: {e}")
+        raise
+
+
+

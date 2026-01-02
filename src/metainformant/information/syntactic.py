@@ -625,3 +625,4 @@ def information_coefficient(
         return 0.0
 
     return mi / denominator
+

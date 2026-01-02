@@ -82,8 +82,9 @@ def calculate_single_diversity(abundances: List[float], method: str) -> float:
         return -sum(p * math.log(p) for p in proportions if p > 0)
 
     elif method == "simpson":
-        # Simpson diversity index: D = Σ(pi^2)
-        return sum(p ** 2 for p in proportions)
+        # Simpson diversity index: 1 - D, where D = Σ(pi^2) is the probability of picking two individuals of the same species
+        simpson_concentration = sum(p ** 2 for p in proportions)
+        return 1.0 - simpson_concentration
 
     elif method == "invsimpson":
         # Inverse Simpson diversity index: 1/D
@@ -624,3 +625,40 @@ def generate_ecology_report(community_data: List[List[float]],
         logger.info(f"Ecology report saved to {output_path}")
 
     return report
+
+
+def shannon_diversity(abundances: List[float]) -> float:
+    """Calculate Shannon diversity index.
+
+    Args:
+        abundances: List of species abundances
+
+    Returns:
+        Shannon diversity index (H')
+
+    Example:
+        >>> shannon_diversity([10, 10, 10])
+        1.09861228866811
+        >>> shannon_diversity([1, 1, 1, 1])
+        1.3862943611198906
+    """
+    return calculate_single_diversity(abundances, "shannon")
+
+
+def simpson_diversity(abundances: List[float]) -> float:
+    """Calculate Simpson diversity index.
+
+    Args:
+        abundances: List of species abundances
+
+    Returns:
+        Simpson diversity index (1-D)
+
+    Example:
+        >>> simpson_diversity([10, 10, 10])
+        0.6666666666666667
+        >>> simpson_diversity([1, 1, 1, 1])
+        0.75
+    """
+    return calculate_single_diversity(abundances, "simpson")
+

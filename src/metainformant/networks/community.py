@@ -586,3 +586,129 @@ def hierarchical_communities(
 
     logger.info(f"Detected {len(hierarchies)} levels of hierarchical communities")
     return hierarchies
+
+
+def modularity(graph: Any, communities: List[List[str]]) -> float:
+    """Calculate modularity of community partitioning.
+
+    Args:
+        graph: NetworkX graph
+        communities: List of community lists
+
+    Returns:
+        Modularity score (-1 to 1)
+
+    Raises:
+        ImportError: If networkx not available
+    """
+    if not HAS_NETWORKX:
+        raise ImportError("networkx required for modularity calculation")
+
+    try:
+        return nx.algorithms.community.modularity(graph, communities)
+    except Exception:
+        # Fallback: simple modularity approximation
+        # This is a simplified calculation for cases where NetworkX fails
+        total_edges = graph.number_of_edges()
+        if total_edges == 0:
+            return 0.0
+
+        modularity = 0.0
+        for community in communities:
+            subgraph = graph.subgraph(community)
+            community_edges = subgraph.number_of_edges()
+            expected_edges = sum(graph.degree(node) for node in community) ** 2 / (4 * total_edges)
+
+            if expected_edges > 0:
+                modularity += (community_edges - expected_edges) / total_edges
+
+        return modularity
+
+
+def community_metrics(graph: Any, communities: List[List[str]]) -> Dict[str, Any]:
+    """Calculate comprehensive community quality metrics.
+
+    Args:
+        graph: NetworkX graph
+        communities: List of community lists
+
+    Returns:
+        Dictionary with comprehensive community metrics
+
+    Raises:
+        ImportError: If networkx not available
+    """
+    if not HAS_NETWORKX:
+        raise ImportError("networkx required for community metrics")
+
+    metrics = {}
+
+    # Basic community statistics
+    community_sizes = [len(comm) for comm in communities]
+    metrics['n_communities'] = len(communities)
+    metrics['community_sizes'] = {
+        'mean': float(np.mean(community_sizes)),
+        'std': float(np.std(community_sizes)),
+        'min': int(np.min(community_sizes)),
+        'max': int(np.max(community_sizes)),
+        'sizes': community_sizes,
+    }
+
+    # Modularity
+    try:
+        metrics['modularity'] = modularity(graph, communities)
+    except Exception:
+        metrics['modularity'] = None
+
+    # Coverage (fraction of nodes in communities)
+    total_nodes_in_communities = sum(len(comm) for comm in communities)
+    metrics['coverage'] = total_nodes_in_communities / len(graph.nodes()) if graph.nodes() else 0
+
+    # Conductance for each community
+    conductances = []
+    for community in communities:
+        if len(community) < len(graph.nodes()):
+            try:
+                conductance = nx.algorithms.cuts.conductance(graph, community)
+                conductances.append(conductance)
+            except:
+                pass
+
+    if conductances:
+        metrics['conductance'] = {
+            'mean': float(np.mean(conductances)),
+            'std': float(np.std(conductances)),
+            'min': float(np.min(conductances)) if conductances else None,
+            'max': float(np.max(conductances)) if conductances else None,
+            'values': conductances,
+        }
+
+    # Internal density for each community
+    densities = []
+    for community in communities:
+        subgraph = graph.subgraph(community)
+        if len(community) > 1:
+            max_edges = len(community) * (len(community) - 1) / 2
+            if graph.is_directed():
+                max_edges *= 2
+            density = subgraph.number_of_edges() / max_edges if max_edges > 0 else 0
+            densities.append(density)
+
+    if densities:
+        metrics['internal_density'] = {
+            'mean': float(np.mean(densities)),
+            'std': float(np.std(densities)),
+            'values': densities,
+        }
+
+    # Community quality score (composite metric)
+    mod_score = metrics['modularity'] if metrics['modularity'] is not None else 0
+    cov_score = metrics['coverage']
+    cond_score = 1 - metrics['conductance']['mean'] if 'conductance' in metrics and conductances else 0.5
+    dens_score = metrics['internal_density']['mean'] if 'internal_density' in metrics and densities else 0.5
+
+    metrics['quality_score'] = (mod_score + cov_score + cond_score + dens_score) / 4
+
+    return metrics
+
+

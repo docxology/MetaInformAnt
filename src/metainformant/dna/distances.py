@@ -136,7 +136,7 @@ def p_distance(seq1: str, seq2: str) -> float:
         Proportion of differing sites (0.0 to 1.0)
 
     Raises:
-        ValueError: If sequences have different lengths or contain invalid nucleotides
+        ValueError: If sequences contain invalid nucleotides
 
     Example:
         >>> p_distance("ATCG", "ATCG")
@@ -144,10 +144,12 @@ def p_distance(seq1: str, seq2: str) -> float:
         >>> p_distance("ATCG", "GCTA")
         1.0
     """
-    if len(seq1) != len(seq2):
-        raise ValueError("Sequences must have equal length")
+    # Handle different lengths by comparing minimum overlapping region
+    min_len = min(len(seq1), len(seq2))
+    seq1 = seq1[:min_len]
+    seq2 = seq2[:min_len]
 
-    if not seq1 or not seq2:
+    if min_len == 0:
         return 0.0
 
     differences = 0
@@ -273,6 +275,87 @@ def distance_matrix(sequences: Dict[str, str], method: str = "jukes_cantor") -> 
     return df
 
 
+def jc69_distance(seq1: str, seq2: str) -> float:
+    """Jukes-Cantor 1969 distance (alias for jukes_cantor_distance).
+
+    Args:
+        seq1: First DNA sequence
+        seq2: Second DNA sequence
+
+    Returns:
+        Jukes-Cantor distance
+    """
+    return jukes_cantor_distance(seq1, seq2)
+
+
+def kimura_2p_distance(seq1: str, seq2: str) -> float:
+    """Kimura 2-parameter distance (alias for kimura_distance).
+
+    Args:
+        seq1: First DNA sequence
+        seq2: Second DNA sequence
+
+    Returns:
+        Kimura 2-parameter distance
+    """
+    return kimura_distance(seq1, seq2)
+
+
+def kmer_distance(seq1: str, seq2: str, k: int = 3) -> float:
+    """Calculate k-mer based distance between sequences.
+
+    Args:
+        seq1: First DNA sequence
+        seq2: Second DNA sequence
+        k: K-mer size
+
+    Returns:
+        K-mer distance (cosine distance between k-mer frequency vectors)
+    """
+    from collections import Counter
+    import math
+
+    def get_kmer_counts(seq: str, k: int) -> Counter:
+        """Get k-mer counts for a sequence."""
+        return Counter(seq[i:i+k] for i in range(len(seq) - k + 1))
+
+    if len(seq1) < k or len(seq2) < k:
+        return 1.0  # Maximum distance for very short sequences
+
+    counts1 = get_kmer_counts(seq1.upper(), k)
+    counts2 = get_kmer_counts(seq2.upper(), k)
+
+    # Get all unique k-mers
+    all_kmers = set(counts1.keys()) | set(counts2.keys())
+
+    # Calculate cosine similarity
+    dot_product = sum(counts1.get(kmer, 0) * counts2.get(kmer, 0) for kmer in all_kmers)
+    norm1 = math.sqrt(sum(count ** 2 for count in counts1.values()))
+    norm2 = math.sqrt(sum(count ** 2 for count in counts2.values()))
+
+    if norm1 == 0 or norm2 == 0:
+        return 1.0
+
+    cosine_similarity = dot_product / (norm1 * norm2)
+
+    # Return distance (1 - similarity)
+    return 1.0 - cosine_similarity
+
+
+def tajima_nei_distance(seq1: str, seq2: str, kappa: float = 2.0) -> float:
+    """Alias for tamura_nei_distance (Tajima-Nei distance model).
+
+    Args:
+        seq1: First DNA sequence
+        seq2: Second DNA sequence
+        kappa: Transition/transversion rate ratio
+
+    Returns:
+        Tajima-Nei distance
+    """
+    return tamura_nei_distance(seq1, seq2, kappa)
+
+
 def tamura_nei_distance(seq1: str, seq2: str, kappa: float = 2.0) -> float:
     """Calculate Tamura-Nei evolutionary distance.
 
@@ -352,5 +435,109 @@ def tamura_nei_distance(seq1: str, seq2: str, kappa: float = 2.0) -> float:
         return distance
     except (ValueError, ZeroDivisionError):
         return float('inf')
+
+
+def kmer_distance_matrix(sequences: Dict[str, str], k: int = 3) -> pd.DataFrame:
+    """Calculate k-mer distance matrix for a set of sequences.
+
+    Args:
+        sequences: Dictionary mapping sequence IDs to DNA sequences
+        k: k-mer size
+
+    Returns:
+        Distance matrix as pandas DataFrame
+
+    Example:
+        >>> seqs = {"seq1": "ATCG", "seq2": "ATCG", "seq3": "GCTA"}
+        >>> matrix = kmer_distance_matrix(seqs, k=2)
+        >>> matrix.shape
+        (3, 3)
+    """
+    if not sequences:
+        raise ValueError("Must provide at least one sequence")
+
+    seq_ids = list(sequences.keys())
+
+    # Calculate pairwise k-mer distances
+    n = len(seq_ids)
+    distance_matrix_array = np.zeros((n, n))
+
+    for i in range(n):
+        for j in range(i + 1, n):
+            seq1 = sequences[seq_ids[i]]
+            seq2 = sequences[seq_ids[j]]
+
+            try:
+                distance = kmer_distance(seq1, seq2, k)
+                # Handle infinite distances
+                if distance == float('inf'):
+                    distance = np.nan
+            except (ValueError, ZeroDivisionError):
+                distance = np.nan
+
+            distance_matrix_array[i, j] = distance
+            distance_matrix_array[j, i] = distance  # Symmetric matrix
+
+    # Create pandas DataFrame
+    df = pd.DataFrame(
+        distance_matrix_array,
+        index=seq_ids,
+        columns=seq_ids
+    )
+
+    return df
+
+
+def sequence_identity_matrix(sequences: Dict[str, str]) -> pd.DataFrame:
+    """Calculate sequence identity matrix (1 - p_distance).
+
+    Args:
+        sequences: Dictionary mapping sequence IDs to DNA sequences
+
+    Returns:
+        Identity matrix as pandas DataFrame (values from 0.0 to 1.0)
+
+    Example:
+        >>> seqs = {"seq1": "ATCG", "seq2": "ATCG", "seq3": "GCTA"}
+        >>> matrix = sequence_identity_matrix(seqs)
+        >>> matrix.shape
+        (3, 3)
+    """
+    if not sequences:
+        raise ValueError("Must provide at least one sequence")
+
+    seq_ids = list(sequences.keys())
+
+    # Calculate pairwise identities
+    n = len(seq_ids)
+    identity_matrix_array = np.zeros((n, n))
+
+    for i in range(n):
+        for j in range(i + 1, n):
+            seq1 = sequences[seq_ids[i]]
+            seq2 = sequences[seq_ids[j]]
+
+            try:
+                distance = p_distance(seq1, seq2)
+                identity = 1.0 - distance
+            except (ValueError, ZeroDivisionError):
+                identity = np.nan
+
+            identity_matrix_array[i, j] = identity
+            identity_matrix_array[j, i] = identity  # Symmetric matrix
+
+    # Diagonal should be 1.0 (identity with self)
+    for i in range(n):
+        identity_matrix_array[i, i] = 1.0
+
+    # Create pandas DataFrame
+    df = pd.DataFrame(
+        identity_matrix_array,
+        index=seq_ids,
+        columns=seq_ids
+    )
+
+    return df
+
 
 

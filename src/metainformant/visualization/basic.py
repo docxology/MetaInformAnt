@@ -317,3 +317,4 @@ def step_plot(
         logger.info(f"Step plot saved to {output_path}")
 
     return ax
+

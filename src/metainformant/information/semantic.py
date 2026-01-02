@@ -512,3 +512,4 @@ def annotation_specificity(
         specificity_scores[item] = avg_ic
 
     return specificity_scores
+

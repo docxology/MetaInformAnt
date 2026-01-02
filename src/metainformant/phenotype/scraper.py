@@ -497,3 +497,4 @@ def create_default_scraper_config(output_path: str | Path) -> None:
 
     io.dump_json(config_dict, Path(output_path), indent=2)
     logger.info(f"Created default scraper config at {output_path}")
+

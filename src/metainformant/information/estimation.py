@@ -516,3 +516,4 @@ def entropy_rate_estimator(
     entropy_rate = h_n1 - h_n
 
     return max(0.0, entropy_rate)
+

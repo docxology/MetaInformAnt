@@ -569,3 +569,4 @@ def filter_reads(fastq_path: str | Path, output_path: str | Path,
 
     logger.info(f"Filtered {passed_reads}/{total_reads} reads ({stats['pass_rate']:.1f}%)")
     return stats
+

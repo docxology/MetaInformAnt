@@ -627,3 +627,4 @@ def evaluate_integration_quality(integrated_data: SingleCellData,
 
     logger.info("Integration quality evaluation completed")
     return metrics
+

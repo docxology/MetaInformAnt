@@ -678,3 +678,4 @@ def evaluate_clustering_performance(data: SingleCellData, cluster_col: str = "cl
 
     logger.info("Clustering evaluation completed")
     return results
+

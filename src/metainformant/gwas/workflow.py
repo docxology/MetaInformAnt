@@ -377,3 +377,145 @@ from .structure import compute_pca, compute_kinship_matrix
 from .association import association_test_linear
 from .correction import fdr_correction
 from .visualization import generate_all_plots
+
+
+def run_gwas(vcf_path: Union[str, Path], phenotype_path: Union[str, Path],
+             config: Dict[str, Any], output_dir: Union[str, Path] | None = None) -> Dict[str, Any]:
+    """Run complete GWAS workflow.
+
+    Args:
+        vcf_path: Path to VCF file
+        phenotype_path: Path to phenotype file
+        config: GWAS configuration dictionary
+        output_dir: Output directory (optional)
+
+    Returns:
+        Dictionary with GWAS results and metadata
+
+    Raises:
+        ValueError: If required parameters are missing
+        FileNotFoundError: If input files don't exist
+    """
+    import tempfile
+    from pathlib import Path
+
+    logger.info("Starting GWAS workflow")
+
+    # Validate inputs
+    vcf_path = Path(vcf_path)
+    phenotype_path = Path(phenotype_path)
+
+    if not vcf_path.exists():
+        raise FileNotFoundError(f"VCF file not found: {vcf_path}")
+    if not phenotype_path.exists():
+        raise FileNotFoundError(f"Phenotype file not found: {phenotype_path}")
+
+    # Create output directory
+    if output_dir is None:
+        temp_dir = tempfile.mkdtemp()
+        output_dir = Path(temp_dir)
+    else:
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+    results = {
+        'config': config,
+        'output_dir': str(output_dir),
+        'steps_completed': [],
+        'results': {}
+    }
+
+    try:
+        # Step 1: Load and parse VCF
+        logger.info("Parsing VCF file")
+        vcf_data = parse_vcf_full(vcf_path)
+        results['steps_completed'].append('parse_vcf')
+        results['results']['vcf_summary'] = {
+            'num_variants': len(vcf_data.get('variants', [])),
+            'num_samples': len(vcf_data.get('samples', []))
+        }
+
+        # Step 2: Apply QC filters
+        logger.info("Applying QC filters")
+        qc_config = config.get('quality_control', {})
+        filtered_data = apply_qc_filters(
+            vcf_data,
+            min_maf=qc_config.get('min_maf', 0.01),
+            max_missing=qc_config.get('max_missing', 0.1),
+            min_hwe_p=qc_config.get('min_hwe_p', 1e-6)
+        )
+        results['steps_completed'].append('qc_filters')
+        results['results']['qc_summary'] = {
+            'variants_after_qc': len(filtered_data.get('variants', [])),
+            'samples_after_qc': len(filtered_data.get('samples', []))
+        }
+
+        # Step 3: Population structure analysis
+        logger.info("Computing population structure")
+        genotypes = filtered_data.get('genotypes', [])
+        if genotypes:
+            pca_result = compute_pca(genotypes, n_components=min(10, len(genotypes)))
+            kinship_matrix = compute_kinship_matrix(genotypes)
+            results['steps_completed'].append('population_structure')
+            results['results']['pca'] = pca_result
+            results['results']['kinship'] = kinship_matrix
+
+        # Step 4: Load phenotypes
+        logger.info("Loading phenotypes")
+        phenotypes = load_phenotypes(phenotype_path)
+        results['steps_completed'].append('load_phenotypes')
+        results['results']['phenotype_summary'] = {
+            'num_samples': len(phenotypes),
+            'trait_name': config.get('trait_name', 'unknown')
+        }
+
+        # Step 5: Association testing
+        logger.info("Running association tests")
+        assoc_results = []
+        if genotypes and phenotypes:
+            for i, genotype in enumerate(genotypes):
+                try:
+                    result = association_test_linear(genotype, phenotypes)
+                    result['variant_id'] = f'variant_{i}'
+                    assoc_results.append(result)
+                except Exception as e:
+                    logger.warning(f"Association test failed for variant {i}: {e}")
+
+        results['steps_completed'].append('association_testing')
+        results['results']['association_results'] = assoc_results
+
+        # Step 6: Multiple testing correction
+        logger.info("Applying multiple testing correction")
+        if assoc_results:
+            p_values = [r.get('p_value', 1.0) for r in assoc_results]
+            _, q_values = fdr_correction(p_values)
+
+            for i, q_val in enumerate(q_values):
+                if i < len(assoc_results):
+                    assoc_results[i]['q_value'] = q_val
+
+        results['steps_completed'].append('multiple_testing_correction')
+
+        # Step 7: Generate plots
+        logger.info("Generating visualization plots")
+        try:
+            plot_results = generate_all_plots(
+                association_results=str(output_dir / "association_results.json"),
+                output_dir=output_dir,
+                significance_threshold=config.get('significance_threshold', 5e-8)
+            )
+            results['steps_completed'].append('visualization')
+            results['results']['plots'] = plot_results
+        except Exception as e:
+            logger.warning(f"Plot generation failed: {e}")
+
+        results['status'] = 'completed'
+        logger.info("GWAS workflow completed successfully")
+
+    except Exception as e:
+        results['status'] = 'failed'
+        results['error'] = str(e)
+        logger.error(f"GWAS workflow failed: {e}")
+        raise
+
+    return results

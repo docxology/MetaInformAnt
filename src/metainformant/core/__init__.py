@@ -25,6 +25,9 @@ from . import (
     workflow,
 )
 
+# Core functions - always available
+from .workflow import create_sample_config, download_and_process_data, run_config_based_workflow, validate_config_file
+
 # Optional dependencies - gracefully handle missing components
 try:
     from . import db
@@ -63,6 +66,12 @@ __all__ = [
     "text",
     "validation",
     "workflow",
+
+    # Core functions (from workflow)
+    "create_sample_config",
+    "download_and_process_data",
+    "run_config_based_workflow",
+    "validate_config_file",
 
     # Optional modules
     "db",

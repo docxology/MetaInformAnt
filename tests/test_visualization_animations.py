@@ -269,3 +269,4 @@ class TestAnimateTrajectory:
 
         with pytest.raises(ImportError, match="numpy required"):
             animate_trajectory(trajectories)
+

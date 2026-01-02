@@ -329,3 +329,4 @@ def plot_information_network(
         logger.info(f"Information network plot saved to {output_path}")
 
     return ax
+

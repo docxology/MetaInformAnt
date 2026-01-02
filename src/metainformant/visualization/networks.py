@@ -353,3 +353,4 @@ def plot_community_network(
         logger.info(f"Community network plot saved to {output_path}")
 
     return ax
+

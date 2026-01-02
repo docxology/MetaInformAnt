@@ -20,6 +20,81 @@ from metainformant.core import logging, errors, validation
 logger = logging.get_logger(__name__)
 
 
+class MultiOmicsData:
+    """Container for multi-omics data integration.
+
+    This class provides a unified interface for storing and manipulating
+    data from multiple omics types with proper alignment and metadata.
+    """
+
+    def __init__(self, data: Dict[str, pd.DataFrame], sample_ids: List[str] | None = None,
+                 feature_ids: Dict[str, List[str]] | None = None):
+        """Initialize multi-omics data container.
+
+        Args:
+            data: Dictionary mapping omics type to data matrix
+            sample_ids: Common sample identifiers
+            feature_ids: Feature identifiers for each omics type
+        """
+        self.data = data.copy()
+        self.sample_ids = sample_ids
+        self.feature_ids = feature_ids or {}
+        self.metadata = {}
+
+        # Validate data compatibility
+        self._validate_data()
+
+    def _validate_data(self) -> None:
+        """Validate data compatibility across omics types."""
+        if not self.data:
+            raise ValueError("No omics data provided")
+
+        # Check sample alignment
+        sample_counts = {}
+        for omics_type, df in self.data.items():
+            if self.sample_ids is None:
+                sample_counts[omics_type] = len(df.columns)
+            else:
+                if len(df.columns) != len(self.sample_ids):
+                    raise ValueError(f"Sample count mismatch for {omics_type}")
+
+        if self.sample_ids is None and len(set(sample_counts.values())) > 1:
+            logger.warning("Different sample counts across omics types - ensure proper alignment")
+
+    def get_common_samples(self) -> List[str]:
+        """Get samples present in all omics types."""
+        if not self.data:
+            return []
+
+        common_samples = None
+        for df in self.data.values():
+            samples = set(df.columns)
+            if common_samples is None:
+                common_samples = samples
+            else:
+                common_samples = common_samples.intersection(samples)
+
+        return sorted(list(common_samples)) if common_samples else []
+
+    def subset_samples(self, sample_ids: List[str]) -> 'MultiOmicsData':
+        """Create subset with specified samples."""
+        subset_data = {}
+        for omics_type, df in self.data.items():
+            available_samples = [s for s in sample_ids if s in df.columns]
+            if available_samples:
+                subset_data[omics_type] = df[available_samples]
+
+        return MultiOmicsData(subset_data, sample_ids=available_samples, feature_ids=self.feature_ids)
+
+    def add_metadata(self, key: str, value: Any) -> None:
+        """Add metadata to the dataset."""
+        self.metadata[key] = value
+
+    def get_metadata(self, key: str) -> Any:
+        """Get metadata value."""
+        return self.metadata.get(key)
+
+
 def integrate_omics_data(dna_data: pd.DataFrame | None = None,
                         rna_data: pd.DataFrame | None = None,
                         protein_data: pd.DataFrame | None = None,
@@ -604,3 +679,4 @@ def find_multiomics_modules(omics_data: Dict[str, pd.DataFrame],
 
     logger.info(f"Multi-omics module detection completed: {n_modules} modules found")
     return results
+

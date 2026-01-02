@@ -447,3 +447,112 @@ def validate_vcf(vcf_path: str | Path) -> Dict[str, Any]:
     return validation
 
 
+def check_bcftools_available() -> bool:
+    """Check if bcftools is available on the system.
+
+    Returns:
+        True if bcftools is available and executable
+    """
+    try:
+        result = subprocess.run(
+            ['bcftools', '--version'],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        return result.returncode == 0
+    except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.SubprocessError):
+        return False
+
+
+def check_gatk_available() -> bool:
+    """Check if GATK is available on the system.
+
+    Returns:
+        True if GATK is available and executable
+    """
+    try:
+        # Try common GATK commands
+        result = subprocess.run(
+            ['gatk', '--version'],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+        return result.returncode == 0
+    except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.SubprocessError):
+        try:
+            # Try java -jar gatk.jar
+            result = subprocess.run(
+                ['java', '-jar', 'gatk.jar', '--version'],
+                capture_output=True,
+                text=True,
+                timeout=10,
+                cwd='.'  # Look in current directory
+            )
+            return result.returncode == 0
+        except (subprocess.TimeoutExpired, FileNotFoundError, subprocess.SubprocessError):
+            return False
+
+
+def merge_vcf_files(vcf_files: List[str | Path], output_vcf: str | Path,
+                   threads: int = 1) -> subprocess.CompletedProcess:
+    """Merge multiple VCF files using bcftools.
+
+    Args:
+        vcf_files: List of VCF files to merge
+        output_vcf: Output merged VCF file
+        threads: Number of threads to use
+
+    Returns:
+        CompletedProcess with bcftools merge results
+
+    Raises:
+        FileNotFoundError: If bcftools is not available or input files don't exist
+        ValueError: If no input files provided
+    """
+    if not vcf_files:
+        raise ValueError("Must provide at least one VCF file to merge")
+
+    # Check that all input files exist
+    for vcf_file in vcf_files:
+        if not Path(vcf_file).exists():
+            raise FileNotFoundError(f"VCF file not found: {vcf_file}")
+
+    # Check bcftools availability
+    if not check_bcftools_available():
+        raise FileNotFoundError("bcftools not available for VCF merging")
+
+    # Build bcftools merge command
+    cmd = [
+        'bcftools', 'merge',
+        '--threads', str(threads),
+        '-o', str(output_vcf)
+    ] + [str(f) for f in vcf_files]
+
+    logger.info(f"Merging {len(vcf_files)} VCF files with bcftools")
+
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=True,
+            text=True,
+            timeout=300  # 5 minute timeout for merging
+        )
+
+        if result.returncode == 0:
+            logger.info(f"Successfully merged VCF files to {output_vcf}")
+        else:
+            logger.error(f"VCF merging failed: {result.stderr}")
+
+        return result
+
+    except subprocess.TimeoutExpired:
+        logger.error("VCF merging timed out")
+        raise RuntimeError("VCF merging operation timed out")
+    except Exception as e:
+        logger.error(f"VCF merging failed with error: {e}")
+        raise
+
+
+

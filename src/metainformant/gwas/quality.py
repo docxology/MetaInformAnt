@@ -359,3 +359,56 @@ def write_filtered_vcf(filtered_data: Dict[str, Any], output_path: Union[str, Pa
     logger.info(f"Filtered VCF written with {len(filtered_data.get('variants', []))} variants")
 
 
+def extract_variant_regions(vcf_data: Dict[str, Any], regions: List[Tuple[str, int, int]],
+                           padding: int = 0) -> Dict[str, Any]:
+    """Extract variants within specified genomic regions.
+
+    Args:
+        vcf_data: Parsed VCF data dictionary
+        regions: List of (chrom, start, end) tuples
+        padding: Additional padding around regions (bp)
+
+    Returns:
+        Dictionary with variants filtered to specified regions
+    """
+    if not regions:
+        logger.warning("No regions specified, returning all data")
+        return vcf_data.copy()
+
+    variants = vcf_data.get('variants', [])
+    if not variants:
+        logger.warning("No variants in VCF data")
+        return vcf_data.copy()
+
+    # Filter variants by regions
+    filtered_variants = []
+    filtered_indices = []
+
+    for i, variant in enumerate(variants):
+        chrom = variant.get('chrom', '')
+        pos = variant.get('pos', 0)
+
+        # Check if variant falls within any region
+        for region_chrom, region_start, region_end in regions:
+            if (chrom == region_chrom and
+                region_start - padding <= pos <= region_end + padding):
+                filtered_variants.append(variant)
+                filtered_indices.append(i)
+                break
+
+    # Filter genotypes if present
+    filtered_genotypes = []
+    genotypes = vcf_data.get('genotypes', [])
+    if genotypes and len(genotypes) == len(variants):
+        filtered_genotypes = [genotypes[i] for i in filtered_indices]
+
+    # Create result dictionary
+    result = vcf_data.copy()
+    result['variants'] = filtered_variants
+    if filtered_genotypes:
+        result['genotypes'] = filtered_genotypes
+
+    logger.info(f"Extracted {len(filtered_variants)} variants from {len(regions)} regions")
+
+    return result
+

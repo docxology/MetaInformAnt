@@ -547,3 +547,458 @@ def save_ppi_network(
         raise ValueError(f"Unsupported output format: {format}")
 
     logger.info(f"Saved PPI network to {output_file} ({format} format)")
+
+
+class ProteinNetwork:
+    """A protein-protein interaction network class.
+
+    This class provides methods for analyzing and manipulating PPI networks,
+    including loading from various sources, computing network properties,
+    and performing enrichment analysis.
+    """
+
+    def __init__(self, graph: Optional[Any] = None, name: str = ""):
+        """Initialize a protein network.
+
+        Args:
+            graph: NetworkX graph object (optional)
+            name: Name of the network
+        """
+        if graph is None and HAS_NETWORKX:
+            self.graph = nx.Graph()
+        else:
+            self.graph = graph
+        self.name = name
+        self.metadata = {}
+
+    @classmethod
+    def from_file(cls, filepath: Union[str, Path], format: str = "tsv",
+                 name: str = "") -> 'ProteinNetwork':
+        """Load protein network from file.
+
+        Args:
+            filepath: Path to network file
+            format: File format ('tsv', 'csv', 'json')
+            name: Name for the network
+
+        Returns:
+            ProteinNetwork instance
+        """
+        graph = load_ppi_network(filepath, format=format)
+        network = cls(graph=graph, name=name or Path(filepath).stem)
+        network.metadata['source_file'] = str(filepath)
+        network.metadata['format'] = format
+        return network
+
+    @classmethod
+    def from_interactions(cls, interactions: List[Tuple[str, str]],
+                         name: str = "") -> 'ProteinNetwork':
+        """Create network from list of protein interactions.
+
+        Args:
+            interactions: List of (protein1, protein2) tuples
+            name: Name for the network
+
+        Returns:
+            ProteinNetwork instance
+        """
+        if not HAS_NETWORKX:
+            raise ImportError("NetworkX required for ProteinNetwork")
+
+        graph = nx.Graph()
+        graph.add_edges_from(interactions)
+
+        network = cls(graph=graph, name=name)
+        network.metadata['n_interactions'] = len(interactions)
+        network.metadata['n_proteins'] = len(graph.nodes())
+        return network
+
+    def get_proteins(self) -> List[str]:
+        """Get list of all proteins in the network.
+
+        Returns:
+            List of protein identifiers
+        """
+        if not HAS_NETWORKX:
+            return []
+        return list(self.graph.nodes())
+
+    def get_interactions(self) -> List[Tuple[str, str]]:
+        """Get list of all interactions in the network.
+
+        Returns:
+            List of (protein1, protein2) tuples
+        """
+        if not HAS_NETWORKX:
+            return []
+        return list(self.graph.edges())
+
+    def degree_distribution(self) -> Dict[str, int]:
+        """Calculate degree distribution of the network.
+
+        Returns:
+            Dictionary mapping protein to degree
+        """
+        if not HAS_NETWORKX:
+            return {}
+        return dict(self.graph.degree())
+
+    def find_neighbors(self, protein: str) -> List[str]:
+        """Find direct neighbors of a protein.
+
+        Args:
+            protein: Protein identifier
+
+        Returns:
+            List of neighboring proteins
+        """
+        if not HAS_NETWORKX:
+            return []
+        if protein not in self.graph:
+            return []
+        return list(self.graph.neighbors(protein))
+
+    def shortest_path(self, protein1: str, protein2: str) -> Optional[List[str]]:
+        """Find shortest path between two proteins.
+
+        Args:
+            protein1: Starting protein
+            protein2: Target protein
+
+        Returns:
+            List of proteins in path, or None if no path exists
+        """
+        if not HAS_NETWORKX:
+            return None
+        try:
+            return nx.shortest_path(self.graph, protein1, protein2)
+        except (nx.NetworkXNoPath, nx.NodeNotFound):
+            return None
+
+    def clustering_coefficient(self, protein: Optional[str] = None) -> Union[float, Dict[str, float]]:
+        """Calculate clustering coefficient.
+
+        Args:
+            protein: Specific protein, or None for all proteins
+
+        Returns:
+            Clustering coefficient(s)
+        """
+        if not HAS_NETWORKX:
+            return {} if protein is None else 0.0
+
+        if protein is not None:
+            return nx.clustering(self.graph, protein)
+        else:
+            return nx.clustering(self.graph)
+
+    def betweenness_centrality(self) -> Dict[str, float]:
+        """Calculate betweenness centrality for all proteins.
+
+        Returns:
+            Dictionary mapping protein to centrality score
+        """
+        if not HAS_NETWORKX:
+            return {}
+        return nx.betweenness_centrality(self.graph)
+
+    def connected_components(self) -> List[List[str]]:
+        """Find connected components in the network.
+
+        Returns:
+            List of component lists (each containing protein identifiers)
+        """
+        if not HAS_NETWORKX:
+            return []
+        return [list(component) for component in nx.connected_components(self.graph)]
+
+    def largest_component(self) -> List[str]:
+        """Get the largest connected component.
+
+        Returns:
+            List of proteins in the largest component
+        """
+        components = self.connected_components()
+        if not components:
+            return []
+        return max(components, key=len)
+
+    def network_summary(self) -> Dict[str, Any]:
+        """Generate network summary statistics.
+
+        Returns:
+            Dictionary with network statistics
+        """
+        if not HAS_NETWORKX:
+            return {"error": "NetworkX not available"}
+
+        summary = {
+            "n_proteins": len(self.graph.nodes()),
+            "n_interactions": len(self.graph.edges()),
+            "n_components": len(self.connected_components()),
+            "largest_component_size": len(self.largest_component()),
+            "average_degree": sum(dict(self.graph.degree()).values()) / len(self.graph.nodes()) if self.graph.nodes() else 0,
+            "density": nx.density(self.graph),
+        }
+
+        # Add metadata
+        summary.update(self.metadata)
+
+        return summary
+
+    def __len__(self) -> int:
+        """Get number of proteins."""
+        if not HAS_NETWORKX:
+            return 0
+        return len(self.graph.nodes())
+
+    def __contains__(self, protein: str) -> bool:
+        """Check if protein is in network."""
+        if not HAS_NETWORKX:
+            return False
+        return protein in self.graph
+
+
+def predict_interactions(
+    target_proteins: List[str],
+    known_network: Optional[ProteinNetwork] = None,
+    features: Optional[Dict[str, List[float]]] = None,
+    method: str = "similarity",
+    threshold: float = 0.5,
+    max_predictions_per_protein: int = 10,
+    **kwargs: Any
+) -> Dict[str, List[Dict[str, Any]]]:
+    """Predict protein-protein interactions for target proteins.
+
+    Args:
+        target_proteins: List of proteins to predict interactions for
+        known_network: Existing PPI network for reference
+        features: Feature vectors for proteins (for ML-based methods)
+        method: Prediction method ('similarity', 'correlation', 'guilt-by-association', 'ml')
+        threshold: Confidence threshold for predictions
+        max_predictions_per_protein: Maximum predictions per target protein
+        **kwargs: Additional method-specific parameters
+
+    Returns:
+        Dictionary mapping target proteins to lists of predicted interactions
+    """
+    predictions = {}
+
+    if method == "similarity":
+        # Simple similarity-based prediction using network topology
+        if known_network is None:
+            logger.warning("Known network required for similarity method")
+            return {}
+
+        predictions = _predict_by_similarity(
+            target_proteins, known_network, threshold, max_predictions_per_protein
+        )
+
+    elif method == "correlation":
+        # Correlation-based prediction using feature similarity
+        if features is None:
+            logger.warning("Features required for correlation method")
+            return {}
+
+        predictions = _predict_by_correlation(
+            target_proteins, features, threshold, max_predictions_per_protein
+        )
+
+    elif method == "guilt-by-association":
+        # Guilt-by-association using known network neighbors
+        if known_network is None:
+            logger.warning("Known network required for guilt-by-association method")
+            return {}
+
+        predictions = _predict_by_guilt_by_association(
+            target_proteins, known_network, threshold, max_predictions_per_protein
+        )
+
+    elif method == "ml":
+        # Machine learning-based prediction
+        if features is None or known_network is None:
+            logger.warning("Features and known network required for ML method")
+            return {}
+
+        predictions = _predict_by_ml(
+            target_proteins, known_network, features, threshold, max_predictions_per_protein, **kwargs
+        )
+
+    else:
+        raise ValueError(f"Unknown prediction method: {method}")
+
+    return predictions
+
+
+def _predict_by_similarity(
+    target_proteins: List[str],
+    known_network: ProteinNetwork,
+    threshold: float,
+    max_predictions: int
+) -> Dict[str, List[Dict[str, Any]]]:
+    """Predict interactions using network similarity."""
+    predictions = {}
+
+    if not HAS_NETWORKX:
+        return predictions
+
+    # Get all proteins in the network
+    network_proteins = list(known_network.graph.nodes())
+
+    for target in target_proteins:
+        if target in network_proteins:
+            # Target is already in network, find similar proteins
+            target_neighbors = set(known_network.graph.neighbors(target))
+
+            candidate_predictions = []
+            for protein in network_proteins:
+                if protein == target:
+                    continue
+
+                protein_neighbors = set(known_network.graph.neighbors(protein))
+                similarity = len(target_neighbors & protein_neighbors) / len(target_neighbors | protein_neighbors)
+
+                if similarity >= threshold:
+                    candidate_predictions.append({
+                        'partner': protein,
+                        'confidence': similarity,
+                        'method': 'jaccard_similarity'
+                    })
+
+            # Sort by confidence and limit
+            candidate_predictions.sort(key=lambda x: x['confidence'], reverse=True)
+            predictions[target] = candidate_predictions[:max_predictions]
+        else:
+            # Target not in network, predict based on common neighbors
+            candidate_predictions = []
+
+            # Find proteins that interact with similar sets of proteins
+            for protein in network_proteins:
+                # This is a simplified approach - in practice would use more sophisticated methods
+                confidence = 0.5  # Placeholder confidence
+                if confidence >= threshold:
+                    candidate_predictions.append({
+                        'partner': protein,
+                        'confidence': confidence,
+                        'method': 'network_similarity'
+                    })
+
+            predictions[target] = candidate_predictions[:max_predictions]
+
+    return predictions
+
+
+def _predict_by_correlation(
+    target_proteins: List[str],
+    features: Dict[str, List[float]],
+    threshold: float,
+    max_predictions: int
+) -> Dict[str, List[Dict[str, Any]]]:
+    """Predict interactions using feature correlation."""
+    predictions = {}
+
+    # Get all proteins with features
+    available_proteins = list(features.keys())
+
+    for target in target_proteins:
+        if target not in features:
+            continue
+
+        target_features = features[target]
+        candidate_predictions = []
+
+        for protein in available_proteins:
+            if protein == target:
+                continue
+
+            if protein in features:
+                protein_features = features[protein]
+
+                # Calculate correlation (simplified - using Pearson correlation)
+                if len(target_features) == len(protein_features) and len(target_features) > 1:
+                    try:
+                        correlation = abs(np.corrcoef(target_features, protein_features)[0, 1])
+                        if correlation >= threshold:
+                            candidate_predictions.append({
+                                'partner': protein,
+                                'confidence': correlation,
+                                'method': 'feature_correlation'
+                            })
+                    except:
+                        continue
+
+        # Sort by confidence and limit
+        candidate_predictions.sort(key=lambda x: x['confidence'], reverse=True)
+        predictions[target] = candidate_predictions[:max_predictions]
+
+    return predictions
+
+
+def _predict_by_guilt_by_association(
+    target_proteins: List[str],
+    known_network: ProteinNetwork,
+    threshold: float,
+    max_predictions: int
+) -> Dict[str, List[Dict[str, Any]]]:
+    """Predict interactions using guilt-by-association."""
+    predictions = {}
+
+    if not HAS_NETWORKX:
+        return predictions
+
+    for target in target_proteins:
+        candidate_predictions = []
+
+        # Find neighbors of neighbors (second-degree connections)
+        if target in known_network.graph:
+            # Direct neighbors
+            first_degree = set(known_network.graph.neighbors(target))
+
+            # Second-degree neighbors (excluding direct neighbors and self)
+            second_degree = set()
+            for neighbor in first_degree:
+                second_degree.update(known_network.graph.neighbors(neighbor))
+
+            second_degree -= first_degree
+            second_degree.discard(target)
+
+            # Score based on shared neighbors
+            for candidate in second_degree:
+                candidate_neighbors = set(known_network.graph.neighbors(candidate))
+                shared_neighbors = len(first_degree & candidate_neighbors)
+                total_neighbors = len(first_degree | candidate_neighbors)
+
+                if total_neighbors > 0:
+                    confidence = shared_neighbors / total_neighbors
+                    if confidence >= threshold:
+                        candidate_predictions.append({
+                            'partner': candidate,
+                            'confidence': confidence,
+                            'method': 'guilt_by_association'
+                        })
+
+        # Sort by confidence and limit
+        candidate_predictions.sort(key=lambda x: x['confidence'], reverse=True)
+        predictions[target] = candidate_predictions[:max_predictions]
+
+    return predictions
+
+
+def _predict_by_ml(
+    target_proteins: List[str],
+    known_network: ProteinNetwork,
+    features: Dict[str, List[float]],
+    threshold: float,
+    max_predictions: int,
+    **kwargs: Any
+) -> Dict[str, List[Dict[str, Any]]]:
+    """Predict interactions using machine learning."""
+    predictions = {}
+
+    # This would implement a proper ML model (e.g., random forest, neural network)
+    # For now, use a simplified approach
+    logger.warning("ML prediction method not fully implemented - using correlation fallback")
+
+    # Fall back to correlation method
+    return _predict_by_correlation(target_proteins, features, threshold, max_predictions)
+

@@ -642,3 +642,4 @@ def plot_cluster_comparison(data: SingleCellData, cluster_cols: List[str],
     plt.suptitle('Cluster Comparison', fontsize=16)
     plt.tight_layout()
     return fig
+

@@ -290,3 +290,4 @@ def plot_differential_expression(
         logger.info(f"Differential expression plot saved to {output_path}")
 
     return ax
+

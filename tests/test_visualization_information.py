@@ -329,3 +329,4 @@ class TestPlotInformationNetwork:
 
         with pytest.raises(ImportError, match="NetworkX required"):
             plot_information_network(nodes, edges)
+

@@ -196,11 +196,117 @@ Template for single-cell RNA-seq analysis workflows including:
 
 See orchestrator scripts in `scripts/` for usage examples.
 
-## Usage
+## Usage Examples
 
 ### Amalgkit RNA-seq Workflows
 
 Configuration files are used by RNA analysis workflows and can be customized for different species and computational requirements.
+
+#### Quick Start Examples
+
+**1. Run a complete species workflow:**
+```bash
+# Using the CLI
+uv run metainformant rna run --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+
+# Using the orchestrator script
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+```
+
+**2. Check workflow status:**
+```bash
+python3 scripts/rna/run_workflow.py --config config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
+```
+
+**3. Create a new species configuration:**
+```bash
+# Use the discovery script to find and configure new species
+python3 scripts/rna/discover_species.py --species "Apis_mellifera" --create-config
+```
+
+#### Complete Workflow Configuration Example
+
+**Pogonomyrmex barbatus (Red Harvester Ant) - Active Configuration:**
+
+```yaml
+# config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml
+work_dir: output/amalgkit/pbarbatus/work
+log_dir: output/amalgkit/pbarbatus/logs
+threads: 8
+auto_install_amalgkit: true
+species_list: ["Pogonomyrmex_barbatus"]
+
+genome:
+  accession: "GCF_000187915.1"
+  assembly_name: "Pbar_UMD_V03"
+  annotation_release: 100
+  dest_dir: "output/amalgkit/pbarbatus/genome"
+  include: ["genome", "gff3", "rna", "cds", "protein"]
+  ftp_url: "https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/000/187/915/GCF_000187915.1_Pbar_UMD_V03"
+
+metadata:
+  enabled: true
+  max_samples: 50
+  min_read_length: 75
+
+integrate:
+  enabled: true
+
+config:
+  enabled: true
+
+select:
+  enabled: true
+  criteria:
+    min_reads: 1000000
+    max_duplicates: 0.5
+
+getfastq:
+  enabled: true
+  prefetch: true
+  max_size: "20G"
+
+quant:
+  enabled: true
+  index: "kallisto"
+  bootstrap_samples: 100
+
+merge:
+  enabled: true
+
+cstmm:
+  enabled: false
+
+curate:
+  enabled: true
+
+csca:
+  enabled: false
+
+sanity:
+  enabled: true
+```
+
+**Configuration Template - For Creating New Species:**
+
+```yaml
+# config/amalgkit/amalgkit_template.yaml
+work_dir: output/amalgkit/{species}/work
+log_dir: output/amalgkit/{species}/logs
+threads: 8
+auto_install_amalgkit: true
+species_list: ["{Scientific_Name}"]
+
+genome:
+  accession: "{NCBI_Assembly_Accession}"
+  assembly_name: "{Assembly_Name}"
+  annotation_release: {Release_Number}
+  dest_dir: "output/amalgkit/{species}/genome"
+  include: ["genome", "gff3", "rna", "cds", "protein"]
+  ftp_url: "{NCBI_FTP_URL}"
+
+# ... workflow steps as above
+```
 
 #### Loading Configurations
 ```python
@@ -228,6 +334,97 @@ uv run python -m metainformant rna run \
 ```
 
 ### GWAS Workflows
+
+#### Complete GWAS Configuration Example
+
+**Pogonomyrmex barbatus GWAS Configuration:**
+
+```yaml
+# config/gwas/gwas_pbarbatus.yaml
+work_dir: output/gwas/pbarbatus
+threads: 8
+
+# Genome reference
+genome:
+  accession: "GCF_000187915.1"
+  assembly_name: "Pbar_UMD_V03"
+  dest_dir: "output/gwas/pbarbatus/genome"
+
+# Variant data sources
+variants:
+  vcf_path: "data/variants/pbarbatus.vcf.gz"
+  # Alternative: call from BAM files
+  # bam_files: ["data/alignments/sample1.bam", "data/alignments/sample2.bam"]
+  # calling_method: "bcftools"
+
+# Sample metadata and phenotypes
+samples:
+  phenotype_file: "data/phenotypes/traits.tsv"
+  sample_column: "sample_id"
+  trait_column: "phenotype"
+
+# Quality control thresholds
+qc:
+  min_maf: 0.01
+  max_missing: 0.1
+  min_hwe_p: 1e-6
+
+# Population structure analysis
+structure:
+  pca_components: 10
+  kinship_method: "vanraden"
+
+# Association testing
+association:
+  model: "linear"  # or "logistic" for binary traits
+  covariates: ["pc1", "pc2", "pc3"]  # population PCs as covariates
+
+# Multiple testing correction
+correction:
+  method: "bonferroni"  # bonferroni, fdr, genomic_control
+  alpha: 0.05
+
+# Output configuration
+output:
+  manhattan_plot: true
+  qq_plot: true
+  regional_plots: true
+  significance_threshold: 5e-8
+```
+
+#### GWAS Quick Start Examples
+
+**1. Run complete GWAS pipeline:**
+```bash
+# Using CLI
+uv run metainformant gwas run --config config/gwas/gwas_pbarbatus.yaml
+
+# Using orchestrator script
+python3 scripts/gwas/run_genome_scale_gwas.py --config config/gwas/gwas_pbarbatus.yaml
+```
+
+**2. Generate GWAS configuration from data:**
+```python
+from metainformant.gwas.config import create_config_from_vcf
+
+# Auto-create config from VCF and phenotype files
+config = create_config_from_vcf(
+    vcf_path="data/variants/cohort.vcf.gz",
+    phenotype_path="data/phenotypes/traits.tsv",
+    output_dir="config/gwas/"
+)
+```
+
+**3. Validate GWAS configuration:**
+```python
+from metainformant.gwas.config import validate_config_parameters
+
+errors = validate_config_parameters(config)
+if errors:
+    print("Configuration errors:", errors)
+else:
+    print("Configuration valid")
+```
 
 #### Loading GWAS Configurations
 ```python

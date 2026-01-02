@@ -282,3 +282,4 @@ def plot_length_distribution(
         logger.info(f"Length distribution plot saved to {output_path}")
 
     return ax
+

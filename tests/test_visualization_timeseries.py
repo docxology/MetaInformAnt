@@ -337,3 +337,4 @@ class TestPlotTrendAnalysis:
 
         with pytest.raises(ValueError, match="cannot be empty"):
             plot_trend_analysis(data)
+

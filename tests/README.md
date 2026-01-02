@@ -377,17 +377,94 @@ uv run pytest tests/ -k "not (network or slow)"
 # Core infrastructure
 uv run pytest tests/test_core_*.py -v
 
-# DNA analysis
+# DNA analysis - all tests
 uv run pytest tests/test_dna_*.py -v
 
-# RNA workflows
+# RNA workflows - all tests
 uv run pytest tests/test_rna_*.py -v
 
-# Mathematical models
+# Mathematical models - all tests
 uv run pytest tests/test_math_*.py -v
 
-# Protein analysis
+# Protein analysis - all tests
 uv run pytest tests/test_protein_*.py -v
+
+# GWAS analysis - all tests
+uv run pytest tests/test_gwas_*.py -v
+
+# Multi-omics integration - all tests
+uv run pytest tests/test_multiomics_*.py -v
+```
+
+### Practical Testing Workflows
+
+#### Development Testing Cycle
+```bash
+# 1. Run fast tests during development
+uv run pytest tests/ -k "not (slow or network)" --tb=short
+
+# 2. Run comprehensive tests before commit
+uv run pytest tests/test_core_*.py tests/test_dna_*.py -v
+
+# 3. Run full test suite with coverage
+uv run pytest tests/ --cov=src/metainformant --cov-report=html --cov-fail-under=85
+
+# 4. Check for test regressions
+uv run pytest tests/ --lf  # Run only failed tests from last run
+```
+
+#### CI/CD Testing Pipeline
+```bash
+# Fast feedback (2-3 minutes)
+uv run pytest tests/test_core_*.py tests/test_dna_*.py --tb=short
+
+# Network tests (requires internet)
+uv run pytest tests/ -m network --tb=short
+
+# Slow comprehensive tests (10-15 minutes)
+uv run pytest tests/ -m "not network" --durations=10
+
+# Performance regression checks
+uv run pytest tests/ --durations=20 --durations-min=1.0
+```
+
+#### Module-Specific Testing Examples
+
+**DNA Sequence Analysis Testing:**
+```bash
+# Test all DNA functionality
+uv run pytest tests/test_dna_*.py -v
+
+# Test specific DNA operations
+uv run pytest tests/test_dna_sequences.py::test_read_fasta_basic -v
+uv run pytest tests/test_dna_alignment.py -k "global" -v
+
+# Test DNA with coverage
+uv run pytest tests/test_dna_*.py --cov=src/metainformant/dna --cov-report=term
+```
+
+**RNA Workflow Testing:**
+```bash
+# Test RNA workflow orchestration
+uv run pytest tests/test_rna_workflow*.py -v
+
+# Test AMALGKIT integration (requires amalgkit CLI)
+uv run pytest tests/test_rna_amalgkit*.py -v --tb=short
+
+# Test RNA configuration loading
+uv run pytest tests/test_rna_config_load_plan.py -v
+```
+
+**GWAS Testing:**
+```bash
+# Test GWAS pipeline components
+uv run pytest tests/test_gwas_*.py -v
+
+# Test GWAS visualization
+uv run pytest tests/test_gwas_visualization.py -v
+
+# Test GWAS with real data
+uv run pytest tests/test_gwas_workflow.py -v --tb=short
 ```
 
 ## Test Development Guidelines
@@ -513,12 +590,147 @@ The test suite follows a consistent naming pattern that maps directly to source 
 
 **All new test files should follow this pattern to maintain consistency and discoverability.**
 
+### Troubleshooting Guide
+
+#### Common Test Issues and Solutions
+
+**1. Import Errors:**
+```bash
+# Missing dependencies
+uv sync --extra scientific
+uv run pytest tests/
+
+# Path issues
+export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"
+uv run pytest tests/
+```
+
+**2. Network Test Failures:**
+```bash
+# Check internet connectivity
+curl -s https://www.ncbi.nlm.nih.gov > /dev/null && echo "Network OK"
+
+# Set NCBI email for Entrez tests
+export NCBI_EMAIL="your.email@example.com"
+
+# Skip network tests
+uv run pytest tests/ -m "not network"
+```
+
+**3. External Tool Missing:**
+```bash
+# AMALGKIT not installed
+uv run pytest tests/test_rna_*.py -k "not amalgkit"
+
+# MUSCLE not available
+uv run pytest tests/test_dna_msa_cli.py -k "not muscle"
+```
+
+**4. Memory Issues:**
+```bash
+# Reduce test parallelism
+uv run pytest tests/ -n 2
+
+# Run specific tests
+uv run pytest tests/test_core_*.py
+```
+
+**5. File Permission Issues:**
+```bash
+# Fix permissions
+chmod +x scripts/package/test.sh
+chmod +x scripts/package/setup.sh
+
+# Run as current user
+sudo -u $(whoami) uv run pytest tests/
+```
+
+#### Debugging Failed Tests
+
+**Get Detailed Output:**
+```bash
+# Verbose output
+uv run pytest tests/test_dna_sequences.py -v -s
+
+# Stop on first failure
+uv run pytest tests/ -x
+
+# Show local variables on failure
+uv run pytest tests/ --pdb
+```
+
+**Isolate Problematic Tests:**
+```bash
+# Run single test
+uv run pytest tests/test_dna_sequences.py::test_read_fasta_basic -v
+
+# Run tests matching pattern
+uv run pytest tests/ -k "fasta and not slow" -v
+
+# Run only failed tests
+uv run pytest tests/ --lf
+```
+
+**Check Test Environment:**
+```bash
+# Verify Python path
+python -c "import metainformant; print(metainformant.__file__)"
+
+# Check dependencies
+python -c "import biopython, numpy, pandas; print('Dependencies OK')"
+
+# Test file access
+ls -la tests/data/dna/
+```
+
+#### Performance Troubleshooting
+
+**Slow Test Identification:**
+```bash
+# Show slowest tests
+uv run pytest tests/ --durations=10
+
+# Profile test execution
+python -m cProfile -s time $(which pytest) tests/test_dna_sequences.py
+```
+
+**Memory Usage Analysis:**
+```bash
+# Monitor memory during tests
+uv run pytest tests/ --mem-usage
+
+# Run with memory profiling
+python -m memory_profiler pytest tests/test_dna_sequences.py
+```
+
 ### Issue Reporting
 When tests fail:
 1. Check if the failure is due to environment/dependency issues
 2. Verify test data integrity
 3. Report bugs with minimal reproduction examples
 4. Tag issues with appropriate domain labels
+
+**Bug Report Template:**
+```markdown
+## Test Failure Report
+
+**Test File:** `tests/test_dna_sequences.py`
+**Test Function:** `test_read_fasta_basic`
+**Environment:** Python 3.11, Ubuntu 22.04
+**Dependencies:** uv 0.1.0, biopython 1.81
+
+**Error Output:**
+```
+# Copy the full error traceback here
+```
+
+**Steps to Reproduce:**
+1. `uv sync`
+2. `uv run pytest tests/test_dna_sequences.py::test_read_fasta_basic -v`
+
+**Expected Behavior:** Test should pass
+**Actual Behavior:** Test fails with error message
+```
 
 ---
 

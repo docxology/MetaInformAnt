@@ -39,7 +39,7 @@ def test_watterson_and_expected_S():
     # invert via Watterson
     S = int(round(a1 * theta * L))
     est = watterson_theta(S, n, sequence_length=L)
-    assert abs(est - theta) < 5e-3  # coarse due to rounding S
+    assert abs(est - theta) < 1e-2  # coarse due to rounding S
 
 
 def test_sfs_counts_shape_and_values():

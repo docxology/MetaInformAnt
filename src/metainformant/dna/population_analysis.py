@@ -483,3 +483,264 @@ def calculate_segregating_sites(sequences: List[str]) -> int:
     return population.segregating_sites(sequences)
 
 
+def calculate_summary_statistics(
+    sequences: List[str] | None = None,
+    genotype_matrix: List[List[int]] | None = None,
+    populations: List[int] | None = None
+) -> Dict[str, any]:
+    """Calculate comprehensive population genetics summary statistics.
+
+    Args:
+        sequences: List of DNA sequences (for sequence-based statistics)
+        genotype_matrix: Genotype matrix (for genotype-based statistics)
+        populations: Population assignments for each individual
+
+    Returns:
+        Dictionary containing various population genetics statistics
+
+    Example:
+        >>> seqs = ["ATCG", "ATCG", "GCTA"]
+        >>> stats = calculate_summary_statistics(sequences=seqs)
+        >>> isinstance(stats, dict)
+        True
+    """
+    results = {}
+
+    if sequences:
+        logger.info(f"Calculating summary statistics for {len(sequences)} sequences")
+
+        # Basic diversity measures
+        results['nucleotide_diversity'] = calculate_nucleotide_diversity(sequences)
+        results['watterson_theta'] = calculate_wattersons_theta(sequences)
+        results['segregating_sites'] = calculate_segregating_sites(sequences)
+
+        # Neutrality tests
+        try:
+            tajima_d, tajima_p = calculate_tajima_d(sequences)
+            results['tajima_d'] = tajima_d
+            results['tajima_d_p_value'] = tajima_p
+        except Exception:
+            results['tajima_d'] = None
+            results['tajima_d_p_value'] = None
+
+        try:
+            fu_li_d, fu_li_p = calculate_fu_li_d(sequences)
+            results['fu_li_d'] = fu_li_d
+            results['fu_li_d_p_value'] = fu_li_p
+        except Exception:
+            results['fu_li_d'] = None
+            results['fu_li_d_p_value'] = None
+
+        # Sequence properties
+        results['sequence_length'] = len(sequences[0]) if sequences else 0
+        results['sample_size'] = len(sequences)
+
+    if genotype_matrix:
+        logger.info(f"Calculating summary statistics for genotype matrix with {len(genotype_matrix)} individuals")
+
+        # Convert to numpy for easier computation
+        genotypes = np.array(genotype_matrix)
+
+        # Basic statistics
+        results['num_individuals'] = len(genotypes)
+        results['num_loci'] = genotypes.shape[1] if genotypes.size > 0 else 0
+
+        # Heterozygosity
+        if genotypes.size > 0:
+            from . import population
+            het_values = []
+            for locus in range(genotypes.shape[1]):
+                locus_genotypes = [(genotypes[i, locus] // 2, genotypes[i, locus] % 2)
+                                 for i in range(len(genotypes))]
+                het = population.observed_heterozygosity(locus_genotypes)
+                het_values.append(het)
+
+            results['mean_heterozygosity'] = np.mean(het_values) if het_values else 0.0
+            results['heterozygosity_variance'] = np.var(het_values) if het_values else 0.0
+
+    if populations and sequences:
+        # Population differentiation
+        if len(set(populations)) > 1:
+            pop_indices = {}
+            for i, pop in enumerate(set(populations)):
+                pop_indices[pop] = [j for j, p in enumerate(populations) if p == pop]
+
+            if len(pop_indices) >= 2:
+                pop1_idx, pop2_idx = list(pop_indices.values())[:2]
+                pop1_seqs = [sequences[i] for i in pop1_idx]
+                pop2_seqs = [sequences[i] for i in pop2_idx]
+
+                try:
+                    results['fst'] = calculate_fst(pop1_seqs, pop2_seqs)
+                except Exception:
+                    results['fst'] = None
+
+    return results
+
+
+def compare_populations(pop1_data: Dict[str, Any], pop2_data: Dict[str, Any]) -> Dict[str, Any]:
+    """Compare two populations based on their summary statistics.
+
+    Args:
+        pop1_data: Summary statistics for population 1
+        pop2_data: Summary statistics for population 2
+
+    Returns:
+        Dictionary containing comparison metrics
+
+    Example:
+        >>> pop1 = {"nucleotide_diversity": 0.01, "tajima_d": 0.5}
+        >>> pop2 = {"nucleotide_diversity": 0.015, "tajima_d": -0.3}
+        >>> comparison = compare_populations(pop1, pop2)
+        >>> isinstance(comparison, dict)
+        True
+    """
+    comparison = {}
+
+    # Compare nucleotide diversity
+    if "nucleotide_diversity" in pop1_data and "nucleotide_diversity" in pop2_data:
+        pi1 = pop1_data["nucleotide_diversity"]
+        pi2 = pop2_data["nucleotide_diversity"]
+        comparison["nucleotide_diversity_ratio"] = pi2 / pi1 if pi1 > 0 else float('inf')
+        comparison["nucleotide_diversity_difference"] = pi2 - pi1
+
+    # Compare Tajima's D
+    if "tajima_d" in pop1_data and "tajima_d" in pop2_data:
+        d1 = pop1_data["tajima_d"]
+        d2 = pop2_data["tajima_d"]
+        comparison["tajima_d_difference"] = d2 - d1
+
+        # Classify selection patterns
+        def classify_selection(d: float) -> str:
+            if d is None:
+                return "unknown"
+            elif d > 2:
+                return "balancing_selection"
+            elif d < -2:
+                return "positive_selection"
+            else:
+                return "neutral"
+
+        comparison["pop1_selection_pattern"] = classify_selection(d1)
+        comparison["pop2_selection_pattern"] = classify_selection(d2)
+
+    # Compare F_ST if available
+    if "fst" in pop1_data and "fst" in pop2_data:
+        fst1 = pop1_data["fst"]
+        fst2 = pop2_data["fst"]
+        if fst1 is not None and fst2 is not None:
+            comparison["fst_difference"] = fst2 - fst1
+            comparison["fst_ratio"] = fst2 / fst1 if fst1 > 0 else float('inf')
+
+    return comparison
+
+
+def neutrality_test_suite(sequences: List[str]) -> Dict[str, Any]:
+    """Run a comprehensive suite of neutrality tests.
+
+    Args:
+        sequences: List of DNA sequences from a population
+
+    Returns:
+        Dictionary containing results from multiple neutrality tests
+
+    Example:
+        >>> seqs = ["ATCG", "ATCG", "GCTA"]
+        >>> results = neutrality_test_suite(seqs)
+        >>> isinstance(results, dict)
+        True
+    """
+    results = {}
+
+    if not sequences:
+        return results
+
+    # Basic statistics
+    results['num_sequences'] = len(sequences)
+    results['sequence_length'] = len(sequences[0]) if sequences else 0
+
+    # Tajima's D
+    try:
+        tajima_d, tajima_p = calculate_tajima_d(sequences)
+        results['tajima_d'] = tajima_d
+        results['tajima_d_p_value'] = tajima_p
+    except Exception as e:
+        logger.warning(f"Failed to calculate Tajima's D: {e}")
+        results['tajima_d'] = None
+        results['tajima_d_p_value'] = None
+
+    # Fu and Li's D*
+    try:
+        fu_li_d_star, fu_li_d_star_p = calculate_fu_li_d(sequences)
+        results['fu_li_d_star'] = fu_li_d_star
+        results['fu_li_d_star_p_value'] = fu_li_d_star_p
+    except Exception as e:
+        logger.warning(f"Failed to calculate Fu and Li's D*: {e}")
+        results['fu_li_d_star'] = None
+        results['fu_li_d_star_p_value'] = None
+
+    # Fu and Li's F*
+    try:
+        fu_li_f_star, fu_li_f_star_p = calculate_fu_li_f(sequences)
+        results['fu_li_f_star'] = fu_li_f_star
+        results['fu_li_f_star_p_value'] = fu_li_f_star_p
+    except Exception as e:
+        logger.warning(f"Failed to calculate Fu and Li's F*: {e}")
+        results['fu_li_f_star'] = None
+        results['fu_li_f_star_p_value'] = None
+
+    # Fay and Wu's H
+    try:
+        fay_wu_h, fay_wu_h_p = calculate_fay_wu_h(sequences)
+        results['fay_wu_h'] = fay_wu_h
+        results['fay_wu_h_p_value'] = fay_wu_h_p
+    except Exception as e:
+        logger.warning(f"Failed to calculate Fay and Wu's H: {e}")
+        results['fay_wu_h'] = None
+        results['fay_wu_h_p_value'] = None
+
+    # Summary interpretation
+    results['neutrality_summary'] = interpret_neutrality_results(results)
+
+    return results
+
+
+def interpret_neutrality_results(results: Dict[str, Any]) -> Dict[str, str]:
+    """Interpret neutrality test results.
+
+    Args:
+        results: Results from neutrality_test_suite
+
+    Returns:
+        Dictionary with interpretation of results
+    """
+    interpretation = {}
+
+    # Tajima's D interpretation
+    tajima_d = results.get('tajima_d')
+    if tajima_d is not None:
+        if tajima_d > 0:
+            interpretation['tajima_d'] = 'balancing_selection_or_population_expansion'
+        elif tajima_d < 0:
+            interpretation['tajima_d'] = 'positive_selection_or_population_bottleneck'
+        else:
+            interpretation['tajima_d'] = 'neutral_evolution'
+    else:
+        interpretation['tajima_d'] = 'calculation_failed'
+
+    # Fu and Li's tests interpretation
+    fu_li_d_star = results.get('fu_li_d_star')
+    if fu_li_d_star is not None:
+        if fu_li_d_star > 0:
+            interpretation['fu_li_d_star'] = 'balancing_selection'
+        elif fu_li_d_star < 0:
+            interpretation['fu_li_d_star'] = 'positive_selection_or_population_expansion'
+        else:
+            interpretation['fu_li_d_star'] = 'neutral_evolution'
+    else:
+        interpretation['fu_li_d_star'] = 'calculation_failed'
+
+    return interpretation
+
+
+

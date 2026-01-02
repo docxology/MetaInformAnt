@@ -270,3 +270,4 @@ class TestPlot3DScatter:
         assert ax is not None
         assert output_path.exists()
         plt.close('all')
+

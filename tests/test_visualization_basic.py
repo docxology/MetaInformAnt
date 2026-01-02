@@ -352,3 +352,4 @@ class TestStepPlot:
 
         with pytest.raises(ValueError, match="same length"):
             step_plot(x, y)
+

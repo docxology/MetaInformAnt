@@ -482,3 +482,4 @@ def add_technical_noise(expression_matrix: np.ndarray, *,
     noisy_matrix = np.random.poisson(noisy_matrix)
 
     return noisy_matrix.astype(int)
+

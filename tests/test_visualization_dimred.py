@@ -370,3 +370,4 @@ class TestBiplot:
 
         with pytest.raises(ImportError, match="scikit-learn required"):
             biplot(data, fake_model)
+

@@ -13,6 +13,9 @@ from . import (
     scraper,
 )
 
+# Direct imports of commonly used classes and functions
+from .life_course import analyze_life_course
+
 # Optional imports with graceful fallbacks
 try:
     from . import antwiki
@@ -33,10 +36,12 @@ if TYPE_CHECKING:
 __all__ = [
     # Core phenotype analysis
     "life_course",
+    "analyze_life_course",
 
     # Data sources and curation
     "antwiki",
     "scraper",
 ]
+
 
 

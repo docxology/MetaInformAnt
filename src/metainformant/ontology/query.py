@@ -591,3 +591,224 @@ def calculate_ic_map(onto: Ontology, corpus_size: int | None = None) -> Dict[str
     for term_id in onto.terms.keys():
         ic_map[term_id] = information_content(onto, term_id, corpus_size)
     return ic_map
+
+
+def subgraph(onto: Ontology, term_ids: List[str], relation_type: str = "is_a") -> Ontology:
+    """Create a subgraph ontology containing only specified terms and their relationships.
+
+    Args:
+        onto: Source ontology.
+        term_ids: List of term IDs to include.
+        relation_type: Type of relationship to consider.
+
+    Returns:
+        New Ontology containing only the specified terms and relationships between them.
+
+    Examples:
+        >>> subgraph_onto = subgraph(go_ontology, ["GO:0008150", "GO:0003674"])
+    """
+    validation.validate_type(onto, Ontology, "onto")
+    validation.validate_not_empty(term_ids, "term_ids")
+
+    # Create new ontology with selected terms
+    selected_terms = {}
+    for term_id in term_ids:
+        if term_id in onto.terms:
+            selected_terms[term_id] = onto.terms[term_id]
+
+    # Find relationships between selected terms
+    selected_relationships = []
+    for rel in onto.relationships:
+        if (rel.relation_type == relation_type and
+            rel.source in selected_terms and
+            rel.target in selected_terms):
+            selected_relationships.append(rel)
+
+    return Ontology(
+        terms=selected_terms,
+        relationships=selected_relationships,
+        metadata={**onto.metadata, "subgraph_of": onto.metadata.get("id", "unknown")}
+    )
+
+
+def path_to_root(onto: Ontology, term_id: str, relation_type: str = "is_a") -> List[str]:
+    """Find the path from a term to the root of the ontology.
+
+    Args:
+        onto: Ontology to analyze.
+        term_id: Starting term ID.
+        relation_type: Type of relationship to traverse.
+
+    Returns:
+        List of term IDs from the given term to the root (inclusive).
+
+    Examples:
+        >>> path = path_to_root(go_ontology, "GO:0008150")
+        >>> print(path)  # ['GO:0008150', 'GO:0003674', 'GO:0005575']
+    """
+    validation.validate_type(onto, Ontology, "onto")
+    validation.validate_not_empty(term_id, "term_id")
+
+    if term_id not in onto.terms:
+        raise errors.TermNotFoundError(f"Term '{term_id}' not found in ontology.")
+
+    path = [term_id]
+    current = term_id
+
+    # Traverse up to parents until we reach a root
+    visited = set()
+    while current not in visited:
+        visited.add(current)
+        parents = [rel.source for rel in onto.relationships
+                  if rel.target == current and rel.relation_type == relation_type]
+
+        if not parents:
+            break  # Reached a root
+
+        # For simplicity, follow the first parent (in real ontologies, there might be multiple paths)
+        current = parents[0]
+        if current not in path:  # Avoid cycles
+            path.append(current)
+
+    return path
+
+
+def distance(onto: Ontology, term1: str, term2: str, relation_type: str = "is_a") -> int:
+    """Calculate the graph distance between two terms.
+
+    Args:
+        onto: Ontology to analyze.
+        term1: First term ID.
+        term2: Second term ID.
+        relation_type: Type of relationship to consider.
+
+    Returns:
+        Minimum number of edges between the terms, or -1 if not connected.
+
+    Examples:
+        >>> dist = distance(go_ontology, "GO:0008150", "GO:0003674")
+    """
+    validation.validate_type(onto, Ontology, "onto")
+    validation.validate_not_empty(term1, "term1")
+    validation.validate_not_empty(term2, "term2")
+
+    if term1 not in onto.terms or term2 not in onto.terms:
+        return -1
+
+    if term1 == term2:
+        return 0
+
+    # Simple BFS to find shortest path
+    from collections import deque
+
+    visited = set()
+    queue = deque([(term1, 0)])
+
+    while queue:
+        current, dist = queue.popleft()
+
+        if current in visited:
+            continue
+        visited.add(current)
+
+        # Check relationships
+        for rel in onto.relationships:
+            if rel.relation_type == relation_type:
+                # Check both directions (ontology might not be directed)
+                if rel.source == current and rel.target not in visited:
+                    if rel.target == term2:
+                        return dist + 1
+                    queue.append((rel.target, dist + 1))
+                elif rel.target == current and rel.source not in visited:
+                    if rel.source == term2:
+                        return dist + 1
+                    queue.append((rel.source, dist + 1))
+
+    return -1  # Not connected
+
+
+def find_term_by_name(onto: Ontology, name_pattern: str, case_sensitive: bool = False) -> List[str]:
+    """Find terms by name pattern.
+
+    Args:
+        onto: Ontology to search.
+        name_pattern: Pattern to match (case-insensitive substring search).
+        case_sensitive: Whether to perform case-sensitive matching.
+
+    Returns:
+        List of term IDs matching the pattern.
+
+    Examples:
+        >>> terms = find_term_by_name(go_ontology, "transport")
+    """
+    validation.validate_type(onto, Ontology, "onto")
+
+    matches = []
+    pattern = name_pattern if case_sensitive else name_pattern.lower()
+
+    for term_id, term in onto.terms.items():
+        name = term.name or ""
+        if not case_sensitive:
+            name = name.lower()
+
+        if pattern in name:
+            matches.append(term_id)
+
+    return matches
+
+
+def filter_by_namespace(onto: Ontology, namespace: str) -> Ontology:
+    """Create a new ontology containing only terms from the specified namespace.
+
+    Args:
+        onto: Source ontology.
+        namespace: Namespace to filter by.
+
+    Returns:
+        New Ontology with filtered terms.
+
+    Examples:
+        >>> bp_ontology = filter_by_namespace(go_ontology, "biological_process")
+    """
+    validation.validate_type(onto, Ontology, "onto")
+
+    filtered_terms = {}
+    for term_id, term in onto.terms.items():
+        if term.namespace == namespace:
+            filtered_terms[term_id] = term
+
+    # Include relationships between filtered terms
+    filtered_relationships = []
+    for rel in onto.relationships:
+        if rel.source in filtered_terms and rel.target in filtered_terms:
+            filtered_relationships.append(rel)
+
+    return Ontology(
+        terms=filtered_terms,
+        relationships=filtered_relationships,
+        metadata={**onto.metadata, "filtered_by_namespace": namespace}
+    )
+
+
+# Cache management (simple in-memory cache)
+_CACHE_ENABLED = True
+_QUERY_CACHE = {}
+
+
+def clear_cache() -> None:
+    """Clear the query cache."""
+    global _QUERY_CACHE
+    _QUERY_CACHE = {}
+
+
+def set_cache_enabled(enabled: bool) -> None:
+    """Enable or disable query caching.
+
+    Args:
+        enabled: Whether to enable caching.
+    """
+    global _CACHE_ENABLED
+    _CACHE_ENABLED = enabled
+
+    if not enabled:
+        clear_cache()

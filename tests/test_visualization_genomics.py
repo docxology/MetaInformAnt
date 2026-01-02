@@ -369,3 +369,4 @@ class TestVariantPlot:
         assert ax is not None
         assert output_path.exists()
         plt.close('all')
+

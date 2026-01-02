@@ -429,3 +429,4 @@ def biplot(
         logger.info(f"PCA biplot saved to {output_path}")
 
     return ax
+

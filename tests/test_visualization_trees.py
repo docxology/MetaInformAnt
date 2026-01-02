@@ -255,3 +255,4 @@ class TestTreeAnnotationPlot:
         ax = tree_annotation_plot(G, {})
         assert ax is not None
         plt.close('all')
+

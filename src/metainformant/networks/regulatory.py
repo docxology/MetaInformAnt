@@ -568,3 +568,377 @@ def export_regulatory_network(
         raise ValueError(f"Unsupported export format: {format}")
 
     logger.info(f"Exported regulatory network to {output_file} ({format} format)")
+
+
+class GeneRegulatoryNetwork:
+    """A gene regulatory network class for analyzing transcriptional regulation.
+
+    This class provides methods for loading, analyzing, and modeling gene regulatory
+    networks, including transcription factor-target relationships and regulatory motifs.
+    """
+
+    def __init__(self, graph: Optional[Any] = None, name: str = ""):
+        """Initialize a gene regulatory network.
+
+        Args:
+            graph: NetworkX DiGraph object (optional)
+            name: Name of the network
+        """
+        if graph is None and HAS_NETWORKX:
+            self.graph = nx.DiGraph()
+        else:
+            self.graph = graph
+        self.name = name
+        self.metadata = {}
+        self.tf_targets = {}  # Map of transcription factors to their targets
+        self.target_tfs = {}  # Map of targets to their regulators
+
+    @classmethod
+    def from_tf_target_file(cls, filepath: Union[str, Path], name: str = "") -> 'GeneRegulatoryNetwork':
+        """Load regulatory network from TF-target file.
+
+        Args:
+            filepath: Path to TF-target file (format: TF<TAB>Target<TAB>Confidence)
+            name: Name for the network
+
+        Returns:
+            GeneRegulatoryNetwork instance
+        """
+        if not HAS_NETWORKX:
+            raise ImportError("NetworkX required for GeneRegulatoryNetwork")
+
+        network = cls(name=name or Path(filepath).stem)
+
+        with open(filepath, 'r') as f:
+            for line in f:
+                parts = line.strip().split('\t')
+                if len(parts) >= 2:
+                    tf = parts[0]
+                    target = parts[1]
+                    confidence = float(parts[2]) if len(parts) > 2 else 1.0
+
+                    # Add edge from TF to target
+                    network.graph.add_edge(tf, target, weight=confidence, type='regulates')
+
+                    # Update mappings
+                    if tf not in network.tf_targets:
+                        network.tf_targets[tf] = []
+                    network.tf_targets[tf].append(target)
+
+                    if target not in network.target_tfs:
+                        network.target_tfs[target] = []
+                    network.target_tfs[target].append(tf)
+
+        network.metadata['source_file'] = str(filepath)
+        network.metadata['n_regulations'] = len(network.graph.edges())
+        network.metadata['n_tfs'] = len(network.tf_targets)
+        network.metadata['n_targets'] = len(network.target_tfs)
+
+        return network
+
+    @classmethod
+    def from_interactions(cls, interactions: List[Tuple[str, str, float]],
+                         name: str = "") -> 'GeneRegulatoryNetwork':
+        """Create network from list of TF-target interactions.
+
+        Args:
+            interactions: List of (TF, target, confidence) tuples
+            name: Name for the network
+
+        Returns:
+            GeneRegulatoryNetwork instance
+        """
+        if not HAS_NETWORKX:
+            raise ImportError("NetworkX required for GeneRegulatoryNetwork")
+
+        network = cls(name=name)
+
+        for tf, target, confidence in interactions:
+            network.graph.add_edge(tf, target, weight=confidence, type='regulates')
+
+            # Update mappings
+            if tf not in network.tf_targets:
+                network.tf_targets[tf] = []
+            network.tf_targets[tf].append(target)
+
+            if target not in network.target_tfs:
+                network.target_tfs[target] = []
+            network.target_tfs[target].append(tf)
+
+        network.metadata['n_regulations'] = len(interactions)
+        network.metadata['n_tfs'] = len(network.tf_targets)
+        network.metadata['n_targets'] = len(network.target_tfs)
+
+        return network
+
+    def get_transcription_factors(self) -> List[str]:
+        """Get list of all transcription factors in the network.
+
+        Returns:
+            List of TF identifiers
+        """
+        return list(self.tf_targets.keys())
+
+    def get_targets(self) -> List[str]:
+        """Get list of all target genes in the network.
+
+        Returns:
+            List of target gene identifiers
+        """
+        return list(self.target_tfs.keys())
+
+    def get_tf_targets(self, tf: str) -> List[str]:
+        """Get targets regulated by a specific transcription factor.
+
+        Args:
+            tf: Transcription factor identifier
+
+        Returns:
+            List of target genes
+        """
+        return self.tf_targets.get(tf, [])
+
+    def get_target_regulators(self, target: str) -> List[str]:
+        """Get transcription factors that regulate a specific target.
+
+        Args:
+            target: Target gene identifier
+
+        Returns:
+            List of regulating TFs
+        """
+        return self.target_tfs.get(target, [])
+
+    def find_common_targets(self, tf1: str, tf2: str) -> List[str]:
+        """Find genes regulated by both transcription factors.
+
+        Args:
+            tf1: First transcription factor
+            tf2: Second transcription factor
+
+        Returns:
+            List of genes regulated by both TFs
+        """
+        targets1 = set(self.get_tf_targets(tf1))
+        targets2 = set(self.get_tf_targets(tf2))
+        return list(targets1 & targets2)
+
+    def find_shared_regulators(self, gene1: str, gene2: str) -> List[str]:
+        """Find transcription factors that regulate both genes.
+
+        Args:
+            gene1: First gene
+            gene2: Second gene
+
+        Returns:
+            List of TFs regulating both genes
+        """
+        regulators1 = set(self.get_target_regulators(gene1))
+        regulators2 = set(self.get_target_regulators(gene2))
+        return list(regulators1 & regulators2)
+
+    def regulatory_motifs(self) -> Dict[str, List[List[str]]]:
+        """Identify regulatory motifs in the network.
+
+        Returns:
+            Dictionary of motif types and their instances
+        """
+        motifs = {
+            'feed_forward': [],  # TF1 -> TF2 -> Target
+            'auto_regulation': [],  # TF regulates itself
+            'mutual_regulation': [],  # TF1 <-> TF2
+            'cascade': []  # TF1 -> TF2 -> TF3
+        }
+
+        # Find auto-regulation
+        for tf in self.get_transcription_factors():
+            if tf in self.get_tf_targets(tf):
+                motifs['auto_regulation'].append([tf])
+
+        # Find feed-forward loops
+        for tf1 in self.get_transcription_factors():
+            for tf2 in self.get_tf_targets(tf1):
+                if tf2 in self.tf_targets:  # TF2 is also a TF
+                    for target in self.get_tf_targets(tf2):
+                        if target not in [tf1, tf2]:  # Avoid self-loops
+                            motifs['feed_forward'].append([tf1, tf2, target])
+
+        # Find mutual regulation
+        for tf1 in self.get_transcription_factors():
+            for tf2 in self.get_tf_targets(tf1):
+                if tf2 in self.tf_targets and tf1 in self.get_tf_targets(tf2):
+                    if [tf1, tf2] not in motifs['mutual_regulation']:
+                        motifs['mutual_regulation'].append([tf1, tf2])
+
+        return motifs
+
+    def network_summary(self) -> Dict[str, Any]:
+        """Generate network summary statistics.
+
+        Returns:
+            Dictionary with network statistics
+        """
+        if not HAS_NETWORKX:
+            return {"error": "NetworkX not available"}
+
+        summary = {
+            "name": self.name,
+            "n_nodes": len(self.graph.nodes()),
+            "n_edges": len(self.graph.edges()),
+            "n_tfs": len(self.tf_targets),
+            "n_targets": len(self.target_tfs),
+            "density": nx.density(self.graph),
+            "average_degree": sum(dict(self.graph.degree()).values()) / len(self.graph.nodes()) if self.graph.nodes() else 0,
+            "is_directed": self.graph.is_directed(),
+        }
+
+        # Add motif information
+        motifs = self.regulatory_motifs()
+        summary["motifs"] = {motif_type: len(instances) for motif_type, instances in motifs.items()}
+
+        # Add metadata
+        summary.update(self.metadata)
+
+        return summary
+
+    def __len__(self) -> int:
+        """Get number of regulations."""
+        if not HAS_NETWORKX:
+            return 0
+        return len(self.graph.edges())
+
+    def __contains__(self, gene: str) -> bool:
+        """Check if gene is in network."""
+        if not HAS_NETWORKX:
+            return False
+        return gene in self.graph
+
+
+def infer_grn(
+    expression_data: Any,
+    gene_names: List[str],
+    method: str = "correlation",
+    threshold: float = 0.5,
+    tf_genes: Optional[List[str]] = None,
+    **kwargs: Any
+) -> GeneRegulatoryNetwork:
+    """Infer gene regulatory network from expression data.
+
+    Args:
+        expression_data: Expression matrix (samples x genes)
+        gene_names: List of gene names
+        method: Inference method ('correlation', 'mutual_info', 'granger')
+        threshold: Correlation threshold for edge inclusion
+        tf_genes: Optional list of known transcription factors
+        **kwargs: Additional method-specific parameters
+
+    Returns:
+        GeneRegulatoryNetwork instance
+    """
+    if not HAS_NETWORKX:
+        raise ImportError("NetworkX required for GRN inference")
+
+    # Convert expression data to numpy array if needed
+    if hasattr(expression_data, 'values'):
+        expression_matrix = expression_data.values
+    else:
+        expression_matrix = expression_data
+
+    n_samples, n_genes = expression_matrix.shape
+    if len(gene_names) != n_genes:
+        raise ValueError("gene_names length must match expression_data columns")
+
+    # Create network
+    network = GeneRegulatoryNetwork(name=f"GRN_{method}")
+
+    # Infer regulatory relationships based on method
+    if method == "correlation":
+        # Use correlation to infer regulatory relationships
+        import numpy as np
+
+        # Calculate correlation matrix
+        corr_matrix = np.corrcoef(expression_matrix.T)
+
+        # Identify potential TFs (if not provided)
+        if tf_genes is None:
+            # Simple heuristic: genes with high variance are likely TFs
+            gene_variance = np.var(expression_matrix, axis=0)
+            variance_threshold = np.percentile(gene_variance, 75)  # Top 25%
+            tf_indices = np.where(gene_variance >= variance_threshold)[0]
+            tf_genes = [gene_names[i] for i in tf_indices]
+
+        # Add regulatory edges
+        for i, tf in enumerate(tf_genes):
+            if tf not in gene_names:
+                continue
+            tf_idx = gene_names.index(tf)
+
+            for j, target in enumerate(gene_names):
+                if i == j:  # Skip self-regulation
+                    continue
+
+                correlation = abs(corr_matrix[tf_idx, j])
+                if correlation >= threshold:
+                    # Add edge from TF to target
+                    network.graph.add_edge(tf, target, weight=correlation, type='regulates')
+
+                    # Update mappings
+                    if tf not in network.tf_targets:
+                        network.tf_targets[tf] = []
+                    network.tf_targets[tf].append(target)
+
+                    if target not in network.target_tfs:
+                        network.target_tfs[target] = []
+                    network.target_tfs[target].append(tf)
+
+    elif method == "mutual_info":
+        # Use mutual information for inference
+        from sklearn.feature_selection import mutual_info_regression
+        import numpy as np
+
+        if tf_genes is None:
+            # Use all genes as potential TFs
+            tf_genes = gene_names
+
+        for tf in tf_genes:
+            tf_idx = gene_names.index(tf)
+            tf_expression = expression_matrix[:, tf_idx]
+
+            for j, target in enumerate(gene_names):
+                if gene_names[j] == tf:
+                    continue
+
+                target_expression = expression_matrix[:, j]
+
+                # Calculate mutual information
+                mi = mutual_info_regression(tf_expression.reshape(-1, 1),
+                                          target_expression)[0]
+
+                if mi >= threshold:
+                    network.graph.add_edge(tf, target, weight=mi, type='regulates')
+
+                    # Update mappings
+                    if tf not in network.tf_targets:
+                        network.tf_targets[tf] = []
+                    network.tf_targets[tf].append(target)
+
+                    if target not in network.target_tfs:
+                        network.target_tfs[target] = []
+                    network.target_tfs[target].append(tf)
+
+    else:
+        raise ValueError(f"Unknown GRN inference method: {method}")
+
+    # Set network attributes
+    network.metadata.update({
+        'inference_method': method,
+        'threshold': threshold,
+        'n_samples': n_samples,
+        'n_genes': n_genes,
+        'n_tfs': len(network.tf_targets),
+        'n_targets': len(network.target_tfs),
+        'n_regulations': len(network.graph.edges())
+    })
+
+    return network
+

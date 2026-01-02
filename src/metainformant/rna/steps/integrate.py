@@ -325,3 +325,5 @@ def merge_metadata_sources(primary_metadata: Dict[str, Any],
     return merged
 
 
+
+run_integrate = run_step

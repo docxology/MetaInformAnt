@@ -279,6 +279,119 @@ def trim_reads(fastq_path: str | Path, output_path: str | Path,
     logger.info(f"Trimmed {len(trimmed_reads)} reads (from {len(reads)} original)")
 
 
+def gc_content(seq: str) -> float:
+    """Calculate GC content of a DNA sequence.
+
+    Args:
+        seq: DNA sequence string
+
+    Returns:
+        GC content as a fraction (0.0-1.0)
+
+    Example:
+        >>> gc_content("ATGC")
+        0.5
+        >>> gc_content("GGGG")
+        1.0
+        >>> gc_content("AAAA")
+        0.0
+    """
+    if not seq:
+        return 0.0
+
+    seq = seq.upper()
+    gc_count = seq.count('G') + seq.count('C')
+    # Exclude N's and other non-standard bases from total count
+    valid_bases = seq.count('A') + seq.count('T') + seq.count('G') + seq.count('C')
+    total_count = valid_bases
+
+    return gc_count / total_count if total_count > 0 else 0.0
+
+
+def average_phred_by_position(fastq_path: str | Path) -> Dict[int, float]:
+    """Calculate average Phred quality score by position.
+
+    Args:
+        fastq_path: Path to FASTQ file
+
+    Returns:
+        Dictionary mapping position to average quality score
+
+    Example:
+        >>> # Assuming test.fastq exists
+        >>> avg_qual = average_phred_by_position("test.fastq")
+        >>> isinstance(avg_qual, dict)
+        True
+    """
+    from collections import defaultdict
+
+    fastq_path = Path(fastq_path)
+    if not fastq_path.exists():
+        raise FileNotFoundError(f"FASTQ file not found: {fastq_path}")
+
+    position_qualities = defaultdict(list)
+
+    # Open file (handle gzip compression)
+    opener = gzip.open if fastq_path.suffix == '.gz' else open
+    mode = 'rt' if fastq_path.suffix == '.gz' else 'r'
+
+    with opener(fastq_path, mode) as f:
+        line_num = 0
+        for line in f:
+            line_num += 1
+            if line_num % 4 == 0:  # Quality line
+                for pos, char in enumerate(line.strip()):
+                    # Convert Phred character to quality score
+                    quality_score = ord(char) - 33  # Illumina 1.8+ encoding
+                    position_qualities[pos].append(quality_score)
+
+    # Calculate averages
+    return {pos: sum(qualities) / len(qualities)
+            for pos, qualities in position_qualities.items()}
+
+
+def iter_fastq(fastq_path: str | Path) -> Iterator[Tuple[str, str, str]]:
+    """Iterate over FASTQ records yielding (header, sequence, quality).
+
+    Args:
+        fastq_path: Path to FASTQ file
+
+    Yields:
+        Tuples of (header, sequence, quality_string)
+
+    Example:
+        >>> # Assuming test.fastq exists
+        >>> records = list(iter_fastq("test.fastq"))
+        >>> len(records) >= 0
+        True
+    """
+    fastq_path = Path(fastq_path)
+    if not fastq_path.exists():
+        raise FileNotFoundError(f"FASTQ file not found: {fastq_path}")
+
+    # Open file (handle gzip compression)
+    opener = gzip.open if fastq_path.suffix == '.gz' else open
+    mode = 'rt' if fastq_path.suffix == '.gz' else 'r'
+
+    with opener(fastq_path, mode) as f:
+        while True:
+            # Read four lines: header, sequence, +, quality
+            header_line = f.readline().strip()
+            if not header_line:  # End of file
+                break
+
+            seq_line = f.readline().strip()
+            plus_line = f.readline().strip()  # Skip the + line
+            qual_line = f.readline().strip()
+
+            if not all([header_line, seq_line, plus_line, qual_line]):
+                raise ValueError("Incomplete FASTQ record")
+
+            # Extract read ID (everything after @ up to first space)
+            read_id = header_line[1:].split()[0] if header_line.startswith('@') else header_line.split()[0]
+            yield read_id, seq_line, qual_line
+
+
 def calculate_per_base_quality(fastq_path: str | Path) -> Dict[int, Dict[str, float]]:
     """Calculate quality statistics for each base position.
 
@@ -337,5 +450,54 @@ def calculate_per_base_quality(fastq_path: str | Path) -> Dict[int, Dict[str, fl
         del stats['qualities']
 
     return position_stats
+
+
+def summarize_fastq(fastq_path: str | Path) -> Dict[str, int]:
+    """Summarize contents of a FASTQ file.
+
+    Args:
+        fastq_path: Path to FASTQ file
+
+    Returns:
+        Dictionary with summary statistics
+    """
+    fastq_path = Path(fastq_path)
+    if not fastq_path.exists():
+        raise FileNotFoundError(f"FASTQ file not found: {fastq_path}")
+
+    # Open file (handle gzip compression)
+    opener = gzip.open if fastq_path.suffix == '.gz' else open
+    mode = 'rt' if fastq_path.suffix == '.gz' else 'r'
+
+    summary = {
+        'total_reads': 0,
+        'total_bases': 0,
+        'min_length': float('inf'),
+        'max_length': 0,
+        'mean_length': 0.0
+    }
+
+    lengths = []
+
+    with opener(fastq_path, mode) as f:
+        line_num = 0
+        for line in f:
+            line_num += 1
+            if line_num % 4 == 2:  # Sequence line
+                seq = line.strip()
+                seq_len = len(seq)
+                lengths.append(seq_len)
+                summary['total_reads'] += 1
+                summary['total_bases'] += seq_len
+                summary['min_length'] = min(summary['min_length'], seq_len)
+                summary['max_length'] = max(summary['max_length'], seq_len)
+
+    if lengths:
+        summary['mean_length'] = sum(lengths) / len(lengths)
+    else:
+        summary['min_length'] = 0
+
+    return summary
+
 
 

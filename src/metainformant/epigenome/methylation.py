@@ -551,8 +551,63 @@ def export_methylation_bedgraph(methylation_data: Dict[str, List[MethylationSite
     logger.info(f"Exported {sum(len(sites) for sites in methylation_data.values())} sites to {output_path}")
 
 
+def load_cpg_table(path: str | Path) -> pd.DataFrame:
+    """Load CpG methylation data from TSV file.
+
+    Args:
+        path: Path to TSV file with columns: chrom, pos, methylated, unmethylated
+
+    Returns:
+        DataFrame with methylation data
+    """
+    import pandas as pd
+
+    df = pd.read_csv(path, sep='\t')
+    required_cols = ['chrom', 'pos', 'methylated', 'unmethylated']
+
+    if not all(col in df.columns for col in required_cols):
+        raise ValueError(f"TSV file must contain columns: {required_cols}")
+
+    return df
+
+
+def compute_beta_values(df: pd.DataFrame) -> pd.DataFrame:
+    """Compute beta values from methylated/unmethylated counts.
+
+    Args:
+        df: DataFrame with 'methylated' and 'unmethylated' columns
+
+    Returns:
+        DataFrame with added 'beta' column
+    """
+    if 'methylated' not in df.columns or 'unmethylated' not in df.columns:
+        raise ValueError("DataFrame must contain 'methylated' and 'unmethylated' columns")
+
+    df_copy = df.copy()
+    total_reads = df_copy['methylated'] + df_copy['unmethylated']
+    df_copy['beta'] = df_copy['methylated'] / total_reads
+    df_copy['beta'] = df_copy['beta'].fillna(0.0)  # Handle division by zero
+
+    return df_copy
+
+
+def summarize_beta_by_chromosome(df: pd.DataFrame) -> pd.DataFrame:
+    """Summarize beta values by chromosome.
+
+    Args:
+        df: DataFrame with 'chrom' and 'beta' columns
+
+    Returns:
+        DataFrame with summary statistics by chromosome
+    """
+    if 'chrom' not in df.columns or 'beta' not in df.columns:
+        raise ValueError("DataFrame must contain 'chrom' and 'beta' columns")
+
+    return df.groupby('chrom')['beta'].agg(['mean', 'std', 'min', 'max', 'count'])
+
+
 def generate_methylation_report(methylation_data: Dict[str, List[MethylationSite]],
-                              output_path: Optional[str | Path] = None) -> str:
+                               output_path: Optional[str | Path] = None) -> str:
     """Generate a comprehensive methylation analysis report.
 
     Args:
@@ -606,3 +661,4 @@ def generate_methylation_report(methylation_data: Dict[str, List[MethylationSite
         logger.info(f"Methylation report saved to {output_path}")
 
     return report
+

@@ -28,6 +28,21 @@ from . import (
 # Import selection_experiments submodule
 from . import selection_experiments
 
+# Direct imports of commonly used functions
+from .coalescent import expected_time_to_mrca, watterson_theta, expected_total_branch_length, tajima_constants, tajimas_D
+from .ddm import ddm_analytic_accuracy, ddm_mean_decision_time, island_model_update
+from .demography import exponential_growth_model, logistic_growth_model, age_structure_model
+from .dynamics import logistic_map, lotka_volterra_step
+from .epidemiology import basic_reproduction_number, effective_reproduction_number, herd_immunity_threshold, sir_step, seir_step, sis_step
+from .ld import ld_coefficients, ld_decay_r2, haldane_c_to_d, haldane_d_to_c
+from .popgen import hardy_weinberg_genotype_freqs, heterozygosity_decay, inbreeding_coefficient, mutation_selection_balance_dominant, mutation_selection_balance_recessive
+from .popgen_stats import expected_pairwise_diversity, expected_segregating_sites, expected_coalescent_waiting_times, expected_r2_from_Ne_c, equilibrium_heterozygosity_infinite_alleles, fixation_probability, bottleneck_effective_size, effective_size_from_family_size_variance, bootstrap_confidence_interval
+from .selection import breeders_equation_response, kin_selection_response, mutation_update, selection_update, selection_differential, selection_gradient
+from .price import price_equation
+from .effective_size import effective_size_sex_ratio
+from .quantgen import narrow_sense_heritability, realized_heritability, multilevel_selection_decomposition, lande_equation_response
+from .utilities import correlation, correlation_coefficient, linear_regression, r_squared
+
 # Optional imports with graceful fallbacks
 try:
     from . import selection_experiments
@@ -70,6 +85,7 @@ __all__ = [
 
     # Decision theory and behavior
     "ddm",
+    "island_model_update",
     "egt",
 
     # Quantitative genetics
@@ -77,6 +93,59 @@ __all__ = [
 
     # Specialized experiments
     "selection_experiments",
+
+    # Direct function exports
+    "expected_time_to_mrca",
+    "watterson_theta",
+    "expected_total_branch_length",
+    "tajima_constants",
+    "tajimas_D",
+    "exponential_growth_model",
+    "logistic_growth_model",
+    "age_structure_model",
+    "logistic_map",
+    "lotka_volterra_step",
+    "basic_reproduction_number",
+    "effective_reproduction_number",
+    "herd_immunity_threshold",
+    "sir_step",
+    "seir_step",
+    "sis_step",
+    "ld_coefficients",
+    "ld_decay_r2",
+    "haldane_c_to_d",
+    "haldane_d_to_c",
+    "hardy_weinberg_genotype_freqs",
+    "mutation_selection_balance_dominant",
+    "mutation_selection_balance_recessive",
+    "heterozygosity_decay",
+    "inbreeding_coefficient",
+    "expected_pairwise_diversity",
+    "expected_segregating_sites",
+    "expected_coalescent_waiting_times",
+    "expected_r2_from_Ne_c",
+    "equilibrium_heterozygosity_infinite_alleles",
+    "fixation_probability",
+    "bottleneck_effective_size",
+    "effective_size_from_family_size_variance",
+    "bootstrap_confidence_interval",
+    "breeders_equation_response",
+    "kin_selection_response",
+    "mutation_update",
+    "selection_update",
+    "selection_differential",
+    "selection_gradient",
+    "price_equation",
+    "effective_size_sex_ratio",
+    "narrow_sense_heritability",
+    "realized_heritability",
+    "multilevel_selection_decomposition",
+    "lande_equation_response",
+    "correlation",
+    "correlation_coefficient",
+    "linear_regression",
+    "r_squared",
 ]
+
 
 

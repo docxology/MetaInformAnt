@@ -612,3 +612,4 @@ def _run_competition_simulation(config: SimulationConfig, rng: random.Random) ->
         "competition_events_trajectory": [s["competition_events"] for s in snapshots],
         "final_agent_counts": snapshots[-1]["agent_counts"] if snapshots else {},
     }
+

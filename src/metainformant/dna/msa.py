@@ -346,3 +346,4 @@ def _parse_fasta(fasta_content: str) -> Dict[str, str]:
     return sequences
 
 
+

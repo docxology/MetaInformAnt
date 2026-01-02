@@ -27,6 +27,12 @@ from . import (
 # Import steps submodule
 from . import steps
 
+# Direct imports of commonly used classes and functions
+from .configs import RNAPipelineConfig
+from .progress_tracker import ProgressTracker
+from .pipeline import summarize_curate_tables
+from .workflow import AmalgkitWorkflowConfig
+
 # All modules imported above are available
 
 # Type checking imports
@@ -59,5 +65,11 @@ __all__ = [
     # Optional/advanced modules
     "protein_integration",
     "discovery",
+
+    # Direct exports
+    "RNAPipelineConfig",
+    "ProgressTracker",
+    "summarize_curate_tables",
+    "AmalgkitWorkflowConfig",
 ]
 
