@@ -10,10 +10,18 @@ from __future__ import annotations
 from typing import Dict, List, Optional, Any, Tuple
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA
 
 from metainformant.core import logging, errors, validation
+
+# Optional scientific dependencies
+try:
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.decomposition import PCA
+    HAS_SKLEARN = True
+except ImportError:
+    HAS_SKLEARN = False
+    StandardScaler = None
+    PCA = None
 
 logger = logging.get_logger(__name__)
 
@@ -36,7 +44,14 @@ def bbknn_integration(data: SingleCellData, batch_key: str,
     Raises:
         TypeError: If data is not SingleCellData
         ValueError: If batch_key not found
+        ImportError: If scikit-learn not available
     """
+    if not HAS_SKLEARN:
+        raise ImportError(
+            "scikit-learn is required for BBKNN integration. "
+            "Install with: uv pip install scikit-learn"
+        )
+
     validation.validate_type(data, SingleCellData, "data")
 
     if data.obs is None or batch_key not in data.obs.columns:
@@ -145,7 +160,14 @@ def harmony_integration(data: SingleCellData, batch_key: str,
     Raises:
         TypeError: If data is not SingleCellData
         ValueError: If batch_key not found
+        ImportError: If scikit-learn not available
     """
+    if not HAS_SKLEARN:
+        raise ImportError(
+            "scikit-learn is required for Harmony integration. "
+            "Install with: uv pip install scikit-learn"
+        )
+
     validation.validate_type(data, SingleCellData, "data")
 
     if data.obs is None or batch_key not in data.obs.columns:
@@ -211,7 +233,14 @@ def scanorama_integration(data_list: List[SingleCellData], batch_key: str) -> Si
     Raises:
         TypeError: If data_list contains non-SingleCellData objects
         ValueError: If data_list is empty
+        ImportError: If scikit-learn not available
     """
+    if not HAS_SKLEARN:
+        raise ImportError(
+            "scikit-learn is required for Scanorama integration. "
+            "Install with: uv pip install scikit-learn"
+        )
+
     if not data_list:
         raise errors.ValidationError("data_list cannot be empty")
 
@@ -299,7 +328,14 @@ def mnn_integration(data_list: List[SingleCellData], batch_key: str) -> SingleCe
     Raises:
         TypeError: If data_list contains non-SingleCellData objects
         ValueError: If data_list has fewer than 2 datasets
+        ImportError: If scikit-learn not available
     """
+    if not HAS_SKLEARN:
+        raise ImportError(
+            "scikit-learn is required for MNN integration. "
+            "Install with: uv pip install scikit-learn"
+        )
+
     if len(data_list) < 2:
         raise errors.ValidationError("MNN integration requires at least 2 datasets")
 

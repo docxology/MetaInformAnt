@@ -10,14 +10,24 @@ from __future__ import annotations
 from typing import Dict, List, Optional, Any, Tuple, Union
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import StandardScaler
-from sklearn.decomposition import PCA, NMF
-from sklearn.cross_decomposition import CCA
 from scipy import stats
 
 from metainformant.core import logging, errors, validation
 
 logger = logging.get_logger(__name__)
+
+# Optional scientific dependencies
+try:
+    from sklearn.preprocessing import StandardScaler
+    from sklearn.decomposition import PCA, NMF
+    from sklearn.cross_decomposition import CCA
+    HAS_SKLEARN = True
+except ImportError:
+    HAS_SKLEARN = False
+    StandardScaler = None
+    PCA = None
+    NMF = None
+    CCA = None
 
 
 class MultiOmicsData:
@@ -208,8 +218,15 @@ def joint_pca(multiomics_data: Dict[str, pd.DataFrame],
         Dictionary with joint PCA results
 
     Raises:
+        ImportError: If scikit-learn not available
         ValueError: If data shapes incompatible
     """
+    if not HAS_SKLEARN:
+        raise ImportError(
+            "scikit-learn is required for joint PCA. "
+            "Install with: uv pip install scikit-learn"
+        )
+
     validation.validate_range(n_components, min_val=2, name="n_components")
 
     logger.info(f"Performing joint PCA with {n_components} components")
@@ -264,8 +281,15 @@ def joint_nmf(multiomics_data: Dict[str, pd.DataFrame],
         Dictionary with joint NMF results
 
     Raises:
+        ImportError: If scikit-learn not available
         ValueError: If data contains negative values
     """
+    if not HAS_SKLEARN:
+        raise ImportError(
+            "scikit-learn is required for joint NMF. "
+            "Install with: uv pip install scikit-learn"
+        )
+
     validation.validate_range(n_components, min_val=2, name="n_components")
     validation.validate_range(max_iter, min_val=10, name="max_iter")
 
@@ -321,8 +345,15 @@ def canonical_correlation(multiomics_data: Dict[str, pd.DataFrame],
         Dictionary with CCA results
 
     Raises:
+        ImportError: If scikit-learn not available
         ValueError: If not exactly 2 datasets provided
     """
+    if not HAS_SKLEARN:
+        raise ImportError(
+            "scikit-learn is required for canonical correlation analysis. "
+            "Install with: uv pip install scikit-learn"
+        )
+
     if len(multiomics_data) != 2:
         raise errors.ValidationError("CCA requires exactly 2 omics datasets")
 
@@ -600,9 +631,16 @@ def compute_multiomics_similarity(omics_data: Dict[str, pd.DataFrame],
 
     Raises:
         ValueError: If method not supported
+        ImportError: If scikit-learn required but not available
     """
     if method not in ["correlation", "euclidean", "cosine"]:
         raise errors.ValidationError(f"Unsupported similarity method: {method}")
+
+    if method == "cosine" and not HAS_SKLEARN:
+        raise ImportError(
+            "scikit-learn is required for cosine similarity. "
+            "Install with: uv pip install scikit-learn"
+        )
 
     logger.info(f"Computing multi-omics similarity using {method}")
 

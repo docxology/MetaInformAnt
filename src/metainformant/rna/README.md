@@ -10,7 +10,21 @@ This module handles RNA sequencing workflows from raw data to analyzed results:
 - **Data Processing**: RNA-seq processing steps including quality control, alignment, and quantification
 - **Metadata Handling**: Transcriptomic metadata retrieval and curation
 
-### Recent Enhancements (November 2025)
+### Sample Selection and Filtering
+
+The RNA module now includes intelligent metadata filtering to ensure only selected samples are processed:
+
+- **Automatic Filtering**: After the `select` step, metadata is automatically filtered to include only samples marked as `is_sampled=yes` and `is_qualified=yes`
+- **Filtered Metadata**: A `metadata_selected.tsv` file is created containing only the selected samples
+- **Workflow Efficiency**: Subsequent steps (getfastq, integrate, merge, curate) use the filtered metadata, preventing unnecessary processing of unselected samples
+- **Validation**: The system validates that filtered metadata exists before downstream steps
+
+This prevents the common issue where `getfastq` would download all samples in the full metadata file instead of only the selected ones.
+
+### Recent Enhancements (January 2026)
+- **Metadata Filtering**: Automatic filtering to only process selected samples (not all metadata rows)
+- **Sample Selection Control**: Precise control over which samples are downloaded and processed
+- **Workflow Efficiency**: Significant performance improvements for large metadata sets
 - **ENA Direct Downloads**: 100% reliability vs 0% with SRA Toolkit
 - **Auto-Activation**: Automatic virtual environment detection and activation
 - **Robust Retry Logic**: Automatic resume and retry for failed downloads
@@ -24,6 +38,7 @@ graph TB
     subgraph "RNA Module"
         Amalgkit[amalgkit<br/>CLI Wrapper]
         Workflow[workflow<br/>Pipeline Orchestration]
+        MetadataFilter[metadata_filter<br/>Sample Filtering]
         Configs[configs<br/>Configuration]
         Steps[steps<br/>Workflow Steps]
     end

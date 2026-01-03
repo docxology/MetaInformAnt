@@ -12,12 +12,22 @@ from typing import Dict, List, Optional, Any, Tuple, Union
 import numpy as np
 import pandas as pd
 from scipy import sparse
-from sklearn.cluster import KMeans
-from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
 from scipy.cluster.hierarchy import linkage, fcluster
 from scipy.spatial.distance import pdist
 
 from metainformant.core import logging, errors, validation
+
+# Optional scientific dependencies
+try:
+    from sklearn.cluster import KMeans
+    from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
+    HAS_SKLEARN = True
+except ImportError:
+    HAS_SKLEARN = False
+    KMeans = None
+    silhouette_score = None
+    calinski_harabasz_score = None
+    davies_bouldin_score = None
 
 # Try to import networkx and community detection libraries
 try:
@@ -199,7 +209,14 @@ def kmeans_clustering(data: SingleCellData, n_clusters: int = 10,
 
     Raises:
         TypeError: If data is not SingleCellData
+        ImportError: If scikit-learn not available
     """
+    if not HAS_SKLEARN:
+        raise ImportError(
+            "scikit-learn is required for K-means clustering. "
+            "Install with: uv pip install scikit-learn"
+        )
+
     validation.validate_type(data, SingleCellData, "data")
     validation.validate_range(n_clusters, min_val=2, name="n_clusters")
 
@@ -504,7 +521,14 @@ def compute_cluster_silhouette(data: SingleCellData, cluster_col: str = "cluster
     Raises:
         TypeError: If data is not SingleCellData
         ValueError: If cluster column not found
+        ImportError: If scikit-learn not available
     """
+    if not HAS_SKLEARN:
+        raise ImportError(
+            "scikit-learn is required for silhouette analysis. "
+            "Install with: uv pip install scikit-learn"
+        )
+
     validation.validate_type(data, SingleCellData, "data")
 
     if data.obs is None or cluster_col not in data.obs.columns:

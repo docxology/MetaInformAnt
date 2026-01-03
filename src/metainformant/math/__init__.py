@@ -27,9 +27,6 @@ from . import (
     visualization,
 )
 
-# Import selection_experiments submodule
-from . import selection_experiments
-
 # Direct imports of commonly used functions
 from .coalescent import expected_time_to_mrca, watterson_theta, expected_total_branch_length, tajima_constants, tajimas_D
 from .ddm import ddm_analytic_accuracy, ddm_mean_decision_time, island_model_update
@@ -97,9 +94,6 @@ __all__ = [
 
     # Quantitative genetics
     "quantgen",
-
-    # Specialized experiments
-    "selection_experiments",
 
     # Visualization
     "visualization",

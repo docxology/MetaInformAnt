@@ -11,17 +11,22 @@ from __future__ import annotations
 from typing import Dict, List, Optional, Any, Tuple
 import numpy as np
 import pandas as pd
-from sklearn.decomposition import PCA
-from sklearn.preprocessing import StandardScaler
 
 from metainformant.core import logging, errors, validation
 
 # Try to import optional dependencies
 try:
+    from sklearn.decomposition import PCA
+    from sklearn.preprocessing import StandardScaler
     from sklearn.manifold import TSNE
+    HAS_SKLEARN = True
     HAS_TSNE = True
 except ImportError:
+    HAS_SKLEARN = False
     HAS_TSNE = False
+    PCA = None
+    StandardScaler = None
+    TSNE = None
 
 try:
     import umap
@@ -51,7 +56,14 @@ def pca_reduction(data: SingleCellData, n_components: int = 50,
     Raises:
         TypeError: If data is not SingleCellData
         ValueError: If n_components is invalid
+        ImportError: If scikit-learn not available
     """
+    if not HAS_SKLEARN:
+        raise ImportError(
+            "scikit-learn is required for PCA. "
+            "Install with: uv pip install scikit-learn"
+        )
+
     validation.validate_type(data, SingleCellData, "data")
     validation.validate_range(n_components, min_val=2, max_val=min(data.n_obs, data.n_vars), name="n_components")
 

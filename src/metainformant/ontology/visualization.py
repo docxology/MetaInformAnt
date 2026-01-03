@@ -15,9 +15,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.axes import Axes
 from matplotlib.patches import FancyBboxPatch, Circle, Rectangle
-import networkx as nx
 
 from metainformant.core import logging, paths, validation
+
+# Optional scientific dependencies
+try:
+    import networkx as nx
+    HAS_NETWORKX = True
+except ImportError:
+    HAS_NETWORKX = False
+    nx = None
 
 logger = logging.get_logger(__name__)
 
@@ -39,7 +46,7 @@ except ImportError:
 
 
 def plot_go_dag(
-    go_graph: nx.DiGraph,
+    go_graph: Any,  # nx.DiGraph
     terms: List[str] | None = None,
     *,
     ax: Axes | None = None,
@@ -59,7 +66,16 @@ def plot_go_dag(
 
     Returns:
         matplotlib Axes object
+
+    Raises:
+        ImportError: If networkx not available
     """
+    if not HAS_NETWORKX:
+        raise ImportError(
+            "networkx is required for GO DAG plotting. "
+            "Install with: uv pip install networkx"
+        )
+
     validation.validate_type(go_graph, nx.DiGraph, "go_graph")
 
     if ax is None:
@@ -270,7 +286,7 @@ def plot_go_enrichment_dotplot(
 
 
 def plot_ontology_network(
-    ontology_graph: nx.Graph,
+    ontology_graph: Any,  # nx.Graph
     node_colors: Dict[str, str] | None = None,
     *,
     ax: Axes | None = None,
@@ -290,7 +306,16 @@ def plot_ontology_network(
 
     Returns:
         matplotlib Axes object
+
+    Raises:
+        ImportError: If networkx not available
     """
+    if not HAS_NETWORKX:
+        raise ImportError(
+            "networkx is required for ontology network plotting. "
+            "Install with: uv pip install networkx"
+        )
+
     validation.validate_type(ontology_graph, nx.Graph, "ontology_graph")
 
     if ax is None:
@@ -382,7 +407,7 @@ def plot_information_content_profile(
 
 
 def plot_go_term_hierarchy(
-    go_graph: nx.DiGraph,
+    go_graph: Any,  # nx.DiGraph
     root_term: str,
     max_depth: int = 3,
     *,
@@ -404,7 +429,16 @@ def plot_go_term_hierarchy(
 
     Returns:
         matplotlib Axes object
+
+    Raises:
+        ImportError: If networkx not available
     """
+    if not HAS_NETWORKX:
+        raise ImportError(
+            "networkx is required for GO term hierarchy plotting. "
+            "Install with: uv pip install networkx"
+        )
+
     validation.validate_type(go_graph, nx.DiGraph, "go_graph")
 
     if ax is None:

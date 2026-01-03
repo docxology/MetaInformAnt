@@ -9,7 +9,6 @@ from __future__ import annotations
 
 # Import all visualization submodules
 from . import (
-    amalgkit_visualization,
     animations,
     basic,
     dimred,
@@ -26,11 +25,6 @@ from . import (
 )
 
 # Optional imports with graceful fallbacks
-try:
-    from . import amalgkit_visualization
-except ImportError:
-    amalgkit_visualization = None
-
 try:
     from metainformant.protein import visualization as protein
 except ImportError:

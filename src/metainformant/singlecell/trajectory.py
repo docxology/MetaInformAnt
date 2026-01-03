@@ -11,9 +11,16 @@ from typing import Dict, List, Optional, Any, Tuple, Set
 import numpy as np
 import pandas as pd
 from scipy import sparse
-from sklearn.neighbors import NearestNeighbors
 
 from metainformant.core import logging, errors, validation
+
+# Optional scientific dependencies
+try:
+    from sklearn.neighbors import NearestNeighbors
+    HAS_SKLEARN = True
+except ImportError:
+    HAS_SKLEARN = False
+    NearestNeighbors = None
 
 logger = logging.get_logger(__name__)
 

@@ -17,7 +17,6 @@ from . import (
     networks,
     semantic,
     syntactic,
-    visualization,
     workflows,
 )
 
