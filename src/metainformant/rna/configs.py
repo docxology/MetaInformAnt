@@ -10,7 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from metainformant.core import io, logging
+from metainformant.core import config as core_config, io, logging
 
 logger = logging.get_logger(__name__)
 
@@ -18,8 +18,11 @@ logger = logging.get_logger(__name__)
 def load_workflow_config(config_path: str | Path) -> Dict[str, Any]:
     """Load RNA-seq workflow configuration from file.
 
+    Supports YAML, TOML, and JSON configuration files. Can also apply
+    environment variable overrides using AK_ prefix (e.g., AK_THREADS=16).
+
     Args:
-        config_path: Path to configuration file
+        config_path: Path to configuration file (YAML, TOML, or JSON)
 
     Returns:
         Configuration dictionary
@@ -33,7 +36,11 @@ def load_workflow_config(config_path: str | Path) -> Dict[str, Any]:
     if not config_path.exists():
         raise FileNotFoundError(f"Configuration file not found: {config_path}")
 
-    config = io.load_json(config_path)
+    # Support multiple file formats using core config utilities
+    config = core_config.load_mapping_from_file(config_path)
+
+    # Apply environment variable overrides
+    config = core_config.apply_env_overrides(config, prefix="AK")
 
     # Validate configuration
     validate_config(config)

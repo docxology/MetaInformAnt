@@ -24,6 +24,7 @@ from metainformant.dna.population_analysis import (
     neutrality_test_suite,
 )
 from metainformant.dna.sequences import read_fasta
+from metainformant.gwas.quality import test_hwe
 from metainformant.gwas.structure import compute_pca, compute_kinship_matrix
 # Note: Additional neutrality tests are imported where used
 
@@ -170,7 +171,18 @@ def analyze_dataset(dataset_info: dict[str, Any], output_dir: Path) -> dict[str,
     kinship_result = compute_kinship_matrix(large_genotypes, method="vanraden")
 
     # Hardy-Weinberg test on genotype matrix
-    hwe_result = hardy_weinberg_test(genotype_matrix=large_genotypes)
+    hwe_p_values = test_hwe(large_genotypes)
+
+    # Format results for plotting function
+    hwe_result = []
+    for i, p_value in enumerate(hwe_p_values):
+        hwe_result.append({
+            "locus": f"Variant_{i}",
+            "p_value": p_value,
+            "chi_square": None,  # Could be calculated if needed
+            "degrees_of_freedom": 2,  # Standard for HWE test
+            "hwe_deviated": p_value < 0.05  # Significant deviation
+        })
 
     results["scenario_analyses"]["large_genotypes"] = {
         "pca": {

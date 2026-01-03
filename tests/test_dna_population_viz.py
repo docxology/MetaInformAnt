@@ -373,12 +373,13 @@ def test_plot_neutrality_test_suite():
 
 def test_plot_hardy_weinberg_test():
     """Test Hardy-Weinberg test plot."""
-    hwe_results = {
+    hwe_results = [{
+        "locus": "Test_Locus",
         "chi_square": 2.5,
         "p_value": 0.1,
         "degrees_of_freedom": 1,
         "hwe_deviated": False,
-    }
+    }]
     fig = plot_hardy_weinberg_test(hwe_results)
 
     assert fig is not None

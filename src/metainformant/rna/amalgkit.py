@@ -187,14 +187,34 @@ def ensure_cli_available(*, auto_install: bool = False) -> Tuple[bool, str, Dict
     if not auto_install:
         return False, message, None
 
-    # Attempt installation (placeholder - would need actual installation logic)
-    logger.info("Attempting to install amalgkit...")
+    # Attempt automatic installation using UV package manager
+    logger.info("Attempting to install amalgkit via UV package manager...")
     try:
-        # This would be the actual installation command
-        # For now, just return failure
-        return False, "Automatic installation not implemented", None
+        import subprocess
+
+        # Use UV package manager (per METAINFORMANT policy)
+        install_result = subprocess.run(
+            ["uv", "pip", "install", "amalgkit"],
+            capture_output=True,
+            text=True,
+            timeout=300
+        )
+
+        if install_result.returncode == 0:
+            logger.info("Successfully installed amalgkit via UV")
+            # Verify installation after install
+            return ensure_cli_available(auto_install=False)
+        else:
+            error_msg = install_result.stderr if install_result.stderr else "Installation failed with no error message"
+            logger.error(f"UV installation of amalgkit failed: {error_msg}")
+            return False, f"Installation failed: {error_msg}", None
+    except subprocess.TimeoutExpired:
+        return False, "Installation timed out (timeout: 300s)", None
+    except FileNotFoundError:
+        return False, "UV package manager not found. Install UV to use automatic installation.", None
     except Exception as e:
-        return False, f"Installation failed: {e}", None
+        logger.error(f"Unexpected error during amalgkit installation: {e}")
+        return False, f"Installation failed with unexpected error: {e}", None
 
 
 def run_amalgkit(subcommand: str, params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:

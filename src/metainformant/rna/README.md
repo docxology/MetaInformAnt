@@ -184,12 +184,18 @@ config = AmalgkitWorkflowConfig(
 )
 
 # Plan workflow steps
-steps = plan_workflow(config)
+plan = plan_workflow(config)
+for step_name, params in plan:
+    print(f"Will execute: {step_name}")
 
 # Execute workflow
-results = execute_workflow(config)
-for step, result in results.items():
-    print(f"{step}: {result.returncode}")
+execution_result = execute_workflow(config)
+print(f"Workflow success: {execution_result.success}")
+print(f"Steps executed: {execution_result.total_steps}")
+print(f"Steps successful: {execution_result.successful_steps}")
+for step_result in execution_result.steps_executed:
+    status = "✓" if step_result.success else "✗"
+    print(f"{status} {step_result.step_name}: exit code {step_result.return_code}")
 ```
 
 ## Supported Workflow Steps
@@ -197,55 +203,60 @@ for step, result in results.items():
 The module supports all major amalgkit workflow steps:
 
 ### Metadata (`metadata`)
-Retrieve and organize transcriptomic metadata from public databases.
+Retrieve and organize transcriptomic metadata from NCBI SRA.
 
-**Parameters:**
-- `threads`: Number of parallel threads
-- `species`: Target species for metadata retrieval
-- `output_dir`: Directory for metadata files
+**Common Parameters:**
+- `out_dir`: Output directory for metadata
+- `search_string`: NCBI search query
+- `resolve_names`: Resolve species taxonomy (v0.12.20+)
+- `redo`: Force re-download metadata
 
 ### Integration (`integrate`)
-Integrate multiple data sources and annotations.
+Integrate local FASTQ files with metadata system.
 
-**Parameters:**
-- `input_dirs`: Directories containing input data
-- `annotation`: Reference annotation file
-- `threads`: Processing threads
+**Common Parameters:**
+- `out_dir`: Output directory for integrated metadata
+- `fastq_dir`: Directory containing FASTQ files
+- `overwrite`: Overwrite existing metadata
 
 ### Configuration (`config`)
-Generate configuration files for downstream analysis.
+Generate configuration files for amalgkit analysis.
 
-**Parameters:**
-- `species`: Target organism
-- `assay`: Assay type (RNA-seq, etc.)
-- `stranded`: Library strandedness
+**Common Parameters:**
+- `out_dir`: Output directory for configuration
+- `metadata`: Metadata file to use
 
 ### Selection (`select`)
-Select and filter relevant features for analysis.
+Select and filter samples from metadata.
 
-**Parameters:**
-- `input`: Input feature file
-- `criteria`: Selection criteria
-- `output`: Output file
+**Common Parameters:**
+- `out_dir`: Output directory for selected metadata
+- `metadata`: Input metadata file
+- `min_samples`: Minimum samples per species
+- `max_samples`: Maximum samples per species
 
 ### Data Retrieval (`getfastq`)
-Download FASTQ files from public repositories.
+Download FASTQ files from SRA/ENA/AWS.
 
-**Parameters:**
-- `accessions`: SRA/ENA accession numbers
-- `output_dir`: Download directory
-- `threads`: Download threads
+**Common Parameters:**
+- `out_dir`: Output directory for FASTQ files
+- `metadata`: Metadata file specifying samples
+- `aws`: Try AWS SRA first (faster)
+- `ncbi`: Use NCBI SRA download
+- `pfd`: Use parallel fastq-dump (faster)
+- `threads`: Number of download threads
 
 ### Quantification (`quant`)
-Quantify gene/transcript expression levels.
+Quantify transcript abundance from FASTQ files.
 
-**Parameters:**
-- `input`: Aligned reads (BAM/SAM)
-- `annotation`: Transcript annotation
-- `method`: Quantification method (featureCounts, etc.)
+**Common Parameters:**
+- `out_dir`: Output directory for quantification results
+- `fastq_dir`: Directory containing FASTQ files
+- `threads`: Number of processing threads
+- `redo`: Re-run quantification even if results exist
 
 ### Merging (`merge`)
-Merge results from parallel processing.
+Merge quantification results across samples.
 
 **Parameters:**
 - `input_files`: Files to merge
@@ -309,40 +320,59 @@ results = workflow.execute_workflow(config)
 
 ### With Protein Module
 ```python
-from metainformant.rna import workflow
-from metainformant.protein import parse_fasta, calculate_aa_composition
+from metainformant.rna import execute_workflow, AmalgkitWorkflowConfig
+from metainformant.protein import calculate_aa_composition
 from metainformant.dna import translation
+from metainformant.core import io
+import pandas as pd
 
-# Translation and expression correlation analysis
-# Extract expression data from RNA workflow
-expression_data = workflow.extract_expression("expression.tsv")
+# Configure and run RNA workflow to generate expression matrices
+config = AmalgkitWorkflowConfig(
+    work_dir="output/rna_analysis",
+    threads=8,
+    species_list=["Homo sapiens"]
+)
+result = execute_workflow(config)
 
-# Translate RNA sequences to protein
-rna_sequences = sequences.read_fasta("rna_sequences.fasta")
+# Load expression results from workflow output
+expression_matrix = pd.read_csv("output/rna_analysis/expression_matrix.tsv", sep="\t", index_col=0)
+
+# Translate coding sequences to proteins
+coding_sequences = io.load_fasta("data/cds.fasta")
 protein_sequences = {}
-for seq_id, rna_seq in rna_sequences.items():
-    protein_seq = translation.translate_dna(rna_seq)
+for seq_id, cds_seq in coding_sequences.items():
+    protein_seq = translation.translate_dna(cds_seq)
     protein_sequences[seq_id] = protein_seq
 
-# Analyze protein sequences
+# Analyze protein properties
 protein_compositions = {}
 for seq_id, protein_seq in protein_sequences.items():
     composition = calculate_aa_composition(protein_seq)
     protein_compositions[seq_id] = composition
 
-# Correlate expression with protein properties
-# Match expression data with protein compositions
+# Correlate expression levels with protein properties
+protein_comp_df = pd.DataFrame(protein_compositions).T
+correlation_matrix = expression_matrix.T.corrwith(protein_comp_df, axis=1)
+print(f"Expression-protein correlations:\n{correlation_matrix}")
 ```
 
 ### With Multiomics Module
 ```python
-from metainformant.rna import workflow
+from metainformant.rna import execute_workflow, AmalgkitWorkflowConfig
 from metainformant.multiomics import MultiOmicsData, joint_pca, canonical_correlation
 import pandas as pd
 
-# RNA + protein integration
-rna_expression = workflow.extract_expression("expression.tsv")
-proteomics_data = pd.read_csv("proteomics.csv", index_col=0)
+# Configure RNA workflow for expression analysis
+config = AmalgkitWorkflowConfig(
+    work_dir="output/rna_analysis",
+    threads=8,
+    species_list=["Homo sapiens"]
+)
+result = execute_workflow(config)
+
+# Load RNA expression from workflow output
+rna_expression = pd.read_csv("output/rna_analysis/expression_matrix.tsv", sep="\t", index_col=0)
+proteomics_data = pd.read_csv("data/proteomics.csv", index_col=0)
 
 # Create multi-omics dataset
 omics_data = MultiOmicsData(
@@ -352,6 +382,7 @@ omics_data = MultiOmicsData(
 
 # Joint analysis of RNA and protein
 embeddings, loadings, variance = joint_pca(omics_data, n_components=50)
+print(f"Joint PCA variance explained: {variance[:5]}")
 
 # Canonical correlation between RNA and protein
 X_c, Y_c, X_w, Y_w, correlations = canonical_correlation(
