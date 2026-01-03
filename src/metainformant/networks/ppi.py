@@ -1002,3 +1002,147 @@ def _predict_by_ml(
     # Fall back to correlation method
     return _predict_by_correlation(target_proteins, features, threshold, max_predictions)
 
+
+def load_string_interactions(interactions_df: Any, proteins_df: Optional[Any] = None,
+                           confidence_threshold: int = 400) -> 'ProteinNetwork':
+    """Load PPI network from STRING database format.
+
+    Args:
+        interactions_df: DataFrame with columns ['protein1', 'protein2', 'combined_score']
+        proteins_df: Optional DataFrame with protein metadata
+        confidence_threshold: Minimum confidence score (0-1000)
+
+    Returns:
+        ProteinNetwork object with loaded interactions
+    """
+    if not HAS_NETWORKX:
+        raise ImportError("networkx required for PPI network loading")
+
+    # Create network
+    network = ProteinNetwork(name="STRING_PPI")
+
+    # Load interactions
+    if hasattr(interactions_df, 'iterrows'):  # pandas DataFrame
+        for _, row in interactions_df.iterrows():
+            protein1 = str(row['protein1'])
+            protein2 = str(row['protein2'])
+            score = int(row['combined_score'])
+
+            if score >= confidence_threshold:
+                if network.graph.has_edge(protein1, protein2):
+                    current_score = network.graph[protein1][protein2].get('weight', 0)
+                    if score > current_score:
+                        network.graph[protein1][protein2]['weight'] = score
+                else:
+                    network.graph.add_edge(protein1, protein2, weight=score)
+
+    # Load protein metadata if provided
+    if proteins_df is not None and hasattr(proteins_df, 'iterrows'):
+        network.protein_metadata = {}
+        for _, row in proteins_df.iterrows():
+            protein_id = str(row['protein_id'])
+            metadata = {
+                'gene_name': row.get('gene_name', ''),
+                'protein_name': row.get('protein_name', ''),
+            }
+            network.protein_metadata[protein_id] = metadata
+
+    logger.info(f"Loaded STRING PPI network: {len(network.graph.nodes())} proteins, "
+               f"{len(network.graph.edges())} interactions (threshold: {confidence_threshold})")
+    return network
+
+
+def functional_enrichment_ppi(protein_list: List[str], ppi_network: 'ProteinNetwork',
+                            function_key: str = 'function', background_proteins: List[str] | None = None,
+                            min_overlap: int = 2, max_p_value: float = 0.05) -> Dict[str, Dict[str, Any]]:
+    """Perform functional enrichment analysis on a protein list using PPI network.
+
+    Args:
+        protein_list: List of proteins to test for enrichment
+        ppi_network: ProteinNetwork instance with functional annotations
+        function_key: Key in protein annotations containing functional categories
+        background_proteins: Background protein set (default: all proteins in network)
+        min_overlap: Minimum overlap for enrichment consideration
+        max_p_value: Maximum p-value for significant enrichment
+
+    Returns:
+        Dictionary mapping functions to enrichment statistics
+    """
+    import math
+    from collections import defaultdict, Counter
+
+    if background_proteins is None:
+        background_proteins = list(ppi_network.proteins.keys())
+
+    # Get functional annotations for background
+    background_functions = defaultdict(list)
+    for protein in background_proteins:
+        if protein in ppi_network.proteins and function_key in ppi_network.proteins[protein]:
+            functions = ppi_network.proteins[protein][function_key]
+            if isinstance(functions, str):
+                functions = [functions]
+            for func in functions:
+                background_functions[func].append(protein)
+
+    # Get functional annotations for test set
+    test_functions = defaultdict(list)
+    for protein in protein_list:
+        if protein in ppi_network.proteins and function_key in ppi_network.proteins[protein]:
+            functions = ppi_network.proteins[protein][function_key]
+            if isinstance(functions, str):
+                functions = [functions]
+            for func in functions:
+                test_functions[func].append(protein)
+
+    # Calculate enrichment for each function
+    enrichment_results = {}
+
+    for func in test_functions:
+        if func not in background_functions:
+            continue
+
+        # Count overlaps
+        test_count = len(set(test_functions[func]))
+        background_count = len(set(background_functions[func]))
+
+        if test_count < min_overlap:
+            continue
+
+        # Calculate enrichment statistics
+        overlap = len(set(test_functions[func]) & set(background_functions[func]))
+
+        # Hypergeometric test
+        # P(X >= overlap) where X ~ Hypergeometric(N, K, n)
+        # N = total background proteins
+        # K = proteins with this function in background
+        # n = test set size
+        N = len(background_proteins)
+        K = background_count
+        n = len(protein_list)
+
+        if K >= overlap and n >= overlap and N >= K and N >= n:
+            # Calculate p-value using hypergeometric distribution
+            p_value = 0.0
+            for k in range(overlap, min(K, n) + 1):
+                # P(X = k) = C(K,k) * C(N-K, n-k) / C(N,n)
+                try:
+                    p_k = (math.comb(K, k) * math.comb(N - K, n - k)) / math.comb(N, n)
+                    p_value += p_k
+                except (ValueError, OverflowError):
+                    # Fallback for large numbers
+                    p_value = 1e-10  # Very significant
+                    break
+
+            enrichment_ratio = (overlap / n) / (K / N) if (K / N) > 0 else float('inf')
+
+            if p_value <= max_p_value:
+                enrichment_results[func] = {
+                    "count": overlap,
+                    "test_count": test_count,
+                    "background_count": background_count,
+                    "enrichment_ratio": enrichment_ratio,
+                    "p_value": p_value,
+                    "proteins": test_functions[func]
+                }
+
+    return enrichment_results

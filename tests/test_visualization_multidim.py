@@ -271,3 +271,7 @@ class TestPlot3DScatter:
         assert output_path.exists()
         plt.close('all')
 
+
+
+
+

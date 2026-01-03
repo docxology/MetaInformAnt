@@ -76,6 +76,44 @@ def get_free_space(path: str | Path) -> int:
     return usage['free']
 
 
+def get_recommended_temp_dir(repo_root: Path) -> Path:
+    """Get recommended temporary directory, preferring locations with more space.
+
+    Args:
+        repo_root: Repository root directory
+
+    Returns:
+        Path to recommended temporary directory
+
+    Notes:
+        Tries in order:
+        1. /tmp if it has >1GB free space
+        2. repo_root/.tmp if repo has >5GB free space
+        3. Falls back to /tmp regardless of space
+    """
+    tmp_dir = Path("/tmp")
+    repo_tmp = repo_root / ".tmp"
+
+    try:
+        # Check /tmp first
+        if tmp_dir.exists():
+            free_space = get_free_space(tmp_dir)
+            if free_space > 1_000_000_000:  # >1GB
+                return tmp_dir
+
+        # Check repo .tmp
+        repo_tmp.mkdir(parents=True, exist_ok=True)
+        free_space = get_free_space(repo_tmp)
+        if free_space > 5_000_000_000:  # >5GB
+            return repo_tmp
+
+    except (OSError, Exception) as e:
+        logger.warning(f"Error checking disk space: {e}")
+
+    # Fall back to /tmp
+    return tmp_dir
+
+
 def ensure_disk_space(
     path: str | Path,
     required_bytes: int,
@@ -387,4 +425,8 @@ def safe_remove_directory(
     except Exception as e:
         logger.error(f"Failed to remove directory {directory}: {e}")
         return False
+
+
+
+
 

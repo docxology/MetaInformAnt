@@ -204,3 +204,269 @@ def bootstrap_confidence_interval(values: List[float], confidence_level: float =
     upper_bound = np.percentile(bootstrap_means, upper_percentile)
 
     return (lower_bound, upper_bound)
+
+
+def calculate_confidence_intervals(values: List[float], confidence_level: float = 0.95,
+                                 method: str = "bootstrap") -> tuple[float, float]:
+    """Calculate confidence intervals for population genetic statistics.
+
+    Args:
+        values: List of observed values
+        confidence_level: Confidence level (default 0.95)
+        method: Method for CI calculation ("bootstrap", "normal", "percentile")
+
+    Returns:
+        Tuple of (lower_bound, upper_bound)
+
+    Examples:
+        >>> values = [0.1, 0.15, 0.12, 0.18, 0.09]
+        >>> lower, upper = calculate_confidence_intervals(values)
+        >>> print(f"95% CI: [{lower:.3f}, {upper:.3f}]")
+    """
+    if not values:
+        raise ValueError("Values list cannot be empty")
+
+    if not (0 < confidence_level < 1):
+        raise ValueError("Confidence level must be between 0 and 1")
+
+    values_arr = np.array(values)
+    n = len(values_arr)
+
+    if method == "bootstrap":
+        # Bootstrap confidence interval
+        n_bootstrap = min(1000, n * 10)  # Reasonable bootstrap sample size
+        bootstrap_means = []
+
+        np.random.seed(42)  # For reproducibility
+        for _ in range(n_bootstrap):
+            sample = np.random.choice(values_arr, size=n, replace=True)
+            bootstrap_means.append(np.mean(sample))
+
+        lower_percentile = (1 - confidence_level) / 2 * 100
+        upper_percentile = (1 + confidence_level) / 2 * 100
+
+        lower_bound = np.percentile(bootstrap_means, lower_percentile)
+        upper_bound = np.percentile(bootstrap_means, upper_percentile)
+
+    elif method == "normal":
+        # Normal approximation confidence interval
+        mean_val = np.mean(values_arr)
+        se = np.std(values_arr, ddof=1) / np.sqrt(n)
+
+        # z-score for confidence level
+        if confidence_level == 0.95:
+            z = 1.96
+        elif confidence_level == 0.99:
+            z = 2.576
+        else:
+            # General case using normal distribution
+            from scipy import stats
+            z = stats.norm.ppf((1 + confidence_level) / 2)
+
+        lower_bound = mean_val - z * se
+        upper_bound = mean_val + z * se
+
+    elif method == "percentile":
+        # Percentile method
+        lower_percentile = (1 - confidence_level) / 2 * 100
+        upper_percentile = (1 + confidence_level) / 2 * 100
+
+        lower_bound = np.percentile(values_arr, lower_percentile)
+        upper_bound = np.percentile(values_arr, upper_percentile)
+
+    else:
+        raise ValueError(f"Unknown method: {method}. Use 'bootstrap', 'normal', or 'percentile'")
+
+    return float(lower_bound), float(upper_bound)
+
+
+def compare_population_statistic(pop1_stats: Dict[str, Any], pop2_stats: Dict[str, Any],
+                                statistic_name: str) -> Dict[str, Any]:
+    """Compare a population genetic statistic between two populations.
+
+    Args:
+        pop1_stats: Statistics for population 1
+        pop2_stats: Statistics for population 2
+        statistic_name: Name of the statistic to compare
+
+    Returns:
+        Dictionary with comparison results
+    """
+    if statistic_name not in pop1_stats or statistic_name not in pop2_stats:
+        raise ValueError(f"Statistic '{statistic_name}' not found in both populations")
+
+    stat1 = pop1_stats[statistic_name]
+    stat2 = pop2_stats[statistic_name]
+
+    # Simple t-test approximation (for demonstration)
+    # In practice, you'd want proper statistical tests
+    diff = stat1 - stat2
+    pooled_var = (pop1_stats.get("variance", 1.0) + pop2_stats.get("variance", 1.0)) / 2
+    se = math.sqrt(pooled_var * 2 / 10)  # Approximate SE
+
+    if se > 0:
+        t_stat = abs(diff) / se
+        # Approximate p-value using normal distribution
+        p_value = 2 * (1 - 0.5 * (1 + math.erf(t_stat / math.sqrt(2))))
+    else:
+        t_stat = 0.0
+        p_value = 1.0
+
+    return {
+        "statistic_name": statistic_name,
+        "population1_value": stat1,
+        "population2_value": stat2,
+        "difference": diff,
+        "test_statistic": t_stat,
+        "p_value": p_value,
+        "significant": p_value < 0.05,
+    }
+
+
+def compare_statistics(stats1: Dict[str, float], stats2: Dict[str, float]) -> Dict[str, Any]:
+    """Compare multiple population statistics between two populations.
+
+    Args:
+        stats1: Statistics dictionary for population 1
+        stats2: Statistics dictionary for population 2
+
+    Returns:
+        Dictionary with comparison results for each statistic
+    """
+    results = {}
+    common_stats = set(stats1.keys()) & set(stats2.keys())
+
+    for stat_name in common_stats:
+        results[stat_name] = compare_population_statistic(
+            {"variance": 1.0, **stats1},  # Add default variance
+            {"variance": 1.0, **stats2},
+            stat_name
+        )
+
+    return results
+
+
+def detect_outliers(values: List[float], method: str = "iqr", threshold: float = 1.5) -> Dict[str, Any]:
+    """Detect outliers in population genetic data.
+
+    Args:
+        values: List of values to check for outliers
+        method: Outlier detection method ("iqr", "zscore")
+        threshold: Threshold for outlier detection
+
+    Returns:
+        Dictionary with outlier detection results
+    """
+    if not values:
+        return {"outliers": [], "outlier_indices": []}
+
+    values_array = np.array(values)
+
+    if method == "iqr":
+        q1 = np.percentile(values_array, 25)
+        q3 = np.percentile(values_array, 75)
+        iqr = q3 - q1
+        lower_bound = q1 - threshold * iqr
+        upper_bound = q3 + threshold * iqr
+
+        outlier_mask = (values_array < lower_bound) | (values_array > upper_bound)
+
+    elif method == "zscore":
+        z_scores = np.abs((values_array - np.mean(values_array)) / np.std(values_array))
+        outlier_mask = z_scores > threshold
+
+    else:
+        raise ValueError(f"Unknown outlier detection method: {method}")
+
+    outlier_indices = np.where(outlier_mask)[0].tolist()
+    outliers = values_array[outlier_mask].tolist()
+
+    return {
+        "outliers": outliers,
+        "outlier_indices": outlier_indices,
+        "method": method,
+        "threshold": threshold,
+        "total_values": len(values),
+        "outlier_percentage": (len(outliers) / len(values)) * 100,
+    }
+
+
+def permutation_test(values1: List[float], values2: List[float],
+                    n_permutations: int = 1000) -> Dict[str, Any]:
+    """Perform permutation test to compare two distributions.
+
+    Args:
+        values1: Values from first distribution
+        values2: Values from second distribution
+        n_permutations: Number of permutations to perform
+
+    Returns:
+        Dictionary with permutation test results
+    """
+    if not values1 or not values2:
+        return {"p_value": 1.0, "test_statistic": 0.0}
+
+    # Observed difference in means
+    observed_diff = abs(np.mean(values1) - np.mean(values2))
+
+    # Combine data
+    combined = np.array(values1 + values2)
+    n1 = len(values1)
+
+    # Count permutations with difference >= observed
+    count = 0
+    for _ in range(n_permutations):
+        np.random.shuffle(combined)
+        perm_diff = abs(np.mean(combined[:n1]) - np.mean(combined[n1:]))
+        if perm_diff >= observed_diff:
+            count += 1
+
+    p_value = count / n_permutations
+
+    return {
+        "test_statistic": observed_diff,
+        "p_value": p_value,
+        "n_permutations": n_permutations,
+        "significant": p_value < 0.05,
+    }
+
+
+def tajimas_d_outliers(d_values: List[float], window_size: int = 10) -> Dict[str, Any]:
+    """Detect outlier Tajima's D values using sliding window analysis.
+
+    Args:
+        d_values: List of Tajima's D values along a chromosome/sequence
+        window_size: Size of sliding window for outlier detection
+
+    Returns:
+        Dictionary with outlier detection results
+    """
+    if len(d_values) < window_size:
+        return {"outliers": [], "outlier_indices": []}
+
+    outliers = []
+    outlier_indices = []
+
+    # Calculate local statistics using sliding window
+    for i in range(len(d_values) - window_size + 1):
+        window = d_values[i:i + window_size]
+        window_mean = np.mean(window)
+        window_std = np.std(window)
+
+        if window_std > 0:
+            # Check each value in window for being outlier
+            for j, value in enumerate(window):
+                z_score = abs(value - window_mean) / window_std
+                if z_score > 3.0:  # 3 standard deviations
+                    global_idx = i + j
+                    if global_idx not in outlier_indices:
+                        outliers.append(value)
+                        outlier_indices.append(global_idx)
+
+    return {
+        "outliers": outliers,
+        "outlier_indices": outlier_indices,
+        "window_size": window_size,
+        "total_windows": len(d_values) - window_size + 1,
+        "outlier_percentage": (len(outliers) / len(d_values)) * 100 if d_values else 0,
+    }

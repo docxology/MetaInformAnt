@@ -942,3 +942,131 @@ def infer_grn(
 
     return network
 
+
+def regulatory_motifs(grn: GeneRegulatoryNetwork) -> List[Dict[str, Any]]:
+    """Identify regulatory motifs in a gene regulatory network.
+
+    This is a standalone function that analyzes regulatory motifs.
+
+    Args:
+        grn: GeneRegulatoryNetwork instance
+
+    Returns:
+        List of identified motifs with type, genes, and confidence
+    """
+    motifs = []
+
+    if not HAS_NETWORKX:
+        return motifs
+
+    # Find feed-forward loops (TF1 -> TF2 -> Target)
+    for tf1 in grn.get_transcription_factors():
+        for tf2 in grn.get_tf_targets(tf1):
+            if tf2 in grn.tf_targets:  # TF2 is also a TF
+                for target in grn.get_tf_targets(tf2):
+                    if target not in [tf1, tf2]:  # Avoid self-loops
+                        # Check if TF1 regulates TF2 and TF2 regulates target
+                        if grn.graph.has_edge(tf1, tf2) and grn.graph.has_edge(tf2, target):
+                            motifs.append({
+                                "motif_type": "feed_forward_loop",
+                                "genes": [tf1, tf2, target],
+                                "confidence": 0.8
+                            })
+
+    # Find auto-regulation (TF regulates itself)
+    for tf in grn.get_transcription_factors():
+        if grn.graph.has_edge(tf, tf):
+            motifs.append({
+                "motif_type": "auto_regulation",
+                "genes": [tf],
+                "confidence": 1.0
+            })
+
+    # Find mutual regulation (TF1 <-> TF2)
+    for tf1 in grn.get_transcription_factors():
+        for tf2 in grn.get_tf_targets(tf1):
+            if tf2 in grn.tf_targets and grn.graph.has_edge(tf2, tf1):
+                if [tf1, tf2] not in [[m["genes"][0], m["genes"][1]] for m in motifs if m["motif_type"] == "mutual_regulation"]:
+                    motifs.append({
+                        "motif_type": "mutual_regulation",
+                        "genes": [tf1, tf2],
+                        "confidence": 0.9
+                    })
+
+    return motifs
+
+def pathway_regulation_analysis(grn: GeneRegulatoryNetwork, pathway_genes: List[str]) -> Dict[str, Any]:
+    """Analyze regulation patterns within a pathway.
+
+    Args:
+        grn: GeneRegulatoryNetwork instance
+        pathway_genes: List of genes in the pathway
+
+    Returns:
+        Dictionary with pathway regulation analysis results
+    """
+    results = {
+        "pathway_tfs": [],
+        "internal_regulations": 0,
+        "external_regulations": 0,
+        "regulation_density": 0.0,
+        "hub_tfs": [],
+        "isolated_genes": []
+    }
+
+    if not HAS_NETWORKX:
+        return results
+
+    pathway_set = set(pathway_genes)
+
+    # Find TFs that regulate pathway genes
+    pathway_tfs = set()
+    for gene in pathway_genes:
+        regulators = grn.get_target_regulators(gene)
+        pathway_tfs.update(regulators)
+
+    results["pathway_tfs"] = list(pathway_tfs)
+
+    # Count internal vs external regulations
+    internal_regulations = 0
+    external_regulations = 0
+
+    for tf in pathway_tfs:
+        targets = grn.get_tf_targets(tf)
+        for target in targets:
+            if target in pathway_set:
+                if tf in pathway_set:
+                    internal_regulations += 1
+                else:
+                    external_regulations += 1
+
+    results["internal_regulations"] = internal_regulations
+    results["external_regulations"] = external_regulations
+
+    # Calculate regulation density
+    if len(pathway_set) > 0:
+        total_possible_regulations = len(pathway_tfs) * len(pathway_set)
+        if total_possible_regulations > 0:
+            results["regulation_density"] = (internal_regulations + external_regulations) / total_possible_regulations
+
+    # Identify hub TFs (regulate many pathway genes)
+    tf_target_counts = {}
+    for tf in pathway_tfs:
+        targets = grn.get_tf_targets(tf)
+        pathway_targets = [t for t in targets if t in pathway_set]
+        tf_target_counts[tf] = len(pathway_targets)
+
+    # TFs regulating 3+ pathway genes are considered hubs
+    results["hub_tfs"] = [tf for tf, count in tf_target_counts.items() if count >= 3]
+
+    # Find isolated genes (no regulation within pathway)
+    isolated_genes = []
+    for gene in pathway_genes:
+        regulators = grn.get_target_regulators(gene)
+        pathway_regulators = [r for r in regulators if r in pathway_set]
+        if not pathway_regulators:
+            isolated_genes.append(gene)
+
+    results["isolated_genes"] = isolated_genes
+
+    return results

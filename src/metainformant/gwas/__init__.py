@@ -82,9 +82,11 @@ from .visualization import qq_plot, manhattan_plot, kinship_heatmap
 from .visualization_variants import variant_density_plot
 from .visualization_population import pca_scree_plot
 from .visualization_comparison import multi_trait_manhattan
+from .visualization_effects import functional_enrichment_plot
 from .visualization_statistical import power_plot
 from .visualization_regional import recombination_rate_plot, effect_direction_plot, regional_plot, regional_ld_plot
 from .visualization_genome import genome_wide_ld_heatmap
+from .visualization_population import admixture_plot
 from .workflow import GWASWorkflowConfig, execute_gwas_workflow, run_gwas
 
 # Type checking imports
@@ -125,6 +127,7 @@ __all__ = [
     "variant_density_plot",
     "pca_scree_plot",
     "multi_trait_manhattan",
+    "functional_enrichment_plot",
     "power_plot",
     "recombination_rate_plot",
     "qq_plot",
@@ -134,6 +137,7 @@ __all__ = [
     "regional_plot",
     "regional_ld_plot",
     "genome_wide_ld_heatmap",
+    "admixture_plot",
 
     # Configuration
     "config",

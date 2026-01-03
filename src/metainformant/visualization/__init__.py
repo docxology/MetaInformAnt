@@ -13,22 +13,14 @@ from . import (
     animations,
     basic,
     dimred,
-    export,
     expression,
     genomics,
-    gwas_integration,
     information,
-    information_integration,
-    interactive,
-    layout,
-    life_events_integration,
     multidim,
     networks,
-    plots,
     quality,
-    singlecell_integration,
+    specialized,
     statistical,
-    style,
     timeseries,
     trees,
 )
@@ -40,29 +32,39 @@ except ImportError:
     amalgkit_visualization = None
 
 try:
-    from . import interactive
+    from metainformant.protein import visualization as protein
 except ImportError:
-    interactive = None
+    protein = None
 
 try:
-    from . import gwas_integration
+    from metainformant.epigenome import visualization as epigenome
 except ImportError:
-    gwas_integration = None
+    epigenome = None
 
 try:
-    from . import information_integration
+    from metainformant.ontology import visualization as ontology
 except ImportError:
-    information_integration = None
+    ontology = None
 
 try:
-    from . import life_events_integration
+    from metainformant.phenotype import visualization as phenotype
 except ImportError:
-    life_events_integration = None
+    phenotype = None
 
 try:
-    from . import singlecell_integration
+    from metainformant.ecology import visualization as ecology
 except ImportError:
-    singlecell_integration = None
+    ecology = None
+
+try:
+    from metainformant.math import visualization as math
+except ImportError:
+    math = None
+
+try:
+    from metainformant.multiomics import visualization as multiomics
+except ImportError:
+    multiomics = None
 
 # Type checking imports
 from typing import TYPE_CHECKING
@@ -72,10 +74,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     # Core plotting functionality
-    "plots",
     "basic",
-    "style",
-    "export",
 
     # Statistical visualizations
     "statistical",
@@ -92,21 +91,26 @@ __all__ = [
     "multidim",
     "timeseries",
     "animations",
+    "specialized",
 
     # Information theory visualizations
     "information",
-    "information_integration",
 
     # Module integrations
     "amalgkit_visualization",
-    "gwas_integration",
-    "life_events_integration",
-    "singlecell_integration",
 
-    # Interactive and layout
-    "interactive",
-    "layout",
+    # Domain-specific visualizations
+    "protein",
+    "epigenome",
+    "ontology",
+    "phenotype",
+    "ecology",
+    "math",
+    "multiomics",
 ]
+
+
+
 
 
 

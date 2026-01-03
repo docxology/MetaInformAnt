@@ -33,6 +33,9 @@ from . import (
     variants,
 )
 
+# Direct imports of commonly used classes
+from .fastq import FastqRecord
+
 # All modules imported above are available
 
 # Type checking imports
@@ -63,6 +66,7 @@ __all__ = [
     "transcription",
     "translation",
     "variants",
+    "FastqRecord",
 
     # External data sources
     "genomes",

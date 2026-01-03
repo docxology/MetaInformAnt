@@ -28,9 +28,16 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent))
 from _setup_utils import ensure_venv_activated, check_environment_or_exit
 
+# Suppress optional dependency warnings until venv is ready
+from metainformant.core.optional_deps import suppress_optional_warnings, enable_optional_warnings
+suppress_optional_warnings()
+
 # Auto-setup and activate venv
 ensure_venv_activated(auto_setup=True)
 check_environment_or_exit(auto_setup=True)
+
+# Now enable warnings since venv should be active
+enable_optional_warnings()
 
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
@@ -175,6 +182,10 @@ def main() -> int:
     )
 
     args = parser.parse_args()
+
+    # Process steps argument - split comma-separated values
+    if args.steps:
+        args.steps = [step.strip() for s in args.steps for step in s.split(',') if step.strip()]
 
     if args.list_configs:
         files = _discover_species_config_files()

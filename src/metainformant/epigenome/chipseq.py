@@ -645,3 +645,7 @@ def generate_chip_report(peaks: List[ChIPPeak], output_path: Optional[str | Path
 
     return report
 
+
+
+
+

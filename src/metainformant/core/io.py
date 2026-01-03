@@ -118,6 +118,31 @@ def load_json_gz(path: str | Path) -> Any:
         return json.load(fh)
 
 
+def dump_yaml(obj: Any, path: str | Path) -> None:
+    """Dump object as YAML file.
+
+    Requires PyYAML to be installed. Falls back to JSON if unavailable.
+
+    Args:
+        obj: Object to serialize
+        path: Output file path
+
+    Raises:
+        ImportError: If PyYAML is not available and fallback fails
+    """
+    ensure_directory(Path(path).parent)
+
+    try:
+        import yaml
+        with open(path, 'w', encoding='utf-8') as fh:
+            yaml.dump(obj, fh, default_flow_style=False, sort_keys=False)
+    except ImportError:
+        # Fallback to JSON with .yaml extension
+        with open(path, 'w', encoding='utf-8') as fh:
+            json.dump(obj, fh, indent=2, sort_keys=True)
+            fh.write('\n')
+
+
 
 
 def read_parquet(path: str | Path, **kwargs) -> Any:

@@ -884,3 +884,87 @@ def cross_cohort_forest(cohort_results: Dict[str, Dict[str, Any]],
 
 
 
+
+def concordance_plot(study1_results: list[dict], study2_results: list[dict],
+                   output_path: Optional[str | Path] = None,
+                   figsize: tuple[int, int] = (8, 8)) -> dict[str, Any]:
+    """Create a concordance plot comparing two GWAS studies.
+
+    Args:
+        study1_results: Results from first study
+        study2_results: Results from second study  
+        output_path: Path to save the plot
+        figsize: Figure size
+
+    Returns:
+        Dictionary with plot status and metadata
+    """
+    try:
+        import matplotlib.pyplot as plt
+        HAS_MATPLOTLIB = True
+    except ImportError:
+        HAS_MATPLOTLIB = False
+
+    if not HAS_MATPLOTLIB:
+        return {"status": "error", "message": "matplotlib not available"}
+
+    try:
+        # Extract p-values from both studies
+        p_values1 = []
+        p_values2 = []
+        
+        # Create SNP ID to p-value mapping for both studies
+        snp_to_p1 = {}
+        snp_to_p2 = {}
+        
+        for result in study1_results:
+            snp_id = result.get('ID', f"{result.get('CHROM')}:{result.get('POS')}")
+            p_val = result.get('p_value', result.get('P', 1.0))
+            snp_to_p1[snp_id] = p_val
+            
+        for result in study2_results:
+            snp_id = result.get('ID', f"{result.get('CHROM')}:{result.get('POS')}")
+            p_val = result.get('p_value', result.get('P', 1.0))
+            snp_to_p2[snp_id] = p_val
+            
+        # Find overlapping SNPs
+        common_snps = set(snp_to_p1.keys()) & set(snp_to_p2.keys())
+        
+        if not common_snps:
+            return {"status": "error", "message": "No overlapping SNPs found"}
+            
+        # Get p-values for common SNPs
+        for snp in common_snps:
+            p_values1.append(-math.log10(max(snp_to_p1[snp], 1e-300)))
+            p_values2.append(-math.log10(max(snp_to_p2[snp], 1e-300)))
+            
+        # Create plot
+        fig, ax = plt.subplots(figsize=figsize)
+        
+        ax.scatter(p_values1, p_values2, alpha=0.6, s=20, color='blue')
+        
+        # Add diagonal line
+        max_val = max(max(p_values1), max(p_values2))
+        ax.plot([0, max_val], [0, max_val], 'r--', alpha=0.7, label='Perfect concordance')
+        
+        ax.set_xlabel('Study 1 -log₁₀(p)')
+        ax.set_ylabel('Study 2 -log₁₀(p)')
+        ax.set_title(f'GWAS Concordance Plot\n{n:,} overlapping SNPs')
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+        
+        plt.tight_layout()
+        
+        if output_path:
+            plt.savefig(output_path, dpi=300, bbox_inches='tight')
+            
+        return {
+            "status": "success",
+            "n_overlapping_snps": len(common_snps),
+            "study1_snps": len(snp_to_p1),
+            "study2_snps": len(snp_to_p2),
+            "output_path": str(output_path) if output_path else None
+        }
+        
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

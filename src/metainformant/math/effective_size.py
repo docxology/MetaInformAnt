@@ -47,3 +47,34 @@ def effective_size_sex_ratio(male_size: float, female_size: float,
     sex_ratio_adjustment = 1 / (sex_ratio * (1 - sex_ratio))
 
     return harmonic_mean * sex_ratio_adjustment
+
+
+def harmonic_mean_effective_size(population_sizes: List[float]) -> float:
+    """Calculate harmonic mean effective population size over multiple generations.
+
+    Args:
+        population_sizes: List of population sizes for each generation
+
+    Returns:
+        Harmonic mean effective population size
+
+    Examples:
+        >>> sizes = [100, 50, 200]
+        >>> Ne = harmonic_mean_effective_size(sizes)
+        >>> print(f"Harmonic mean Ne: {Ne:.1f}")
+    """
+    if not population_sizes:
+        raise ValueError("Population sizes list cannot be empty")
+
+    if any(size <= 0 for size in population_sizes):
+        raise ValueError("All population sizes must be positive")
+
+    n_generations = len(population_sizes)
+
+    # Harmonic mean: n / sum(1/x_i)
+    harmonic_sum = sum(1.0 / size for size in population_sizes)
+
+    if harmonic_sum == 0:
+        return float('inf')
+
+    return n_generations / harmonic_sum

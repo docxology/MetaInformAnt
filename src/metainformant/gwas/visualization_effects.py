@@ -529,3 +529,221 @@ def effect_size_forest_plot(effect_data: Dict[str, Any],
 
 
 
+
+def effect_direction_plot(results: list[dict], output_path: Optional[str | Path] = None,
+                        figsize: tuple[int, int] = (10, 6)) -> dict[str, Any]:
+    """Create an effect direction plot showing beta coefficients by chromosome.
+
+    Args:
+        results: GWAS results with CHROM, POS, BETA columns
+        output_path: Path to save the plot
+        figsize: Figure size
+
+    Returns:
+        Dictionary with plot status and metadata
+    """
+    try:
+        import matplotlib.pyplot as plt
+        HAS_MATPLOTLIB = True
+    except ImportError:
+        HAS_MATPLOTLIB = False
+
+    if not HAS_MATPLOTLIB:
+        return {"status": "error", "message": "matplotlib not available"}
+
+    try:
+        # Extract data
+        chromosomes = []
+        positions = []
+        betas = []
+        
+        for result in results:
+            chrom = result.get('CHROM', result.get('chr', 1))
+            pos = result.get('POS', result.get('pos', 0))
+            beta = result.get('BETA', result.get('beta', 0))
+            
+            chromosomes.append(chrom)
+            positions.append(pos)
+            betas.append(beta)
+            
+        if not betas:
+            return {"status": "error", "message": "No beta values found"}
+            
+        # Create chromosome mapping
+        unique_chroms = sorted(set(str(chrom) for chrom in chromosomes))
+        chrom_to_num = {chrom: i+1 for i, chrom in enumerate(unique_chroms)}
+        
+        # Convert chromosome names to numbers
+        chrom_nums = [chrom_to_num[str(chrom)] for chrom in chromosomes]
+        
+        # Calculate x positions
+        x_positions = []
+        current_pos = 0
+        
+        for chrom, pos in zip(chrom_nums, positions):
+            x_positions.append(current_pos + pos)
+            current_pos = max(current_pos, x_positions[-1] + 1)
+            
+        # Create plot
+        fig, ax = plt.subplots(figsize=figsize)
+        
+        # Color points by effect direction
+        colors = ['red' if beta < 0 else 'blue' for beta in betas]
+        ax.scatter(x_positions, betas, c=colors, alpha=0.6, s=20)
+        
+        # Add zero line
+        ax.axhline(y=0, color='black', linestyle='-', alpha=0.5)
+        
+        # Add chromosome labels
+        chrom_centers = []
+        for chrom in unique_chroms:
+            chrom_x = [x for x, c in zip(x_positions, chrom_nums) if c == chrom]
+            if chrom_x:
+                chrom_centers.append((chrom, sum(chrom_x) / len(chrom_x)))
+                
+        for chrom, center in chrom_centers:
+            ax.text(center, min(betas) - 0.1, str(chrom), 
+                   ha='center', va='top', fontsize=8)
+                   
+        ax.set_xlabel('Genomic Position')
+        ax.set_ylabel('Effect Size (Beta)')
+        ax.set_title('Effect Direction Plot')
+        ax.grid(True, alpha=0.3)
+        
+        # Add legend
+        import matplotlib.patches as mpatches
+        red_patch = mpatches.Patch(color='red', label='Negative effect', alpha=0.6)
+        blue_patch = mpatches.Patch(color='blue', label='Positive effect', alpha=0.6)
+        ax.legend(handles=[red_patch, blue_patch])
+        
+        plt.tight_layout()
+        
+        if output_path:
+            plt.savefig(output_path, dpi=300, bbox_inches='tight')
+            
+        return {
+            "status": "success",
+            "n_variants": len(betas),
+            "n_chromosomes": len(unique_chroms),
+            "positive_effects": sum(1 for b in betas if b > 0),
+            "negative_effects": sum(1 for b in betas if b < 0),
+            "output_path": str(output_path) if output_path else None
+        }
+        
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+def functional_enrichment_plot(enrichment_results: Dict[str, Dict[str, Any]],
+                             output_path: Optional[str | Path] = None,
+                             top_n: int = 20, figsize: tuple[int, int] = (12, 8)) -> dict[str, Any]:
+    """Create a functional enrichment plot for GWAS results.
+
+    Args:
+        enrichment_results: Dictionary mapping functions to enrichment statistics
+        output_path: Path to save the plot
+        top_n: Number of top enriched functions to show
+        figsize: Figure size
+
+    Returns:
+        Dictionary with plot status and metadata
+    """
+    try:
+        import matplotlib.pyplot as plt
+        HAS_MATPLOTLIB = True
+    except ImportError:
+        HAS_MATPLOTLIB = False
+
+    if not HAS_MATPLOTLIB:
+        return {"status": "error", "message": "matplotlib not available"}
+
+    try:
+        if not enrichment_results:
+            return {"status": "error", "message": "No enrichment results provided"}
+
+        # Sort by enrichment ratio and get top N
+        sorted_results = sorted(
+            [(func, stats) for func, stats in enrichment_results.items()
+             if stats.get('enrichment_ratio', 0) > 1],
+            key=lambda x: x[1].get('enrichment_ratio', 0),
+            reverse=True
+        )[:top_n]
+
+        if not sorted_results:
+            return {"status": "error", "message": "No significantly enriched functions"}
+
+        functions = [func for func, _ in sorted_results]
+        enrichment_ratios = [stats.get('enrichment_ratio', 1) for _, stats in sorted_results]
+        p_values = [stats.get('p_value', 1) for _, stats in sorted_results]
+
+        # Create plot
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
+
+        # Plot enrichment ratios
+        bars = ax1.barh(range(len(functions)), enrichment_ratios, color='skyblue')
+        ax1.set_yticks(range(len(functions)))
+        ax1.set_yticklabels([f[:30] + '...' if len(f) > 30 else f for f in functions])
+        ax1.set_xlabel('Enrichment Ratio')
+        ax1.set_title('Functional Enrichment Ratios')
+        ax1.grid(True, alpha=0.3)
+
+        # Add enrichment ratio values on bars
+        for i, (bar, ratio) in enumerate(zip(bars, enrichment_ratios)):
+            ax1.text(bar.get_width() + 0.1, bar.get_y() + bar.get_height()/2,
+                    f'{ratio:.1f}', ha='left', va='center', fontsize=8)
+
+        # Plot -log10(p-values)
+        neg_log_p = [-math.log10(max(p, 1e-10)) for p in p_values]
+        ax2.scatter(enrichment_ratios, neg_log_p, s=50, alpha=0.7, color='red')
+
+        # Add function labels
+        for i, func in enumerate(functions):
+            short_name = func[:20] + '...' if len(func) > 20 else func
+            ax2.annotate(short_name, (enrichment_ratios[i], neg_log_p[i]),
+                        xytext=(5, 5), textcoords='offset points', fontsize=6)
+
+        ax2.set_xlabel('Enrichment Ratio')
+        ax2.set_ylabel('-log₁₀(p-value)')
+        ax2.set_title('Enrichment vs Significance')
+        ax2.grid(True, alpha=0.3)
+
+        plt.tight_layout()
+
+        if output_path:
+            plt.savefig(output_path, dpi=300, bbox_inches='tight')
+
+        return {
+            "status": "success",
+            "n_functions": len(functions),
+            "top_functions": functions[:5],  # Return top 5 for summary
+            "enrichment_range": f"{min(enrichment_ratios):.1f}-{max(enrichment_ratios):.1f}",
+            "output_path": str(output_path) if output_path else None
+        }
+
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
+def allelic_series_plot(results: list[dict], output_path: Optional[str | Path] = None,
+                       gene_region: Optional[tuple[str, int, int]] = None) -> dict[str, Any]:
+    """Create an allelic series plot showing effect sizes across alleles at a locus.
+
+    This is a placeholder implementation for future development.
+
+    Args:
+        results: GWAS results with CHROM, POS, BETA columns
+        output_path: Path to save the plot
+        gene_region: Optional tuple of (chrom, start, end) for gene region
+
+    Returns:
+        Dictionary with plot status and metadata
+    """
+    logger.info("Allelic series plot requested - currently a placeholder implementation")
+
+    # Placeholder return - this would be implemented with actual plotting logic
+    return {
+        "status": "skipped",
+        "message": "Allelic series plot not yet implemented - requires complex haplotype analysis",
+        "n_variants": len(results) if results else 0,
+        "gene_region": gene_region,
+        "output_path": str(output_path) if output_path else None
+    }

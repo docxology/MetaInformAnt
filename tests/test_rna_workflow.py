@@ -35,7 +35,7 @@ def test_plan_workflow_orders_steps_and_inherits_common_params(tmp_path: Path):
     # Each step should include the common params
     for _, params in steps:
         assert params.get("threads") == 6
-        assert params.get("species-list") == ["Apis_mellifera"]
+        assert params.get("species_list") == ["Apis_mellifera"]
 
 
 def test_plan_workflow_step_dependencies(tmp_path: Path):

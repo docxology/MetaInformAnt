@@ -182,3 +182,186 @@ def pca_scree_plot(explained_variance: List[float], output_file: Optional[str | 
         logger.info(f"Saved PCA scree plot to {output_file}")
 
     return fig
+
+def kinship_heatmap(kinship_matrix: np.ndarray | List[List[float]],
+                   output_path: Optional[str | Path] = None) -> Any:
+    """Create kinship matrix heatmap.
+
+    Args:
+        kinship_matrix: Kinship matrix
+        output_path: Path to save the plot (optional)
+
+    Returns:
+        matplotlib Figure object
+    """
+    try:
+        import matplotlib.pyplot as plt
+        HAS_MATPLOTLIB = True
+    except ImportError:
+        HAS_MATPLOTLIB = False
+
+    if not HAS_MATPLOTLIB:
+        logger.warning("matplotlib not available, cannot create kinship heatmap")
+        return None
+
+    logger.info("Creating kinship heatmap")
+
+    try:
+        # Convert to numpy array if needed
+        if isinstance(kinship_matrix, list):
+            kinship_matrix = np.array(kinship_matrix)
+
+        # Create heatmap
+        fig, ax = plt.subplots(figsize=(10, 8))
+
+        # Plot heatmap
+        im = ax.imshow(kinship_matrix, cmap='viridis', aspect='equal')
+
+        # Add colorbar
+        cbar = plt.colorbar(im, ax=ax)
+        cbar.set_label('Kinship coefficient')
+
+        # Labels and title
+        ax.set_title('Kinship Matrix Heatmap')
+        ax.set_xlabel('Sample')
+        ax.set_ylabel('Sample')
+
+        plt.tight_layout()
+
+        # Save if output path provided
+        if output_path:
+            output_path = Path(output_path)
+            fig.savefig(output_path, dpi=300, bbox_inches='tight')
+            logger.info(f"Saved kinship heatmap to {output_path}")
+
+        return fig
+
+    except Exception as e:
+        logger.error(f"Error creating kinship heatmap: {e}")
+        return None
+
+def admixture_plot(admixture_data: Dict[str, Any], output_path: Optional[str | Path] = None,
+                  figsize: tuple[int, int] = (12, 6)) -> dict[str, Any]:
+    """Create an admixture plot showing population ancestry proportions.
+
+    Args:
+        admixture_data: Dictionary containing admixture proportions and sample info
+        output_path: Path to save the plot
+        figsize: Figure size
+
+    Returns:
+        Dictionary with plot status and metadata
+    """
+    try:
+        import matplotlib.pyplot as plt
+        import numpy as np
+        HAS_MATPLOTLIB = True
+    except ImportError:
+        HAS_MATPLOTLIB = False
+
+    if not HAS_MATPLOTLIB:
+        return {"status": "error", "message": "matplotlib not available"}
+
+    try:
+        # Extract data from admixture_data
+        admixture_proportions = admixture_data.get('admixture_proportions', [])
+        sample_names = admixture_data.get('sample_names', [])
+        population_labels = admixture_data.get('population_labels', [])
+        ancestry_names = admixture_data.get('ancestry_names', [])
+
+        if not admixture_proportions:
+            return {"status": "error", "message": "No admixture proportions provided"}
+
+        admixture_matrix = np.array(admixture_proportions)
+
+        if admixture_matrix.ndim != 2:
+            return {"status": "error", "message": "Admixture proportions must be 2D array"}
+
+        n_samples, n_ancestries = admixture_matrix.shape
+
+        # Sort samples by population if population labels are provided
+        if population_labels and len(population_labels) == n_samples:
+            # Group by population
+            pop_indices = {}
+            for i, pop in enumerate(population_labels):
+                if pop not in pop_indices:
+                    pop_indices[pop] = []
+                pop_indices[pop].append(i)
+
+            # Sort within populations by ancestry proportion
+            sorted_indices = []
+            for pop in sorted(pop_indices.keys()):
+                indices = pop_indices[pop]
+                # Sort by the proportion of the first ancestry component
+                sorted_pop_indices = sorted(indices, key=lambda x: admixture_matrix[x, 0], reverse=True)
+                sorted_indices.extend(sorted_pop_indices)
+        else:
+            # Sort by first ancestry component
+            sorted_indices = list(range(n_samples))
+            sorted_indices.sort(key=lambda x: admixture_matrix[x, 0], reverse=True)
+
+        # Reorder data
+        sorted_proportions = admixture_matrix[sorted_indices]
+
+        # Create plot
+        fig, ax = plt.subplots(figsize=figsize)
+
+        # Create stacked bar plot
+        bottom = np.zeros(n_samples)
+
+        # Use a color map for ancestries
+        colors = plt.cm.tab10(np.linspace(0, 1, n_ancestries))
+
+        ancestry_labels = ancestry_names if ancestry_names else [f'Ancestry {i+1}' for i in range(n_ancestries)]
+
+        for i in range(n_ancestries):
+            ax.bar(range(n_samples), sorted_proportions[:, i], bottom=bottom,
+                  color=colors[i], width=1.0, edgecolor='none', alpha=0.8)
+            bottom += sorted_proportions[:, i]
+
+        # Add population separators if population labels exist
+        if population_labels and len(population_labels) == n_samples:
+            sorted_pops = [population_labels[i] for i in sorted_indices]
+            pop_changes = [i for i in range(1, len(sorted_pops)) if sorted_pops[i] != sorted_pops[i-1]]
+
+            for change_point in pop_changes:
+                ax.axvline(x=change_point - 0.5, color='black', linewidth=1, alpha=0.7)
+
+            # Add population labels
+            unique_pops = sorted(set(population_labels))
+            pop_positions = []
+            for pop in unique_pops:
+                indices = [i for i, p in enumerate(sorted_pops) if p == pop]
+                if indices:
+                    pop_positions.append((pop, sum(indices) / len(indices)))
+
+            for pop, pos in pop_positions:
+                ax.text(pos, -0.05, pop, ha='center', va='top',
+                       transform=ax.get_xaxis_transform(), fontsize=10, fontweight='bold')
+
+        ax.set_xlabel('Samples')
+        ax.set_ylabel('Ancestry Proportion')
+        ax.set_title('Population Admixture Proportions')
+        ax.set_xlim(-0.5, n_samples - 0.5)
+        ax.set_ylim(0, 1)
+
+        # Create legend
+        legend_elements = [plt.Rectangle((0,0),1,1, facecolor=colors[i], alpha=0.8)
+                          for i in range(n_ancestries)]
+        ax.legend(legend_elements, ancestry_labels, loc='center left', bbox_to_anchor=(1.02, 0.5))
+
+        plt.tight_layout()
+
+        if output_path:
+            plt.savefig(output_path, dpi=300, bbox_inches='tight')
+
+        return {
+            "status": "success",
+            "n_samples": n_samples,
+            "n_ancestries": n_ancestries,
+            "populations": list(set(population_labels)) if population_labels else None,
+            "output_path": str(output_path) if output_path else None
+        }
+
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

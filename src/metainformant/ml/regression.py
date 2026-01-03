@@ -208,6 +208,57 @@ def train_regressor(
     return regressor
 
 
+def evaluate_regressor(
+    regressor: 'BiologicalRegressor',
+    X: np.ndarray,
+    y: np.ndarray,
+    test_size: float = 0.2,
+    random_state: int = 42
+) -> Dict[str, Any]:
+    """Evaluate a trained regressor on test data.
+
+    Args:
+        regressor: Trained BiologicalRegressor
+        X: Feature matrix
+        y: Target values
+        test_size: Fraction of data to use for testing
+        random_state: Random seed for reproducibility
+
+    Returns:
+        Dictionary with evaluation metrics and predictions
+    """
+    from sklearn.model_selection import train_test_split
+    from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
+
+    # Split data
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=test_size, random_state=random_state
+    )
+
+    # Fit on training data
+    regressor.fit(X_train, y_train)
+
+    # Predict on test data
+    y_pred = regressor.predict(X_test)
+
+    # Calculate metrics
+    mse = mean_squared_error(y_test, y_pred)
+    r2 = r2_score(y_test, y_pred)
+    mae = mean_absolute_error(y_test, y_pred)
+
+    results = {
+        "mse": mse,
+        "r2_score": r2,
+        "mae": mae,
+        "predictions": y_pred.tolist(),
+        "actual_values": y_test.tolist(),
+        "test_size": len(X_test),
+    }
+
+    logger.info(f"Regressor evaluation: MSE={mse:.4f}, R²={r2:.4f}")
+    return results
+
+
 def cross_validate_regressor(
     model: BaseEstimator,
     X: np.ndarray,
@@ -510,4 +561,6 @@ def analyze_prediction_uncertainty(
         'ci_upper_95': ci_upper.tolist(),
         'prediction_ranges': (ci_upper - ci_lower).tolist(),
     }
+
+
 

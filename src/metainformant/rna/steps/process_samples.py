@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Any
 
 from metainformant.core import logging
-from metainformant.rna.amalgkit import AmalgkitWorkflowConfig
+from metainformant.rna.workflow import AmalgkitWorkflowConfig
 
 logger = logging.get_logger(__name__)
 
@@ -224,3 +224,20 @@ def _delete_fastq_for_sample(sample_id: str, fastq_dir: str | Path) -> bool:
     except Exception as e:
         logger.error(f"Error deleting FASTQ files for sample {sample_id}: {e}")
         return False
+
+
+def _sample_already_quantified(sample_id: str, quant_dir: str | Path) -> bool:
+    """Check if a sample has already been quantified.
+
+    Args:
+        sample_id: Sample identifier
+        quant_dir: Quantification directory
+
+    Returns:
+        True if sample has abundance.tsv file (already quantified)
+    """
+    quant_path = Path(quant_dir)
+    sample_quant_dir = quant_path / sample_id
+    abundance_file = sample_quant_dir / "abundance.tsv"
+
+    return abundance_file.exists() and abundance_file.stat().st_size > 0

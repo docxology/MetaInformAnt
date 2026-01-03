@@ -158,3 +158,50 @@ def haldane_d_to_c(genetic_distance: float) -> float:
     """
     import math
     return 0.5 * (1 - math.exp(-2 * genetic_distance))
+
+def kosambi_c_to_d(recombination_fraction: float) -> float:
+    """Convert recombination fraction to genetic distance using Kosambi mapping function.
+
+    The Kosambi mapping function: c = 0.5 * tanh(2d)
+    where c is recombination fraction and d is genetic distance in Morgans.
+
+    Args:
+        recombination_fraction: Recombination fraction (0 <= c <= 0.5)
+
+    Returns:
+        Genetic distance in Morgans
+    """
+    import math
+
+    if not (0 <= recombination_fraction <= 0.5):
+        raise ValueError("Recombination fraction must be between 0 and 0.5")
+
+    if recombination_fraction == 0.5:
+        return float('inf')  # Infinite distance
+    elif recombination_fraction == 0:
+        return 0.0
+
+    return 0.25 * math.log((1 + 2 * recombination_fraction) / (1 - 2 * recombination_fraction))
+
+
+def kosambi_d_to_c(genetic_distance: float) -> float:
+    """Convert genetic distance to recombination fraction using Kosambi mapping function.
+
+    The Kosambi mapping function: c = 0.5 * tanh(2d)
+    where d is genetic distance in Morgans and c is recombination fraction.
+
+    Args:
+        genetic_distance: Genetic distance in Morgans
+
+    Returns:
+        Recombination fraction (0 <= c <= 0.5)
+    """
+    import math
+
+    if genetic_distance < 0:
+        raise ValueError("Genetic distance cannot be negative")
+
+    if genetic_distance == 0:
+        return 0.0
+
+    return 0.5 * math.tanh(2 * genetic_distance)

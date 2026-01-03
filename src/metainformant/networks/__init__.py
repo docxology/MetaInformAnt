@@ -17,15 +17,16 @@ from . import (
 )
 
 # Optional imports with graceful fallbacks
+# Import regulatory module components
 try:
     from . import regulatory
-    from .regulatory import GeneRegulatoryNetwork, infer_grn, regulatory_motifs, pathway_regulation_analysis
+    from .regulatory import GeneRegulatoryNetwork, infer_grn
 except ImportError:
     regulatory = None
     GeneRegulatoryNetwork = None
     infer_grn = None
 
-# Always try to import regulatory_motifs and pathway_regulation_analysis separately
+# Import regulatory functions (these may fail if optional dependencies not available)
 try:
     from .regulatory import regulatory_motifs, pathway_regulation_analysis
 except ImportError:

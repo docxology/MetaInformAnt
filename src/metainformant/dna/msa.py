@@ -7,6 +7,7 @@ like MUSCLE, MAFFT, and ClustalW.
 
 from __future__ import annotations
 
+import os
 import subprocess
 import tempfile
 from pathlib import Path
@@ -73,9 +74,17 @@ def _is_tool_available(tool: str) -> bool:
 
 
 def _run_external_alignment(sequences: Dict[str, str], method: str) -> Dict[str, str]:
-    """Run external alignment tool."""
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmpdir = Path(tmpdir)
+    """Run external alignment tool using repository-local temp directory."""
+    # Use repo-local temp directory for FAT filesystem compatibility (per CLAUDE.md)
+    repo_root = Path(__file__).resolve().parent.parent.parent.parent
+    temp_base = repo_root / ".tmp" / "python"
+    temp_base.mkdir(parents=True, exist_ok=True)
+
+    # Create a unique temporary directory within repo-local temp
+    tmpdir = tempfile.mkdtemp(dir=str(temp_base), prefix="msa_")
+    tmpdir = Path(tmpdir)
+
+    try:
 
         # Write input FASTA
         input_fasta = tmpdir / "input.fasta"
@@ -108,6 +117,11 @@ def _run_external_alignment(sequences: Dict[str, str], method: str) -> Dict[str,
             aligned_fasta_content = output_fasta.read_text()
 
         return _parse_fasta(aligned_fasta_content)
+    finally:
+        # Clean up temporary directory
+        import shutil
+        if tmpdir.exists():
+            shutil.rmtree(tmpdir, ignore_errors=True)
 
 
 def _simple_progressive_alignment(sequences: Dict[str, str]) -> Dict[str, str]:
@@ -344,6 +358,10 @@ def _parse_fasta(fasta_content: str) -> Dict[str, str]:
         sequences[current_id] = ''.join(current_seq)
 
     return sequences
+
+
+
+
 
 
 

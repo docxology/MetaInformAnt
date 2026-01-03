@@ -27,7 +27,7 @@ try:
     HAS_LOUVAIN = True
 except ImportError:
     HAS_LOUVAIN = False
-    logger.warning("python-louvain not available, Louvain method disabled")
+    community_louvain = None
 
 try:
     import numpy as np
@@ -64,6 +64,8 @@ def louvain_communities(
     if not HAS_NETWORKX:
         raise ImportError("networkx required for community detection")
     if not HAS_LOUVAIN:
+        from metainformant.core.optional_deps import warn_optional_dependency
+        warn_optional_dependency("python-louvain", "Louvain community detection")
         raise ImportError("python-louvain required for Louvain method")
 
     # Set random seed if provided

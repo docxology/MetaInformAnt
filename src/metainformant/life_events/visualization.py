@@ -28,7 +28,7 @@ try:
     HAS_SEABORN = True
 except ImportError:
     HAS_SEABORN = False
-    logger.warning("seaborn not available, enhanced plots disabled")
+    sns = None
 
 
 def plot_event_timeline(
@@ -211,7 +211,8 @@ def plot_attention_heatmap(
         return None
 
     if not HAS_SEABORN:
-        logger.warning("seaborn not available for attention heatmap")
+        from metainformant.core.optional_deps import warn_optional_dependency
+        warn_optional_dependency("seaborn", "attention heatmap visualization")
         return None
 
     # Convert attention weights to numpy array
@@ -1103,5 +1104,434 @@ def plot_prediction_accuracy(
     if output_path:
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Saved prediction accuracy plot to {output_path}")
+
+    return fig
+
+def plot_sequence_length_distribution(
+    sequences: List[EventSequence],
+    output_path: Optional[Union[str, Path]] = None,
+    figsize: Tuple[int, int] = (10, 6)
+) -> Any:
+    """Plot distribution of sequence lengths.
+
+    Args:
+        sequences: List of EventSequence objects
+        output_path: Path to save the plot (optional)
+        figsize: Figure size (width, height)
+
+    Returns:
+        matplotlib Figure object
+    """
+    if not HAS_MATPLOTLIB:
+        logger.warning("matplotlib not available, cannot create sequence length distribution plot")
+        return None
+
+    fig, axes = plt.subplots(1, 2, figsize=figsize)
+
+    # Extract sequence lengths
+    lengths = [len(seq.events) for seq in sequences]
+
+    if not lengths:
+        logger.warning("No sequences provided")
+        return None
+
+    # Plot histogram
+    axes[0].hist(lengths, bins=20, alpha=0.7, edgecolor='black')
+    axes[0].set_xlabel('Sequence Length')
+    axes[0].set_ylabel('Frequency')
+    axes[0].set_title('Sequence Length Distribution')
+    axes[0].grid(True, alpha=0.3)
+
+    # Plot box plot
+    axes[1].boxplot(lengths, vert=False)
+    axes[1].set_xlabel('Sequence Length')
+    axes[1].set_title('Sequence Length Box Plot')
+    axes[1].grid(True, alpha=0.3)
+
+    # Add statistics text
+    mean_len = np.mean(lengths)
+    median_len = np.median(lengths)
+    std_len = np.std(lengths)
+    min_len = np.min(lengths)
+    max_len = np.max(lengths)
+
+    stats_text = f'n = {len(lengths)}\nMean: {mean_len:.1f}\nMedian: {median_len:.1f}\nStd: {std_len:.1f}\nRange: {min_len}-{max_len}'
+    axes[0].text(0.95, 0.95, stats_text, transform=axes[0].transAxes,
+                verticalalignment='top', horizontalalignment='right',
+                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+
+    plt.tight_layout()
+
+    if output_path:
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        logger.info(f"Saved sequence length distribution plot to {output_path}")
+
+    return fig
+
+def plot_sequence_similarity(
+    sequences: List[EventSequence],
+    output_path: Optional[Union[str, Path]] = None,
+    figsize: Tuple[int, int] = (10, 8)
+) -> Any:
+    """Plot pairwise sequence similarities.
+
+    Args:
+        sequences: List of EventSequence objects
+        output_path: Path to save the plot (optional)
+        figsize: Figure size (width, height)
+
+    Returns:
+        matplotlib Figure object
+    """
+    if not HAS_MATPLOTLIB:
+        logger.warning("matplotlib not available, cannot create sequence similarity plot")
+        return None
+
+    try:
+        from sklearn.metrics.pairwise import cosine_similarity
+        from sklearn.feature_extraction.text import TfidfVectorizer
+        HAS_SKLEARN = True
+    except ImportError:
+        logger.warning("sklearn not available, cannot create sequence similarity plot")
+        HAS_SKLEARN = False
+        return None
+
+    # Convert sequences to feature vectors
+    sequence_strings = []
+    for seq in sequences:
+        # Create a string representation of the sequence
+        event_types = [event.event_type for event in seq.events]
+        sequence_strings.append(' '.join(event_types))
+
+    if len(sequence_strings) < 2:
+        logger.warning("Need at least 2 sequences for similarity analysis")
+        return None
+
+    # Use TF-IDF vectorization
+    vectorizer = TfidfVectorizer()
+    try:
+        tfidf_matrix = vectorizer.fit_transform(sequence_strings)
+        
+        # Calculate cosine similarity
+        similarity_matrix = cosine_similarity(tfidf_matrix)
+        
+        # Plot heatmap
+        fig, ax = plt.subplots(figsize=figsize)
+        im = ax.imshow(similarity_matrix, cmap='viridis', aspect='auto', vmin=0, vmax=1)
+        
+        # Set labels
+        n_seq = len(sequences)
+        ax.set_xticks(range(n_seq))
+        ax.set_yticks(range(n_seq))
+        ax.set_xticklabels([f'Seq {i+1}' for i in range(n_seq)], rotation=45, ha='right')
+        ax.set_yticklabels([f'Seq {i+1}' for i in range(n_seq)])
+        
+        ax.set_title('Sequence Similarity Matrix (Cosine Similarity)')
+        
+        # Add colorbar
+        cbar = plt.colorbar(im, ax=ax, shrink=0.8)
+        cbar.set_label('Similarity Score')
+        
+        plt.tight_layout()
+        
+        if output_path:
+            plt.savefig(output_path, dpi=300, bbox_inches='tight')
+            logger.info(f"Saved sequence similarity plot to {output_path}")
+        
+        return fig
+        
+    except Exception as e:
+        logger.warning(f"Failed to compute similarities: {e}")
+        return None
+
+def plot_temporal_density(
+    sequences: List[EventSequence],
+    output_path: Optional[Union[str, Path]] = None,
+    bins: int = 20,
+    figsize: Tuple[int, int] = (12, 6)
+) -> Any:
+    """Plot temporal density of events across all sequences.
+
+    Args:
+        sequences: List of EventSequence objects
+        output_path: Path to save the plot (optional)
+        bins: Number of time bins for density estimation
+        figsize: Figure size (width, height)
+
+    Returns:
+        matplotlib Figure object
+    """
+    if not HAS_MATPLOTLIB:
+        logger.warning("matplotlib not available, cannot create temporal density plot")
+        return None
+
+    # Collect all event timestamps
+    all_timestamps = []
+    for seq in sequences:
+        for event in seq.events:
+            all_timestamps.append(event.timestamp)
+
+    if not all_timestamps:
+        logger.warning("No timestamps found in sequences")
+        return None
+
+    # Convert timestamps to numerical values (days since earliest event)
+    timestamps_numeric = [(ts - min(all_timestamps)).total_seconds() / (24 * 3600) 
+                         for ts in all_timestamps]
+
+    fig, axes = plt.subplots(1, 2, figsize=figsize)
+
+    # Plot histogram
+    counts, bin_edges, _ = axes[0].hist(timestamps_numeric, bins=bins, alpha=0.7, edgecolor='black')
+    axes[0].set_xlabel('Time (days)')
+    axes[0].set_ylabel('Event Count')
+    axes[0].set_title('Event Temporal Distribution')
+    axes[0].grid(True, alpha=0.3)
+
+    # Plot density estimate
+    try:
+        from scipy import stats
+        # Use Gaussian kernel density estimation
+        kde = stats.gaussian_kde(timestamps_numeric)
+        x_range = np.linspace(min(timestamps_numeric), max(timestamps_numeric), 200)
+        density = kde(x_range)
+        
+        axes[1].plot(x_range, density, 'b-', linewidth=2)
+        axes[1].fill_between(x_range, density, alpha=0.3)
+        axes[1].set_xlabel('Time (days)')
+        axes[1].set_ylabel('Density')
+        axes[1].set_title('Event Temporal Density (KDE)')
+        axes[1].grid(True, alpha=0.3)
+        
+    except ImportError:
+        # Fallback: just show histogram again
+        axes[1].hist(timestamps_numeric, bins=bins, alpha=0.7, edgecolor='black')
+        axes[1].set_xlabel('Time (days)')
+        axes[1].set_ylabel('Event Count')
+        axes[1].set_title('Event Temporal Distribution (Histogram)')
+        axes[1].grid(True, alpha=0.3)
+
+    # Add statistics
+    mean_time = np.mean(timestamps_numeric)
+    median_time = np.median(timestamps_numeric)
+    std_time = np.std(timestamps_numeric)
+    
+    stats_text = f'Events: {len(all_timestamps)}\nMean: {mean_time:.1f} days\nMedian: {median_time:.1f} days\nStd: {std_time:.1f} days'
+    axes[0].text(0.02, 0.98, stats_text, transform=axes[0].transAxes,
+                verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+
+    plt.tight_layout()
+
+    if output_path:
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        logger.info(f"Saved temporal density plot to {output_path}")
+
+    return fig
+
+def plot_temporal_patterns(
+    sequences: List[EventSequence],
+    importance_scores: Optional[Dict[int, float]] = None,
+    output_path: Optional[Union[str, Path]] = None,
+    figsize: Tuple[int, int] = (14, 8)
+) -> Any:
+    """Plot temporal patterns of life events with importance highlighting.
+
+    Args:
+        sequences: List of EventSequence objects
+        importance_scores: Optional dict mapping sequence indices to importance scores
+        output_path: Path to save the plot (optional)
+        figsize: Figure size (width, height)
+
+    Returns:
+        matplotlib Figure object
+    """
+    if not HAS_MATPLOTLIB:
+        logger.warning("matplotlib not available, cannot create temporal patterns plot")
+        return None
+
+    fig, axes = plt.subplots(2, 1, figsize=figsize)
+
+    # Plot 1: Timeline view of all sequences
+    ax1 = axes[0]
+    colors = plt.cm.viridis(np.linspace(0, 1, len(sequences)))
+
+    # Find global time range
+    all_timestamps = []
+    for seq in sequences:
+        for event in seq.events:
+            all_timestamps.append(event.timestamp)
+
+    if all_timestamps:
+        min_time = min(all_timestamps)
+        max_time = max(all_timestamps)
+        time_range = max_time - min_time
+
+        for i, seq in enumerate(sequences):
+            seq_color = colors[i]
+            # Adjust color intensity based on importance
+            if importance_scores and i in importance_scores:
+                alpha = 0.3 + 0.7 * importance_scores[i]  # 0.3 to 1.0
+                seq_color = (*seq_color[:3], alpha)
+
+            for event in seq.events:
+                # Convert to relative time
+                rel_time = (event.timestamp - min_time).total_seconds() / (24 * 3600)  # days
+                ax1.scatter(rel_time, i, color=seq_color, s=50, alpha=0.8)
+                ax1.text(rel_time, i + 0.1, event.event_type.split(':')[-1],
+                        fontsize=6, ha='center', va='bottom', rotation=45)
+
+    ax1.set_xlabel('Time (days)')
+    ax1.set_ylabel('Sequence Index')
+    ax1.set_title('Temporal Patterns of Life Events')
+    ax1.grid(True, alpha=0.3)
+
+    # Plot 2: Event type frequency over time
+    ax2 = axes[1]
+
+    # Bin events by time
+    if all_timestamps:
+        time_bins = np.linspace(0, (max_time - min_time).total_seconds() / (24 * 3600), 10)
+
+        # Collect event frequencies by type and time bin
+        event_types = set()
+        for seq in sequences:
+            for event in seq.events:
+                event_types.add(event.event_type)
+
+        event_types = sorted(list(event_types))
+
+        # Create frequency matrix
+        freq_matrix = np.zeros((len(event_types), len(time_bins) - 1))
+
+        for seq in sequences:
+            for event in seq.events:
+                rel_time = (event.timestamp - min_time).total_seconds() / (24 * 3600)
+                time_bin = np.digitize(rel_time, time_bins) - 1
+                if 0 <= time_bin < len(time_bins) - 1:
+                    event_idx = event_types.index(event.event_type)
+                    freq_matrix[event_idx, time_bin] += 1
+
+        # Plot as heatmap
+        im = ax2.imshow(freq_matrix, aspect='auto', cmap='Blues')
+        ax2.set_xticks(range(len(time_bins) - 1))
+        ax2.set_yticks(range(len(event_types)))
+        ax2.set_xticklabels([f'{time_bins[i]:.1f}' for i in range(len(time_bins) - 1)])
+        ax2.set_yticklabels([et.split(':')[-1] for et in event_types])
+        ax2.set_xlabel('Time Bin (days)')
+        ax2.set_ylabel('Event Type')
+        ax2.set_title('Event Frequency Over Time')
+
+        # Add colorbar
+        plt.colorbar(im, ax=ax2, shrink=0.8)
+
+    plt.tight_layout()
+
+    if output_path:
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        logger.info(f"Saved temporal patterns plot to {output_path}")
+
+    return fig
+
+def plot_transition_network(sequences: List[EventSequence], output_path: Optional[Union[str, Path]] = None,
+                          top_n: int = 10, figsize: Tuple[int, int] = (12, 8)) -> Any:
+    """Plot transition network between event types.
+
+    Args:
+        sequences: List of EventSequence objects
+        output_path: Path to save the plot (optional)
+        top_n: Number of top transitions to show
+        figsize: Figure size (width, height)
+
+    Returns:
+        matplotlib Figure object
+    """
+    if not HAS_MATPLOTLIB:
+        logger.warning("matplotlib not available, cannot create transition network plot")
+        return None
+
+    try:
+        import networkx as nx
+        HAS_NETWORKX = True
+    except ImportError:
+        logger.warning("networkx not available, cannot create transition network plot")
+        HAS_NETWORKX = False
+        return None
+
+    # Build transition matrix
+    transitions = {}
+    event_types = set()
+
+    for seq in sequences:
+        events = seq.events
+        for i in range(len(events) - 1):
+            from_event = events[i].event_type
+            to_event = events[i + 1].event_type
+
+            event_types.add(from_event)
+            event_types.add(to_event)
+
+            key = (from_event, to_event)
+            transitions[key] = transitions.get(key, 0) + 1
+
+    if not transitions:
+        logger.warning("No transitions found in sequences")
+        return None
+
+    # Get top N transitions
+    sorted_transitions = sorted(transitions.items(), key=lambda x: x[1], reverse=True)[:top_n]
+    top_event_types = set()
+    for (from_event, to_event), _ in sorted_transitions:
+        top_event_types.add(from_event)
+        top_event_types.add(to_event)
+
+    # Create network
+    G = nx.DiGraph()
+
+    # Add nodes
+    for event_type in top_event_types:
+        G.add_node(event_type, label=event_type.split(':')[-1])
+
+    # Add edges with weights
+    for (from_event, to_event), weight in sorted_transitions:
+        G.add_edge(from_event, to_event, weight=weight)
+
+    # Create plot
+    fig, ax = plt.subplots(figsize=figsize)
+
+    # Calculate positions
+    pos = nx.spring_layout(G, k=2, iterations=50, seed=42)
+
+    # Draw nodes
+    node_sizes = [G.degree(node) * 100 + 300 for node in G.nodes()]
+    nx.draw_networkx_nodes(G, pos, ax=ax, node_size=node_sizes,
+                          node_color='lightblue', alpha=0.7)
+
+    # Draw edges
+    edges = G.edges()
+    weights = [G[u][v]['weight'] for u, v in edges]
+    max_weight = max(weights) if weights else 1
+
+    # Scale edge widths
+    edge_widths = [w / max_weight * 5 + 1 for w in weights]
+    nx.draw_networkx_edges(G, pos, ax=ax, width=edge_widths,
+                          edge_color='gray', alpha=0.6, arrows=True,
+                          arrowsize=20, arrowstyle='->')
+
+    # Draw labels
+    labels = {node: node.split(':')[-1] for node in G.nodes()}
+    nx.draw_networkx_labels(G, pos, labels, ax=ax, font_size=8, font_weight='bold')
+
+    # Add edge labels for weights
+    edge_labels = {(u, v): str(G[u][v]['weight']) for u, v in edges}
+    nx.draw_networkx_edge_labels(G, pos, edge_labels, ax=ax, font_size=6)
+
+    ax.set_title(f'Event Transition Network\n(Top {top_n} transitions)')
+    ax.axis('off')
+
+    plt.tight_layout()
+
+    if output_path:
+        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        logger.info(f"Saved transition network plot to {output_path}")
 
     return fig

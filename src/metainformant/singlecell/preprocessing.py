@@ -23,7 +23,6 @@ try:
 except ImportError:
     ad = None
     HAS_ANNDATA = False
-    logger.warning("anndata not available - using fallback SingleCellData implementation")
 
 # Custom SingleCellData class as fallback when anndata is not available
 class SingleCellData:
@@ -85,6 +84,8 @@ def load_count_matrix(filepath: str | Path, format: str = "h5ad", **kwargs) -> S
 
     if format == "h5ad":
         if not HAS_ANNDATA:
+            from metainformant.core.optional_deps import warn_optional_dependency
+            warn_optional_dependency("anndata", "H5AD file format support")
             raise errors.ConfigurationError("h5ad format requires anndata package")
 
         try:
@@ -678,4 +679,8 @@ def remove_batch_effects(data: SingleCellData, batch_key: str,
 
     logger.info("Batch effect correction completed")
     return result
+
+
+
+
 

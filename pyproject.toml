@@ -178,7 +178,7 @@ addopts = [
     # Default timeout of 10 seconds for fast tests (can be overridden for slow tests)
     # For faster runs, exclude slow tests: -m "not slow"
 ]
-timeout = 10  # Default 10-second timeout for all tests
+# timeout = 10  # Commented out - requires pytest-timeout plugin
 markers = [
     "slow: marks tests as slow (deselect with '-m \"not slow\"')",
     "network: marks tests requiring network access - REAL API CALLS ONLY",

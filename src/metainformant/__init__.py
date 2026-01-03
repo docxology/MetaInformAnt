@@ -61,6 +61,7 @@ from . import (
     phenotype,
     ecology,
     epigenome,
+    menu,
 )
 
 
@@ -106,5 +107,6 @@ __all__ = [
     # Utilities
     "quality",
     "visualization",
+    "menu",
 ]
 

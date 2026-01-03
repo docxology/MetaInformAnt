@@ -22,7 +22,7 @@ try:
 except ImportError:
     psycopg2 = None
     HAS_PSYCOPG2 = False
-    logger.warning("psycopg2 not available, PostgreSQL functionality disabled")
+    # Use lazy warning - only warn when database functionality is actually used
 
 
 class PostgresConnection:
@@ -72,6 +72,8 @@ class PostgresConnection:
             max_connections: Maximum pool size
         """
         if not HAS_PSYCOPG2:
+            from metainformant.core.optional_deps import warn_optional_dependency
+            warn_optional_dependency("psycopg2", "PostgreSQL database functionality")
             raise ImportError("psycopg2 required for PostgreSQL functionality")
 
         self.host = host
@@ -362,6 +364,8 @@ def get_db_client(
         ImportError: If psycopg2 is not available
     """
     if not HAS_PSYCOPG2:
+        from metainformant.core.optional_deps import warn_optional_dependency
+        warn_optional_dependency("psycopg2", "PostgreSQL database operations")
         raise ImportError("psycopg2 required for database operations")
 
     return PostgresConnection(

@@ -163,3 +163,37 @@ def selection_gradient(trait_values: List[float], fitness_values: List[float]) -
         return 0.0
 
     return covariance / trait_variance
+
+def multilevel_selection_decomposition(group_trait_mean: float,
+                                     individual_trait_variance: float,
+                                     group_trait_variance: float,
+                                     group_size: int) -> Dict[str, float]:
+    """Decompose selection into individual and group-level components.
+
+    Args:
+        group_trait_mean: Mean trait value across groups
+        individual_trait_variance: Variance within groups
+        group_trait_variance: Variance between groups
+        group_size: Average group size
+
+    Returns:
+        Dictionary with multilevel selection components
+    """
+    if group_size <= 0:
+        raise ValueError("Group size must be positive")
+
+    # Total phenotypic variance
+    total_variance = individual_trait_variance + group_trait_variance * group_size
+
+    # Individual-level selection
+    individual_selection = individual_trait_variance / total_variance if total_variance > 0 else 0
+
+    # Group-level selection
+    group_selection = (group_trait_variance * group_size) / total_variance if total_variance > 0 else 0
+
+    return {
+        'total_variance': total_variance,
+        'individual_level_selection': individual_selection,
+        'group_level_selection': group_selection,
+        'multilevel_selection_ratio': group_selection / individual_selection if individual_selection > 0 else 0
+    }

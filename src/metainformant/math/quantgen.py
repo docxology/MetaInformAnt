@@ -48,157 +48,45 @@ def realized_heritability(selection_response: float, selection_differential: flo
     return selection_response / selection_differential
 
 
-def multilevel_selection_decomposition(group_trait_mean: float,
-                                     individual_trait_variance: float,
-                                     group_trait_variance: float,
-                                     group_size: int) -> Dict[str, float]:
-    """Decompose selection into individual and group-level components.
+def lande_equation_response(selection_gradient: List[float], genetic_variance_covariance: List[List[float]]) -> float:
+    """Calculate evolutionary response using Lande's equation.
+
+    Lande's equation predicts the evolutionary response to selection as:
+    R = G * β, where G is the genetic variance-covariance matrix and β is the selection gradient.
 
     Args:
-        group_trait_mean: Mean trait value across groups
-        individual_trait_variance: Variance within groups
-        group_trait_variance: Variance between groups
-        group_size: Average group size
+        selection_gradient: Vector of selection gradients
+        genetic_variance_covariance: Genetic variance-covariance matrix (G matrix)
 
     Returns:
-        Dictionary with multilevel selection components
+        Predicted evolutionary response
+
+    Examples:
+        >>> gradient = [0.1, -0.05]
+        >>> G = [[1.0, 0.3], [0.3, 0.8]]
+        >>> response = lande_equation_response(gradient, G)
     """
-    if group_size <= 0:
-        raise ValueError("Group size must be positive")
+    import numpy as np
 
-    # Total phenotypic variance
-    total_variance = individual_trait_variance + group_trait_variance * group_size
+    if not selection_gradient or not genetic_variance_covariance:
+        raise ValueError("Selection gradient and G matrix cannot be empty")
 
-    # Individual-level selection
-    individual_selection = individual_trait_variance / total_variance if total_variance > 0 else 0
+    n_traits = len(selection_gradient)
+    if len(genetic_variance_covariance) != n_traits:
+        raise ValueError("G matrix dimensions must match selection gradient length")
 
-    # Group-level selection
-    group_selection = (group_trait_variance * group_size) / total_variance if total_variance > 0 else 0
+    for row in genetic_variance_covariance:
+        if len(row) != n_traits:
+            raise ValueError("G matrix must be square")
 
-    return {
-        'total_variance': total_variance,
-        'individual_level_selection': individual_selection,
-        'group_level_selection': group_selection,
-        'multilevel_selection_ratio': group_selection / individual_selection if individual_selection > 0 else 0
-    }
+    # Convert to numpy arrays
+    beta = np.array(selection_gradient)
+    G = np.array(genetic_variance_covariance)
 
+    # Calculate response: R = G * β
+    response_vector = np.dot(G, beta)
 
-def lande_equation_response(selection_intensity: float, heritability: float,
-                          phenotypic_sd: float) -> float:
-    """Calculate response to selection using Lande's equation.
-
-    Args:
-        selection_intensity: Selection intensity (i)
-        heritability: Heritability (h²)
-        phenotypic_sd: Phenotypic standard deviation
-
-    Returns:
-        Response to selection (R)
-    """
-    if phenotypic_sd <= 0:
-        raise ValueError("Phenotypic standard deviation must be positive")
-
-    # R = i * h² * σ_p
-    return selection_intensity * heritability * phenotypic_sd
+    # Return the magnitude of the response vector
+    return float(np.linalg.norm(response_vector))
 
 
-def heritability(broader_sense: bool, variance_components: Dict[str, float]) -> float:
-    """Calculate heritability from variance components.
-
-    Args:
-        broader_sense: If True, calculate broad-sense heritability (H²), else narrow-sense (h²)
-        variance_components: Dictionary with variance components
-
-    Returns:
-        Heritability estimate
-    """
-    required_keys = ['additive', 'dominance', 'epistasis', 'environmental']
-    if not all(key in variance_components for key in required_keys):
-        raise ValueError(f"Variance components must include: {required_keys}")
-
-    additive = variance_components['additive']
-    dominance = variance_components['dominance']
-    epistasis = variance_components['epistasis']
-    environmental = variance_components['environmental']
-
-    total_genetic = additive + dominance + epistasis
-    total_phenotypic = total_genetic + environmental
-
-    if total_phenotypic == 0:
-        return 0.0
-
-    if broader_sense:
-        # Broad-sense heritability: H² = Vg/Vp
-        return total_genetic / total_phenotypic
-    else:
-        # Narrow-sense heritability: h² = Va/Vp
-        return additive / total_phenotypic
-
-
-def genetic_correlation(trait1_values: List[float], trait2_values: List[float],
-                       relatedness_values: List[float]) -> float:
-    """Calculate genetic correlation between traits.
-
-    Args:
-        trait1_values: Values of first trait
-        trait2_values: Values of second trait
-        relatedness_values: Relatedness coefficients
-
-    Returns:
-        Genetic correlation estimate
-    """
-    if len(trait1_values) != len(trait2_values) or len(trait1_values) != len(relatedness_values):
-        raise ValueError("All input lists must have same length")
-
-    if not trait1_values:
-        return 0.0
-
-    # Simplified estimation using cross-trait covariances
-    # This is a basic approximation - full genetic correlation requires more complex estimation
-
-    # Calculate trait means
-    mean1 = statistics.mean(trait1_values)
-    mean2 = statistics.mean(trait2_values)
-    mean_r = statistics.mean(relatedness_values)
-
-    # Calculate covariances weighted by relatedness
-    cov_11 = sum(r * (t1 - mean1) ** 2 for t1, r in zip(trait1_values, relatedness_values)) / len(trait1_values)
-    cov_22 = sum(r * (t2 - mean2) ** 2 for t2, r in zip(trait2_values, relatedness_values)) / len(trait2_values)
-    cov_12 = sum(r * (t1 - mean1) * (t2 - mean2) for t1, t2, r in zip(trait1_values, trait2_values, relatedness_values)) / len(trait1_values)
-
-    # Genetic correlation
-    if cov_11 > 0 and cov_22 > 0:
-        return cov_12 / (cov_11 ** 0.5 * cov_22 ** 0.5)
-    else:
-        return 0.0
-
-
-def response_to_selection(selection_differential: float, heritability: float) -> float:
-    """Calculate response to selection using breeder's equation.
-
-    Args:
-        selection_differential: Selection differential (S)
-        heritability: Heritability (h²)
-
-    Returns:
-        Response to selection (R)
-    """
-    return heritability * selection_differential
-
-
-def breeder_equation(selection_intensity: float, heritability: float,
-                   phenotypic_sd: float) -> float:
-    """Calculate response to selection using breeder's equation with selection intensity.
-
-    Args:
-        selection_intensity: Selection intensity (i)
-        heritability: Heritability (h²)
-        phenotypic_sd: Phenotypic standard deviation (σ_p)
-
-    Returns:
-        Response to selection (R = i * h² * σ_p)
-    """
-    if phenotypic_sd <= 0:
-        raise ValueError("Phenotypic standard deviation must be positive")
-
-    return selection_intensity * heritability * phenotypic_sd

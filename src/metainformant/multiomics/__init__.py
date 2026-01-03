@@ -8,7 +8,7 @@ correlation analysis, and systems-level biological interpretation.
 from __future__ import annotations
 
 # Import all multiomics submodules
-from . import integration
+from . import integration, visualization
 
 # Type checking imports
 from typing import TYPE_CHECKING
@@ -19,7 +19,11 @@ if TYPE_CHECKING:
 __all__ = [
     # Core integration functionality
     "integration",
+    "visualization",
 ]
+
+
+
 
 
 

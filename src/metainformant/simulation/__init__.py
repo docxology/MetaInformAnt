@@ -13,6 +13,7 @@ from . import (
     popgen,
     rna,
     sequences,
+    visualization,
     workflow,
 )
 
@@ -29,6 +30,8 @@ except ImportError:
 
 # Direct imports of commonly used classes
 from .agents import Agent, GridWorld
+from .sequences import generate_random_dna, generate_random_protein, mutate_sequence
+from .rna import simulate_counts_negative_binomial
 
 # Type checking imports
 from typing import TYPE_CHECKING
@@ -48,9 +51,16 @@ __all__ = [
     # Workflow and testing
     "workflow",
 
+    # Visualization
+    "visualization",
+
     # Direct exports
     "Agent",
     "GridWorld",
+    "generate_random_dna",
+    "generate_random_protein",
+    "mutate_sequence",
+    "simulate_counts_negative_binomial",
 ]
 
 

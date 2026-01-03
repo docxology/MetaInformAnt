@@ -41,14 +41,21 @@ def run_workflow_for_species(config_path: str | Path,
         config.species_list = [species]
 
     # Execute workflow
-    return_codes = execute_workflow(config, **kwargs)
+    workflow_result = execute_workflow(config, steps=steps, **kwargs)
 
     results = {
         'species': species or config.species_list[0],
         'config_path': str(config_path),
-        'return_codes': return_codes,
-        'success': all(rc == 0 for rc in return_codes),
-        'steps_executed': len(return_codes)
+        'workflow_result': workflow_result,
+        'return_codes': workflow_result.return_codes,  # Backward compatibility
+        'success': workflow_result.success,
+        'steps_executed': workflow_result.total_steps,
+        'successful_steps': workflow_result.successful_steps,
+        'failed_steps': workflow_result.failed_steps,
+        'step_details': [step.__dict__ for step in workflow_result.steps_executed],
+        # Backward compatibility for existing scripts
+        'completed': [step.step_name for step in workflow_result.steps_executed if step.success],
+        'failed': [step.step_name for step in workflow_result.steps_executed if not step.success]
     }
 
     logger.info(f"Workflow completed for {results['species']}: {'SUCCESS' if results['success'] else 'FAILED'}")
@@ -147,6 +154,10 @@ def discover_species_configs(config_dir: Path) -> List[Dict[str, Any]]:
     logger.info(f"Discovered {len(configs)} species configuration files")
 
     return configs
+
+
+
+
 
 
 

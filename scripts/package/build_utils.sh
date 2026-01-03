@@ -160,12 +160,15 @@ test_package_installation() {
     # Setup cleanup trap
     trap "rm -rf '$temp_venv'" EXIT
 
-    # Create and activate venv
-    python -m venv "$temp_venv"
+    # Create and activate venv using uv
+    if ! uv venv "$temp_venv" >/dev/null 2>&1; then
+        print_status "ERROR" "Failed to create virtual environment"
+        return 1
+    fi
     source "$temp_venv/bin/activate"
 
-    # Install package
-    if pip install "$package_path"; then
+    # Install package using uv (UV-exclusive policy)
+    if uv pip install "$package_path"; then
         print_status "SUCCESS" "Package installed successfully"
     else
         print_status "ERROR" "Package installation failed"

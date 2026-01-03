@@ -13,6 +13,7 @@ from . import (
     query,
     serialize,
     types,
+    visualization,
 )
 
 # Optional imports with graceful fallbacks
@@ -36,7 +37,11 @@ __all__ = [
     # Data structures and utilities
     "types",
     "serialize",
+    "visualization",
 ]
+
+
+
 
 
 

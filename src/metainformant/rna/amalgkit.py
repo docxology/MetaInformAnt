@@ -47,11 +47,11 @@ class AmalgkitParams:
         }
 
 
-def build_cli_args(params: AmalgkitParams | None, *, for_cli: bool = False) -> List[str]:
+def build_cli_args(params: AmalgkitParams | Dict[str, Any] | None, *, for_cli: bool = False) -> List[str]:
     """Build command-line arguments for amalgkit.
 
     Args:
-        params: Amalgkit parameters
+        params: Amalgkit parameters (AmalgkitParams object or dict)
         for_cli: Whether to format for CLI usage
 
     Returns:
@@ -59,36 +59,68 @@ def build_cli_args(params: AmalgkitParams | None, *, for_cli: bool = False) -> L
     """
     args = []
 
-    if params:
-        args.extend(['--work-dir', str(params.work_dir)])
-        args.extend(['--threads', str(params.threads)])
+    if params is None:
+        return args
 
-        if params.species_list:
-            for species in params.species_list:
+    # Handle dict parameters
+    if isinstance(params, dict):
+        if 'work_dir' in params:
+            args.extend(['--work-dir', str(params['work_dir'])])
+        if 'threads' in params:
+            args.extend(['--threads', str(params['threads'])])
+        if 'species_list' in params and params['species_list']:
+            for species in params['species_list']:
                 args.extend(['--species', species])
 
-        # Add extra parameters
-        for key, value in params.extra_params.items():
+        # Add remaining parameters
+        skip_keys = {'work_dir', 'threads', 'species_list', 'extra_params', 'genome', 'filters',
+                     'taxon_id', 'auto_install_amalgkit', 'log_dir', 'resolve_names', 'mark_missing_rank'}
+        for key, value in params.items():
+            if key in skip_keys or value is None:
+                continue
             if isinstance(value, bool):
-                if value:
-                    args.append(f'--{key.replace("_", "-")}')
+                # Amalgkit expects --flag yes/no not just --flag
+                # Note: Keep underscores, don't convert to hyphens for amalgkit
+                args.extend([f'--{key}', 'yes' if value else 'no'])
             elif isinstance(value, (int, float)):
-                args.extend([f'--{key.replace("_", "-")}', str(value)])
+                args.extend([f'--{key}', str(value)])
             elif isinstance(value, str):
-                args.extend([f'--{key.replace("_", "-")}', value])
+                args.extend([f'--{key}', value])
             elif isinstance(value, list):
                 for item in value:
-                    args.extend([f'--{key.replace("_", "-")}', str(item)])
+                    args.extend([f'--{key}', str(item)])
+        return args
+
+    # Handle AmalgkitParams object
+    args.extend(['--work-dir', str(params.work_dir)])
+    args.extend(['--threads', str(params.threads)])
+
+    if params.species_list:
+        for species in params.species_list:
+            args.extend(['--species', species])
+
+    # Add extra parameters
+    for key, value in params.extra_params.items():
+        if isinstance(value, bool):
+            if value:
+                args.append(f'--{key.replace("_", "-")}')
+        elif isinstance(value, (int, float)):
+            args.extend([f'--{key.replace("_", "-")}', str(value)])
+        elif isinstance(value, str):
+            args.extend([f'--{key.replace("_", "-")}', value])
+        elif isinstance(value, list):
+            for item in value:
+                args.extend([f'--{key.replace("_", "-")}', str(item)])
 
     return args
 
 
-def build_amalgkit_command(subcommand: str, params: AmalgkitParams | None = None) -> List[str]:
+def build_amalgkit_command(subcommand: str, params: AmalgkitParams | Dict[str, Any] | None = None) -> List[str]:
     """Build full amalgkit command.
 
     Args:
         subcommand: Amalgkit subcommand
-        params: Parameters for the command
+        params: Parameters for the command (AmalgkitParams object or dict)
 
     Returns:
         Complete command as list of strings
@@ -165,7 +197,7 @@ def ensure_cli_available(*, auto_install: bool = False) -> Tuple[bool, str, Dict
         return False, f"Installation failed: {e}", None
 
 
-def run_amalgkit(subcommand: str, params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+def run_amalgkit(subcommand: str, params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
     """Run amalgkit command.
 
     Args:
@@ -197,11 +229,11 @@ def run_amalgkit(subcommand: str, params: AmalgkitParams | None = None, **kwargs
         raise
 
 
-def metadata(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+def metadata(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
     """Run amalgkit metadata command.
 
     Args:
-        params: Amalgkit parameters
+        params: Amalgkit parameters (AmalgkitParams object or dict)
         **kwargs: Additional arguments
 
     Returns:
@@ -210,7 +242,7 @@ def metadata(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.
     return run_amalgkit('metadata', params, **kwargs)
 
 
-def integrate(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+def integrate(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
     """Run amalgkit integrate command.
 
     Args:
@@ -223,7 +255,7 @@ def integrate(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess
     return run_amalgkit('integrate', params, **kwargs)
 
 
-def config(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+def config(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
     """Run amalgkit config command.
 
     Args:
@@ -236,7 +268,7 @@ def config(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.Co
     return run_amalgkit('config', params, **kwargs)
 
 
-def select(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+def select(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
     """Run amalgkit select command.
 
     Args:
@@ -249,7 +281,7 @@ def select(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.Co
     return run_amalgkit('select', params, **kwargs)
 
 
-def getfastq(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+def getfastq(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
     """Run amalgkit getfastq command.
 
     Args:
@@ -262,7 +294,7 @@ def getfastq(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.
     return run_amalgkit('getfastq', params, **kwargs)
 
 
-def quant(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+def quant(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
     """Run amalgkit quant command.
 
     Args:
@@ -275,7 +307,7 @@ def quant(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.Com
     return run_amalgkit('quant', params, **kwargs)
 
 
-def merge(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+def merge(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
     """Run amalgkit merge command.
 
     Args:
@@ -288,7 +320,7 @@ def merge(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.Com
     return run_amalgkit('merge', params, **kwargs)
 
 
-def cstmm(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+def cstmm(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
     """Run amalgkit cstmm command.
 
     Args:
@@ -301,7 +333,7 @@ def cstmm(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.Com
     return run_amalgkit('cstmm', params, **kwargs)
 
 
-def curate(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+def curate(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
     """Run amalgkit curate command.
 
     Args:
@@ -314,7 +346,7 @@ def curate(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.Co
     return run_amalgkit('curate', params, **kwargs)
 
 
-def csca(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+def csca(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
     """Run amalgkit csca command.
 
     Args:
@@ -327,7 +359,7 @@ def csca(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.Comp
     return run_amalgkit('csca', params, **kwargs)
 
 
-def sanity(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+def sanity(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
     """Run amalgkit sanity command.
 
     Args:
@@ -338,6 +370,10 @@ def sanity(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.Co
         CompletedProcess instance
     """
     return run_amalgkit('sanity', params, **kwargs)
+
+
+
+
 
 
 

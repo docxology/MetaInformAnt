@@ -512,3 +512,7 @@ def build_hierarchy_dict(onto: Ontology) -> Dict[str, Set[str]]:
 # Import re at module level for GO ID validation
 import re
 
+
+
+
+

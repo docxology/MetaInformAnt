@@ -629,3 +629,7 @@ def compare_sequences_information(
     logger.info(f"Compared sequences using {method}: {len(seq1)} bp/aa each")
     return comparison
 
+
+
+
+

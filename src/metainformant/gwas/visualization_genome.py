@@ -342,3 +342,110 @@ def genome_wide_ld_heatmap(
         "chromosomes": list(chrom_data.keys()),
         "ld_threshold": ld_threshold
     }
+
+def manhattan_plot(results: list[dict], output_path: Optional[str | Path] = None,
+                  significance_threshold: float = 5e-8, figsize: tuple[int, int] = (12, 8)) -> dict[str, Any]:
+    """Create a Manhattan plot for GWAS results.
+
+    Args:
+        results: List of dictionaries with CHROM, POS, p_value keys
+        output_path: Path to save the plot
+        significance_threshold: P-value threshold for significance line
+        figsize: Figure size
+
+    Returns:
+        Dictionary with plot status and metadata
+    """
+    try:
+        import matplotlib.pyplot as plt
+        HAS_MATPLOTLIB = True
+    except ImportError:
+        HAS_MATPLOTLIB = False
+
+    if not HAS_MATPLOTLIB:
+        return {"status": "error", "message": "matplotlib not available"}
+
+    try:
+        # Convert to DataFrame-like structure
+        chromosomes = []
+        positions = []
+        p_values = []
+
+        for result in results:
+            chromosomes.append(result.get("CHROM", result.get("chr", 1)))
+            positions.append(result.get("POS", result.get("pos", 0)))
+            p_values.append(result.get("p_value", result.get("P", 1.0)))
+
+        # Create chromosome mapping
+        unique_chroms = sorted(set(str(chrom) for chrom in chromosomes))
+        chrom_to_num = {chrom: i+1 for i, chrom in enumerate(unique_chroms)}
+
+        # Convert chromosome names to numbers
+        chrom_nums = [chrom_to_num[str(chrom)] for chrom in chromosomes]
+
+        # Calculate x positions
+        x_positions = []
+        chrom_max_pos = {}
+        current_pos = 0
+
+        for i, (chrom, pos) in enumerate(zip(chrom_nums, positions)):
+            if chrom not in chrom_max_pos:
+                chrom_max_pos[chrom] = current_pos
+            x_positions.append(current_pos + pos)
+            current_pos = max(current_pos, chrom_max_pos[chrom] + pos + 1)
+
+        # Convert p-values to -log10
+        neg_log_p = [-math.log10(max(p, 1e-300)) for p in p_values]
+
+        # Create plot
+        fig, ax = plt.subplots(figsize=figsize)
+
+        # Color by chromosome
+        colors = ['#1f77b4', '#ff7f0e'] * len(unique_chroms)
+        chrom_colors = {}
+        for i, chrom in enumerate(unique_chroms):
+            chrom_colors[chrom] = colors[i % len(colors)]
+
+        for i in range(len(x_positions)):
+            ax.scatter(x_positions[i], neg_log_p[i],
+                      color=chrom_colors[chrom_nums[i]],
+                      alpha=0.8, s=20)
+
+        # Add significance line
+        sig_threshold = -math.log10(significance_threshold)
+        ax.axhline(y=sig_threshold, color='red', linestyle='--', alpha=0.7,
+                  label=f'Significance threshold ({significance_threshold})')
+
+        # Add chromosome labels at centers
+        chrom_centers = []
+        for chrom in unique_chroms:
+            chrom_x = [x for x, c in zip(x_positions, chrom_nums) if c == chrom]
+            if chrom_x:
+                chrom_centers.append((chrom, sum(chrom_x) / len(chrom_x)))
+
+        for chrom, center in chrom_centers:
+            ax.text(center, min(neg_log_p) - 0.5, str(chrom),
+                   ha='center', va='top', fontsize=8)
+
+        ax.set_xlabel('Genomic Position')
+        ax.set_ylabel('-log₁₀(p-value)')
+        ax.set_title('Manhattan Plot')
+        ax.legend()
+        ax.grid(True, alpha=0.3)
+
+        plt.tight_layout()
+
+        if output_path:
+            plt.savefig(output_path, dpi=300, bbox_inches='tight')
+
+        return {
+            "status": "success",
+            "n_variants": len(results),
+            "n_chromosomes": len(unique_chroms),
+            "significance_threshold": significance_threshold,
+            "chromosomes": unique_chroms,
+            "output_path": str(output_path) if output_path else None
+        }
+
+    except Exception as e:
+        return {"status": "error", "message": str(e)}

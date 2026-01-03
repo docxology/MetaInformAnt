@@ -1192,3 +1192,34 @@ class SurvivalPredictor:
             features.append(np.concatenate([event_counts, [len(seq.events)]]))
 
         return np.array(features)
+
+def attention_weights(model: Any, sequences: List[EventSequence]) -> Dict[str, np.ndarray]:
+    """Compute attention weights for event sequences using a trained model.
+
+    Args:
+        model: Trained sequence model with attention mechanism
+        sequences: List of EventSequence objects
+
+    Returns:
+        Dictionary mapping sequence indices to attention weight arrays
+    """
+    attention_results = {}
+
+    if not hasattr(model, 'get_attention_weights'):
+        logger.warning("Model does not support attention weights")
+        return attention_results
+
+    try:
+        for i, seq in enumerate(sequences):
+            try:
+                weights = model.get_attention_weights(seq)
+                if weights is not None:
+                    attention_results[str(i)] = np.array(weights)
+            except Exception as e:
+                logger.warning(f"Failed to compute attention for sequence {i}: {e}")
+                continue
+
+    except Exception as e:
+        logger.error(f"Error computing attention weights: {e}")
+
+    return attention_results

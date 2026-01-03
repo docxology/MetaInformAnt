@@ -518,3 +518,211 @@ def biological_data_validator(
     logger.info(f"Biological data validation: {'PASSED' if results['passed'] else 'FAILED'}")
     return results
 
+
+def bootstrap_validate(X: np.ndarray, y: np.ndarray, model_func: callable,
+                      n_bootstrap: int = 100, test_size: float = 0.2,
+                      random_state: int = 42) -> Dict[str, Any]:
+    """Perform bootstrap validation of a model.
+
+    Args:
+        X: Feature matrix
+        y: Target values
+        model_func: Function that takes (X_train, y_train, X_test, y_test) and returns predictions
+        n_bootstrap: Number of bootstrap iterations
+        test_size: Fraction of data for testing
+        random_state: Random seed
+
+    Returns:
+        Dictionary with bootstrap validation results
+    """
+    if not HAS_SKLEARN:
+        raise ImportError("scikit-learn required for bootstrap validation")
+
+    np.random.seed(random_state)
+    n_samples = len(X)
+
+    scores = []
+    predictions = []
+
+    for i in range(n_bootstrap):
+        # Bootstrap sample
+        bootstrap_indices = np.random.choice(n_samples, size=n_samples, replace=True)
+        X_boot = X[bootstrap_indices]
+        y_boot = y[bootstrap_indices]
+
+        # Split into train/test
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_boot, y_boot, test_size=test_size, random_state=random_state + i
+        )
+
+        # Train and predict
+        y_pred = model_func(X_train, y_train, X_test, y_test)
+        predictions.append(y_pred)
+
+        # Calculate score (MSE for regression, accuracy for classification)
+        if len(np.unique(y)) > 20:  # Regression
+            score = -mean_squared_error(y_test, y_pred)  # Negative MSE
+        else:  # Classification
+            score = accuracy_score(y_test, y_pred)
+
+        scores.append(score)
+
+    scores_array = np.array(scores)
+
+    results = {
+        "mean_score": float(scores_array.mean()),
+        "std_score": float(scores_array.std()),
+        "scores": scores_array.tolist(),
+        "n_bootstrap": n_bootstrap,
+        "test_size": test_size,
+        "mean_mse": float(-scores_array.mean()) if len(np.unique(y)) > 20 else None,
+    }
+
+    logger.info(f"Bootstrap validation: {results['mean_score']:.3f} ± {results['std_score']:.3f}")
+    return results
+
+
+def cross_validate(model: Any, X: np.ndarray, y: np.ndarray, cv: int = 5,
+                  scoring: str = "accuracy") -> Dict[str, Any]:
+    """Perform cross-validation with specified scoring metric.
+
+    Args:
+        model: sklearn model or model factory function
+        X: Feature matrix
+        y: Target values
+        cv: Number of cross-validation folds
+        scoring: Scoring metric
+
+    Returns:
+        Dictionary with cross-validation results
+    """
+    if not HAS_SKLEARN:
+        raise ImportError("scikit-learn required for cross-validation")
+
+    # Handle model factory vs trained model
+    if callable(model):
+        model_factory = model
+    else:
+        model_factory = lambda: model
+
+    scores = cross_val_score(model_factory(), X, y, cv=cv, scoring=scoring)
+
+    results = {
+        "scores": scores.tolist(),
+        "mean_score": float(scores.mean()),
+        "std_score": float(scores.std()),
+        "cv_folds": cv,
+        "scoring": scoring,
+    }
+
+    logger.info(f"Cross-validation ({cv} folds, {scoring}): {results['mean_score']:.3f} ± {results['std_score']:.3f}")
+    return results
+
+
+def k_fold_split(X: np.ndarray, y: np.ndarray, k: int = 5,
+                stratify: bool = True, random_state: int = 42) -> List[Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
+    """Split data into k folds for cross-validation.
+
+    Args:
+        X: Feature matrix
+        y: Target values
+        k: Number of folds
+        stratify: Whether to stratify folds
+        random_state: Random seed
+
+    Returns:
+        List of (X_train, X_test, y_train, y_test) tuples for each fold
+    """
+    if not HAS_SKLEARN:
+        raise ImportError("scikit-learn required for k-fold splitting")
+
+    if stratify and len(np.unique(y)) < 20:
+        kf = StratifiedKFold(n_splits=k, shuffle=True, random_state=random_state)
+    else:
+        kf = KFold(n_splits=k, shuffle=True, random_state=random_state)
+
+    folds = []
+    for train_idx, test_idx in kf.split(X, y):
+        X_train, X_test = X[train_idx], X[test_idx]
+        y_train, y_test = y[train_idx], y[test_idx]
+        folds.append((X_train, X_test, y_train, y_test))
+
+    logger.info(f"Created {k}-fold split with {len(folds)} folds")
+    return folds
+
+
+def learning_curve(X: np.ndarray, y: np.ndarray, model_factory: callable,
+                  train_sizes: np.ndarray = None, cv: int = 5,
+                  random_state: int = 42) -> Dict[str, Any]:
+    """Generate learning curves for model evaluation.
+
+    Args:
+        X: Feature matrix
+        y: Target values
+        model_factory: Function that returns a new model instance
+        train_sizes: Array of training set sizes (fractions)
+        cv: Number of cross-validation folds
+        random_state: Random seed
+
+    Returns:
+        Dictionary with learning curve results
+    """
+    if not HAS_SKLEARN:
+        raise ImportError("scikit-learn required for learning curves")
+
+    if train_sizes is None:
+        train_sizes = np.linspace(0.1, 1.0, 10)
+
+    train_scores = []
+    val_scores = []
+
+    for train_size in train_sizes:
+        fold_scores_train = []
+        fold_scores_val = []
+
+        # Create stratified folds
+        if len(np.unique(y)) < 20:
+            kf = StratifiedKFold(n_splits=cv, shuffle=True, random_state=random_state)
+        else:
+            kf = KFold(n_splits=cv, shuffle=True, random_state=random_state)
+
+        for train_idx, val_idx in kf.split(X, y):
+            # Subsample training data
+            n_train = int(len(train_idx) * train_size)
+            train_subset = np.random.choice(train_idx, size=n_train, replace=False)
+
+            X_train_fold = X[train_subset]
+            y_train_fold = y[train_subset]
+            X_val_fold = X[val_idx]
+            y_val_fold = y[val_idx]
+
+            # Train model
+            model = model_factory()
+            model.fit(X_train_fold, y_train_fold)
+
+            # Score on train and validation
+            if len(np.unique(y)) < 20:  # Classification
+                train_score = accuracy_score(y_train_fold, model.predict(X_train_fold))
+                val_score = accuracy_score(y_val_fold, model.predict(X_val_fold))
+            else:  # Regression
+                train_score = r2_score(y_train_fold, model.predict(X_train_fold))
+                val_score = r2_score(y_val_fold, model.predict(X_val_fold))
+
+            fold_scores_train.append(train_score)
+            fold_scores_val.append(val_score)
+
+        train_scores.append(np.mean(fold_scores_train))
+        val_scores.append(np.mean(fold_scores_val))
+
+    results = {
+        "train_sizes": train_sizes.tolist(),
+        "train_scores": train_scores,
+        "validation_scores": val_scores,
+        "cv_folds": cv,
+    }
+
+    logger.info(f"Generated learning curve with {len(train_sizes)} training sizes")
+    return results
+
+
+

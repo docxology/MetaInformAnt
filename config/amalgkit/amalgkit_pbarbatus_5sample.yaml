@@ -81,11 +81,11 @@ steps:
   integrate:
     fastq_dir: output/amalgkit/pbarbatus_test5/fastq
   config: {}
-  select: {}
+  select:
+    max_sample: 5  # Limit to 5 samples for testing
   getfastq:
     out_dir: output/amalgkit/pbarbatus_test5/fastq
-    threads: 12
-    num_download_workers: 5  # Reduced for 5 samples
+    threads: 4  # Reduced for limited samples
     # Cloud acceleration: AWS only (full SRA files)
     # NOTE: NCBI and GCP have LITE files (metadata-only, no sequence data) for this species
     # AWS has full SRA files with actual sequence data
@@ -102,17 +102,15 @@ steps:
     out_dir: output/amalgkit/pbarbatus_test5/quant
     threads: 12
     redo: no
-    # Delete SRA/FASTQ files after quantification to save space
-    keep_fastq: no
     # Build kallisto index if not present
     build_index: yes
   merge:
     out: output/amalgkit/pbarbatus_test5/merged/merged_abundance.tsv
     out_dir: output/amalgkit/pbarbatus_test5/merged
-  cstmm:
-    out_dir: output/amalgkit/pbarbatus_test5/cstmm
+  # cstmm:  # Skipped: requires orthogroup_table or dir_busco parameters
+  #   out_dir: output/amalgkit/pbarbatus_test5/cstmm
   curate:
     out_dir: output/amalgkit/pbarbatus_test5/curate
-  csca:
-    out_dir: output/amalgkit/pbarbatus_test5/csca
+  # csca:   # Skipped: requires orthogroup_table or dir_busco parameters
+  #   out_dir: output/amalgkit/pbarbatus_test5/csca
   sanity: {}

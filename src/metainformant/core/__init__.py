@@ -16,6 +16,7 @@ from . import (
     hash,
     io,
     logging,
+    optional_deps,
     parallel,
     paths,
     progress,
@@ -59,6 +60,7 @@ __all__ = [
     "hash",
     "io",
     "logging",
+    "optional_deps",
     "parallel",
     "paths",
     "progress",
@@ -76,5 +78,4 @@ __all__ = [
     # Optional modules
     "db",
     "disk",
-    "filesystem",
 ]

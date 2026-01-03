@@ -324,3 +324,7 @@ def run_star_quantification(fastq_files: list[str], output_dir: Path, threads: i
 
 
 run_quant = run_step
+
+
+
+

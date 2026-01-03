@@ -412,6 +412,79 @@ def detect_vector_contamination(sequences: List[str],
     }
 
 
+def detect_adapter_contamination(sequences: List[str],
+                               adapters: Optional[List[str]] = None) -> Dict[str, Any]:
+    """Detect adapter sequence contamination (standalone function).
+
+    Args:
+        sequences: List of sequences to analyze
+        adapters: List of adapter sequences to check
+
+    Returns:
+        Dictionary with adapter contamination results
+    """
+    detector = ContaminationDetector()
+    return detector.detect_adapter_contamination(sequences, adapters)
+
+
+def detect_cross_species_contamination(sequences: List[str],
+                                     target_species: str,
+                                     other_species: List[str],
+                                     reference_genomes: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+    """Detect cross-species contamination (standalone function).
+
+    Args:
+        sequences: List of sequences to analyze
+        target_species: Expected species for the sequences
+        other_species: List of potential contaminant species
+        reference_genomes: Dictionary mapping species names to reference genome sequences
+
+    Returns:
+        Dictionary with cross-species contamination results
+    """
+    detector = ContaminationDetector(reference_genomes)
+    return detector.detect_cross_species_contamination(sequences, target_species, other_species)
+
+
+def detect_mycoplasma_contamination(sequences: List[str]) -> Dict[str, Any]:
+    """Detect mycoplasma contamination (standalone function).
+
+    Args:
+        sequences: List of sequences to analyze
+
+    Returns:
+        Dictionary with mycoplasma contamination results
+    """
+    # Mycoplasma is a common laboratory contaminant
+    mycoplasma_sequences = [
+        "TTAACCTTAACTTACTTAACTT",  # Mycoplasma-specific sequence
+        "GAAAGAAAGAAAGAAAGAAA",   # Mycoplasma 16S rRNA
+    ]
+
+    detector = ContaminationDetector({"mycoplasma": mycoplasma_sequences[0]})
+    return detector.detect_microbial_contamination(sequences)
+
+
+def detect_rrna_contamination(sequences: List[str]) -> Dict[str, Any]:
+    """Detect rRNA contamination (standalone function).
+
+    Args:
+        sequences: List of sequences to analyze
+
+    Returns:
+        Dictionary with rRNA contamination results
+    """
+    # Common rRNA sequences (highly conserved)
+    rrna_sequences = [
+        "GTGCCAGCAGCCGCGGTAA",  # Bacterial 16S rRNA
+        "GACGGGCGGTGTGTRCAA",   # Archaeal 16S rRNA
+        "CCTACGGGAGGCAGCAG",    # Eukaryotic 18S rRNA
+    ]
+
+    detector = ContaminationDetector({"rrna": rrna_sequences[0]})
+    return detector.detect_microbial_contamination(sequences)
+
+
 def generate_contamination_report(contamination_results: Dict[str, Any],
                                 output_path: Optional[str | Path] = None) -> str:
     """Generate a contamination analysis report.
@@ -495,4 +568,6 @@ def generate_contamination_report(contamination_results: Dict[str, Any],
         logger.info(f"Contamination report saved to {output_path}")
 
     return report
+
+
 

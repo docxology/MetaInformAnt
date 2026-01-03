@@ -21,6 +21,7 @@ from . import (
     structure_analysis,
     structure_io,
     uniprot,
+    visualization,
 )
 
 # Optional imports with graceful fallbacks
@@ -66,6 +67,9 @@ __all__ = [
 
     # Proteome analysis
     "proteomes",
+
+    # Visualization
+    "visualization",
 ]
 
 

@@ -149,14 +149,17 @@ if [[ "$IMPORT_CHECK" == "true" ]] || [[ "$CLI_CHECK" == "true" ]]; then
     TEMP_VENV=$(mktemp -d)
     trap "rm -rf '$TEMP_VENV'" EXIT
 
-    # Setup clean environment
-    python -m venv "$TEMP_VENV"
+    # Setup clean environment using uv
+    if ! uv venv "$TEMP_VENV" >/dev/null 2>&1; then
+        print_status "ERROR" "Failed to create temporary virtual environment"
+        exit 1
+    fi
     source "$TEMP_VENV/bin/activate"
 
-    # Install package
+    # Install package using uv (UV-exclusive policy)
     WHEEL_FILE=$(ls "$DIST_DIR"/*.whl 2>/dev/null | head -1 || echo "")
     if [[ -n "$WHEEL_FILE" ]]; then
-        pip install "$WHEEL_FILE" >/dev/null 2>&1
+        uv pip install "$WHEEL_FILE" >/dev/null 2>&1
 
         # Test imports
         if [[ "$IMPORT_CHECK" == "true" ]]; then
@@ -216,14 +219,17 @@ if [[ "$METADATA_CHECK" == "true" ]]; then
     TEMP_META_VENV=$(mktemp -d)
     trap "rm -rf '$TEMP_META_VENV'" EXIT
 
-    # Setup clean environment
-    python -m venv "$TEMP_META_VENV" >/dev/null 2>&1
+    # Setup clean environment using uv
+    if ! uv venv "$TEMP_META_VENV" >/dev/null 2>&1; then
+        print_status "ERROR" "Failed to create temporary metadata environment"
+        exit 1
+    fi
     source "$TEMP_META_VENV/bin/activate"
 
     WHEEL_FILE=$(ls "$DIST_DIR"/*.whl 2>/dev/null | head -1 || echo "")
     if [[ -n "$WHEEL_FILE" ]]; then
-        # Install package for metadata access
-        pip install "$WHEEL_FILE" >/dev/null 2>&1
+        # Install package for metadata access using uv (UV-exclusive policy)
+        uv pip install "$WHEEL_FILE" >/dev/null 2>&1
 
         METADATA=$(python -c "
 import metainformant

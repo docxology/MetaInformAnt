@@ -6,6 +6,7 @@ RNA-seq workflow configurations.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -234,3 +235,140 @@ class RNAPipelineConfig:
 
 
 
+
+@dataclass
+class AmalgkitRunLayout:
+    """Layout configuration for amalgkit workflow runs.
+
+    This class defines the directory structure and file organization
+    for amalgkit workflow executions.
+    """
+    work_dir: Path
+    metadata_dir: Path
+    fastq_dir: Path
+    quant_dir: Path
+    merge_dir: Path
+    cstmm_dir: Path
+    curate_dir: Path
+    csca_dir: Path
+    sanity_dir: Path
+    log_dir: Path
+
+    @classmethod
+    def from_work_dir(cls, work_dir: str | Path) -> 'AmalgkitRunLayout':
+        """Create layout from work directory.
+
+        Args:
+            work_dir: Base work directory
+
+        Returns:
+            AmalgkitRunLayout instance
+        """
+        work_path = Path(work_dir)
+
+        return cls(
+            work_dir=work_path,
+            metadata_dir=work_path / "metadata",
+            fastq_dir=work_path / "fastq",
+            quant_dir=work_path / "quant",
+            merge_dir=work_path / "merge",
+            cstmm_dir=work_path / "cstmm",
+            curate_dir=work_path / "curate",
+            csca_dir=work_path / "csca",
+            sanity_dir=work_path / "sanity",
+            log_dir=work_path / "logs"
+        )
+
+    def create_directories(self) -> None:
+        """Create all directories in the layout."""
+        for dir_path in [self.metadata_dir, self.fastq_dir, self.quant_dir,
+                        self.merge_dir, self.cstmm_dir, self.curate_dir,
+                        self.csca_dir, self.sanity_dir, self.log_dir]:
+            dir_path.mkdir(parents=True, exist_ok=True)
+
+    def get_step_output_dir(self, step: str) -> Path:
+        """Get output directory for a specific step.
+
+        Args:
+            step: Step name ('metadata', 'fastq', 'quant', etc.)
+
+        Returns:
+            Path to step output directory
+        """
+        step_dirs = {
+            'metadata': self.metadata_dir,
+            'fastq': self.fastq_dir,
+            'quant': self.quant_dir,
+            'merge': self.merge_dir,
+            'cstmm': self.cstmm_dir,
+            'curate': self.curate_dir,
+            'csca': self.csca_dir,
+            'sanity': self.sanity_dir
+        }
+
+        if step not in step_dirs:
+            raise ValueError(f"Unknown step: {step}")
+
+        return step_dirs[step]
+
+
+@dataclass
+class SpeciesProfile:
+    """Profile information for a species in RNA-seq analysis.
+
+    Contains taxonomic and tissue information for a species.
+    """
+    name: str
+    taxon_id: int
+    tissues: list[str]
+
+
+def build_step_params(species: SpeciesProfile, layout: AmalgkitRunLayout) -> Dict[str, Dict[str, Any]]:
+    """Build step parameters for amalgkit workflow.
+
+    Args:
+        species: Species profile information
+        layout: Run layout configuration
+
+    Returns:
+        Dictionary mapping step names to parameter dictionaries
+    """
+    # Base parameters for all steps
+    base_params = {
+        'threads': 8,
+        'work_dir': str(layout.work_dir),
+        'log_dir': str(layout.log_dir),
+    }
+
+    # Step-specific parameters
+    step_params = {
+        'metadata': {
+            **base_params,
+            'taxon-id': species.taxon_id,
+            'species': species.name,
+            'tissues': species.tissues,
+        },
+        'integrate': base_params,
+        'config': base_params,
+        'select': {
+            **base_params,
+            'taxon-id': species.taxon_id,
+            'species': species.name,
+            'tissues': species.tissues,
+        },
+        'getfastq': {
+            **base_params,
+            'ENA': True,  # Use ENA for downloading
+        },
+        'quant': {
+            **base_params,
+            'kallisto': True,  # Use kallisto for quantification
+        },
+        'merge': base_params,
+        'cstmm': base_params,
+        'curate': base_params,
+        'csca': base_params,
+        'sanity': base_params,
+    }
+
+    return step_params

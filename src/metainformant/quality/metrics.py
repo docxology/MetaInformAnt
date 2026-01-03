@@ -9,8 +9,10 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Dict, List, Any, Optional, Union, Tuple
+import math
 import numpy as np
 import pandas as pd
+import statistics
 from scipy import stats
 
 from metainformant.core import logging, errors, validation
@@ -472,6 +474,233 @@ def batch_quality_analysis(file_paths: List[str | Path], data_type: str = "fastq
         "results": results,
         "summary": summary,
     }
+
+
+def calculate_coverage_metrics(coverage_values: List[float], target_coverage: float = 30.0) -> Dict[str, Any]:
+    """Calculate coverage metrics for sequencing data.
+
+    Args:
+        coverage_values: List of coverage values (one per position/region)
+        target_coverage: Target coverage level for bias calculations
+
+    Returns:
+        Dictionary with coverage metrics
+    """
+    if not coverage_values:
+        return {}
+
+    coverage_array = np.array(coverage_values)
+
+    metrics = {
+        "mean_coverage": float(np.mean(coverage_array)),
+        "median_coverage": float(np.median(coverage_array)),
+        "min_coverage": float(np.min(coverage_array)),
+        "max_coverage": float(np.max(coverage_array)),
+        "std_coverage": float(np.std(coverage_array)),
+        "total_positions": len(coverage_values),
+    }
+
+    # Coverage bias (deviation from target)
+    if target_coverage > 0:
+        bias_values = [(cov - target_coverage) / target_coverage for cov in coverage_values]
+        metrics["coverage_bias"] = float(np.mean(bias_values))
+        metrics["bias_std"] = float(np.std(bias_values))
+
+    # Percentage of positions with low/high coverage
+    low_coverage_threshold = target_coverage * 0.5  # 50% of target
+    high_coverage_threshold = target_coverage * 2.0  # 200% of target
+
+    low_coverage_positions = sum(1 for cov in coverage_values if cov < low_coverage_threshold)
+    high_coverage_positions = sum(1 for cov in coverage_values if cov > high_coverage_threshold)
+
+    metrics["pct_low_coverage"] = (low_coverage_positions / len(coverage_values)) * 100
+    metrics["pct_high_coverage"] = (high_coverage_positions / len(coverage_values)) * 100
+
+    # Coverage uniformity (coefficient of variation)
+    if metrics["mean_coverage"] > 0:
+        metrics["coverage_uniformity"] = metrics["std_coverage"] / metrics["mean_coverage"]
+    else:
+        metrics["coverage_uniformity"] = 0.0
+
+    # Coverage breadth (percentage of positions with at least 1x coverage)
+    covered_positions = sum(1 for cov in coverage_values if cov >= 1.0)
+    metrics["coverage_breadth"] = (covered_positions / len(coverage_values)) * 100
+
+    # Target coverage achievement
+    target_achieved = sum(1 for cov in coverage_values if cov >= target_coverage)
+    metrics["pct_target_coverage"] = (target_achieved / len(coverage_values)) * 100
+
+    return metrics
+
+
+def calculate_duplication_metrics(duplication_levels: Dict[int, int]) -> Dict[str, Any]:
+    """Calculate duplication metrics from duplication level data.
+
+    Args:
+        duplication_levels: Dictionary mapping duplication level to count
+
+    Returns:
+        Dictionary with duplication metrics
+    """
+    if not duplication_levels:
+        return {}
+
+    total_reads = sum(duplication_levels.values())
+
+    metrics = {
+        "total_reads": total_reads,
+        "unique_reads": duplication_levels.get(1, 0),
+        "duplicate_reads": total_reads - duplication_levels.get(1, 0),
+    }
+
+    # Duplication rate
+    if total_reads > 0:
+        metrics["duplication_rate"] = (metrics["duplicate_reads"] / total_reads) * 100
+        metrics["uniqueness_rate"] = (metrics["unique_reads"] / total_reads) * 100
+
+    # Weighted duplication level
+    weighted_sum = sum(level * count for level, count in duplication_levels.items())
+    if total_reads > 0:
+        metrics["mean_duplication_level"] = weighted_sum / total_reads
+
+    # Duplication distribution
+    distribution = {}
+    for level in sorted(duplication_levels.keys()):
+        count = duplication_levels[level]
+        distribution[f"level_{level}"] = {
+            "count": count,
+            "percentage": (count / total_reads) * 100 if total_reads > 0 else 0
+        }
+
+    metrics["distribution"] = distribution
+
+    return metrics
+
+
+def calculate_gc_metrics(gc_content: List[float]) -> Dict[str, Any]:
+    """Calculate GC content metrics.
+
+    Args:
+        gc_content: List of GC content values (0-1)
+
+    Returns:
+        Dictionary with GC content metrics
+    """
+    if not gc_content:
+        return {}
+
+    gc_array = np.array(gc_content)
+
+    metrics = {
+        "mean_gc": float(np.mean(gc_array)),
+        "median_gc": float(np.median(gc_array)),
+        "min_gc": float(np.min(gc_array)),
+        "max_gc": float(np.max(gc_array)),
+        "std_gc": float(np.std(gc_array)),
+        "total_sequences": len(gc_content),
+    }
+
+    # GC distribution analysis
+    bins = [0, 0.3, 0.4, 0.5, 0.6, 0.7, 1.0]
+    hist, bin_edges = np.histogram(gc_array, bins=bins)
+
+    distribution = {}
+    for i, count in enumerate(hist):
+        bin_start = bin_edges[i]
+        bin_end = bin_edges[i + 1]
+        distribution[f"{bin_start:.1f}-{bin_end:.1f}"] = {
+            "count": int(count),
+            "percentage": (count / len(gc_content)) * 100
+        }
+
+    metrics["distribution"] = distribution
+
+    return metrics
+
+
+def calculate_length_metrics(lengths: List[int]) -> Dict[str, Any]:
+    """Calculate sequence length metrics.
+
+    Args:
+        lengths: List of sequence lengths
+
+    Returns:
+        Dictionary with length metrics
+    """
+    if not lengths:
+        return {}
+
+    length_array = np.array(lengths)
+
+    metrics = {
+        "mean_length": float(np.mean(length_array)),
+        "median_length": float(np.median(length_array)),
+        "min_length": int(np.min(length_array)),
+        "max_length": int(np.max(length_array)),
+        "std_length": float(np.std(length_array)),
+        "total_sequences": len(lengths),
+    }
+
+    # Length distribution
+    if len(lengths) > 1:
+        metrics["length_range"] = metrics["max_length"] - metrics["min_length"]
+        # Most common lengths
+        from collections import Counter
+        length_counts = Counter(lengths)
+        most_common = length_counts.most_common(5)
+        metrics["most_common_lengths"] = [{"length": length, "count": count} for length, count in most_common]
+
+    return metrics
+
+
+def calculate_quality_metrics(quality_scores: List[float]) -> Dict[str, Any]:
+    """Calculate quality score metrics.
+
+    Args:
+        quality_scores: List of quality scores
+
+    Returns:
+        Dictionary with quality metrics
+    """
+    if not quality_scores:
+        return {}
+
+    score_array = np.array(quality_scores)
+
+    metrics = {
+        "mean_quality": float(np.mean(score_array)),
+        "median_quality": float(np.median(score_array)),
+        "min_quality": float(np.min(score_array)),
+        "max_quality": float(np.max(score_array)),
+        "std_quality": float(np.std(score_array)),
+        "total_scores": len(quality_scores),
+    }
+
+    # Quality distribution
+    bins = [0, 10, 20, 25, 30, 35, 40, 50]
+    hist, bin_edges = np.histogram(score_array, bins=bins)
+
+    distribution = {}
+    for i, count in enumerate(hist):
+        bin_start = bin_edges[i]
+        bin_end = bin_edges[i + 1]
+        distribution[f"{int(bin_start)}-{int(bin_end)}"] = {
+            "count": int(count),
+            "percentage": (count / len(quality_scores)) * 100
+        }
+
+    metrics["distribution"] = distribution
+
+    # Quality categories
+    low_quality = sum(1 for score in quality_scores if score < 20)
+    medium_quality = sum(1 for score in quality_scores if 20 <= score < 30)
+    high_quality = sum(1 for score in quality_scores if score >= 30)
+
+    metrics["low_quality_pct"] = (low_quality / len(quality_scores)) * 100
+    metrics["medium_quality_pct"] = (medium_quality / len(quality_scores)) * 100
+    metrics["high_quality_pct"] = (high_quality / len(quality_scores)) * 100
+
+    return metrics
 
 
 def calculate_complexity_metrics(sequences: List[str]) -> Dict[str, Any]:

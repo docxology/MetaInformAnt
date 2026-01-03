@@ -9,10 +9,10 @@ from __future__ import annotations
 
 # Import all epigenome submodules
 from . import (
-    atac,
     chipseq,
     methylation,
     tracks,
+    visualization,
     workflow,
 )
 
@@ -41,10 +41,10 @@ __all__ = [
     # Core epigenomic assays
     "methylation",
     "chipseq",
-    "atac",
 
     # Data visualization and workflow
     "tracks",
+    "visualization",
     "workflow",
 ]
 

@@ -13,14 +13,11 @@ from . import (
     cleanup,
     configs,
     deps,
-    discovery,
-    environment,
-    genome_prep,
+    metadata_filter,
     monitoring,
     orchestration,
     pipeline,
     progress_tracker,
-    protein_integration,
     workflow,
 )
 
@@ -28,7 +25,7 @@ from . import (
 from . import steps
 
 # Direct imports of commonly used classes and functions
-from .configs import RNAPipelineConfig
+from .configs import RNAPipelineConfig, AmalgkitRunLayout
 from .progress_tracker import ProgressTracker
 from .pipeline import summarize_curate_tables
 from .workflow import AmalgkitWorkflowConfig
@@ -55,19 +52,15 @@ __all__ = [
 
     # Configuration and setup
     "configs",
-    "environment",
-    "genome_prep",
 
     # Utilities
     "cleanup",
     "deps",
-
-    # Optional/advanced modules
-    "protein_integration",
-    "discovery",
+    "metadata_filter",
 
     # Direct exports
     "RNAPipelineConfig",
+    "AmalgkitRunLayout",
     "ProgressTracker",
     "summarize_curate_tables",
     "AmalgkitWorkflowConfig",

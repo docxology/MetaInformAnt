@@ -161,3 +161,128 @@ def relative_fitness(fitness_values: List[float]) -> List[float]:
         return [0.0] * len(fitness_values)
 
     return [f / fitness_mean for f in fitness_values]
+
+
+def selection_intensity(fitness_values: List[float]) -> float:
+    """Calculate selection intensity (i) from fitness values.
+
+    Selection intensity is the standardized selection differential.
+
+    Args:
+        fitness_values: List of relative fitness values
+
+    Returns:
+        Selection intensity (i)
+    """
+    if not fitness_values:
+        return 0.0
+
+    fitness_array = [f for f in fitness_values if f > 0]  # Remove zero fitness
+    if not fitness_array:
+        return 0.0
+
+    # Selection intensity = SD / mean, where SD is selection differential
+    # For relative fitness, this is approximately the coefficient of variation
+    fitness_mean = statistics.mean(fitness_array)
+    if fitness_mean == 0:
+        return 0.0
+
+    fitness_std = statistics.stdev(fitness_array) if len(fitness_array) > 1 else 0.0
+
+    return fitness_std / fitness_mean
+
+
+def standard_deviation(values: List[float]) -> float:
+    """Calculate standard deviation.
+
+    Args:
+        values: List of values
+
+    Returns:
+        Standard deviation
+    """
+    if len(values) < 2:
+        return 0.0
+
+    return statistics.stdev(values)
+
+
+def weighted_variance(values: List[float], weights: List[float]) -> float:
+    """Calculate weighted variance.
+
+    Args:
+        values: List of values
+        weights: Corresponding weights
+
+    Returns:
+        Weighted variance
+    """
+    if len(values) != len(weights):
+        raise ValueError("Values and weights must have same length")
+
+    if not values:
+        return 0.0
+
+    total_weight = sum(weights)
+    if total_weight == 0:
+        return 0.0
+
+    # Weighted mean
+    weighted_mean = sum(v * w for v, w in zip(values, weights)) / total_weight
+
+    # Weighted variance
+    weighted_var = sum(w * (v - weighted_mean) ** 2 for v, w in zip(values, weights)) / total_weight
+
+    return weighted_var
+
+
+def weighted_covariance(x: List[float], y: List[float], weights: List[float]) -> float:
+    """Calculate weighted covariance.
+
+    Args:
+        x: First list of values
+        y: Second list of values
+        weights: Corresponding weights
+
+    Returns:
+        Weighted covariance
+    """
+    if len(x) != len(y) or len(x) != len(weights):
+        raise ValueError("All input lists must have same length")
+
+    if not x:
+        return 0.0
+
+    total_weight = sum(weights)
+    if total_weight == 0:
+        return 0.0
+
+    # Weighted means
+    x_mean = sum(xi * w for xi, w in zip(x, weights)) / total_weight
+    y_mean = sum(yi * w for yi, w in zip(y, weights)) / total_weight
+
+    # Weighted covariance
+    weighted_cov = sum(w * (xi - x_mean) * (yi - y_mean) for xi, yi, w in zip(x, y, weights)) / total_weight
+
+    return weighted_cov
+
+
+def weighted_correlation(x: List[float], y: List[float], weights: List[float]) -> float:
+    """Calculate weighted correlation coefficient.
+
+    Args:
+        x: First list of values
+        y: Second list of values
+        weights: Corresponding weights
+
+    Returns:
+        Weighted correlation coefficient
+    """
+    weighted_cov_xy = weighted_covariance(x, y, weights)
+    weighted_var_x = weighted_variance(x, weights)
+    weighted_var_y = weighted_variance(y, weights)
+
+    if weighted_var_x <= 0 or weighted_var_y <= 0:
+        return 0.0
+
+    return weighted_cov_xy / (weighted_var_x ** 0.5 * weighted_var_y ** 0.5)

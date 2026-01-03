@@ -501,3 +501,148 @@ def summarize_fastq(fastq_path: str | Path) -> Dict[str, int]:
 
 
 
+
+class FastqRecord:
+    """Represents a single FASTQ record with sequence and quality information.
+
+    A FASTQ record consists of:
+    - Header line (starts with @)
+    - Sequence line
+    - Separator line (starts with +)
+    - Quality line (same length as sequence)
+
+    Attributes:
+        header: Read header/name
+        sequence: DNA sequence
+        quality_string: Quality scores as ASCII string
+        quality_scores: Quality scores as integer list (Phred scale)
+    """
+    def __init__(self, header: str, sequence: str, quality_string: str):
+        """Initialize FastqRecord.
+
+        Args:
+            header: Read header (without @ prefix)
+            sequence: DNA sequence
+            quality_string: Quality scores as ASCII string
+
+        Raises:
+            ValueError: If sequence and quality lengths don't match
+        """
+        if len(sequence) != len(quality_string):
+            raise ValueError(f"Sequence length ({len(sequence)}) must match quality length ({len(quality_string)})")
+
+        self.header = header
+        self.sequence = sequence
+        self.quality_string = quality_string
+
+        # Convert ASCII quality to Phred scores (Sanger encoding: ASCII 33-126 = Q0-Q93)
+        self.quality_scores = [ord(c) - 33 for c in quality_string]
+
+    @property
+    def mean_quality(self) -> float:
+        """Calculate mean quality score."""
+        return sum(self.quality_scores) / len(self.quality_scores) if self.quality_scores else 0.0
+
+    @property
+    def median_quality(self) -> int:
+        """Calculate median quality score."""
+        if not self.quality_scores:
+            return 0
+        sorted_scores = sorted(self.quality_scores)
+        n = len(sorted_scores)
+        return sorted_scores[n // 2] if n % 2 == 1 else (sorted_scores[n // 2 - 1] + sorted_scores[n // 2]) // 2
+
+    @property
+    def min_quality(self) -> int:
+        """Get minimum quality score."""
+        return min(self.quality_scores) if self.quality_scores else 0
+
+    @property
+    def max_quality(self) -> int:
+        """Get maximum quality score."""
+        return max(self.quality_scores) if self.quality_scores else 0
+
+    def gc_content(self) -> float:
+        """Calculate GC content of the sequence."""
+        if not self.sequence:
+            return 0.0
+        gc_count = self.sequence.count('G') + self.sequence.count('C')
+        return gc_count / len(self.sequence)
+
+    def length(self) -> int:
+        """Get sequence length."""
+        return len(self.sequence)
+
+    def to_string(self) -> str:
+        """Convert record to FASTQ format string."""
+        return f"@{self.header}\n{self.sequence}\n+\n{self.quality_string}\n"
+
+    def trim_low_quality(self, min_quality: int = 20) -> 'FastqRecord':
+        """Trim low-quality bases from 3' end.
+
+        Args:
+            min_quality: Minimum quality threshold
+
+        Returns:
+            New FastqRecord with trimmed sequence
+        """
+        # Find first position from end with quality >= min_quality
+        trim_pos = len(self.quality_scores)
+        for i in range(len(self.quality_scores) - 1, -1, -1):
+            if self.quality_scores[i] >= min_quality:
+                trim_pos = i + 1
+                break
+
+        if trim_pos < len(self.sequence):
+            new_sequence = self.sequence[:trim_pos]
+            new_quality = self.quality_string[:trim_pos]
+            return FastqRecord(self.header, new_sequence, new_quality)
+
+        return self
+
+    @classmethod
+    def from_string(cls, fastq_string: str) -> 'FastqRecord':
+        """Create FastqRecord from FASTQ format string.
+
+        Args:
+            fastq_string: FASTQ record as string (4 lines)
+
+        Returns:
+            FastqRecord instance
+
+        Raises:
+            ValueError: If string format is invalid
+        """
+        lines = fastq_string.strip().split('\n')
+        if len(lines) != 4:
+            raise ValueError("FASTQ record must have exactly 4 lines")
+
+        header = lines[0].lstrip('@')
+        sequence = lines[1]
+        separator = lines[2]
+        quality_string = lines[3]
+
+        if not separator.startswith('+'):
+            raise ValueError("Third line must start with '+'")
+
+        return cls(header, sequence, quality_string)
+
+    def __str__(self) -> str:
+        """String representation."""
+        return f"FastqRecord(header='{self.header}', length={self.length()}, mean_q={self.mean_quality:.1f})"
+
+    def __repr__(self) -> str:
+        """Detailed string representation."""
+        return self.__str__()
+
+    def __len__(self) -> int:
+        """Return sequence length."""
+        return self.length()
+
+    def __eq__(self, other) -> bool:
+        """Check equality with another FastqRecord."""
+        if not isinstance(other, FastqRecord):
+            return False
+        return (self.header == other.header and
+                self.sequence == other.sequence and
+                self.quality_string == other.quality_string)

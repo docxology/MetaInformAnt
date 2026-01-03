@@ -11,6 +11,7 @@ from . import (
     antwiki,
     life_course,
     scraper,
+    visualization,
 )
 
 # Direct imports of commonly used classes and functions
@@ -41,6 +42,9 @@ __all__ = [
     # Data sources and curation
     "antwiki",
     "scraper",
+
+    # Visualization
+    "visualization",
 ]
 
 

@@ -6,8 +6,12 @@ Population genetics analysis and synthetic data generation workflow orchestrator
 
 ```
 scripts/popgen/
-├── analysis.py                    # Comprehensive population genetics analysis ⭐
-└── README.md                      # This file
+├── __init__.py                    # Package initialization
+├── analysis.py                    # Main workflow orchestrator ⭐
+├── generate_dataset.py            # Dataset generation functions
+├── analyze.py                     # Statistical analysis functions
+├── visualize.py                   # Visualization functions
+└── report.py                      # Reporting functions
 ```
 
 ## Population Genetics Analysis (`analysis.py`)

@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Dict, List, Any
 
 from metainformant.core import logging
+from .configs import RNAPipelineConfig
 
 logger = logging.get_logger(__name__)
 

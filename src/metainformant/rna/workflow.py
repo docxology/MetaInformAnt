@@ -9,10 +9,38 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
+from dataclasses import dataclass
 
 from metainformant.core import io, logging
+from metainformant.core.config import load_mapping_from_file
+from metainformant.rna.metadata_filter import filter_selected_metadata
 
 logger = logging.get_logger(__name__)
+
+
+@dataclass
+class WorkflowStepResult:
+    """Result of executing a single workflow step."""
+    step_name: str
+    return_code: int
+    success: bool
+    error_message: Optional[str] = None
+    command: Optional[str] = None
+
+
+@dataclass
+class WorkflowExecutionResult:
+    """Result of executing a complete workflow."""
+    steps_executed: List[WorkflowStepResult]
+    success: bool
+    total_steps: int
+    successful_steps: int
+    failed_steps: int
+
+    @property
+    def return_codes(self) -> List[int]:
+        """Return list of return codes for backward compatibility."""
+        return [step.return_code for step in self.steps_executed]
 
 
 class AmalgkitWorkflowConfig:
@@ -82,14 +110,8 @@ def load_workflow_config(config_file: Union[str, Path]) -> AmalgkitWorkflowConfi
         raise FileNotFoundError(f"Configuration file not found: {config_path}")
 
     try:
-        if config_path.suffix.lower() in ['.yaml', '.yml']:
-            config_dict = io.load_yaml(str(config_path))
-        elif config_path.suffix.lower() == '.toml':
-            config_dict = io.load_toml(str(config_path))
-        elif config_path.suffix.lower() == '.json':
-            config_dict = io.load_json(str(config_path))
-        else:
-            raise ValueError(f"Unsupported config format: {config_path.suffix}")
+        # Load config using core.config which supports YAML/TOML/JSON
+        config_dict = load_mapping_from_file(config_path)
 
         # Apply defaults
         config_dict = apply_config_defaults(config_dict)
@@ -151,10 +173,10 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
     # Define the standard amalgkit workflow steps
     workflow_steps = [
         'metadata',
-        'integrate',
         'config',
         'select',
         'getfastq',
+        'integrate',  # After getfastq to integrate downloaded FASTQ files
         'quant',
         'merge',
         'cstmm',
@@ -163,9 +185,55 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
         'sanity'
     ]
 
+    # Get per-step overrides if provided (support both 'steps' and 'per_step' keys)
+    per_step = config.extra_config.get('steps', {}) or config.extra_config.get('per_step', {})
+
+    # Check if cstmm/csca required parameters are provided
+    has_ortholog_params = (
+        (per_step.get('cstmm', {}).get('orthogroup_table') or
+         per_step.get('cstmm', {}).get('dir_busco')) or
+        (per_step.get('csca', {}).get('orthogroup_table') or
+         per_step.get('csca', {}).get('dir_busco')) or
+        config.extra_config.get('orthogroup_table') or
+        config.extra_config.get('dir_busco')
+    )
+
+    # Filter out cstmm and csca if required parameters not provided
+    if not has_ortholog_params:
+        workflow_steps = [step for step in workflow_steps if step not in ('cstmm', 'csca')]
+        if 'cstmm' in per_step or 'csca' in per_step:
+            logger.warning("Skipping cstmm and csca steps: required parameters (orthogroup_table or dir_busco) not provided")
+
     for step in workflow_steps:
-        step_params = config.to_dict()
-        # Step-specific parameter overrides would go here
+        # Start with only step-specific params if provided, otherwise use common config
+        if step in per_step:
+            # Use step-specific parameters
+            step_params = per_step[step].copy()
+            # Ensure work_dir is set from common config if not in step params
+            if 'out_dir' not in step_params and 'work_dir' in config.to_dict():
+                step_params['out_dir'] = str(config.work_dir)
+        else:
+            # Use common config params
+            step_params = {
+                'out_dir': str(config.work_dir),
+                'threads': config.threads,
+            }
+            # Add species for steps that need it
+            if config.species_list:
+                step_params['species'] = config.species_list
+
+        # Auto-inject metadata paths for steps that need them
+        # Use filtered metadata if it exists (created after select step)
+        if step in ('getfastq', 'integrate', 'merge'):
+            filtered_metadata = config.work_dir / 'metadata' / 'metadata_selected.tsv'
+            if filtered_metadata.exists():
+                step_params['metadata'] = str(filtered_metadata)
+            elif 'metadata' not in step_params:
+                step_params['metadata'] = str(config.work_dir / 'metadata' / 'metadata.tsv')
+        elif step == 'curate' and 'metadata' not in step_params:
+            # Curate uses metadata from merge directory
+            step_params['metadata'] = str(config.work_dir / 'merge' / 'metadata' / 'metadata.tsv')
+
         steps.append((step, step_params))
 
     logger.info(f"Planned workflow with {len(steps)} steps")
@@ -217,30 +285,43 @@ def sanitize_params_for_cli(subcommand: str, params: Dict[str, Any]) -> Dict[str
         if isinstance(value, Path):
             sanitized[key] = str(value)
 
+    # Remove invalid parameters per subcommand
+    INVALID_PARAMS = {
+        'quant': {'keep_fastq'},  # keep_fastq is not supported by amalgkit CLI
+        # Add more as needed
+    }
+
+    if subcommand in INVALID_PARAMS:
+        for param in INVALID_PARAMS[subcommand]:
+            sanitized.pop(param, None)
+
     return sanitized
 
 
 def execute_workflow(config: AmalgkitWorkflowConfig, *,
+                    steps: Optional[List[str]] = None,
                     check: bool = False,
                     walk: bool = False,
                     progress: bool = True,
-                    show_commands: bool = False) -> List[int]:
+                    show_commands: bool = False) -> WorkflowExecutionResult:
     """Execute the complete amalgkit workflow.
 
     Args:
         config: Workflow configuration
+        steps: Specific steps to run (if None, run all steps)
         check: Stop on first failure if True
         walk: Dry run mode
         progress: Show progress indicators
         show_commands: Print commands being executed
 
     Returns:
-        List of return codes from each step
+        WorkflowExecutionResult with detailed step results
     """
     from metainformant.rna.amalgkit import (
-        AmalgkitParams, metadata, integrate, config, select,
+        AmalgkitParams, metadata, integrate, select,
         getfastq, quant, merge, cstmm, curate, csca, sanity
     )
+    from metainformant.rna.amalgkit import config as amalgkit_config
 
     logger.info(f"Starting amalgkit workflow for species: {config.species_list}")
     logger.info(f"Working directory: {config.work_dir}")
@@ -249,13 +330,29 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
     config.work_dir.mkdir(parents=True, exist_ok=True)
 
     # Plan workflow
-    steps = plan_workflow(config)
+    steps_planned = plan_workflow(config)
 
-    return_codes = []
+    # Filter steps if specific steps requested
+    if steps:
+        original_count = len(steps_planned)
+        steps_planned = [(name, params) for name, params in steps_planned if name in steps]
+        logger.info(f"Filtered workflow from {original_count} to {len(steps_planned)} steps: {[s[0] for s in steps_planned]}")
+
+    if not steps_planned:
+        logger.warning("No steps to execute after filtering")
+        return WorkflowExecutionResult(
+            steps_executed=[],
+            success=True,
+            total_steps=0,
+            successful_steps=0,
+            failed_steps=0
+        )
+
+    step_results = []
     step_functions = {
         'metadata': metadata,
         'integrate': integrate,
-        'config': config,
+        'config': amalgkit_config,
         'select': select,
         'getfastq': getfastq,
         'quant': quant,
@@ -266,60 +363,134 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
         'sanity': sanity
     }
 
-    for step_name, step_params in steps:
+    logger.info(f"Starting execution of {len(steps_planned)} steps")
+    for i, (step_name, step_params) in enumerate(steps_planned, 1):
         if progress:
-            logger.info(f"Executing step: {step_name}")
+            logger.info(f"Step {i}/{len(steps_planned)}: {step_name}")
 
         if walk:
             logger.info(f"Would execute: {step_name}")
-            return_codes.append(0)
+            step_results.append(WorkflowStepResult(
+                step_name=step_name,
+                return_code=0,
+                success=True,
+                command="(dry run)"
+            ))
             continue
 
         try:
-            # Create step parameters
-            params = AmalgkitParams(**step_params)
-
             # Get step function
             step_func = step_functions.get(step_name)
             if not step_func:
-                logger.error(f"Unknown step: {step_name}")
-                return_codes.append(1)
+                error_msg = f"Unknown step: {step_name}"
+                logger.error(error_msg)
+                step_results.append(WorkflowStepResult(
+                    step_name=step_name,
+                    return_code=1,
+                    success=False,
+                    error_message=error_msg
+                ))
                 if check:
                     break
                 continue
 
-            # Execute step
+            # Execute step (pass params dict directly, not AmalgkitParams)
+            command_str = None
             if show_commands:
                 from metainformant.rna.amalgkit import build_amalgkit_command
-                command = build_amalgkit_command(step_name, params)
-                logger.info(f"Command: {' '.join(command)}")
+                sanitized_params = sanitize_params_for_cli(step_name, step_params)
+                command = build_amalgkit_command(step_name, sanitized_params)
+                command_str = ' '.join(command)
+                logger.info(f"Command: {command_str}")
 
-            result = step_func(params)
+            # Validate filtered metadata exists for steps that need it
+            if step_name in ('getfastq', 'integrate', 'merge'):
+                filtered_metadata = config.work_dir / 'metadata' / 'metadata_selected.tsv'
+                if not filtered_metadata.exists():
+                    error_msg = f"Filtered metadata not found: {filtered_metadata}. Run 'select' step first."
+                    logger.error(error_msg)
+                    step_results.append(WorkflowStepResult(
+                        step_name=step_name,
+                        return_code=1,
+                        success=False,
+                        error_message=error_msg
+                    ))
+                    if check:
+                        break
+                    continue
 
-            return_codes.append(result.returncode)
+            # Sanitize parameters before passing to step function
+            sanitized_params = sanitize_params_for_cli(step_name, step_params)
+            result = step_func(sanitized_params)
 
+            # After select step, create filtered metadata for downstream steps
+            if step_name == 'select' and result.returncode == 0:
+                try:
+                    logger.info("Creating filtered metadata for selected samples")
+                    filter_selected_metadata(
+                        config.work_dir / 'metadata' / 'metadata.tsv',
+                        config.work_dir / 'metadata' / 'metadata_selected.tsv'
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to create filtered metadata: {e}")
+                    if check:
+                        step_results.append(WorkflowStepResult(
+                            step_name="metadata_filtering",
+                            return_code=1,
+                            success=False,
+                            error_message=str(e)
+                        ))
+                        break
+
+            # Create step result
+            error_message = None
             if result.returncode != 0:
+                error_message = f"Step failed with return code {result.returncode}"
+                if result.stderr:
+                    error_message += f": {result.stderr}"
                 logger.error(f"Step {step_name} failed with return code {result.returncode}")
                 if result.stderr:
                     logger.error(f"Error output: {result.stderr}")
-                if check:
-                    break
             else:
                 logger.info(f"Step {step_name} completed successfully")
 
+            step_results.append(WorkflowStepResult(
+                step_name=step_name,
+                return_code=result.returncode,
+                success=result.returncode == 0,
+                error_message=error_message,
+                command=command_str
+            ))
+
+            if result.returncode != 0 and check:
+                break
+
         except Exception as e:
+            error_msg = f"Exception during execution: {e}"
             logger.error(f"Error executing step {step_name}: {e}")
-            return_codes.append(1)
+            step_results.append(WorkflowStepResult(
+                step_name=step_name,
+                return_code=1,
+                success=False,
+                error_message=error_msg
+            ))
             if check:
                 break
 
-    success_count = sum(1 for rc in return_codes if rc == 0)
-    total_count = len(return_codes)
+    successful_steps = sum(1 for sr in step_results if sr.success)
+    total_steps = len(step_results)
+    failed_steps = total_steps - successful_steps
 
     if progress:
-        logger.info(f"Workflow completed: {success_count}/{total_count} steps successful")
+        logger.info(f"Workflow completed: {successful_steps}/{total_steps} steps successful")
 
-    return return_codes
+    return WorkflowExecutionResult(
+        steps_executed=step_results,
+        success=failed_steps == 0,
+        total_steps=total_steps,
+        successful_steps=successful_steps,
+        failed_steps=failed_steps
+    )
 
 
 def validate_workflow_config(config: AmalgkitWorkflowConfig) -> Tuple[bool, List[str]]:
@@ -456,6 +627,10 @@ def run_config_based_workflow(config_path: Union[str, Path], **kwargs: Any) -> D
         'return_codes': return_codes,
         'success': all(rc == 0 for rc in return_codes)
     }
+
+
+
+
 
 
 
