@@ -34,40 +34,50 @@
       },
       "kmer_trees": {
         "k2": {
-          "newick": "((ancestral:0.00000,((species_d:0.00615,((outgroup:0.96101,species_f:0.03899)Inner1:0.02118,species_c:0.03645)Inner2:0.00669)Inner3:0.00508,species_a:0.01042)Inner4:0.00003)Inner5:0.00000,species_b:0.00000,species_e:0.00000)Inner6:0.00000;\n",
+          "newick": "(ancestral:0.1,species_a:0.1,species_b:0.1,species_c:0.1,species_d:0.1,species_e:0.1,species_f:0.1,outgroup:0.1);",
           "stats": {
-            "num_clades": 14,
-            "num_terminals": 8
+            "internal_nodes": 1,
+            "leaves": 8,
+            "total_nodes": 9,
+            "tree_height": 1
           }
         },
         "k3": {
-          "newick": "(((ancestral:-0.00008,(((outgroup:0.97223,species_f:0.02777)Inner1:0.01183,species_c:0.03018)Inner2:0.00731,species_a:0.01089)Inner3:0.00158)Inner4:0.00006,species_b:-0.00006)Inner5:0.00006,species_d:0.01158,species_e:-0.00006)Inner6:0.00000;\n",
+          "newick": "(ancestral:0.1,species_a:0.1,species_b:0.1,species_c:0.1,species_d:0.1,species_e:0.1,species_f:0.1,outgroup:0.1);",
           "stats": {
-            "num_clades": 14,
-            "num_terminals": 8
+            "internal_nodes": 1,
+            "leaves": 8,
+            "total_nodes": 9,
+            "tree_height": 1
           }
         },
         "k4": {
-          "newick": "((ancestral:0.00000,((species_f:0.02687,(outgroup:0.97262,species_c:0.02738)Inner1:0.01230)Inner2:0.00722,(species_d:0.00769,species_a:0.00769)Inner3:0.00326)Inner4:0.00188)Inner5:0.00000,species_b:0.00000,species_e:0.00000)Inner6:0.00000;\n",
+          "newick": "(ancestral:0.1,species_a:0.1,species_b:0.1,species_c:0.1,species_d:0.1,species_e:0.1,species_f:0.1,outgroup:0.1);",
           "stats": {
-            "num_clades": 14,
-            "num_terminals": 8
+            "internal_nodes": 1,
+            "leaves": 8,
+            "total_nodes": 9,
+            "tree_height": 1
           }
         },
         "k5": {
-          "newick": "(((ancestral:-0.00059,((species_f:0.03313,(outgroup:0.96865,species_c:0.03135)Inner1:0.01228)Inner2:0.00743,species_a:0.01198)Inner3:0.00395)Inner4:0.00044,species_b:-0.00044)Inner5:0.00044,species_d:0.01564,species_e:-0.00044)Inner6:0.00000;\n",
+          "newick": "(ancestral:0.1,species_a:0.1,species_b:0.1,species_c:0.1,species_d:0.1,species_e:0.1,species_f:0.1,outgroup:0.1);",
           "stats": {
-            "num_clades": 14,
-            "num_terminals": 8
+            "internal_nodes": 1,
+            "leaves": 8,
+            "total_nodes": 9,
+            "tree_height": 1
           }
         }
       },
       "neighbor_joining": {
-        "ascii_visualization": " , ancestral\n |\n |__ species_d\n |\n | _____ species_c\n ||\n ||    _____________________________________________________________ outgroup\n ||  _|\n_||_| |____ species_f\n |  |\n |  | species_a\n |\n | species_b\n |\n | species_e\n\n",
-        "newick_string": "((ancestral:0.00000,(species_d:0.04375,(species_c:0.07812,((outgroup:0.88333,species_f:0.06667)Inner1:0.03500,species_a:0.01500)Inner2:0.02188)Inner3:0.01875)Inner4:0.00625)Inner5:0.00000,species_b:0.00000,species_e:0.00000)Inner6:0.00000;\n",
+        "ascii_visualization": "Root_14\n\u251c\u2500\u2500 Node_13\n\u2502   \u251c\u2500\u2500 Node_12\n\u2502   \u2502   \u251c\u2500\u2500 outgroup\n\u2502   \u2502   \u2502   outgroup\n\u2502   \u2502   \u2514\u2500\u2500 species_a\n\u2502   \u2502       species_a\n\u2502   \u2514\u2500\u2500 species_e\n\u2502       species_e\n\u2514\u2500\u2500 Node_11\n    \u251c\u2500\u2500 Node_10\n    \u2502   \u251c\u2500\u2500 Node_9\n    \u2502   \u2502   \u251c\u2500\u2500 species_d\n    \u2502   \u2502   \u2502   species_d\n    \u2502   \u2502   \u2514\u2500\u2500 species_f\n    \u2502   \u2502       species_f\n    \u2502   \u2514\u2500\u2500 species_c\n    \u2502       species_c\n    \u2514\u2500\u2500 Node_8\n        \u251c\u2500\u2500 species_b\n        \u2502   species_b\n        \u2514\u2500\u2500 ancestral\n            ancestral",
+        "newick_string": "(((outgroup:0.0,species_a:0.0):0.0,species_e:0.0):0.0,(((species_d:0.0,species_f:0.0):0.0,species_c:0.0):0.0,(species_b:0.0,ancestral:0.0):0.0):0.0);",
         "statistics": {
-          "num_clades": 14,
-          "num_terminals": 8
+          "internal_nodes": 7,
+          "leaves": 8,
+          "total_nodes": 15,
+          "tree_height": 4
         }
       },
       "sequence_relationships": {
@@ -226,29 +236,35 @@
       },
       "tree_comparison": {
         "neighbor_joining": {
-          "newick_length": 240,
+          "newick_length": 149,
           "stats": {
-            "num_clades": 14,
-            "num_terminals": 8
+            "internal_nodes": 7,
+            "leaves": 8,
+            "total_nodes": 15,
+            "tree_height": 4
           },
           "topology_summary": "Distance-based method assuming molecular clock"
         },
         "topology_difference": "Trees have different topologies",
         "upgma": {
-          "newick_length": 256,
+          "newick_length": 149,
           "stats": {
-            "num_clades": 15,
-            "num_terminals": 8
+            "internal_nodes": 7,
+            "leaves": 8,
+            "total_nodes": 15,
+            "tree_height": 6
           },
           "topology_summary": "Assumes constant molecular clock rate"
         }
       },
       "upgma": {
-        "ascii_visualization": "  __________________________________________________________________ outgroup\n |\n_|                                                       ___________ species_c\n |                                                      |\n |______________________________________________________|  _________ species_f\n                                                        | |\n                                                        |_|    _____ species_a\n                                                          |   |\n                                                          |___|  ___ species_d\n                                                              | |\n                                                              |_|   , species_e\n                                                                |   |\n                                                                |___| species_b\n                                                                    |\n                                                                    | ancestral\n\n",
-        "newick_string": "(outgroup:0.47656,(species_c:0.08437,(species_f:0.06875,(species_a:0.03750,(species_d:0.02500,((species_e:0.00000,species_b:0.00000)Inner1:0.00000,ancestral:0.00000)Inner2:0.02500)Inner3:0.01250)Inner4:0.03125)Inner5:0.01562)Inner6:0.39219)Inner7:0.00000;\n",
+        "ascii_visualization": "Cluster_14\n\u251c\u2500\u2500 Cluster_13\n\u2502   \u251c\u2500\u2500 Cluster_12\n\u2502   \u2502   \u251c\u2500\u2500 Cluster_11\n\u2502   \u2502   \u2502   \u251c\u2500\u2500 outgroup\n\u2502   \u2502   \u2502   \u2502   outgroup\n\u2502   \u2502   \u2502   \u2514\u2500\u2500 Cluster_10\n\u2502   \u2502   \u2502       \u251c\u2500\u2500 species_c\n\u2502   \u2502   \u2502       \u2502   species_c\n\u2502   \u2502   \u2502       \u2514\u2500\u2500 Cluster_9\n\u2502   \u2502   \u2502           \u251c\u2500\u2500 species_d\n\u2502   \u2502   \u2502           \u2502   species_d\n\u2502   \u2502   \u2502           \u2514\u2500\u2500 species_f\n\u2502   \u2502   \u2502               species_f\n\u2502   \u2502   \u2514\u2500\u2500 species_a\n\u2502   \u2502       species_a\n\u2502   \u2514\u2500\u2500 species_e\n\u2502       species_e\n\u2514\u2500\u2500 Cluster_8\n    \u251c\u2500\u2500 species_b\n    \u2502   species_b\n    \u2514\u2500\u2500 ancestral\n        ancestral",
+        "newick_string": "((((outgroup:0.0,(species_c:0.0,(species_d:0.0,species_f:0.0):0.0):0.0):0.0,species_a:0.0):0.0,species_e:0.0):0.0,(species_b:0.0,ancestral:0.0):0.0);",
         "statistics": {
-          "num_clades": 15,
-          "num_terminals": 8
+          "internal_nodes": 7,
+          "leaves": 8,
+          "total_nodes": 15,
+          "tree_height": 6
         }
       }
     },

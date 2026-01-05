@@ -332,8 +332,6 @@ def download_reference_genome(species: str, output_dir: str | Path) -> Optional[
 
 def _download_from_ftp(ftp_url: str, output_dir: Path) -> Path:
     """Download genome data from FTP URL."""
-    from urllib.request import urlretrieve
-
     output_dir.mkdir(parents=True, exist_ok=True)
 
     # Parse FTP URL
@@ -346,7 +344,22 @@ def _download_from_ftp(ftp_url: str, output_dir: Path) -> Path:
     output_file = output_dir / filename
 
     logger.info(f"Downloading from FTP: {ftp_url}")
-    urlretrieve(ftp_url, output_file)
+    from metainformant.core.download import download_with_progress
+
+    # Use the centralized downloader so we get heartbeat + retry.
+    result = download_with_progress(
+        ftp_url,
+        output_file,
+        protocol="ftp",
+        show_progress=False,
+        heartbeat_interval=5,
+        max_retries=3,
+        chunk_size=1024 * 1024,
+        timeout=300,
+        resume=False,
+    )
+    if not result.success:
+        raise RuntimeError(f"FTP download failed: {ftp_url}: {result.error or 'unknown error'}")
 
     return output_dir
 

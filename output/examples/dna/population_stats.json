@@ -75,40 +75,38 @@
           "low_vs_high_diversity": {
             "pi_ratio": 16.25,
             "segregating_sites_ratio": 14.0,
-            "theta_ratio": 14.0
+            "theta_ratio": 13.999999999999998
           }
         },
         "neutrality_test_summary": {
           "directional_bias": {
             "negative": 1,
-            "positive": 0
+            "positive": 2
           },
-          "significant_deviations": 1,
+          "significant_deviations": 3,
           "tests_performed": 4
         }
       },
       "diversity_statistics": {
         "high_diversity": {
           "nucleotide_diversity_pi": 0.325,
-          "pi_theta_ratio": 0.9672619047619049,
+          "pi_theta_ratio": 0.04836309523809523,
           "segregating_sites": 14,
-          "wattersons_theta": 0.33599999999999997
+          "wattersons_theta": 6.720000000000001
         },
         "low_diversity": {
           "nucleotide_diversity_pi": 0.02,
-          "pi_theta_ratio": 0.8333333333333335,
+          "pi_theta_ratio": 0.04166666666666666,
           "segregating_sites": 1,
-          "wattersons_theta": 0.023999999999999997
+          "wattersons_theta": 0.4800000000000001
         }
       },
       "genotype_analysis": {
         "population_1": {
           "allele_frequencies": [
-            0.3333333333333333,
-            0.0,
-            0.3333333333333333,
-            0.3333333333333333,
-            0.0
+            0.1,
+            0.1,
+            0.1
           ],
           "heterozygosity_per_snp": [
             0.2,
@@ -121,11 +119,9 @@
         },
         "population_2": {
           "allele_frequencies": [
-            0.6666666666666666,
-            1.0,
-            1.0,
-            0.6666666666666666,
-            1.0
+            0.5,
+            0.4,
+            0.4
           ],
           "heterozygosity_per_snp": [
             1.0,
@@ -141,26 +137,26 @@
         "fay_wu_h": {
           "interpretation": "Detects recent positive selection",
           "significance": "Negative values suggest recent selective sweeps",
-          "statistic": -4.769911784417324
+          "statistic": 0.14311111111111113
         },
         "fu_li_d_star": {
           "interpretation": "Tests for recent population growth or selection",
           "significance": "Negative values suggest population expansion",
-          "statistic": -0.07449534420881351
+          "statistic": 14.265555555555556
         },
         "fu_li_f_star": {
           "interpretation": "More powerful for detecting population growth",
           "significance": "Negative values suggest population expansion",
-          "statistic": 0.0
+          "statistic": 13.555555555555555
         },
         "tajimas_d": {
           "interpretation": "Negative: purifying selection or population expansion; Positive: balancing selection or bottleneck",
           "significance": "Typically significant if |D| > 2",
-          "statistic": -1.1858407079646018
+          "statistic": -4.414404951370661
         }
       },
       "population_differentiation": {
-        "fst_value": 0.12878787878787878,
+        "fst_value": 0.09100241545893728,
         "interpretation": {
           "0.0-0.05": "Little genetic differentiation",
           "0.05-0.15": "Moderate genetic differentiation",

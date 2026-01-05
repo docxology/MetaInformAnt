@@ -260,6 +260,14 @@ Download FASTQ files from SRA/ENA/AWS.
 - `ncbi`: Use NCBI SRA download
 - `pfd`: Use parallel fastq-dump (faster)
 - `threads`: Number of download threads
+- `max_bp`: Maximum base pairs to download per sample (default: unlimited)
+  - Use to limit download size for testing or disk space constraints
+  - After quantification, only small abundance files remain (~few MB per sample)
+  - Large downloads are temporary - quantified samples don't need re-download
+- `redo`: Re-download behavior (default: `no`)
+  - `redo: no` (recommended): Skips already-downloaded SRA files, only downloads missing ones
+  - `redo: yes`: Forces re-download even if files exist (use only for corrupted files or testing)
+  - Note: Even with `redo: no`, amalgkit will still process existing SRA files to FASTQ if needed
 
 ### Quantification (`quant`)
 Quantify transcript abundance from FASTQ files.
@@ -607,6 +615,98 @@ config = AmalgkitWorkflowConfig(
 results = execute_workflow(config)
 print("Workflow completed successfully!")
 ```
+
+## Sample Validation
+
+The RNA module includes comprehensive end-to-end sample validation to track samples through the complete pipeline (download → extract → quant → merge).
+
+### Automatic Validation
+
+Validation runs automatically after key workflow steps:
+- **After `getfastq`**: Validates that samples were downloaded and FASTQ files extracted
+- **After `quant`**: Validates that samples were quantified and abundance files exist
+
+Validation reports are saved to `work_dir/validation/`:
+- `getfastq_validation.json`: Download and extraction validation
+- `quant_validation.json`: Quantification validation
+
+### Standalone Validation
+
+Run validation without executing the workflow:
+
+```bash
+# Validate all stages
+python3 scripts/rna/run_workflow.py config/amalgkit/my_species.yaml --validate
+
+# Validate specific stage
+python3 scripts/rna/run_workflow.py config/amalgkit/my_species.yaml --validate --validate-stage quantification
+```
+
+### Programmatic Validation
+
+```python
+from metainformant.rna.workflow import load_workflow_config
+from metainformant.rna.validation import validate_all_samples, get_sample_pipeline_status
+
+# Load config
+config = load_workflow_config("config/amalgkit/my_species.yaml")
+
+# Validate all samples
+validation_result = validate_all_samples(config)
+print(f"Validated: {validation_result['validated']}/{validation_result['total_samples']}")
+
+# Check specific sample
+sample_status = get_sample_pipeline_status("SRR123456", config.work_dir)
+print(f"Sample stage: {sample_status['stage']}")
+print(f"Downloaded: {sample_status['download']}")
+print(f"Extracted: {sample_status['extraction']}")
+print(f"Quantified: {sample_status['quantification']}")
+
+# Access diagnostics for troubleshooting
+if not sample_status['quantification']:
+    print("Missing quantification files")
+    # Check per-sample diagnostics in validation report
+```
+
+### Validation Report Schema
+
+Validation reports are JSON files with the following structure:
+
+```json
+{
+  "total_samples": 100,
+  "validated": 95,
+  "failed": 5,
+  "per_sample": {
+    "SRR123456": {
+      "valid": true,
+      "stages": {
+        "download": true,
+        "extraction": true,
+        "quantification": true,
+        "merge": false
+      },
+      "diagnostics": {
+        "fastq_files": ["path/to/file.fastq.gz"],
+        "abundance_file": "path/to/abundance.tsv"
+      }
+    }
+  },
+  "summary": {
+    "extraction": {"total": 100, "complete": 98, "missing": 2},
+    "quantification": {"total": 100, "complete": 97, "missing": 3}
+  }
+}
+```
+
+See [Validation Guide](../../docs/rna/VALIDATION.md) for complete documentation.
+
+### Validation Stages
+
+- **download**: SRA file exists
+- **extraction**: FASTQ files exist (paired or single-end)
+- **quantification**: Abundance file exists (`abundance.tsv` or `quant.sf`)
+- **merge**: Sample appears in merged abundance matrix
 
 ## See Also
 

@@ -62,6 +62,7 @@ steps:
     aws: yes
     gcp: yes
     min_read_length: 25
+    max_bp: 10000000000  # Optional: Limit download size per sample (10GB)
 ```
 
 ## Parameters
@@ -73,13 +74,13 @@ steps:
 | `--out_dir` | PATH | `./` | Directory for intermediate and output files. |
 | `--metadata` | PATH | `inferred` | Path to metadata.tsv. Default: `out_dir/metadata/metadata.tsv` |
 | `--threads` | INT | `1` | Number of threads for parallel processing. |
-| `--redo` | yes/no | `no` | Re-download even if FASTQs exist. |
+| `--redo` | yes/no | `no` | Re-download behavior. See "When to Use `redo`" section below for details. |
 | `--batch` | INT | `None` | Process only one SRA record (1-based index). For HPC array jobs. |
 | `--entrez_email` | email | `` | Email for NCBI Entrez API. |
 | `--id` | STR | `None` | Single BioProject/BioSample/SRR ID to download directly. |
 | `--id_list` | PATH | `None` | File containing list of SRA IDs (one per line). |
 | `--layout` | STR | `auto` | Library layout: `single`, `paired`, or `auto` (prefers paired). |
-| `--max_bp` | INT | `999999999999999` | Target sequence size (bp) to download. |
+| `--max_bp` | INT | `999999999999999` | Target sequence size (bp) to download per sample. Use to limit download size for testing or disk space constraints. After quantification, only small abundance files (~few MB) remain, so large downloads are temporary. |
 | `--min_read_length` | INT | `25` | Minimum read length after quality filtering. |
 | `--pfd` | yes/no | `yes` | Use parallel-fastq-dump for SRA extraction. |
 | `--pfd_exe` | PATH | `parallel-fastq-dump` | Path to parallel-fastq-dump executable. |
@@ -106,6 +107,62 @@ steps:
 | `show_progress` | bool | `true` | Enable live progress tracking with file size monitoring. Shows per-thread download progress, rates (MB/s), and elapsed time. |
 | `progress_update_interval` | float | `2.0` | How often to update progress display in seconds. Lower values provide more frequent updates but use more CPU. |
 | `progress_style` | str | `"bar"` | Progress display style: `"bar"` for tqdm progress bars (requires tqdm), or `"text"` for simple text updates. |
+
+## When to Use `redo: yes` vs `redo: no`
+
+The `redo` parameter controls whether amalgkit re-downloads SRA files that already exist locally.
+
+### Default Behavior: `redo: no` (Recommended)
+
+**Use `redo: no` for normal operations.** This is the default and recommended setting.
+
+With `redo: no`:
+- ✅ **Skips already-downloaded SRA files** - Amalgkit automatically detects existing `.sra` files and skips re-downloading them
+- ✅ **Saves bandwidth and time** - Only downloads missing files
+- ✅ **Still processes existing files** - Even if SRA files exist, amalgkit will still:
+  - Extract FASTQ files if they don't exist
+  - Run quality filtering with fastp if enabled
+  - Generate output files as needed
+
+**Example output with `redo: no`:**
+```
+Processing SRA ID: SRR34065661
+Previously-downloaded sra file was detected at: .../SRR34065661.sra
+Time elapsed for 1st-round sequence extraction: SRR34065661, 0.0 sec
+```
+
+### When to Use `redo: yes`
+
+**Use `redo: yes` only in specific situations:**
+
+1. **Corrupted files** - If SRA files are corrupted and need to be re-downloaded
+2. **Data refresh** - If you want to ensure you have the latest version from SRA (rarely needed, as SRA data is typically stable)
+3. **Testing** - When testing download functionality or troubleshooting download issues
+4. **Configuration changes** - If you changed download settings (e.g., switching from NCBI to AWS) and want fresh downloads
+
+**Warning**: Using `redo: yes` will:
+- ⚠️ Re-download ALL files, even if they already exist
+- ⚠️ Use significant bandwidth and time
+- ⚠️ May overwrite existing files
+
+### File Detection Behavior
+
+Amalgkit detects existing files by checking for `.sra` files in the expected location:
+- Pattern: `{out_dir}/getfastq/{SRR_ID}/{SRR_ID}.sra`
+- Detection message: `"Previously-downloaded sra file was detected at: {path}"`
+- Skip message: `"Previously-downloaded sra file was not detected. New sra file will be downloaded."`
+
+### Summary Logging
+
+After the `getfastq` step completes, METAINFORMANT logs a summary showing:
+- Number of files skipped (already exists)
+- Number of files downloaded
+- Total samples processed
+
+Example summary:
+```
+Step getfastq summary: 1 file(s) skipped (already exists), 14 file(s) downloaded (total: 15 samples)
+```
 
 ## Input Requirements
 
@@ -224,6 +281,25 @@ When multiple sources enabled, amalgkit tries in order:
 - **Per sample**: 2-20GB download
 - **100 samples**: 200GB - 2TB total
 - **Recommendation**: Use high-speed network connection
+
+### Download Size Limits
+
+The `--max_bp` parameter allows you to limit the download size per sample. This is useful for:
+- **Testing workflows**: Limit downloads to validate pipeline without full data
+- **Disk space constraints**: Control peak disk usage during processing
+- **Network bandwidth management**: Reduce download time and bandwidth usage
+
+**Important Notes**:
+- After quantification, only small abundance files remain (~few MB per sample)
+- Large downloads are **temporary** - quantified samples don't need re-download
+- The `max_bp` limit applies per sample, not total workflow size
+
+**Example**:
+```yaml
+steps:
+  getfastq:
+    max_bp: 10000000000  # Limit to 10GB per sample
+```
 
 ### Parallelization
 
@@ -392,6 +468,47 @@ The METAINFORMANT workflow includes automatic conversion of SRA files to FASTQ f
 
 4. **Wrapper mechanism**: For `amalgkit` calls, a wrapper script injects `--size-check off` into `fasterq-dump` commands to prevent "disk-limit exceeded" errors. The wrapper is automatically created in `{fastq_dir}/temp/fasterq-dump` and added to PATH for `amalgkit` processes.
 
+## Validation
+
+After the `getfastq` step completes, validation automatically runs to verify that samples were successfully downloaded and extracted.
+
+### Automatic Validation
+
+Validation runs automatically after `getfastq` completes:
+- Checks that FASTQ files exist for each sample
+- Validates file sizes and counts
+- Generates validation report: `work_dir/validation/getfastq_validation.json`
+
+### Validation Results
+
+Check validation results:
+
+```bash
+# View validation report
+cat output/amalgkit/my_species/work/validation/getfastq_validation.json
+
+# Run standalone validation
+python3 scripts/rna/run_workflow.py config/amalgkit/my_species.yaml --validate --validate-stage extraction
+```
+
+### Common Validation Issues
+
+**Issue**: Samples show `extraction: false` in validation
+
+**Solutions**:
+1. Check if FASTQ files exist:
+   ```bash
+   ls output/amalgkit/my_species/fastq/getfastq/SRR123456/
+   ```
+2. Verify `getfastq` step completed successfully
+3. Check logs for download errors:
+   ```bash
+   cat output/amalgkit/my_species/work/logs/getfastq.log
+   ```
+4. Re-run `getfastq` step if needed
+
+For detailed validation troubleshooting, see [Validation Guide](../VALIDATION.md).
+
 ## Troubleshooting
 
 ### Issue: getfastq reports success but produces 0 reads
@@ -399,6 +516,17 @@ The METAINFORMANT workflow includes automatic conversion of SRA files to FASTQ f
 **Symptoms**:
 - `amalgkit getfastq` returns exit code 0 (success)
 - Log shows "Sum of fastp input reads: 0 bp" and "Sum of fastp output reads: 0 bp"
+
+**Root Cause**: fasterq-dump is failing due to disk space issues in `/tmp` (tmpfs may be full).
+
+**Solution**: The workflow now automatically sets `TMPDIR` to the repository's `.tmp/fasterq-dump` directory (on external drive with sufficient space) before running getfastq step. This prevents "disk-limit exceeded" and "storage exhausted" errors.
+
+**Verification**: Check that TMPDIR is set correctly:
+```bash
+# During getfastq execution, TMPDIR should point to repository .tmp directory
+echo $TMPDIR
+# Should show: /path/to/repo/.tmp/fasterq-dump
+```
 - No FASTQ files are created
 - SRA file may be deleted after "successful" download
 
@@ -460,11 +588,40 @@ grep "SRR123456" output/amalgkit/work/metadata/metadata.tsv | grep -i "lite"
 - SRA file exists but extraction fails
 - Even though disk has sufficient space
 
-**Root Cause**: `fasterq-dump` has an internal disk space check that can fail even when sufficient space is available, especially if the default temporary directory is small.
+**Root Cause**: `fasterq-dump` has an internal disk space check that can fail even when sufficient space is available, especially if the default temporary directory (`/tmp`) is small or full. Additionally, `/tmp` may be a tmpfs (RAM-based filesystem) with limited space.
 
 **Solutions Implemented**:
 
-1. **Wrapper Script for `amalgkit` Calls**:
+1. **Automatic TMPDIR Configuration** (Primary Fix):
+   - **Location**: `src/metainformant/rna/amalgkit.py::run_amalgkit()`
+   - **Purpose**: Automatically sets `TMPDIR`, `TEMP`, and `TMP` environment variables to repository's `.tmp/fasterq-dump` directory before running getfastq step
+   - **Implementation**:
+     - Detects when `subcommand == "getfastq"`
+     - Sets `TMPDIR` to `{repo_root}/.tmp/fasterq-dump` (on external drive with sufficient space)
+     - Creates directory if it doesn't exist
+     - Passes environment to subprocess calls
+   - **Benefits**:
+     - Prevents "disk-limit exceeded" errors when `/tmp` is full
+     - Uses external drive space instead of limited tmpfs
+     - Works automatically without user configuration
+   - **Code Location**: `src/metainformant/rna/amalgkit.py::run_amalgkit()` (lines 299-318 and 392-406)
+
+2. **Automatic vdb-config Repository Path Configuration** (For Prefetch Downloads):
+   - **Location**: `src/metainformant/rna/workflow.py::execute_workflow()`
+   - **Purpose**: Configures vdb-config repository root to point to amalgkit fastq output directory
+   - **Implementation**:
+     - Detects when getfastq step is in workflow
+     - Gets fastq output directory from getfastq step parameters
+     - Sets vdb-config repository root to `{fastq_dir}/getfastq` (where amalgkit expects SRA files)
+     - This ensures `prefetch` downloads SRA files to the correct location
+   - **Benefits**:
+     - Prevents "SRA file download failed" errors where prefetch downloads to wrong location
+     - Ensures SRA files are in the location amalgkit expects them
+     - Works automatically without user configuration
+   - **Code Location**: `src/metainformant/rna/workflow.py::execute_workflow()` (lines 422-460)
+   - **Note**: vdb-config repository root (for prefetch) is different from VDB_CONFIG environment variable (for cache/temp)
+
+2. **Wrapper Script for `amalgkit` Calls** (Legacy/Alternative):
    - **Location**: `{fastq_dir}/temp/fasterq-dump`
    - **Purpose**: Automatically injects `--size-check off` into all `fasterq-dump` calls made by `amalgkit`
    - **Implementation**:
@@ -533,8 +690,12 @@ exec /usr/bin/fasterq-dump --size-check off "$@"
 EOF
 chmod +x output/amalgkit/work/fastq/temp/fasterq-dump
 
-# Or configure vdb-config to use a large temp directory
-vdb-config --set /repository/user/default-path=/path/to/large/disk
+# Or configure vdb-config repository root manually (for prefetch downloads)
+# This should point to where amalgkit expects SRA files: {fastq_dir}/getfastq
+vdb-config -s /repository/user/main/public/root=/path/to/amalgkit/fastq/getfastq
+
+# Note: The workflow automatically configures vdb-config repository root to the correct location.
+# Manual configuration is rarely needed.
 ```
 
 **Note**: The workflow handles this automatically - manual intervention is rarely needed.

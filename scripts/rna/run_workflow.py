@@ -180,6 +180,16 @@ def main() -> int:
         action="store_true",
         help="Log the exact amalgkit command for each stage before running it",
     )
+    parser.add_argument(
+        "--validate",
+        action="store_true",
+        help="Run validation on workflow samples without executing workflow",
+    )
+    parser.add_argument(
+        "--validate-stage",
+        choices=["download", "extraction", "quantification", "merge"],
+        help="Validate specific pipeline stage (use with --validate)",
+    )
 
     args = parser.parse_args()
 
@@ -261,6 +271,47 @@ def main() -> int:
         created, exists = fix_abundance_naming_for_species(config_path)
         logger.info(f"Created: {created}, Already exists: {exists}")
         return 0
+
+    # Validation
+    if args.validate:
+        from metainformant.rna.workflow import load_workflow_config
+        from metainformant.rna.validation import validate_all_samples, save_validation_report
+        
+        logger.info(f"Running validation for {config_path.name}")
+        config = load_workflow_config(config_path)
+        
+        validation_result = validate_all_samples(config, stage=args.validate_stage)
+        
+        # Save validation report
+        validation_dir = config.work_dir / "validation"
+        validation_dir.mkdir(parents=True, exist_ok=True)
+        report_file = validation_dir / "validation_report.json"
+        save_validation_report(validation_result, report_file)
+        
+        # Print summary
+        total = validation_result.get('total_samples', 0)
+        validated = validation_result.get('validated', 0)
+        failed = validation_result.get('failed', 0)
+        stage = args.validate_stage or 'all'
+        
+        logger.info(f"Validation results ({stage}):")
+        logger.info(f"  Total samples: {total}")
+        logger.info(f"  Validated: {validated}")
+        logger.info(f"  Failed: {failed}")
+        
+        if validation_result.get('summary'):
+            logger.info("  Stage breakdown:")
+            for stage_name, stage_info in validation_result['summary'].items():
+                complete = stage_info.get('complete', 0)
+                missing = stage_info.get('missing', 0)
+                logger.info(f"    {stage_name}: {complete} complete, {missing} missing")
+        
+        if failed > 0:
+            logger.warning(f"  {failed} samples failed validation. Check {report_file} for details.")
+            return 1
+        else:
+            logger.info("  All samples passed validation")
+            return 0
 
     # Run workflow
     logger.info(f"Running workflow for {config_path.name}")

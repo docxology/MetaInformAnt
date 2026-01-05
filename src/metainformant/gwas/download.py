@@ -221,39 +221,42 @@ def download_sra_run(sra_accession: str, output_dir: str | Path, threads: int = 
 
 def _download_sra_from_ena(accession: str, output_dir: Path, threads: int) -> Path:
     """Download SRA data from ENA."""
-    # ENA URL pattern
+    from metainformant.core.download import download_with_progress
+
+    # ENA URL pattern (FTP). We keep the original behavior but add heartbeat + retry.
     ena_url = f"ftp://ftp.sra.ebi.ac.uk/vol1/fastq/{accession[:6]}/{accession}"
 
-    # Try different file patterns
     patterns = [
         f"{ena_url}/{accession}.fastq.gz",
         f"{ena_url}/{accession}_1.fastq.gz",
-        f"{ena_url}/{accession}_2.fastq.gz"
+        f"{ena_url}/{accession}_2.fastq.gz",
     ]
 
-    downloaded_files = []
+    downloaded_files: list[Path] = []
+    last_error: str | None = None
 
     for url in patterns:
-        try:
-            filename = url.split('/')[-1]
-            output_file = output_dir / filename
-
-            # Use requests for download
-            response = requests.get(url, stream=True, timeout=60)
-            response.raise_for_status()
-
-            with open(output_file, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
-
+        filename = url.split("/")[-1]
+        output_file = output_dir / filename
+        result = download_with_progress(
+            url,
+            output_file,
+            protocol="ftp",
+            show_progress=False,
+            heartbeat_interval=5,
+            max_retries=3,
+            chunk_size=1024 * 1024,
+            timeout=60,
+            resume=False,
+        )
+        if result.success:
             downloaded_files.append(output_file)
             logger.info(f"Downloaded {filename}")
-
-        except requests.RequestException:
-            continue
+        else:
+            last_error = result.error
 
     if not downloaded_files:
-        raise RuntimeError(f"No files downloaded from ENA for {accession}")
+        raise RuntimeError(f"No files downloaded from ENA for {accession}: {last_error or 'unknown error'}")
 
     return output_dir
 

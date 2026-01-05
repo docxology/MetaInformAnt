@@ -79,14 +79,14 @@ steps:
     search_string: '"Pogonomyrmex barbatus"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
     redo: yes
   integrate:
-    fastq_dir: output/amalgkit/pbarbatus_test5/fastq
+    fastq_dir: output/amalgkit/pbarbatus_test5/fastq/getfastq
   config: {}
   select:
-    max_sample: 5  # Limit to 5 samples for testing
+    max_sample: 1  # Limit to 1 sample for end-to-end testing
   getfastq:
     out_dir: output/amalgkit/pbarbatus_test5/fastq
     threads: 4  # Reduced for limited samples
-    redo: yes         # Force restart of downloads/conversions
+    redo: no    # Skip already-downloaded files (set to 'yes' only to force re-download)
     # Cloud acceleration: AWS only (full SRA files)
     # NOTE: NCBI and GCP have LITE files (metadata-only, no sequence data) for this species
     # AWS has full SRA files with actual sequence data
@@ -95,16 +95,22 @@ steps:
     ncbi: no           # DISABLED: NCBI has lite files (no sequence data)
     pfd: no           # DISABLED: parallel-fastq-dump usually not needed
     fastp: yes        # ENABLED: fastp QC tool
+    # max_bp: 10000000000  # Optional: Limit download size per sample (default: unlimited)
+    #                       # After quantification, only small abundance files remain (~few MB per sample)
+    #                       # Large downloads are temporary - quantified samples don't need re-download
     # IMPORTANT: vdb-config must be set to use a location with sufficient disk space
     # Run: vdb-config -i and set repository root to a location with >50GB free space
     # Or set via: vdb-config -s /repository/user/main/public/root=/path/to/large/disk
   quant:
     # If a Salmon/Kallisto index is available, set it; otherwise genome_dir is injected from genome step
-    out_dir: output/amalgkit/pbarbatus_test5/quant
+    # NOTE: amalgkit quant looks for getfastq output in {out_dir}/getfastq/, so out_dir should be work_dir
+    out_dir: output/amalgkit/pbarbatus_test5/work
     threads: 12
     redo: no
     # Build kallisto index if not present
     build_index: yes
+    # Delete FASTQ files after quantification to save disk space
+    keep_fastq: no
   merge:
     out: output/amalgkit/pbarbatus_test5/merged/merged_abundance.tsv
     out_dir: output/amalgkit/pbarbatus_test5/merged

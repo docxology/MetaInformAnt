@@ -4,7 +4,7 @@
     "final_mean_expression": 1.2568128178301072,
     "generations": 10,
     "genes": 50,
-    "initial_mean_expression": 1.2270663992744755,
+    "initial_mean_expression": 1.2270663992744757,
     "simulation_type": "gene_expression_evolution",
     "trajectory_summary": {
       "end": [

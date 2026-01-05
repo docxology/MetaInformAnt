@@ -4,7 +4,7 @@
       "cli_availability": {
         "available": true,
         "status": "available",
-        "version": "AMALGKIT version: 0.12.19\nAMALGKIT command: /Users/4d/miniforge3/bin/amalgkit -h\nAMALGKIT bug report: https://github.com/kfuku52/amalgkit/issues\nusage: amalgkit [-h] [--version]\n                {metadata,select,getfastq,quant,merge,cstmm,csca,curate,sanity,integrate,config,help}\n                ...\n\nA toolkit for cross-species transcriptome amalgamation\n\npositional arguments:\n  {metadata,select,getfastq,quant,merge,cstmm,csca,curate,sanity,integrate,config,help}\n    metadata            NCBI SRA metadata retrieval and curation. See\n                        `amalgkit metadata -h`\n    select              Selecting SRA entries for analysis. See `amalgkit\n                        select -h`\n    getfastq            Retrieving fastq files. See `amalgkit getfastq -h`\n    quant               Estimating transcript abundance with kallisto. See\n                        `amalgkit quant -h`\n    merge               Generating transcript abundance tables. See `amalgkit\n                        merge -h`\n    cstmm               Applying cross-species TMM normalization using single-\n                        copy genes. See `amalgkit cstmm -h`\n    csca                Generating plots with cross-species correlation\n                        analysis. See `amalgkit csca -h`\n    curate              Automatic removal of outlier samples and SVA-based\n                        unwanted biases. See `amalgkit curate -h`\n    sanity              Checking the integrity of AMALGKIT input and output\n                        files. See `amalgkit sanity -h`\n    integrate           Appending local fastq info to a metadata table. See\n                        `amalgkit integrate -h`\n    config              Creating a series of config files for the metadata\n                        search. See `amalgkit config -h`\n    help                Printing help messages\n\noptions:\n  -h, --help            show this help message and exit\n  --version             show program's version number and exit\n"
+        "version": "amalgkit CLI is available"
       },
       "data_sources": [
         "NCBI SRA",
@@ -91,7 +91,8 @@
         {
           "description": "Step 1 in amalgkit pipeline",
           "parameters": {
-            "species-list": [
+            "out_dir": "output/examples/rna/amalgkit_work",
+            "species": [
               "test_species"
             ],
             "threads": 2
@@ -101,7 +102,8 @@
         {
           "description": "Step 2 in amalgkit pipeline",
           "parameters": {
-            "species-list": [
+            "out_dir": "output/examples/rna/amalgkit_work",
+            "species": [
               "test_species"
             ],
             "threads": 2
@@ -111,7 +113,8 @@
         {
           "description": "Step 3 in amalgkit pipeline",
           "parameters": {
-            "species-list": [
+            "out_dir": "output/examples/rna/amalgkit_work",
+            "species": [
               "test_species"
             ],
             "threads": 2
@@ -119,7 +122,7 @@
           "step_name": "select"
         }
       ],
-      "steps_planned": 11
+      "steps_planned": 9
     }
   }
 }

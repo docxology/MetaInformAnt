@@ -20,7 +20,8 @@ def filter_selected_metadata(
     output_path: Optional[str | Path] = None,
     require_sampled: bool = True,
     require_qualified: bool = True,
-    exclude_excluded: bool = True
+    exclude_excluded: bool = True,
+    exclude_lite_files: bool = True
 ) -> Path:
     """Filter metadata to only selected samples.
 
@@ -87,6 +88,20 @@ def filter_selected_metadata(
         # Exclude rows where exclusion column has values (not empty/NaN and not "no")
         df = df[df['exclusion'].isna() | (df['exclusion'] == '') | (df['exclusion'] == 'no')]
         logger.debug(f"After exclusion filter: {len(df)} samples")
+
+    if exclude_lite_files:
+        # Exclude LITE SRA files (metadata-only, no sequence data)
+        # Check AWS_Link, NCBI_Link, and GCP_Link columns for "lite" in URL
+        lite_mask = pd.Series([False] * len(df), index=df.index)
+        for link_col in ['AWS_Link', 'NCBI_Link', 'GCP_Link']:
+            if link_col in df.columns:
+                lite_mask |= df[link_col].astype(str).str.contains('lite', case=False, na=False)
+        
+        if lite_mask.any():
+            lite_count = lite_mask.sum()
+            logger.warning(f"Excluding {lite_count} LITE SRA files (metadata-only, no sequence data)")
+            df = df[~lite_mask]
+            logger.debug(f"After LITE file filter: {len(df)} samples")
 
     filtered_count = len(df)
 

@@ -240,6 +240,38 @@ def _get_step_output_files(species_dir: Path, step: str) -> List[Path]:
     return step_outputs.get(step, [])
 
 
+def get_sample_progress_report(config_path: Path) -> Dict[str, Any]:
+    """Get detailed per-sample progress report for a workflow.
+    
+    Args:
+        config_path: Path to workflow configuration file
+        
+    Returns:
+        Dictionary with per-sample pipeline status
+    """
+    from metainformant.rna.workflow import load_workflow_config
+    from metainformant.rna.validation import validate_all_samples
+    
+    try:
+        config = load_workflow_config(config_path)
+        validation_result = validate_all_samples(config)
+        
+        return {
+            'config_path': str(config_path),
+            'work_dir': str(config.work_dir),
+            'total_samples': validation_result.get('total_samples', 0),
+            'summary': validation_result.get('summary', {}),
+            'per_sample': validation_result.get('per_sample', {}),
+            'missing_stages': validation_result.get('missing_stages', {})
+        }
+    except Exception as e:
+        logger.error(f"Failed to generate progress report: {e}")
+        return {
+            'error': str(e),
+            'config_path': str(config_path)
+        }
+
+
 
 
 

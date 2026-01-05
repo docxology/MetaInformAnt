@@ -1,1 +1,1 @@
-((ancestral:0.00000,((species_d:0.00615,((outgroup:0.96101,species_f:0.03899)Inner1:0.02118,species_c:0.03645)Inner2:0.00669)Inner3:0.00508,species_a:0.01042)Inner4:0.00003)Inner5:0.00000,species_b:0.00000,species_e:0.00000)Inner6:0.00000;
+(ancestral:0.1,species_a:0.1,species_b:0.1,species_c:0.1,species_d:0.1,species_e:0.1,species_f:0.1,outgroup:0.1);

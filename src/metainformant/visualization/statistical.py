@@ -268,18 +268,23 @@ def correlation_heatmap(
 
     # Use seaborn if available, otherwise matplotlib
     if HAS_SEABORN:
-        sns.heatmap(corr_matrix, ax=ax, annot=kwargs.get('annot', True),
-                   cmap=kwargs.get('cmap', 'coolwarm'), **kwargs)
+        # Extract specific kwargs to avoid duplicate keyword argument error
+        annot = kwargs.pop('annot', True)
+        cmap = kwargs.pop('cmap', 'coolwarm')
+        sns.heatmap(corr_matrix, ax=ax, annot=annot, cmap=cmap, **kwargs)
     else:
         # Fallback to matplotlib imshow
         logger.warning("Seaborn not available, using basic heatmap")
-        im = ax.imshow(corr_matrix.values, cmap=kwargs.get('cmap', 'coolwarm'), **kwargs)
+        # Remove seaborn-specific kwargs that imshow doesn't understand
+        cmap = kwargs.pop('cmap', 'coolwarm')
+        kwargs.pop('annot', None)  # Remove annot if present
+        im = ax.imshow(corr_matrix.values, cmap=cmap, **kwargs)
         plt.colorbar(im, ax=ax)
 
         # Add text annotations
         for i in range(len(corr_matrix)):
             for j in range(len(corr_matrix)):
-                text = ax.text(j, i, '.2f',
+                text = ax.text(j, i, f'{corr_matrix.iloc[i, j]:.2f}',
                              ha="center", va="center", color="w")
 
     if output_path:

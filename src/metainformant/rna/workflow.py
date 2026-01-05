@@ -7,6 +7,8 @@ including configuration loading, workflow planning, and execution orchestration.
 from __future__ import annotations
 
 import json
+import shutil
+import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 from dataclasses import dataclass
@@ -212,6 +214,22 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
             # Ensure work_dir is set from common config if not in step params
             if 'out_dir' not in step_params and 'work_dir' in config.to_dict():
                 step_params['out_dir'] = str(config.work_dir)
+            
+            # Warn if redo: yes is set for getfastq (usually unnecessary)
+            if step == 'getfastq':
+                redo_value = step_params.get('redo', 'no')
+                # Handle both string and boolean values
+                if isinstance(redo_value, bool):
+                    redo_is_yes = redo_value
+                else:
+                    redo_is_yes = str(redo_value).lower() in ('yes', 'true', '1')
+                
+                if redo_is_yes:
+                    logger.warning(
+                        "getfastq step has redo: yes - this will force re-download of all files, "
+                        "even if they already exist. Consider using redo: no to skip already-downloaded files. "
+                        "Use redo: yes only if files are corrupted or you need to refresh data."
+                    )
         else:
             # Use common config params
             step_params = {
@@ -230,9 +248,43 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
                 step_params['metadata'] = str(filtered_metadata)
             elif 'metadata' not in step_params:
                 step_params['metadata'] = str(config.work_dir / 'metadata' / 'metadata.tsv')
+        elif step == 'quant':
+            # Quant uses metadata from integrate step (amalgkit creates metadata.tsv after integrate)
+            # Prefer integrated metadata if it exists, otherwise use selected metadata
+            integrated_metadata = config.work_dir / 'metadata' / 'metadata.tsv'
+            filtered_metadata = config.work_dir / 'metadata' / 'metadata_selected.tsv'
+            if integrated_metadata.exists():
+                step_params['metadata'] = str(integrated_metadata)
+            elif filtered_metadata.exists():
+                step_params['metadata'] = str(filtered_metadata)
+            elif 'metadata' not in step_params:
+                step_params['metadata'] = str(config.work_dir / 'metadata' / 'metadata.tsv')
         elif step == 'curate' and 'metadata' not in step_params:
             # Curate uses metadata from merge directory
             step_params['metadata'] = str(config.work_dir / 'merge' / 'metadata' / 'metadata.tsv')
+
+        # Auto-adjust integrate fastq_dir to include getfastq subdirectory if it exists
+        if step == 'integrate':
+            if 'fastq_dir' in step_params:
+                fastq_dir = Path(step_params['fastq_dir'])
+                # Check if getfastq subdirectory exists (amalgkit getfastq creates this)
+                getfastq_subdir = fastq_dir / "getfastq"
+                if getfastq_subdir.exists():
+                    step_params['fastq_dir'] = str(getfastq_subdir)
+                    logger.debug(f"Adjusted integrate fastq_dir to include getfastq subdirectory: {getfastq_subdir}")
+                # Also check if fastq_dir itself is the getfastq directory
+                elif fastq_dir.name == "getfastq":
+                    # Already pointing to getfastq, no adjustment needed
+                    logger.debug(f"Integrate fastq_dir already points to getfastq directory: {fastq_dir}")
+            else:
+                # If fastq_dir not specified, try to infer from getfastq step
+                getfastq_out_dir = per_step.get('getfastq', {}).get('out_dir')
+                if getfastq_out_dir:
+                    fastq_dir = Path(getfastq_out_dir)
+                    getfastq_subdir = fastq_dir / "getfastq"
+                    if getfastq_subdir.exists():
+                        step_params['fastq_dir'] = str(getfastq_subdir)
+                        logger.debug(f"Inferred integrate fastq_dir from getfastq step: {getfastq_subdir}")
 
         steps.append((step, step_params))
 
@@ -256,6 +308,149 @@ def plan_workflow_with_params(config: AmalgkitWorkflowConfig, **param_overrides:
     )
 
     return plan_workflow(override_config)
+
+
+def _log_getfastq_summary(output_text: str, logger: Any) -> None:
+    """Parse amalgkit getfastq output and log summary of skipped vs downloaded files.
+    
+    Args:
+        output_text: Combined stdout/stderr output from amalgkit getfastq command
+        logger: Logger instance for logging summary
+    """
+    if not output_text:
+        return
+    
+    # Count patterns in amalgkit output
+    # Pattern 1: Files that were already downloaded (skipped)
+    skipped_count = output_text.count("Previously-downloaded sra file was detected")
+    # Pattern 2: Files that needed to be downloaded
+    downloaded_count = output_text.count("Previously-downloaded sra file was not detected")
+    # Pattern 3: Total files processed
+    processed_count = output_text.count("Processing SRA ID:")
+    
+    # Try to extract total samples from metadata if available
+    total_samples = None
+    if "Number of SRAs to be processed:" in output_text:
+        try:
+            for line in output_text.split('\n'):
+                if "Number of SRAs to be processed:" in line:
+                    total_samples = int(line.split(":")[-1].strip())
+                    break
+        except (ValueError, IndexError):
+            pass
+    
+    # Log summary only if we found relevant information
+    if skipped_count > 0 or downloaded_count > 0 or processed_count > 0:
+        summary_parts = []
+        if skipped_count > 0:
+            summary_parts.append(f"{skipped_count} file(s) skipped (already exists)")
+        if downloaded_count > 0:
+            summary_parts.append(f"{downloaded_count} file(s) downloaded")
+        if processed_count > 0 and (skipped_count == 0 and downloaded_count == 0):
+            # Only show processed count if we couldn't determine skipped/downloaded
+            summary_parts.append(f"{processed_count} file(s) processed")
+        
+        if summary_parts:
+            summary = ", ".join(summary_parts)
+            if total_samples:
+                logger.info(f"Step getfastq summary: {summary} (total: {total_samples} samples)")
+            else:
+                logger.info(f"Step getfastq summary: {summary}")
+
+
+def _cleanup_incorrectly_placed_sra_files(getfastq_dir: Path) -> None:
+    """Find and move SRA files from wrong locations to correct location.
+    
+    Args:
+        getfastq_dir: Directory where amalgkit expects SRA files
+    """
+    # Common locations where prefetch might download SRA files
+    default_locations = [
+        Path.home() / "ncbi" / "public" / "sra",
+        Path("/tmp") / "ncbi" / "public" / "sra",
+    ]
+    
+    moved_count = 0
+    for default_loc in default_locations:
+        if not default_loc.exists():
+            continue
+        
+        # Find SRA files in default location
+        for sra_file in default_loc.rglob("*.sra"):
+            try:
+                # Extract sample ID from filename (e.g., SRR34065661.sra -> SRR34065661)
+                sample_id = sra_file.stem
+                target_dir = getfastq_dir / sample_id
+                target_dir.mkdir(parents=True, exist_ok=True)
+                target_file = target_dir / sra_file.name
+                
+                # Only move if target doesn't exist
+                if not target_file.exists():
+                    logger.info(f"Moving SRA file from wrong location: {sra_file} -> {target_file}")
+                    shutil.move(str(sra_file), str(target_file))
+                    moved_count += 1
+                else:
+                    # Target exists, remove duplicate
+                    logger.debug(f"Target SRA file already exists, removing duplicate: {sra_file}")
+                    sra_file.unlink()
+            except Exception as e:
+                logger.warning(f"Could not move SRA file {sra_file}: {e}")
+    
+    if moved_count > 0:
+        logger.info(f"Moved {moved_count} SRA files from wrong locations to correct location")
+
+
+def _cleanup_temp_files(tmp_dir: Path, max_size_gb: float = 50.0) -> None:
+    """Clean up temporary files if directory gets too large.
+    
+    Args:
+        tmp_dir: Temporary directory to clean
+        max_size_gb: Maximum size in GB before cleanup
+    """
+    if not tmp_dir.exists():
+        return
+    
+    try:
+        # Calculate directory size
+        total_size = sum(f.stat().st_size for f in tmp_dir.rglob('*') if f.is_file())
+        size_gb = total_size / (1024 ** 3)
+        
+        if size_gb > max_size_gb:
+            logger.warning(f"Temporary directory {tmp_dir} is {size_gb:.2f} GB (max: {max_size_gb} GB), cleaning up...")
+            # Remove all files in temp directory
+            for item in tmp_dir.iterdir():
+                if item.is_file():
+                    item.unlink()
+                elif item.is_dir():
+                    shutil.rmtree(item)
+            logger.info(f"Cleaned up temporary directory {tmp_dir}")
+    except Exception as e:
+        logger.warning(f"Could not clean up temporary directory {tmp_dir}: {e}")
+
+
+def _check_disk_space(path: Path, min_free_gb: float = 10.0) -> bool:
+    """Check if there's sufficient disk space.
+    
+    Args:
+        path: Path to check disk space for
+        min_free_gb: Minimum free space required in GB
+        
+    Returns:
+        True if sufficient space, False otherwise
+    """
+    try:
+        stat = os.statvfs(path)
+        free_gb = (stat.f_bavail * stat.f_frsize) / (1024 ** 3)
+        
+        if free_gb < min_free_gb:
+            logger.warning(f"Low disk space: {free_gb:.2f} GB free (minimum: {min_free_gb} GB) at {path}")
+            return False
+        else:
+            logger.debug(f"Disk space check: {free_gb:.2f} GB free at {path}")
+            return True
+    except Exception as e:
+        logger.warning(f"Could not check disk space: {e}")
+        return True  # Assume OK if we can't check
 
 
 def sanitize_params_for_cli(subcommand: str, params: Dict[str, Any]) -> Dict[str, Any]:
@@ -304,6 +499,12 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
                     walk: bool = False,
                     progress: bool = True,
                     show_commands: bool = False) -> WorkflowExecutionResult:
+    """Execute RNA-seq workflow with automatic vdb-config setup for getfastq step.
+    
+    This function automatically configures vdb-config repository path to use
+    repository .tmp/vdb directory (on external drive with sufficient space) to
+    prevent "disk-limit exceeded" errors during SRA extraction.
+    """
     """Execute the complete amalgkit workflow.
 
     Args:
@@ -347,6 +548,53 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
             successful_steps=0,
             failed_steps=0
         )
+
+    # Configure vdb-config repository path for getfastq step (if getfastq is in workflow)
+    # prefetch downloads SRA files to vdb-config repository root, so we need to set it to
+    # the amalgkit fastq output directory where amalgkit expects the files
+    if any(step == 'getfastq' for step, _ in steps_planned):
+        try:
+            import subprocess
+            
+            # Find getfastq step parameters to get out_dir
+            getfastq_params = next((params for step, params in steps_planned if step == 'getfastq'), None)
+            if getfastq_params:
+                # Get fastq output directory from getfastq step params
+                fastq_out_dir = getfastq_params.get('out_dir', str(config.work_dir / "fastq"))
+                fastq_dir = Path(fastq_out_dir)
+                # Amalgkit creates getfastq subdirectory, so prefetch should download to that
+                getfastq_dir = fastq_dir / "getfastq" if fastq_dir.name != "getfastq" else fastq_dir
+                getfastq_dir.mkdir(parents=True, exist_ok=True)
+                
+                # Check disk space before proceeding
+                if not _check_disk_space(getfastq_dir, min_free_gb=20.0):
+                    logger.warning("Low disk space detected, but continuing with getfastq step")
+                
+                # Clean up any incorrectly placed SRA files before configuring vdb-config
+                _cleanup_incorrectly_placed_sra_files(getfastq_dir)
+                
+                # Clean up temp files if needed
+                repo_root = Path(__file__).resolve().parent.parent.parent.parent
+                tmp_dir = repo_root / ".tmp" / "fasterq-dump"
+                _cleanup_temp_files(tmp_dir, max_size_gb=50.0)
+                
+                # Set vdb-config repository root to getfastq directory (where prefetch downloads SRA files)
+                result = subprocess.run(
+                    ['vdb-config', '-s', f'/repository/user/main/public/root={getfastq_dir}'],
+                    capture_output=True,
+                    text=True,
+                    timeout=5
+                )
+                if result.returncode == 0:
+                    logger.info(f"Configured vdb-config repository path for prefetch: {getfastq_dir}")
+                else:
+                    logger.warning(f"Could not set vdb-config repository path (may require interactive): {result.stderr[:100]}")
+                    logger.info(f"Will rely on TMPDIR and VDB_CONFIG environment variables")
+            else:
+                logger.warning("Could not find getfastq step parameters, skipping vdb-config setup")
+        except Exception as e:
+            logger.warning(f"Could not configure vdb-config: {e}")
+            logger.info("Will rely on TMPDIR and VDB_CONFIG environment variables")
 
     step_results = []
     step_functions = {
@@ -418,19 +666,219 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
                     if check:
                         break
                     continue
+            
+            # Pre-step prerequisite validation
+            if step_name == 'integrate':
+                # Check if FASTQ files exist before integrate
+                steps_config = config.extra_config.get('steps', {})
+                fastq_dir_raw = steps_config.get('getfastq', {}).get('out_dir', config.work_dir / "fastq")
+                fastq_dir = Path(fastq_dir_raw)
+                # Check for amalgkit getfastq/ subdirectory structure
+                if fastq_dir.name != "getfastq":
+                    getfastq_subdir = fastq_dir / "getfastq"
+                    if getfastq_subdir.exists():
+                        fastq_dir = getfastq_subdir
+                
+                # Check if any FASTQ files exist
+                fastq_files = list(fastq_dir.glob("**/*.fastq*"))
+                if not fastq_files:
+                    error_msg = (
+                        f"PREREQUISITE CHECK FAILED: No FASTQ files found before integrate step.\n"
+                        f"  - Expected location: {fastq_dir}\n"
+                        f"  - Checked for: *.fastq, *.fastq.gz, *.fq, *.fq.gz\n\n"
+                        f"REMEDIATION:\n"
+                        f"  1. Ensure getfastq step completed successfully\n"
+                        f"  2. Check validation report: {config.work_dir / 'validation' / 'getfastq_validation.json'}\n"
+                        f"  3. Re-run getfastq step if FASTQ files are missing\n"
+                        f"  4. Verify amalgkit getfastq extracted files correctly"
+                    )
+                    logger.error(error_msg)
+                    step_results.append(WorkflowStepResult(
+                        step_name=step_name,
+                        return_code=1,
+                        success=False,
+                        error_message=error_msg
+                    ))
+                    if check:
+                        break
+                    continue
+            
+            elif step_name == 'quant':
+                # Check if integrate completed (quant needs integrated metadata)
+                integrated_metadata = config.work_dir / 'integration' / 'integrated_metadata.json'
+                # Also check for metadata.tsv that amalgkit integrate creates
+                metadata_tsv = config.work_dir / 'metadata' / 'metadata.tsv'
+                if not integrated_metadata.exists() and not metadata_tsv.exists():
+                    error_msg = (
+                        f"PREREQUISITE CHECK FAILED: Integrate step must complete before quant.\n"
+                        f"  - Expected: {integrated_metadata} or {metadata_tsv}\n\n"
+                        f"REMEDIATION:\n"
+                        f"  1. Ensure integrate step completed successfully\n"
+                        f"  2. Re-run integrate step if needed\n"
+                    )
+                    logger.error(error_msg)
+                    step_results.append(WorkflowStepResult(
+                        step_name=step_name,
+                        return_code=1,
+                        success=False,
+                        error_message=error_msg
+                    ))
+                    if check:
+                        break
+                    continue
+                
+                # Check if FASTQ files exist (quant needs them for quantification)
+                steps_config = config.extra_config.get('steps', {})
+                fastq_dir_raw = steps_config.get('getfastq', {}).get('out_dir', config.work_dir / "fastq")
+                fastq_dir = Path(fastq_dir_raw)
+                if fastq_dir.name != "getfastq":
+                    getfastq_subdir = fastq_dir / "getfastq"
+                    if getfastq_subdir.exists():
+                        fastq_dir = getfastq_subdir
+                
+                fastq_files = list(fastq_dir.glob("**/*.fastq*"))
+                if not fastq_files:
+                    error_msg = (
+                        f"PREREQUISITE CHECK FAILED: No FASTQ files found before quant step.\n"
+                        f"  - Expected location: {fastq_dir}\n\n"
+                        f"REMEDIATION:\n"
+                        f"  1. Ensure getfastq and integrate steps completed successfully\n"
+                        f"  2. Check validation reports in: {config.work_dir / 'validation'}\n"
+                        f"  3. Re-run getfastq step if FASTQ files are missing"
+                    )
+                    logger.error(error_msg)
+                    step_results.append(WorkflowStepResult(
+                        step_name=step_name,
+                        return_code=1,
+                        success=False,
+                        error_message=error_msg
+                    ))
+                    if check:
+                        break
+                    continue
+                
+                # Check quantification tools availability
+                try:
+                    from metainformant.rna.deps import check_quantification_tools
+                    quant_tools = check_quantification_tools()
+                    available_tools = [tool for tool, (avail, _) in quant_tools.items() if avail]
+                    if not available_tools:
+                        error_msg = (
+                            f"PREREQUISITE CHECK FAILED: No quantification tools available.\n"
+                            f"  - Checked: kallisto, salmon\n"
+                            f"  - Status: {quant_tools}\n\n"
+                            f"REMEDIATION:\n"
+                            f"  1. Install kallisto: conda install -c bioconda kallisto\n"
+                            f"     OR: apt-get install kallisto\n"
+                            f"  2. Install salmon: conda install -c bioconda salmon\n"
+                            f"     OR: apt-get install salmon\n"
+                            f"  3. Verify tools are in PATH: which kallisto / which salmon"
+                        )
+                        logger.error(error_msg)
+                        step_results.append(WorkflowStepResult(
+                            step_name=step_name,
+                            return_code=1,
+                            success=False,
+                            error_message=error_msg
+                        ))
+                        if check:
+                            break
+                        continue
+                except Exception as e:
+                    logger.warning(f"Could not check quantification tools: {e}")
+            
+            elif step_name == 'merge':
+                # Check if quant files exist before merge
+                steps_config = config.extra_config.get('steps', {})
+                quant_dir_raw = steps_config.get('quant', {}).get('out_dir', config.work_dir / "quant")
+                quant_dir = Path(quant_dir_raw)
+                
+                # Check for quant output files (abundance.tsv or quant.sf)
+                quant_files = list(quant_dir.glob("**/abundance.tsv")) + list(quant_dir.glob("**/quant.sf"))
+                if not quant_files:
+                    error_msg = (
+                        f"PREREQUISITE CHECK FAILED: No quantification files found before merge step.\n"
+                        f"  - Expected location: {quant_dir}\n"
+                        f"  - Checked for: abundance.tsv, quant.sf\n\n"
+                        f"REMEDIATION:\n"
+                        f"  1. Ensure quant step completed successfully\n"
+                        f"  2. Check validation report: {config.work_dir / 'validation' / 'quant_validation.json'}\n"
+                        f"  3. Re-run quant step if quantification files are missing"
+                    )
+                    logger.error(error_msg)
+                    step_results.append(WorkflowStepResult(
+                        step_name=step_name,
+                        return_code=1,
+                        success=False,
+                        error_message=error_msg
+                    ))
+                    if check:
+                        break
+                    continue
+                
+                # Check R dependencies for merge (optional but recommended)
+                try:
+                    from metainformant.rna.environment import check_rscript
+                    r_available, r_message = check_rscript()
+                    if not r_available:
+                        logger.warning(
+                            f"R/Rscript not available - merge step may fail if R plotting is required.\n"
+                            f"  Status: {r_message}\n"
+                            f"  Installation: apt-get install r-base-core or conda install r-base\n"
+                            f"  Note: Merge can work without R, but plots will be skipped."
+                        )
+                    else:
+                        # Check if ggplot2 package is available
+                        try:
+                            import subprocess
+                            check_ggplot2 = subprocess.run(
+                                ["Rscript", "-e", "library(ggplot2)"],
+                                capture_output=True,
+                                text=True,
+                                timeout=10
+                            )
+                            if check_ggplot2.returncode != 0:
+                                logger.warning(
+                                    f"R package 'ggplot2' not available - merge step plotting may fail.\n"
+                                    f"  Installation: Rscript -e \"install.packages('ggplot2', repos='https://cloud.r-project.org')\"\n"
+                                    f"  Note: Merge can work without ggplot2, but plots will be skipped."
+                                )
+                        except Exception:
+                            pass  # R check failed, but that's okay - merge can still work
+                except Exception as e:
+                    logger.debug(f"Could not check R dependencies: {e}")
 
             # Sanitize parameters before passing to step function
             sanitized_params = sanitize_params_for_cli(step_name, step_params)
-            result = step_func(sanitized_params)
+            # Pass monitoring/progress preferences through to amalgkit wrappers.
+            # `show_progress` controls tqdm progress bars (if available) and heartbeat cadence.
+            result = step_func(
+                sanitized_params,
+                show_progress=progress,
+                heartbeat_interval=5,
+            )
 
             # After select step, create filtered metadata for downstream steps
             if step_name == 'select' and result.returncode == 0:
                 try:
-                    logger.info("Creating filtered metadata for selected samples")
-                    filter_selected_metadata(
-                        config.work_dir / 'metadata' / 'metadata.tsv',
-                        config.work_dir / 'metadata' / 'metadata_selected.tsv'
-                    )
+                    logger.info("Creating filtered metadata for selected samples (excluding LITE files)")
+                    try:
+                        filter_selected_metadata(
+                            config.work_dir / 'metadata' / 'metadata.tsv',
+                            config.work_dir / 'metadata' / 'metadata_selected.tsv',
+                            exclude_lite_files=True  # Automatically filter out LITE SRA files
+                        )
+                    except ValueError as e:
+                        if "No samples meet the filtering criteria" in str(e):
+                            logger.warning("All selected samples are LITE files. Creating metadata_selected.tsv without LITE filtering for this run.")
+                            # Fall back to not excluding LITE files if all samples would be filtered out
+                            filter_selected_metadata(
+                                config.work_dir / 'metadata' / 'metadata.tsv',
+                                config.work_dir / 'metadata' / 'metadata_selected.tsv',
+                                exclude_lite_files=False  # Don't exclude LITE files if all would be filtered
+                            )
+                        else:
+                            raise
                 except Exception as e:
                     logger.error(f"Failed to create filtered metadata: {e}")
                     if check:
@@ -453,6 +901,79 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
                     logger.error(f"Error output: {result.stderr}")
             else:
                 logger.info(f"Step {step_name} completed successfully")
+                
+                # Add step summary for getfastq to show skipped vs downloaded files
+                if step_name == 'getfastq':
+                    # Check both stdout and stderr (amalgkit may output to either)
+                    output_text = (result.stdout or "") + (result.stderr or "")
+                    if output_text:
+                        _log_getfastq_summary(output_text, logger)
+                    
+                    # Run validation after getfastq step
+                    try:
+                        from metainformant.rna.validation import validate_all_samples, save_validation_report
+                        validation_result = validate_all_samples(config, stage='extraction')
+                        validation_dir = config.work_dir / "validation"
+                        validation_dir.mkdir(parents=True, exist_ok=True)
+                        save_validation_report(validation_result, validation_dir / "getfastq_validation.json")
+                        
+                        # Log validation summary
+                        total = validation_result.get('total_samples', 0)
+                        validated = validation_result.get('validated', 0)
+                        failed = validation_result.get('failed', 0)
+                        logger.info(f"Validation after getfastq: {validated}/{total} samples have FASTQ files extracted")
+                        
+                        # Early exit if critical failure: no FASTQ files extracted
+                        if validated == 0 and failed > 0 and total > 0:
+                            error_msg = (
+                                f"CRITICAL: getfastq step failed to extract FASTQ files for any samples.\n"
+                                f"  - Total samples: {total}\n"
+                                f"  - Samples with FASTQ files: {validated}\n"
+                                f"  - Samples missing FASTQ files: {failed}\n\n"
+                                f"REMEDIATION STEPS:\n"
+                                f"  1. Check amalgkit getfastq logs: {config.work_dir / 'logs' / 'getfastq.log'}\n"
+                                f"  2. Verify SRA files were downloaded: {config.work_dir / 'fastq' / 'getfastq'}\n"
+                                f"  3. Check if fastp/fasterq-dump tools are available:\n"
+                                f"     - fasterq-dump: shutil.which('fasterq-dump')\n"
+                                f"     - fastp: shutil.which('fastp')\n"
+                                f"  4. Check amalgkit command output for extraction errors\n"
+                                f"  5. Try re-running with redo: yes if files may be corrupted\n"
+                                f"  6. Verify disk space is sufficient for FASTQ extraction\n\n"
+                                f"Workflow stopped to prevent cascading failures in downstream steps."
+                            )
+                            logger.error(error_msg)
+                            step_results.append(WorkflowStepResult(
+                                step_name="getfastq_validation",
+                                return_code=1,
+                                success=False,
+                                error_message=error_msg
+                            ))
+                            # Stop workflow unless check=False (user wants to continue anyway)
+                            if check:
+                                break
+                        elif failed > 0:
+                            logger.warning(f"{failed} samples missing FASTQ files after getfastq step")
+                    except Exception as e:
+                        logger.warning(f"Validation after getfastq failed: {e}")
+                
+                # Run validation after quant step
+                if step_name == 'quant':
+                    try:
+                        from metainformant.rna.validation import validate_all_samples, save_validation_report
+                        validation_result = validate_all_samples(config, stage='quantification')
+                        validation_dir = config.work_dir / "validation"
+                        validation_dir.mkdir(parents=True, exist_ok=True)
+                        save_validation_report(validation_result, validation_dir / "quant_validation.json")
+                        
+                        # Log validation summary
+                        total = validation_result.get('total_samples', 0)
+                        validated = validation_result.get('validated', 0)
+                        failed = validation_result.get('failed', 0)
+                        logger.info(f"Validation after quant: {validated}/{total} samples quantified")
+                        if failed > 0:
+                            logger.warning(f"{failed} samples missing quantification files after quant step")
+                    except Exception as e:
+                        logger.warning(f"Validation after quant failed: {e}")
 
             step_results.append(WorkflowStepResult(
                 step_name=step_name,
@@ -481,8 +1002,96 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
     total_steps = len(step_results)
     failed_steps = total_steps - successful_steps
 
+    # Generate workflow summary with remediation steps
     if progress:
         logger.info(f"Workflow completed: {successful_steps}/{total_steps} steps successful")
+        
+        if failed_steps > 0:
+            logger.info("=" * 80)
+            logger.info("WORKFLOW SUMMARY")
+            logger.info("=" * 80)
+            
+            failed_step_results = [sr for sr in step_results if not sr.success]
+            logger.info(f"\nFailed steps: {len(failed_step_results)}/{total_steps}")
+            
+            for failed_step in failed_step_results:
+                logger.info(f"\n  ❌ {failed_step.step_name}")
+                if failed_step.error_message:
+                    # Log error message with indentation for readability
+                    for line in failed_step.error_message.split('\n'):
+                        logger.info(f"     {line}")
+            
+            logger.info("\n" + "=" * 80)
+            logger.info("REMEDIATION STEPS")
+            logger.info("=" * 80)
+            
+            # Provide step-specific remediation guidance
+            remediation_steps = []
+            
+            for failed_step in failed_step_results:
+                step_name = failed_step.step_name
+                
+                if step_name == 'getfastq' or step_name == 'getfastq_validation':
+                    remediation_steps.append(
+                        f"\n  For {step_name}:\n"
+                        f"    1. Check logs: {config.work_dir / 'logs' / 'getfastq.log'}\n"
+                        f"    2. Check validation: {config.work_dir / 'validation' / 'getfastq_validation.json'}\n"
+                        f"    3. Verify SRA files downloaded: ls -lh {config.work_dir / 'fastq' / 'getfastq'}\n"
+                        f"    4. Check tool availability: which fasterq-dump which fastp\n"
+                        f"    5. Re-run: python3 scripts/rna/run_workflow.py {config.work_dir.parent.name} --steps getfastq"
+                    )
+                elif step_name == 'integrate':
+                    remediation_steps.append(
+                        f"\n  For {step_name}:\n"
+                        f"    1. Ensure getfastq completed successfully\n"
+                        f"    2. Check FASTQ files exist: find {config.work_dir / 'fastq'} -name '*.fastq*'\n"
+                        f"    3. Re-run: python3 scripts/rna/run_workflow.py {config.work_dir.parent.name} --steps getfastq integrate"
+                    )
+                elif step_name == 'quant':
+                    remediation_steps.append(
+                        f"\n  For {step_name}:\n"
+                        f"    1. Ensure getfastq and integrate completed successfully\n"
+                        f"    2. Check quantification tools: which kallisto which salmon\n"
+                        f"    3. Check validation: {config.work_dir / 'validation' / 'quant_validation.json'}\n"
+                        f"    4. Re-run: python3 scripts/rna/run_workflow.py {config.work_dir.parent.name} --steps quant"
+                    )
+                elif step_name == 'merge':
+                    remediation_steps.append(
+                        f"\n  For {step_name}:\n"
+                        f"    1. Ensure quant completed successfully\n"
+                        f"    2. Check quant files: find {config.work_dir / 'quant'} -name 'abundance.tsv' -o -name 'quant.sf'\n"
+                        f"    3. If R plotting failed, install: Rscript -e \"install.packages('ggplot2', repos='https://cloud.r-project.org')\"\n"
+                        f"    4. Re-run: python3 scripts/rna/run_workflow.py {config.work_dir.parent.name} --steps merge"
+                    )
+                elif step_name == 'curate':
+                    remediation_steps.append(
+                        f"\n  For {step_name}:\n"
+                        f"    1. Ensure merge completed successfully\n"
+                        f"    2. Check merge output: {config.work_dir / 'merge' / 'merge' / 'metadata.tsv'}\n"
+                        f"    3. Install R if missing: apt-get install r-base-core\n"
+                        f"    4. Re-run: python3 scripts/rna/run_workflow.py {config.work_dir.parent.name} --steps curate"
+                    )
+                else:
+                    remediation_steps.append(
+                        f"\n  For {step_name}:\n"
+                        f"    1. Check logs: {config.work_dir / 'logs' / f'{step_name}.log'}\n"
+                        f"    2. Review error message above for specific guidance\n"
+                        f"    3. Re-run: python3 scripts/rna/run_workflow.py {config.work_dir.parent.name} --steps {step_name}"
+                    )
+            
+            for remediation in remediation_steps:
+                logger.info(remediation)
+            
+            logger.info("\n" + "=" * 80)
+            logger.info("INDEPENDENT STEP RE-RUN")
+            logger.info("=" * 80)
+            logger.info(
+                "You can re-run individual steps without re-running the entire workflow:\n"
+                f"  python3 scripts/rna/run_workflow.py <config_file> --steps <step_name>\n\n"
+                "Example:\n"
+                f"  python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pbarbatus_5sample.yaml --steps getfastq"
+            )
+            logger.info("=" * 80)
 
     return WorkflowExecutionResult(
         steps_executed=step_results,

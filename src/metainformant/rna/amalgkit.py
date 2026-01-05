@@ -6,12 +6,19 @@ for comprehensive RNA-seq analysis workflows.
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
+import csv
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from metainformant.core import logging
+from metainformant.core.download import (
+    monitor_subprocess_directory_growth,
+    monitor_subprocess_file_count,
+    monitor_subprocess_sample_progress,
+)
 
 logger = logging.get_logger(__name__)
 
@@ -232,21 +239,253 @@ def run_amalgkit(subcommand: str, params: AmalgkitParams | Dict[str, Any] | None
 
     logger.info(f"Running amalgkit command: {' '.join(command)}")
 
-    # Default kwargs
-    run_kwargs = {
-        'capture_output': True,
-        'text': True,
-        'check': False,  # Don't raise on non-zero exit
-        **kwargs
-    }
-
     try:
+        # For `getfastq` (and other long-running I/O steps), we provide heartbeat + progress
+        # by monitoring directory growth while the subprocess runs.
+        monitor = kwargs.pop("monitor", None)
+        heartbeat_interval = int(kwargs.pop("heartbeat_interval", 5))
+        show_progress = bool(kwargs.pop("show_progress", True))
+
+        # Default behavior stays the same unless monitoring is enabled.
+        # Enable monitoring for long-running steps by default.
+        if monitor is None:
+            monitor = subcommand in {"metadata", "integrate", "getfastq", "quant", "merge", "cstmm", "curate", "csca"}
+
+        if monitor and isinstance(params, dict):
+            out_dir_val = params.get("out_dir")
+            metadata_val = params.get("metadata")
+            if out_dir_val:
+                out_dir = Path(str(out_dir_val))
+                hb_path = out_dir / ".downloads" / f"amalgkit-{subcommand}.heartbeat.json"
+
+                # Determine monitoring strategy by step
+                # - getfastq: directory_size with optional total_bytes from metadata size column
+                #   Note: Skipped files (already downloaded) are not included in progress,
+                #         but will be summarized at step completion in workflow.py
+                # - quant: sample_count by counting quant/SRR*/abundance.tsv
+                # - metadata/merge/cstmm/curate/csca: file_count (expected key outputs)
+                # - integrate: directory_size fallback (depends on actual FASTQ presence)
+
+                watch_dir = out_dir
+                if subcommand == "getfastq":
+                    watch_dir = out_dir / "getfastq"
+                elif subcommand == "quant":
+                    watch_dir = out_dir / "quant"
+                elif subcommand == "metadata":
+                    watch_dir = out_dir / "metadata"
+                elif subcommand == "merge":
+                    watch_dir = out_dir / "merge"
+                elif subcommand == "cstmm":
+                    watch_dir = out_dir / "cstmm"
+                elif subcommand == "curate":
+                    watch_dir = out_dir / "curate"
+                elif subcommand == "csca":
+                    watch_dir = out_dir / "csca"
+
+                # Best-effort total estimations
+                meta_path: Path | None = None
+                if metadata_val:
+                    meta_path = Path(str(metadata_val))
+                else:
+                    meta_path = _infer_metadata_path_from_out_dir(out_dir)
+
+                total_bytes: int | None = None
+                total_runs: int | None = None
+                if meta_path is not None:
+                    total_runs = _estimate_total_runs_from_metadata(meta_path)
+                    if subcommand == "getfastq":
+                        total_bytes = _estimate_total_bytes_from_metadata(meta_path)
+
+                # Set TMPDIR for fasterq-dump temp files to avoid disk space issues
+                # fasterq-dump needs temp space and /tmp may be full (tmpfs)
+                # Note: vdb-config repository root (for prefetch downloads) is configured
+                # separately in workflow.py to point to the amalgkit fastq output directory
+                env = os.environ.copy()
+                if subcommand == "getfastq":
+                    # Use repository .tmp directory for temp files (on external drive with space)
+                    # This is for fasterq-dump temporary files during FASTQ extraction
+                    repo_root = Path(__file__).resolve().parent.parent.parent.parent
+                    tmp_dir = repo_root / ".tmp" / "fasterq-dump"
+                    tmp_dir.mkdir(parents=True, exist_ok=True)
+                    env["TMPDIR"] = str(tmp_dir)
+                    env["TEMP"] = str(tmp_dir)
+                    env["TMP"] = str(tmp_dir)
+                    
+                    # VDB_CONFIG environment variable for cache/temp (not repository root)
+                    # The repository root (where prefetch downloads SRA files) is configured
+                    # separately via vdb-config command in workflow.py
+                    vdb_cache = repo_root / ".tmp" / "vdb"
+                    vdb_cache.mkdir(parents=True, exist_ok=True)
+                    env["VDB_CONFIG"] = str(vdb_cache)
+                    logger.debug(f"Set TMPDIR={tmp_dir} for fasterq-dump temp files and VDB_CONFIG={vdb_cache} for cache")
+                
+                # Avoid deadlocks: do not pipe stdout/stderr while we poll.
+                proc = subprocess.Popen(command, env=env)
+
+                # Step-specific monitoring
+                if subcommand == "quant":
+                    rc = monitor_subprocess_sample_progress(
+                        process=proc,
+                        watch_dir=watch_dir,
+                        heartbeat_path=hb_path,
+                        completion_glob="*/abundance.tsv",
+                        total_samples=total_runs,
+                        heartbeat_interval=heartbeat_interval,
+                        show_progress=show_progress,
+                        desc=f"amalgkit {subcommand}",
+                    )
+                    return subprocess.CompletedProcess(args=command, returncode=rc, stdout="", stderr="")
+
+                if subcommand == "metadata":
+                    # Expected core files from amalgkit metadata
+                    expected = [
+                        "metadata.tsv",
+                        "metadata_original.tsv",
+                        "pivot_selected.tsv",
+                        "pivot_qualified.tsv",
+                    ]
+                    rc = monitor_subprocess_file_count(
+                        process=proc,
+                        watch_dir=watch_dir,
+                        heartbeat_path=hb_path,
+                        expected_files=expected,
+                        heartbeat_interval=heartbeat_interval,
+                        show_progress=show_progress,
+                        desc=f"amalgkit {subcommand}",
+                    )
+                    return subprocess.CompletedProcess(args=command, returncode=rc, stdout="", stderr="")
+
+                if subcommand in {"merge", "cstmm", "curate", "csca"}:
+                    # File-count based for key outputs (best-effort, varies with configs)
+                    # We include the most common / key artifacts per step.
+                    if subcommand == "merge":
+                        expected = ["merged_abundance.tsv"]
+                    elif subcommand == "cstmm":
+                        expected = ["cstmm.tsv"]
+                    elif subcommand == "curate":
+                        expected = ["tables"]  # directory presence is enough
+                    else:  # csca
+                        expected = ["csca.tsv"]
+
+                    rc = monitor_subprocess_file_count(
+                        process=proc,
+                        watch_dir=watch_dir,
+                        heartbeat_path=hb_path,
+                        expected_files=expected,
+                        heartbeat_interval=heartbeat_interval,
+                        show_progress=show_progress,
+                        desc=f"amalgkit {subcommand}",
+                    )
+                    return subprocess.CompletedProcess(args=command, returncode=rc, stdout="", stderr="")
+
+                # Default: directory growth
+                rc, _bytes_done = monitor_subprocess_directory_growth(
+                    process=proc,
+                    watch_dir=watch_dir,
+                    heartbeat_path=hb_path,
+                    total_bytes=total_bytes if total_bytes and total_bytes > 0 else None,
+                    heartbeat_interval=heartbeat_interval,
+                    show_progress=show_progress,
+                    desc=f"amalgkit {subcommand}",
+                )
+                return subprocess.CompletedProcess(args=command, returncode=rc, stdout="", stderr="")
+
+        # Set TMPDIR for fasterq-dump temp files to avoid disk space issues
+        # Note: vdb-config repository root (for prefetch downloads) is configured
+        # separately in workflow.py to point to the amalgkit fastq output directory
+        env = os.environ.copy()
+        if subcommand == "getfastq":
+            # Use repository .tmp directory for temp files (on external drive with space)
+            # This is for fasterq-dump temporary files during FASTQ extraction
+            repo_root = Path(__file__).resolve().parent.parent.parent.parent
+            tmp_dir = repo_root / ".tmp" / "fasterq-dump"
+            tmp_dir.mkdir(parents=True, exist_ok=True)
+            env["TMPDIR"] = str(tmp_dir)
+            env["TEMP"] = str(tmp_dir)
+            env["TMP"] = str(tmp_dir)
+            
+            # VDB_CONFIG environment variable for cache/temp (not repository root)
+            # The repository root (where prefetch downloads SRA files) is configured
+            # separately via vdb-config command in workflow.py
+            vdb_cache = repo_root / ".tmp" / "vdb"
+            vdb_cache.mkdir(parents=True, exist_ok=True)
+            env["VDB_CONFIG"] = str(vdb_cache)
+            logger.debug(f"Set TMPDIR={tmp_dir} for fasterq-dump temp files and VDB_CONFIG={vdb_cache} for cache")
+        
+        # Default kwargs (non-monitored)
+        run_kwargs = {
+            "capture_output": True,
+            "text": True,
+            "check": False,  # Don't raise on non-zero exit
+            "env": env,
+            **kwargs,
+        }
+
         result = subprocess.run(command, **run_kwargs)
         logger.debug(f"amalgkit {subcommand} completed with return code {result.returncode}")
         return result
     except Exception as e:
         logger.error(f"Error running amalgkit {subcommand}: {e}")
         raise
+
+
+def _estimate_total_bytes_from_metadata(metadata_path: Path) -> int | None:
+    """Estimate total download size from amalgkit metadata.tsv.
+
+    We sum the `size` column when present (typically bytes of the run payload).
+    Returns None if size is unavailable.
+    """
+    if not metadata_path.exists():
+        return None
+
+    try:
+        with open(metadata_path, "r", encoding="utf-8") as fh:
+            reader = csv.DictReader(fh, delimiter="\t")
+            if reader.fieldnames is None or "size" not in reader.fieldnames:
+                return None
+            total = 0
+            for row in reader:
+                val = (row.get("size") or "").strip()
+                if not val:
+                    continue
+                try:
+                    total += int(float(val))
+                except ValueError:
+                    continue
+            return total if total > 0 else None
+    except Exception:
+        return None
+
+
+def _estimate_total_runs_from_metadata(metadata_path: Path) -> int | None:
+    """Estimate number of runs/samples from metadata TSV (row-per-run)."""
+    if not metadata_path.exists():
+        return None
+    try:
+        with open(metadata_path, "r", encoding="utf-8") as fh:
+            reader = csv.DictReader(fh, delimiter="\t")
+            if reader.fieldnames is None or "run" not in reader.fieldnames:
+                return None
+            n = 0
+            for _ in reader:
+                n += 1
+            return n if n > 0 else None
+    except Exception:
+        return None
+
+
+def _infer_metadata_path_from_out_dir(out_dir: Path) -> Path | None:
+    """Best-effort: locate metadata.tsv under a typical amalgkit work dir."""
+    candidates = [
+        out_dir / "metadata" / "metadata_selected.tsv",
+        out_dir / "metadata" / "metadata.tsv",
+        out_dir / "work" / "metadata" / "metadata_selected.tsv",
+        out_dir / "work" / "metadata" / "metadata.tsv",
+    ]
+    for c in candidates:
+        if c.exists():
+            return c
+    return None
 
 
 def metadata(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:

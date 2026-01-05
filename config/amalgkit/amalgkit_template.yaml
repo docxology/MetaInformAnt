@@ -173,7 +173,16 @@ steps:
     # Output directory for FASTQ files
     out_dir: output/amalgkit/my_species/fastq
 
-    # Force re-download even if files exist
+    # Re-download behavior:
+    #   - redo: no (default) - Skip already-downloaded SRA files, only download missing ones
+    #                          Amalgkit automatically detects existing files and skips them.
+    #                          This saves bandwidth and time for normal operations.
+    #   - redo: yes - Force re-download even if files exist. Use only when:
+    #                 * Files are corrupted and need to be re-downloaded
+    #                 * You want to refresh data from SRA (rarely needed)
+    #                 * Testing download functionality
+    #   Note: Even with redo: no, amalgkit will still process existing SRA files
+    #         to FASTQ format if FASTQ files don't exist.
     redo: no
 
     # Parallel fastq-dump options
@@ -186,6 +195,12 @@ steps:
     # Quality filtering with fastp
     fastp: no                   # Enable fastp filtering
     # fastp_exe: fastp          # Custom fastp executable
+
+    # Download size limits
+    # max_bp: 1000000000        # Maximum base pairs to download per sample (default: 999999999999999)
+    #                            # Use this to limit download size for testing or disk space constraints
+    #                            # Note: After quantification, only small abundance files remain, so
+    #                            # large downloads are temporary. Quantified samples don't need re-download.
 
     # Data source preferences (try in this order)
     aws: yes                    # Try AWS Open Data Program first

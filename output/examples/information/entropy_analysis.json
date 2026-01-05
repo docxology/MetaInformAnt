@@ -15,8 +15,8 @@
         "complexity_rank": "high",
         "entropies": {
           "k1": 1.95006375643621,
-          "k2": 3.084962500721156,
-          "k3": 3.277613436819116
+          "k2": 3.0849625007211556,
+          "k3": 3.2776134368191165
         },
         "length": 13,
         "sequence": "ATGCGTACGTTAG"
@@ -24,9 +24,9 @@
       "repetitive": {
         "complexity_rank": "low",
         "entropies": {
-          "k1": 0.0,
-          "k2": 0.0,
-          "k3": 0.0
+          "k1": -0.0,
+          "k2": -0.0,
+          "k3": -0.0
         },
         "length": 12,
         "sequence": "AAAAAAAAAAAA"

@@ -6,11 +6,15 @@ This step downloads FASTQ files from SRA or other sources for selected samples.
 from __future__ import annotations
 
 import time
+import json
 from pathlib import Path
 from typing import Any, Dict
+from urllib.parse import urlparse
 
 from metainformant.core import logging
 from metainformant.rna.steps import StepResult
+
+from metainformant.core.download import _utc_iso
 
 logger = logging.get_logger(__name__)
 
@@ -201,30 +205,57 @@ def download_from_ena(accession: str, output_dir: Path, threads: int) -> Dict[st
     Returns:
         Download result
     """
-    import requests
-
     try:
-        # ENA API for FASTQ download
-        # This is a simplified implementation - real implementation would need proper ENA API calls
+        import requests
 
-        # For now, simulate download
-        logger.info(f"Simulating ENA download for {accession}")
+        from metainformant.core.download import download_with_progress
 
-        # Create dummy FASTQ files for demonstration
-        fastq1 = output_dir / f"{accession}_1.fastq.gz"
-        fastq2 = output_dir / f"{accession}_2.fastq.gz"
+        output_dir.mkdir(parents=True, exist_ok=True)
 
-        # In real implementation, would download actual files
-        # For now, just create empty files to simulate success
-        fastq1.touch()
-        fastq2.touch()
+        # ENA filereport API returns fastq URLs and sizes.
+        # Docs: https://www.ebi.ac.uk/ena/portal/api/
+        api_url = (
+            "https://www.ebi.ac.uk/ena/portal/api/filereport"
+            f"?accession={accession}&result=read_run&fields=fastq_http,fastq_bytes&format=tsv"
+        )
+        resp = requests.get(api_url, timeout=60)
+        resp.raise_for_status()
+        lines = [ln for ln in resp.text.splitlines() if ln.strip()]
+        if len(lines) < 2:
+            raise RuntimeError(f"ENA filereport returned no rows for {accession}")
 
-        return {
-            'success': True,
-            'method': 'ena',
-            'files': [str(fastq1), str(fastq2)],
-            'accession': accession
-        }
+        header = lines[0].split("\t")
+        row = lines[1].split("\t")
+        record = dict(zip(header, row, strict=False))
+
+        fastq_http = (record.get("fastq_http") or "").strip()
+        if not fastq_http:
+            raise RuntimeError(f"ENA has no fastq_http for {accession}")
+
+        urls = [u for u in fastq_http.split(";") if u]
+        if not urls:
+            raise RuntimeError(f"ENA has no FASTQ URLs for {accession}")
+
+        downloaded: list[str] = []
+        for url in urls:
+            filename = Path(urlparse(url).path).name or f"{accession}.fastq.gz"
+            dest = output_dir / filename
+            result = download_with_progress(
+                url,
+                dest,
+                protocol="https",
+                show_progress=True,
+                heartbeat_interval=5,
+                max_retries=3,
+                chunk_size=1024 * 1024,
+                timeout=300,
+                resume=True,
+            )
+            if not result.success:
+                raise RuntimeError(f"Failed downloading {url}: {result.error or 'unknown error'}")
+            downloaded.append(str(dest))
+
+        return {"success": True, "method": "ena", "files": downloaded, "accession": accession}
 
     except Exception as e:
         return {
@@ -246,27 +277,82 @@ def download_from_sra(accession: str, output_dir: Path, threads: int) -> Dict[st
     Returns:
         Download result
     """
-    import subprocess
-
     try:
-        # Use fasterq-dump or similar tool
-        # This is a simplified implementation
+        import shutil
+        import subprocess
 
-        logger.info(f"Simulating SRA download for {accession}")
+        output_dir.mkdir(parents=True, exist_ok=True)
 
-        # Create dummy FASTQ files
-        fastq1 = output_dir / f"{accession}_1.fastq.gz"
-        fastq2 = output_dir / f"{accession}_2.fastq.gz"
+        fasterq = shutil.which("fasterq-dump")
+        if not fasterq:
+            raise RuntimeError("SRA toolkit not available: missing fasterq-dump on PATH")
 
-        fastq1.touch()
-        fastq2.touch()
+        # Heartbeat during subprocess: track total bytes of FASTQ outputs in output_dir.
+        hb_path = (output_dir / ".downloads")
+        hb_path.mkdir(parents=True, exist_ok=True)
+        hb_file = hb_path / f"{accession}.sra_toolkit.heartbeat.json"
 
-        return {
-            'success': True,
-            'method': 'sra',
-            'files': [str(fastq1), str(fastq2)],
-            'accession': accession
-        }
+        def _write_hb(status: str, errors: list[str] | None = None) -> None:
+            files = list(output_dir.glob(f"{accession}*.fastq")) + list(output_dir.glob(f"{accession}*.fastq.gz"))
+            bytes_done = sum(p.stat().st_size for p in files if p.exists())
+            payload = {
+                "url": accession,
+                "destination": str(output_dir),
+                "started_at": _utc_iso(),
+                "last_update": _utc_iso(),
+                "bytes_downloaded": bytes_done,
+                "total_bytes": None,
+                "progress_percent": None,
+                "speed_mbps": None,
+                "eta_seconds": None,
+                "status": status,
+                "errors": errors or [],
+            }
+            with open(hb_file, "w", encoding="utf-8") as fh:
+                json.dump(payload, fh, indent=2, sort_keys=True)
+                fh.write("\n")
+
+        cmd = [
+            fasterq,
+            "--split-files",
+            "--threads",
+            str(max(1, int(threads))),
+            "--outdir",
+            str(output_dir),
+            accession,
+        ]
+        logger.info(f"Running: {' '.join(cmd)}")
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+        start = time.time()
+        last = 0.0
+        stderr_tail: list[str] = []
+        while True:
+            rc = proc.poll()
+            now = time.time()
+            if now - last >= 5:
+                _write_hb("downloading")
+                last = now
+            if rc is not None:
+                break
+            # Avoid busy loop
+            time.sleep(1)
+
+        out, err = proc.communicate(timeout=30)
+        if err:
+            stderr_tail = err.splitlines()[-20:]
+        if proc.returncode != 0:
+            _write_hb("failed", errors=stderr_tail)
+            raise RuntimeError(f"fasterq-dump failed for {accession}: {stderr_tail[-1] if stderr_tail else 'unknown'}")
+
+        _write_hb("completed")
+
+        # Collect produced FASTQs
+        files = sorted([str(p) for p in output_dir.glob(f"{accession}*.fastq*")])
+        if not files:
+            raise RuntimeError(f"fasterq-dump produced no FASTQ files for {accession}")
+
+        return {"success": True, "method": "sra", "files": files, "accession": accession}
 
     except Exception as e:
         return {

@@ -17,6 +17,7 @@ from . import (
     information,
     multidim,
     networks,
+    plots,
     quality,
     specialized,
     statistical,
@@ -69,6 +70,7 @@ if TYPE_CHECKING:
 __all__ = [
     # Core plotting functionality
     "basic",
+    "plots",
 
     # Statistical visualizations
     "statistical",
@@ -89,9 +91,6 @@ __all__ = [
 
     # Information theory visualizations
     "information",
-
-    # Module integrations
-    "amalgkit_visualization",
 
     # Domain-specific visualizations
     "protein",

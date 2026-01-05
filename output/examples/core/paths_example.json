@@ -13,9 +13,9 @@
     "file_system_operations": {
       "directories_created": 3,
       "directory_sizes": {
-        "output/examples/core": 91807,
+        "output/examples/core": 5884,
         "output/examples/core/analysis": 0,
-        "output/examples/core/temp": 3096
+        "output/examples/core/temp": 72
       },
       "files_found_by_extension": {
         "csv": [
@@ -49,10 +49,10 @@
         "output/examples/core in output/examples": true
       },
       "expanded_paths": {
-        "./relative/path": "/Users/4d/Documents/GitHub/MetaInformAnt/relative/path",
+        "./relative/path": "/home/q/Documents/MetaInformAnt/relative/path",
         "/absolute/path": "/absolute/path",
-        "output/examples/../core": "/Users/4d/Documents/GitHub/MetaInformAnt/output/core",
-        "~/Documents/project": "/Users/4d/Documents/project"
+        "output/examples/../core": "/home/q/Documents/MetaInformAnt/output/core",
+        "~/Documents/project": "/home/q/Documents/project"
       },
       "safety_validation": {
         "../../../etc/passwd": false,

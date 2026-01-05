@@ -15,6 +15,7 @@ def test_plan_workflow_orders_steps_and_inherits_common_params(tmp_path: Path):
     cfg = AmalgkitWorkflowConfig(work_dir=tmp_path, threads=6, species_list=["Apis_mellifera"])
     steps = plan_workflow(cfg)
 
+    # cstmm/csca are skipped by default unless ortholog inputs (orthogroup_table/dir_busco) are provided.
     expected_order = [
         "metadata",
         "config",
@@ -23,9 +24,7 @@ def test_plan_workflow_orders_steps_and_inherits_common_params(tmp_path: Path):
         "integrate",  # Moved after getfastq to integrate downloaded FASTQs
         "quant",
         "merge",
-        "cstmm",
         "curate",
-        "csca",
         "sanity",
     ]
 
@@ -35,7 +34,8 @@ def test_plan_workflow_orders_steps_and_inherits_common_params(tmp_path: Path):
     # Each step should include the common params
     for _, params in steps:
         assert params.get("threads") == 6
-        assert params.get("species_list") == ["Apis_mellifera"]
+        # plan_workflow injects species under the key used by amalgkit CLI wrappers
+        assert params.get("species") == ["Apis_mellifera"]
 
 
 def test_plan_workflow_step_dependencies(tmp_path: Path):

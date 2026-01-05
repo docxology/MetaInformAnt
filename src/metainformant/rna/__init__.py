@@ -13,11 +13,16 @@ from . import (
     cleanup,
     configs,
     deps,
+    discovery,
+    environment,
+    genome_prep,
     metadata_filter,
     monitoring,
     orchestration,
     pipeline,
     progress_tracker,
+    protein_integration,
+    validation,
     workflow,
 )
 
@@ -53,10 +58,17 @@ __all__ = [
     # Configuration and setup
     "configs",
 
+    # Environment and discovery
+    "discovery",
+    "environment",
+    "genome_prep",
+    "protein_integration",
+
     # Utilities
     "cleanup",
     "deps",
     "metadata_filter",
+    "validation",
 
     # Direct exports
     "RNAPipelineConfig",

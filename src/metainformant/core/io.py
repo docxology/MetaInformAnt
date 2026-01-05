@@ -409,33 +409,22 @@ def download_file(url: str, dest_path: str | Path, *, chunk_size: int = 8192, ti
     Returns:
         True if download successful, False otherwise
     """
-    import requests
-    from urllib.parse import urlparse
-    
     try:
-        # Create parent directory if it doesn't exist
-        dest_path = Path(dest_path)
-        ensure_directory(dest_path.parent)
-        
-        # Parse URL to get filename if dest_path is a directory
-        if dest_path.is_dir():
-            parsed_url = urlparse(url)
-            filename = Path(parsed_url.path).name
-            if not filename:
-                filename = "downloaded_file"
-            dest_path = dest_path / filename
-            
-        # Download with progress tracking
-        response = requests.get(url, stream=True, timeout=timeout)
-        response.raise_for_status()
-        
-        with open(dest_path, 'wb') as f:
-            for chunk in response.iter_content(chunk_size=chunk_size):
-                if chunk:
-                    f.write(chunk)
-                    
-        return True
-        
+        from metainformant.core.download import download_with_progress
+
+        # Keep existing signature/behavior: silent + boolean return.
+        # Also keep default chunk_size small to match previous behavior.
+        result = download_with_progress(
+            url,
+            dest_path,
+            chunk_size=chunk_size,
+            timeout=timeout,
+            show_progress=False,
+            heartbeat_interval=5,
+            max_retries=3,
+            resume=True,
+        )
+        return bool(result.success)
     except Exception:
         return False
 
