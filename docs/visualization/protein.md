@@ -252,3 +252,4 @@ plt.savefig("protein_analysis.png", dpi=300, bbox_inches='tight')
 - **[Visualization Integration](integration.md)**: Cross-module visualization patterns
 
 This module provides comprehensive protein visualization capabilities integrated with METAINFORMANT's protein analysis workflows.
+

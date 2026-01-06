@@ -20,10 +20,12 @@ The `integrate` step:
 ```bash
 amalgkit integrate \
   --out_dir output/amalgkit/work \
-  --fastq_dir output/amalgkit/fastq \
+  --fastq_dir output/amalgkit/fastq/getfastq \
   --metadata output/amalgkit/work/metadata/metadata.tsv \
   --threads 6
 ```
+
+**Important**: The `fastq_dir` parameter must point to the `getfastq/` subdirectory created by the `getfastq` step, not just the base fastq directory. If `getfastq` used `out_dir: output/amalgkit/fastq`, then `integrate` should use `fastq_dir: output/amalgkit/fastq/getfastq`.
 
 ### Python API
 
@@ -44,7 +46,10 @@ result = amalgkit.integrate(
 steps:
   integrate:
     out_dir: output/amalgkit/amellifera/work
-    fastq_dir: output/amalgkit/amellifera/fastq
+    # CRITICAL: fastq_dir must point to the getfastq subdirectory
+    # If getfastq used out_dir: output/amalgkit/amellifera/fastq,
+    # then fastq_dir should be: output/amalgkit/amellifera/fastq/getfastq
+    fastq_dir: output/amalgkit/amellifera/fastq/getfastq
     metadata: output/amalgkit/amellifera/work/metadata/metadata.tsv
     threads: 6
     accurate_size: yes
@@ -56,7 +61,7 @@ steps:
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `--fastq_dir` | PATH | **Required**. Directory containing FASTQ files (.fq, .fastq, .fq.gz, .fastq.gz). |
+| `--fastq_dir` | PATH | **Required**. Directory containing FASTQ files (.fq, .fastq, .fq.gz, .fastq.gz). **Must point to the `getfastq/` subdirectory** created by the `getfastq` step (e.g., `{getfastq_out_dir}/getfastq`). |
 
 ### Optional Parameters
 
@@ -73,9 +78,11 @@ steps:
 
 ### Prerequisites
 
-- **FASTQ Directory**: Directory containing FASTQ files
+- **FASTQ Directory**: Directory containing FASTQ files (typically `{getfastq_out_dir}/getfastq/`)
 - **Metadata Table**: Existing `metadata.tsv` from `amalgkit metadata`
 - **seqkit**: Installed and available on PATH
+
+**Path Resolution**: The `integrate` step scans the specified `fastq_dir` for FASTQ files. If `getfastq` created files in `{out_dir}/getfastq/{sample_id}/`, then `fastq_dir` must be set to `{out_dir}/getfastq/`. The workflow automatically adjusts this path if the `getfastq` subdirectory exists, but it's best to explicitly set it correctly.
 
 ### FASTQ File Naming
 
@@ -151,10 +158,10 @@ amalgkit getfastq \
   --out_dir output/amalgkit/work \
   --metadata output/amalgkit/work/metadata/pivot_qualified.tsv
 
-# Then integrate them
+# Then integrate them (note: fastq_dir points to getfastq subdirectory)
 amalgkit integrate \
   --out_dir output/amalgkit/work \
-  --fastq_dir output/amalgkit/fastq \
+  --fastq_dir output/amalgkit/fastq/getfastq \
   --threads 8
 ```
 
@@ -164,9 +171,10 @@ Skip SRA downloads entirely:
 
 ```bash
 # Integrate existing FASTQs from previous project
+# Note: If FASTQs are from amalgkit getfastq, use the getfastq subdirectory
 amalgkit integrate \
   --out_dir output/new_analysis/work \
-  --fastq_dir /path/to/existing/fastqs \
+  --fastq_dir /path/to/existing/fastqs/getfastq \
   --metadata output/new_analysis/work/metadata/metadata.tsv \
   --accurate_size yes
 ```
@@ -178,7 +186,7 @@ For quick integration of large .gz files:
 ```bash
 amalgkit integrate \
   --out_dir output/amalgkit/work \
-  --fastq_dir output/amalgkit/fastq \
+  --fastq_dir output/amalgkit/fastq/getfastq \
   --accurate_size no \
   --threads 16
 ```
@@ -330,10 +338,10 @@ head -1 output/amalgkit/work/metadata/metadata.tsv | tr '\t' '\n' | grep local
 ### Example 1: Post-getfastq Integration
 
 ```bash
-# After downloading FASTQs
+# After downloading FASTQs (note: use getfastq subdirectory)
 amalgkit integrate \
   --out_dir output/amalgkit/amellifera/work \
-  --fastq_dir output/amalgkit/amellifera/fastq \
+  --fastq_dir output/amalgkit/amellifera/fastq/getfastq \
   --threads 8 \
   --accurate_size yes
 ```

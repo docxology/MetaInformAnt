@@ -332,3 +332,4 @@ interactive_sankey = spec_viz.plot_sankey_diagram(flows, interactive=True)
 - **[Multi-dimensional Plots](multidim.md)**: Complex data visualization
 
 This module provides advanced specialized visualization capabilities for complex bioinformatics data analysis and presentation.
+

@@ -135,7 +135,10 @@ steps:
   # -------------------------------------------------------------------------
   integrate:
     # Directory containing local FASTQ files (optional)
-    fastq_dir: output/amalgkit/my_species/fastq
+    # IMPORTANT: Must point to the getfastq subdirectory created by getfastq step
+    # If getfastq used out_dir: output/amalgkit/my_species/fastq,
+    # then fastq_dir should be: output/amalgkit/my_species/fastq/getfastq
+    fastq_dir: output/amalgkit/my_species/fastq/getfastq
 
     # Specific sample IDs to integrate (optional)
     # id: SRR123456
@@ -220,10 +223,13 @@ steps:
   # QUANT: Quantify transcript abundance
   # -------------------------------------------------------------------------
   quant:
-    # Output directory for quantification results
-    out_dir: output/amalgkit/my_species/quant
+    # CRITICAL: out_dir should be work_dir (not separate quant_dir)
+    # This allows quant to find getfastq output in {out_dir}/getfastq/
+    # Quantification results will be in {out_dir}/quant/{sample_id}/abundance.tsv
+    out_dir: output/amalgkit/my_species/work
 
     # Pre-built transcriptome index (if not using genome above)
+    # Index location: {out_dir}/index/{Scientific_Name}_transcripts.idx
     # index_dir: /path/to/salmon/index
 
     # Force re-quantification even if results exist
@@ -231,6 +237,12 @@ steps:
 
     # Quantification method (salmon, kallisto, etc.)
     # method: salmon
+
+    # Build kallisto index from FASTA if index doesn't exist
+    # build_index: yes
+
+    # Delete FASTQ files after successful quantification (saves disk space)
+    # keep_fastq: no
 
   # -------------------------------------------------------------------------
   # MERGE: Combine quantification results into expression matrix

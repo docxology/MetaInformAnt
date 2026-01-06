@@ -54,7 +54,9 @@ Enable automatic index building:
 ```yaml
 steps:
   quant:
-    out_dir: output/amalgkit/camponotus_floridanus/quant
+    # CRITICAL: out_dir should be work_dir (not separate quant_dir)
+    # This allows quant to find getfastq output in {out_dir}/getfastq/
+    out_dir: output/amalgkit/camponotus_floridanus/work
     build_index: yes  # Automatically build kallisto index
     threads: 12
 ```

@@ -425,7 +425,10 @@ def download_with_progress(
                 time.sleep(retry_delay * (2 ** (attempt - 1)))
     finally:
         if bar is not None:
-            bar.close()
+            try:
+                bar.close()
+            except Exception:
+                pass  # Ignore errors when closing
 
     elapsed = time.time() - start_time
     return DownloadResult(
@@ -542,7 +545,10 @@ def monitor_subprocess_directory_growth(
         time.sleep(1)
 
     if bar is not None:
-        bar.close()
+        try:
+            bar.close()
+        except Exception:
+            pass  # Ignore errors when closing
 
     return int(rc), int(last_bytes)
 
@@ -605,8 +611,17 @@ def monitor_subprocess_file_count(
         rc = process.poll()
         done = _count_done()
         if bar is not None:
-            bar.n = done
-            bar.refresh()
+            try:
+                bar.n = done
+                bar.refresh()
+            except (AttributeError, TypeError) as e:
+                # Handle tqdm compatibility issues gracefully
+                # If refresh fails, just update n and continue
+                if "refresh" in str(e).lower():
+                    try:
+                        bar.n = done
+                    except Exception:
+                        pass  # Ignore if we can't update
         now = time.time()
         if heartbeat_interval > 0 and (now - last) >= heartbeat_interval:
             _write("running" if rc is None else ("completed" if rc == 0 else "failed"), done)
@@ -617,7 +632,10 @@ def monitor_subprocess_file_count(
         time.sleep(1)
 
     if bar is not None:
-        bar.close()
+        try:
+            bar.close()
+        except Exception:
+            pass  # Ignore errors when closing
     return int(rc)
 
 
@@ -676,8 +694,17 @@ def monitor_subprocess_sample_progress(
         rc = process.poll()
         done = _count_done()
         if bar is not None:
-            bar.n = done
-            bar.refresh()
+            try:
+                bar.n = done
+                bar.refresh()
+            except (AttributeError, TypeError) as e:
+                # Handle tqdm compatibility issues gracefully
+                # If refresh fails, just update n and continue
+                if "refresh" in str(e).lower():
+                    try:
+                        bar.n = done
+                    except Exception:
+                        pass  # Ignore if we can't update
         now = time.time()
         if heartbeat_interval > 0 and (now - last) >= heartbeat_interval:
             _write("running" if rc is None else ("completed" if rc == 0 else "failed"), done)
@@ -688,7 +715,10 @@ def monitor_subprocess_sample_progress(
         time.sleep(1)
 
     if bar is not None:
-        bar.close()
+        try:
+            bar.close()
+        except Exception:
+            pass  # Ignore errors when closing
     return int(rc)
 
 

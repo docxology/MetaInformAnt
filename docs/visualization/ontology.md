@@ -266,3 +266,4 @@ plt.savefig("ontology_analysis.png", dpi=300, bbox_inches='tight')
 - **[Visualization Integration](integration.md)**: Cross-module visualization patterns
 
 This module provides comprehensive ontology visualization capabilities integrated with METAINFORMANT's functional annotation workflows.
+

@@ -38,3 +38,4 @@ if not result.success:
 `metainformant.core.io.download_file()` now delegates to `download_with_progress()` (with progress disabled by default) while preserving the same boolean return semantics.
 
 
+

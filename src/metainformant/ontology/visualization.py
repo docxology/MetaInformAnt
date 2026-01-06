@@ -702,3 +702,4 @@ def create_interactive_go_network(
 
     return fig
 
+

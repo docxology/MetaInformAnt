@@ -79,6 +79,10 @@ steps:
     search_string: '"Pogonomyrmex barbatus"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
     redo: yes
   integrate:
+    # IMPORTANT: fastq_dir must point to the getfastq subdirectory created by getfastq step
+    # If getfastq used out_dir: output/amalgkit/pbarbatus_test5/fastq,
+    # then fastq_dir should be: output/amalgkit/pbarbatus_test5/fastq/getfastq
+    # The workflow automatically adjusts this path if the getfastq subdirectory exists
     fastq_dir: output/amalgkit/pbarbatus_test5/fastq/getfastq
   config: {}
   select:
@@ -102,16 +106,26 @@ steps:
     # Run: vdb-config -i and set repository root to a location with >50GB free space
     # Or set via: vdb-config -s /repository/user/main/public/root=/path/to/large/disk
   quant:
-    # If a Salmon/Kallisto index is available, set it; otherwise genome_dir is injected from genome step
-    # NOTE: amalgkit quant looks for getfastq output in {out_dir}/getfastq/, so out_dir should be work_dir
+    # CRITICAL PATH CONFIGURATION:
+    # - amalgkit quant looks for FASTQ files in {out_dir}/getfastq/{sample_id}/
+    # - If getfastq used out_dir: output/amalgkit/pbarbatus_test5/fastq,
+    #   then quant's out_dir must be work_dir so it can find getfastq output
+    # - Quantification results will be written to {out_dir}/quant/{sample_id}/abundance.tsv
+    # - Therefore: out_dir should be work_dir (not a separate quant_dir)
     out_dir: output/amalgkit/pbarbatus_test5/work
     threads: 12
     redo: no
     # Build kallisto index if not present
+    # Index location: {out_dir}/index/{Scientific_Name}_transcripts.idx
     build_index: yes
     # Delete FASTQ files after quantification to save disk space
     keep_fastq: no
   merge:
+    # Merge looks for abundance files in {out_dir}/quant/{sample_id}/{sample_id}_abundance.tsv
+    # If quant used out_dir: work_dir, merge should either:
+    # - Use same work_dir as quant, OR
+    # - Copy abundance files to {merge_out_dir}/quant/{sample_id}/{sample_id}_abundance.tsv
+    # This config uses a separate merged directory, so files may need to be copied/symlinked
     out: output/amalgkit/pbarbatus_test5/merged/merged_abundance.tsv
     out_dir: output/amalgkit/pbarbatus_test5/merged
   # cstmm:  # Skipped: requires orthogroup_table or dir_busco parameters

@@ -12,6 +12,9 @@ The `merge` step:
 - Produces multiple output formats (counts, TPM, effective lengths)
 - Handles missing samples gracefully
 - Creates sample-by-transcript matrices
+- **Requires R and ggplot2**: For generating visualization plots (PCA, correlation heatmaps)
+
+**R Dependency**: The merge step requires R and the `ggplot2` package for plotting. If R is not installed, merge will still create expression matrices but will skip plot generation. See [R_INSTALLATION.md](../R_INSTALLATION.md) for installation instructions.
 
 ## Usage
 
@@ -39,9 +42,11 @@ result = amalgkit.merge(
 ```yaml
 steps:
   merge:
+    # If quant used out_dir: work_dir, merge should use work_dir or copy files
+    # Option 1: Use same work_dir as quant
     out_dir: output/amalgkit/amellifera/work
-    out: output/amalgkit/amellifera/merged/merged_abundance.tsv
-    out_dir: output/amalgkit/amellifera/merged
+    # Option 2: Use separate merged directory (requires copying abundance files)
+    # out_dir: output/amalgkit/amellifera/merged
     metadata: output/amalgkit/amellifera/work/metadata/pivot_qualified.tsv
 ```
 
@@ -58,20 +63,34 @@ steps:
 
 ### Prerequisites
 
-- **Quantification Results**: `abundance.tsv` files from `amalgkit quant` (in `out_dir/quant/SRR*/`)
+- **Quantification Results**: `abundance.tsv` files from `amalgkit quant` (in `{quant_out_dir}/quant/{sample_id}/abundance.tsv`)
+  - **Path Resolution**: `amalgkit merge` looks for abundance files in `{out_dir}/quant/{sample_id}/{sample_id}_abundance.tsv` relative to its `out_dir` parameter
+  - **Critical**: If `quant` used `out_dir: work_dir` (e.g., `output/amalgkit/{species}/work`), then merge's `out_dir` should either:
+    - Be set to the same `work_dir` so it can find quant output in `{work_dir}/quant/`, OR
+    - Point to a location where abundance files have been copied/symlinked
+  - The workflow may copy abundance files to `{merge_out_dir}/quant/{sample_id}/{sample_id}_abundance.tsv` to ensure merge can find them
 - **Metadata Table**: Sample metadata with SRA IDs
+- **R and ggplot2** (optional but recommended): For generating visualization plots
 
 ### Expected Input Structure
 
+**Important**: `amalgkit merge` looks for abundance files in `{out_dir}/quant/{sample_id}/{sample_id}_abundance.tsv`. If quant used `out_dir: work_dir`, the files will be in `{work_dir}/quant/{sample_id}/abundance.tsv`. Merge's `out_dir` should be set accordingly.
+
 ```
-out_dir/quant/
+{out_dir}/quant/
 ├── SRR12345678/
-│   └── abundance.tsv
+│   └── SRR12345678_abundance.tsv  # Note: filename includes sample_id prefix
 ├── SRR12345679/
-│   └── abundance.tsv
+│   └── SRR12345679_abundance.tsv
 └── SRR12345680/
-    └── abundance.tsv
+    └── SRR12345680_abundance.tsv
 ```
+
+**Example**: If quant used `out_dir: output/amalgkit/pbarbatus/work`, then:
+- Quant output: `output/amalgkit/pbarbatus/work/quant/SRR12345678/abundance.tsv`
+- Merge should either:
+  - Use `out_dir: output/amalgkit/pbarbatus/work` (same as quant), OR
+  - Copy files to `output/amalgkit/pbarbatus/merged/quant/SRR12345678/SRR12345678_abundance.tsv`
 
 ## Output Files
 
@@ -359,6 +378,41 @@ wc -l output/work/merge/Species_name/Species_name_tc.tsv
    ```bash
    cat output/work/quant/*/run_info.json | grep "p_pseudoaligned"
    ```
+
+### Issue: R/ggplot2 not found (plotting fails)
+
+```
+Error in library(ggplot2, quietly = TRUE) : there is no package called 'ggplot2'
+```
+
+**Diagnosis**:
+```bash
+# Check if R is installed
+which R
+R --version
+
+# Check if ggplot2 is installed
+Rscript -e "library(ggplot2)"
+```
+
+**Solutions**:
+1. Install R (if not installed):
+   ```bash
+   sudo apt-get update
+   sudo apt-get install -y r-base r-base-dev
+   ```
+
+2. Install ggplot2:
+   ```bash
+   Rscript -e "install.packages('ggplot2', repos='https://cloud.r-project.org')"
+   ```
+
+3. Verify installation:
+   ```bash
+   Rscript -e "library(ggplot2); cat('ggplot2 version:', packageVersion('ggplot2'), '\n')"
+   ```
+
+**Note**: If R/ggplot2 is not available, merge will still create expression matrices but will skip plot generation. The core functionality (matrix creation) does not require R.
 
 ## Best Practices
 

@@ -816,3 +816,4 @@ def create_interactive_simulation_dashboard(
         logger.info(f"Interactive simulation dashboard saved to {html_path}")
 
     return fig
+

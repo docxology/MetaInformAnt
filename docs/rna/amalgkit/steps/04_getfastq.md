@@ -25,6 +25,8 @@ amalgkit getfastq \
   --threads 8 \
   --pfd yes \
   --fastp yes
+
+# Note: FASTQ files will be in output/amalgkit/work/fastq/getfastq/{SRR_ID}/
 ```
 
 **Important**: The metadata file must be in row-per-sample format (with a `run` column), NOT a pivot table. The step automatically looks for `metadata.filtered.tissue.tsv` or `metadata.tsv` in the metadata directory.
@@ -53,6 +55,8 @@ result = run(
 steps:
   getfastq:
     out_dir: output/amalgkit/amellifera/fastq
+    # Note: FASTQ files will be in {out_dir}/getfastq/{SRR_ID}/
+    # Example: output/amalgkit/amellifera/fastq/getfastq/SRR12345678/SRR12345678_1.fastq.gz
     metadata: output/amalgkit/amellifera/work/metadata/metadata.tsv  # Row-per-sample format
     threads: 8
     pfd: yes                # Use parallel-fastq-dump (auto-detected if available)
@@ -189,15 +193,23 @@ Step getfastq summary: 1 file(s) skipped (already exists), 14 file(s) downloaded
 
 ### Directory Structure
 
+**Important**: The `getfastq` step automatically creates a `getfastq/` subdirectory within the specified `out_dir`. FASTQ files are NOT placed directly in `out_dir/`, but rather in `out_dir/getfastq/{sample_id}/`.
+
 ```
-out_dir/getfastq/
-└── SRR12345678/
-    ├── SRR12345678_1.fastq.gz         # Paired-end read 1
-    ├── SRR12345678_2.fastq.gz         # Paired-end read 2
-    ├── SRR12345678.fastq.gz           # Single-end (if applicable)
-    ├── fastp.json                     # Quality control report
-    └── fastp.html                     # HTML QC report
+out_dir/
+└── getfastq/                          # ← Automatically created by amalgkit
+    └── SRR12345678/
+        ├── SRR12345678_1.fastq.gz     # Paired-end read 1
+        ├── SRR12345678_2.fastq.gz     # Paired-end read 2
+        ├── SRR12345678.fastq.gz       # Single-end (if applicable)
+        ├── fastp.json                 # Quality control report
+        └── fastp.html                 # HTML QC report
 ```
+
+**Example**: If `out_dir: output/amalgkit/pbarbatus/fastq`, then FASTQ files will be in:
+- `output/amalgkit/pbarbatus/fastq/getfastq/SRR12345678/SRR12345678_1.fastq.gz`
+
+**Key Point**: The `getfastq/` subdirectory is created automatically by amalgkit. When configuring the `integrate` step, the `fastq_dir` parameter must point to `{out_dir}/getfastq/` (the getfastq subdirectory), not just `{out_dir}/`.
 
 ### FASTQ File Naming
 

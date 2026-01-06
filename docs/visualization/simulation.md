@@ -337,3 +337,4 @@ fitness_colors = ['blue', 'red']  # Mean, maximum fitness
 - **[Visualization Integration](integration.md)**: Cross-module visualization patterns
 
 This module provides comprehensive simulation visualization capabilities integrated with METAINFORMANT's synthetic data generation and modeling workflows.
+

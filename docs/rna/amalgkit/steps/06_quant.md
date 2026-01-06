@@ -73,22 +73,50 @@ result = amalgkit.quant(
 ```yaml
 steps:
   quant:
+    # CRITICAL: out_dir must be work_dir (not separate quant_dir)
+    # This allows quant to find getfastq output in {out_dir}/getfastq/
     out_dir: output/amalgkit/amellifera/work
     metadata: output/amalgkit/amellifera/work/metadata/pivot_qualified.tsv
     index_dir: output/amalgkit/amellifera/work/index
     threads: 8
     clean_fastq: yes
     build_index: yes
-    fasta_dir: output/amalgkit/amellifera/fasta
+    fasta_dir: output/amalgkit/amellifera/work/fasta
 ```
 
 ## Parameters
+
+### CRITICAL: out_dir Configuration
+
+**IMPORTANT**: For `amalgkit quant`, the `out_dir` parameter should be set to the `work_dir` (not a separate quant directory). This is because:
+
+1. **FASTQ Location**: `amalgkit quant` looks for FASTQ files in `{out_dir}/getfastq/{sample_id}/`. If `getfastq` used `out_dir: output/amalgkit/{species}/fastq`, then quant's `out_dir` must be set to `work_dir` so it can find the getfastq output via a symlink or the same directory structure.
+
+2. **Output Location**: Quantification results are written to `{out_dir}/quant/{sample_id}/abundance.tsv`. If `out_dir` is `work_dir`, results will be in `work_dir/quant/`.
+
+3. **Path Resolution**: Setting `out_dir` to `work_dir` ensures that all workflow steps can find files in expected locations relative to the working directory.
+
+**Correct Configuration**:
+```yaml
+steps:
+  quant:
+    out_dir: output/amalgkit/{species}/work  # ← Use work_dir, not separate quant_dir
+    threads: 12
+```
+
+**Incorrect Configuration** (will fail to find FASTQ files):
+```yaml
+steps:
+  quant:
+    out_dir: output/amalgkit/{species}/quant  # ← WRONG: quant can't find getfastq output
+    threads: 12
+```
 
 ### Optional Parameters
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `--out_dir` | PATH | `./` | Directory for intermediate and output files. |
+| `--out_dir` | PATH | `./` | Directory for intermediate and output files. **Should be set to `work_dir`** (not a separate quant directory) so quant can find getfastq output in `{out_dir}/getfastq/`. |
 | `--metadata` | PATH | `inferred` | Path to metadata.tsv. Default: `out_dir/metadata/metadata.tsv` |
 | `--threads` | INT | `1` | Number of threads for kallisto. |
 | `--redo` | yes/no | `no` | Re-quantify even if output exists. |
@@ -102,8 +130,13 @@ steps:
 
 ### Prerequisites
 
-- **FASTQ Files**: From `amalgkit getfastq` (in `out_dir/getfastq/`)
+- **FASTQ Files**: From `amalgkit getfastq` (in `{out_dir}/getfastq/{sample_id}/`)
+  - **Path Resolution**: `amalgkit quant` looks for FASTQ files in `{out_dir}/getfastq/{sample_id}/` relative to its `out_dir` parameter
+  - **Critical**: If `getfastq` used `out_dir: output/amalgkit/{species}/fastq`, then quant's `out_dir` must be set to `work_dir` (e.g., `output/amalgkit/{species}/work`) so it can find the getfastq output
+  - The workflow may create symlinks from `{work_dir}/getfastq/` to `{fastq_dir}/getfastq/` to ensure quant can find the files
 - **Kallisto Index**: Pre-built index for the species OR FASTA file with `--build_index yes`
+  - Index location: `{out_dir}/index/{Scientific_Name}_transcripts.idx`
+  - FASTA location: `{out_dir}/fasta/{Scientific_Name}_rna.fasta`
 - **kallisto**: Installed and available on PATH
 
 ### Kallisto Index Requirements

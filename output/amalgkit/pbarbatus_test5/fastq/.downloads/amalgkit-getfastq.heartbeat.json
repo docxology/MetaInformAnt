@@ -1,0 +1,20 @@
+{
+  "bytes_downloaded": 21417439693,
+  "destination": "output/amalgkit/pbarbatus_test5/fastq/getfastq",
+  "errors": [],
+  "eta_seconds": 0.0,
+  "last_update": "2026-01-06T17:50:30Z",
+  "progress": {
+    "current": 21417439693,
+    "percent": 100.0,
+    "total": 6228110901,
+    "type": "directory_size"
+  },
+  "progress_percent": 100.0,
+  "speed_mbps": 49.75202114656058,
+  "started_at": "2026-01-06T17:43:40Z",
+  "status": "running",
+  "step": "amalgkit getfastq",
+  "total_bytes": 6228110901,
+  "url": "['amalgkit', 'getfastq', '--threads', '4', '--out_dir', 'output/amalgkit/pbarbatus_test5/fastq', '--redo', 'no', '--aws', 'yes', '--gcp', 'no', '--ncbi', 'no', '--pfd', 'no', '--fastp', 'yes', '--metadata', 'output/amalgkit/pbarbatus_test5/work/metadata/metadata_selected.tsv']"
+}

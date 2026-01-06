@@ -714,3 +714,4 @@ def create_interactive_population_genetics_dashboard(
 
     return fig
 
+

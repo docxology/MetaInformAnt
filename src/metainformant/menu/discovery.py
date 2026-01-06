@@ -272,3 +272,4 @@ def generate_menu_from_scripts(scripts: dict[str, list[ScriptInfo]]) -> dict[str
 
 
 
+

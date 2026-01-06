@@ -2,6 +2,14 @@
 
 This module provides Python wrappers around the amalgkit command-line interface
 for comprehensive RNA-seq analysis workflows.
+
+PATH RESOLUTION NOTES:
+- getfastq: Creates FASTQ files in {out_dir}/getfastq/{sample_id}/ (automatically creates getfastq subdirectory)
+- integrate: Expects fastq_dir to point to {fastq_dir}/getfastq/ (the getfastq subdirectory)
+- quant: Should use out_dir = work_dir so it can find getfastq output in {out_dir}/getfastq/
+- merge: Looks for abundance files in {out_dir}/quant/{sample_id}/{sample_id}_abundance.tsv
+
+See docs/rna/amalgkit/PATH_RESOLUTION.md for complete path resolution documentation.
 """
 
 from __future__ import annotations
@@ -301,6 +309,19 @@ def run_amalgkit(subcommand: str, params: AmalgkitParams | Dict[str, Any] | None
                 # Note: vdb-config repository root (for prefetch downloads) is configured
                 # separately in workflow.py to point to the amalgkit fastq output directory
                 env = os.environ.copy()
+                
+                # Check tqdm compatibility and suppress progress bars if incompatible
+                try:
+                    import tqdm
+                    tqdm_version = tuple(map(int, tqdm.__version__.split('.')))
+                    if tqdm_version < (4, 60, 0):
+                        # Suppress progress bars for older tqdm versions that may cause 'refresh' errors
+                        env['AMALGKIT_PROGRESS'] = 'false'
+                        logger.debug(f"tqdm version {tqdm.__version__} detected - suppressing progress bars for compatibility")
+                except (ImportError, ValueError, AttributeError):
+                    # tqdm not available or version check failed - continue normally
+                    pass
+                
                 if subcommand == "getfastq":
                     # Use repository .tmp directory for temp files (on external drive with space)
                     # This is for fasterq-dump temporary files during FASTQ extraction
@@ -394,6 +415,19 @@ def run_amalgkit(subcommand: str, params: AmalgkitParams | Dict[str, Any] | None
         # Note: vdb-config repository root (for prefetch downloads) is configured
         # separately in workflow.py to point to the amalgkit fastq output directory
         env = os.environ.copy()
+        
+        # Check tqdm compatibility and suppress progress bars if incompatible
+        try:
+            import tqdm
+            tqdm_version = tuple(map(int, tqdm.__version__.split('.')))
+            if tqdm_version < (4, 60, 0):
+                # Suppress progress bars for older tqdm versions that may cause 'refresh' errors
+                env['AMALGKIT_PROGRESS'] = 'false'
+                logger.debug(f"tqdm version {tqdm.__version__} detected - suppressing progress bars for compatibility")
+        except (ImportError, ValueError, AttributeError):
+            # tqdm not available or version check failed - continue normally
+            pass
+        
         if subcommand == "getfastq":
             # Use repository .tmp directory for temp files (on external drive with space)
             # This is for fasterq-dump temporary files during FASTQ extraction

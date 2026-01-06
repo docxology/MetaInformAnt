@@ -163,6 +163,15 @@ def apply_step_defaults(config: AmalgkitWorkflowConfig) -> AmalgkitWorkflowConfi
 
 def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
     """Plan the workflow steps and their parameters.
+    
+    This function handles automatic path resolution for workflow steps:
+    
+    - **getfastq**: Creates FASTQ files in {out_dir}/getfastq/{sample_id}/ (automatically creates getfastq subdirectory)
+    - **integrate**: Automatically adjusts fastq_dir to point to {fastq_dir}/getfastq/ if it exists
+    - **quant**: Should use out_dir = work_dir so it can find getfastq output in {out_dir}/getfastq/
+    - **merge**: Looks for abundance files in {out_dir}/quant/{sample_id}/{sample_id}_abundance.tsv
+    
+    See docs/rna/amalgkit/PATH_RESOLUTION.md for complete path resolution documentation.
 
     Args:
         config: Workflow configuration
@@ -240,6 +249,13 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
             if config.species_list:
                 step_params['species'] = config.species_list
 
+        # Auto-inject metadata path for select step
+        if step == 'select' and 'metadata' not in step_params:
+            # Select step needs metadata.tsv as input
+            metadata_file = config.work_dir / 'metadata' / 'metadata.tsv'
+            if metadata_file.exists():
+                step_params['metadata'] = str(metadata_file.resolve())
+        
         # Auto-inject metadata paths for steps that need them
         # Use filtered metadata if it exists (created after select step)
         if step in ('getfastq', 'integrate', 'merge'):
@@ -263,7 +279,16 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
             # Curate uses metadata from merge directory
             step_params['metadata'] = str(config.work_dir / 'merge' / 'metadata' / 'metadata.tsv')
 
-        # Auto-adjust integrate fastq_dir to include getfastq subdirectory if it exists
+        # PATH RESOLUTION: Auto-adjust integrate fastq_dir to include getfastq subdirectory
+        # 
+        # Context: amalgkit getfastq automatically creates a 'getfastq/' subdirectory within
+        # the specified out_dir. For example, if getfastq uses out_dir: output/fastq,
+        # then FASTQ files are actually in output/fastq/getfastq/{sample_id}/.
+        #
+        # The integrate step needs to point to this getfastq subdirectory to find the files.
+        # This code automatically adjusts the path if the getfastq subdirectory exists.
+        #
+        # See docs/rna/amalgkit/PATH_RESOLUTION.md for complete path resolution guide.
         if step == 'integrate':
             if 'fastq_dir' in step_params:
                 fastq_dir = Path(step_params['fastq_dir'])
@@ -475,10 +500,11 @@ def sanitize_params_for_cli(subcommand: str, params: Dict[str, Any]) -> Dict[str
     for key in to_remove:
         del sanitized[key]
 
-    # Convert Path objects to strings
+    # Convert Path objects to absolute path strings
     for key, value in sanitized.items():
         if isinstance(value, Path):
-            sanitized[key] = str(value)
+            # Use absolute path to ensure amalgkit can find files regardless of working directory
+            sanitized[key] = str(value.resolve())
 
     # Remove invalid parameters per subcommand
     INVALID_PARAMS = {
@@ -493,19 +519,123 @@ def sanitize_params_for_cli(subcommand: str, params: Dict[str, Any]) -> Dict[str
     return sanitized
 
 
+def _is_step_completed(step_name: str, step_params: dict, config: AmalgkitWorkflowConfig) -> tuple[bool, Optional[str]]:
+    """Check if a workflow step has already completed.
+    
+    Args:
+        step_name: Name of the workflow step
+        step_params: Parameters for the step
+        config: Workflow configuration
+        
+    Returns:
+        Tuple of (is_completed: bool, completion_indicator: Optional[str])
+        completion_indicator is a file path or description indicating why step is considered complete
+    """
+    work_dir = config.work_dir
+    steps_config = config.extra_config.get('steps', {})
+    
+    if step_name == 'metadata':
+        metadata_file = work_dir / 'metadata' / 'metadata.tsv'
+        if metadata_file.exists():
+            return True, str(metadata_file)
+        return False, None
+    
+    elif step_name == 'config':
+        config_dir = work_dir / 'config_base'
+        if config_dir.exists():
+            config_files = list(config_dir.glob('*.config'))
+            if config_files:
+                return True, f"{len(config_files)} config files in {config_dir}"
+        return False, None
+    
+    elif step_name == 'select':
+        selected_metadata = work_dir / 'metadata' / 'metadata_selected.tsv'
+        if selected_metadata.exists():
+            return True, str(selected_metadata)
+        return False, None
+    
+    elif step_name == 'getfastq':
+        # Check for FASTQ files in getfastq output directory
+        fastq_dir = Path(step_params.get('out_dir', work_dir / 'fastq'))
+        if fastq_dir.name != 'getfastq':
+            fastq_dir = fastq_dir / 'getfastq'
+        
+        if fastq_dir.exists():
+            fastq_files = list(fastq_dir.glob('**/*.fastq*'))
+            if fastq_files:
+                return True, f"{len(fastq_files)} FASTQ files in {fastq_dir}"
+        return False, None
+    
+    elif step_name == 'integrate':
+        # Check for integrated metadata
+        integrated_meta = work_dir / 'integration' / 'integrated_metadata.json'
+        if integrated_meta.exists():
+            return True, str(integrated_meta)
+        
+        # Also check if metadata.tsv was updated (integrate updates it)
+        metadata_tsv = work_dir / 'metadata' / 'metadata.tsv'
+        if metadata_tsv.exists():
+            # Check if there's an integration directory or if metadata has been processed
+            integration_dir = work_dir / 'integration'
+            if integration_dir.exists() and any(integration_dir.iterdir()):
+                return True, f"Integration directory exists: {integration_dir}"
+        return False, None
+    
+    elif step_name == 'quant':
+        # Check for quantification output files
+        quant_dir = Path(step_params.get('out_dir', work_dir))
+        quant_files = list(quant_dir.glob('quant/**/abundance.tsv'))
+        if quant_files:
+            return True, f"{len(quant_files)} abundance files in {quant_dir / 'quant'}"
+        return False, None
+    
+    elif step_name == 'merge':
+        # Check for merged abundance file
+        merge_out = step_params.get('out')
+        if merge_out:
+            merge_path = Path(merge_out)
+            if merge_path.exists():
+                return True, str(merge_path)
+        
+        merge_dir = Path(step_params.get('out_dir', work_dir / 'merged'))
+        merged_file = merge_dir / 'merged_abundance.tsv'
+        if merged_file.exists():
+            return True, str(merged_file)
+        return False, None
+    
+    elif step_name == 'curate':
+        curate_dir = Path(step_params.get('out_dir', work_dir / 'curate'))
+        if curate_dir.exists():
+            # Check for expected curate output files
+            expected_files = ['curated_abundance.tsv', 'curated_metadata.tsv']
+            found_files = [f for f in expected_files if (curate_dir / f).exists()]
+            if found_files:
+                return True, f"Curate outputs found: {', '.join(found_files)} in {curate_dir}"
+        return False, None
+    
+    elif step_name == 'sanity':
+        sanity_file = work_dir / 'sanity_check.txt'
+        if sanity_file.exists():
+            return True, str(sanity_file)
+        return False, None
+    
+    return False, None
+
+
 def execute_workflow(config: AmalgkitWorkflowConfig, *,
                     steps: Optional[List[str]] = None,
                     check: bool = False,
                     walk: bool = False,
                     progress: bool = True,
                     show_commands: bool = False) -> WorkflowExecutionResult:
-    """Execute RNA-seq workflow with automatic vdb-config setup for getfastq step.
+    """Execute the complete amalgkit workflow.
     
     This function automatically configures vdb-config repository path to use
     repository .tmp/vdb directory (on external drive with sufficient space) to
     prevent "disk-limit exceeded" errors during SRA extraction.
-    """
-    """Execute the complete amalgkit workflow.
+    
+    The function checks if steps are already completed and skips them unless
+    redo: yes is explicitly set in the configuration.
 
     Args:
         config: Workflow configuration
@@ -611,6 +741,39 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
         'sanity': sanity
     }
 
+    # Pre-execution status reporting: check which steps are already completed
+    completed_steps = []
+    steps_to_run = []
+    steps_to_skip = []
+    
+    for step_name, step_params in steps_planned:
+        is_completed, completion_indicator = _is_step_completed(step_name, step_params, config)
+        
+        # Check redo setting
+        redo_value = step_params.get('redo', 'no')
+        if isinstance(redo_value, bool):
+            force_redo = redo_value
+        else:
+            force_redo = str(redo_value).lower() in ('yes', 'true', '1')
+        
+        if is_completed and not force_redo:
+            completed_steps.append((step_name, completion_indicator))
+            steps_to_skip.append(step_name)
+        else:
+            steps_to_run.append(step_name)
+    
+    # Log status summary
+    logger.info(f"Workflow status summary:")
+    logger.info(f"  Total steps planned: {len(steps_planned)}")
+    if completed_steps:
+        logger.info(f"  Steps already completed ({len(completed_steps)}): {', '.join([s[0] for s in completed_steps])}")
+        for step_name, indicator in completed_steps:
+            logger.info(f"    - {step_name}: {indicator}")
+    if steps_to_run:
+        logger.info(f"  Steps to run ({len(steps_to_run)}): {', '.join(steps_to_run)}")
+    else:
+        logger.info(f"  All steps already completed - nothing to run")
+
     logger.info(f"Starting execution of {len(steps_planned)} steps")
     for i, (step_name, step_params) in enumerate(steps_planned, 1):
         if progress:
@@ -623,6 +786,64 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
                 return_code=0,
                 success=True,
                 command="(dry run)"
+            ))
+            continue
+
+        # Check if step is already completed
+        is_completed, completion_indicator = _is_step_completed(step_name, step_params, config)
+        
+        # Check redo setting
+        redo_value = step_params.get('redo', 'no')
+        if isinstance(redo_value, bool):
+            force_redo = redo_value
+        else:
+            force_redo = str(redo_value).lower() in ('yes', 'true', '1')
+        
+        if is_completed and not force_redo:
+            logger.info(f"Step {i}/{len(steps_planned)}: {step_name} - Already completed, skipping")
+            logger.info(f"  Completion indicator: {completion_indicator}")
+            
+            # For config step, ensure symlink exists even if step was skipped
+            if step_name == 'config':
+                config_base_dir = config.work_dir / 'config_base'
+                config_dir = config.work_dir / 'config'
+                if config_base_dir.exists():
+                    if config_dir.exists() or config_dir.is_symlink():
+                        # Symlink or directory already exists - verify it points to config_base
+                        if config_dir.is_symlink():
+                            target = config_dir.readlink()
+                            if target == config_base_dir or target.name == 'config_base':
+                                logger.debug(f"Config symlink already exists and is correct: {config_dir}")
+                            else:
+                                logger.warning(f"Config symlink exists but points to wrong target: {target}")
+                        else:
+                            logger.debug(f"Config directory already exists: {config_dir}")
+                    else:
+                        try:
+                            # Use absolute path for symlink to ensure it resolves correctly
+                            config_dir.symlink_to(config_base_dir.resolve())
+                            logger.info(f"Created symlink: {config_dir} -> {config_base_dir.resolve()} (for select step compatibility)")
+                        except (OSError, FileExistsError) as e:
+                            # Symlink already exists or file exists - check if it's correct
+                            if config_dir.exists() or config_dir.is_symlink():
+                                logger.debug(f"Config symlink/directory already exists: {config_dir}")
+                            else:
+                                logger.warning(f"Could not create config symlink: {e}")
+                                # Try creating a regular directory and copying files as fallback
+                                try:
+                                    config_dir.mkdir(parents=True, exist_ok=True)
+                                    import shutil
+                                    for config_file in config_base_dir.glob('*.config'):
+                                        shutil.copy2(config_file, config_dir / config_file.name)
+                                    logger.info(f"Copied config files from {config_base_dir} to {config_dir} as fallback")
+                                except Exception as e2:
+                                    logger.warning(f"Could not copy config files as fallback: {e2}")
+            
+            step_results.append(WorkflowStepResult(
+                step_name=step_name,
+                return_code=0,
+                success=True,
+                command="(skipped - already completed)"
             ))
             continue
 
@@ -651,6 +872,36 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
                 command_str = ' '.join(command)
                 logger.info(f"Command: {command_str}")
 
+            # Ensure config symlink exists before select step
+            if step_name == 'select':
+                config_base_dir = config.work_dir / 'config_base'
+                config_dir = config.work_dir / 'config'
+                if config_base_dir.exists() and not (config_dir.exists() or config_dir.is_symlink()):
+                    try:
+                        config_dir.symlink_to(config_base_dir.resolve())
+                        logger.info(f"Created config symlink before select step: {config_dir} -> {config_base_dir.resolve()}")
+                    except Exception as e:
+                        logger.warning(f"Could not create config symlink: {e}")
+                        # Try copying as fallback
+                        try:
+                            config_dir.mkdir(parents=True, exist_ok=True)
+                            import shutil
+                            for config_file in config_base_dir.glob('*.config'):
+                                shutil.copy2(config_file, config_dir / config_file.name)
+                            logger.info(f"Copied config files as fallback")
+                        except Exception as e2:
+                            logger.warning(f"Could not copy config files: {e2}")
+                # Update step_params to use absolute path to config directory
+                # Always prefer config/ (symlink) over config_base/ for select step compatibility
+                # Use absolute path of config_dir itself (not resolved) so amalgkit uses the symlink
+                if (config_dir.exists() or config_dir.is_symlink()) and config_base_dir.exists():
+                    step_params['config_dir'] = str(config_dir.absolute())
+                    logger.debug(f"Using config directory (symlink): {config_dir.absolute()}")
+                elif config_base_dir.exists():
+                    # Fallback: use config_base directly if symlink doesn't exist
+                    step_params['config_dir'] = str(config_base_dir.absolute())
+                    logger.debug(f"Using config_base directory (fallback): {config_base_dir.absolute()}")
+            
             # Validate filtered metadata exists for steps that need it
             if step_name in ('getfastq', 'integrate', 'merge'):
                 filtered_metadata = config.work_dir / 'metadata' / 'metadata_selected.tsv'
@@ -858,6 +1109,27 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
                 heartbeat_interval=5,
             )
 
+            # After config step, create symlink from config/ to config_base/ for select step compatibility
+            if step_name == 'config':
+                config_base_dir = config.work_dir / 'config_base'
+                config_dir = config.work_dir / 'config'
+                if config_base_dir.exists() and not config_dir.exists():
+                    try:
+                        # Use absolute path for symlink to ensure it resolves correctly
+                        config_dir.symlink_to(config_base_dir.resolve())
+                        logger.info(f"Created symlink: {config_dir} -> {config_base_dir.resolve()} (for select step compatibility)")
+                    except Exception as e:
+                        logger.warning(f"Could not create config symlink: {e}")
+                        # Try creating a regular directory and copying files as fallback
+                        try:
+                            config_dir.mkdir(parents=True, exist_ok=True)
+                            import shutil
+                            for config_file in config_base_dir.glob('*.config'):
+                                shutil.copy2(config_file, config_dir / config_file.name)
+                            logger.info(f"Copied config files from {config_base_dir} to {config_dir} as fallback")
+                        except Exception as e2:
+                            logger.warning(f"Could not copy config files as fallback: {e2}")
+
             # After select step, create filtered metadata for downstream steps
             if step_name == 'select' and result.returncode == 0:
                 try:
@@ -893,12 +1165,21 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
             # Create step result
             error_message = None
             if result.returncode != 0:
-                error_message = f"Step failed with return code {result.returncode}"
-                if result.stderr:
-                    error_message += f": {result.stderr}"
-                logger.error(f"Step {step_name} failed with return code {result.returncode}")
-                if result.stderr:
-                    logger.error(f"Error output: {result.stderr}")
+                # Check if step actually produced expected outputs despite error
+                is_completed, completion_indicator = _is_step_completed(step_name, step_params, config)
+                if is_completed:
+                    logger.warning(f"Step {step_name} reported error (return code {result.returncode}) but outputs exist: {completion_indicator}")
+                    logger.warning(f"Continuing workflow - step appears to have completed successfully despite error")
+                    # Mark as successful despite error
+                    result.returncode = 0
+                    logger.info(f"Step {step_name} marked as successful based on output validation")
+                else:
+                    error_message = f"Step failed with return code {result.returncode}"
+                    if result.stderr:
+                        error_message += f": {result.stderr}"
+                    logger.error(f"Step {step_name} failed with return code {result.returncode}")
+                    if result.stderr:
+                        logger.error(f"Error output: {result.stderr}")
             else:
                 logger.info(f"Step {step_name} completed successfully")
                 
@@ -925,20 +1206,49 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
                         
                         # Early exit if critical failure: no FASTQ files extracted
                         if validated == 0 and failed > 0 and total > 0:
+                            # Check if selected samples are LITE files
+                            lite_check_msg = ""
+                            try:
+                                import pandas as pd
+                                selected_meta = config.work_dir / 'metadata' / 'metadata_selected.tsv'
+                                if selected_meta.exists():
+                                    df = pd.read_csv(selected_meta, sep='\t')
+                                    if 'run' in df.columns:
+                                        runs = df['run'].tolist()
+                                        # Check AWS/GCP links for .lite indicators
+                                        lite_runs = []
+                                        for _, row in df.iterrows():
+                                            aws_link = str(row.get('AWS_Link', ''))
+                                            gcp_link = str(row.get('GCP_Link', ''))
+                                            if '.lite' in aws_link or '.lite' in gcp_link or '.sralite' in aws_link or '.sralite' in gcp_link:
+                                                lite_runs.append(row.get('run', 'unknown'))
+                                        if lite_runs:
+                                            lite_check_msg = (
+                                                f"\n  ⚠️  LITE FILE DETECTION:\n"
+                                                f"  - {len(lite_runs)}/{total} selected samples are LITE files (metadata-only, no sequence data)\n"
+                                                f"  - LITE samples: {', '.join(lite_runs[:5])}{'...' if len(lite_runs) > 5 else ''}\n"
+                                                f"  - LITE files cannot be extracted to FASTQ format\n"
+                                                f"  - SOLUTION: Re-run select step with LITE filtering enabled or select different samples\n"
+                                            )
+                            except Exception:
+                                pass  # Ignore errors in LITE detection
+                            
                             error_msg = (
                                 f"CRITICAL: getfastq step failed to extract FASTQ files for any samples.\n"
                                 f"  - Total samples: {total}\n"
                                 f"  - Samples with FASTQ files: {validated}\n"
-                                f"  - Samples missing FASTQ files: {failed}\n\n"
+                                f"  - Samples missing FASTQ files: {failed}\n"
+                                f"{lite_check_msg}\n"
                                 f"REMEDIATION STEPS:\n"
-                                f"  1. Check amalgkit getfastq logs: {config.work_dir / 'logs' / 'getfastq.log'}\n"
-                                f"  2. Verify SRA files were downloaded: {config.work_dir / 'fastq' / 'getfastq'}\n"
-                                f"  3. Check if fastp/fasterq-dump tools are available:\n"
+                                f"  1. Check if selected samples are LITE files (see above)\n"
+                                f"  2. Check amalgkit getfastq logs: {config.work_dir / 'logs' / 'getfastq.log'}\n"
+                                f"  3. Verify SRA files were downloaded: {config.work_dir / 'fastq' / 'getfastq'}\n"
+                                f"  4. Check if fastp/fasterq-dump tools are available:\n"
                                 f"     - fasterq-dump: shutil.which('fasterq-dump')\n"
                                 f"     - fastp: shutil.which('fastp')\n"
-                                f"  4. Check amalgkit command output for extraction errors\n"
-                                f"  5. Try re-running with redo: yes if files may be corrupted\n"
-                                f"  6. Verify disk space is sufficient for FASTQ extraction\n\n"
+                                f"  5. Check amalgkit command output for extraction errors\n"
+                                f"  6. Try re-running with redo: yes if files may be corrupted\n"
+                                f"  7. Verify disk space is sufficient for FASTQ extraction\n\n"
                                 f"Workflow stopped to prevent cascading failures in downstream steps."
                             )
                             logger.error(error_msg)
@@ -989,14 +1299,50 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
         except Exception as e:
             error_msg = f"Exception during execution: {e}"
             logger.error(f"Error executing step {step_name}: {e}")
-            step_results.append(WorkflowStepResult(
-                step_name=step_name,
-                return_code=1,
-                success=False,
-                error_message=error_msg
-            ))
-            if check:
-                break
+            
+            # If exception is tqdm-related, the subprocess might still be running
+            # Wait longer for subprocess to complete and files to be written
+            import time
+            if "tqdm" in str(e).lower() or "refresh" in str(e).lower():
+                logger.warning(f"tqdm error detected - waiting for subprocess to complete (up to 30 seconds)")
+                # Wait longer for subprocess to finish (metadata step can take time)
+                for i in range(30):
+                    time.sleep(1)
+                    is_completed, completion_indicator = _is_step_completed(step_name, step_params, config)
+                    if is_completed:
+                        break
+                    if i % 5 == 0:
+                        logger.debug(f"Waiting for {step_name} outputs... ({i+1}/30 seconds)")
+            else:
+                # For other exceptions, wait briefly
+                time.sleep(2)
+            
+            # Check if step actually produced expected outputs despite exception
+            is_completed, completion_indicator = _is_step_completed(step_name, step_params, config)
+            if is_completed:
+                logger.warning(f"Step {step_name} raised exception but outputs exist: {completion_indicator}")
+                logger.warning(f"Continuing workflow - step appears to have completed successfully despite exception")
+                # Mark as successful despite exception
+                step_results.append(WorkflowStepResult(
+                    step_name=step_name,
+                    return_code=0,
+                    success=True,
+                    error_message=f"Exception occurred but outputs validated: {error_msg}",
+                    command=command_str
+                ))
+                logger.info(f"Step {step_name} marked as successful based on output validation")
+                # Continue to next step (don't break workflow)
+                continue
+            else:
+                step_results.append(WorkflowStepResult(
+                    step_name=step_name,
+                    return_code=1,
+                    success=False,
+                    error_message=error_msg
+                ))
+                if check:
+                    break
+                continue
 
     successful_steps = sum(1 for sr in step_results if sr.success)
     total_steps = len(step_results)

@@ -308,3 +308,4 @@ state_colors = {
 - **[Visualization Integration](integration.md)**: Cross-module visualization patterns
 
 This module provides comprehensive epigenetic visualization capabilities integrated with METAINFORMANT's epigenomic analysis workflows.
+

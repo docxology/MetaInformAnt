@@ -679,3 +679,4 @@ def create_interactive_structure_viewer(
 
     return fig
 
+
