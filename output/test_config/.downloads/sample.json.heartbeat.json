@@ -1,0 +1,13 @@
+{
+  "bytes_downloaded": 429,
+  "destination": "output/test_config/sample.json",
+  "errors": [],
+  "eta_seconds": 0.0,
+  "last_update": "2026-01-08T16:56:12Z",
+  "progress_percent": 100.0,
+  "speed_mbps": 0.0009839376197310456,
+  "started_at": "2026-01-08T16:56:10Z",
+  "status": "completed",
+  "total_bytes": 429,
+  "url": "https://httpbin.org/json"
+}

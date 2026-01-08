@@ -41,21 +41,21 @@ class TestBuildArtifacts:
         """Test that domain modules can be imported."""
         domains_to_test = [
             'dna.sequence',
-            'rna.workflow',
-            'protein.alignment',
-            'gwas.association',
-            'epigenome.methylation',
+            'rna.analysis',
+            'protein.structure',
+            'gwas.analysis',
+            'epigenome.analysis',
             'ontology.go',
-            'phenotype.life_course',
-            'ecology.community',
-            'math.popgen',
-            'ml.classification',
-            'networks.graph',
-            'singlecell.preprocessing',
-            'quality.fastq',
+            'phenotype.analysis',
+            'ecology.analysis',
+            'math.population_genetics',
+            'ml.models',
+            'networks.analysis',
+            'singlecell.analysis',
+            'quality.analysis',
             'visualization.plots',
-            'simulation.sequences',
-            'life_events.embeddings'
+            'simulation.models',
+            'life_events.analysis'
         ]
 
         failed_imports = []
