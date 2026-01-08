@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.gwas.visualization_statistical import (
+from metainformant.gwas.visualization.visualization_statistical import (
     lambda_gc_plot,
     power_plot,
     qq_plot as qq_plot_statistical,

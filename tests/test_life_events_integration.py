@@ -73,7 +73,7 @@ def test_integration_with_visualization_module():
     """Test integration with visualization module."""
     try:
         from metainformant.life_events import learn_event_embeddings, plot_event_embeddings
-        from metainformant.ml.dimensionality import biological_embedding
+        from metainformant.ml.features.features.features.features.features.features.features.features.dimensionality import biological_embedding
     except ImportError:
         pytest.skip("Visualization integration not available")
 
@@ -276,7 +276,7 @@ def test_cli_end_to_end_workflow(tmp_path: Path):
     
     sequences_file = tmp_path / "sequences.json"
     sequences_data = [seq.to_dict() for seq in sequences]
-    from metainformant.core.io import dump_json
+    from metainformant.core.io.io import dump_json
     dump_json(sequences_data, sequences_file)
     
     # Step 1: Train model using analyze_life_course

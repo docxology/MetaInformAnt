@@ -84,7 +84,7 @@ class TestSerialization:
 
     def test_load_nonexistent_file(self):
         """Test loading nonexistent file raises error."""
-        from metainformant.core.errors import IOError
+        from metainformant.core.utils.errors import IOError
 
         with pytest.raises(IOError, match="not found"):
             load_ontology("nonexistent.json")

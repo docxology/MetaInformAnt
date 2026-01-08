@@ -4,7 +4,7 @@ import numpy as np
 
 
 def test_kabsch_rmsd_zero_for_identical():
-    from metainformant.protein.structure import compute_rmsd_kabsch
+    from metainformant.protein.structure.general.general.general.general.general.general.general.general import compute_rmsd_kabsch
 
     coords = np.array([[0.0, 0.0, 0.0], [1.0, 2.0, 3.0], [-1.0, 0.5, 2.5]])
     rmsd = compute_rmsd_kabsch(coords, coords.copy())
@@ -12,7 +12,7 @@ def test_kabsch_rmsd_zero_for_identical():
 
 
 def test_kabsch_rmsd_invariant_to_rotation_translation():
-    from metainformant.protein.structure import compute_rmsd_kabsch
+    from metainformant.protein.structure.general.general.general.general.general.general.general.general import compute_rmsd_kabsch
 
     A = np.array([[1.0, 0.0, 0.0], [0.0, 2.0, 0.0], [0.0, 0.0, 3.0]])
     # rotate around z by 90 degrees and translate

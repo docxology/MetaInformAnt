@@ -305,6 +305,21 @@ Validate data integrity and completeness.
 - `input_dirs`: Directories to validate
 - `checks`: Validation checks to perform
 
+### Genome Preparation (`genome_prep`)
+Automated download and indexing of reference genomes and transcriptomes.
+
+**Key Functions:**
+- `download_rna_fasta_from_ftp`: Reliable `urllib` based download from NCBI.
+- `build_kallisto_index`: Automated construction of Kallisto indices.
+- `orchestrate_genome_setup`: High-level workflow for genome setups.
+
+**Usage:**
+```python
+from metainformant.rna import genome_prep
+# Download and index
+genome_prep.orchestrate_genome_setup(config_dict, species_name="Homo_sapiens", work_dir=work_path)
+```
+
 ## Command Line Interface
 
 The module provides a comprehensive CLI for RNA analysis:

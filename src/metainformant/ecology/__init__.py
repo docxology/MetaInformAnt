@@ -1,16 +1,26 @@
-"""Ecological and environmental analysis module for METAINFORMANT.
+"""Ecology and community analysis module for METAINFORMANT.
 
-This module provides tools for ecological data analysis, community ecology,
-environmental correlations, species interactions, and biodiversity assessment.
+This module provides tools for ecological analysis, including community
+structure, diversity metrics, and ecological visualization.
 """
 
 from __future__ import annotations
 
-# Import all ecology submodules
-from . import (
+# Import subpackages
+from . import analysis
+from . import visualization
+
+# Import modules from subpackages for backward compatibility
+from .analysis import (
     community,
-    visualization,
 )
+from .visualization import visualization as visualization_module
+
+# Optional imports with graceful fallbacks
+try:
+    from .analysis import community
+except ImportError:
+    community = None
 
 # Type checking imports
 from typing import TYPE_CHECKING
@@ -19,13 +29,8 @@ if TYPE_CHECKING:
     pass
 
 __all__ = [
-    # Core ecological analysis
-    "community",
+    # Subpackages
+    "analysis",
     "visualization",
 ]
-
-
-
-
-
 

@@ -5,7 +5,7 @@ Tests YAML config file parsing and workflow configuration object creation.
 
 from pathlib import Path
 
-from metainformant.rna.workflow import load_workflow_config, plan_workflow
+from metainformant.rna.engine.workflow import load_workflow_config, plan_workflow
 
 
 def test_load_workflow_config_yaml(tmp_path: Path):

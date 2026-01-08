@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from metainformant.menu.navigation import Menu, MenuHistory, MenuItem, MenuSystem, get_current_menu, go_back, navigate_to_submenu
+from metainformant.menu.ui.navigation import Menu, MenuHistory, MenuItem, MenuSystem, get_current_menu, go_back, navigate_to_submenu
 
 
 class TestMenuItem:

@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from metainformant.rna.workflow import AmalgkitWorkflowConfig, plan_workflow
+from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig, plan_workflow
 
 
 def test_manifest_written_and_logs_directory(tmp_path: Path):

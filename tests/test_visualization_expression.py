@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from metainformant.visualization.expression import (
+from metainformant.visualization.genomics.expression import (
     plot_expression_heatmap,
     plot_enrichment_barplot,
     plot_differential_expression,

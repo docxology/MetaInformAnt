@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.gwas.visualization_genome import (
+from metainformant.gwas.visualization.visualization_genome import (
     circular_manhattan_plot,
     chromosome_ideogram,
     genome_wide_ld_heatmap,

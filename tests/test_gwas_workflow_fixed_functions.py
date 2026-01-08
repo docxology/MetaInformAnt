@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.gwas.workflow import _extract_genotype_matrix, _load_phenotypes
+from metainformant.gwas.workflow.workflow import _extract_genotype_matrix, _load_phenotypes
 
 
 class TestExtractGenotypeMatrix:

@@ -11,7 +11,7 @@ import pytest
 
 # Import modules with graceful handling for optional dependencies
 try:
-    from metainformant.singlecell.preprocessing import (
+    from metainformant.singlecell.data.preprocessing import (
         SingleCellData,
         filter_cells,
         filter_genes,
@@ -30,14 +30,14 @@ except ImportError:
 
 
 try:
-    from metainformant.singlecell.dimensionality import run_pca, run_tsne, run_umap
+    from metainformant.singlecell.analysis.dimensionality import run_pca, run_tsne, run_umap
 
     DIMENSIONALITY_AVAILABLE = True
 except ImportError:
     DIMENSIONALITY_AVAILABLE = False
 
 try:
-    from metainformant.singlecell.clustering import find_markers, leiden_clustering
+    from metainformant.singlecell.analysis.clustering import find_markers, leiden_clustering
 
     CLUSTERING_AVAILABLE = True
 except ImportError:

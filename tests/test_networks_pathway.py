@@ -11,8 +11,8 @@ from typing import Dict, List, Set
 import numpy as np
 import pytest
 
-from metainformant.networks.graph import BiologicalNetwork
-from metainformant.networks.pathway import (
+from metainformant.networks.analysis.graph import BiologicalNetwork
+from metainformant.networks.analysis.pathway import (
     PathwayNetwork,
     load_pathway_database,
     network_enrichment_analysis,
@@ -475,7 +475,7 @@ class TestNewPathwayFunctions:
 
     def test_pathway_similarity(self):
         """Test pathway similarity calculation."""
-        from metainformant.networks.pathway import pathway_similarity
+        from metainformant.networks.analysis.pathway import pathway_similarity
 
         path1 = {"GENE1", "GENE2", "GENE3"}
         path2 = {"GENE2", "GENE3", "GENE4"}
@@ -492,7 +492,7 @@ class TestNewPathwayFunctions:
 
     def test_pathway_activity_score(self):
         """Test pathway activity scoring."""
-        from metainformant.networks.pathway import pathway_activity_score
+        from metainformant.networks.analysis.pathway import pathway_activity_score
 
         pn = PathwayNetwork()
         pn.add_pathway("path1", ["GENE1", "GENE2", "GENE3"])

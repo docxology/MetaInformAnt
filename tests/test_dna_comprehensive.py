@@ -13,14 +13,14 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.core.errors import ValidationError
+from metainformant.core.utils.errors import ValidationError
 
 # Import gc_content from core functionality tests since it's working there
-from metainformant.dna.composition import gc_skew  # We'll use a different approach for gc_content
-from metainformant.dna.composition import cumulative_gc_skew, melting_temperature
-from metainformant.dna.distances import jc69_distance, kimura_2p_distance, kmer_distance, p_distance
-from metainformant.dna.fastq import average_phred_by_position, iter_fastq
-from metainformant.simulation.sequences import generate_random_dna
+from metainformant.dna.sequence.composition import gc_skew  # We'll use a different approach for gc_content
+from metainformant.dna.sequence.composition import cumulative_gc_skew, melting_temperature
+from metainformant.dna.alignment.distances import jc69_distance, kimura_2p_distance, kmer_distance, p_distance
+from metainformant.dna.io.fastq import average_phred_by_position, iter_fastq
+from metainformant.simulation.models.sequences import generate_random_dna
 
 
 class TestDNAComposition:

@@ -51,7 +51,7 @@ class TestDNASequences:
         assert score == 1.0
 
         # Different lengths (should raise error)
-        from metainformant.core.errors import ValidationError
+        from metainformant.core.utils.errors import ValidationError
         with pytest.raises(ValidationError):
             sequences.dna_complementarity_score("ATCG", "ATC")
 
@@ -224,7 +224,7 @@ class TestDNASequences:
         assert tm_wallace == tm_enhanced
 
         # Test with invalid method
-        from metainformant.core.errors import ValidationError
+        from metainformant.core.utils.errors import ValidationError
         with pytest.raises(ValidationError):
             sequences.calculate_melting_temperature(short_seq, "invalid")
 
@@ -238,7 +238,7 @@ class TestDNASequences:
         assert sum(usage.values()) == 1.0  # Should sum to 1.0
 
         # Test with sequence not divisible by 3
-        from metainformant.core.errors import ValidationError
+        from metainformant.core.utils.errors import ValidationError
         with pytest.raises(ValidationError):
             sequences.calculate_codon_usage("ATCGA")  # 5 bases
 

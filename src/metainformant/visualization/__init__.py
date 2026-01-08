@@ -2,27 +2,43 @@
 
 This module provides comprehensive plotting and visualization capabilities
 for biological data, including statistical plots, genomic visualizations,
-network graphs, animations, and publication-quality figure generation.
+genomic networks, animations, and publication-quality figure generation.
 """
 
 from __future__ import annotations
 
-# Import all visualization submodules
-from . import (
+# Import subpackages
+from . import analysis
+from . import genomics
+from . import plots
+
+# Import modules from subpackages for backward compatibility
+from .plots.animations import *
+from .plots.basic import *
+from .plots.general import *
+from .plots.multidim import *
+from .plots.specialized import *
+
+# Re-export submodules for explicit imports
+from .plots import (
     animations,
     basic,
-    dimred,
-    expression,
-    genomics,
-    information,
+    general,
     multidim,
-    networks,
-    plots,
-    quality,
     specialized,
+)
+from .genomics import (
+    expression,
+    genomics as genomics_module,
+    networks,
+    trees,
+)
+from .analysis import (
+    dimred,
+    information,
+    quality,
     statistical,
     timeseries,
-    trees,
 )
 
 # Optional imports with graceful fallbacks
@@ -68,6 +84,11 @@ if TYPE_CHECKING:
     pass
 
 __all__ = [
+    # Subpackages
+    "analysis",
+    "genomics",
+    "plots",
+
     # Core plotting functionality
     "basic",
     "plots",
@@ -77,7 +98,7 @@ __all__ = [
     "quality",
 
     # Biological data visualizations
-    "genomics",
+    "genomics_module",
     "expression",
     "networks",
     "trees",

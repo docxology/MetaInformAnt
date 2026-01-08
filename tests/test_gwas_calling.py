@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.gwas.calling import (
+from metainformant.gwas.analysis.calling import (
     check_bcftools_available,
     check_gatk_available,
     merge_vcf_files,

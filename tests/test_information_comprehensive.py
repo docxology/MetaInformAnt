@@ -31,7 +31,7 @@ from metainformant.information import (
     total_correlation,
     transfer_entropy,
 )
-from metainformant.information.syntactic import shannon_entropy_from_counts
+from metainformant.information.metrics.syntactic import shannon_entropy_from_counts
 
 
 class TestSyntacticInformation:
@@ -299,7 +299,7 @@ class TestAdditionalMethods:
 
     def test_jensen_shannon_divergence(self):
         """Test Jensen-Shannon divergence."""
-        from metainformant.information.syntactic import jensen_shannon_divergence
+        from metainformant.information.metrics.syntactic import jensen_shannon_divergence
 
         p = [0.5, 0.5]
         q = [0.5, 0.5]
@@ -308,7 +308,7 @@ class TestAdditionalMethods:
 
     def test_renyi_entropy(self):
         """Test Rényi entropy calculation."""
-        from metainformant.information.syntactic import renyi_entropy, shannon_entropy
+        from metainformant.information.metrics.syntactic import renyi_entropy, shannon_entropy
 
         probs = [0.25, 0.25, 0.25, 0.25]
         # α=1 should equal Shannon entropy
@@ -322,7 +322,7 @@ class TestAdditionalMethods:
 
     def test_tsallis_entropy(self):
         """Test Tsallis entropy calculation."""
-        from metainformant.information.syntactic import shannon_entropy, tsallis_entropy
+        from metainformant.information.metrics.syntactic import shannon_entropy, tsallis_entropy
 
         probs = [0.5, 0.5]
         # q=1 should equal Shannon entropy
@@ -336,7 +336,7 @@ class TestAdditionalMethods:
 
     def test_normalized_mutual_information(self):
         """Test normalized mutual information."""
-        from metainformant.information.syntactic import normalized_mutual_information
+        from metainformant.information.metrics.syntactic import normalized_mutual_information
 
         x = [0, 1, 0, 1]
         y = [0, 1, 0, 1]  # Perfect correlation
@@ -345,7 +345,7 @@ class TestAdditionalMethods:
 
     def test_information_coefficient(self):
         """Test information coefficient."""
-        from metainformant.information.syntactic import information_coefficient
+        from metainformant.information.metrics.syntactic import information_coefficient
 
         x = [0.0, 1.0, 0.0, 1.0, 0.0, 1.0]
         y = [0.0, 1.0, 0.0, 1.0, 0.0, 1.0]  # Perfect correlation
@@ -358,7 +358,7 @@ class TestContinuousMethods:
 
     def test_differential_entropy(self):
         """Test differential entropy calculation."""
-        from metainformant.information.continuous import differential_entropy
+        from metainformant.information.metrics.continuous import differential_entropy
 
         import numpy as np
 
@@ -368,7 +368,7 @@ class TestContinuousMethods:
 
     def test_mutual_information_continuous(self):
         """Test continuous mutual information."""
-        from metainformant.information.continuous import mutual_information_continuous
+        from metainformant.information.metrics.continuous import mutual_information_continuous
 
         import numpy as np
 
@@ -379,7 +379,7 @@ class TestContinuousMethods:
 
     def test_entropy_estimation(self):
         """Test entropy estimation methods."""
-        from metainformant.information.continuous import entropy_estimation
+        from metainformant.information.metrics.continuous import entropy_estimation
 
         import numpy as np
 
@@ -396,7 +396,7 @@ class TestEstimationMethods:
 
     def test_entropy_estimator(self):
         """Test entropy estimation with various methods."""
-        from metainformant.information.estimation import entropy_estimator
+        from metainformant.information.metrics.estimation import entropy_estimator
 
         counts = {"A": 50, "T": 30, "G": 20}
         h_plugin = entropy_estimator(counts, method="plugin")
@@ -406,7 +406,7 @@ class TestEstimationMethods:
 
     def test_mutual_information_estimator(self):
         """Test MI estimation with bias correction."""
-        from metainformant.information.estimation import mutual_information_estimator
+        from metainformant.information.metrics.estimation import mutual_information_estimator
 
         x = [0, 1, 0, 1, 0, 1]
         y = [0, 1, 0, 1, 0, 1]
@@ -415,7 +415,7 @@ class TestEstimationMethods:
 
     def test_bias_correction(self):
         """Test bias correction function."""
-        from metainformant.information.estimation import bias_correction
+        from metainformant.information.metrics.estimation import bias_correction
 
         corrected = bias_correction(1.5, n_samples=100, n_bins=10, measure="entropy")
         assert corrected > 1.5  # Should increase for entropy
@@ -431,7 +431,7 @@ class TestWorkflowFunctions:
 
     def test_batch_entropy_analysis(self):
         """Test batch entropy analysis."""
-        from metainformant.information.workflows import batch_entropy_analysis
+        from metainformant.information.workflow.workflows import batch_entropy_analysis
 
         sequences = ["ATCG", "ATCG", "AAAA"]
         results = batch_entropy_analysis(sequences, k=1)
@@ -441,7 +441,7 @@ class TestWorkflowFunctions:
 
     def test_information_workflow(self):
         """Test complete information workflow."""
-        from metainformant.information.workflows import information_workflow
+        from metainformant.information.workflow.workflows import information_workflow
 
         sequences = ["ATCGATCG", "AAAA"]
         results = information_workflow(sequences, k_values=[1, 2])
@@ -450,7 +450,7 @@ class TestWorkflowFunctions:
 
     def test_compare_datasets(self):
         """Test dataset comparison."""
-        from metainformant.information.workflows import compare_datasets
+        from metainformant.information.workflow.workflows import compare_datasets
 
         dataset1 = ["ATCG", "ATCG"]
         dataset2 = ["AAAA", "AAAA"]
@@ -464,7 +464,7 @@ class TestIntegrationFunctions:
 
     def test_dna_integration(self):
         """Test DNA integration."""
-        from metainformant.information.integration import dna_integration
+        from metainformant.information.integration.integration import dna_integration
 
         sequences = {"seq1": "ATCG", "seq2": "AAAA"}
         results = dna_integration(sequences, k=1, analysis_type="entropy")
@@ -472,7 +472,7 @@ class TestIntegrationFunctions:
 
     def test_rna_integration(self):
         """Test RNA integration."""
-        from metainformant.information.integration import rna_integration
+        from metainformant.information.integration.integration import rna_integration
 
         import numpy as np
 
@@ -482,7 +482,7 @@ class TestIntegrationFunctions:
 
     def test_ml_integration(self):
         """Test ML integration."""
-        from metainformant.information.integration import ml_integration
+        from metainformant.information.integration.integration import ml_integration
 
         import numpy as np
 

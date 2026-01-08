@@ -1,4 +1,4 @@
-from metainformant.dna.genomes import is_valid_assembly_accession
+from metainformant.dna.external.genomes import is_valid_assembly_accession
 
 
 def test_is_valid_assembly_accession_valid_cases():

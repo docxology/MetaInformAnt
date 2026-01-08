@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from metainformant.visualization.multidim import (
+from metainformant.visualization.plots.multidim import (
     plot_pairwise_relationships,
     plot_parallel_coordinates,
     plot_radar_chart,

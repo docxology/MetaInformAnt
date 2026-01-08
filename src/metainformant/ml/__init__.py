@@ -1,24 +1,43 @@
-"""Machine learning utilities for biological data analysis in METAINFORMANT.
+"""Machine learning module for METAINFORMANT.
 
-This module provides machine learning tools tailored for biological applications,
-including classification, regression, feature selection, dimensionality reduction,
-and model validation for genomics, transcriptomics, and other biological data.
+This module provides machine learning capabilities for bioinformatics analysis,
+including classification, regression, dimensionality reduction, and feature
+selection/engineering.
 """
 
 from __future__ import annotations
 
-# Import all machine learning submodules
-from . import (
+# Import subpackages
+from . import evaluation
+from . import features
+from . import models
+
+# Import modules from subpackages for backward compatibility
+from .models import (
     classification,
+    regression,
+)
+from .features import (
     dimensionality,
     features,
-    regression,
+)
+from .evaluation import (
     validation,
 )
 
 # Optional imports with graceful fallbacks
 try:
-    from . import dimensionality
+    from .models import classification
+except ImportError:
+    classification = None
+
+try:
+    from .models import regression
+except ImportError:
+    regression = None
+
+try:
+    from .features import dimensionality
 except ImportError:
     dimensionality = None
 
@@ -29,7 +48,12 @@ if TYPE_CHECKING:
     pass
 
 __all__ = [
-    # Core ML tasks
+    # Subpackages
+    "evaluation",
+    "features",
+    "models",
+
+    # Models
     "classification",
     "regression",
 
@@ -37,13 +61,9 @@ __all__ = [
     "features",
     "dimensionality",
 
-    # Model evaluation
+    # Validation and metrics
     "validation",
 ]
-
-
-
-
 
 
 

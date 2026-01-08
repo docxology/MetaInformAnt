@@ -10,7 +10,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from metainformant.protein.alignment import global_align, local_align, calculate_alignment_identity
+from metainformant.protein.sequence.alignment import global_align, local_align, calculate_alignment_identity
 
 
 class TestGlobalAlignNeedlemanWunsch:

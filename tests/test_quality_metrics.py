@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from metainformant.quality.metrics import (
+from metainformant.quality.analysis.metrics import (
     calculate_complexity_metrics,
     calculate_coverage_metrics,
     calculate_duplication_metrics,

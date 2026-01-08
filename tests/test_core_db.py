@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 import pytest
 
-from metainformant.core.db import (
+from metainformant.core.data.db import (
     build_postgres_url,
     get_db_client,
     sanitize_connection_params,
@@ -108,7 +108,7 @@ class TestDatabaseConnection:
 
         try:
             # Should raise ImportError first since psycopg2 is not available
-            with pytest.raises(ImportError, match="psycopg2 is required"):
+            with pytest.raises(ImportError, match="psycopg2 required for database operations"):
                 get_db_client()
         finally:
             # Restore original environment

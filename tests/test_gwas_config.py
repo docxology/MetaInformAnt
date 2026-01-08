@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 
 from metainformant.gwas import GWASWorkflowConfig, load_gwas_config
-from metainformant.core.io import dump_json
+from metainformant.core.io.io import dump_json
 
 
 def test_load_gwas_config_basic(tmp_path: Path) -> None:

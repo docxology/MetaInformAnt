@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from metainformant.protein.proteomes import read_taxon_ids
+from metainformant.protein.sequence.proteomes import read_taxon_ids
 
 
 def test_read_taxon_ids_basic(tmp_path: Path) -> None:

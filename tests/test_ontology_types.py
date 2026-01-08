@@ -132,7 +132,7 @@ class TestOntology:
     def test_ontology_add_term_validation(self):
         """Test add_term validation."""
         onto = Ontology()
-        from metainformant.core.errors import ValidationError
+        from metainformant.core.utils.errors import ValidationError
         
         # Empty term_id
         with pytest.raises(ValidationError, match="Term ID cannot be empty"):

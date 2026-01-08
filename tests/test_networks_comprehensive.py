@@ -9,8 +9,8 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from metainformant.networks.community import community_metrics, detect_communities, modularity
-from metainformant.networks.graph import (
+from metainformant.networks.analysis.community import community_metrics, detect_communities, modularity
+from metainformant.networks.analysis.graph import (
     BiologicalNetwork,
     add_edges_from_correlation,
     add_edges_from_interactions,
@@ -19,9 +19,9 @@ from metainformant.networks.graph import (
     network_metrics,
     shortest_paths,
 )
-from metainformant.networks.pathway import PathwayNetwork, pathway_enrichment
-from metainformant.networks.ppi import ProteinNetwork, predict_interactions
-from metainformant.networks.regulatory import GeneRegulatoryNetwork, infer_grn, regulatory_motifs
+from metainformant.networks.analysis.pathway import PathwayNetwork, pathway_enrichment
+from metainformant.networks.interaction.ppi import ProteinNetwork, predict_interactions
+from metainformant.networks.interaction.regulatory import GeneRegulatoryNetwork, infer_grn, regulatory_motifs
 
 
 class TestBiologicalNetwork:
@@ -344,7 +344,7 @@ class TestGraphUtilities:
 
     def test_export_import_roundtrip(self, tmp_path):
         """Test network export and import round-trip."""
-        from metainformant.networks.graph import export_network, import_network
+        from metainformant.networks.analysis.graph import export_network, import_network
 
         original = create_network(["A", "B", "C"], directed=False)
         original.add_edge("A", "B", weight=0.8)
@@ -361,7 +361,7 @@ class TestGraphUtilities:
 
     def test_hierarchical_community_detection(self):
         """Test hierarchical community detection."""
-        from metainformant.networks.community import hierarchical_communities
+        from metainformant.networks.analysis.community import hierarchical_communities
 
         network = create_network(["A", "B", "C", "D", "E", "F"], directed=False)
         network.add_edge("A", "B")
@@ -374,7 +374,7 @@ class TestGraphUtilities:
 
     def test_protein_complex_detection(self):
         """Test protein complex detection."""
-        from metainformant.networks.ppi import detect_complexes
+        from metainformant.networks.interaction.ppi import detect_complexes
 
         ppi = ProteinNetwork()
         # Create dense subgraph
@@ -387,7 +387,7 @@ class TestGraphUtilities:
 
     def test_regulatory_cascade_detection(self):
         """Test regulatory cascade detection."""
-        from metainformant.networks.regulatory import detect_regulatory_cascades
+        from metainformant.networks.interaction.regulatory import detect_regulatory_cascades
 
         grn = GeneRegulatoryNetwork()
         grn.add_regulation("TF1", "TF2", confidence=0.8)
@@ -398,7 +398,7 @@ class TestGraphUtilities:
 
     def test_pathway_similarity_and_activity(self):
         """Test pathway similarity and activity scoring."""
-        from metainformant.networks.pathway import pathway_similarity, pathway_activity_score
+        from metainformant.networks.analysis.pathway import pathway_similarity, pathway_activity_score
 
         pn = PathwayNetwork()
         pn.add_pathway("path1", ["GENE1", "GENE2", "GENE3"])

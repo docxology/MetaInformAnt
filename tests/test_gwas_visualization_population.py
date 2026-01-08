@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.gwas.visualization_population import (
+from metainformant.gwas.visualization.visualization_population import (
     pca_plot,
     pca_scree_plot,
     kinship_heatmap,

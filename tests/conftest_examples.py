@@ -116,7 +116,7 @@ def mock_example_environment(monkeypatch, temp_example_dir: Path) -> Dict[str, A
 
     # Set environment variables
     monkeypatch.setenv("MPLBACKEND", "Agg")
-    monkeypatch.setattr("metainformant.core.paths.PLATFORM", "test")
+    monkeypatch.setattr("metainformant.core.io.paths.PLATFORM", "test")
 
     return {
         "output_dir": mock_output,

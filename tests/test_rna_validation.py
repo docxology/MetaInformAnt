@@ -12,14 +12,14 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.core.io import dump_json, write_delimited
-from metainformant.rna.validation import (
+from metainformant.core.io.io import dump_json, write_delimited
+from metainformant.rna.analysis.validation import (
     get_sample_pipeline_status,
     save_validation_report,
     validate_all_samples,
     validate_sample_end_to_end,
 )
-from metainformant.rna.workflow import AmalgkitWorkflowConfig
+from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig
 
 
 class TestGetSamplePipelineStatus:
@@ -443,7 +443,7 @@ class TestSaveValidationReport:
         assert report_path.parent.exists()
         
         # Verify content
-        from metainformant.core.io import load_json
+        from metainformant.core.io.io import load_json
         loaded = load_json(report_path)
         assert loaded['total_samples'] == 10
         assert loaded['validated'] == 8

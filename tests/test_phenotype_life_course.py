@@ -14,7 +14,7 @@ try:
         extract_phenotypes_from_events,
         map_events_to_traits,
     )
-    from metainformant.core.errors import ValidationError
+    from metainformant.core.utils.errors import ValidationError
     
     LIFE_EVENTS_AVAILABLE = True
 except ImportError:

@@ -1,30 +1,30 @@
-"""Phenotypic trait analysis and curation module for METAINFORMANT.
+"""Phenotype analysis module for METAINFORMANT.
 
-This module provides tools for phenotypic data analysis, trait curation,
-life course analysis, and integration with biological databases like AntWiki.
+This module provides tools for analyzing phenotypic data, including
+trait extraction from text (AntWiki), life course analysis, and
+morphological data visualization.
 """
 
 from __future__ import annotations
 
-# Import all phenotype analysis submodules
-from . import (
-    antwiki,
-    life_course,
-    scraper,
-    visualization,
-)
+# Import subpackages
+from . import analysis
+from . import data
+from . import visualization
 
-# Direct imports of commonly used classes and functions
-from .life_course import analyze_life_course
+# Import modules from subpackages for backward compatibility
+from .data import (
+    antwiki,
+    scraper,
+)
+from .analysis import (
+    life_course,
+)
+from .visualization import visualization as visualization_module
 
 # Optional imports with graceful fallbacks
 try:
-    from . import antwiki
-except ImportError:
-    antwiki = None
-
-try:
-    from . import scraper
+    from .data import scraper
 except ImportError:
     scraper = None
 
@@ -35,17 +35,18 @@ if TYPE_CHECKING:
     pass
 
 __all__ = [
-    # Core phenotype analysis
-    "life_course",
-    "analyze_life_course",
+    # Subpackages
+    "analysis",
+    "data",
+    "visualization",
 
-    # Data sources and curation
+    # Data sources
     "antwiki",
     "scraper",
 
+    # Analysis
+    "life_course",
+
     # Visualization
-    "visualization",
+    "visualization_module",
 ]
-
-
-

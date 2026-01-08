@@ -13,7 +13,7 @@ import numpy as np
 import pytest
 
 # Test visualization functions - these should return real matplotlib Figures
-from metainformant.gwas.visualization import manhattan_plot, qq_plot, pca_plot, kinship_heatmap
+from metainformant.gwas.visualization.general import manhattan_plot, qq_plot, pca_plot, kinship_heatmap
 
 # Test matplotlib dependency
 try:

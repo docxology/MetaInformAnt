@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from metainformant.visualization.dimred import (
+from metainformant.visualization.analysis.dimred import (
     plot_pca,
     plot_umap,
     plot_tsne,

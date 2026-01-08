@@ -7,44 +7,54 @@ parallel processing, caching, and workflow orchestration.
 
 from __future__ import annotations
 
-# Core infrastructure - always available
-from . import (
-    cache,
+# Import subpackages (reordered for dependency resolution)
+# 1. Utils (Foundation)
+from . import utils
+from .utils import (
     config,
-    discovery,
     errors,
     hash,
-    io,
     logging,
-    download,
     optional_deps,
-    parallel,
-    paths,
     progress,
     symbols,
     text,
+)
+
+# 2. Data (Structures)
+from . import data
+from .data import (
     validation,
+)
+
+# 3. IO (Input/Output)
+# Depends on Utils for logging/config
+from . import io
+from .io import (
+    cache,
+    disk,
+    download,
+    io as io_module,
+    paths,
+)
+
+# 4. Execution (Workflow)
+# Depends on IO and Utils
+from . import execution
+from .execution import (
+    discovery,
+    parallel,
     workflow,
 )
 
-# Core functions - always available
-from .workflow import create_sample_config, download_and_process_data, run_config_based_workflow, validate_config_file
-
-# Optional dependencies - gracefully handle missing components
+# Optional dependencies
 try:
-    from . import db
+    from .data import db
 except ImportError:
     db = None
 
-try:
-    from . import disk
-except ImportError:
-    disk = None
-
-try:
-    from . import filesystem
-except ImportError:
-    filesystem = None
+# Core functions - always available
+from .execution.workflow import create_sample_config, download_and_process_data, run_config_based_workflow, validate_config_file
 
 # Type system
 from typing import TYPE_CHECKING
@@ -53,14 +63,20 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 __all__ = [
-    # Core modules
+    # Subpackages
+    "data",
+    "execution",
+    "io",
+    "utils",
+
+    # Core modules (backward compatibility)
     "cache",
     "config",
     "discovery",
     "download",
     "errors",
     "hash",
-    "io",
+    "io_module",
     "logging",
     "optional_deps",
     "parallel",
@@ -71,7 +87,7 @@ __all__ = [
     "validation",
     "workflow",
 
-    # Core functions (from workflow)
+    # Core functions
     "create_sample_config",
     "download_and_process_data",
     "run_config_based_workflow",
@@ -80,5 +96,4 @@ __all__ = [
     # Optional modules
     "db",
     "disk",
-    "filesystem",
 ]

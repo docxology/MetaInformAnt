@@ -86,11 +86,11 @@ steps:
     fastq_dir: output/amalgkit/pbarbatus_test5/fastq/getfastq
   config: {}
   select:
-    max_sample: 5  # End-to-end testing with 5 valid samples
+    max_sample: 1  # End-to-end testing with 1 valid sample for speed
   getfastq:
     out_dir: output/amalgkit/pbarbatus_test5/fastq
     threads: 4  # Reduced for limited samples
-    redo: no    # Skip already-downloaded files (set to 'yes' only to force re-download)
+    redo: yes    # Force re-download to fix partial files
     # Cloud acceleration: AWS only (full SRA files)
     # NOTE: NCBI and GCP have LITE files (metadata-only, no sequence data) for this species
     # AWS has full SRA files with actual sequence data
@@ -99,7 +99,7 @@ steps:
     ncbi: no           # DISABLED: NCBI has lite files (no sequence data)
     pfd: no           # DISABLED: parallel-fastq-dump usually not needed
     fastp: yes        # ENABLED: fastp QC tool
-    # max_bp: 10000000000  # Optional: Limit download size per sample (default: unlimited)
+    max_bp: 10000000  # Limit download size to 10MB for rapid verification
     #                       # After quantification, only small abundance files remain (~few MB per sample)
     #                       # Large downloads are temporary - quantified samples don't need re-download
     # IMPORTANT: vdb-config must be set to use a location with sufficient disk space
@@ -113,7 +113,7 @@ steps:
     # - Quantification results will be written to {out_dir}/quant/{sample_id}/abundance.tsv
     # - Therefore: out_dir should be work_dir (not a separate quant_dir)
     out_dir: output/amalgkit/pbarbatus_test5/work
-    threads: 12
+    threads: 6
     redo: no
     # Build kallisto index if not present
     # Index location: {out_dir}/index/{Scientific_Name}_transcripts.idx

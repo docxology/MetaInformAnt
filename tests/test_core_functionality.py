@@ -14,26 +14,26 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from metainformant.core.hash import sha256_bytes, sha256_file
+from metainformant.core.utils.hash import sha256_bytes, sha256_file
 
 # Test core modules
-from metainformant.core.io import dump_json, load_json, open_text_auto
-from metainformant.core.paths import expand_and_resolve, is_within
-from metainformant.core.text import normalize_whitespace, slugify
-from metainformant.dna.composition import gc_skew, melting_temperature
-from metainformant.dna.distances import p_distance
+from metainformant.core.io.io import dump_json, load_json, open_text_auto
+from metainformant.core.io.paths import expand_and_resolve, is_within
+from metainformant.core.utils.text import normalize_whitespace, slugify
+from metainformant.dna.sequence.composition import gc_skew, melting_temperature
+from metainformant.dna.alignment.distances import p_distance
 
 # Test DNA analysis functions
-from metainformant.dna.fastq import gc_content
+from metainformant.dna.io.fastq import gc_content
 
 # Test ecology functions
-from metainformant.ecology.community import shannon_diversity, simpson_diversity
+from metainformant.ecology.analysis.community import shannon_diversity, simpson_diversity
 
 # Test math functions that don't need external dependencies
-from metainformant.math.popgen import hardy_weinberg_genotype_freqs
+from metainformant.math import hardy_weinberg_genotype_freqs
 
 # Test simulation functions (those that work with standard random)
-from metainformant.simulation.sequences import generate_random_dna
+from metainformant.simulation.models.sequences import generate_random_dna
 
 
 class TestCoreIO:
@@ -297,7 +297,7 @@ class TestErrorHandling:
 
     def test_invalid_input_handling(self):
         """Test handling of invalid inputs."""
-        from metainformant.core.errors import ValidationError
+        from metainformant.core.utils.errors import ValidationError
         
         # Invalid GC content
         with pytest.raises(ValidationError):

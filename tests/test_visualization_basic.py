@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.visualization.basic import (
+from metainformant.visualization.plots.basic import (
     lineplot,
     scatter_plot,
     heatmap,

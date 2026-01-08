@@ -1,29 +1,34 @@
-"""Data quality control and assessment module for METAINFORMANT.
+"""Quality control analysis module for METAINFORMANT.
 
-This module provides comprehensive quality control tools for biological data,
-including FASTQ quality assessment, contamination detection, quality metrics,
-and data validation across all supported data types.
+This module provides tools for assessing data quality, including
+contamination detection, sequencing metrics, and FastQ file handling.
 """
 
 from __future__ import annotations
 
-# Import all quality control submodules
-from . import (
+# Import subpackages
+from . import analysis
+from . import io
+
+# Import modules from subpackages for backward compatibility
+from .analysis import (
     contamination,
-    fastq,
     metrics,
+)
+from .io import (
+    fastq,
 )
 
 # Optional imports with graceful fallbacks
 try:
-    from . import contamination
+    from .analysis import contamination
 except ImportError:
     contamination = None
 
-# Direct imports of commonly used functions
-from .contamination import ContaminationDetector
-from .fastq import FastqRecord
-from .metrics import calculate_complexity_metrics
+try:
+    from .analysis import metrics
+except ImportError:
+    metrics = None
 
 # Type checking imports
 from typing import TYPE_CHECKING
@@ -32,17 +37,12 @@ if TYPE_CHECKING:
     pass
 
 __all__ = [
-    # Quality assessment tools
-    "fastq",
-    "metrics",
+    # Subpackages
+    "analysis",
+    "io",
 
-    # Specialized analysis
+    # Analysis
     "contamination",
-
-    # Direct exports
-    "FastqRecord",
-    "ContaminationDetector",
-    "calculate_complexity_metrics",
 ]
 
 

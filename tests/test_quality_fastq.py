@@ -12,8 +12,8 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.dna.fastq import FastqRecord
-from metainformant.quality.fastq import (
+from metainformant.dna.io.fastq import FastqRecord
+from metainformant.quality.io.fastq import (
     adapter_content,
     analyze_fastq_quality,
     basic_statistics,
@@ -270,7 +270,7 @@ class TestOverrepresentedSequences:
 
     def test_sequence_source_identification(self):
         """Test identification of sequence sources."""
-        from metainformant.quality.fastq import _identify_sequence_source
+        from metainformant.quality.io.fastq import _identify_sequence_source
 
         # Test various sequence types
         assert _identify_sequence_source("AAAAAAAAAA") == "Poly-A tail"

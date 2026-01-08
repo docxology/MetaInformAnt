@@ -8,20 +8,27 @@ continuous information theory, and analysis workflows.
 
 from __future__ import annotations
 
-# Import all information theory submodules
-from . import (
+# Import subpackages
+from . import integration
+from . import metrics
+from . import workflow
+
+# Import modules from subpackages for backward compatibility
+from .metrics import (
     analysis,
     continuous,
     estimation,
-    integration,
-    networks,
     semantic,
     syntactic,
-    workflows,
 )
+from .integration import (
+    integration as integration_module,
+    networks,
+)
+from .workflow import workflows as workflow_module
 
 # Direct imports of commonly used functions
-from .syntactic import (
+from .metrics.syntactic import (
     shannon_entropy,
     shannon_entropy_from_counts,
     joint_entropy,
@@ -39,7 +46,7 @@ from .syntactic import (
     information_coefficient,
 )
 
-from .semantic import (
+from .metrics.semantic import (
     information_content,
     information_content_from_annotations,
     semantic_entropy,
@@ -47,54 +54,33 @@ from .semantic import (
     semantic_similarity_matrix,
 )
 
-from .analysis import (
+from .metrics.analysis import (
     information_profile,
     information_signature,
     analyze_sequence_information,
     compare_sequences_information,
 )
 
-from .continuous import (
+from .metrics.continuous import (
     differential_entropy,
     mutual_information_continuous,
-    kl_divergence_continuous,
-    entropy_estimation,
 )
-
-from .estimation import (
-    entropy_estimator,
-    mutual_information_estimator,
-    kl_divergence_estimator,
-    bias_correction,
+from .integration import (
+    integration as integration_module,
+    networks,
 )
-
-from .workflows import (
-    batch_entropy_analysis,
-    information_workflow,
-    compare_datasets,
-    information_report,
-)
-
-from .networks import (
-    network_entropy,
-    information_flow,
-)
+from .workflow import workflows as workflow_module
 
 # Optional imports with graceful fallbacks
 try:
-    from . import integration
+    from .metrics import continuous
 except ImportError:
-    integration = None
+    continuous = None
 
 try:
-    from . import networks
+    from .metrics import semantic
 except ImportError:
-    networks = None
-
-try:
-    from . import visualization
-except ImportError:
-    visualization = None
+    semantic = None
 
 # Type checking imports
 from typing import TYPE_CHECKING
@@ -103,22 +89,21 @@ if TYPE_CHECKING:
     pass
 
 __all__ = [
-    # Core information measures
-    "syntactic",
-    "semantic",
-    "continuous",
-
-    # Analysis and estimation
-    "analysis",
-    "estimation",
-    "workflows",
-
-    # Specialized applications
+    # Subpackages
     "integration",
-    "networks",
-    "visualization",
+    "metrics",
+    "workflow",
 
-    # Syntactic information functions
+    # Metrics
+    "analysis",
+    "continuous",
+    "estimation",
+    "semantic",
+    "syntactic",
+
+    # Integration
+    "integration_module",
+    "networks",
     "shannon_entropy",
     "shannon_entropy_from_counts",
     "joint_entropy",

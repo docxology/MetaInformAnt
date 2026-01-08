@@ -1,170 +1,236 @@
 """Mathematical biology and theoretical modeling module for METAINFORMANT.
 
-This module provides mathematical and computational tools for biological modeling,
-including population genetics theory, evolutionary dynamics, epidemiology,
-coalescent theory, and quantitative genetics.
+This module provides mathematical and computational tools for biological modeling.
 """
 
 from __future__ import annotations
 
-# Import all mathematical biology submodules
+# Subpackages
 from . import (
-    coalescent,
-    ddm,
-    demography,
-    dynamics,
-    effective_size,
-    egt,
+    decision_theory,
     epidemiology,
-    fst,
-    ld,
-    popgen,
-    popgen_stats,
-    price,
-    quantgen,
-    selection,
-    utilities,
-    visualization,
+    evolutionary_dynamics,
+    population_genetics,
+    quantitative_genetics,
 )
 
-# Direct imports of commonly used functions
-from .coalescent import expected_time_to_mrca, watterson_theta, expected_total_branch_length, tajima_constants, tajimas_D
-from .ddm import ddm_analytic_accuracy, ddm_mean_decision_time, island_model_update
-from .demography import exponential_growth_model, logistic_growth_model, age_structure_model
-from .dynamics import logistic_map, lotka_volterra_step
-from .epidemiology import basic_reproduction_number, effective_reproduction_number, herd_immunity_threshold, sir_step, seir_step, sis_step
-from .egt import replicator_derivative, replicator_step
-from .ld import ld_coefficients, ld_decay_r2, haldane_c_to_d, haldane_d_to_c, kosambi_c_to_d, kosambi_d_to_c
-from .popgen import hardy_weinberg_genotype_freqs, heterozygosity_decay, inbreeding_coefficient, mutation_selection_balance_dominant, mutation_selection_balance_recessive
-from .popgen_stats import expected_pairwise_diversity, expected_segregating_sites, expected_coalescent_waiting_times, expected_r2_from_Ne_c, equilibrium_heterozygosity_infinite_alleles, fixation_probability, bottleneck_effective_size, effective_size_from_family_size_variance, bootstrap_confidence_interval, calculate_confidence_intervals
-from .selection import breeders_equation_response, kin_selection_response, mutation_update, selection_update, selection_differential, selection_gradient
-from .price import (price_equation, delta_mean_trait, expectation, relative_fitness,
-                    selection_intensity, standard_deviation, variance, weighted_variance,
-                    weighted_covariance, weighted_correlation)
-from .effective_size import effective_size_sex_ratio, harmonic_mean_effective_size
-from .quantgen import narrow_sense_heritability, realized_heritability, lande_equation_response
-from .selection import multilevel_selection_decomposition
-from .utilities import correlation, correlation_coefficient, linear_regression, r_squared, fisher_exact_test, covariance, shannon_entropy, jensen_shannon_divergence
-from .fst import fst_from_allele_freqs, fst_from_heterozygosity
+# Create alias for backward compatibility
+popgen = population_genetics
+from .population_genetics import demography
+from .population_genetics.demography import island_model_update
+from .population_genetics import statistics as popgen_stats
+from .epidemiology import models as epimodels
 
-# Optional imports with graceful fallbacks
-try:
-    from . import selection_experiments
-except ImportError:
-    selection_experiments = None
+# Re-export coalescent from population_genetics for backward compatibility
+from .population_genetics import coalescent
+from .population_genetics.coalescent import (
+    expected_time_to_mrca,
+    watterson_theta,
+    expected_total_branch_length,
+    expected_pairwise_diversity,
+    tajimas_D,
+    tajima_constants,
+    expected_segregating_sites,
+)
 
-try:
-    from . import ddm
-except ImportError:
-    ddm = None
+# Re-export core functions
+from .population_genetics.core import (
+    hardy_weinberg_genotype_freqs,
+    heterozygosity_decay,
+    inbreeding_coefficient,
+)
+from .population_genetics.selection import (
+    breeders_equation_response,
+    mutation_update,
+    selection_update,
+    kin_selection_response,
+    relative_fitness,
+    selection_intensity,
+)
+from .population_genetics.statistics import (
+    fixation_probability,
+    expected_r2_from_Ne_c,
+    effective_size_from_family_size_variance,
+    equilibrium_heterozygosity_infinite_alleles,
+)
+from .population_genetics.selection import (
+    breeders_equation_response,
+    mutation_update,
+    selection_update,
+    kin_selection_response,
+    relative_fitness,
+    selection_intensity,
+    selection_differential,
+    selection_gradient,
+    mutation_selection_balance_dominant,
+    mutation_selection_balance_recessive,
+)
+from .population_genetics.effective_size import (
+    effective_size_sex_ratio,
+    harmonic_mean_effective_size,
+)
+from .population_genetics.fst import (
+    fst_from_allele_freqs,
+    fst_from_heterozygosity,
+)
+from .population_genetics.statistics import (
+    kurtosis,
+    skewness,
+    standard_deviation,
+    variance,
+)
+from .quantitative_genetics.core import (
+    realized_heritability,
+    lande_equation_response,
+    narrow_sense_heritability,
+)
+from .quantitative_genetics.price import (
+    delta_mean_trait,
+    expectation,
+    price_equation,
+    weighted_correlation,
+    weighted_covariance,
+    weighted_variance,
+)
+from .core.utilities import (
+    fisher_exact_test,
+    correlation,
+    covariance,
+    shannon_entropy,
+    jensen_shannon_divergence,
+)
 
-try:
-    from . import egt
-except ImportError:
-    egt = None
+# Re-export Epidemiology
+from .epidemiology.models import (
+    basic_reproduction_number,
+    effective_reproduction_number,
+    herd_immunity_threshold,
+    sir_step,
+    seir_step,
+    sis_step,
+)
 
-# Type checking imports
-from typing import TYPE_CHECKING
+# Re-export Evolutionary Dynamics
+from .evolutionary_dynamics.core import (
+    logistic_map,
+    lotka_volterra_step,
+    replicator_derivative,
+    replicator_step,
+)
 
-if TYPE_CHECKING:
-    pass
+# Re-export Decision Theory
+from .decision_theory.ddm import (
+    ddm_analytic_accuracy,
+    ddm_mean_decision_time,
+)
+
+# Re-export LD functions
+from .population_genetics.ld import (
+    ld_coefficients,
+    ld_decay_r2,
+    haldane_c_to_d,
+    haldane_d_to_c,
+    kosambi_c_to_d,
+    kosambi_d_to_c,
+)
+
+# Re-export core utilities for backward compatibility
+from .core.utilities import r_squared, correlation_coefficient, linear_regression
 
 __all__ = [
-    # Population genetics
+    "coalescent",
+    "decision_theory",
+    "epidemiology",
+    "evolutionary_dynamics",
+    "population_genetics",
+    "quantitative_genetics",
+    "demography",
     "popgen",
     "popgen_stats",
-    "fst",
-    "ld",
-    "effective_size",
-
-    # Evolutionary theory
-    "coalescent",
-    "selection",
-    "price",
-
-    # Population dynamics and ecology
-    "demography",
-    "dynamics",
-    "epidemiology",
-
-    # Decision theory and behavior
-    "ddm",
-    "island_model_update",
-    "egt",
-
-    # Quantitative genetics
-    "quantgen",
-
-    # Visualization
-    "visualization",
-
-    # Direct function exports
+    "epimodels",
+    
+    # Coalescent
     "expected_time_to_mrca",
     "watterson_theta",
     "expected_total_branch_length",
-    "tajima_constants",
+    "expected_pairwise_diversity",
     "tajimas_D",
-    "exponential_growth_model",
-    "logistic_growth_model",
-    "age_structure_model",
-    "logistic_map",
-    "lotka_volterra_step",
+    "tajima_constants",
+    "expected_segregating_sites",
+    
+    # Core
+    "hardy_weinberg_genotype_freqs",
+    "fisher_exact_test",
+    "correlation",
+    
+    # PopGen
+    "fixation_probability",
+    "expected_r2_from_Ne_c",
+    "mutation_update",
+    "selection_update",
+    "kin_selection_response",
+    "harmonic_mean_effective_size",
+    "island_model_update",
+    "heterozygosity_decay",
+    "inbreeding_coefficient",
+    "fst_from_allele_freqs",
+    "fst_from_heterozygosity",
+    
+    # QuantGen
+    "breeders_equation_response",
+    "realized_heritability",
+    "lande_equation_response",
+    "narrow_sense_heritability",
+    "price_equation",
+    "delta_mean_trait",
+    "expectation",
+    "weighted_correlation",
+    "weighted_covariance",
+    "weighted_variance",
+
+    # Utilities
+    "covariance",
+    "shannon_entropy",
+    "jensen_shannon_divergence",
+    "r_squared",
+    "correlation_coefficient",
+    "linear_regression",
+    "relative_fitness",
+    "selection_intensity",
+    "selection_differential",
+    "selection_gradient",
+    "mutation_selection_balance_dominant",
+    "mutation_selection_balance_recessive",
+
+    # Epidemiology
     "basic_reproduction_number",
     "effective_reproduction_number",
     "herd_immunity_threshold",
-    "sir_step",
-    "seir_step",
-    "sis_step",
+    "kurtosis",
+    "skewness",
+    "standard_deviation",
+    "variance",
+    
+    # PopGen Extensions
+    "effective_size_from_family_size_variance",
+    "equilibrium_heterozygosity_infinite_alleles",
+    "effective_size_sex_ratio",
+
+    # Evolutionary Dynamics
+    "logistic_map",
+    "lotka_volterra_step",
+    "replicator_derivative",
+    "replicator_step",
+
+    # Decision Theory
+    "ddm_analytic_accuracy",
+    "ddm_mean_decision_time",
+    
+    # LD
     "ld_coefficients",
     "ld_decay_r2",
     "haldane_c_to_d",
     "haldane_d_to_c",
-    "hardy_weinberg_genotype_freqs",
-    "mutation_selection_balance_dominant",
-    "mutation_selection_balance_recessive",
-    "heterozygosity_decay",
-    "inbreeding_coefficient",
-    "expected_pairwise_diversity",
-    "expected_segregating_sites",
-    "expected_coalescent_waiting_times",
-    "expected_r2_from_Ne_c",
-    "equilibrium_heterozygosity_infinite_alleles",
-    "fixation_probability",
-    "bottleneck_effective_size",
-    "fst_from_heterozygosity",
-    "harmonic_mean_effective_size",
-    "replicator_derivative",
-    "replicator_step",
-    "effective_size_from_family_size_variance",
-    "bootstrap_confidence_interval",
-    "breeders_equation_response",
-    "kin_selection_response",
-    "mutation_update",
-    "selection_update",
-    "selection_differential",
-    "selection_gradient",
-    "price_equation",
-    "delta_mean_trait",
-    "expectation",
-    "relative_fitness",
-    "selection_intensity",
-    "standard_deviation",
-    "variance",
-    "weighted_variance",
-    "weighted_covariance",
-    "weighted_correlation",
-    "effective_size_sex_ratio",
-    "narrow_sense_heritability",
-    "realized_heritability",
-    "multilevel_selection_decomposition",
-    "lande_equation_response",
-    "correlation",
-    "correlation_coefficient",
-    "linear_regression",
-    "r_squared",
-    "shannon_entropy",
-    "jensen_shannon_divergence",
+    "kosambi_c_to_d",
+    "kosambi_d_to_c",
 ]
-
-
-

@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.gwas.visualization_effects import (
+from metainformant.gwas.visualization.visualization_effects import (
     effect_size_forest_plot,
     effect_direction_plot,
     functional_enrichment_plot,

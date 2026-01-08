@@ -7,32 +7,42 @@ differential expression analysis, and multi-species comparative studies.
 
 from __future__ import annotations
 
-# Import all RNA analysis submodules
-from . import (
-    amalgkit,
+# Import subpackages
+from . import core        # Base configs and utils
+from . import analysis    # Analysis modules
+from . import amalgkit    # Amalgkit integration
+from . import engine      # Orchestration engine (depends on others)
+
+# Import modules from subpackages for backward compatibility
+from .core import (
     cleanup,
     configs,
     deps,
-    discovery,
     environment,
-    genome_prep,
-    metadata_filter,
+)
+from .engine import (
+    discovery,
     monitoring,
     orchestration,
     pipeline,
     progress_tracker,
+    workflow,
+)
+from .amalgkit import (
+    amalgkit as amalgkit_module,
+    genome_prep,
+    metadata_filter,
+)
+from .analysis import (
     protein_integration,
     validation,
-    workflow,
 )
 
 # Direct imports of commonly used classes and functions
-from .configs import RNAPipelineConfig, AmalgkitRunLayout
-from .progress_tracker import ProgressTracker
-from .pipeline import summarize_curate_tables
-from .workflow import AmalgkitWorkflowConfig
-
-# All modules imported above are available
+from .core.configs import RNAPipelineConfig, AmalgkitRunLayout
+from .engine.progress_tracker import ProgressTracker
+from .engine.pipeline import summarize_curate_tables
+from .engine.workflow import AmalgkitWorkflowConfig
 
 # Type checking imports
 from typing import TYPE_CHECKING
@@ -41,6 +51,12 @@ if TYPE_CHECKING:
     pass
 
 __all__ = [
+    # Subpackages
+    "amalgkit",
+    "analysis",
+    "core",
+    "engine",
+
     # Core workflow management
     "workflow",
     "orchestration",
@@ -49,7 +65,7 @@ __all__ = [
     "progress_tracker",
 
     # Amalgkit integration
-    "amalgkit",
+    "amalgkit_module",
 
     # Configuration and setup
     "configs",

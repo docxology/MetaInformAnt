@@ -5,10 +5,10 @@ This document outlines AI assistance in developing METAINFORMANT's RNA transcrip
 ## Implementation Status
 
 **Status**: ✅ PARTIALLY IMPLEMENTED
-- **Core functions**: Implemented (amalgkit.py, workflow.py, monitoring.py, cleanup.py, orchestration.py)
+- **Core functions**: Implemented (amalgkit.py, workflow.py, monitoring.py, cleanup.py, orchestration.py, genome_prep.py)
 - **Step wrappers**: Partially implemented (11 amalgkit steps in steps/ directory)
 - **Enhancements**: "Smart Parallelism" for `getfastq` implemented and verified.
-- **Remaining**: Full step implementations, genome_prep.py completion, protein_integration.py
+- **Remaining**: Full step implementations, protein_integration.py
 
 ## Implemented Functions by Module
 
@@ -95,7 +95,9 @@ AI helped ensure:
 - **Performance Optimization**: Efficient resource utilization (12 threads)
 - **Scalability**: Support for large-scale multi-species analyses
 - **Environment Management**: Automatic virtual environment activation
+- **Environment Management**: Automatic virtual environment activation
 - **Download Reliability**: Direct ENA downloads with automatic retry and resume
+- **Genome Automation**: Hands-off download and indexing of references via `genome_prep`
 
 ## Real-World Production Use
 

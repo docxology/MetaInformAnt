@@ -11,7 +11,7 @@ from pathlib import Path
 def test_each_step_runner_invokes_real_subcommand_or_skips(tmp_path: Path):
     """Test that each step runner can invoke real amalgkit subcommands or skip gracefully."""
     from metainformant.rna import steps as step_mod
-    from metainformant.rna.amalgkit import check_cli_available
+    from metainformant.rna.amalgkit.amalgkit import check_cli_available
 
     ok, _ = check_cli_available()
     if not ok:

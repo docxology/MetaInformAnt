@@ -1,14 +1,26 @@
-"""Multi-omic data integration module for METAINFORMANT.
+"""Multi-omics integration module for METAINFORMANT.
 
-This module provides tools for integrating and analyzing multiple omics data types,
-including cross-platform harmonization, joint dimensionality reduction,
-correlation analysis, and systems-level biological interpretation.
+This module provides tools for integrating multiple omics layers, including
+genomics, transcriptomics, epigenomics, and proteomics.
 """
 
 from __future__ import annotations
 
-# Import all multiomics submodules
-from . import integration, visualization
+# Import subpackages
+from . import analysis
+from . import visualization
+
+# Import modules from subpackages for backward compatibility
+from .analysis import (
+    integration,
+)
+from .visualization import visualization as visualization_module
+
+# Optional imports with graceful fallbacks
+try:
+    from .analysis import integration
+except ImportError:
+    integration = None
 
 # Type checking imports
 from typing import TYPE_CHECKING
@@ -17,13 +29,8 @@ if TYPE_CHECKING:
     pass
 
 __all__ = [
-    # Core integration functionality
-    "integration",
+    # Subpackages
+    "analysis",
     "visualization",
 ]
-
-
-
-
-
 

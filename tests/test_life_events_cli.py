@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.core.io import dump_json
+from metainformant.core.io.io import dump_json
 from metainformant.life_events import (
     Event,
     EventSequence,

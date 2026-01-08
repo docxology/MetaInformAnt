@@ -14,7 +14,7 @@ from metainformant.information import (
     mutual_information,
     shannon_entropy_from_counts,
 )
-from metainformant.information.integration import (
+from metainformant.information.integration.integration import (
     dna_integration,
     ml_integration,
     multiomics_integration,
@@ -264,7 +264,7 @@ class TestNetworkIntegration:
         """Test network entropy calculation."""
         try:
             import networkx as nx
-            from metainformant.information.networks import network_entropy
+            from metainformant.information.integration.integration.networks import network_entropy
 
             G = nx.karate_club_graph()
             entropy = network_entropy(G)
@@ -282,7 +282,7 @@ class TestNetworkIntegration:
         """Test information flow calculation."""
         try:
             import networkx as nx
-            from metainformant.information.networks import information_flow
+            from metainformant.information.integration.integration.networks import information_flow
 
             G = nx.karate_club_graph()
             flow = information_flow(G)
@@ -297,7 +297,7 @@ class TestCrossModuleIntegration:
     def test_dna_to_network_information(self):
         """Test information flow from DNA analysis to network analysis."""
         from metainformant.information import information_profile
-        from metainformant.information.networks import network_entropy
+        from metainformant.information.integration.integration.networks import network_entropy
 
         try:
             import networkx as nx

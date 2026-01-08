@@ -11,8 +11,8 @@ from typing import Dict, List, Set
 import numpy as np
 import pytest
 
-from metainformant.networks.community import community_metrics, detect_communities, modularity
-from metainformant.networks.graph import BiologicalNetwork, create_network
+from metainformant.networks.analysis.community import community_metrics, detect_communities, modularity
+from metainformant.networks.analysis.graph import BiologicalNetwork, create_network
 
 
 class TestCommunityDetection:
@@ -384,7 +384,7 @@ class TestHierarchicalCommunities:
 
     def test_hierarchical_communities(self):
         """Test hierarchical community detection."""
-        from metainformant.networks.community import hierarchical_communities
+        from metainformant.networks.analysis.community import hierarchical_communities
 
         network = create_network(["A", "B", "C", "D", "E", "F"], directed=False)
         network.add_edge("A", "B")
@@ -399,7 +399,7 @@ class TestHierarchicalCommunities:
 
     def test_community_stability(self):
         """Test community stability assessment."""
-        from metainformant.networks.community import community_stability
+        from metainformant.networks.analysis.community import community_stability
 
         network = create_network(["A", "B", "C", "D", "E", "F"], directed=False)
         network.add_edge("A", "B")
@@ -414,7 +414,7 @@ class TestHierarchicalCommunities:
 
     def test_compare_communities(self):
         """Test community comparison."""
-        from metainformant.networks.community import compare_communities
+        from metainformant.networks.analysis.community import compare_communities
 
         comm1 = {"A": 0, "B": 0, "C": 1, "D": 1}
         comm2 = {"A": 0, "B": 1, "C": 1, "D": 1}
@@ -426,7 +426,7 @@ class TestHierarchicalCommunities:
 
     def test_optimize_resolution(self):
         """Test resolution optimization."""
-        from metainformant.networks.community import optimize_resolution
+        from metainformant.networks.analysis.community import optimize_resolution
 
         network = create_network(["A", "B", "C", "D", "E", "F"], directed=False)
         network.add_edge("A", "B")

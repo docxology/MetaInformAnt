@@ -568,7 +568,7 @@ def test_check_cli_available_runs_help(ensure_amalgkit_available):
 
 def test_curate_summary_counts_from_fixture(tmp_path: Path):
     """Test that summarize_curate_tables correctly counts TSV files from test fixtures."""
-    from metainformant.rna.pipeline import summarize_curate_tables
+    from metainformant.rna.engine.pipeline import summarize_curate_tables
 
     # Use repo test data under tests/data/rna/curate/Apis_mellifera/tables
     repo_root = Path(__file__).resolve().parents[1]

@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from metainformant.multiomics.integration import (
+from metainformant.multiomics.analysis.integration import (
     MultiOmicsData,
     canonical_correlation,
     integrate_omics_data,

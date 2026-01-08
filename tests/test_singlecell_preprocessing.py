@@ -24,7 +24,7 @@ except ImportError:
 
 pytestmark = pytest.mark.skipif(not SCIPY_AVAILABLE, reason="scipy not available")
 
-from metainformant.singlecell.preprocessing import (
+from metainformant.singlecell.data.preprocessing import (
     SingleCellData,
     calculate_qc_metrics,
     filter_cells,

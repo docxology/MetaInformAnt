@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 from metainformant.rna import amalgkit
-from metainformant.rna.amalgkit import (
+from metainformant.rna.amalgkit.amalgkit import (
     metadata as run_metadata,
     integrate as run_integrate,
     config as run_config,

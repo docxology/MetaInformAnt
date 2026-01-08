@@ -143,7 +143,7 @@ class TestDiscoveryDocumentation:
     def test_search_species_with_rnaseq_requires_biopython(self):
         """Test that search_species_with_rnaseq requires Biopython."""
         try:
-            from metainformant.rna.discovery import BIOPYTHON_AVAILABLE
+            from metainformant.rna.analysis.discovery import BIOPYTHON_AVAILABLE
             if not BIOPYTHON_AVAILABLE:
                 pytest.skip("Biopython not available")
             
@@ -160,7 +160,7 @@ class TestDiscoveryDocumentation:
     def test_get_genome_info_requires_ncbi_datasets(self):
         """Test that get_genome_info requires ncbi-datasets-pylib."""
         try:
-            from metainformant.rna.discovery import NCBI_DATASETS_AVAILABLE
+            from metainformant.rna.analysis.discovery import NCBI_DATASETS_AVAILABLE
             if not NCBI_DATASETS_AVAILABLE:
                 pytest.skip("ncbi-datasets-pylib not available")
             

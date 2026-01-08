@@ -10,7 +10,7 @@ from pathlib import Path
 
 
 def test_plan_applies_defaults_and_sanitizes_internal_only_flags(tmp_path: Path) -> None:
-    from metainformant.rna.workflow import AmalgkitWorkflowConfig, apply_step_defaults, plan_workflow, sanitize_params_for_cli
+    from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig, apply_step_defaults, plan_workflow, sanitize_params_for_cli
 
     cfg = AmalgkitWorkflowConfig(
         work_dir=tmp_path / "work",

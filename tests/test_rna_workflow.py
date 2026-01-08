@@ -1,4 +1,4 @@
-"""Tests for metainformant.rna.workflow module.
+"""Tests for metainformant.rna.engine.workflow module.
 
 Tests workflow planning, step ordering, and parameter inheritance.
 """
@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from metainformant.rna.workflow import AmalgkitWorkflowConfig, plan_workflow
+from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig, plan_workflow
 
 
 def test_plan_workflow_orders_steps_and_inherits_common_params(tmp_path: Path):

@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from metainformant.visualization.statistical import (
+from metainformant.visualization.analysis.statistical import (
     histogram,
     box_plot,
     violin_plot,

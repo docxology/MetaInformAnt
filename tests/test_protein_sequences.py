@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 def test_parse_fasta_and_composition(tmp_path: Path):
-    from metainformant.protein.sequences import (
+    from metainformant.protein.sequence.sequences import (
         calculate_aa_composition,
         is_valid_protein_sequence,
         kmer_frequencies,

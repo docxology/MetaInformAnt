@@ -1,35 +1,50 @@
-"""Epigenomic analysis module for METAINFORMANT.
+"""Epigenome analysis module for METAINFORMANT.
 
-This module provides comprehensive tools for epigenomic data analysis,
-including DNA methylation, ChIP-seq, ATAC-seq, chromatin accessibility,
-and epigenetic track visualization.
+This module provides tools for analyzing epigenetic data, including
+DNA methylation, histone modifications (ChIP-seq), and chromatin
+accessibility (ATAC-seq), along with genome browser track generation.
 """
 
 from __future__ import annotations
 
-# Import all epigenome submodules
-from . import (
-    chipseq,
-    methylation,
-    tracks,
-    visualization,
-    workflow,
-)
+# Import subpackages
+from . import analysis
+from . import assays
+from . import visualization
+from . import workflow
 
-# Direct imports of commonly used functions
-from .methylation import compute_beta_values, load_cpg_table, summarize_beta_by_chromosome
-from .tracks import load_bedgraph_track as read_bedgraph
+# Import modules from subpackages for backward compatibility
+from .assays import (
+    atacseq,
+    chipseq,
+)
+from .assays.methylation import (
+    compute_beta_values,
+    load_cpg_table,
+    summarize_beta_by_chromosome,
+)
+from .analysis.tracks import read_bedgraph
+from .analysis import (
+    tracks,
+)
+from .workflow import workflow as workflow_module
+from .visualization import visualization as visualization_module
 
 # Optional imports with graceful fallbacks
 try:
-    from . import workflow
+    from .assays import atacseq
 except ImportError:
-    workflow = None
+    atacseq = None
 
 try:
-    from . import tracks
+    from .assays import chipseq
 except ImportError:
-    tracks = None
+    chipseq = None
+
+try:
+    from .assays import methylation
+except ImportError:
+    methylation = None
 
 # Type checking imports
 from typing import TYPE_CHECKING
@@ -38,15 +53,25 @@ if TYPE_CHECKING:
     pass
 
 __all__ = [
-    # Core epigenomic assays
-    "methylation",
-    "chipseq",
-
-    # Data visualization and workflow
-    "tracks",
+    # Subpackages
+    "analysis",
+    "assays",
     "visualization",
     "workflow",
+
+    # Epigenetic assays
+    "atacseq",
+    "chipseq",
+    "methylation",
+    "compute_beta_values",
+    "load_cpg_table",
+    "summarize_beta_by_chromosome",
+    "read_bedgraph",
+
+    # Data visualization and tracks
+    "tracks",
+    "visualization_module",
+    
+    # Workflow
+    "workflow_module",
 ]
-
-
-

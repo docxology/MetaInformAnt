@@ -3,7 +3,7 @@
 import pandas as pd
 import pytest
 
-from metainformant.multiomics.integration import integrate_omics_data
+from metainformant.multiomics.analysis.integration import integrate_omics_data
 
 
 class TestSampleMapping:

@@ -12,8 +12,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from metainformant.networks.graph import BiologicalNetwork
-from metainformant.networks.ppi import (
+from metainformant.networks.analysis.graph import BiologicalNetwork
+from metainformant.networks.interaction.ppi import (
     ProteinNetwork,
     functional_enrichment_ppi,
     load_string_interactions,
@@ -629,7 +629,7 @@ class TestNewPPIMethods:
 
     def test_protein_similarity(self):
         """Test protein similarity calculation."""
-        from metainformant.networks.ppi import protein_similarity
+        from metainformant.networks.interaction.ppi import protein_similarity
 
         ppi = ProteinNetwork()
         ppi.add_interaction("P1", "P2")
@@ -643,7 +643,7 @@ class TestNewPPIMethods:
 
     def test_detect_complexes(self):
         """Test protein complex detection."""
-        from metainformant.networks.ppi import detect_complexes
+        from metainformant.networks.interaction.ppi import detect_complexes
 
         ppi = ProteinNetwork()
         # Create dense subgraph (complex)
@@ -656,7 +656,7 @@ class TestNewPPIMethods:
 
     def test_export_to_string_format(self, tmp_path):
         """Test STRING format export."""
-        from metainformant.networks.ppi import export_to_string_format
+        from metainformant.networks.interaction.ppi import export_to_string_format
 
         ppi = ProteinNetwork()
         ppi.add_interaction("P1", "P2", confidence=0.8)

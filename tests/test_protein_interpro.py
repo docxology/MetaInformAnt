@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from metainformant.protein.interpro import fetch_interpro_domains
+from metainformant.protein.database.interpro import fetch_interpro_domains
 
 
 def _check_online(url: str) -> bool:

@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from metainformant.visualization.information import (
+from metainformant.visualization.analysis.information import (
     plot_entropy_profile,
     plot_mutual_information_matrix,
     plot_renyi_spectra,

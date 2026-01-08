@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.core.io import dump_json, ensure_directory, write_tsv
+from metainformant.core.io.io import dump_json, ensure_directory, write_tsv
 from metainformant.gwas import execute_gwas_workflow, load_gwas_config
 
 

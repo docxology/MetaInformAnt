@@ -12,8 +12,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from metainformant.networks.graph import BiologicalNetwork
-from metainformant.networks.regulatory import (
+from metainformant.networks.analysis.graph import BiologicalNetwork
+from metainformant.networks.interaction.regulatory import (
     GeneRegulatoryNetwork,
     infer_grn,
     pathway_regulation_analysis,
@@ -689,7 +689,7 @@ class TestNewRegulatoryFunctions:
 
     def test_detect_regulatory_cascades(self):
         """Test regulatory cascade detection."""
-        from metainformant.networks.regulatory import detect_regulatory_cascades
+        from metainformant.networks.interaction.regulatory import detect_regulatory_cascades
 
         grn = GeneRegulatoryNetwork()
         grn.add_regulation("TF1", "TF2", confidence=0.8)
@@ -700,7 +700,7 @@ class TestNewRegulatoryFunctions:
 
     def test_validate_regulation(self):
         """Test regulation validation."""
-        from metainformant.networks.regulatory import validate_regulation
+        from metainformant.networks.interaction.regulatory import validate_regulation
 
         grn = GeneRegulatoryNetwork()
         grn.add_regulation("TF1", "GENE1", confidence=0.8, regulation_type="activation")

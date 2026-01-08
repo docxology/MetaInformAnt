@@ -25,7 +25,12 @@ To ensure 100% feature parity and reliability, the module acts as a "thin wrappe
 3.  **`configs.py`**:
     *   Helpers for validating and applying default configurations.
 
-4.  **`steps/` (Legacy/Specific Helpers)**:
+
+4.  **`genome_prep.py`**:
+    *   Handles reference data acquisition (NCBI FTP) and indexing (Kallisto).
+    *   Provides high-level orchestration for genome setup steps.
+
+5.  **`steps/` (Legacy/Specific Helpers)**:
     *   *Note: Historical native implementations in this directory are being deprecated in favor of direct CLI calls in `amalgkit.py`.*
     *   `process_samples.py` may remain if it provides unique parallelization logic *on top of* the CLI commands (e.g., concurrent process management).
 

@@ -13,8 +13,8 @@ from pathlib import Path
 import pytest
 import requests
 
-from metainformant.core.errors import NetworkError
-from metainformant.phenotype.scraper import AntWikiScraper, AntWikiScraperConfig, load_scraper_config
+from metainformant.core.utils.errors import NetworkError
+from metainformant.phenotype.data.scraper import AntWikiScraper, AntWikiScraperConfig, load_scraper_config
 
 
 def _handle_antwiki_403(e: Exception) -> None:
@@ -279,7 +279,7 @@ def test_get_species_list(antwiki_scraper_config: AntWikiScraperConfig) -> None:
     except (requests.RequestException, requests.Timeout):
         pytest.skip("AntWiki not accessible. Network may be unavailable.")
 
-    from metainformant.core.errors import NetworkError
+    from metainformant.core.utils.errors import NetworkError
     try:
         scraper = AntWikiScraper(antwiki_scraper_config)
 

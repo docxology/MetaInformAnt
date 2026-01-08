@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from metainformant.visualization.timeseries import (
+from metainformant.visualization.analysis.timeseries import (
     plot_time_series,
     plot_autocorrelation,
     plot_seasonal_decomposition,

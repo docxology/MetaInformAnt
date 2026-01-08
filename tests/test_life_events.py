@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.life_events.events import Event, EventDatabase, EventSequence
+from metainformant.life_events.core.events import Event, EventDatabase, EventSequence
 
 
 class TestEvent:

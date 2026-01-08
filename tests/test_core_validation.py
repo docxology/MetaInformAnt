@@ -9,8 +9,8 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.core.errors import ValidationError
-from metainformant.core.validation import (
+from metainformant.core.utils.errors import ValidationError
+from metainformant.core.data.validation import (
     validate_json_schema,
     validate_not_empty,
     validate_not_none,

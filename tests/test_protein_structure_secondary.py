@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 def test_simple_secondary_structure_prediction_signature():
-    from metainformant.protein.secondary import simple_helix_coil_propensity
+    from metainformant.protein.structure.general.general.general.general.general.general.general.secondary import simple_helix_coil_propensity
 
     seq = "MAAAAAGGGGLLLLPPPP"
     probs = simple_helix_coil_propensity(seq)

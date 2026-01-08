@@ -17,8 +17,8 @@ import pytest
 
 # Import all available modules
 try:
-    from metainformant.dna.phylogeny import neighbor_joining_tree
-    from metainformant.dna.population import hudson_fst, nucleotide_diversity
+    from metainformant.dna.phylogeny.distance.distance.distance.distance import neighbor_joining_tree
+    from metainformant.dna.population.metrics.metrics.metrics.metrics import hudson_fst, nucleotide_diversity
     from metainformant.dna.sequences import gc_content, read_fasta, reverse_complement
 
     DNA_AVAILABLE = True
@@ -26,37 +26,37 @@ except ImportError:
     DNA_AVAILABLE = False
 
 try:
-    from metainformant.protein.sequences import parse_fasta as parse_protein_fasta
-    from metainformant.protein.structure import compute_rmsd_kabsch
+    from metainformant.protein.sequence.sequences import parse_fasta as parse_protein_fasta
+    from metainformant.protein.structure.general.general.general.general.general.general.general.general import compute_rmsd_kabsch
 
     PROTEIN_AVAILABLE = True
 except ImportError:
     PROTEIN_AVAILABLE = False
 
 try:
-    from metainformant.networks.community import detect_communities, modularity
-    from metainformant.networks.graph import add_edges_from_correlation, create_network, network_metrics
+    from metainformant.networks.analysis.community import detect_communities, modularity
+    from metainformant.networks.analysis.graph import add_edges_from_correlation, create_network, network_metrics
 
     NETWORKS_AVAILABLE = True
 except ImportError:
     NETWORKS_AVAILABLE = False
 
 try:
-    from metainformant.ml.features import biological_feature_ranking, select_features_univariate
+    from metainformant.ml.features.features.features.features.features.features.features.features.features import biological_feature_ranking, select_features_univariate
 
     ML_AVAILABLE = True
 except ImportError:
     ML_AVAILABLE = False
 
 try:
-    from metainformant.multiomics.integration import MultiOmicsData, canonical_correlation, joint_pca
+    from metainformant.multiomics.analysis.integration import MultiOmicsData, canonical_correlation, joint_pca
 
     MULTIOMICS_AVAILABLE = True
 except ImportError:
     MULTIOMICS_AVAILABLE = False
 
 try:
-    from metainformant.math.coalescent import expected_time_to_mrca, watterson_theta
+    from metainformant.math.population_genetics.coalescent import expected_time_to_mrca, watterson_theta
     from metainformant.math.popgen import hardy_weinberg_genotype_freqs
 
     MATH_AVAILABLE = True
@@ -64,29 +64,29 @@ except ImportError:
     MATH_AVAILABLE = False
 
 try:
-    from metainformant.ecology.community import shannon_diversity, simpson_diversity
+    from metainformant.ecology.analysis.community import shannon_diversity, simpson_diversity
 
     ECOLOGY_AVAILABLE = True
 except ImportError:
     ECOLOGY_AVAILABLE = False
 
 try:
-    from metainformant.simulation.rna import simulate_counts_negative_binomial
-    from metainformant.simulation.sequences import generate_random_dna, mutate_sequence
+    from metainformant.simulation.models.rna import simulate_counts_negative_binomial
+    from metainformant.simulation.models.sequences import generate_random_dna, mutate_sequence
 
     SIMULATION_AVAILABLE = True
 except ImportError:
     SIMULATION_AVAILABLE = False
 
 try:
-    from metainformant.epigenome.methylation import compute_beta_values, load_cpg_table
+    from metainformant.epigenome.assays.methylation import compute_beta_values, load_cpg_table
 
     EPIGENOME_AVAILABLE = True
 except ImportError:
     EPIGENOME_AVAILABLE = False
 
-from metainformant.core.io import dump_json, load_json
-from metainformant.core.paths import expand_and_resolve
+from metainformant.core.io.io import dump_json, load_json
+from metainformant.core.io.paths import expand_and_resolve
 
 
 class TestBioinformaticsWorkflow:
@@ -383,9 +383,9 @@ class TestModuleInteroperability:
 
     def test_core_utilities_integration(self, tmp_path):
         """Test that core utilities work across all modules."""
-        from metainformant.core.hash import sha256_bytes
-        from metainformant.core.io import dump_json, load_json
-        from metainformant.core.text import slugify
+        from metainformant.core.utils.hash import sha256_bytes
+        from metainformant.core.io.io import dump_json, load_json
+        from metainformant.core.utils.text import slugify
 
         # Create test data
         test_data = {
@@ -469,14 +469,14 @@ class TestModuleInteroperability:
         test_matrix = np.random.randn(20, 30)
 
         # Should work with core utilities
-        from metainformant.core.hash import sha256_bytes
+        from metainformant.core.utils.hash import sha256_bytes
 
         matrix_hash = sha256_bytes(test_matrix.tobytes())
         assert len(matrix_hash) == 64
 
         # Should work with ML if available
         if ML_AVAILABLE:
-            from metainformant.ml.features import select_features_univariate
+            from metainformant.ml.features.features.features.features.features.features.features.features.features import select_features_univariate
 
             y = np.random.randint(0, 2, 20)
             X_selected, indices = select_features_univariate(test_matrix, y, k=10)
@@ -486,7 +486,7 @@ class TestModuleInteroperability:
         df = pd.DataFrame(test_matrix, columns=[f"Feature_{i}" for i in range(30)])
 
         if MULTIOMICS_AVAILABLE:
-            from metainformant.multiomics.integration import MultiOmicsData
+            from metainformant.multiomics.analysis.integration import MultiOmicsData
 
             omics_data = MultiOmicsData(transcriptomics=df)
             assert omics_data.n_samples == 20

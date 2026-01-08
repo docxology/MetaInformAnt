@@ -9,7 +9,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from metainformant.networks.graph import (
+from metainformant.networks.analysis.graph import (
     BiologicalNetwork,
     add_edges_from_correlation,
     add_edges_from_interactions,
@@ -405,7 +405,7 @@ class TestNetworkExportImport:
 
     def test_export_import_json(self, tmp_path):
         """Test JSON export and import."""
-        from metainformant.networks.graph import export_network, import_network
+        from metainformant.networks.analysis.graph import export_network, import_network
 
         network = create_network(["A", "B", "C"], directed=False)
         network.add_edge("A", "B", weight=0.8)
@@ -422,7 +422,7 @@ class TestNetworkExportImport:
 
     def test_export_import_csv(self, tmp_path):
         """Test CSV export and import."""
-        from metainformant.networks.graph import export_network, import_network
+        from metainformant.networks.analysis.graph import export_network, import_network
 
         network = create_network(["A", "B"], directed=False)
         network.add_edge("A", "B", weight=0.9)
@@ -436,7 +436,7 @@ class TestNetworkExportImport:
 
     def test_export_invalid_format(self):
         """Test error handling for invalid export format."""
-        from metainformant.networks.graph import export_network
+        from metainformant.networks.analysis.graph import export_network
 
         network = create_network(["A", "B"])
         with pytest.raises(ValueError, match="Unsupported export format"):
@@ -448,7 +448,7 @@ class TestNetworkComparison:
 
     def test_network_similarity(self):
         """Test network similarity calculation."""
-        from metainformant.networks.graph import network_similarity
+        from metainformant.networks.analysis.graph import network_similarity
 
         net1 = create_network(["A", "B", "C"], directed=False)
         net1.add_edge("A", "B", weight=0.8)
@@ -463,7 +463,7 @@ class TestNetworkComparison:
 
     def test_extract_subgraph(self):
         """Test subgraph extraction."""
-        from metainformant.networks.graph import extract_subgraph
+        from metainformant.networks.analysis.graph import extract_subgraph
 
         network = create_network(["A", "B", "C", "D"], directed=False)
         network.add_edge("A", "B")
@@ -476,7 +476,7 @@ class TestNetworkComparison:
 
     def test_filter_network(self):
         """Test network filtering."""
-        from metainformant.networks.graph import filter_network
+        from metainformant.networks.analysis.graph import filter_network
 
         network = create_network(["A", "B", "C", "D"], directed=False)
         network.add_edge("A", "B", weight=0.9)
@@ -487,7 +487,7 @@ class TestNetworkComparison:
 
     def test_get_connected_components(self):
         """Test connected component detection."""
-        from metainformant.networks.graph import get_connected_components
+        from metainformant.networks.analysis.graph import get_connected_components
 
         network = create_network(["A", "B", "C", "D"], directed=False)
         network.add_edge("A", "B")
@@ -498,7 +498,7 @@ class TestNetworkComparison:
 
     def test_network_union_intersection(self):
         """Test network union and intersection."""
-        from metainformant.networks.graph import network_union, network_intersection
+        from metainformant.networks.analysis.graph import network_union, network_intersection
 
         net1 = create_network(["A", "B", "C"], directed=False)
         net1.add_edge("A", "B", weight=0.5)
@@ -516,7 +516,7 @@ class TestNetworkComparison:
 
     def test_remove_node_edge(self):
         """Test node and edge removal."""
-        from metainformant.networks.graph import remove_node, remove_edge
+        from metainformant.networks.analysis.graph import remove_node, remove_edge
 
         network = create_network(["A", "B", "C"], directed=False)
         network.add_edge("A", "B")

@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.rna.pipeline import RNAPipelineConfig, summarize_curate_tables
+from metainformant.rna.engine.pipeline import RNAPipelineConfig, summarize_curate_tables
 
 
 class TestRNAPipelineConfig:

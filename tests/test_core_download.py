@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.core.download import download_with_progress
+from metainformant.core.io.download import download_with_progress
 
 
 def test_download_with_progress_file_scheme_creates_file_and_heartbeat(tmp_path: Path) -> None:
@@ -42,7 +42,7 @@ def test_monitor_subprocess_directory_growth_writes_heartbeat(tmp_path: Path) ->
     import subprocess
     import sys
 
-    from metainformant.core.download import monitor_subprocess_directory_growth
+    from metainformant.core.io.download import monitor_subprocess_directory_growth
 
     out_dir = tmp_path / "out"
     out_dir.mkdir()
@@ -81,7 +81,7 @@ def test_monitor_subprocess_file_count_tracks_expected_files(tmp_path: Path) -> 
     import subprocess
     import sys
 
-    from metainformant.core.download import monitor_subprocess_file_count
+    from metainformant.core.io.download import monitor_subprocess_file_count
 
     out_dir = tmp_path / "out_files"
     out_dir.mkdir()
@@ -121,7 +121,7 @@ def test_monitor_subprocess_sample_progress_counts_completion_glob(tmp_path: Pat
     import subprocess
     import sys
 
-    from metainformant.core.download import monitor_subprocess_sample_progress
+    from metainformant.core.io.download import monitor_subprocess_sample_progress
 
     quant_dir = tmp_path / "quant"
     quant_dir.mkdir()

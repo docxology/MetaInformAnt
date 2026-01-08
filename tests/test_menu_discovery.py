@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.menu.discovery import (
+from metainformant.menu.core.discovery import (
     ScriptInfo,
     categorize_script,
     discover_scripts,

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import math
 
-from metainformant.math.coalescent import (
+from metainformant.math.population_genetics.coalescent import (
     expected_coalescent_waiting_times,
     expected_pairwise_diversity,
     expected_pairwise_diversity_from_theta,

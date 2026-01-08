@@ -7,8 +7,8 @@ import sys
 
 import pytest
 
-from metainformant.menu.display import clear_screen, format_breadcrumb, format_menu, get_choice
-from metainformant.menu.navigation import MenuItem
+from metainformant.menu.ui.display import clear_screen, format_breadcrumb, format_menu, get_choice
+from metainformant.menu.ui.navigation import MenuItem
 
 
 class TestFormatMenu:

@@ -5,7 +5,7 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
-from metainformant.math.popgen_stats import (
+from metainformant.math.population_genetics.statistics import (
     bootstrap_confidence_interval,
     calculate_confidence_intervals,
     compare_population_statistic,

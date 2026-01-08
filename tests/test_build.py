@@ -40,7 +40,7 @@ class TestBuildArtifacts:
     def test_domain_modules_importable(self):
         """Test that domain modules can be imported."""
         domains_to_test = [
-            'dna.sequences',
+            'dna.sequence',
             'rna.workflow',
             'protein.alignment',
             'gwas.association',

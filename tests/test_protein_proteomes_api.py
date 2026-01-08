@@ -13,7 +13,7 @@ from pathlib import Path
 import pytest
 import requests
 
-from metainformant.protein.proteomes import get_proteome_metadata, download_proteome_fasta
+from metainformant.protein.sequence.proteomes import get_proteome_metadata, download_proteome_fasta
 
 
 def _check_network_connectivity(url: str = "https://rest.uniprot.org") -> bool:

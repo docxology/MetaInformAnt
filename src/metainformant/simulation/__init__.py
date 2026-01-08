@@ -1,37 +1,44 @@
-"""Biological simulation and synthetic data generation module for METAINFORMANT.
+"""Evolutionary and Population Genetics Simulation module for METAINFORMANT.
 
-This module provides tools for generating synthetic biological data and running
-agent-based simulations, including sequence evolution, population dynamics,
-RNA-seq data simulation, and workflow testing data.
+This module provides tools for simulating evolutionary processes, including
+agent-based modeling, population genetics simulation (forward and backward time),
+molecular evolution, and sequence simulation.
 """
 
 from __future__ import annotations
 
-# Import all simulation submodules
-from . import (
+# Import subpackages
+from . import models
+from . import visualization
+from . import workflow
+
+# Import modules from subpackages for backward compatibility
+from .models import (
     agents,
     popgen,
     rna,
     sequences,
-    visualization,
-    workflow,
 )
+from .models.agents import Agent, GridWorld
+from .models.sequences import (
+    generate_random_dna,
+    generate_random_protein,
+    mutate_sequence,
+)
+from .models.rna import simulate_counts_negative_binomial
+from .workflow import workflow as workflow_module
+from .visualization import visualization as visualization_module
 
 # Optional imports with graceful fallbacks
 try:
-    from . import agents
+    from .models import popgen
 except ImportError:
-    agents = None
+    popgen = None
 
 try:
-    from . import workflow
+    from .models import agents
 except ImportError:
-    workflow = None
-
-# Direct imports of commonly used classes
-from .agents import Agent, GridWorld
-from .sequences import generate_random_dna, generate_random_protein, mutate_sequence
-from .rna import simulate_counts_negative_binomial
+    agents = None
 
 # Type checking imports
 from typing import TYPE_CHECKING

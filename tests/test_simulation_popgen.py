@@ -6,7 +6,7 @@ import random
 
 import pytest
 
-from metainformant.simulation.popgen import (
+from metainformant.simulation.models.popgen import (
     generate_genotype_matrix,
     generate_linkage_disequilibrium_data,
     generate_population_sequences,

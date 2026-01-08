@@ -10,7 +10,7 @@ from pathlib import Path
 
 def test_load_workflow_config_and_plan_uses_yaml_values():
     """Test that workflow config loading and planning uses YAML values correctly."""
-    from metainformant.rna.workflow import load_workflow_config, plan_workflow
+    from metainformant.rna.engine.workflow import load_workflow_config, plan_workflow
 
     repo_root = Path(__file__).resolve().parents[1]
     # Use test config file with threads: 6 instead of production config with threads: 12
@@ -57,7 +57,7 @@ def test_load_workflow_config_and_plan_uses_yaml_values():
 
 def test_env_overrides_for_config_threads(tmp_path: Path):
     """Test that environment variables can override config values."""
-    from metainformant.rna.workflow import load_workflow_config
+    from metainformant.rna.engine.workflow import load_workflow_config
 
     repo_root = Path(__file__).resolve().parents[1]
     # Use test config if available, otherwise use pbarbatus

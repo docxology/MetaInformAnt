@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.visualization.networks import (
+from metainformant.visualization.genomics.networks import (
     plot_network_basic,
     plot_network_circular,
     plot_network_hierarchical,

@@ -4,10 +4,11 @@ from __future__ import annotations
 
 import pytest
 
-from metainformant.dna.population_analysis import (
-    calculate_summary_statistics,
-    compare_populations,
-    neutrality_test_suite,
+from metainformant.dna.population.analysis import (
+    calculate_fst,
+    calculate_nucleotide_diversity,
+    calculate_tajima_d,
+    calculate_wattersons_theta,
 )
 
 

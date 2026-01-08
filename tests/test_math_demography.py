@@ -6,7 +6,7 @@ import math
 
 import pytest
 
-from metainformant.math.demography import (
+from metainformant.math.population_genetics.demography import (
     bottleneck_effective_size,
     exponential_growth_effective_size,
     two_epoch_effective_size,

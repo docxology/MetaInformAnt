@@ -6,12 +6,13 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.dna.population_viz import (
+from metainformant.dna.population.visualization import (
     plot_allele_frequency_spectrum,
     plot_bootstrap_distribution,
     plot_demographic_comparison,
     plot_diversity_comparison,
     plot_fst_comparison,
+    plot_fst_matrix,
     plot_fst_matrix,
     plot_hardy_weinberg_test,
     plot_heterozygosity_distribution,
@@ -128,7 +129,7 @@ class TestPlotPCAResults:
         """Test PCA plot with failed status."""
         pca_result = {"status": "failed"}
         
-        from metainformant.core.errors import ValidationError
+        from metainformant.core.utils.errors import ValidationError
         with pytest.raises(ValidationError, match="PCA result status is not 'success'"):
             plot_pca_results(pca_result)
 
@@ -158,7 +159,7 @@ class TestPlotKinshipMatrix:
         """Test kinship plot with failed status."""
         kinship_result = {"status": "failed"}
         
-        from metainformant.core.errors import ValidationError
+        from metainformant.core.utils.errors import ValidationError
         with pytest.raises(ValidationError, match="Kinship result status is not 'success'"):
             plot_kinship_matrix(kinship_result)
 

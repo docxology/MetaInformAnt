@@ -236,7 +236,7 @@ class TestWorkflowAllSteps:
         if not available:
             pytest.skip("amalgkit CLI not available; skipping external-tool planning test")
         
-        from metainformant.rna.workflow import (
+        from metainformant.rna.engine.workflow import (
             AmalgkitWorkflowConfig,
             plan_workflow,
         )

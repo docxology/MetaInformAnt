@@ -11,7 +11,7 @@ from typing import List, Tuple
 import numpy as np
 import pytest
 
-from metainformant.ml.features import (
+from metainformant.ml.features.features import (
     biological_feature_ranking,
     select_features_recursive,
     select_features_stability,

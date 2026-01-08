@@ -8,7 +8,7 @@ import numpy as np
 import pytest
 
 from metainformant.gwas import association_test_linear, association_test_logistic, run_gwas
-from metainformant.core.io import write_tsv, write_delimited
+from metainformant.core.io.io import write_tsv, write_delimited
 
 
 def test_association_linear_basic() -> None:

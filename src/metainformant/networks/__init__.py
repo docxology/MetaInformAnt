@@ -1,34 +1,48 @@
-"""Biological network analysis module for METAINFORMANT.
+"""Network analysis module for METAINFORMANT.
 
-This module provides comprehensive tools for biological network analysis,
-including graph construction, community detection, centrality measures,
-pathway analysis, protein-protein interactions, and regulatory networks.
+This module provides tools for biological network analysis, including
+protein-protein interaction (PPI) networks, gene regulatory networks,
+and pathway enrichment analysis.
 """
 
 from __future__ import annotations
 
-# Import all network analysis submodules
-from . import (
+# Import subpackages
+from . import analysis
+from . import interaction
+
+# Import modules from subpackages for backward compatibility
+from .analysis import (
     community,
     graph,
     pathway,
+)
+from .interaction import (
     ppi,
     regulatory,
 )
 
 # Optional imports with graceful fallbacks
-# Import regulatory module components
 try:
-    from . import regulatory
-    from .regulatory import GeneRegulatoryNetwork, infer_grn
+    from .interaction import ppi
+except ImportError:
+    ppi = None
+
+try:
+    from .interaction import regulatory
 except ImportError:
     regulatory = None
+
+# Import regulatory module components (these may fail if optional dependencies not available)
+try:
+    from .interaction.regulatory import GeneRegulatoryNetwork, infer_grn
+except ImportError:
     GeneRegulatoryNetwork = None
     infer_grn = None
 
 # Import regulatory functions (these may fail if optional dependencies not available)
 try:
-    from .regulatory import regulatory_motifs, pathway_regulation_analysis
+    from .interaction.regulatory import regulatory_motifs, pathway_regulation_analysis
 except ImportError:
     regulatory_motifs = None
     pathway_regulation_analysis = None
@@ -39,10 +53,9 @@ except ImportError:
     pathway = None
 
 # Direct imports of commonly used classes and functions
-from .graph import BiologicalNetwork, centrality_measures
-from .pathway import PathwayNetwork, pathway_enrichment, load_pathway_database, network_enrichment_analysis
-from .ppi import ProteinNetwork, predict_interactions
-from .graph import BiologicalNetwork
+from .analysis.graph import BiologicalNetwork, centrality_measures
+from .analysis.pathway import PathwayNetwork, pathway_enrichment, load_pathway_database, network_enrichment_analysis
+from .interaction.ppi import ProteinNetwork, predict_interactions
 
 # Type checking imports
 from typing import TYPE_CHECKING

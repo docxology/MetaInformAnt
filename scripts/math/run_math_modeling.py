@@ -132,7 +132,7 @@ def run_logistic_model(args, output_dir: Path) -> dict[str, Any]:
     logger.info("Running logistic growth model...")
     from metainformant.math import logistic_map
     
-    trajectory = logistic_map(r=args.r, x0=args.x0, steps=args.steps)
+    trajectory = logistic_map(r=args.r, x0=args.x0, n_iterations=args.steps)
     
     results = {
         "r": args.r,

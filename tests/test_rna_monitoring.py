@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.core.io import dump_json, write_delimited
+from metainformant.core.io.io import dump_json, write_delimited
 from metainformant.rna import monitoring
 
 

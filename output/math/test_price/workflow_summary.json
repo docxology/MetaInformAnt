@@ -1,0 +1,9 @@
+{
+  "model_type": "price",
+  "output_dir": "output/math/test_price",
+  "results": {
+    "covariance_term": 0.0,
+    "total_change": 0.0,
+    "transmission_term": 0.0
+  }
+}

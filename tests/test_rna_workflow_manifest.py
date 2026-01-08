@@ -6,8 +6,8 @@ Tests that workflow execution creates manifest files with execution records.
 import json
 from pathlib import Path
 
-from metainformant.rna.amalgkit import check_cli_available
-from metainformant.rna.workflow import AmalgkitWorkflowConfig, execute_workflow
+from metainformant.rna.amalgkit.amalgkit import check_cli_available
+from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig, execute_workflow
 
 
 def test_manifest_written_with_records(tmp_path: Path, ensure_amalgkit_available):

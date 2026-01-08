@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.gwas.sra_download import (
+from metainformant.gwas.data.sra_download import (
     check_sra_tools_available,
     download_sra_project,
     download_sra_run,

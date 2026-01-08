@@ -2,7 +2,7 @@
 
 import pytest
 
-from metainformant.quality.contamination import (
+from metainformant.quality.analysis.contamination import (
     detect_adapter_contamination,
     detect_cross_species_contamination,
     detect_mycoplasma_contamination,

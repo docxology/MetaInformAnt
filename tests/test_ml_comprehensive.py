@@ -11,20 +11,32 @@ from typing import List, Tuple
 import numpy as np
 import pytest
 
-from metainformant.ml.classification import BiologicalClassifier, cross_validate_biological, evaluate_classifier
-from metainformant.ml.dimensionality import (
+from metainformant.ml.models.classification import BiologicalClassifier, cross_validate_biological, evaluate_classifier
+from metainformant.ml.features.dimensionality import (
     biological_embedding,
     reduce_dimensions_pca,
     reduce_dimensions_tsne,
     reduce_dimensions_umap,
 )
-from metainformant.ml.regression import BiologicalRegressor, evaluate_regressor
-from metainformant.ml.validation import (
+from metainformant.ml.models.regression import BiologicalRegressor, evaluate_regressor
+try:
+    from sklearn.model_selection import (
+        train_test_split,
+    )
+    HAS_SKLEARN = True
+except ImportError:
+    HAS_SKLEARN = False
+
+# Mock for type checking if sklearn missing
+if not HAS_SKLEARN:
+    def train_test_split(*args, **kwargs):
+        pass
+from metainformant.ml.evaluation.validation import (
     bootstrap_validate,
     cross_validate,
     k_fold_split,
     learning_curve,
-    train_test_split,
+    train_test_split_biological,
 )
 
 

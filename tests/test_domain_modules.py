@@ -1,9 +1,9 @@
 from pathlib import Path
 
 from metainformant.ontology.go import count_go_scripts
-from metainformant.phenotype.antwiki import load_antwiki_json
-from metainformant.protein.proteomes import read_taxon_ids
-from metainformant.rna.pipeline import summarize_curate_tables
+from metainformant.phenotype.data.antwiki import load_antwiki_json
+from metainformant.protein.sequence.proteomes import read_taxon_ids
+from metainformant.rna.engine.pipeline import summarize_curate_tables
 
 
 def test_rna_curate_summary_apis_mellifera():

@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from metainformant.visualization.quality import (
+from metainformant.visualization.analysis.quality import (
     plot_quality_metrics,
     plot_adapter_content,
     plot_gc_distribution,

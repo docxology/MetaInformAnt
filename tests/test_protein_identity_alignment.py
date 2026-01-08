@@ -2,7 +2,7 @@ from __future__ import annotations
 
 
 def test_pairwise_identity_and_needleman_wunsch():
-    from metainformant.protein.alignment import needleman_wunsch, pairwise_identity
+    from metainformant.protein.sequence.alignment import needleman_wunsch, pairwise_identity
 
     a = "MKT"
     b = "MKT"

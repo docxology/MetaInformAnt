@@ -12,13 +12,13 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.rna.workflow import (
+from metainformant.rna.engine.workflow import (
     AmalgkitWorkflowConfig,
     execute_workflow,
     load_workflow_config,
     plan_workflow,
 )
-from metainformant.core.io import dump_json, read_jsonl
+from metainformant.core.io.io import dump_json, read_jsonl
 
 
 class TestWorkflowErrorHandling:
@@ -223,9 +223,9 @@ class TestEarlyExitAndValidation:
     
     def test_early_exit_on_getfastq_validation_failure(self, tmp_path: Path):
         """Test that workflow stops early when getfastq validation shows 0 samples with FASTQ files."""
-        from metainformant.rna.workflow import execute_workflow
-        from metainformant.rna.validation import validate_all_samples, save_validation_report
-        from metainformant.core.io import write_delimited
+        from metainformant.rna.engine.workflow import execute_workflow
+        from metainformant.rna.analysis.validation import validate_all_samples, save_validation_report
+        from metainformant.core.io.io import write_delimited
         
         # Create config
         config_data = {
@@ -282,7 +282,7 @@ class TestEarlyExitAndValidation:
         
     def test_pre_step_validation_integrate(self, tmp_path: Path):
         """Test that integrate step checks for FASTQ files before running."""
-        from metainformant.core.io import write_delimited
+        from metainformant.core.io.io import write_delimited
         
         config_data = {
             "work_dir": str(tmp_path / "work"),
@@ -330,7 +330,7 @@ class TestEarlyExitAndValidation:
         
     def test_pre_step_validation_quant(self, tmp_path: Path):
         """Test that quant step checks for FASTQ files before running."""
-        from metainformant.core.io import write_delimited
+        from metainformant.core.io.io import write_delimited
         
         config_data = {
             "work_dir": str(tmp_path / "work"),
@@ -378,7 +378,7 @@ class TestEarlyExitAndValidation:
     
     def test_fastq_extraction_validation(self, tmp_path: Path):
         """Test that FASTQ extraction validation correctly detects FASTQ files."""
-        from metainformant.rna.validation import validate_all_samples, get_sample_pipeline_status
+        from metainformant.rna.analysis.validation import validate_all_samples, get_sample_pipeline_status
         
         config_data = {
             "work_dir": str(tmp_path / "work"),
@@ -400,7 +400,7 @@ class TestEarlyExitAndValidation:
         metadata_dir = cfg.work_dir / "metadata"
         metadata_dir.mkdir(parents=True, exist_ok=True)
         metadata_file = metadata_dir / "metadata_selected.tsv"
-        from metainformant.core.io import write_delimited
+        from metainformant.core.io.io import write_delimited
         write_delimited(
             [{"run": "SRR123456", "species": "Test_species"}],
             metadata_file,

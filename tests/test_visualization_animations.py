@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.visualization.animations import (
+from metainformant.visualization.plots.animations import (
     animate_time_series,
     animate_evolution,
     animate_clustering,

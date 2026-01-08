@@ -222,7 +222,7 @@ def load_ncbi_config():
     if "NCBI_EMAIL" not in os.environ:
         try:
             from pathlib import Path
-            from metainformant.core.config import load_mapping_from_file
+            from metainformant.core.utils.config import load_mapping_from_file
             
             config_path = Path(__file__).parent.parent / "config" / "ncbi.yaml"
             if config_path.exists():
@@ -249,7 +249,7 @@ def ensure_amalgkit_available():
     import os
     from pathlib import Path
     import pytest
-    from metainformant.rna.amalgkit import check_cli_available, ensure_cli_available
+    from metainformant.rna.amalgkit.amalgkit import check_cli_available, ensure_cli_available
     
     # Ensure user local bin is in PATH (common for --user installs)
     user_bin = Path.home() / ".local" / "bin"

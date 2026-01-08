@@ -1,4 +1,4 @@
-"""Tests for metainformant.rna.configs module.
+"""Tests for metainformant.rna.core.configs module.
 
 Tests species profile configuration, run layout generation, and step parameter building.
 """
@@ -7,10 +7,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from metainformant.rna.configs import AmalgkitRunLayout, SpeciesProfile, build_step_params
-from metainformant.rna.workflow import AmalgkitWorkflowConfig
-from metainformant.rna.workflow import plan_workflow as plan_basic
-from metainformant.rna.workflow import plan_workflow_with_params
+from metainformant.rna.core.configs import AmalgkitRunLayout, SpeciesProfile, build_step_params
+from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig
+from metainformant.rna.engine.workflow import plan_workflow as plan_basic
+from metainformant.rna.engine.workflow import plan_workflow_with_params
 
 
 def test_build_step_params_includes_species_tissues_and_layout(tmp_path: Path):

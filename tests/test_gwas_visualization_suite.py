@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.gwas.visualization_suite import (
+from metainformant.gwas.visualization.visualization_suite import (
     generate_all_plots,
 )
 

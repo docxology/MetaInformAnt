@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.protein.alphafold import build_alphafold_url, fetch_alphafold_model
+from metainformant.protein.structure.alphafold import build_alphafold_url, fetch_alphafold_model
 
 
 def _check_online(url: str) -> bool:

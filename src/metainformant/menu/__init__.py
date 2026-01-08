@@ -1,22 +1,15 @@
-"""Menu system for METAINFORMANT script orchestration.
+"""Interactive menu and CLI interface for METAINFORMANT.
 
-This module provides interactive text menus for accessing scripts and workflows
-through a unified interface. It includes menu display, navigation, script discovery,
-and execution capabilities.
-
-Key Components:
-- Menu display and formatting
-- Interactive navigation with submenus and breadcrumbs
-- Automatic script discovery from scripts directory
-- Script execution with argument prompting
+This module provides the interactive command-line interface and menu system,
+allowing users to discover and execute analysis workflows.
 """
 
 from __future__ import annotations
 
-from .discovery import ScriptInfo, categorize_script, discover_scripts, extract_script_metadata, generate_menu_from_scripts
-from .display import clear_screen, format_breadcrumb, format_menu, get_choice, show_menu
-from .executor import execute_bash_script, execute_python_script, execute_script, prompt_for_args, validate_script_executable
-from .navigation import Menu, MenuHistory, MenuItem, MenuSystem, get_current_menu, go_back, navigate_to_submenu
+from .ui.display import clear_screen, format_breadcrumb, format_menu, get_choice, show_menu
+from .core.executor import execute_bash_script, execute_python_script, execute_script, prompt_for_args, validate_script_executable
+from .ui.navigation import Menu, MenuHistory, MenuItem, MenuSystem, get_current_menu, go_back, navigate_to_submenu
+from .core.discovery import discover_scripts, extract_script_metadata, categorize_script, generate_menu_from_scripts, ScriptInfo
 
 __all__ = [
     # Data structures

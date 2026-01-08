@@ -10,9 +10,9 @@ from pathlib import Path
 
 def test_workflow_skips_steps_when_missing_deps(tmp_path: Path):
     """Test that workflow execution skips steps when required dependencies are missing."""
-    from metainformant.rna.amalgkit import check_cli_available
-    from metainformant.rna.deps import check_step_dependencies
-    from metainformant.rna.workflow import AmalgkitWorkflowConfig, execute_workflow
+    from metainformant.rna.amalgkit.amalgkit import check_cli_available
+    from metainformant.rna.core.deps import check_step_dependencies
+    from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig, execute_workflow
 
     ok, _ = check_cli_available()
     if not ok:

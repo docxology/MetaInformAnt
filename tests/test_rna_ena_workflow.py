@@ -19,7 +19,7 @@ import pytest
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
-from metainformant.core.io import read_delimited
+from metainformant.core.io.io import read_delimited
 
 
 class TestENADownloader:

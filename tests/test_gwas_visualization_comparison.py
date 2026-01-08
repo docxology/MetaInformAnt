@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from metainformant.gwas.visualization_comparison import (
+from metainformant.gwas.visualization.visualization_comparison import (
     miami_plot,
     multi_trait_manhattan,
     cross_cohort_forest,

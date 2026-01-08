@@ -7,36 +7,62 @@ motif discovery, and genomic data retrieval from NCBI databases.
 
 from __future__ import annotations
 
-# Import all DNA analysis submodules
+# Import subpackages
 from . import (
+    sequence,
     alignment,
-    codon,
-    composition,
-    consensus,
-    distances,
-    entrez,
-    fastq,
-    genomes,
-    motifs,
-    msa,
-    mutations,
-    ncbi,
-    phylogeny,
+    expression,
+    variation,
     population,
-    population_analysis,
-    population_viz,
-    restriction,
-    rna_integration,
-    sequences,
-    transcription,
-    translation,
-    variants,
+    phylogeny,
+    external,
+    io,
+    integration,
 )
 
-# Direct imports of commonly used classes
-from .fastq import FastqRecord
+# Re-export modules to maintain backward compatibility
+# Sequence
+from .sequence import core as sequences
+from .sequence import composition
+from .sequence import motifs
+from .sequence import restriction
+from .sequence import consensus
 
-# All modules imported above are available
+# Alignment
+from .alignment import pairwise as alignment
+from .alignment import msa
+from .alignment import distances
+
+# Expression
+from .expression import codon
+from .expression import transcription
+from .expression import translation
+
+# Variation
+from .variation import mutations
+from .variation import variants
+
+# Population
+from .population import core as population
+from .population import analysis as population_analysis
+from .population import visualization as population_viz
+
+# Phylogeny
+from .phylogeny import tree as phylogeny
+
+# External
+from .external import ncbi
+from .external import entrez
+from .external import genomes
+
+# I/O
+from .io import fastq
+
+# Integration
+from .integration import rna as rna_integration
+
+# Direct imports of commonly used classes
+from .io.fastq import FastqRecord
 
 # Type checking imports
 from typing import TYPE_CHECKING
@@ -45,37 +71,47 @@ if TYPE_CHECKING:
     pass
 
 __all__ = [
-    # Core sequence analysis
-    "sequences",
+    # Subpackages
+    "sequence",
     "alignment",
-    "phylogeny",
+    "expression",
+    "variation",
     "population",
-    "composition",
-    "distances",
+    "phylogeny",
+    "external",
+    "io",
+    "integration",
 
-    # Specialized analysis
-    "codon",
+    # Module aliases (Backward Compatibility)
+    "sequences",
+    "composition",
     "motifs",
-    "msa",
-    "mutations",
     "restriction",
     "consensus",
-
-    # Data formats and I/O
-    "fastq",
+    
+    "alignment",
+    "msa",
+    "distances",
+    
+    "codon",
     "transcription",
     "translation",
+    
+    "mutations",
     "variants",
-    "FastqRecord",
-
-    # External data sources
-    "genomes",
-    "ncbi",
-    "entrez",
-
-    # Optional/advanced modules
+    
+    "population",
     "population_analysis",
     "population_viz",
+    
+    "phylogeny",
+    
+    "ncbi",
+    "entrez",
+    "genomes",
+    
+    "fastq",
+    "FastqRecord",
+    
     "rna_integration",
 ]
-

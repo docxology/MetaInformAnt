@@ -20,7 +20,7 @@ except ImportError:
 
 pytestmark = pytest.mark.skipif(not SCIPY_AVAILABLE, reason="scipy not available")
 
-from metainformant.singlecell.dimensionality import (
+from metainformant.singlecell.analysis.dimensionality import (
     SKLEARN_AVAILABLE,
     compute_diffusion_map,
     compute_neighbors,
@@ -29,7 +29,7 @@ from metainformant.singlecell.dimensionality import (
     compute_umap,
     select_hvgs,
 )
-from metainformant.singlecell.preprocessing import SingleCellData, log_transform, normalize_counts, scale_data
+from metainformant.singlecell.data.preprocessing import SingleCellData, log_transform, normalize_counts, scale_data
 
 
 class TestHVGSelection:
