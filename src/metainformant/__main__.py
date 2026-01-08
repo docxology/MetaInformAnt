@@ -78,13 +78,14 @@ def _list_modules() -> None:
         ("phenotype", "Phenotypic trait analysis"),
         ("ecology", "Ecological and community analysis"),
         ("epigenome", "Epigenomic data analysis"),
+        ("menu", "Interactive menu and discovery system"),
     ]
 
     print("Available METAINFORMANT modules:")
     print("=" * 50)
 
     for name, description in modules:
-        print(f"    {description}")
+        print(f"  {name:15} - {description}")
 
     print("\nImport modules in Python:")
     print("  from metainformant import dna, rna, protein  # etc.")

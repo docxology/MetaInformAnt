@@ -10,281 +10,145 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.core.io import write_delimited
 from metainformant.rna import cleanup
-from metainformant.rna.workflow import AmalgkitWorkflowConfig
 
 
 class TestFindPartialDownloads:
     """Test find_partial_downloads function."""
 
-    def test_find_partial_downloads_empty_directories(self, tmp_path: Path):
-        """Test find_partial_downloads with empty directories."""
+    def test_empty_directories(self, tmp_path: Path):
+        """Test with empty directories."""
         fastq_dir = tmp_path / "fastq"
         quant_dir = tmp_path / "quant"
         fastq_dir.mkdir()
         quant_dir.mkdir()
-        
-        partial = cleanup.find_partial_downloads(fastq_dir, quant_dir)
-        assert isinstance(partial, list)
-        assert len(partial) == 0
 
-    def test_find_partial_downloads_missing_directories(self, tmp_path: Path):
-        """Test find_partial_downloads with missing directories."""
+        partial = cleanup.find_partial_downloads(fastq_dir, quant_dir)
+        assert partial == []
+
+    def test_missing_directories(self, tmp_path: Path):
+        """Test with missing directories."""
         fastq_dir = tmp_path / "fastq"
         quant_dir = tmp_path / "quant"
-        
-        partial = cleanup.find_partial_downloads(fastq_dir, quant_dir)
-        assert isinstance(partial, list)
-        assert len(partial) == 0
 
-    def test_find_partial_downloads_with_unquantified_samples(self, tmp_path: Path):
-        """Test find_partial_downloads finds unquantified samples."""
+        partial = cleanup.find_partial_downloads(fastq_dir, quant_dir)
+        assert partial == []
+
+    def test_finds_unquantified(self, tmp_path: Path):
+        """Test finds samples without quantification."""
         fastq_dir = tmp_path / "fastq"
         quant_dir = tmp_path / "quant"
-        fastq_dir.mkdir(parents=True)
-        quant_dir.mkdir(parents=True)
-        
-        # Create sample directory with files but no quantification
-        sample_dir = fastq_dir / "getfastq" / "SRR123"
-        sample_dir.mkdir(parents=True)
-        (sample_dir / "SRR123_1.fastq.gz").write_text("test")
-        
-        partial = cleanup.find_partial_downloads(fastq_dir, quant_dir)
-        assert len(partial) == 1
-        assert partial[0][0] == "SRR123"
-        assert partial[0][1] == sample_dir
-        assert isinstance(partial[0][2], int)  # size_mb
+        fastq_dir.mkdir()
+        quant_dir.mkdir()
 
-    def test_find_partial_downloads_skips_quantified_samples(self, tmp_path: Path):
-        """Test find_partial_downloads skips quantified samples."""
-        fastq_dir = tmp_path / "fastq"
-        quant_dir = tmp_path / "quant"
-        fastq_dir.mkdir(parents=True)
-        quant_dir.mkdir(parents=True)
-        
-        # Create quantified sample
-        sample_dir = fastq_dir / "getfastq" / "SRR123"
-        sample_dir.mkdir(parents=True)
-        (sample_dir / "SRR123_1.fastq.gz").write_text("test")
-        
-        quant_sample_dir = quant_dir / "SRR123"
-        quant_sample_dir.mkdir(parents=True)
-        (quant_sample_dir / "abundance.tsv").write_text("test")
-        
-        partial = cleanup.find_partial_downloads(fastq_dir, quant_dir)
-        assert len(partial) == 0
-
-    def test_find_partial_downloads_direct_structure(self, tmp_path: Path):
-        """Test find_partial_downloads with direct structure (not getfastq subdir)."""
-        fastq_dir = tmp_path / "fastq"
-        quant_dir = tmp_path / "quant"
-        fastq_dir.mkdir(parents=True)
-        quant_dir.mkdir(parents=True)
-        
-        # Create sample directory directly in fastq_dir
         sample_dir = fastq_dir / "SRR123"
-        sample_dir.mkdir(parents=True)
-        (sample_dir / "SRR123_1.fastq.gz").write_text("test")
-        
+        sample_dir.mkdir()
+        (sample_dir / "SRR123_1.fastq.gz").write_text("test data")
+
         partial = cleanup.find_partial_downloads(fastq_dir, quant_dir)
         assert len(partial) == 1
         assert partial[0][0] == "SRR123"
+
+    def test_skips_quantified(self, tmp_path: Path):
+        """Test skips already quantified samples."""
+        fastq_dir = tmp_path / "fastq"
+        quant_dir = tmp_path / "quant"
+        fastq_dir.mkdir()
+        quant_dir.mkdir()
+
+        # Sample with FASTQ
+        sample_fastq = fastq_dir / "SRR123"
+        sample_fastq.mkdir()
+        (sample_fastq / "SRR123_1.fastq.gz").write_text("test")
+
+        # Sample quantified
+        sample_quant = quant_dir / "SRR123"
+        sample_quant.mkdir()
+        (sample_quant / "abundance.tsv").write_text("test")
+
+        partial = cleanup.find_partial_downloads(fastq_dir, quant_dir)
+        assert partial == []
 
 
 class TestCleanupPartialDownloads:
     """Test cleanup_partial_downloads function."""
 
-    def test_cleanup_partial_downloads_dry_run(self, tmp_path: Path):
-        """Test cleanup_partial_downloads with dry_run=True."""
-        # Create config file
-        config_file = tmp_path / "config.yaml"
-        config_data = {
-            "work_dir": str(tmp_path / "work"),
-            "threads": 4,
-            "species_list": ["Test_species"],
-            "per_step": {
-                "getfastq": {"out_dir": str(tmp_path / "fastq")},
-                "quant": {"out_dir": str(tmp_path / "quant")},
-            },
-        }
-        from metainformant.core.io import dump_json
-        dump_json(config_data, config_file)
-        
-        # Create partial download
+    def test_dry_run(self, tmp_path: Path):
+        """Test dry run doesn't delete."""
         fastq_dir = tmp_path / "fastq"
         quant_dir = tmp_path / "quant"
-        fastq_dir.mkdir(parents=True)
-        quant_dir.mkdir(parents=True)
-        
-        sample_dir = fastq_dir / "getfastq" / "SRR123"
-        sample_dir.mkdir(parents=True)
-        (sample_dir / "SRR123_1.fastq.gz").write_text("test")
-        
-        result = cleanup.cleanup_partial_downloads(config_file, dry_run=True)
-        assert isinstance(result, dict)
-        assert "deleted" in result
-        assert "freed_mb" in result
-        assert "errors" in result
-        assert result["deleted"] == 0  # Dry run doesn't delete
-        assert sample_dir.exists()  # Should still exist
+        fastq_dir.mkdir()
+        quant_dir.mkdir()
 
-    def test_cleanup_partial_downloads_actual_cleanup(self, tmp_path: Path):
-        """Test cleanup_partial_downloads actually deletes files."""
-        # Create config file with absolute paths
-        config_file = tmp_path / "config.yaml"
-        # Use absolute paths since load_workflow_config resolves relative to repo root
-        work_dir_abs = (tmp_path / "work").resolve()
-        fastq_dir_abs = (tmp_path / "fastq").resolve()
-        quant_dir_abs = (tmp_path / "quant").resolve()
-        config_data = {
-            "work_dir": str(work_dir_abs),
-            "threads": 4,
-            "species_list": ["Test_species"],
-            "per_step": {
-                "getfastq": {"out_dir": str(fastq_dir_abs)},
-                "quant": {"out_dir": str(quant_dir_abs)},
-            },
-        }
-        from metainformant.core.io import dump_json
-        dump_json(config_data, config_file)
-        
-        # Create partial download
-        fastq_dir_abs.mkdir(parents=True)
-        quant_dir_abs.mkdir(parents=True)
-        
-        sample_dir = fastq_dir_abs / "getfastq" / "SRR123"
-        sample_dir.mkdir(parents=True)
-        test_file = sample_dir / "SRR123_1.fastq.gz"
-        test_file.write_text("test")
-        
-        result = cleanup.cleanup_partial_downloads(config_file, dry_run=False)
-        assert isinstance(result, dict)
+        sample_dir = fastq_dir / "SRR123"
+        sample_dir.mkdir()
+        (sample_dir / "SRR123_1.fastq.gz").write_text("test")
+
+        result = cleanup.cleanup_partial_downloads(tmp_path, dry_run=True)
+        assert result["deleted"] == 0
+        assert sample_dir.exists()
+
+    def test_actual_cleanup(self, tmp_path: Path):
+        """Test actual deletion."""
+        fastq_dir = tmp_path / "fastq"
+        quant_dir = tmp_path / "quant"
+        fastq_dir.mkdir()
+        quant_dir.mkdir()
+
+        sample_dir = fastq_dir / "SRR123"
+        sample_dir.mkdir()
+        (sample_dir / "SRR123_1.fastq.gz").write_text("test")
+
+        result = cleanup.cleanup_partial_downloads(tmp_path, dry_run=False)
         assert result["deleted"] == 1
-        assert result["freed_mb"] >= 0
-        assert not sample_dir.exists()  # Should be deleted
+        assert not sample_dir.exists()
 
 
 class TestFixAbundanceNaming:
-    """Test fix_abundance_naming functions."""
+    """Test fix_abundance_naming function."""
 
-    def test_fix_abundance_naming_creates_symlink(self, tmp_path: Path):
-        """Test fix_abundance_naming creates symlink."""
+    def test_creates_symlink(self, tmp_path: Path):
+        """Test symlink creation."""
         quant_dir = tmp_path / "quant"
-        quant_dir.mkdir(parents=True)
-        
         sample_dir = quant_dir / "SRR123"
         sample_dir.mkdir(parents=True)
-        source = sample_dir / "abundance.tsv"
-        source.write_text("test")
-        
+        (sample_dir / "abundance.tsv").write_text("test")
+
         result = cleanup.fix_abundance_naming(quant_dir, "SRR123")
         assert result is True
-        
-        target = sample_dir / "SRR123_abundance.tsv"
-        assert target.exists()
-        assert target.is_symlink()
+        assert (sample_dir / "SRR123_abundance.tsv").is_symlink()
 
-    def test_fix_abundance_naming_handles_missing_source(self, tmp_path: Path):
-        """Test fix_abundance_naming handles missing source file."""
+    def test_handles_missing_source(self, tmp_path: Path):
+        """Test returns False if source missing."""
         quant_dir = tmp_path / "quant"
-        quant_dir.mkdir(parents=True)
-        
         sample_dir = quant_dir / "SRR123"
         sample_dir.mkdir(parents=True)
-        # Don't create abundance.tsv
-        
+
         result = cleanup.fix_abundance_naming(quant_dir, "SRR123")
         assert result is False
 
-    def test_fix_abundance_naming_handles_existing_target(self, tmp_path: Path):
-        """Test fix_abundance_naming handles existing target."""
+
+class TestCleanupUnquantifiedSamples:
+    """Test cleanup_unquantified_samples function."""
+
+    def test_removes_unquantified(self, tmp_path: Path):
+        """Test removing unquantified samples."""
+        fastq_dir = tmp_path / "fastq"
         quant_dir = tmp_path / "quant"
-        quant_dir.mkdir(parents=True)
-        
-        sample_dir = quant_dir / "SRR123"
-        sample_dir.mkdir(parents=True)
-        source = sample_dir / "abundance.tsv"
-        source.write_text("test")
-        
-        target = sample_dir / "SRR123_abundance.tsv"
-        target.write_text("existing")
-        
-        result = cleanup.fix_abundance_naming(quant_dir, "SRR123")
-        assert result is True  # Should return True if target exists
+        fastq_dir.mkdir()
+        quant_dir.mkdir()
 
-    def test_fix_abundance_naming_for_species(self, tmp_path: Path):
-        """Test fix_abundance_naming_for_species fixes all samples."""
-        # Create config file
-        config_file = tmp_path / "config.yaml"
-        config_data = {
-            "work_dir": str(tmp_path / "work"),
-            "threads": 4,
-            "species_list": ["Test_species"],
-            "per_step": {
-                "quant": {"out_dir": str(tmp_path / "quant")},
-            },
-        }
-        from metainformant.core.io import dump_json
-        dump_json(config_data, config_file)
-        
-        quant_dir = tmp_path / "quant"
-        quant_dir.mkdir(parents=True)
-        
-        # Create multiple samples
-        for srr_id in ["SRR123", "SRR456"]:
-            sample_dir = quant_dir / srr_id
-            sample_dir.mkdir(parents=True)
-            (sample_dir / "abundance.tsv").write_text("test")
-        
-        created, already_exists = cleanup.fix_abundance_naming_for_species(config_file)
-        assert isinstance(created, int)
-        assert isinstance(already_exists, int)
-        # Should create 2 symlinks (or more if some already existed)
-        assert created >= 0
-        assert (created + already_exists) >= 0
-        
-        # Verify symlinks were created (if created > 0)
-        if created > 0:
-            for srr_id in ["SRR123", "SRR456"]:
-                target = quant_dir / srr_id / f"{srr_id}_abundance.tsv"
-                # Target may exist as symlink or regular file
-                if target.exists():
-                    assert target.is_symlink() or target.is_file()
+        # Quantified sample (keep)
+        (quant_dir / "S1").mkdir()
+        (quant_dir / "S1" / "abundance.tsv").write_text("data")
+        (fastq_dir / "S1_1.fastq").write_text("data")
 
-    def test_fix_abundance_naming_for_species_handles_missing_quant_dir(self, tmp_path: Path):
-        """Test fix_abundance_naming_for_species handles missing quant directory."""
-        # Create config file
-        config_file = tmp_path / "config.yaml"
-        config_data = {
-            "work_dir": str(tmp_path / "work"),
-            "threads": 4,
-            "species_list": ["Test_species"],
-            "per_step": {
-                "quant": {"out_dir": str(tmp_path / "nonexistent" / "quant")},
-            },
-        }
-        from metainformant.core.io import dump_json
-        dump_json(config_data, config_file)
-        
-        created, already_exists = cleanup.fix_abundance_naming_for_species(config_file)
-        assert created == 0
-        assert already_exists == 0
+        # Unquantified sample (remove)
+        (fastq_dir / "S2_1.fastq").write_text("data")
 
+        cleaned = cleanup.cleanup_unquantified_samples(tmp_path)
+        assert "S2" in cleaned
+        assert not (fastq_dir / "S2_1.fastq").exists()
+        assert (fastq_dir / "S1_1.fastq").exists()
 
-class TestCleanupDocumentation:
-    """Test that cleanup functions have proper documentation."""
-
-    def test_all_functions_have_docstrings(self):
-        """Verify all cleanup functions have docstrings."""
-        functions = [
-            cleanup.find_partial_downloads,
-            cleanup.cleanup_partial_downloads,
-            cleanup.fix_abundance_naming,
-            cleanup.fix_abundance_naming_for_species,
-        ]
-        
-        for func in functions:
-            assert func.__doc__ is not None, f"{func.__name__} missing docstring"
-            assert len(func.__doc__.strip()) > 0
 

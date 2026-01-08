@@ -26,9 +26,6 @@ from . import (
     workflow,
 )
 
-# Import steps submodule
-from . import steps
-
 # Direct imports of commonly used classes and functions
 from .configs import RNAPipelineConfig, AmalgkitRunLayout
 from .progress_tracker import ProgressTracker
@@ -53,7 +50,6 @@ __all__ = [
 
     # Amalgkit integration
     "amalgkit",
-    "steps",
 
     # Configuration and setup
     "configs",

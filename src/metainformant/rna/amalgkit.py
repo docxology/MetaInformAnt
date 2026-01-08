@@ -18,6 +18,9 @@ import os
 import subprocess
 import sys
 import csv
+import math
+import tempfile
+import concurrent.futures
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -89,7 +92,7 @@ def build_cli_args(params: AmalgkitParams | Dict[str, Any] | None, *, for_cli: b
 
         # Add remaining parameters
         skip_keys = {'work_dir', 'threads', 'species_list', 'extra_params', 'genome', 'filters',
-                     'taxon_id', 'auto_install_amalgkit', 'log_dir', 'resolve_names', 'mark_missing_rank'}
+                     'taxon_id', 'auto_install_amalgkit', 'log_dir'}
         for key, value in params.items():
             if key in skip_keys or value is None:
                 continue
@@ -101,6 +104,8 @@ def build_cli_args(params: AmalgkitParams | Dict[str, Any] | None, *, for_cli: b
                 args.extend([f'--{key}', str(value)])
             elif isinstance(value, str):
                 args.extend([f'--{key}', value])
+            elif isinstance(value, Path):
+                args.extend([f'--{key}', str(value)])
             elif isinstance(value, list):
                 for item in value:
                     args.extend([f'--{key}', str(item)])
@@ -584,7 +589,180 @@ def getfastq(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: An
     Returns:
         CompletedProcess instance
     """
+    # Check if parallel execution is requested
+    jobs = 1
+    if isinstance(params, dict):
+        jobs = int(params.get('jobs', 1))
+    elif isinstance(params, AmalgkitParams):
+        jobs = int(params.extra_params.get('jobs', 1)) 
+        
+    if jobs > 1:
+        return _run_parallel_getfastq(jobs, params, **kwargs)
+        
     return run_amalgkit('getfastq', params, **kwargs)
+
+
+def _split_metadata_by_worker(metadata_path: Path, n_workers: int) -> List[Path]:
+    """Split metadata file into chunks for parallel processing.
+    
+    Args:
+        metadata_path: Path to original metadata file
+        n_workers: Number of workers/chunks
+        
+    Returns:
+        List of paths to temporary metadata chunk files
+    """
+    if not metadata_path.exists():
+        raise FileNotFoundError(f"Metadata file not found: {metadata_path}")
+        
+    # Read all rows
+    rows = []
+    header = []
+    with open(metadata_path, 'r', newline='') as f:
+        reader = csv.reader(f, delimiter='\t')
+        try:
+            header = next(reader)
+            rows = list(reader)
+        except StopIteration:
+            pass
+            
+    if not rows:
+        return [metadata_path]
+        
+    # Calculate chunk size
+    n_samples = len(rows)
+    chunk_size = math.ceil(n_samples / n_workers)
+    
+    chunk_paths = []
+    temp_dir = Path(tempfile.mkdtemp(prefix='amalgkit_parallel_'))
+    
+    for i in range(n_workers):
+        start_idx = i * chunk_size
+        end_idx = min((i + 1) * chunk_size, n_samples)
+        
+        if start_idx >= n_samples:
+            break
+            
+        chunk_rows = rows[start_idx:end_idx]
+        if not chunk_rows:
+            continue
+            
+        chunk_path = temp_dir / f"metadata_chunk_{i}.tsv"
+        with open(chunk_path, 'w', newline='') as f:
+            writer = csv.writer(f, delimiter='\t')
+            writer.writerow(header)
+            writer.writerows(chunk_rows)
+            
+        chunk_paths.append(chunk_path)
+        
+    return chunk_paths
+
+
+def _run_parallel_getfastq(jobs: int, params: AmalgkitParams | Dict[str, Any] | None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
+    """Execute getfastq in parallel using multiple workers.
+    
+    Args:
+        jobs: Number of parallel jobs
+        params: Amalgkit parameters
+        **kwargs: Additional arguments
+        
+    Returns:
+        Combined CompletedProcess
+    """
+    # Extract metadata path
+    metadata_path = None
+    if isinstance(params, dict):
+        metadata_path = Path(params.get('metadata', ''))
+    else:
+        metadata_path = Path(params.extra_params.get('metadata', ''))
+        
+    if not metadata_path.exists():
+        # Fallback to single process if metadata not found
+        logger.warning(f"Metadata not found at {metadata_path}, falling back to sequential execution")
+        return run_amalgkit('getfastq', params, **kwargs)
+
+    # Split metadata
+    try:
+        chunk_paths = _split_metadata_by_worker(metadata_path, jobs)
+    except Exception as e:
+        logger.warning(f"Failed to split metadata: {e}, falling back to sequential execution")
+        return run_amalgkit('getfastq', params, **kwargs)
+        
+    if len(chunk_paths) <= 1:
+        # Only one chunk needed (small sample size), run normally
+        return run_amalgkit('getfastq', params, **kwargs)
+        
+    logger.info(f"Parallelizing getfastq with {len(chunk_paths)} workers")
+    
+    # Create worker params
+    worker_futures = []
+    results = []
+    
+    with concurrent.futures.ThreadPoolExecutor(max_workers=len(chunk_paths)) as executor:
+        for i, chunk_path in enumerate(chunk_paths):
+            # Create specific params for this worker
+            if isinstance(params, dict):
+                worker_params = params.copy()
+                worker_params['metadata'] = str(chunk_path)
+                # Ensure jobs param is removed/reset to prevent recursion if passed down
+                worker_params.pop('jobs', None)
+            else:
+                # Clone object
+                worker_params = AmalgkitParams(
+                    work_dir=params.work_dir,
+                    threads=params.threads, # Each worker gets full requested threads? Or divide?
+                    # Usually better to set threads=1 per worker if bandwidth limited, 
+                    # OR keep threads high if fasterq-dump needs it. 
+                    # We'll rely on workflow.py to set appropriate threads per job.
+                    species_list=params.species_list,
+                    **params.extra_params.copy()
+                )
+                worker_params.extra_params['metadata'] = str(chunk_path)
+                worker_params.extra_params.pop('jobs', None)
+
+            # Submit job
+            # We disable individual monitoring for workers to avoid console fighting
+            # Instead we monitor the main directory globally in the main thread?
+            # Or just let them run. Since `run_amalgkit` runs a subprocess, blocking here is fine.
+            # We pass `monitor=False` to workers to prevent them from starting their own monitoring loop?
+            # Yes, `monitor=False` is safer.
+            # But we want to monitor overall progress. 
+            # We can start a separate monitor thread for the main directory.
+            
+            worker_kwargs = kwargs.copy()
+            worker_kwargs['monitor'] = False # Disable individual monitoring
+            
+            future = executor.submit(run_amalgkit, 'getfastq', worker_params, **worker_kwargs)
+            worker_futures.append(future)
+
+        # Optional: Start a global monitor here if requested
+        # For now, we rely on the fact that individual workers log to stdout/stderr.
+        # But we disabled their monitor loop (heartbeat), not the logging.
+        # run_amalgkit logs "Running amalgkit command..."
+        
+        # Wait for all
+        for future in concurrent.futures.as_completed(worker_futures):
+            try:
+                res = future.result()
+                results.append(res)
+            except Exception as e:
+                logger.error(f"Worker failed: {e}")
+                # We should probably cancel others or report failure
+                # For now, continue and reporting stats at end
+                results.append(subprocess.CompletedProcess(args=[], returncode=1, stderr=str(e)))
+
+    # Cleanup temp chunks
+    try:
+        shutil.rmtree(chunk_paths[0].parent)
+    except:
+        pass
+
+    # Aggregate results
+    failed = [r for r in results if r.returncode != 0]
+    if failed:
+        return failed[0] # Return first failure
+        
+    return results[0] # Return success (representative)
 
 
 def quant(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:

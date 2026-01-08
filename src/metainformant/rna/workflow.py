@@ -249,6 +249,19 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
             if config.species_list:
                 step_params['species'] = config.species_list
 
+        # Parallel download configuration for getfastq
+        if step == 'getfastq' and 'jobs' not in step_params:
+            # Default heuristic: Use 1 job per 2 threads, max 4 jobs
+            # Adjust threads per job to keep total thread usage roughly within limit
+            total_threads = config.threads
+            if total_threads >= 2:
+                jobs = min(4, total_threads)
+                threads_per_job = max(1, total_threads // jobs)
+                
+                step_params['jobs'] = jobs
+                step_params['threads'] = threads_per_job
+                logger.debug(f"Auto-configured parallel getfastq: {jobs} jobs with {threads_per_job} threads each (total threads: {total_threads})")
+
         # Auto-inject metadata path for select step
         if step == 'select' and 'metadata' not in step_params:
             # Select step needs metadata.tsv as input

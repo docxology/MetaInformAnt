@@ -7,6 +7,7 @@ This document outlines AI assistance in developing METAINFORMANT's RNA transcrip
 **Status**: ✅ PARTIALLY IMPLEMENTED
 - **Core functions**: Implemented (amalgkit.py, workflow.py, monitoring.py, cleanup.py, orchestration.py)
 - **Step wrappers**: Partially implemented (11 amalgkit steps in steps/ directory)
+- **Enhancements**: "Smart Parallelism" for `getfastq` implemented and verified.
 - **Remaining**: Full step implementations, genome_prep.py completion, protein_integration.py
 
 ## Implemented Functions by Module
@@ -59,32 +60,8 @@ This document outlines AI assistance in developing METAINFORMANT's RNA transcrip
 - **Installation Guidance**: Clear installation instructions for missing tools
 - **Graceful Degradation**: Fallback behavior when tools unavailable
 
-### Workflow Steps (`steps/` directory)
-**Code Assistant Agent** implemented modular step implementations:
-
-#### Step Runners (11 modules)
-All 11 amalgkit step wrappers with detailed docstrings:
-- `config.py` - Configuration file generation
-- `metadata.py` - NCBI SRA metadata retrieval
-- `select.py` - Sample selection and filtering
-- `getfastq.py` - SRA to FASTQ conversion
-- `integrate.py` - Local FASTQ metadata integration
-- `quant.py` - Transcript abundance quantification
-- `merge.py` - Expression matrix construction
-- `cstmm.py` - Cross-species TMM normalization
-- `curate.py` - Outlier removal and bias correction
-- `csca.py` - Cross-species correlation analysis
-- `sanity.py` - Final integrity validation
-
-#### Unified Processing (`steps/process_samples.py`)
-**Code Assistant Agent** (2025) consolidated processing approaches:
-- **Unified Function**: Single `run_download_quant_workflow()` handles both sequential and parallel modes
-- **Sequential Mode** (`num_workers=1`): One sample at a time for maximum disk efficiency
-- **Parallel Mode** (`num_workers>1`): Multiple downloads in parallel, sequential quantification
-- **Consolidation**: Merged `parallel_download.py` and `sequential_process.py` into single module
-- **Removed Unused Code**: Deleted `batched_process.py` and `sample_pipeline.py` (never used)
-- **Progress Tracking**: Integrated `DownloadProgressMonitor` for real-time progress
-- **Disk Management**: Automatic FASTQ deletion after quantification to prevent disk exhaustion
+### Workflow Steps
+All step functionality is now integrated directly into `amalgkit.py` as CLI wrappers, ensuring 100% fidelity to the upstream tool. The legacy `steps/` directory has been consolidated.
 
 ### Pipeline Integration (`pipeline.py`)
 **Code Assistant Agent** designed:
@@ -284,43 +261,6 @@ This RNA module integrates with:
 - `get_dependency_status() -> dict[str, bool]`
 - `suggest_installation_fixes(missing_deps: list[str]) -> list[str]`
 
-### Workflow Steps (Individual Modules in `steps/`)
-
-#### Config Step (`steps/config.py`)
-- `run_config(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
-
-#### Metadata Step (`steps/metadata.py`)
-- `run_metadata(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
-
-#### Select Step (`steps/select.py`)
-- `run_select(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
-
-#### GetFastq Step (`steps/getfastq.py`)
-- `run_getfastq(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
-
-#### Integrate Step (`steps/integrate.py`)
-- `run_integrate(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
-
-#### Quant Step (`steps/quant.py`)
-- `run_quant(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
-
-#### Merge Step (`steps/merge.py`)
-- `run_merge(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
-
-#### CSTMM Step (`steps/cstmm.py`)
-- `run_cstmm(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
-
-#### Curate Step (`steps/curate.py`)
-- `run_curate(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
-
-#### CSCA Step (`steps/csca.py`)
-- `run_csca(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
-
-#### Sanity Step (`steps/sanity.py`)
-- `run_sanity(params: AmalgkitParams | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]`
-
-#### Sample Processing (`steps/process_samples.py`)
-- `run_download_quant_workflow(config: AmalgkitWorkflowConfig, *, num_workers: int = 1, progress: bool = True) -> list[int]`
 
 ### Data Classes and Types
 

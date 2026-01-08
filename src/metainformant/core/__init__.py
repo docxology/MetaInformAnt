@@ -80,4 +80,5 @@ __all__ = [
     # Optional modules
     "db",
     "disk",
+    "filesystem",
 ]

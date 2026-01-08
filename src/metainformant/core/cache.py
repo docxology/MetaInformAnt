@@ -266,6 +266,70 @@ class JsonCache:
             }
 
 
+def get_cache_info(cache_dir: Union[str, Path]) -> Dict[str, Any]:
+    """Get information about a cache directory.
+
+    Args:
+        cache_dir: Path to cache directory
+
+    Returns:
+        Dictionary with cache statistics
+    """
+    path = Path(cache_dir)
+    if not path.exists():
+        return {
+            "exists": False,
+            "total_files": 0,
+            "valid_entries": 0,
+            "expired_entries": 0,
+            "corrupted_files": 0,
+            "cache_dir": str(path),
+            "default_ttl": 0,
+        }
+
+    # Use existing JsonCache implementation to get stats
+    # We use a default TTL of 0 since we're just inspecting
+    cache = JsonCache(path, ttl_seconds=0)
+    stats = cache.stats()
+    stats["exists"] = True
+    return stats
+
+
+def cache_json(
+    cache_dir: Union[str, Path],
+    key: str,
+    data: Any,
+    ttl_seconds: int = 3600
+) -> None:
+    """Cache data as JSON.
+
+    Args:
+        cache_dir: Path to cache directory
+        key: Cache key
+        data: Data to cache (must be JSON serializable)
+        ttl_seconds: Time-to-live in seconds
+    """
+    cache = JsonCache(cache_dir, ttl_seconds=ttl_seconds)
+    cache.set(key, data)
+
+
+def clear_cache_dir(cache_dir: Union[str, Path]) -> int:
+    """Clear all files from a cache directory.
+
+    Args:
+        cache_dir: Path to cache directory
+
+    Returns:
+        Number of files removed
+    """
+    path = Path(cache_dir)
+    if not path.exists():
+        return 0
+
+    cache = JsonCache(path)
+    return cache.clear()
+
+
 
 
 

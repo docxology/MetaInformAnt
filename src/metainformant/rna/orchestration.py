@@ -63,14 +63,14 @@ def run_workflow_for_species(config_path: str | Path,
     return results
 
 
-def cleanup_unquantified_samples(config_path: str | Path) -> Dict[str, Any]:
+def cleanup_unquantified_samples(config_path: str | Path) -> tuple[int, int]:
     """Clean up samples that failed quantification.
 
     Args:
         config_path: Path to workflow configuration file
 
     Returns:
-        Cleanup operation results
+        Tuple of (quantified_count, failed_count)
     """
     from metainformant.rna.workflow import load_workflow_config
     from metainformant.rna.cleanup import cleanup_unquantified_samples as cleanup_func
@@ -81,15 +81,14 @@ def cleanup_unquantified_samples(config_path: str | Path) -> Dict[str, Any]:
 
     cleaned_samples = cleanup_func(config.work_dir)
 
-    results = {
-        'work_dir': str(config.work_dir),
-        'cleaned_samples': cleaned_samples,
-        'count': len(cleaned_samples)
-    }
+    # Return (quantified=0, failed=len(cleaned)) since we're cleaning up failed samples
+    quantified = 0
+    failed = len(cleaned_samples)
 
-    logger.info(f"Cleaned up {len(cleaned_samples)} unquantified samples")
+    logger.info(f"Cleaned up {failed} unquantified samples")
 
-    return results
+    return (quantified, failed)
+
 
 
 def monitor_workflows(work_dir: Path) -> Dict[str, Any]:

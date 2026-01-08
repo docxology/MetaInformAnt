@@ -40,7 +40,6 @@ graph TB
         Workflow[workflow<br/>Pipeline Orchestration]
         MetadataFilter[metadata_filter<br/>Sample Filtering]
         Configs[configs<br/>Configuration]
-        Steps[steps<br/>Workflow Steps]
     end
 
     subgraph "Workflow Steps"
@@ -64,14 +63,11 @@ graph TB
 
     AmalgkitCLI --> Amalgkit
     SRA --> Meta
-    Amalgkit --> Steps
-    Steps --> Meta
-    Steps --> Quant
-    Steps --> Integrate
-    Steps --> Select
-    Steps --> Sanity
+    Amalgkit --> Quant
+    Amalgkit --> Integrate
+    Amalgkit --> Select
+    Amalgkit --> Sanity
     Workflow --> Configs
-    Configs --> Steps
     Quant --> SingleCell
     Meta --> MultiOmics
 ```

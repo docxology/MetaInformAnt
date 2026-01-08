@@ -485,7 +485,6 @@ class TestCoreMethods:
         assert "test@example.com" in emails
         assert "admin@company.org" in emails
 
-    @pytest.mark.skip("API functions not implemented in cache module")
     def test_enhanced_cache_utilities(self, tmp_path):
         """Test enhanced cache utilities."""
         cache_dir = tmp_path / "enhanced_cache"

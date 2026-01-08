@@ -77,7 +77,7 @@ steps:
     # Uses NCBI_EMAIL from environment; override here if needed
     # entrez_email: you@example.com
     search_string: '"Pogonomyrmex barbatus"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
-    redo: yes
+    redo: no
   integrate:
     # IMPORTANT: fastq_dir must point to the getfastq subdirectory created by getfastq step
     # If getfastq used out_dir: output/amalgkit/pbarbatus_test5/fastq,
@@ -86,7 +86,7 @@ steps:
     fastq_dir: output/amalgkit/pbarbatus_test5/fastq/getfastq
   config: {}
   select:
-    max_sample: 1  # Limit to 1 sample for end-to-end testing
+    max_sample: 5  # End-to-end testing with 5 valid samples
   getfastq:
     out_dir: output/amalgkit/pbarbatus_test5/fastq
     threads: 4  # Reduced for limited samples
