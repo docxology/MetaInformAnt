@@ -1,52 +1,36 @@
-"""Phenotype analysis module for METAINFORMANT.
+"""
+Phenotype module for MetaInformAnt.
 
-This module provides tools for analyzing phenotypic data, including
-trait extraction from text (AntWiki), life course analysis, and
-morphological data visualization.
+This module encapsulates phenotypic trait analysis, including:
+- Morphological measurements (from AntWiki or direct measurement)
+- Behavioral sequences and ethograms
+- Chemical profiles (GC-MS)
+- Acoustic signals (Stridulation)
+- Electronic tracking data (RFID, video)
+
+Submodules:
+    antwiki: Legacy AntWiki data integration (loading/scraping).
+    analysis: Life course and temporal analysis.
+    behavior: Behavioral phenotype analysis.
+    chemical: Chemical phenotype analysis.
+    electronic: Electronic/Sensor phenotype analysis.
+    morphological: Morphometric phenotype analysis.
+    sonic: Acoustic phenotype analysis.
+    visualization: Phenotype visualization tools.
+    data: Data loading utilities.
 """
 
-from __future__ import annotations
+# Export new submodules
+from . import behavior
+from . import chemical
+from . import electronic
+from . import morphological
+from . import sonic
 
-# Import subpackages
+# Export legacy/existing components
 from . import analysis
 from . import data
 from . import visualization
 
-# Import modules from subpackages for backward compatibility
-from .data import (
-    antwiki,
-    scraper,
-)
-from .analysis import (
-    life_course,
-)
-from .visualization import visualization as visualization_module
-
-# Optional imports with graceful fallbacks
-try:
-    from .data import scraper
-except ImportError:
-    scraper = None
-
-# Type checking imports
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    pass
-
-__all__ = [
-    # Subpackages
-    "analysis",
-    "data",
-    "visualization",
-
-    # Data sources
-    "antwiki",
-    "scraper",
-
-    # Analysis
-    "life_course",
-
-    # Visualization
-    "visualization_module",
-]
+# Flattened exports for convenience (optional, sticking to module access preferred for clarity)
+# But we can expose key classes if desired.

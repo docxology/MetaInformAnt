@@ -143,6 +143,55 @@ def dump_yaml(obj: Any, path: str | Path) -> None:
             fh.write('\n')
 
 
+def load_yaml(path: str | Path) -> Any:
+    """Load YAML data from a file.
+
+    Args:
+        path: Path to YAML file
+
+    Returns:
+        Parsed YAML data
+
+    Raises:
+        ImportError: If PyYAML is not available
+        IOError: If file read fails
+    """
+    from .errors import IOError as CoreIOError
+    
+    try:
+        import yaml
+        with open_text_auto(path, mode="rt") as fh:
+            return yaml.safe_load(fh)
+    except ImportError as e:
+        raise ImportError("PyYAML is required for YAML support. Install with: uv add PyYAML") from e
+    except Exception as e:
+        raise CoreIOError(f"Failed to read YAML file {path}: {e}") from e
+
+
+def load_toml(path: str | Path) -> Any:
+    """Load TOML data from a file.
+
+    Args:
+        path: Path to TOML file
+
+    Returns:
+        Parsed TOML data
+
+    Raises:
+        IOError: If file read fails
+    """
+    from .errors import IOError as CoreIOError
+    
+    try:
+        import tomllib
+        with open(path, "rb") as fh:
+            return tomllib.load(fh)
+    except ImportError as e:
+        raise ImportError("tomllib is required for TOML support (Python 3.11+).") from e
+    except Exception as e:
+        raise CoreIOError(f"Failed to read TOML file {path}: {e}") from e
+
+
 
 
 def read_parquet(path: str | Path, **kwargs) -> Any:

@@ -29,7 +29,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from _setup_utils import ensure_venv_activated, check_environment_or_exit
 
 # Suppress optional dependency warnings until venv is ready
-from metainformant.core.optional_deps import suppress_optional_warnings, enable_optional_warnings
+from metainformant.core.utils.optional_deps import suppress_optional_warnings, enable_optional_warnings
 suppress_optional_warnings()
 
 # Auto-setup and activate venv
@@ -42,13 +42,13 @@ enable_optional_warnings()
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
-from metainformant.rna.cleanup import cleanup_partial_downloads, fix_abundance_naming_for_species
-from metainformant.rna.monitoring import analyze_species_status, check_workflow_progress
-from metainformant.rna.orchestration import (
+from metainformant.rna.core.cleanup import cleanup_partial_downloads, fix_abundance_naming_for_species
+from metainformant.rna.engine.monitoring import analyze_species_status, check_workflow_progress
+from metainformant.rna.engine.orchestration import (
     cleanup_unquantified_samples,
     run_workflow_for_species,
 )
-from metainformant.core.logging import get_logger
+from metainformant.core.utils.logging import get_logger
 
 logger = get_logger("run_workflow")
 
@@ -232,8 +232,8 @@ def main() -> int:
         return 1
 
     if args.plan:
-        from metainformant.rna.amalgkit import build_amalgkit_command
-        from metainformant.rna.workflow import apply_step_defaults, load_workflow_config, plan_workflow, sanitize_params_for_cli
+        from metainformant.rna.amalgkit.amalgkit import build_amalgkit_command
+        from metainformant.rna.engine.workflow import apply_step_defaults, load_workflow_config, plan_workflow, sanitize_params_for_cli
 
         cfg = load_workflow_config(config_path)
         apply_step_defaults(cfg)
@@ -274,8 +274,8 @@ def main() -> int:
 
     # Validation
     if args.validate:
-        from metainformant.rna.workflow import load_workflow_config
-        from metainformant.rna.validation import validate_all_samples, save_validation_report
+        from metainformant.rna.engine.workflow import load_workflow_config
+        from metainformant.rna.analysis.validation import validate_all_samples, save_validation_report
         
         logger.info(f"Running validation for {config_path.name}")
         config = load_workflow_config(config_path)
@@ -312,6 +312,35 @@ def main() -> int:
         else:
             logger.info("  All samples passed validation")
             return 0
+
+    # Run robust download if getfastq is in steps (or steps is None/all)
+    should_run_download = args.steps is None or 'getfastq' in args.steps
+    
+    if should_run_download and not args.validate: # Skip if validating
+        # Determine metadata path and fastq dir
+        # We need to load config to get work_dir
+        from metainformant.rna.engine.workflow import load_workflow_config
+        cfg = load_workflow_config(config_path)
+        
+        metadata_path = cfg.work_dir / "metadata" / "metadata_selected.tsv"
+        fastq_dir = cfg.work_dir.parent / "fastq" / "getfastq" # Default layout assumption
+        
+        steps_config = cfg.extra_config.get('steps', {})
+        if 'getfastq' in steps_config and 'out_dir' in steps_config['getfastq']:
+             fastq_dir = Path(steps_config['getfastq']['out_dir'])
+             if fastq_dir.name != "getfastq":
+                 fastq_dir = fastq_dir / "getfastq"
+
+        if metadata_path.exists():
+            print(f"DEBUG: Metadata found at {metadata_path}, running robust download...")
+            logger.info(f"Running robust pre-download for SRA files to {fastq_dir}...")
+            from metainformant.core.io.download_robust import download_sra_files_from_metadata
+            download_sra_files_from_metadata(metadata_path, fastq_dir)
+        else:
+            print(f"DEBUG: Metadata NOT found at {metadata_path}")
+            logger.info("Metadata selected file not found yet, skipping robust pre-download (will run in normal flow)")
+    else:
+        print(f"DEBUG: Skipping robust download. should_run_download={should_run_download}")
 
     # Run workflow
     logger.info(f"Running workflow for {config_path.name}")

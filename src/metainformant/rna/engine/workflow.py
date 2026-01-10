@@ -239,6 +239,10 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
                         "even if they already exist. Consider using redo: no to skip already-downloaded files. "
                         "Use redo: yes only if files are corrupted or you need to refresh data."
                     )
+        
+            # Ensure work_dir is always set (crucial for steps like merge to find inputs)
+            if 'work_dir' not in step_params:
+                step_params['work_dir'] = str(config.work_dir)
         else:
             # Use common config params
             step_params = {
@@ -260,7 +264,42 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
                 
                 step_params['jobs'] = jobs
                 step_params['threads'] = threads_per_job
+                step_params['jobs'] = jobs
+                step_params['threads'] = threads_per_job
                 logger.debug(f"Auto-configured parallel getfastq: {jobs} jobs with {threads_per_job} threads each (total threads: {total_threads})")
+
+            # INTELLIGENT REDO LOGIC:
+            # We check if SRA files exist to prevent `amalgkit` from nuking them (default behavior of redo: yes).
+            # However, there is a nuance: if `download_robust` creates the directory structure (e.g. output/SRR123/),
+            # `amalgkit` with `redo: no` might see the directory and skip extraction entirely if it assumes existence
+            # implies completion.
+            #
+            # The logic below overrides `redo: yes` -> `redo: no` ONLY if files are physically present.
+            # But if extraction fails because amalgkit skips, the user must run with strict `redo: yes` 
+            # (which will re-download) or ensure FASTQ files are present.
+            #
+            # Future improvement: Check for FASTQ files specifically before overriding.
+            getfastq_out_dir = Path(step_params.get('out_dir', str(config.work_dir / 'fastq')))
+            if getfastq_out_dir.name != 'getfastq':
+                 getfastq_subdir = getfastq_out_dir / 'getfastq'
+                 
+            sra_files_found = 0
+            if getfastq_subdir.exists():
+                sra_files_found = len(list(getfastq_subdir.glob('**/*.sra')) + list(getfastq_subdir.glob('**/*.sra.part')))
+
+            if sra_files_found > 0:
+                 current_redo = step_params.get('redo', 'no')
+                 is_redo_yes = str(current_redo).lower() in ('yes', 'true', '1')
+                 
+                 if is_redo_yes:
+                     logger.warning(
+                         f"Found {sra_files_found} SRA files in {getfastq_subdir}. "
+                         f"Overriding 'redo: yes' to 'redo: no' to prevent deletion/redownload. "
+                         f"NOTE: If extraction skips inappropriately, please delete SRA files or force redo."
+                     )
+                     step_params['redo'] = 'no'
+                 else:
+                     logger.info(f"Verified {sra_files_found} SRA files exist. Keeping 'redo: no' to enable extraction.")
 
         # Auto-inject metadata path for select step
         if step == 'select' and 'metadata' not in step_params:
@@ -491,6 +530,206 @@ def _check_disk_space(path: Path, min_free_gb: float = 10.0) -> bool:
         return True  # Assume OK if we can't check
 
 
+def prepare_extraction_directories(getfastq_dir: Path) -> int:
+    """Prepare directories for FASTQ extraction by cleaning empty sample dirs.
+    
+    Amalgkit with redo: no skips extraction if sample directories exist,
+    even if they're empty or only contain SRA files without FASTQ output.
+    This function:
+    1. Finds all sample directories (SRR*, ERR*, DRR*)
+    2. For each dir: if SRA present but no .amalgkit.fastq.gz -> move SRA to root sra/ dir
+    3. Delete the empty sample directory so amalgkit will re-create and extract
+    
+    Args:
+        getfastq_dir: Path to the getfastq output directory
+        
+    Returns:
+        Number of directories cleaned
+    """
+    if not getfastq_dir.exists():
+        logger.debug(f"getfastq directory does not exist: {getfastq_dir}")
+        return 0
+    
+    # Ensure we have a central sra/ directory for preserving downloaded files
+    sra_backup_dir = getfastq_dir / 'sra'
+    sra_backup_dir.mkdir(parents=True, exist_ok=True)
+    
+    cleaned_count = 0
+    sample_dirs = list(getfastq_dir.glob('SRR*')) + list(getfastq_dir.glob('ERR*')) + list(getfastq_dir.glob('DRR*'))
+    
+    for sample_dir in sample_dirs:
+        if not sample_dir.is_dir():
+            continue
+            
+        # Check for FASTQ output
+        fastq_files = list(sample_dir.glob('*.amalgkit.fastq.gz'))
+        if fastq_files:
+            # FASTQ already extracted, skip
+            continue
+            
+        # Check for SRA files
+        sra_files = list(sample_dir.glob('*.sra'))
+        
+        if sra_files:
+            # SRA present but no FASTQ - need to force extraction
+            # Move SRA to backup location before deleting dir
+            for sra_file in sra_files:
+                backup_path = sra_backup_dir / sra_file.name
+                if not backup_path.exists():
+                    logger.info(f"Moving SRA for extraction: {sra_file.name} -> sra/")
+                    shutil.move(str(sra_file), str(backup_path))
+                else:
+                    # Already backed up, just remove
+                    sra_file.unlink()
+        
+        # Remove the empty sample directory so amalgkit will re-create it during extraction
+        try:
+            # Remove any remaining files in the directory
+            for item in sample_dir.iterdir():
+                if item.is_file():
+                    item.unlink()
+                elif item.is_dir():
+                    shutil.rmtree(item)
+            sample_dir.rmdir()
+            logger.info(f"Cleaned empty sample directory for re-extraction: {sample_dir.name}")
+            cleaned_count += 1
+        except Exception as e:
+            logger.warning(f"Could not clean directory {sample_dir}: {e}")
+    
+    if cleaned_count > 0:
+        logger.info(f"Prepared {cleaned_count} directories for FASTQ extraction")
+        logger.info(f"SRA files preserved in: {sra_backup_dir}")
+    
+    return cleaned_count
+
+
+def prepare_reference_genome(config: AmalgkitWorkflowConfig) -> bool:
+    """Download reference genome and build index if needed.
+    
+    This function checks if the kallisto index for the species currently exists.
+    If not, it downloads the transcriptome FASTA from the URL specified in
+    the config and builds the index using 'kallisto index'.
+    
+    Args:
+        config: Workflow configuration
+        
+    Returns:
+        True if index is ready (exists or created), False on failure
+    """
+    if not config.genome or 'ftp_url' not in config.genome:
+        logger.debug("No genome configuration or FTP URL found, skipping automated genome prep")
+        return True
+        
+    try:
+        species_name = config.species_list[0] if config.species_list else "species"
+        
+        # 1. Define paths
+        # Index location: {work_dir}/index/{Species}_transcripts.idx
+        index_dir = config.work_dir / 'index'
+        index_file = index_dir / f"{species_name}_transcripts.idx"
+        
+        if index_file.exists():
+            logger.info(f"Reference genome index found at: {index_file}")
+            return True
+            
+        logger.info(f"Reference index missing at {index_file}. Preparing reference genome...")
+        
+        # 2. Get download URL
+        # URL construction: ftp_url + files.transcriptome_fasta
+        ftp_url = config.genome['ftp_url'].rstrip('/')
+        transcriptome_file = config.genome.get('files', {}).get('transcriptome_fasta')
+        
+        if not transcriptome_file:
+            logger.warning("No transcriptome_fasta file name in config genome.files")
+            return False
+            
+        download_url = f"{ftp_url}/{transcriptome_file}"
+        
+        # 3. Create destination
+        dest_dir = Path(config.genome.get('dest_dir', config.work_dir.parent / 'genome'))
+        dest_dir.mkdir(parents=True, exist_ok=True)
+        dest_file = dest_dir / transcriptome_file
+        
+        # 4. Download file
+        if not dest_file.exists():
+            logger.info(f"Downloading transcriptome from {download_url}...")
+            # Use curl for simplicity
+            import subprocess
+            cmd = ['curl', '-L', '-o', str(dest_file), download_url]
+            result = subprocess.run(cmd, check=True)
+            if result.returncode != 0:
+                logger.error("Download failed")
+                return False
+            logger.info("Download complete")
+        else:
+             logger.info(f"Transcriptome file already exists at {dest_file}")
+             
+        # 5. Build Index
+        index_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Building kallisto index at {index_file}...")
+        
+        # Find kallisto executable (assume in path or env)
+        kallisto_cmd = ['kallisto', 'index', '-i', str(index_file), str(dest_file)]
+        
+        import subprocess
+        result = subprocess.run(kallisto_cmd, capture_output=True, text=True)
+        
+        if result.returncode == 0:
+            logger.info("Genome index built successfully")
+            return True
+        else:
+            logger.error(f"Kallisto index failed: {result.stderr}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Failed to prepare reference genome: {e}")
+        return False
+
+
+        return False
+
+
+def verify_getfastq_prerequisites(config: AmalgkitWorkflowConfig, steps_planned: List[Tuple[str, Any]]) -> None:
+    """Verify prerequisites before running getfastq (e.g. SRA files exist).
+    
+    Args:
+        config: Workflow configuration
+        steps_planned: Planned steps
+    """
+    # Only run if getfastq is in the plan
+    getfastq_params = next((params for step, params in steps_planned if step == 'getfastq'), None)
+    if not getfastq_params:
+        return
+        
+    logger.info("--- Pre-flight Check: getfastq ---")
+    
+    # 1. Check directories
+    out_dir = Path(getfastq_params.get('out_dir', str(config.work_dir / 'fastq')))
+    getfastq_dir = out_dir / 'getfastq' if out_dir.name != 'getfastq' else out_dir
+    
+    logger.info(f"Target Directory: {getfastq_dir}")
+    if getfastq_dir.exists():
+        sras = list(getfastq_dir.glob('**/*.sra'))
+        parts = list(getfastq_dir.glob('**/*.sra.part'))
+        fastqs = list(getfastq_dir.glob('**/*.fastq.gz*'))
+        
+        logger.info(f"Files Found:")
+        logger.info(f"  - SRA files (.sra): {len(sras)}")
+        logger.info(f"  - Partial downloads (.part): {len(parts)}") 
+        logger.info(f"  - Extracted FASTQ (.fastq.gz): {len(fastqs)}")
+        
+        if len(sras) > 0:
+             logger.info("✓ SRA files detected. 'redo: no' should trigger extraction.")
+        elif len(parts) > 0:
+             logger.warning("! Only partial downloads found. Robust download may be incomplete.")
+        elif len(fastqs) == 0:
+             logger.warning("! No input SRA or output FASTQ files found. getfastq will attempt fresh download.")
+    else:
+        logger.info(f"Directory {getfastq_dir} does not exist yet.")
+        
+    logger.info("----------------------------------")
+
+
 def sanitize_params_for_cli(subcommand: str, params: Dict[str, Any]) -> Dict[str, Any]:
     """Sanitize parameters for CLI usage.
 
@@ -518,6 +757,9 @@ def sanitize_params_for_cli(subcommand: str, params: Dict[str, Any]) -> Dict[str
         if isinstance(value, Path):
             # Use absolute path to ensure amalgkit can find files regardless of working directory
             sanitized[key] = str(value.resolve())
+
+    # ALWAYS remove work_dir - amalgkit CLI does not accept --work-dir (only --out_dir)
+    sanitized.pop('work_dir', None)
 
     # Remove invalid parameters per subcommand
     INVALID_PARAMS = {
@@ -568,15 +810,8 @@ def _is_step_completed(step_name: str, step_params: dict, config: AmalgkitWorkfl
         return False, None
     
     elif step_name == 'getfastq':
-        # Check for FASTQ files in getfastq output directory
-        fastq_dir = Path(step_params.get('out_dir', work_dir / 'fastq'))
-        if fastq_dir.name != 'getfastq':
-            fastq_dir = fastq_dir / 'getfastq'
-        
-        if fastq_dir.exists():
-            fastq_files = list(fastq_dir.glob('**/*.fastq*'))
-            if fastq_files:
-                return True, f"{len(fastq_files)} FASTQ files in {fastq_dir}"
+        # Defer to amalgkit's internal skipping logic (redo: no)
+        # We don't want to skip the whole step if only some files are missing
         return False, None
     
     elif step_name == 'integrate':
@@ -595,11 +830,8 @@ def _is_step_completed(step_name: str, step_params: dict, config: AmalgkitWorkfl
         return False, None
     
     elif step_name == 'quant':
-        # Check for quantification output files
-        quant_dir = Path(step_params.get('out_dir', work_dir))
-        quant_files = list(quant_dir.glob('quant/**/abundance.tsv'))
-        if quant_files:
-            return True, f"{len(quant_files)} abundance files in {quant_dir / 'quant'}"
+        # Defer to amalgkit's internal skipping logic (redo: no)
+        # We don't want to skip the whole step if only some specific samples are missing
         return False, None
     
     elif step_name == 'merge':
@@ -666,6 +898,12 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
         getfastq, quant, merge, cstmm, curate, csca, sanity
     )
     from metainformant.rna.amalgkit.amalgkit import config as amalgkit_config
+    
+    # Check if we need to prepare reference genome (for quant step)
+    has_quant_or_merge = (not steps) or any(s in ('quant', 'merge') for s in steps)
+    if not steps or has_quant_or_merge:
+        # If running steps is None (all) or includes quant/merge, ensure genome is ready
+        prepare_reference_genome(config)
 
     logger.info(f"Starting amalgkit workflow for species: {config.species_list}")
     logger.info(f"Working directory: {config.work_dir}")
@@ -691,6 +929,10 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
             successful_steps=0,
             failed_steps=0
         )
+        
+    # Run pre-flight checks
+    if any(step == 'getfastq' for step, _ in steps_planned):
+        verify_getfastq_prerequisites(config, steps_planned)
 
     # Configure vdb-config repository path for getfastq step (if getfastq is in workflow)
     # prefetch downloads SRA files to vdb-config repository root, so we need to set it to
@@ -733,6 +975,12 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
                 else:
                     logger.warning(f"Could not set vdb-config repository path (may require interactive): {result.stderr[:100]}")
                     logger.info(f"Will rely on TMPDIR and VDB_CONFIG environment variables")
+                
+                # CRITICAL: Prepare directories for extraction by cleaning empty sample dirs
+                # This fixes the issue where amalgkit skips extraction if sample directories exist
+                cleaned = prepare_extraction_directories(getfastq_dir)
+                if cleaned > 0:
+                    logger.info(f"Prepared {cleaned} sample directories for extraction")
             else:
                 logger.warning("Could not find getfastq step parameters, skipping vdb-config setup")
         except Exception as e:
@@ -879,7 +1127,7 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
             # Execute step (pass params dict directly, not AmalgkitParams)
             command_str = None
             if show_commands:
-                from metainformant.rna.amalgkit.amalgkit.amalgkit import build_amalgkit_command
+                from metainformant.rna.amalgkit.amalgkit import build_amalgkit_command
                 sanitized_params = sanitize_params_for_cli(step_name, step_params)
                 command = build_amalgkit_command(step_name, sanitized_params)
                 command_str = ' '.join(command)

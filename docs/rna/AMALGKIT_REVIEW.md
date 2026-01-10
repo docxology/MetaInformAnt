@@ -4,7 +4,35 @@
 **Reviewer**: AI Code Assistant (Claude Sonnet 4.5)  
 **Module Version**: METAINFORMANT 0.2.0  
 **Amalgkit Version**: Latest (October 2025)  
-**Status**: ✅ EXCELLENT - Production Ready
+**Status**: ✅ EXCELLENT - Production Ready (Updated Jan 2026)
+
+---
+
+## Jan 2026 Critical Update: Robust SRA Download
+
+**Date**: January 8, 2026
+**Focus**: SRA Download Reliability & "LITE" File Remediation
+
+### The Challenge: "LITE" SRA Files
+In early 2026 testing with *Pogonomyrmex barbatus*, a critical failure mode was identified with the standard `amalgkit getfastq` workflow.
+- **Symptom**: `amalgkit` would successfully "download" files via `prefetch` or `fasterq-dump`, but extraction would fail, or files would be tiny (metadata only).
+- **Cause**: NCBI/ENA provide "LITE" versions of SRA files for some older samples. These files contain valid metadata and headers but **zero sequence data**. `amalgkit` (v0.4) does not automatically distinguish or recover from this.
+- **Impact**: Workflow would halt at `getfastq`, preventing any downstream analysis.
+
+### The Solution: Robust Download Interceptor
+To resolve this, we implemented a **Robust Download Interceptor** that runs *before* `amalgkit getfastq`.
+
+1.  **Module**: `src/metainformant/core/io/download_robust.py`
+2.  **Mechanism**:
+    -   Reads the selected metadata file (`metadata_selected.tsv`).
+    -   Bypasses `prefetch`/`sra-tools` entirely for the download phase.
+    -   Uses `curl` (with retries and resume `-C -`) to fetch the **full SRA object** directly from AWS Open Data (`https://sra-pub-run-odp.s3.amazonaws.com/...`).
+    -    Places the `.sra` file exactly where `amalgkit` expects it (`fastq/getfastq/<sample_id>/<sample_id>.sra`).
+3.  **Result**: When `amalgkit getfastq` runs, it detects the existing (full) `.sra` file, verifies it, and proceeds directly to `fasterq-dump` extraction, successfully generating FASTQ data.
+
+### Configuration Learnings
+-   **Work Dir Propagation**: `plan_workflow` must explicitly inject `work_dir` into step parameters, otherwise `amalgkit merge` (which runs in a different directory scope) cannot locate `quant` outputs.
+-   **Sample Limits**: Ensure config `max_sample` matches the intended scope (e.g., don't leave `max_sample: 1` in a "5-sample" config).
 
 ---
 

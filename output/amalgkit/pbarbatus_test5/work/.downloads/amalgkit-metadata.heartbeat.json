@@ -1,9 +1,9 @@
 {
-  "bytes_downloaded": 127638,
+  "bytes_downloaded": 126752,
   "destination": "output/amalgkit/pbarbatus_test5/work/metadata",
   "errors": [],
   "eta_seconds": null,
-  "last_update": "2026-01-08T02:09:44Z",
+  "last_update": "2026-01-09T17:40:18Z",
   "progress": {
     "current": 1,
     "percent": 25.0,
@@ -11,8 +11,8 @@
     "type": "file_count"
   },
   "progress_percent": 25.0,
-  "speed_mbps": 0.024275083377963875,
-  "started_at": "2026-01-08T02:09:39Z",
+  "speed_mbps": 0.030099933169703892,
+  "started_at": "2026-01-09T17:40:14Z",
   "status": "completed",
   "step": "amalgkit metadata",
   "total_bytes": null,

@@ -31,7 +31,7 @@
     },
     "description": "End-to-end analysis from raw data to publication-ready results",
     "efficiency_metrics": {
-      "average_stage_duration": 0.300324022769928,
+      "average_stage_duration": 0.30237889289855957,
       "data_flow": [
         "validated_datasets",
         "qc_filtered_data",
@@ -42,9 +42,9 @@
         "figures_and_plots",
         "final_report"
       ],
-      "efficiency_ratio": 9.989210894055711,
+      "efficiency_ratio": 9.921327415556163,
       "stages_completed": 8,
-      "total_duration": 2.402592182159424,
+      "total_duration": 2.4190311431884766,
       "total_stages": 8
     },
     "key_achievements": [
@@ -56,9 +56,9 @@
     ],
     "stages_executed": [
       {
-        "cumulative_time": 0.20121192932128906,
+        "cumulative_time": 0.20016098022460938,
         "description": "Load and validate input data",
-        "duration_actual": 0.20121192932128906,
+        "duration_actual": 0.20016098022460938,
         "duration_estimate": 2.0,
         "output_generated": "validated_datasets",
         "stage_name": "data_ingestion",
@@ -66,9 +66,9 @@
         "status": "completed"
       },
       {
-        "cumulative_time": 0.5013885498046875,
+        "cumulative_time": 0.502112865447998,
         "description": "Assess data quality and filter",
-        "duration_actual": 0.30017662048339844,
+        "duration_actual": 0.30195188522338867,
         "duration_estimate": 3.0,
         "output_generated": "qc_filtered_data",
         "stage_name": "quality_control",
@@ -76,9 +76,9 @@
         "status": "completed"
       },
       {
-        "cumulative_time": 1.00154447555542,
+        "cumulative_time": 1.0027778148651123,
         "description": "Sequence alignment and variant calling",
-        "duration_actual": 0.5001559257507324,
+        "duration_actual": 0.5006649494171143,
         "duration_estimate": 5.0,
         "output_generated": "variant_calls",
         "stage_name": "dna_analysis",
@@ -86,9 +86,9 @@
         "status": "completed"
       },
       {
-        "cumulative_time": 1.4017674922943115,
+        "cumulative_time": 1.4079477787017822,
         "description": "Gene expression quantification",
-        "duration_actual": 0.4002230167388916,
+        "duration_actual": 0.4051699638366699,
         "duration_estimate": 4.0,
         "output_generated": "expression_matrix",
         "stage_name": "rna_analysis",
@@ -96,9 +96,9 @@
         "status": "completed"
       },
       {
-        "cumulative_time": 1.7019238471984863,
+        "cumulative_time": 1.7083630561828613,
         "description": "Multi-omics data integration",
-        "duration_actual": 0.3001563549041748,
+        "duration_actual": 0.3004152774810791,
         "duration_estimate": 3.0,
         "output_generated": "integrated_dataset",
         "stage_name": "integration",
@@ -106,9 +106,9 @@
         "status": "completed"
       },
       {
-        "cumulative_time": 2.10209584236145,
+        "cumulative_time": 2.112995147705078,
         "description": "Differential analysis and modeling",
-        "duration_actual": 0.40017199516296387,
+        "duration_actual": 0.4046320915222168,
         "duration_estimate": 4.0,
         "output_generated": "statistical_results",
         "stage_name": "statistical_analysis",
@@ -116,9 +116,9 @@
         "status": "completed"
       },
       {
-        "cumulative_time": 2.3022353649139404,
+        "cumulative_time": 2.3177101612091064,
         "description": "Generate publication-ready figures",
-        "duration_actual": 0.20013952255249023,
+        "duration_actual": 0.20471501350402832,
         "duration_estimate": 2.0,
         "output_generated": "figures_and_plots",
         "stage_name": "visualization",
@@ -126,9 +126,9 @@
         "status": "completed"
       },
       {
-        "cumulative_time": 2.4023876190185547,
+        "cumulative_time": 2.418674945831299,
         "description": "Create comprehensive analysis report",
-        "duration_actual": 0.10015225410461426,
+        "duration_actual": 0.10096478462219238,
         "duration_estimate": 1.0,
         "output_generated": "final_report",
         "stage_name": "report_generation",

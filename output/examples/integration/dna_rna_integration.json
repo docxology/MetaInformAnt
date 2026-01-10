@@ -1,10 +1,10 @@
 {
   "dna_rna_integration": {
     "correlations_found": {
-      "gc_content_vs_expression": 0.8449594754658699,
-      "gene_lengths_vs_expression": 0.07561709980748327,
-      "intron_count_vs_expression": 0.0873582331478993,
-      "tss_motifs_vs_expression": 0.48612349277235567
+      "gc_content_vs_expression": 0.8449594754658698,
+      "gene_lengths_vs_expression": 0.07561709980748325,
+      "intron_count_vs_expression": 0.08735823314789928,
+      "tss_motifs_vs_expression": 0.48612349277235556
     },
     "dna_features_integrated": [
       "gene_lengths",
@@ -21,9 +21,9 @@
           "vs_all_genes": 1.4958802686268593
         },
         "gene_lengths": {
-          "mean": 1881.117567987682,
+          "mean": 1881.1175679876822,
           "median": 1887.1118497567322,
-          "vs_all_genes": 0.9656280618234342
+          "vs_all_genes": 0.9656280618234343
         },
         "intron_count": {
           "mean": 3.08,
@@ -37,7 +37,7 @@
         }
       },
       "genes_above_threshold": 25,
-      "threshold": 487.2380337457309
+      "threshold": 487.23803374573095
     },
     "integration_insights": [
       "GC content shows moderate positive correlation with expression",
@@ -48,7 +48,7 @@
     "integration_type": "dna_features_to_rna_expression",
     "top_correlation": [
       "gc_content_vs_expression",
-      0.8449594754658699
+      0.8449594754658698
     ]
   }
 }

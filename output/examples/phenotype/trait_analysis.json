@@ -1,9 +1,9 @@
 {
   "phenotype_analysis": {
     "correlations": {
-      "body_length_vs_colony_size": 0.19083991336126765,
-      "body_length_vs_wing_span": -0.1364222121700024,
-      "wing_span_vs_colony_size": -0.03663174574715583
+      "body_length_vs_colony_size": 0.1908399133612676,
+      "body_length_vs_wing_span": -0.13642221217000247,
+      "wing_span_vs_colony_size": -0.036631745747155796
     },
     "individuals": 100,
     "traits_analyzed": [

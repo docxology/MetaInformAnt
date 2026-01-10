@@ -7,6 +7,12 @@
 The RNA domain provides RNA-seq analysis workflows, integrating with external tools like Amalgkit for transcriptomic analysis.
 
 ### RNA-seq Analysis Workflow
+**New in Jan 2026:**
+- **Automated Genome Indexing**: Automatically downloads and builds kallisto reference indices.
+- **Robust SRA Download**: Intercepts "LITE" files and performs parallel, resumable downloads via AWS Open Data.
+- **Intelligent Redo**: Automatically detects existing SRA files and overrides `redo: yes` to prevent unnecessary redownloads.
+- **Pre-flight Checks**: Validates inputs before long-running steps.
+
 
 ```mermaid
 graph TD
@@ -157,6 +163,15 @@ Automated genome download, transcriptome extraction, and kallisto index building
 - [amalgkit/genome_setup_guide.md](amalgkit/genome_setup_guide.md) - User guide
 - [amalgkit/genome_preparation.md](amalgkit/genome_preparation.md) - Technical API
 - [API.md](API.md#genome-preparation-functions) - Function reference
+
+### Robustness Features (Jan 2026)
+
+- **Robust Download Interceptor**: Automatically detects "LITE" SRA files and fetches full data from AWS Open Data.
+- **Intelligent Redo**: Prevents accidental deletion of downloaded files by verifying presence before `getfastq` execution.
+  > [!IMPORTANT]
+  > **Directory Structure Nuance**: `amalgkit`'s internal skipping logic checks for the existence of the output directory/files. If `download_robust` creates a directory structure, `amalgkit` with `redo: no` may assume extraction is complete even if FASTQ files are missing. The orchestrator handles this by defaulting to `redo: no` only when *files* are verified, but provides alerts (`redo: yes` override warnings) to guide manual intervention if needed.
+- **Automated Indexing**: `prepare_reference_genome` runs automatically before quantification steps.
+
 
 ---
 
@@ -312,6 +327,6 @@ The RNA domain provides:
 
 ---
 
-**Last Updated**: November 2025  
-**Documentation Status**: Complete and organized  
-**Production Status**: Validated with 4,548 samples across 20 ant species
+**Last Updated**: January 2026
+**Documentation Status**: Complete and organized
+**Production Status**: Validated with 4,548 samples across 20 ant species (Robust SRA Download Active)

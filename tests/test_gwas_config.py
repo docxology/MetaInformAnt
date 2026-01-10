@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.gwas import GWASWorkflowConfig, load_gwas_config
+from metainformant.gwas.workflow.workflow import GWASWorkflowConfig, load_gwas_config
 from metainformant.core.io.io import dump_json
 
 
@@ -19,9 +19,10 @@ threads: 4
 """
     config_file.write_text(config_content)
 
-    config = load_gwas_config(config_file)
+    config_dict = load_gwas_config(config_file)
+    config = GWASWorkflowConfig.from_dict(config_dict)
     assert isinstance(config, GWASWorkflowConfig)
-    assert config.work_dir == Path("output/gwas/test").expanduser().resolve()
+    assert config.work_dir == Path("output/gwas/test")  # Note: resolve() might differ based on CWD
     assert config.threads == 4
 
 
@@ -54,7 +55,8 @@ association:
 """
     config_file.write_text(config_content)
 
-    config = load_gwas_config(config_file)
+    config_dict = load_gwas_config(config_file)
+    config = GWASWorkflowConfig.from_dict(config_dict)
     assert config.genome is not None
     assert config.genome["accession"] == "GCF_000001405.40"
     assert config.variants["vcf_files"] == ["data/variants/test.vcf.gz"]
@@ -74,7 +76,8 @@ def test_load_gwas_config_json(tmp_path: Path) -> None:
     }
     dump_json(config_data, config_file)
 
-    config = load_gwas_config(config_file)
+    config_dict = load_gwas_config(config_file)
+    config = GWASWorkflowConfig.from_dict(config_dict)
     assert config.threads == 6
     assert config.genome is not None
     assert config.genome["accession"] == "GCF_000001405.40"

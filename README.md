@@ -24,7 +24,7 @@ METAINFORMANT analyzes biological data across genomics, transcriptomics, proteom
 ### **Production-Ready Capabilities:**
 - **Core Infrastructure**: Complete I/O, config, logging, parallel processing
 - **DNA Analysis**: Sequences, population genetics, phylogenetics, alignment
-- **RNA Analysis**: Complete Amalgkit integration and workflow orchestration
+- **RNA Analysis**: Complete Amalgkit integration, robust SRA downloads, automated genome indexing
 - **GWAS Pipeline**: Association testing, QC, visualization, variant calling
 - **Systems Biology**: PPI networks, pathway analysis, multi-omics integration
 - **Machine Learning**: Classification, regression, feature selection

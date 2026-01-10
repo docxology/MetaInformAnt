@@ -34,6 +34,19 @@ class Event:
     domain: str
     attributes: Dict[str, Any] = field(default_factory=dict)
 
+    def __post_init__(self):
+        """Validate event data."""
+        if not self.event_type:
+            raise ValueError("event_type cannot be empty")
+        if not self.domain:
+            raise ValueError("domain cannot be empty")
+        
+        # Auto-convert numeric timestamp to datetime
+        if isinstance(self.timestamp, (int, float)):
+            self.timestamp = datetime.fromtimestamp(self.timestamp)
+        elif isinstance(self.timestamp, str):
+            self.timestamp = datetime.fromisoformat(self.timestamp)
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert event to dictionary for serialization."""
         return {
@@ -46,9 +59,15 @@ class Event:
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> Event:
         """Create event from dictionary."""
+        timestamp = data['timestamp']
+        if isinstance(timestamp, (int, float)):
+            ts_obj = datetime.fromtimestamp(timestamp)
+        else:
+            ts_obj = datetime.fromisoformat(timestamp)
+            
         return cls(
             event_type=data['event_type'],
-            timestamp=datetime.fromisoformat(data['timestamp']),
+            timestamp=ts_obj,
             domain=data['domain'],
             attributes=data.get('attributes', {})
         )
@@ -63,15 +82,25 @@ class EventSequence:
     Provides methods for filtering, querying, and analyzing temporal event sequences.
     """
 
-    def __init__(self, person_id: str, events: List[Event]):
+    def __init__(self, person_id: str, events: Optional[List[Event]] = None, metadata: Optional[Dict[str, Any]] = None):
         """Initialize event sequence.
 
         Args:
             person_id: Unique identifier for the individual
             events: List of events in chronological order
+            metadata: Optional metadata dictionary
         """
         self.person_id = person_id
-        self.events = sorted(events, key=lambda e: e.timestamp)
+        self.events = sorted(events or [], key=lambda e: e.timestamp)
+        self.metadata = metadata or {}
+
+    def filter_by_time(self, start_time: datetime | float, end_time: datetime | float) -> EventSequence:
+        """Alias for filter_by_time_range with flexible input."""
+        if isinstance(start_time, (int, float)):
+            start_time = datetime.fromtimestamp(start_time)
+        if isinstance(end_time, (int, float)):
+            end_time = datetime.fromtimestamp(end_time)
+        return self.filter_by_time_range(start_time, end_time)
 
     def filter_by_domain(self, domain: str) -> EventSequence:
         """Filter events by domain.
@@ -127,14 +156,15 @@ class EventSequence:
         """Convert sequence to dictionary for serialization."""
         return {
             'person_id': self.person_id,
-            'events': [e.to_dict() for e in self.events]
+            'events': [e.to_dict() for e in self.events],
+            'metadata': self.metadata
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> EventSequence:
         """Create sequence from dictionary."""
         events = [Event.from_dict(e_data) for e_data in data['events']]
-        return cls(data['person_id'], events)
+        return cls(data['person_id'], events, metadata=data.get('metadata'))
 
     def __len__(self) -> int:
         return len(self.events)
@@ -153,14 +183,25 @@ class EventDatabase:
     querying, filtering, and batch operations.
     """
 
-    def __init__(self, sequences: List[EventSequence]):
+    def __init__(self, sequences: Optional[List[EventSequence]] = None, metadata: Optional[Dict[str, Any]] = None):
         """Initialize database.
 
         Args:
             sequences: List of EventSequence objects
+            metadata: Optional metadata dictionary
         """
-        self.sequences = sequences
+        self.sequences = sequences or []
+        self.metadata = metadata or {}
         self._build_index()
+
+    def add_sequence(self, sequence: EventSequence) -> None:
+        """Add a sequence to the database.
+
+        Args:
+            sequence: EventSequence to add
+        """
+        self.sequences.append(sequence)
+        self.person_index[sequence.person_id] = sequence
 
     def _build_index(self):
         """Build internal indices for efficient querying."""
@@ -191,7 +232,7 @@ class EventDatabase:
             for seq in self.sequences
         ]
         # Remove empty sequences
-        filtered_sequences = [seq for seq in filtered_sequences if len(seq) > 0]
+        # filtered_sequences = [seq for seq in filtered_sequences if len(seq) > 0]
         return EventDatabase(filtered_sequences)
 
     def filter_by_time_range(self, start: datetime, end: datetime) -> EventDatabase:
@@ -209,7 +250,7 @@ class EventDatabase:
             for seq in self.sequences
         ]
         # Remove empty sequences
-        filtered_sequences = [seq for seq in filtered_sequences if len(seq) > 0]
+        # filtered_sequences = [seq for seq in filtered_sequences if len(seq) > 0]
         return EventDatabase(filtered_sequences)
 
     def get_statistics(self) -> Dict[str, Any]:
@@ -221,16 +262,30 @@ class EventDatabase:
         total_events = sum(len(seq) for seq in self.sequences)
         event_types = set()
         domains = set()
+        
+        # Count occurrences
+        domain_counts = {}
+        event_type_counts = {}
 
         for seq in self.sequences:
-            event_types.update(seq.get_event_types())
-            domains.update(seq.get_domains())
+            seq_types = seq.get_event_types()
+            seq_domains = seq.get_domains()
+            event_types.update(seq_types)
+            domains.update(seq_domains)
+            
+            for event in seq.events:
+                domain_counts[event.domain] = domain_counts.get(event.domain, 0) + 1
+                event_type_counts[event.event_type] = event_type_counts.get(event.event_type, 0) + 1
 
         return {
             'num_sequences': len(self.sequences),
+            'n_sequences': len(self.sequences),
             'total_events': total_events,
+            'n_events': total_events,
             'unique_event_types': len(event_types),
             'unique_domains': len(domains),
+            'domains': domain_counts,
+            'event_types': event_type_counts,
             'avg_events_per_sequence': total_events / len(self.sequences) if self.sequences else 0
         }
 
@@ -269,7 +324,21 @@ class EventDatabase:
             data = json.load(f)
 
         sequences = [EventSequence.from_dict(seq_data) for seq_data in data['sequences']]
-        return cls(sequences)
+        return cls(sequences, metadata=data.get('metadata', {}))
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert database to dictionary for serialization."""
+        return {
+            'sequences': [seq.to_dict() for seq in self.sequences],
+            'statistics': self.get_statistics(),
+            'metadata': self.metadata
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> EventDatabase:
+        """Create database from dictionary."""
+        sequences = [EventSequence.from_dict(s) for s in data['sequences']]
+        return cls(sequences, metadata=data.get('metadata'))
 
     def __len__(self) -> int:
         return len(self.sequences)

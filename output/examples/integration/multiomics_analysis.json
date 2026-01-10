@@ -7,23 +7,23 @@
       "Multi-omics integration reveals complex regulatory relationships"
     ],
     "cross_omics_correlations": {
-      "genomics_vs_metabolomics": 0.17903559258825702,
-      "genomics_vs_proteomics": -0.06304232434484308,
-      "genomics_vs_transcriptomics": 0.006289410557368484,
-      "proteomics_vs_metabolomics": 0.2766341709663924,
-      "transcriptomics_vs_metabolomics": 0.27985281132132483,
-      "transcriptomics_vs_proteomics": 0.44665221532366767
+      "genomics_vs_metabolomics": 0.1790355925882568,
+      "genomics_vs_proteomics": -0.06304232434484328,
+      "genomics_vs_transcriptomics": 0.006289410557368419,
+      "proteomics_vs_metabolomics": 0.27663417096639237,
+      "transcriptomics_vs_metabolomics": 0.2798528113213248,
+      "transcriptomics_vs_proteomics": 0.4466522153236676
     },
     "features_per_omics": 100,
     "integration_summary": {
       "omics_layers_integrated": 4,
       "strongest_cross_omics_correlation": [
         "transcriptomics_vs_proteomics",
-        0.44665221532366767
+        0.4466522153236676
       ],
       "strongest_phenotype_correlation": [
         "transcriptomics_vs_phenotype",
-        0.22612453635792534
+        0.22612453635792523
       ],
       "total_correlation_pairs": 10
     },
@@ -36,9 +36,9 @@
     ],
     "omics_phenotype_relationships": {
       "genomics_vs_phenotype": -0.1227183187839296,
-      "metabolomics_vs_phenotype": 0.03474678848310233,
-      "proteomics_vs_phenotype": 0.12398811595050578,
-      "transcriptomics_vs_phenotype": 0.22612453635792534
+      "metabolomics_vs_phenotype": 0.0347467884831022,
+      "proteomics_vs_phenotype": 0.12398811595050603,
+      "transcriptomics_vs_phenotype": 0.22612453635792523
     },
     "samples": 50
   }

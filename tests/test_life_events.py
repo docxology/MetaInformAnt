@@ -46,8 +46,8 @@ class TestEvent:
             timestamp=1577836800.0,  # Unix timestamp
             domain="address"
         )
-        assert isinstance(event.timestamp, float)
-        assert event.timestamp == 1577836800.0
+        assert isinstance(event.timestamp, datetime)
+        assert event.timestamp.timestamp() == 1577836800.0
 
     def test_event_validation_empty_type(self):
         """Test that empty event_type raises ValueError."""
@@ -102,7 +102,7 @@ class TestEvent:
             "domain": "address"
         }
         event = Event.from_dict(data)
-        assert isinstance(event.timestamp, float)
+        assert isinstance(event.timestamp, datetime)
 
 
 class TestEventSequence:

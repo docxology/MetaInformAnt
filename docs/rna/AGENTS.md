@@ -103,6 +103,12 @@ This document outlines AI assistance in creating METAINFORMANT's comprehensive R
 - Automated species detection and configuration generation
 - Quality control standardization across species
 
+### Jan 2026: Robust SRA Download Logic
+**Code Assistant Agent** implemented:
+- **`download_robust.py`**: A dedicated SRA downloader using `curl`/`wget` with retry logic.
+- **LITE File Bypass**: Logic to fetch full SRA objects from AWS, bypassing NCBI's "LITE" file limitations.
+- **Workflow Integration**: Seamless injection into `run_workflow.py` to pre-fetch data before `amalgkit` execution.
+
 ### Scientific Literature Integration
 **Documentation Agent** incorporated:
 - References to RNA-seq best practices and statistical methods

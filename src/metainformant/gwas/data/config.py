@@ -213,7 +213,12 @@ def load_gwas_config(config_path: str | Path) -> Dict[str, Any]:
     if not config_path.exists():
         raise FileNotFoundError(f"Configuration file not found: {config_path}")
 
-    config = io.load_json(config_path)
+    if config_path.suffix.lower() in ['.yaml', '.yml']:
+        config = io.load_yaml(config_path)
+    elif config_path.suffix.lower() == '.toml':
+        config = io.load_toml(config_path)
+    else:
+        config = io.load_json(config_path)
 
     # Merge with defaults
     config = merge_config_defaults(config)

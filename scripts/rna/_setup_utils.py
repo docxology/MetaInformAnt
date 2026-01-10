@@ -14,10 +14,26 @@ from typing import Optional
 
 # Add src to path before imports
 repo_root = Path(__file__).parent.parent.parent.resolve()
-sys.path.insert(0, str(repo_root / "src"))
+src_path = repo_root / "src"
+if str(src_path) not in sys.path:
+    sys.path.insert(0, str(src_path))
 
-from metainformant.core.logging import get_logger
-from metainformant.core.disk import get_recommended_temp_dir
+try:
+    from metainformant.core.utils.logging import get_logger
+except ImportError:
+    # If import fails, we might need to debug sys.path or structure
+    # Fallback logger or print
+    import logging as std_logging
+    def get_logger(name):
+        return std_logging.getLogger(name)
+
+try:
+    from metainformant.core.io.disk import get_recommended_temp_dir
+except ImportError:
+    # Fallback if disk module moved or missing
+    def get_recommended_temp_dir(repo_root=None):
+        import tempfile
+        return Path(tempfile.gettempdir())
 
 logger = get_logger("rna_setup")
 

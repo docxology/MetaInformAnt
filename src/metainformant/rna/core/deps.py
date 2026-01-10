@@ -21,7 +21,7 @@ def check_amalgkit_availability() -> Tuple[bool, str]:
     Returns:
         Tuple of (available, version_or_error_message)
     """
-    from metainformant.rna.amalgkit.amalgkit.amalgkit import check_cli_available
+    from metainformant.rna.amalgkit.amalgkit import check_cli_available
     available, msg = check_cli_available()
     # check_cli_available returns (bool, msg), dep report expects (bool, version/msg)
     # amalgkit.py's check_cli_available returns generic message if found via --help

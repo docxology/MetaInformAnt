@@ -86,7 +86,7 @@ steps:
     fastq_dir: output/amalgkit/pbarbatus_test5/fastq/getfastq
   config: {}
   select:
-    max_sample: 1  # End-to-end testing with 1 valid sample for speed
+    max_sample: 5  # Increased to 5 for test validation
   getfastq:
     out_dir: output/amalgkit/pbarbatus_test5/fastq
     threads: 4  # Reduced for limited samples

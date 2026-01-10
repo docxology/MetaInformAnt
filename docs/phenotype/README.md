@@ -6,8 +6,21 @@ This directory contains comprehensive documentation for METAINFORMANT's phenotyp
 
 ## Overview
 
-The phenotype domain provides tools for morphological and behavioral phenotype data analysis, including automated curation from web sources like AntWiki.
+behavioral phenotype data analysis, including automated curation from web sources like AntWiki.
 
+### Module Architecture
+
+```mermaid
+    subgraph "Phenotype Module"
+        AntWiki[antwiki<br/>AntWiki Integration]
+        LifeCourse[life_course<br/>Life Course Analysis]
+        Behavior[behavior<br/>Behavioral Analysis]
+        Chemical[chemical<br/>Chemotypes]
+        Sonic[sonic<br/>Acoustic Signals]
+        Morph[morphological<br/>Morphometrics]
+        Electronic[electronic<br/>Tracking Data]
+    end
+```
 ## Documentation Files
 
 ### Core Phenotype Tools

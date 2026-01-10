@@ -399,10 +399,18 @@ The METAINFORMANT wrapper provides additional functionality beyond stock amalgki
 ```python
 # From src/metainformant/rna/steps/getfastq.py
 # Automatic retry logic for failed downloads:
-# 1. Try amalgkit getfastq (uses parallel-fastq-dump)
-# 2. If fails, retry with prefetch + fasterq-dump
-# 3. Up to 3 attempts per sample
+# 1. NEW (Jan 2026): Checks for "LITE" files and uses `curl` to fetch full SRA objects directly from AWS Open Data (`https://sra-pub-run-odp.s3.amazonaws.com/...`).
+#    - This bypasses `prefetch`/`sra-tools` entirely for the download phase.
+#    - Supports resume (`-C -`) and retries.
+# 2. Falls back to amalgkit's default methods if direct download fails.
 ```
+
+### LITE File Bypass (Jan 2026)
+Older SRA entries often have "LITE" versions (metadata only) in NCBI/GCP. The workflow now automatically:
+1. Detects LITE metadata.
+2. Intercepts the download process.
+3. Downloads the **full** SRA file from AWS using `curl`.
+4. Places it where `amalgkit` expects it, allowing `getfastq` to proceed with extraction only.
 
 ### Cloud Acceleration (METAINFORMANT-specific)
 

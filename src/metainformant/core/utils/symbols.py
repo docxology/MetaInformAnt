@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from metainformant.core.io.io import io
+from metainformant.core.io.io import load_json, dump_json
 
 
 @dataclass
@@ -137,7 +137,7 @@ def index_functions(repo_root: str | Path, use_cache: bool = True) -> dict[str, 
     # Try to load from cache
     if use_cache and cache_file.exists():
         try:
-            cached_data = io.load_json(cache_file)
+            cached_data = load_json(cache_file)
             # Check if cache is still valid (simplified - could check mtimes)
             if cached_data:
                 index: dict[str, list[SymbolDefinition]] = {}
@@ -209,7 +209,7 @@ def index_functions(repo_root: str | Path, use_cache: bool = True) -> dict[str, 
                 }
                 for d in defs
             ]
-        io.dump_json(cache_data, cache_file)
+        dump_json(cache_data, cache_file)
 
     return index
 
