@@ -107,12 +107,15 @@ def get_sample_pipeline_status(sample_id: str, work_dir: Path,
     sample_quant_dir = quant_dir / sample_id
     if sample_quant_dir.exists():
         abundance_tsv = sample_quant_dir / "abundance.tsv"
+        sample_abundance_tsv = sample_quant_dir / f"{sample_id}_abundance.tsv"
         quant_sf = sample_quant_dir / "quant.sf"
         
-        if abundance_tsv.exists() and abundance_tsv.stat().st_size > 0:
+        if (abundance_tsv.exists() and abundance_tsv.stat().st_size > 0) or \
+           (sample_abundance_tsv.exists() and sample_abundance_tsv.stat().st_size > 0):
+            target_abundance = abundance_tsv if abundance_tsv.exists() else sample_abundance_tsv
             status['quantification'] = True
-            status['diagnostics']['abundance_file'] = str(abundance_tsv)
-            status['diagnostics']['abundance_size'] = abundance_tsv.stat().st_size
+            status['diagnostics']['abundance_file'] = str(target_abundance)
+            status['diagnostics']['abundance_size'] = target_abundance.stat().st_size
             status['stage'] = 'quantification'
         elif quant_sf.exists() and quant_sf.stat().st_size > 0:
             status['quantification'] = True

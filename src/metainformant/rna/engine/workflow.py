@@ -329,7 +329,11 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
                 step_params['metadata'] = str(config.work_dir / 'metadata' / 'metadata.tsv')
         elif step == 'curate' and 'metadata' not in step_params:
             # Curate uses metadata from merge directory
-            step_params['metadata'] = str(config.work_dir / 'merge' / 'metadata' / 'metadata.tsv')
+            # We need to find where merge step puts its output
+            merge_params = per_step.get('merge', {})
+            merge_dir = Path(merge_params.get('out_dir', config.work_dir / 'merged'))
+            # amalgkit merge creates a 'merge' subdirectory inside out_dir
+            step_params['metadata'] = str(merge_dir / 'merge' / 'metadata.tsv')
 
         # PATH RESOLUTION: Auto-adjust integrate fastq_dir to include getfastq subdirectory
         # 
@@ -603,6 +607,94 @@ def prepare_extraction_directories(getfastq_dir: Path) -> int:
     return cleaned_count
 
 
+def create_extraction_metadata(getfastq_dir: Path, source_metadata: Path, 
+                                output_metadata: Path) -> int:
+    """Create filtered metadata containing only samples with existing SRA files.
+    
+    This function:
+    2. Scans getfastq_dir/sra/ for available SRA files
+    3. Filters metadata to only include samples with SRA files present
+    4. Moves SRA files from sra/ to individual sample directories for amalgkit
+    5. Writes filtered metadata for extraction-only run
+    
+    Args:
+        getfastq_dir: Path to the getfastq output directory
+        source_metadata: Path to the source metadata TSV file
+        output_metadata: Path where filtered metadata will be written
+        
+    Returns:
+        Number of samples with available SRA files
+    """
+    import csv
+    
+    sra_dir = getfastq_dir / 'sra'
+    if not sra_dir.exists():
+        logger.warning(f"No SRA directory found at {sra_dir}")
+        return 0
+    
+    # Find all available SRA files
+    available_sra = {}
+    for sra_file in sra_dir.glob('*.sra'):
+        # Extract sample ID from filename (e.g., SRR12345.sra -> SRR12345)
+        sample_id = sra_file.stem
+        available_sra[sample_id] = sra_file
+    
+    if not available_sra:
+        logger.warning("No SRA files found in sra/ directory")
+        return 0
+    
+    logger.info(f"Found {len(available_sra)} SRA files available for extraction")
+    
+    # Read source metadata and filter
+    try:
+        with open(source_metadata, 'r', newline='') as f:
+            reader = csv.DictReader(f, delimiter='\t')
+            fieldnames = reader.fieldnames
+            rows = list(reader)
+    except Exception as e:
+        logger.error(f"Could not read metadata: {e}")
+        return 0
+    
+    # Filter rows to only those with SRA files present
+    filtered_rows = []
+    moved_count = 0
+    for row in rows:
+        run_id = row.get('run', '')
+        if run_id in available_sra:
+            filtered_rows.append(row)
+            
+            # Move SRA file to sample directory where amalgkit expects it
+            sra_source = available_sra[run_id]
+            sample_dir = getfastq_dir / run_id
+            sample_dir.mkdir(parents=True, exist_ok=True)
+            sra_dest = sample_dir / f"{run_id}.sra"
+            
+            if not sra_dest.exists():
+                try:
+                    shutil.copy2(str(sra_source), str(sra_dest))
+                    logger.info(f"Copied SRA to sample dir: {run_id}.sra")
+                    moved_count += 1
+                except Exception as e:
+                    logger.warning(f"Could not copy SRA file {run_id}: {e}")
+    
+    if not filtered_rows:
+        logger.warning("No samples in metadata have corresponding SRA files")
+        return 0
+    
+    # Write filtered metadata
+    try:
+        with open(output_metadata, 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter='\t')
+            writer.writeheader()
+            writer.writerows(filtered_rows)
+        logger.info(f"Created extraction metadata with {len(filtered_rows)} samples: {output_metadata}")
+    except Exception as e:
+        logger.error(f"Could not write filtered metadata: {e}")
+        return 0
+    
+    return len(filtered_rows)
+
+
 def prepare_reference_genome(config: AmalgkitWorkflowConfig) -> bool:
     """Download reference genome and build index if needed.
     
@@ -867,12 +959,13 @@ def _is_step_completed(step_name: str, step_params: dict, config: AmalgkitWorkfl
     return False, None
 
 
-def execute_workflow(config: AmalgkitWorkflowConfig, *,
+def execute_workflow(config: AmalgkitConfig, 
                     steps: Optional[List[str]] = None,
                     check: bool = False,
                     walk: bool = False,
                     progress: bool = True,
-                    show_commands: bool = False) -> WorkflowExecutionResult:
+                    show_commands: bool = False,
+                    **kwargs: Any) -> WorkflowExecutionResult:
     """Execute the complete amalgkit workflow.
     
     This function automatically configures vdb-config repository path to use
@@ -911,8 +1004,8 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
     # Create working directory
     config.work_dir.mkdir(parents=True, exist_ok=True)
 
-    # Plan workflow
     steps_planned = plan_workflow(config)
+    steps_config = config.extra_config.get('steps', {}) or config.extra_config.get('per_step', {})
 
     # Filter steps if specific steps requested
     if steps:
@@ -981,6 +1074,35 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
                 cleaned = prepare_extraction_directories(getfastq_dir)
                 if cleaned > 0:
                     logger.info(f"Prepared {cleaned} sample directories for extraction")
+                
+                # Create filtered metadata with only samples that have SRA files available
+                # This prevents amalgkit from crashing on network failures
+                source_metadata = config.work_dir / 'metadata' / 'metadata_selected.tsv'
+                extraction_metadata = config.work_dir / 'metadata' / 'metadata_extraction.tsv'
+                
+                # SKIP LOGIC: Filter out samples that are already quantified
+                # This prevents re-downloading samples that have already been processed
+                unquantified_metadata = config.work_dir / 'metadata' / 'metadata_unquantified.tsv'
+                if source_metadata.exists():
+                    remaining = filter_metadata_for_unquantified(config, source_metadata, unquantified_metadata)
+                    if remaining == 0:
+                        # All samples already quantified - skip getfastq entirely
+                        logger.info("All samples already quantified - skipping getfastq step")
+                        # Remove getfastq from steps_planned
+                        steps_planned = [(name, params) for name, params in steps_planned if name != 'getfastq']
+                    elif remaining < sum(1 for _ in open(source_metadata)) - 1:
+                        # Some samples already quantified - use filtered metadata
+                        source_metadata = unquantified_metadata
+                        logger.info(f"Using unquantified metadata ({remaining} samples remaining)")
+                
+                if source_metadata.exists() and any(s[0] == 'getfastq' for s in steps_planned):
+                    num_samples = create_extraction_metadata(getfastq_dir, source_metadata, extraction_metadata)
+                    if num_samples > 0:
+                        # Update the getfastq step to use the extraction-only metadata
+                        for i, (step_name, step_params) in enumerate(steps_planned):
+                            if step_name == 'getfastq':
+                                steps_planned[i] = (step_name, {**step_params, 'metadata': str(extraction_metadata)})
+                                logger.info(f"Using extraction metadata ({num_samples} samples) for getfastq step")
             else:
                 logger.warning("Could not find getfastq step parameters, skipping vdb-config setup")
         except Exception as e:
@@ -1010,8 +1132,8 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
     for step_name, step_params in steps_planned:
         is_completed, completion_indicator = _is_step_completed(step_name, step_params, config)
         
-        # Check redo setting
-        redo_value = step_params.get('redo', 'no')
+        # Check redo setting (override from kwargs if present)
+        redo_value = kwargs.get('redo', step_params.get('redo', 'no'))
         if isinstance(redo_value, bool):
             force_redo = redo_value
         else:
@@ -1182,21 +1304,45 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
             # Pre-step prerequisite validation
             if step_name == 'integrate':
                 # Check if FASTQ files exist before integrate
-                steps_config = config.extra_config.get('steps', {})
-                fastq_dir_raw = steps_config.get('getfastq', {}).get('out_dir', config.work_dir / "fastq")
-                fastq_dir = Path(fastq_dir_raw)
-                # Check for amalgkit getfastq/ subdirectory structure
-                if fastq_dir.name != "getfastq":
-                    getfastq_subdir = fastq_dir / "getfastq"
-                    if getfastq_subdir.exists():
-                        fastq_dir = getfastq_subdir
+                # Check multiple possible locations for FASTQ files
+                fastq_locations = []
                 
-                # Check if any FASTQ files exist
-                fastq_files = list(fastq_dir.glob("**/*.fastq*"))
+                # 1. From config (if absolute or relative to CWD)
+                fastq_dir_raw = steps_config.get('getfastq', {}).get('out_dir', config.work_dir / "fastq")
+                fastq_locations.append(Path(fastq_dir_raw))
+                
+                # 2. Relative to work_dir parent (common layout)
+                fastq_locations.append(config.work_dir.parent / "fastq")
+                
+                # 3. Inside work_dir (legacy/default layout)
+                fastq_locations.append(config.work_dir)
+                fastq_locations.append(config.work_dir / "fastq")
+                
+                fastq_files = []
+                checked_dirs = []
+                
+                for f_dir in fastq_locations:
+                    if not f_dir.exists():
+                        continue
+                    
+                    # Try both root and getfastq/ subdirectory
+                    search_dirs = [f_dir]
+                    if f_dir.name != "getfastq":
+                        getfastq_subdir = f_dir / "getfastq"
+                        if getfastq_subdir.exists():
+                            search_dirs.append(getfastq_subdir)
+                    
+                    for s_dir in search_dirs:
+                        checked_dirs.append(str(s_dir))
+                        found = list(s_dir.glob("**/*.fastq*"))
+                        if found:
+                            fastq_files.extend(found)
+                            fastq_dir = s_dir # Select for logging
+                
                 if not fastq_files:
                     error_msg = (
                         f"PREREQUISITE CHECK FAILED: No FASTQ files found before integrate step.\n"
-                        f"  - Expected location: {fastq_dir}\n"
+                        f"  - Checked locations: {', '.join(checked_dirs)}\n"
                         f"  - Checked for: *.fastq, *.fastq.gz, *.fq, *.fq.gz\n\n"
                         f"REMEDIATION:\n"
                         f"  1. Ensure getfastq step completed successfully\n"
@@ -1240,19 +1386,33 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
                     continue
                 
                 # Check if FASTQ files exist (quant needs them for quantification)
+                # Use same robust check for quant
                 steps_config = config.extra_config.get('steps', {})
-                fastq_dir_raw = steps_config.get('getfastq', {}).get('out_dir', config.work_dir / "fastq")
-                fastq_dir = Path(fastq_dir_raw)
-                if fastq_dir.name != "getfastq":
-                    getfastq_subdir = fastq_dir / "getfastq"
-                    if getfastq_subdir.exists():
-                        fastq_dir = getfastq_subdir
+                fastq_locations = []
+                fastq_locations.append(Path(steps_config.get('getfastq', {}).get('out_dir', config.work_dir / "fastq")))
+                fastq_locations.append(config.work_dir.parent / "fastq")
+                fastq_locations.append(config.work_dir)
+                fastq_locations.append(config.work_dir / "fastq")
                 
-                fastq_files = list(fastq_dir.glob("**/*.fastq*"))
+                fastq_files = []
+                checked_dirs = []
+                for f_dir in fastq_locations:
+                    if not f_dir.exists(): continue
+                    search_dirs = [f_dir]
+                    if f_dir.name != "getfastq":
+                        getfastq_subdir = f_dir / "getfastq"
+                        if getfastq_subdir.exists(): search_dirs.append(getfastq_subdir)
+                    for s_dir in search_dirs:
+                        checked_dirs.append(str(s_dir))
+                        found = list(s_dir.glob("**/*.fastq*"))
+                        if found:
+                            fastq_files.extend(found)
+                            fastq_dir = s_dir
+                
                 if not fastq_files:
                     error_msg = (
                         f"PREREQUISITE CHECK FAILED: No FASTQ files found before quant step.\n"
-                        f"  - Expected location: {fastq_dir}\n\n"
+                        f"  - Checked locations: {', '.join(checked_dirs)}\n\n"
                         f"REMEDIATION:\n"
                         f"  1. Ensure getfastq and integrate steps completed successfully\n"
                         f"  2. Check validation reports in: {config.work_dir / 'validation'}\n"
@@ -1304,9 +1464,17 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
                 steps_config = config.extra_config.get('steps', {})
                 quant_dir_raw = steps_config.get('quant', {}).get('out_dir', config.work_dir / "quant")
                 quant_dir = Path(quant_dir_raw)
+                # Resolve to the actual 'quant' directory where files are stored (amalgkit creates a 'quant' subdir)
+                if quant_dir.name != "quant":
+                    actual_quant_dir = quant_dir / "quant"
+                    if actual_quant_dir.exists():
+                         quant_dir = actual_quant_dir
                 
-                # Check for quant output files (abundance.tsv or quant.sf)
-                quant_files = list(quant_dir.glob("**/abundance.tsv")) + list(quant_dir.glob("**/quant.sf"))
+                # Check for quant output files (abundance.tsv, *_abundance.tsv, or quant.sf)
+                # amalgkit quant can name them either way
+                quant_files = list(quant_dir.glob("**/abundance.tsv")) + \
+                              list(quant_dir.glob("**/*_abundance.tsv")) + \
+                              list(quant_dir.glob("**/quant.sf"))
                 if not quant_files:
                     error_msg = (
                         f"PREREQUISITE CHECK FAILED: No quantification files found before merge step.\n"
@@ -1328,17 +1496,28 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
                         break
                     continue
                 
-                # Check R dependencies for merge (optional but recommended)
+                # Check R dependencies for merge (mandatory per user request)
                 try:
                     from metainformant.rna.core.environment import check_rscript
                     r_available, r_message = check_rscript()
                     if not r_available:
-                        logger.warning(
-                            f"R/Rscript not available - merge step may fail if R plotting is required.\n"
-                            f"  Status: {r_message}\n"
-                            f"  Installation: apt-get install r-base-core or conda install r-base\n"
-                            f"  Note: Merge can work without R, but plots will be skipped."
+                        error_msg = (
+                            f"PREREQUISITE CHECK FAILED: R/Rscript not available for merge step.\n"
+                            f"  Status: {r_message}\n\n"
+                            f"REMEDIATION:\n"
+                            f"  1. Install R: brew install r (on Mac) or apt-get install r-base-core\n"
+                            f"  2. Verify: Rscript --version"
                         )
+                        logger.error(error_msg)
+                        step_results.append(WorkflowStepResult(
+                            step_name=step_name,
+                            return_code=1,
+                            success=False,
+                            error_message=error_msg
+                        ))
+                        if check:
+                            break
+                        continue
                     else:
                         # Check if ggplot2 package is available
                         try:
@@ -1350,15 +1529,79 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
                                 timeout=10
                             )
                             if check_ggplot2.returncode != 0:
-                                logger.warning(
-                                    f"R package 'ggplot2' not available - merge step plotting may fail.\n"
+                                error_msg = (
+                                    f"PREREQUISITE CHECK FAILED: R package 'ggplot2' not available for merge step.\n"
                                     f"  Installation: Rscript -e \"install.packages('ggplot2', repos='https://cloud.r-project.org')\"\n"
-                                    f"  Note: Merge can work without ggplot2, but plots will be skipped."
                                 )
-                        except Exception:
-                            pass  # R check failed, but that's okay - merge can still work
+                                logger.error(error_msg)
+                                step_results.append(WorkflowStepResult(
+                                    step_name=step_name,
+                                    return_code=1,
+                                    success=False,
+                                    error_message=error_msg
+                                ))
+                                if check:
+                                    break
+                                continue
+                        except Exception as e:
+                            logger.warning(f"Failed to check R packages: {e}")
                 except Exception as e:
                     logger.debug(f"Could not check R dependencies: {e}")
+                
+                # Path mapping fix: amalgkit merge expects 'quant' directory in ITS out_dir.
+                # If quant outputs were written to a different location (like work_dir/quant),
+                # we link them into the merge out_dir so amalgkit can find them.
+                merge_out_dir_path = Path(step_params.get('out_dir', config.work_dir / "merge"))
+                merge_quant_link = merge_out_dir_path / "quant"
+                
+                if quant_dir.resolve() != merge_quant_link.resolve():
+                    if not merge_quant_link.exists() or not list(merge_quant_link.glob("**/*.tsv")):
+                        logger.info(f"Bridging quantification results for merge: {quant_dir} -> {merge_quant_link}")
+                        try:
+                            merge_quant_link.parent.mkdir(parents=True, exist_ok=True)
+                            if merge_quant_link.exists() and not merge_quant_link.is_symlink():
+                                # If it's an empty directory, remove it to replace with symlink
+                                if merge_quant_link.is_dir() and not any(merge_quant_link.iterdir()):
+                                    merge_quant_link.rmdir()
+                            
+                            if not merge_quant_link.exists():
+                                # Use absolute path for symlink
+                                merge_quant_link.symlink_to(quant_dir.resolve())
+                        except Exception as e:
+                            logger.warning(f"Could not bridge quant results for merge: {e}")
+
+            # Check R availability for R-dependent steps (mandatory per user request)
+            if step_name in ['curate', 'cstmm']:
+                import shutil
+                if not shutil.which('Rscript'):
+                    error_msg = f"PREREQUISITE CHECK FAILED: Rscript not found for {step_name} step."
+                    logger.error(error_msg)
+                    step_results.append(WorkflowStepResult(
+                        step_name=step_name,
+                        return_code=1,
+                        success=False,
+                        error_message=error_msg
+                    ))
+                    if check:
+                        break
+                    continue
+                
+                # Bridging for curate: it expects a 'merge' subdirectory in its out_dir
+                merge_params = steps_config.get('merge', {})
+                merge_out_dir = Path(merge_params.get('out_dir', config.work_dir / "merged"))
+                merge_results_dir = merge_out_dir / "merge"
+                
+                curate_out_dir = Path(step_params.get('out_dir', config.work_dir / "curate"))
+                curate_merge_link = curate_out_dir / "merge"
+                
+                if merge_results_dir.exists() and merge_results_dir.resolve() != curate_merge_link.resolve():
+                    if not curate_merge_link.exists():
+                        logger.info(f"Bridging merge results for curate: {merge_results_dir} -> {curate_merge_link}")
+                        try:
+                            curate_merge_link.parent.mkdir(parents=True, exist_ok=True)
+                            curate_merge_link.symlink_to(merge_results_dir.resolve())
+                        except Exception as e:
+                            logger.warning(f"Could not bridge merge results for curate: {e}")
 
             # Sanitize parameters before passing to step function
             sanitized_params = sanitize_params_for_cli(step_name, step_params)
@@ -1434,7 +1677,19 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
                     # Mark as successful despite error
                     result.returncode = 0
                     logger.info(f"Step {step_name} marked as successful based on output validation")
-                else:
+                elif step_name == 'integrate':
+                    # FALLBACK: If integrate fails (e.g. KeyError), try manual fallback
+                    logger.warning(f"Step integrate reported error. Attempting manual integration fallback...")
+                    try:
+                        if manual_integration_fallback(config):
+                            logger.info("Manual integration fallback successful")
+                            result.returncode = 0
+                        else:
+                            logger.error("Manual integration fallback failed")
+                    except Exception as e:
+                        logger.error(f"Manual integration fallback exception: {e}")
+                            
+                if result.returncode != 0:
                     error_message = f"Step failed with return code {result.returncode}"
                     if result.stderr:
                         error_message += f": {result.stderr}"
@@ -1467,7 +1722,49 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
                         
                         # Early exit if critical failure: no FASTQ files extracted
                         if validated == 0 and failed > 0 and total > 0:
-                            # Check if selected samples are LITE files
+                            # FALLBACK: Check if SRA files exist and attempt direct extraction
+                            # This handles the case where amalgkit skipped extraction due to redo:no
+                            # but SRA files were successfully downloaded
+                            sra_dir = config.work_dir / 'fastq' / 'getfastq'
+                            # Check config for explicit output directory
+                            steps_config = config.extra_config.get('steps', {})
+                            if 'getfastq' in steps_config and 'out_dir' in steps_config['getfastq']:
+                                step_out = Path(steps_config['getfastq']['out_dir'])
+                                if step_out.name != 'getfastq':
+                                    sra_dir = step_out / 'getfastq'
+                                else:
+                                    sra_dir = step_out
+                            elif not sra_dir.exists():
+                                # Try standard layout relative to work_dir parent
+                                sra_dir = config.work_dir.parent / 'fastq' / 'getfastq'
+                            
+                            if sra_dir.exists():
+                                # Check for SRA files in root, sra/ subdir, or sample subdirs
+                                sra_files_exist = list(sra_dir.glob('*.sra'))
+                                sra_files_exist.extend(list(sra_dir.glob('sra/*.sra')))
+                                sra_files_exist.extend(list(sra_dir.glob('*/*.sra')))
+                                
+                                if sra_files_exist:
+                                    logger.warning(f"Validation failed (0 FASTQ) but found {len(sra_files_exist)} SRA files.")
+                                    logger.info("Triggering direct fallback extraction...")
+                                    try:
+                                        extracted = extract_sra_directly(config, sra_dir, sra_dir)
+                                        
+                                        if extracted > 0:
+                                            logger.info(f"Fallback extraction recovered {extracted} samples")
+                                            # Re-validate
+                                            validation_result = validate_all_samples(config, stage='extraction')
+                                            validated = validation_result.get('validated', 0)
+                                            failed = validation_result.get('failed', 0)
+                                            logger.info(f"Re-validation: {validated}/{total} samples ready")
+                                            
+                                            if validated > 0:
+                                                logger.info("Fallback recovery successful - continuing workflow")
+                                                continue
+                                    except Exception as e:
+                                        logger.error(f"Fallback extraction failed: {e}")
+
+
                             lite_check_msg = ""
                             try:
                                 import pandas as pd
@@ -1543,6 +1840,24 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
                         logger.info(f"Validation after quant: {validated}/{total} samples quantified")
                         if failed > 0:
                             logger.warning(f"{failed} samples missing quantification files after quant step")
+                        
+                        # CLEANUP: Delete FASTQ/SRA files for successfully quantified samples
+                        # This implements the workflow_resilience.md requirement:
+                        # "Only remove raw SRA and intermediate FASTQ data once the quant step
+                        # has successfully produced abundance files"
+                        if validated > 0:
+                            cleanup_config = config.extra_config.get('cleanup_after_quant', True)
+                            if cleanup_config:
+                                logger.info("Running post-quant cleanup to free disk space...")
+                                try:
+                                    cleanup_result = cleanup_after_quant(config)
+                                    if cleanup_result['samples_cleaned'] > 0:
+                                        freed_gb = cleanup_result['bytes_freed'] / 1024**3
+                                        logger.info(f"Post-quant cleanup freed {freed_gb:.2f} GB")
+                                except Exception as cleanup_err:
+                                    logger.warning(f"Post-quant cleanup failed (non-fatal): {cleanup_err}")
+                            else:
+                                logger.info("Post-quant cleanup disabled in config")
                     except Exception as e:
                         logger.warning(f"Validation after quant failed: {e}")
 
@@ -1707,6 +2022,432 @@ def execute_workflow(config: AmalgkitWorkflowConfig, *,
         successful_steps=successful_steps,
         failed_steps=failed_steps
     )
+
+
+def extract_sra_directly(config: AmalgkitWorkflowConfig, 
+                        sra_dir: Path, 
+                        output_dir: Path) -> int:
+    """Manually extract SRA files using fasterq-dump when amalgkit fails.
+    
+    This acts as a fallback when amalgkit getfastq skips extraction due to 
+    existing SRA files (redo: no) or other internal checks.
+    
+    Args:
+        config: Workflow configuration
+        sra_dir: Directory containing .sra files
+        output_dir: Directory to output .fastq.gz files
+        
+    Returns:
+        Number of successfully extracted samples
+    """
+    import shutil
+    import subprocess
+    import concurrent.futures
+    
+    from metainformant.core.io.download import monitor_subprocess_directory_growth
+
+    # Check if fasterq-dump is available
+    fasterq_dump = shutil.which('fasterq-dump')
+    if not fasterq_dump:
+        logger.error("fasterq-dump not found in PATH - cannot run fallback extraction")
+        return 0
+        
+    # Check for gzip/pigz
+    gzip_cmd = shutil.which('pigz') or shutil.which('gzip')
+    if not gzip_cmd:
+        logger.error("gzip/pigz not found - cannot compress FASTQ output")
+        return 0
+        
+    # Find SRA files (root, sra/, or sample subdirs)
+    sra_files = list(sra_dir.glob('*.sra'))
+    sra_files.extend(list(sra_dir.glob('sra/*.sra')))
+    sra_files.extend(list(sra_dir.glob('*/*.sra')))
+    # Deduplicate by path
+    sra_files = list({str(f): f for f in sra_files}.values())
+    if not sra_files:
+        logger.warning(f"No SRA files found in {sra_dir} for fallback extraction")
+        return 0
+        
+    logger.info(f"Attempting fallback extraction for {len(sra_files)} files using {fasterq_dump}...")
+    
+    # Configure path for fasterq-dump temp files
+    # Use repo .tmp directory to avoid filling up system /tmp or /var
+    repo_root = Path(__file__).resolve().parent.parent.parent.parent.parent.parent
+    tmp_dir = repo_root / ".tmp" / "fasterq-dump"
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    
+    extracted_count = 0
+    
+    def process_sra(sra_file):
+        sample_id = sra_file.stem
+        sample_out_dir = output_dir / sample_id
+        sample_out_dir.mkdir(parents=True, exist_ok=True)
+        
+        # Check if already extracted
+        if list(sample_out_dir.glob('*.fastq.gz')):
+            return True
+            
+        try:
+            # Run fasterq-dump
+            # Note: fasterq-dump outputs to CWD or specified dir. 
+            # We output to sample dir directly.
+            cmd = [
+                fasterq_dump,
+                '--split-3',
+                '--threads', str(min(config.threads, 4)), # Limit threads per job
+                '--outdir', str(sample_out_dir),
+                '--temp', str(tmp_dir),
+                str(sra_file)
+            ]
+            
+            logger.info(f"Extracting {sample_id} with fasterq-dump...")
+            
+            # Use monitor_subprocess_directory_growth for progress + heartbeat
+            heartbeat_file = config.work_dir / "heartbeat" / f"fallback_{sample_id}.json"
+            heartbeat_file.parent.mkdir(exist_ok=True, parents=True)
+            
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            
+            rc, _ = monitor_subprocess_directory_growth(
+                process=process,
+                watch_dir=sample_out_dir,
+                heartbeat_path=heartbeat_file,
+                desc=f"Extracting {sample_id}",
+                heartbeat_interval=10
+            )
+            
+            if rc != 0:
+                raise RuntimeError(f"fasterq-dump exited with {rc}")
+            
+            # Gzip output files
+            fastqs = list(sample_out_dir.glob('*.fastq'))
+            if not fastqs:
+                logger.warning(f"No FASTQ exported for {sample_id}")
+                return False
+                
+            for fq in fastqs:
+                subprocess.run([gzip_cmd, '-f', str(fq)], check=True)
+                
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to extract {sample_id}: {e}")
+            return False
+
+    # Run in parallel
+    max_workers = max(1, config.threads // 4)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+        results = list(executor.map(process_sra, sra_files))
+        
+    extracted_count = sum(results)
+    logger.info(f"Fallback extraction completed: {extracted_count}/{len(sra_files)} samples extracted")
+    
+    # Clean up temp dir
+    try:
+        shutil.rmtree(tmp_dir)
+    except:
+        pass
+        
+    return extracted_count
+
+def manual_integration_fallback(config: AmalgkitWorkflowConfig) -> bool:
+    """Fallback for when 'amalgkit integrate' fails (e.g. path detection bugs).
+    
+    Manually exposes FASTQ files from getfastq subdirectories to the location
+    expected by 'amalgkit quant'.
+    """
+    logger.info("Attempting Manual Integration Fallback...")
+    
+    steps_config = config.extra_config.get('steps', {})
+    getfastq_dir_raw = steps_config.get('getfastq', {}).get('out_dir', config.work_dir / "fastq" / "getfastq")
+    getfastq_dir = Path(getfastq_dir_raw)
+    
+    # Also check standard amalgkit structure if configured path empty
+    if not getfastq_dir.exists():
+        getfastq_dir = config.work_dir / "fastq" / "getfastq"
+        
+    if not getfastq_dir.exists():
+        logger.error(f"Cannot perform manual integration: getfastq dir {getfastq_dir} not found")
+        return False
+        
+    # Target directory for quant (expects out_dir/getfastq/sample/sample_1.fastq.gz)
+    # If quant.out_dir is work_dir, then it looks in work_dir/getfastq/
+    steps_config = config.extra_config.get('steps', {})
+    quant_out_dir = Path(steps_config.get('quant', {}).get('out_dir', config.work_dir))
+    quant_input_dir = quant_out_dir / "getfastq"
+    quant_input_dir.mkdir(parents=True, exist_ok=True)
+    
+    found_any = False
+    
+    # Search for FASTQ files in getfastq_dir recursively
+    for fastq_file in getfastq_dir.glob("**/*.fastq*"):
+        if fastq_file.is_file():
+            # Identify sample ID from parent folder or filename
+            # Standard amalgkit: getfastq/SRR12345/SRR12345_1.fastq.gz
+            # SRA fallback: getfastq/SRR12345_1.fastq.gz
+            
+            sample_id = None
+            if fastq_file.parent.name.startswith(('SRR', 'ERR', 'DRR')):
+                sample_id = fastq_file.parent.name
+            else:
+                # Extract from filename
+                import re
+                match = re.search(r'(SRR\d+|ERR\d+|DRR\d+)', fastq_file.name)
+                if match:
+                    sample_id = match.group(1)
+            
+            if sample_id:
+                sample_dest_dir = quant_input_dir / sample_id
+                sample_dest_dir.mkdir(parents=True, exist_ok=True)
+                dest_path = sample_dest_dir / fastq_file.name
+                
+                if not dest_path.exists():
+                    try:
+                        dest_path.symlink_to(fastq_file.resolve())
+                        found_any = True
+                        logger.info(f"Linked {fastq_file.name} -> {sample_id}")
+                    except Exception:
+                        try:
+                            shutil.copy2(fastq_file, dest_path)
+                            found_any = True
+                        except Exception as e:
+                            logger.warning(f"Failed to link {fastq_file}: {e}")
+                else:
+                    found_any = True
+    
+    if found_any:
+        # Create a dummy metadata if amalgkit integrate was bypassed?
+        # Actually, quant might need the integrated metadata.tsv.
+        # If it doesn't exist, we might need to copy the selected one.
+        metadata_tsv = config.work_dir / 'metadata' / 'metadata.tsv'
+        selected_metadata = config.work_dir / 'metadata' / 'metadata_selected.tsv'
+        if not metadata_tsv.exists() and selected_metadata.exists():
+            shutil.copy2(selected_metadata, metadata_tsv)
+            logger.info("Created metadata.tsv from metadata_selected.tsv for quant step")
+
+        logger.info("Manual integration completed: valid FASTQ files expose for quant.")
+        return True
+    
+    return False
+
+
+
+
+def get_quantified_samples(config: AmalgkitWorkflowConfig) -> set[str]:
+    """Get set of sample IDs that already have successful quantification results.
+    
+    Args:
+        config: Workflow configuration
+        
+    Returns:
+        Set of sample IDs (e.g., 'SRR12345') that have abundance.tsv files
+    """
+    quantified = set()
+    
+    # Get quant output directory from config
+    steps_config = config.extra_config.get('steps', {})
+    quant_dir_raw = steps_config.get('quant', {}).get('out_dir', config.work_dir / 'quant')
+    quant_dir = Path(quant_dir_raw)
+    
+    if not quant_dir.exists():
+        return quantified
+    
+    # Find all abundance.tsv or *_abundance.tsv files and extract sample IDs
+    patterns = ['**/abundance.tsv', '**/*_abundance.tsv']
+    for pattern in patterns:
+        for abundance_file in quant_dir.glob(pattern):
+            # Sample ID is the parent directory name (e.g., quant/SRR12345/abundance.tsv)
+            sample_id = abundance_file.parent.name
+            if sample_id.startswith(('SRR', 'ERR', 'DRR')):
+                # Verify the file has content (not empty/corrupt)
+                if abundance_file.stat().st_size > 100:  # Has more than just header
+                    quantified.add(sample_id)
+    
+    if quantified:
+        logger.info(f"Found {len(quantified)} samples already quantified")
+    
+    return quantified
+
+
+def cleanup_after_quant(config: AmalgkitWorkflowConfig, 
+                       dry_run: bool = False) -> dict[str, Any]:
+    """Delete FASTQ and SRA files for samples with successful quantification.
+    
+    This function implements the cleanup sequence from workflow_resilience.md:
+    "Only remove raw SRA and intermediate FASTQ data once the quant step 
+    has successfully produced abundance files, confirming the integrity 
+    of the upstream extraction."
+    
+    Args:
+        config: Workflow configuration
+        dry_run: If True, only report what would be deleted without deleting
+        
+    Returns:
+        Dictionary with cleanup statistics:
+        {
+            'samples_cleaned': int,
+            'fastq_files_deleted': int,
+            'sra_files_deleted': int,
+            'bytes_freed': int,
+            'errors': list[str]
+        }
+    """
+    result = {
+        'samples_cleaned': 0,
+        'fastq_files_deleted': 0,
+        'sra_files_deleted': 0,
+        'bytes_freed': 0,
+        'errors': []
+    }
+    
+    # Get quantified samples
+    quantified_samples = get_quantified_samples(config)
+    if not quantified_samples:
+        logger.info("No quantified samples found - skipping cleanup")
+        return result
+    
+    # Get FASTQ directory
+    steps_config = config.extra_config.get('steps', {})
+    fastq_dir_raw = steps_config.get('getfastq', {}).get('out_dir', config.work_dir / 'fastq')
+    fastq_dir = Path(fastq_dir_raw)
+    
+    # Check for getfastq subdirectory (amalgkit structure)
+    if fastq_dir.name != 'getfastq':
+        getfastq_subdir = fastq_dir / 'getfastq'
+        if getfastq_subdir.exists():
+            fastq_dir = getfastq_subdir
+    
+    if not fastq_dir.exists():
+        logger.info(f"FASTQ directory does not exist: {fastq_dir}")
+        return result
+    
+    logger.info(f"Cleaning up FASTQ/SRA files for {len(quantified_samples)} quantified samples")
+    if dry_run:
+        logger.info("DRY RUN - no files will be deleted")
+    
+    for sample_id in quantified_samples:
+        sample_dir = fastq_dir / sample_id
+        if not sample_dir.exists():
+            continue
+        
+        files_to_delete = []
+        
+        # Find FASTQ files
+        for pattern in ['*.fastq.gz', '*.fastq', '*.fq.gz', '*.fq', '*.amalgkit.fastq.gz']:
+            files_to_delete.extend(sample_dir.glob(pattern))
+        
+        # Find SRA files
+        for pattern in ['*.sra', '*.sra.part']:
+            files_to_delete.extend(sample_dir.glob(pattern))
+        
+        if not files_to_delete:
+            continue
+        
+        sample_bytes_freed = 0
+        for file_path in files_to_delete:
+            try:
+                file_size = file_path.stat().st_size
+                if not dry_run:
+                    file_path.unlink()
+                sample_bytes_freed += file_size
+                
+                if file_path.suffix in ('.sra', '.part'):
+                    result['sra_files_deleted'] += 1
+                else:
+                    result['fastq_files_deleted'] += 1
+                    
+                logger.debug(f"{'Would delete' if dry_run else 'Deleted'}: {file_path.name} ({file_size / 1024**2:.1f} MB)")
+            except Exception as e:
+                error_msg = f"Failed to delete {file_path}: {e}"
+                result['errors'].append(error_msg)
+                logger.warning(error_msg)
+        
+        if sample_bytes_freed > 0:
+            result['samples_cleaned'] += 1
+            result['bytes_freed'] += sample_bytes_freed
+            logger.info(f"{'Would clean' if dry_run else 'Cleaned'} {sample_id}: {sample_bytes_freed / 1024**3:.2f} GB")
+    
+    # Summary
+    total_gb = result['bytes_freed'] / 1024**3
+    action = "Would free" if dry_run else "Freed"
+    logger.info(
+        f"Cleanup complete: {result['samples_cleaned']} samples, "
+        f"{result['fastq_files_deleted']} FASTQ files, "
+        f"{result['sra_files_deleted']} SRA files, "
+        f"{action} {total_gb:.2f} GB"
+    )
+    
+    if result['errors']:
+        logger.warning(f"{len(result['errors'])} errors during cleanup")
+    
+    return result
+
+
+def filter_metadata_for_unquantified(config: AmalgkitWorkflowConfig,
+                                     source_metadata: Path,
+                                     output_metadata: Path) -> int:
+    """Filter metadata to include only samples not yet quantified.
+    
+    Args:
+        config: Workflow configuration
+        source_metadata: Path to source metadata TSV
+        output_metadata: Path to write filtered metadata
+        
+    Returns:
+        Number of samples remaining after filtering
+    """
+    import csv
+    
+    # Get already quantified samples
+    quantified = get_quantified_samples(config)
+    
+    if not quantified:
+        # No samples quantified yet - copy metadata as-is
+        if source_metadata.exists():
+            shutil.copy2(source_metadata, output_metadata)
+            # Count rows
+            with open(source_metadata, 'r') as f:
+                return sum(1 for _ in f) - 1  # Subtract header
+        return 0
+    
+    # Read and filter metadata
+    try:
+        with open(source_metadata, 'r', newline='') as f:
+            reader = csv.DictReader(f, delimiter='\t')
+            fieldnames = reader.fieldnames
+            rows = list(reader)
+    except Exception as e:
+        logger.error(f"Could not read metadata: {e}")
+        return 0
+    
+    # Filter out quantified samples
+    filtered_rows = []
+    for row in rows:
+        run_id = row.get('run', '')
+        if run_id not in quantified:
+            filtered_rows.append(row)
+        else:
+            logger.debug(f"Skipping already-quantified sample: {run_id}")
+    
+    skipped_count = len(rows) - len(filtered_rows)
+    logger.info(f"Filtered metadata: {len(filtered_rows)} remaining, {skipped_count} already quantified")
+    
+    if not filtered_rows:
+        logger.info("All samples already quantified - nothing to process")
+        return 0
+    
+    # Write filtered metadata
+    try:
+        with open(output_metadata, 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter='\t')
+            writer.writeheader()
+            writer.writerows(filtered_rows)
+        logger.info(f"Created filtered metadata with {len(filtered_rows)} unprocessed samples: {output_metadata}")
+    except Exception as e:
+        logger.error(f"Could not write filtered metadata: {e}")
+        return 0
+    
+    return len(filtered_rows)
 
 
 def validate_workflow_config(config: AmalgkitWorkflowConfig) -> Tuple[bool, List[str]]:

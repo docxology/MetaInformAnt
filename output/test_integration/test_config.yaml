@@ -1,1 +1,0 @@
-{"work_dir": "output/test_integration/work", "threads": 4, "species_list": ["Homo sapiens"], "genome": {"accession": "GCF_000001405.40", "include": ["genome", "gff3", "rna"]}, "steps": ["metadata", "config"]}

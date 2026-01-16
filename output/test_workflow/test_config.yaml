@@ -1,1 +1,0 @@
-{"work_dir": "output/test_workflow/work", "threads": 4, "species_list": ["Homo sapiens"], "steps": ["metadata", "config"]}

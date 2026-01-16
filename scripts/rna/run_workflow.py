@@ -191,6 +191,12 @@ def main() -> int:
         help="Validate specific pipeline stage (use with --validate)",
     )
 
+    parser.add_argument(
+        "--redo",
+        action="store_true",
+        help="Force re-execution of all specified steps",
+    )
+    
     args = parser.parse_args()
 
     # Process steps argument - split comma-separated values
@@ -331,7 +337,8 @@ def main() -> int:
              if fastq_dir.name != "getfastq":
                  fastq_dir = fastq_dir / "getfastq"
 
-        if metadata_path.exists():
+        should_run_download = (args.steps is None or 'getfastq' in args.steps)
+        if metadata_path.exists() and should_run_download:
             print(f"DEBUG: Metadata found at {metadata_path}, running robust download...")
             logger.info(f"Running robust pre-download for SRA files to {fastq_dir}...")
             from metainformant.core.io.download_robust import download_sra_files_from_metadata
@@ -351,6 +358,7 @@ def main() -> int:
         walk=args.walk,
         progress=not args.no_progress,
         show_commands=args.show_commands,
+        redo=args.redo,
     )
 
     if results["success"]:

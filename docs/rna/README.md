@@ -289,7 +289,7 @@ Real-world analysis examples:
 
 ---
 
-## Current Status (November 2025)
+## Current Status (January 2026)
 
 - **Ant Species Discovery**: 55 species discovered, 20 validated genomes
 - **Batch 1**: 10 species (3,820 samples) processing

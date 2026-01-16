@@ -1,0 +1,20 @@
+{
+  "bytes_downloaded": 1835525,
+  "destination": "output/amalgkit/pbarbatus_test5/work/quant",
+  "errors": [],
+  "eta_seconds": null,
+  "last_update": "2026-01-16T21:37:52Z",
+  "progress": {
+    "current": 0,
+    "percent": 0.0,
+    "total": 1,
+    "type": "sample_count"
+  },
+  "progress_percent": 0.0,
+  "speed_mbps": 1.7446745615560897,
+  "started_at": "2026-01-16T21:37:51Z",
+  "status": "completed",
+  "step": "amalgkit quant",
+  "total_bytes": null,
+  "url": "['amalgkit', 'quant', '--threads', '6', '--out_dir', 'output/amalgkit/pbarbatus_test5/work', '--redo', 'no', '--build_index', 'yes', '--metadata', 'output/amalgkit/pbarbatus_test5/work/metadata/metadata.tsv']"
+}

@@ -580,7 +580,7 @@ def select(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any)
 
 
 def getfastq(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: Any) -> subprocess.CompletedProcess[str]:
-    """Run amalgkit getfastq command.
+    """Run amalgkit getfastq command with retry logic.
 
     Args:
         params: Amalgkit parameters
@@ -595,11 +595,59 @@ def getfastq(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: An
         jobs = int(params.get('jobs', 1))
     elif isinstance(params, AmalgkitParams):
         jobs = int(params.extra_params.get('jobs', 1)) 
+    
+    # Retry configuration
+    max_retries = 3
+    retry_delay = 5  # seconds, will be multiplied by attempt number
+    
+    last_result = None
+    for attempt in range(1, max_retries + 1):
+        if attempt > 1:
+            logger.info(f"Retry attempt {attempt}/{max_retries} for getfastq...")
+            import time
+            time.sleep(retry_delay * attempt)  # Exponential backoff
         
-    if jobs > 1:
-        return _run_parallel_getfastq(jobs, params, **kwargs)
-        
-    return run_amalgkit('getfastq', params, **kwargs)
+        try:
+            if jobs > 1:
+                result = _run_parallel_getfastq(jobs, params, **kwargs)
+            else:
+                result = run_amalgkit('getfastq', params, **kwargs)
+            
+            last_result = result
+            
+            # Check if successful (return code 0) 
+            if result.returncode == 0:
+                return result
+            
+            # Check if partial success (some files downloaded)
+            # Don't retry if the command ran but just had no work to do
+            stderr_lower = (result.stderr or '').lower()
+            if 'no samples' in stderr_lower or 'nothing to download' in stderr_lower:
+                logger.info("getfastq completed with no samples to process")
+                return result
+            
+            # Log retry reason
+            logger.warning(f"getfastq failed with return code {result.returncode} (attempt {attempt}/{max_retries})")
+            if result.stderr:
+                logger.warning(f"Error: {result.stderr[:500]}")
+                
+        except Exception as e:
+            logger.error(f"getfastq exception on attempt {attempt}/{max_retries}: {e}")
+            last_result = subprocess.CompletedProcess(
+                args=['amalgkit', 'getfastq'],
+                returncode=1,
+                stdout='',
+                stderr=str(e)
+            )
+    
+    # Return last result after all retries exhausted
+    logger.error(f"getfastq failed after {max_retries} attempts")
+    return last_result or subprocess.CompletedProcess(
+        args=['amalgkit', 'getfastq'],
+        returncode=1,
+        stdout='',
+        stderr='All retry attempts failed'
+    )
 
 
 def _split_metadata_by_worker(metadata_path: Path, n_workers: int) -> List[Path]:
@@ -690,6 +738,12 @@ def _run_parallel_getfastq(jobs: int, params: AmalgkitParams | Dict[str, Any] | 
         
     if len(chunk_paths) <= 1:
         # Only one chunk needed (small sample size), run normally
+        # MUST strip 'jobs' from params because CLI doesn't support it
+        if isinstance(params, dict):
+            params.pop('jobs', None)
+        elif isinstance(params, AmalgkitParams):
+            params.extra_params.pop('jobs', None)
+            
         return run_amalgkit('getfastq', params, **kwargs)
         
     logger.info(f"Parallelizing getfastq with {len(chunk_paths)} workers")

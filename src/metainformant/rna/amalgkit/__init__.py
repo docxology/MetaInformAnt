@@ -13,6 +13,11 @@ from .amalgkit import (
     select,
     getfastq,
     quant,
+    merge,
+    cstmm,
+    curate,
+    csca,
+    sanity,
 )
 from . import genome_prep
 from . import metadata_filter
@@ -30,6 +35,11 @@ __all__ = [
     "select",
     "getfastq",
     "quant",
+    "merge",
+    "cstmm",
+    "curate",
+    "csca",
+    "sanity",
     "genome_prep",
     "metadata_filter",
 ]
