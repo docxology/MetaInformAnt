@@ -12,6 +12,7 @@ from . import core        # Base configs and utils
 from . import analysis    # Analysis modules
 from . import amalgkit    # Amalgkit integration
 from . import engine      # Orchestration engine (depends on others)
+from . import steps       # Step runners shim
 
 # Import modules from subpackages for backward compatibility
 from .core import (
@@ -19,6 +20,7 @@ from .core import (
     configs,
     deps,
     environment,
+    validate_environment,
 )
 from .engine import (
     discovery,
@@ -73,6 +75,7 @@ __all__ = [
     # Environment and discovery
     "discovery",
     "environment",
+    "validate_environment",
     "genome_prep",
     "protein_integration",
 
@@ -88,5 +91,6 @@ __all__ = [
     "ProgressTracker",
     "summarize_curate_tables",
     "AmalgkitWorkflowConfig",
+    "steps",
 ]
 

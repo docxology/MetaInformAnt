@@ -1,14 +1,14 @@
 {
-  "bytes_downloaded": 23853457,
+  "bytes_downloaded": 23862820,
   "destination": "output/amalgkit/pbarbatus_test5/work",
   "errors": [],
   "eta_seconds": null,
-  "last_update": "2026-01-16T21:37:51Z",
+  "last_update": "2026-01-19T12:28:48Z",
   "progress_percent": null,
-  "speed_mbps": 11.349471671827509,
-  "started_at": "2026-01-16T21:37:49Z",
-  "status": "failed",
+  "speed_mbps": 11.299401962459024,
+  "started_at": "2026-01-19T12:28:46Z",
+  "status": "completed",
   "step": "amalgkit integrate",
   "total_bytes": null,
-  "url": "['amalgkit', 'integrate', '--fastq_dir', 'output/amalgkit/pbarbatus_test5/fastq/getfastq', '--out_dir', 'output/amalgkit/pbarbatus_test5/work', '--metadata', 'output/amalgkit/pbarbatus_test5/work/metadata/metadata_selected.tsv']"
+  "url": "['amalgkit', 'integrate', '--out_dir', 'output/amalgkit/pbarbatus_test5/work', '--threads', '12', '--fastq_dir', 'output/amalgkit/pbarbatus_test5/fastq/getfastq', '--metadata', 'output/amalgkit/pbarbatus_test5/work/metadata/metadata_selected.tsv']"
 }

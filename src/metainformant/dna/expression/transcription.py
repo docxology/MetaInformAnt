@@ -50,7 +50,7 @@ def transcribe_reverse_complement(dna_seq: str) -> str:
     Returns:
         RNA sequence from reverse complement
     """
-    from metainformant.dna.sequences import reverse_complement
+    from metainformant.dna.sequence.core import reverse_complement
 
     rev_comp = reverse_complement(dna_seq)
     return transcribe(rev_comp)

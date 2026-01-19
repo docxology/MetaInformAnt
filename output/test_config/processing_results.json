@@ -1,0 +1,1 @@
+{"config": {"downloads": {"sample": {"filename": "sample.json", "url": "https://httpbin.org/json"}}}, "downloads": {"sample": {"path": "output/test_config/sample.json", "status": "success"}}, "end_time": 1768766241.628232, "errors": [], "processing": {}, "start_time": 1768766240.160735}

@@ -107,7 +107,7 @@ def test_pdb_download_format_handling(tmp_path: Path):
     # This tests the format logic without making network calls
     # The function should handle format parameters correctly regardless of network
 
-    from metainformant.protein.structure.general.general.general.general.general.general.general.general.pdb import fetch_pdb_structure
+    from metainformant.protein.structure.pdb import fetch_pdb_structure
 
     # Test that different formats create different file extensions
     # We can test the path construction logic by examining the function's behavior

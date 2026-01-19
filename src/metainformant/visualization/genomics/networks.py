@@ -72,7 +72,7 @@ def plot_network_basic(
     ax.set_title('Network Visualization (Spring Layout)')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Basic network plot saved to {output_path}")
 
@@ -125,7 +125,7 @@ def plot_network_circular(
     ax.set_title('Network Visualization (Circular Layout)')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Circular network plot saved to {output_path}")
 
@@ -204,7 +204,7 @@ def plot_network_hierarchical(
     ax.set_title('Network Visualization (Hierarchical Layout)')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Hierarchical network plot saved to {output_path}")
 
@@ -257,7 +257,7 @@ def plot_network_force_directed(
     ax.set_title('Network Visualization (Force-Directed Layout)')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Force-directed network plot saved to {output_path}")
 
@@ -348,7 +348,7 @@ def plot_community_network(
     ax.set_title('Network Visualization (Community Colored)')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Community network plot saved to {output_path}")
 

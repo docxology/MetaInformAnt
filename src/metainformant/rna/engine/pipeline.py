@@ -36,29 +36,19 @@ def summarize_curate_tables(curate_dir: str | Path) -> Dict[str, int]:
 
     counts = {}
 
-    # Count different file types in curate directory
-    file_patterns = [
-        "*.tsv",      # Tab-separated value files
-        "*.txt",      # Text files
-        "*.json",     # JSON files
-        "*.log",      # Log files
-        "*.csv",      # CSV files
-    ]
+    # Count only TSV files by their basename
+    for tsv_file in curate_path.glob("**/*.tsv"):
+        name = tsv_file.name
+        counts[name] = counts.get(name, 0) + 1
 
-    for pattern in file_patterns:
-        matching_files = list(curate_path.glob(f"**/{pattern}"))
-        if matching_files:
-            counts[pattern] = len(matching_files)
-
-    # Specifically look for expected amalgkit curate outputs
-    expected_files = [
-        "metadata.tsv",
-        "tc.tsv",
+    # Specifically check for other expected amalgkit curate outputs (non-TSV)
+    # like stats.json and outlier_samples.txt
+    other_expected = [
         "stats.json",
         "outlier_samples.txt",
     ]
 
-    for expected_file in expected_files:
+    for expected_file in other_expected:
         if (curate_path / expected_file).exists():
             counts[expected_file] = counts.get(expected_file, 0) + 1
 

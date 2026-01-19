@@ -83,7 +83,7 @@ def plot_phylo_tree(
     ax.set_ylabel('Taxa')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Phylogenetic tree plot saved to {output_path}")
 
@@ -144,7 +144,7 @@ def circular_tree_plot(
     ax.set_rlabel_position(0)  # Move radial labels
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Circular phylogenetic tree plot saved to {output_path}")
 
@@ -203,7 +203,7 @@ def unrooted_tree_plot(
     ax.set_title('Unrooted Phylogenetic Tree')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Unrooted phylogenetic tree plot saved to {output_path}")
 
@@ -262,7 +262,7 @@ def tree_comparison_plot(
     plt.tight_layout()
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Tree comparison plot saved to {output_path}")
 
@@ -352,7 +352,7 @@ def tree_annotation_plot(
     ax.set_title('Annotated Phylogenetic Tree')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Annotated phylogenetic tree plot saved to {output_path}")
 

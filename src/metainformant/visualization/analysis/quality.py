@@ -115,7 +115,7 @@ def plot_quality_metrics(
     plt.tight_layout()
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Quality metrics plot saved to {output_path}")
 
@@ -176,7 +176,7 @@ def plot_adapter_content(
                f'{pct:.1f}%', ha='center', va='bottom', fontsize=8)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Adapter content plot saved to {output_path}")
 
@@ -204,9 +204,8 @@ def plot_gc_distribution(
     Raises:
         ValueError: If gc_data is empty
     """
-    validation.validate_type(gc_data, list, "gc_data")
-
-    if not gc_data:
+    validation.validate_type(gc_data, (list, np.ndarray), "gc_data")
+    if len(gc_data) == 0:
         raise ValueError("GC data list cannot be empty")
 
     if ax is None:
@@ -231,7 +230,7 @@ def plot_gc_distribution(
            verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"GC distribution plot saved to {output_path}")
 
@@ -259,9 +258,9 @@ def plot_length_distribution(
     Raises:
         ValueError: If length_data is empty
     """
-    validation.validate_type(length_data, list, "length_data")
+    validation.validate_type(length_data, (list, np.ndarray), "length_data")
 
-    if not length_data:
+    if len(length_data) == 0:
         raise ValueError("Length data list cannot be empty")
 
     if ax is None:
@@ -287,7 +286,7 @@ def plot_length_distribution(
            verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Length distribution plot saved to {output_path}")
 
@@ -348,7 +347,7 @@ def plot_per_base_quality_boxplot(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Per-base quality boxplot saved to {output_path}")
 
@@ -397,7 +396,7 @@ def plot_sequence_duplication_levels(
                f'{pct:.1f}%', ha='center', va='bottom', fontsize=8)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Sequence duplication levels plot saved to {output_path}")
 
@@ -456,7 +455,7 @@ def plot_overrepresented_sequences(
                f'{pct:.2f}%\n({count})', ha='left', va='center', fontsize=8)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Overrepresented sequences plot saved to {output_path}")
 
@@ -508,7 +507,7 @@ def plot_kmer_profiles(
                f'{count}', ha='center', va='bottom', fontsize=8)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"K-mer profiles plot saved to {output_path}")
 
@@ -614,7 +613,7 @@ def plot_vcf_quality_metrics(
     plt.tight_layout()
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"VCF quality metrics plot saved to {output_path}")
 
@@ -740,7 +739,7 @@ def plot_singlecell_qc_metrics(
     plt.tight_layout()
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Single-cell QC metrics plot saved to {output_path}")
 
@@ -838,7 +837,7 @@ def plot_protein_structure_quality(
     plt.tight_layout()
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Protein structure quality plot saved to {output_path}")
 
@@ -902,7 +901,7 @@ def plot_multiomics_quality_overview(
                ha='center', va='bottom', fontsize=8)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Multi-omics quality overview saved to {output_path}")
 
@@ -962,7 +961,7 @@ def plot_coverage_uniformity(
            verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Coverage uniformity plot saved to {output_path}")
 
@@ -1009,7 +1008,7 @@ def plot_error_profiles(
     ax.set_yscale('log')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Error profiles plot saved to {output_path}")
 
@@ -1137,7 +1136,7 @@ def plot_batch_effects_qc(
     plt.tight_layout()
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Batch effects QC plot saved to {output_path}")
 
@@ -1202,7 +1201,7 @@ def plot_data_integrity_metrics(
                f'{value:.3f}', ha='center', va='bottom', fontsize=8)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Data integrity metrics plot saved to {output_path}")
 

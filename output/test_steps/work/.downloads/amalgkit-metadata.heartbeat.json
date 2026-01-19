@@ -1,0 +1,20 @@
+{
+  "bytes_downloaded": 0,
+  "destination": "output/test_steps/work/metadata",
+  "errors": [],
+  "eta_seconds": null,
+  "last_update": "2026-01-18T21:41:49Z",
+  "progress": {
+    "current": 0,
+    "percent": 0.0,
+    "total": 4,
+    "type": "file_count"
+  },
+  "progress_percent": 0.0,
+  "speed_mbps": 0.0,
+  "started_at": "2026-01-18T21:41:48Z",
+  "status": "failed",
+  "step": "amalgkit metadata",
+  "total_bytes": null,
+  "url": "['amalgkit', 'metadata', '--threads', '2', '--out_dir', 'output/test_steps/work', '--search-string', '\"Homo sapiens\"[Organism] AND RNA-Seq[Strategy]']"
+}

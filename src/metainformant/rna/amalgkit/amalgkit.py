@@ -65,7 +65,7 @@ class AmalgkitParams:
         }
 
 
-def build_cli_args(params: AmalgkitParams | Dict[str, Any] | None, *, for_cli: bool = False) -> List[str]:
+def build_cli_args(params: AmalgkitParams | Dict[str, Any] | None, subcommand: str | None = None, *, for_cli: bool = False) -> List[str]:
     """Build command-line arguments for amalgkit.
 
     Args:
@@ -82,40 +82,83 @@ def build_cli_args(params: AmalgkitParams | Dict[str, Any] | None, *, for_cli: b
 
     # Handle dict parameters
     if isinstance(params, dict):
-        if 'work_dir' in params:
-            args.extend(['--work-dir', str(params['work_dir'])])
+        # amalgkit uses --out_dir for the main working directory in all subcommands
+        if 'out_dir' in params:
+            args.extend(['--out_dir', str(params['out_dir'])])
+        elif 'work_dir' in params:
+            args.extend(['--out_dir', str(params['work_dir'])])
+            
         if 'threads' in params:
             args.extend(['--threads', str(params['threads'])])
-        if 'species_list' in params and params['species_list']:
-            for species in params['species_list']:
-                args.extend(['--species', species])
 
-        # Add remaining parameters
-        skip_keys = {'work_dir', 'threads', 'species_list', 'extra_params', 'genome', 'filters',
-                     'taxon_id', 'auto_install_amalgkit', 'log_dir'}
+        # skip_keys should check both underscores and hyphens
+        skip_keys = {'work_dir', 'out_dir', 'threads', 'extra_params', 
+                     'genome', 'filters', 'taxon_id', 'auto_install_amalgkit', 'log_dir',
+                     'num_download_workers'}
+        
+        # List of flags that should use underscores instead of hyphens for amalgkit CLI
+        underscore_flags = {
+            "out_dir", "fastq_dir", "quant_dir", "metadata_dir", "config_dir", 
+            "cstmm_dir", "curate_dir", "csca_dir", "genome_dir", "index_dir",
+            "taxon_id", "species_list", "resolve_names", 
+            "mark_missing_rank", "mark_redundant_biosamples", "min_nspots", 
+            "max_sample", "build_index", "fasta_dir"
+        }
+        
+        # Flags that expect explicit yes/no instead of just being present/absent
+        yes_no_flags = {
+            "redo", "pfd", "resolve_names", "mark_redundant_biosamples",
+            "aws", "ncbi", "gcp", "fastp", "remove_sra", "remove_tmp",
+            "pfd_print", "fastp_print", "build_index", "overwrite"
+        }
+        
         for key, value in params.items():
             if key in skip_keys or value is None:
                 continue
+            
+            # Skip arguments not supported by specific subcommands
+            if subcommand == 'merge' and key in ('out', 'threads'):
+                continue
+            
+            # Normalize key: replace _ with - unless it's in underscore_flags
+            if key in underscore_flags:
+                cli_key = key
+            elif '-' in key:
+                cli_key = key
+            else:
+                cli_key = key.replace('_', '-')
+            
             if isinstance(value, bool):
-                # Amalgkit expects --flag yes/no not just --flag
-                # Note: Keep underscores, don't convert to hyphens for amalgkit
-                args.extend([f'--{key}', 'yes' if value else 'no'])
+                if cli_key in yes_no_flags:
+                    args.extend([f'--{cli_key}', 'yes' if value else 'no'])
+                elif value:
+                    args.append(f'--{cli_key}')
             elif isinstance(value, (int, float)):
-                args.extend([f'--{key}', str(value)])
-            elif isinstance(value, str):
-                args.extend([f'--{key}', value])
-            elif isinstance(value, Path):
-                args.extend([f'--{key}', str(value)])
+                if key == 'threads' and subcommand in ('merge', 'metadata', 'config'):
+                    continue
+                args.extend([f'--{cli_key}', str(value)])
             elif isinstance(value, list):
-                for item in value:
-                    args.extend([f'--{key}', str(item)])
+                # Handle lists (multiple arguments)
+                if (key == 'species-list' or key == 'species_list' or key == 'species'):
+                    if subcommand not in ('integrate', 'config', 'help', 'merge', 'metadata', 'getfastq', 'quant'):
+                        for val in value:
+                            args.extend(['--species', str(val)])
+                else:
+                    for val in value:
+                        args.extend([f'--{cli_key}', str(val)])
+            elif (key == 'species-list' or key == 'species_list' or key == 'species'):
+                if subcommand not in ('integrate', 'config', 'help', 'merge', 'metadata', 'getfastq', 'quant'):
+                    args.extend(['--species', str(value)])
+            else:
+                args.extend([f'--{cli_key}', str(value)])
         return args
 
     # Handle AmalgkitParams object
-    args.extend(['--work-dir', str(params.work_dir)])
-    args.extend(['--threads', str(params.threads)])
+    args.extend(['--out_dir', str(params.work_dir)])
+    if subcommand not in ('merge', 'metadata', 'config'):
+        args.extend(['--threads', str(params.threads)])
 
-    if params.species_list:
+    if params.species_list and subcommand not in ('integrate', 'config', 'merge', 'metadata', 'getfastq', 'quant'):
         for species in params.species_list:
             args.extend(['--species', species])
 
@@ -123,14 +166,15 @@ def build_cli_args(params: AmalgkitParams | Dict[str, Any] | None, *, for_cli: b
     for key, value in params.extra_params.items():
         if isinstance(value, bool):
             if value:
-                args.append(f'--{key.replace("_", "-")}')
+                # Keep underscores for amalgkit compatibility
+                args.extend([f'--{key}', 'yes'])
         elif isinstance(value, (int, float)):
-            args.extend([f'--{key.replace("_", "-")}', str(value)])
+            args.extend([f'--{key}', str(value)])
         elif isinstance(value, str):
-            args.extend([f'--{key.replace("_", "-")}', value])
+            args.extend([f'--{key}', value])
         elif isinstance(value, list):
             for item in value:
-                args.extend([f'--{key.replace("_", "-")}', str(item)])
+                args.extend([f'--{key}', str(item)])
 
     return args
 
@@ -148,7 +192,7 @@ def build_amalgkit_command(subcommand: str, params: AmalgkitParams | Dict[str, A
     command = ['amalgkit', subcommand]
 
     if params:
-        command.extend(build_cli_args(params))
+        command.extend(build_cli_args(params, subcommand=subcommand))
 
     return command
 
@@ -252,13 +296,25 @@ def run_amalgkit(subcommand: str, params: AmalgkitParams | Dict[str, Any] | None
 
     logger.info(f"Running amalgkit command: {' '.join(command)}")
 
-    try:
-        # For `getfastq` (and other long-running I/O steps), we provide heartbeat + progress
-        # by monitoring directory growth while the subprocess runs.
-        monitor = kwargs.pop("monitor", None)
-        heartbeat_interval = int(kwargs.pop("heartbeat_interval", 5))
-        show_progress = bool(kwargs.pop("show_progress", True))
+    # Extract custom keys to avoid passing them to subprocess.run/Popen twice
+    cwd = kwargs.pop("cwd", None) or kwargs.pop("work_dir", None)
+    log_dir = kwargs.pop("log_dir", None)
+    step_name = kwargs.pop("step_name", None)
+    monitor = kwargs.pop("monitor", None)
+    heartbeat_interval = int(kwargs.pop("heartbeat_interval", 5))
+    show_progress = bool(kwargs.pop("show_progress", True))
 
+    if log_dir:
+        import time
+        ts = int(time.time())
+        log_dir_path = Path(log_dir)
+        log_dir_path.mkdir(parents=True, exist_ok=True)
+        stdout_log = log_dir_path / f"{ts}.{subcommand}.stdout.log"
+        stderr_log = log_dir_path / f"{ts}.{subcommand}.stderr.log"
+        stdout_fh = open(stdout_log, "w")
+        stderr_fh = open(stderr_log, "w")
+
+    try:
         # Default behavior stays the same unless monitoring is enabled.
         # Enable monitoring for long-running steps by default.
         if monitor is None:
@@ -270,14 +326,6 @@ def run_amalgkit(subcommand: str, params: AmalgkitParams | Dict[str, Any] | None
             if out_dir_val:
                 out_dir = Path(str(out_dir_val))
                 hb_path = out_dir / ".downloads" / f"amalgkit-{subcommand}.heartbeat.json"
-
-                # Determine monitoring strategy by step
-                # - getfastq: directory_size with optional total_bytes from metadata size column
-                #   Note: Skipped files (already downloaded) are not included in progress,
-                #         but will be summarized at step completion in workflow.py
-                # - quant: sample_count by counting quant/SRR*/abundance.tsv
-                # - metadata/merge/cstmm/curate/csca: file_count (expected key outputs)
-                # - integrate: directory_size fallback (depends on actual FASTQ presence)
 
                 watch_dir = out_dir
                 if subcommand == "getfastq":
@@ -309,163 +357,84 @@ def run_amalgkit(subcommand: str, params: AmalgkitParams | Dict[str, Any] | None
                     if subcommand == "getfastq":
                         total_bytes = _estimate_total_bytes_from_metadata(meta_path)
 
-                # Set TMPDIR for fasterq-dump temp files to avoid disk space issues
-                # fasterq-dump needs temp space and /tmp may be full (tmpfs)
-                # Note: vdb-config repository root (for prefetch downloads) is configured
-                # separately in workflow.py to point to the amalgkit fastq output directory
                 env = os.environ.copy()
-                
-                # Check tqdm compatibility and suppress progress bars if incompatible
+                # Check tqdm compatibility
                 try:
                     import tqdm
-                    tqdm_version = tuple(map(int, tqdm.__version__.split('.')))
-                    if tqdm_version < (4, 60, 0):
-                        # Suppress progress bars for older tqdm versions that may cause 'refresh' errors
+                    if tuple(map(int, tqdm.__version__.split('.'))) < (4, 60, 0):
                         env['AMALGKIT_PROGRESS'] = 'false'
-                        logger.debug(f"tqdm version {tqdm.__version__} detected - suppressing progress bars for compatibility")
-                except (ImportError, ValueError, AttributeError):
-                    # tqdm not available or version check failed - continue normally
-                    pass
+                except: pass
                 
                 if subcommand == "getfastq":
-                    # Use repository .tmp directory for temp files (on external drive with space)
-                    # This is for fasterq-dump temporary files during FASTQ extraction
                     repo_root = Path(__file__).resolve().parent.parent.parent.parent
                     tmp_dir = repo_root / ".tmp" / "fasterq-dump"
                     tmp_dir.mkdir(parents=True, exist_ok=True)
                     env["TMPDIR"] = str(tmp_dir)
-                    env["TEMP"] = str(tmp_dir)
-                    env["TMP"] = str(tmp_dir)
-                    
-                    # VDB_CONFIG environment variable for cache/temp (not repository root)
-                    # The repository root (where prefetch downloads SRA files) is configured
-                    # separately via vdb-config command in workflow.py
                     vdb_cache = repo_root / ".tmp" / "vdb"
                     vdb_cache.mkdir(parents=True, exist_ok=True)
                     env["VDB_CONFIG"] = str(vdb_cache)
-                    logger.debug(f"Set TMPDIR={tmp_dir} for fasterq-dump temp files and VDB_CONFIG={vdb_cache} for cache")
-                
-                # Avoid deadlocks: do not pipe stdout/stderr while we poll.
-                proc = subprocess.Popen(command, env=env)
 
-                # Step-specific monitoring
+                proc_kwargs = {"env": env}
+                if cwd: proc_kwargs["cwd"] = cwd
+                
+                if log_dir:
+                    proc_kwargs["stdout"] = stdout_fh
+                    proc_kwargs["stderr"] = stderr_fh
+                
+                proc = subprocess.Popen(command, **proc_kwargs)
+
                 if subcommand == "quant":
                     rc = monitor_subprocess_sample_progress(
-                        process=proc,
-                        watch_dir=watch_dir,
-                        heartbeat_path=hb_path,
-                        completion_glob="*/abundance.tsv",
-                        total_samples=total_runs,
-                        heartbeat_interval=heartbeat_interval,
-                        show_progress=show_progress,
-                        desc=f"amalgkit {subcommand}",
+                        process=proc, watch_dir=watch_dir, heartbeat_path=hb_path,
+                        completion_glob="*/abundance.tsv", total_samples=total_runs,
+                        heartbeat_interval=heartbeat_interval, show_progress=show_progress,
+                        desc=f"amalgkit {subcommand}"
                     )
-                    return subprocess.CompletedProcess(args=command, returncode=rc, stdout="", stderr="")
-
-                if subcommand == "metadata":
-                    # Expected core files from amalgkit metadata
-                    expected = [
-                        "metadata.tsv",
-                        "metadata_original.tsv",
-                        "pivot_selected.tsv",
-                        "pivot_qualified.tsv",
-                    ]
+                elif subcommand == "metadata":
+                    expected = ["metadata.tsv", "metadata_original.tsv", "pivot_selected.tsv", "pivot_qualified.tsv"]
                     rc = monitor_subprocess_file_count(
-                        process=proc,
-                        watch_dir=watch_dir,
-                        heartbeat_path=hb_path,
-                        expected_files=expected,
-                        heartbeat_interval=heartbeat_interval,
-                        show_progress=show_progress,
-                        desc=f"amalgkit {subcommand}",
+                        process=proc, watch_dir=watch_dir, heartbeat_path=hb_path,
+                        expected_files=expected, heartbeat_interval=heartbeat_interval,
+                        show_progress=show_progress, desc=f"amalgkit {subcommand}"
                     )
-                    return subprocess.CompletedProcess(args=command, returncode=rc, stdout="", stderr="")
-
-                if subcommand in {"merge", "cstmm", "curate", "csca"}:
-                    # File-count based for key outputs (best-effort, varies with configs)
-                    # We include the most common / key artifacts per step.
-                    if subcommand == "merge":
-                        expected = ["merged_abundance.tsv"]
-                    elif subcommand == "cstmm":
-                        expected = ["cstmm.tsv"]
-                    elif subcommand == "curate":
-                        expected = ["tables"]  # directory presence is enough
-                    else:  # csca
-                        expected = ["csca.tsv"]
-
+                elif subcommand in {"merge", "cstmm", "curate", "csca"}:
+                    expected = ["merged_abundance.tsv"] if subcommand == "merge" else \
+                               ["cstmm.tsv"] if subcommand == "cstmm" else \
+                               ["tables"] if subcommand == "curate" else ["csca.tsv"]
                     rc = monitor_subprocess_file_count(
-                        process=proc,
-                        watch_dir=watch_dir,
-                        heartbeat_path=hb_path,
-                        expected_files=expected,
-                        heartbeat_interval=heartbeat_interval,
-                        show_progress=show_progress,
-                        desc=f"amalgkit {subcommand}",
+                        process=proc, watch_dir=watch_dir, heartbeat_path=hb_path,
+                        expected_files=expected, heartbeat_interval=heartbeat_interval,
+                        show_progress=show_progress, desc=f"amalgkit {subcommand}"
                     )
-                    return subprocess.CompletedProcess(args=command, returncode=rc, stdout="", stderr="")
-
-                # Default: directory growth
-                rc, _bytes_done = monitor_subprocess_directory_growth(
-                    process=proc,
-                    watch_dir=watch_dir,
-                    heartbeat_path=hb_path,
-                    total_bytes=total_bytes if total_bytes and total_bytes > 0 else None,
-                    heartbeat_interval=heartbeat_interval,
-                    show_progress=show_progress,
-                    desc=f"amalgkit {subcommand}",
-                )
-                return subprocess.CompletedProcess(args=command, returncode=rc, stdout="", stderr="")
-
-        # Set TMPDIR for fasterq-dump temp files to avoid disk space issues
-        # Note: vdb-config repository root (for prefetch downloads) is configured
-        # separately in workflow.py to point to the amalgkit fastq output directory
-        env = os.environ.copy()
+                else:
+                    rc, _ = monitor_subprocess_directory_growth(
+                        process=proc, watch_dir=watch_dir, heartbeat_path=hb_path,
+                        total_bytes=total_bytes, heartbeat_interval=heartbeat_interval,
+                        show_progress=show_progress, desc=f"amalgkit {subcommand}"
+                    )
+        # Non-monitored path
+        proc_kwargs = kwargs.copy()
+        if cwd: proc_kwargs["cwd"] = cwd
         
-        # Check tqdm compatibility and suppress progress bars if incompatible
-        try:
-            import tqdm
-            tqdm_version = tuple(map(int, tqdm.__version__.split('.')))
-            if tqdm_version < (4, 60, 0):
-                # Suppress progress bars for older tqdm versions that may cause 'refresh' errors
-                env['AMALGKIT_PROGRESS'] = 'false'
-                logger.debug(f"tqdm version {tqdm.__version__} detected - suppressing progress bars for compatibility")
-        except (ImportError, ValueError, AttributeError):
-            # tqdm not available or version check failed - continue normally
-            pass
-        
-        if subcommand == "getfastq":
-            # Use repository .tmp directory for temp files (on external drive with space)
-            # This is for fasterq-dump temporary files during FASTQ extraction
-            repo_root = Path(__file__).resolve().parent.parent.parent.parent
-            tmp_dir = repo_root / ".tmp" / "fasterq-dump"
-            tmp_dir.mkdir(parents=True, exist_ok=True)
-            env["TMPDIR"] = str(tmp_dir)
-            env["TEMP"] = str(tmp_dir)
-            env["TMP"] = str(tmp_dir)
+        if log_dir:
+            proc_kwargs["stdout"] = stdout_fh
+            proc_kwargs["stderr"] = stderr_fh
+        else:
+            if "capture_output" not in proc_kwargs:
+                proc_kwargs["capture_output"] = True
+                proc_kwargs["text"] = True
             
-            # VDB_CONFIG environment variable for cache/temp (not repository root)
-            # The repository root (where prefetch downloads SRA files) is configured
-            # separately via vdb-config command in workflow.py
-            vdb_cache = repo_root / ".tmp" / "vdb"
-            vdb_cache.mkdir(parents=True, exist_ok=True)
-            env["VDB_CONFIG"] = str(vdb_cache)
-            logger.debug(f"Set TMPDIR={tmp_dir} for fasterq-dump temp files and VDB_CONFIG={vdb_cache} for cache")
-        
-        # Default kwargs (non-monitored)
-        run_kwargs = {
-            "capture_output": True,
-            "text": True,
-            "check": False,  # Don't raise on non-zero exit
-            "env": env,
-            **kwargs,
-        }
-
-        result = subprocess.run(command, **run_kwargs)
-        logger.debug(f"amalgkit {subcommand} completed with return code {result.returncode}")
+        result = subprocess.run(command, **proc_kwargs)
+        if log_dir:
+            stdout_fh.close()
+            stderr_fh.close()
         return result
+
     except Exception as e:
         logger.error(f"Error running amalgkit {subcommand}: {e}")
-        raise
+        # Return failed process if check=False, otherwise re-raise if it was a budget error
+        if kwargs.get("check"): raise
+        return subprocess.CompletedProcess(args=command, returncode=1, stdout="", stderr=str(e))
 
 
 def _estimate_total_bytes_from_metadata(metadata_path: Path) -> int | None:
@@ -618,6 +587,11 @@ def getfastq(params: AmalgkitParams | Dict[str, Any] | None = None, **kwargs: An
             # Check if successful (return code 0) 
             if result.returncode == 0:
                 return result
+            
+            # Check if 'check' was True and command failed
+            check = kwargs.get('check', False)
+            if result.returncode != 0 and check:
+                raise subprocess.CalledProcessError(result.returncode, command, output=result.stdout, stderr=result.stderr)
             
             # Check if partial success (some files downloaded)
             # Don't retry if the command ran but just had no work to do

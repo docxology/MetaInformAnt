@@ -34,6 +34,13 @@ except ImportError:
     sns = None
     HAS_SEABORN = False
 
+try:
+    import sklearn.metrics as metrics
+    HAS_SKLEARN = True
+except ImportError:
+    metrics = None
+    HAS_SKLEARN = False
+
 
 def histogram(
     data: np.ndarray,
@@ -68,7 +75,7 @@ def histogram(
     ax.hist(data, bins=bins, **kwargs)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Histogram saved to {output_path}")
 
@@ -111,7 +118,7 @@ def box_plot(
     ax.boxplot(data, **kwargs)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Box plot saved to {output_path}")
 
@@ -165,7 +172,7 @@ def violin_plot(
         ax.boxplot(data, **kwargs)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Violin plot saved to {output_path}")
 
@@ -225,7 +232,7 @@ def qq_plot(
     ax.set_ylabel('Sample Quantiles')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Q-Q plot saved to {output_path}")
 
@@ -288,7 +295,7 @@ def correlation_heatmap(
                              ha="center", va="center", color="w")
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Correlation heatmap saved to {output_path}")
 
@@ -331,7 +338,7 @@ def density_plot(
         ax.hist(data, density=True, alpha=0.7, **kwargs)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Density plot saved to {output_path}")
 
@@ -388,7 +395,7 @@ def ridge_plot(
     ax.legend()
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Ridge plot saved to {output_path}")
 
@@ -424,14 +431,14 @@ def roc_curve(
     if len(y_true) != len(y_scores):
         raise ValueError("y_true and y_scores must have same length")
 
-    if not HAS_SCIPY:
-        raise ImportError("scipy required for ROC curve")
+    if metrics is None:
+        raise ImportError("scikit-learn required for ROC curve")
 
     if ax is None:
         fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (8, 6)))
 
-    fpr, tpr, _ = stats.roc_curve(y_true, y_scores)
-    roc_auc = stats.roc_auc_score(y_true, y_scores)
+    fpr, tpr, _ = metrics.roc_curve(y_true, y_scores)
+    roc_auc = metrics.roc_auc_score(y_true, y_scores)
 
     ax.plot(fpr, tpr, label=f'ROC curve (AUC = {roc_auc:.2f})', **kwargs)
     ax.plot([0, 1], [0, 1], 'k--', alpha=0.7)
@@ -441,7 +448,7 @@ def roc_curve(
     ax.legend()
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"ROC curve saved to {output_path}")
 
@@ -477,14 +484,14 @@ def precision_recall_curve(
     if len(y_true) != len(y_scores):
         raise ValueError("y_true and y_scores must have same length")
 
-    if not HAS_SCIPY:
-        raise ImportError("scipy required for precision-recall curve")
+    if metrics is None:
+        raise ImportError("scikit-learn required for precision-recall curve")
 
     if ax is None:
         fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (8, 6)))
 
-    precision, recall, _ = stats.precision_recall_curve(y_true, y_scores)
-    pr_auc = stats.average_precision_score(y_true, y_scores)
+    precision, recall, _ = metrics.precision_recall_curve(y_true, y_scores)
+    pr_auc = metrics.average_precision_score(y_true, y_scores)
 
     ax.plot(recall, precision, label=f'PR curve (AP = {pr_auc:.2f})', **kwargs)
     ax.set_xlabel('Recall')
@@ -493,7 +500,7 @@ def precision_recall_curve(
     ax.legend()
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Precision-recall curve saved to {output_path}")
 
@@ -541,7 +548,7 @@ def residual_plot(
     ax.set_title('Residual Plot')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Residual plot saved to {output_path}")
 
@@ -608,7 +615,7 @@ def leverage_plot(
     ax.set_title('Leverage Plot')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Leverage plot saved to {output_path}")
 

@@ -92,7 +92,7 @@ def plot_expression_heatmap(
             ax.set_xticklabels(data.columns, rotation=45, ha='right', fontsize=8)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Expression heatmap saved to {output_path}")
 
@@ -174,7 +174,7 @@ def plot_enrichment_barplot(
             ax.text(neg_log_pvals.iloc[i] + 0.1, i, f'n={count}', va='center', fontsize=8)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Enrichment barplot saved to {output_path}")
 
@@ -285,7 +285,7 @@ def plot_differential_expression(
     ax.legend(handles=legend_elements, loc='best', fontsize=8)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Differential expression plot saved to {output_path}")
 

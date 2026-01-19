@@ -98,7 +98,7 @@ def animate_time_series(
     )
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         writer = PillowWriter(fps=1000/interval)
         anim.save(output_path, writer=writer)
         logger.info(f"Time series animation saved to {output_path}")
@@ -183,7 +183,7 @@ def animate_evolution(
     )
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         writer = PillowWriter(fps=1000/interval)
         anim.save(output_path, writer=writer)
         logger.info(f"Sequence evolution animation saved to {output_path}")
@@ -256,7 +256,7 @@ def animate_clustering(
     )
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         writer = PillowWriter(fps=1000/interval)
         anim.save(output_path, writer=writer)
         logger.info(f"Clustering animation saved to {output_path}")
@@ -343,7 +343,7 @@ def animate_network(
     )
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         writer = PillowWriter(fps=1000/interval)
         anim.save(output_path, writer=writer)
         logger.info(f"Network animation saved to {output_path}")
@@ -443,7 +443,7 @@ def animate_trajectory(
     )
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         writer = PillowWriter(fps=1000/interval)
         anim.save(output_path, writer=writer)
         logger.info(f"Trajectory animation saved to {output_path}")

@@ -107,7 +107,7 @@ def plot_pca(
         ax.set_title('3D PCA Plot')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"PCA plot saved to {output_path}")
 
@@ -189,7 +189,7 @@ def plot_umap(
         ax.set_title('3D UMAP Plot')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"UMAP plot saved to {output_path}")
 
@@ -274,7 +274,7 @@ def plot_tsne(
         ax.set_title('3D t-SNE Plot')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"t-SNE plot saved to {output_path}")
 
@@ -340,7 +340,7 @@ def plot_pca_loadings(
     ax.set_title('PCA Loadings Plot')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"PCA loadings plot saved to {output_path}")
 
@@ -424,7 +424,7 @@ def biplot(
     ax.legend()
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"PCA biplot saved to {output_path}")
 

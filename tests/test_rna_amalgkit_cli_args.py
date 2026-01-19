@@ -24,7 +24,7 @@ def test_build_cli_args_basic():
     assert "--threads" in args and "8" in args
     assert "--dry-run" in args
     # repeat flags for lists
-    assert args.count("--species-list") == 2
+    assert args.count("--species") == 2
     # path stringified
     assert "output/x" in args
 

@@ -180,8 +180,12 @@ def download_sra_files_from_metadata(
             sample_dir = output_base_dir / sample_id
             target_file = sample_dir / f"{sample_id}.sra"
             
-            if target_file.exists() and target_file.stat().st_size > 1000:
-                logger.info(f"File already exists: {target_file}")
+            # Also check backup directory usually used by workflow manager
+            backup_file = output_base_dir / "sra" / f"{sample_id}.sra"
+            
+            if (target_file.exists() and target_file.stat().st_size > 1000) or \
+               (backup_file.exists() and backup_file.stat().st_size > 1000):
+                logger.info(f"File already exists (original or backup): {sample_id}")
                 results[sample_id] = True
                 continue
                 

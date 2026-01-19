@@ -25,6 +25,12 @@ from .utils import (
 from . import data
 from .data import (
     validation,
+    validate_type,
+    validate_range,
+    validate_path_exists,
+    validate_not_none,
+    validate_not_empty,
+    validate_schema,
 )
 
 # 3. IO (Input/Output)
@@ -36,6 +42,10 @@ from .io import (
     download,
     io as io_module,
     paths,
+    load_json,
+    dump_json,
+    load_yaml,
+    download_file,
 )
 
 # 4. Execution (Workflow)
@@ -45,6 +55,26 @@ from .execution import (
     discovery,
     parallel,
     workflow,
+    discover_functions,
+    discover_configs,
+    thread_map,
+    parallel_batch,
+    cpu_count,
+)
+
+# 5. Engine (Workflow Manager)
+from . import engine
+from .engine import (
+    WorkflowManager,
+    SampleStage,
+    SampleState,
+)
+
+# 6. UI (Terminal Interface)
+from . import ui
+from .ui import (
+    ProgressState,
+    TerminalInterface,
 )
 
 # Optional dependencies
@@ -65,8 +95,10 @@ if TYPE_CHECKING:
 __all__ = [
     # Subpackages
     "data",
+    "engine",
     "execution",
     "io",
+    "ui",
     "utils",
 
     # Core modules (backward compatibility)
@@ -92,6 +124,32 @@ __all__ = [
     "download_and_process_data",
     "run_config_based_workflow",
     "validate_config_file",
+    
+    # Key utility functions
+    "validate_type",
+    "validate_range",
+    "validate_path_exists",
+    "validate_not_none",
+    "validate_not_empty",
+    "validate_schema",
+    "load_json",
+    "dump_json",
+    "load_yaml",
+    "download_file",
+    "discover_functions",
+    "discover_configs",
+    "thread_map",
+    "parallel_batch",
+    "cpu_count",
+    
+    # Engine
+    "WorkflowManager",
+    "SampleStage",
+    "SampleState",
+    
+    # UI
+    "ProgressState",
+    "TerminalInterface",
 
     # Optional modules
     "db",

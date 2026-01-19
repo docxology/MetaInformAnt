@@ -40,6 +40,12 @@ try:
 except ImportError:
     HAS_SKLEARN = False
 
+try:
+    import sklearn.metrics
+    HAS_METRICS = True
+except ImportError:
+    HAS_METRICS = False
+
 
 class TestHistogram:
     """Test histogram function."""
@@ -382,8 +388,8 @@ class TestROCCurve:
 
     def test_basic_roc_curve(self):
         """Test basic ROC curve creation."""
-        if not HAS_SCIPY:
-            pytest.skip("scipy required for ROC curve")
+        if not HAS_METRICS:
+            pytest.skip("scikit-learn required for ROC curve")
 
         import matplotlib
         matplotlib.use('Agg')
@@ -399,8 +405,8 @@ class TestROCCurve:
 
     def test_roc_curve_with_output_path(self, tmp_path: Path):
         """Test ROC curve with output path."""
-        if not HAS_SCIPY:
-            pytest.skip("scipy required for ROC curve")
+        if not HAS_METRICS:
+            pytest.skip("scikit-learn required for ROC curve")
 
         import matplotlib
         matplotlib.use('Agg')
@@ -443,8 +449,8 @@ class TestPrecisionRecallCurve:
 
     def test_basic_precision_recall_curve(self):
         """Test basic precision-recall curve creation."""
-        if not HAS_SCIPY:
-            pytest.skip("scipy required for precision-recall curve")
+        if not HAS_METRICS:
+            pytest.skip("scikit-learn required for precision-recall curve")
 
         import matplotlib
         matplotlib.use('Agg')

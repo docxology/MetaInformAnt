@@ -196,6 +196,8 @@ def to_newick(tree: Tree) -> str:
         if isinstance(tree[node], dict):
             children = []
             for child, branch_length in tree[node].items():
+                if child == 'bootstrap':
+                    continue
                 if branch_length is not None:
                     children.append(f"{_to_newick_recursive(child)}:{branch_length}")
                 else:
@@ -269,7 +271,7 @@ def to_ascii(tree: Tree) -> str:
         lines = []
 
         if isinstance(tree[node], dict):
-            children = list(tree[node].keys())
+            children = [c for c in tree[node].keys() if c != 'bootstrap']
             for i, child in enumerate(children):
                 is_last_child = (i == len(children) - 1)
 
@@ -325,6 +327,8 @@ def basic_tree_stats(tree: Tree) -> Dict[str, int]:
 
         total = 0
         for child in tree[node].keys():
+            if child == 'bootstrap':
+                continue
             total += _count_leaves(child)
 
         return total
@@ -335,6 +339,8 @@ def basic_tree_stats(tree: Tree) -> Dict[str, int]:
 
         total = 1  # Count this node
         for child in tree[node].keys():
+            if child == 'bootstrap':
+                continue
             total += _count_internal_nodes(child)
 
         return total

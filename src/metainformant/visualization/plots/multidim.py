@@ -65,12 +65,12 @@ def plot_pairwise_relationships(
     g = sns.pairplot(numeric_data, **kwargs)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         g.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Pairwise relationships plot saved to {output_path}")
 
-    # Return the main axes (this is a bit of a hack since pairplot creates its own figure)
-    return g.ax
+    # Return the first axes from the grid
+    return g.fig.axes[0] if g.fig.axes else None
 
 
 def plot_parallel_coordinates(
@@ -142,7 +142,7 @@ def plot_parallel_coordinates(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Parallel coordinates plot saved to {output_path}")
 
@@ -209,7 +209,7 @@ def plot_radar_chart(
         ax.legend(loc='upper right', bbox_to_anchor=(1.1, 1.1))
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Radar chart saved to {output_path}")
 
@@ -287,7 +287,7 @@ def plot_3d_scatter(
     ax.set_title('3D Scatter Plot')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"3D scatter plot saved to {output_path}")
 

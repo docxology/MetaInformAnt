@@ -89,7 +89,7 @@ def plot_venn_diagram(
     ax.set_title('Venn Diagram')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Venn diagram saved to {output_path}")
 
@@ -213,7 +213,7 @@ def plot_sankey_diagram(
         fig.update_layout(title_text="Sankey Diagram", **kwargs)
 
         if output_path:
-            output_path = paths.ensure_directory(Path(output_path).parent)
+            paths.ensure_directory(Path(output_path).parent)
             html_path = Path(output_path).with_suffix('.html')
             fig.write_html(str(html_path))
             logger.info(f"Sankey diagram saved to {html_path}")
@@ -246,7 +246,7 @@ def plot_sankey_diagram(
         ax.set_title('Flow Diagram')
 
         if output_path:
-            output_path = paths.ensure_directory(Path(output_path).parent)
+            paths.ensure_directory(Path(output_path).parent)
             plt.savefig(output_path, dpi=300, bbox_inches='tight')
             logger.info(f"Flow diagram saved to {output_path}")
 
@@ -327,7 +327,7 @@ def plot_chord_diagram(
     ax.axis('off')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Chord diagram saved to {output_path}")
 
@@ -373,7 +373,7 @@ def plot_alluvial_diagram(
     ax.set_title('Alluvial Diagram')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Alluvial diagram saved to {output_path}")
 
@@ -443,7 +443,7 @@ def plot_circular_barplot(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Circular bar plot saved to {output_path}")
 
@@ -497,7 +497,7 @@ def plot_network_circular_layout(
     ax.set_rlabel_position(0)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Circular network plot saved to {output_path}")
 
@@ -558,7 +558,7 @@ def plot_radar_chart(
         ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Radar chart saved to {output_path}")
 
@@ -597,7 +597,7 @@ def plot_upset_plot(
     upsetplot.plot(upset_data, fig=fig, **kwargs)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"UpSet plot saved to {output_path}")
 

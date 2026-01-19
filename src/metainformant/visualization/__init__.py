@@ -33,6 +33,11 @@ from .genomics import (
     networks,
     trees,
 )
+from .genomics.trees import (
+    plot_phylo_tree,
+    circular_tree_plot,
+    unrooted_tree_plot,
+)
 from .analysis import (
     dimred,
     information,
@@ -102,6 +107,9 @@ __all__ = [
     "expression",
     "networks",
     "trees",
+    "plot_phylo_tree",
+    "circular_tree_plot",
+    "unrooted_tree_plot",
 
     # Advanced plotting
     "dimred",

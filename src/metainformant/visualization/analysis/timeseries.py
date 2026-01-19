@@ -75,7 +75,7 @@ def plot_time_series(
     plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Time series plot saved to {output_path}")
 
@@ -121,7 +121,7 @@ def plot_autocorrelation(
     ax.set_title('Autocorrelation Function (ACF)')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Autocorrelation plot saved to {output_path}")
 
@@ -195,7 +195,7 @@ def plot_seasonal_decomposition(
     plt.tight_layout()
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Seasonal decomposition plot saved to {output_path}")
 
@@ -261,7 +261,7 @@ def plot_forecast(
     plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Forecast plot saved to {output_path}")
 
@@ -325,7 +325,7 @@ def plot_trend_analysis(
     plt.setp(ax.get_xticklabels(), rotation=45, ha='right')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Trend analysis plot saved to {output_path}")
 

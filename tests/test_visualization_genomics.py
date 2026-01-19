@@ -163,7 +163,7 @@ class TestRegionalPlot:
         # Create sample regional data
         data = pd.DataFrame({
             'CHR': ['1'] * 10,
-            'BP': list(range(1000000, 1010000, 100000)),
+            'BP': np.arange(1000000, 2000000, 100000),
             'P': np.random.uniform(1e-8, 1, 10)
         })
 

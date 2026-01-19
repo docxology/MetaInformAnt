@@ -165,7 +165,7 @@ class TestPlotRenyiSpectra:
 
         ax = plot_renyi_spectra(renyi_data, alpha_values)
         assert ax is not None
-        assert len(ax.lines) == 2  # Two distributions
+        assert len(ax.lines) == 3  # Two distributions + Shannon marker (alpha=1)
         plt.close('all')
 
     def test_renyi_spectra_with_output_path(self, tmp_path: Path):

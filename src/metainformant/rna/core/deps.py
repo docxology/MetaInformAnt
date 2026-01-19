@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import shutil
 import subprocess
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any
 
 from metainformant.core import logging
 
@@ -23,10 +23,6 @@ def check_amalgkit_availability() -> Tuple[bool, str]:
     """
     from metainformant.rna.amalgkit.amalgkit import check_cli_available
     available, msg = check_cli_available()
-    # check_cli_available returns (bool, msg), dep report expects (bool, version/msg)
-    # amalgkit.py's check_cli_available returns generic message if found via --help
-    # To be fully compatible with old deps report behavior, we might want version
-    # But for now, unification is key.
     return available, msg
 
 
@@ -65,7 +61,7 @@ def check_quantification_tools() -> Dict[str, Tuple[bool, str]]:
     return tools
 
 
-def check_system_requirements() -> Dict[str, any]:
+def check_system_requirements() -> Dict[str, Any]:
     """Check system requirements for RNA-seq analysis.
 
     Returns:
@@ -107,7 +103,7 @@ def check_cpu_cores() -> int:
     try:
         import multiprocessing
         return multiprocessing.cpu_count()
-    except ImportError:
+    except Exception:
         return 1  # Conservative estimate
 
 
@@ -151,7 +147,7 @@ def check_required_packages() -> Dict[str, Tuple[bool, str]]:
     return packages
 
 
-def get_dependency_report() -> Dict[str, any]:
+def get_dependency_report() -> Dict[str, Any]:
     """Generate a comprehensive dependency report.
 
     Returns:
@@ -220,9 +216,38 @@ def ensure_dependencies() -> bool:
     return True
 
 
+def check_step_dependencies(step_name: str, params: Dict[str, Any], config: Any) -> Tuple[bool, str]:
+    """Check if all dependencies for a step are satisfied.
 
+    Args:
+        step_name: Name of the workflow step
+        params: Parameters for the step
+        config: Workflow configuration
 
+    Returns:
+        Tuple of (satisfied, error_message)
+    """
+    # Amalgkit is required for all amalgkit-base steps
+    amalgkit_steps = {'metadata', 'integrate', 'config', 'select', 'getfastq', 'quant', 'merge', 'curate', 'cstmm', 'csca', 'sanity'}
+    if step_name in amalgkit_steps:
+        ok, msg = check_amalgkit_availability()
+        if not ok:
+            return False, f"Amalgkit CLI not available: {msg}"
 
+    if step_name == 'quant':
+        # Kallisto or Salmon required depending on tool
+        tool = params.get('tool', 'kallisto')
+        tools = check_quantification_tools()
+        if tool in tools and not tools[tool][0]:
+            return False, f"Quantification tool '{tool}' not available: {tools[tool][1]}"
 
+    if step_name in ('curate', 'cstmm', 'csca'):
+        # R required for these steps
+        try:
+            result = subprocess.run(['Rscript', '--version'], capture_output=True, text=True, timeout=5)
+            if result.returncode != 0:
+                return False, "Rscript not available (required for R-based steps)"
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            return False, "Rscript not available (required for R-based steps)"
 
-
+    return True, ""

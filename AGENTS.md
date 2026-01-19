@@ -180,6 +180,11 @@ This section provides technical documentation of all implemented functions acros
 - `ProgressTracker.update(n: int = 1) -> None`
 - `ProgressTracker.close() -> None`
 
+**Workflow Engine** (`metainformant.core.engine`):
+- `WorkflowManager(config_path: Path, max_threads: int = 5)`
+- `WorkflowManager.add_sample(sample_id: str, sra_url: str, dest_path: Path) -> None`
+- `WorkflowManager.run() -> dict[str, bool]`
+
 **Hashing Utilities** (`metainformant.core.hash`):
 - `compute_file_hash(path: str | Path, algorithm: str = "sha256") -> str`
 - `compute_content_hash(content: str | bytes, algorithm: str = "sha256") -> str`
@@ -261,6 +266,27 @@ DNA sequence analysis, alignment, population genetics, phylogenetics, and genomi
 - `to_ascii(tree) -> str`
 - `basic_tree_stats(tree) -> Dict[str, int]`
 - `nj_tree_from_kmer(id_to_seq: Dict[str, str], *, k: int = 3, metric: str = "cosine") -> Tree`
+
+**DNA Variation** (`metainformant.dna.variation`):
+- `parse_vcf(path: str | Path) -> dict[str, Any]`
+- `filter_variants_by_quality(vcf_data: dict[str, Any], min_qual: float = 20.0) -> dict[str, Any]`
+- `filter_variants_by_maf(vcf_data: dict[str, Any], min_maf: float = 0.01) -> dict[str, Any]`
+- `calculate_variant_statistics(vcf_data: dict[str, Any]) -> dict[str, Any]`
+- `calculate_mutation_rate(ancestral: str, derived: str) -> float`
+- `classify_mutations(ancestral: str, derived: str) -> dict[str, int]`
+- `simulate_sequence_evolution(sequence: str, generations: int, mutation_rate: float) -> str`
+
+**DNA Integration** (`metainformant.dna.integration`):
+- `find_open_reading_frames(dna_sequence: str) -> list[tuple[int, int, str]]`
+- `predict_transcription_start_sites(dna_sequence: str) -> list[tuple[int, float]]`
+- `correlate_dna_with_rna_expression(dna_features: dict[str, Any], rna_features: dict[str, Any]) -> dict[str, Any]`
+- `integrate_dna_rna_data(dna_data: dict[str, Any], rna_data: dict[str, Any]) -> dict[str, Any]`
+
+**DNA I/O** (`metainformant.dna.io`):
+- `read_fastq(path: str | Path) -> dict[str, tuple[str, str]]`
+- `write_fastq(sequences: dict[str, tuple[str, str]], path: str | Path) -> None`
+- `assess_quality(fastq_path: str | Path) -> dict[str, Any]`
+- `trim_reads(fastq_path: str | Path, output_path: str | Path) -> None`
 
 **Genomic Data Retrieval** (`metainformant.dna.ncbi`, `metainformant.dna.genomes`):
 - `download_genome_package(accession: str, output_dir: str | Path, include: list[str] | None = None) -> Path`
@@ -420,6 +446,21 @@ Plotting, animations, heatmaps, and specialized biological visualizations.
 - `lineplot(x: np.ndarray = None, y: np.ndarray = None, ax: matplotlib.axes.Axes = None) -> matplotlib.axes.Axes`
 - `scatterplot(x: np.ndarray, y: np.ndarray, ax: matplotlib.axes.Axes = None) -> matplotlib.axes.Axes`
 - `heatmap(data: np.ndarray, cmap: str = "viridis", ax: matplotlib.axes.Axes = None) -> matplotlib.axes.Axes`
+
+**Genomics Visualization** (`metainformant.visualization.genomics`):
+- `manhattan_plot(results: pd.DataFrame, significance_threshold: float = 5e-8) -> Axes`
+- `volcano_plot(results: pd.DataFrame, p_col: str, lfc_col: str) -> Axes`
+- `regional_plot(results: pd.DataFrame, chrom: str, start: int, end: int) -> Axes`
+- `plot_phylo_tree(tree: Any, title: str = "Phylogenetic Tree") -> Axes`
+- `plot_expression_heatmap(counts_matrix: pd.DataFrame) -> Axes`
+
+**Statistical Analysis Visualization** (`metainformant.visualization.analysis`):
+- `histogram(data: np.ndarray, bins: int = 30) -> Axes`
+- `box_plot(data: list[np.ndarray], labels: list[str]) -> Axes`
+- `correlation_heatmap(corr_matrix: pd.DataFrame) -> Axes`
+- `plot_pca(pca_results: np.ndarray, labels: list[int]) -> Axes`
+- `plot_entropy_profile(entropy_values: list[float]) -> Axes`
+- `plot_quality_metrics(metrics: dict[str, Any]) -> Axes`
 
 **Animation System** (`metainformant.visualization.animation`):
 - `animate_time_series(data: np.ndarray, interval: int = 200) -> Tuple[matplotlib.figure.Figure, matplotlib.animation.FuncAnimation]`

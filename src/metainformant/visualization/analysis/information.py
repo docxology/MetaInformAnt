@@ -72,7 +72,7 @@ def plot_entropy_profile(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Entropy profile plot saved to {output_path}")
 
@@ -130,7 +130,7 @@ def plot_mutual_information_matrix(
     ax.grid(False)  # Turn off grid for cleaner heatmap
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Mutual information matrix plot saved to {output_path}")
 
@@ -189,7 +189,7 @@ def plot_renyi_spectra(
         ax.legend()
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Rényi spectra plot saved to {output_path}")
 
@@ -247,7 +247,7 @@ def plot_information_landscape(
     ax.set_title('Information Landscape')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Information landscape plot saved to {output_path}")
 
@@ -324,7 +324,7 @@ def plot_information_network(
     ax.set_title('Information Flow Network')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Information network plot saved to {output_path}")
 

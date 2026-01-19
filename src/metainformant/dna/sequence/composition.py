@@ -235,7 +235,7 @@ def amino_acid_frequencies(seq: str) -> dict[str, float]:
         return {}
 
     # Translate DNA to protein
-    from metainformant.dna.transcription import translate_dna
+    from metainformant.dna.expression.translation import translate_dna
 
     try:
         protein = translate_dna(seq)

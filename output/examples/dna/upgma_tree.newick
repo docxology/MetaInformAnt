@@ -1,1 +1,1 @@
-((((((species_b:0.0,ancestral:0.0):0.0,species_a:0.0):0.0,species_c:0.0):0.0,outgroup:0.0):0.0,species_e:0.0):0.0,(species_f:0.0,species_d:0.0):0.0);
+(((((species_f:0.0,species_d:0.0):0.0,outgroup:0.0):0.0,(species_c:0.0,(species_b:0.0,ancestral:0.0):0.0):0.0):0.0,species_e:0.0):0.0,species_a:0.0);

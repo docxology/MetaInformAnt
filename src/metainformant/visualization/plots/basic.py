@@ -56,7 +56,7 @@ def lineplot(
     ax.plot(x_data, y_data, **kwargs)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Line plot saved to {output_path}")
 
@@ -98,7 +98,7 @@ def scatter_plot(
     ax.scatter(x, y, **kwargs)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Scatter plot saved to {output_path}")
 
@@ -140,7 +140,7 @@ def heatmap(
     plt.colorbar(im, ax=ax)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Heatmap saved to {output_path}")
 
@@ -184,7 +184,7 @@ def bar_plot(
     ax.bar(x, height, **kwargs)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Bar plot saved to {output_path}")
 
@@ -228,7 +228,7 @@ def pie_chart(
     ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Pie chart saved to {output_path}")
 
@@ -270,7 +270,7 @@ def area_plot(
     ax.fill_between(x, y, **kwargs)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Area plot saved to {output_path}")
 
@@ -312,7 +312,7 @@ def step_plot(
     ax.step(x, y, **kwargs)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Step plot saved to {output_path}")
 

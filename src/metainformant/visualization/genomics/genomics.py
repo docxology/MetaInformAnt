@@ -108,7 +108,7 @@ def manhattan_plot(
         ax.legend()
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Manhattan plot saved to {output_path}")
 
@@ -185,7 +185,7 @@ def volcano_plot(
     ax.set_title('Volcano Plot')
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Volcano plot saved to {output_path}")
 
@@ -267,7 +267,7 @@ def regional_plot(
     ax.axhline(y=-np.log10(5e-8), color='red', linestyle='--', alpha=0.7)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Regional plot saved to {output_path}")
 
@@ -337,7 +337,7 @@ def circular_manhattan_plot(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Circular Manhattan plot saved to {output_path}")
 
@@ -389,7 +389,7 @@ def chromosome_ideogram(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Chromosome ideogram saved to {output_path}")
 
@@ -437,7 +437,7 @@ def coverage_plot(
     ax.grid(True, alpha=0.3)
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Coverage plot saved to {output_path}")
 
@@ -489,7 +489,7 @@ def variant_plot(
     ax.set_yticks([])  # Hide y-axis ticks
 
     if output_path:
-        output_path = paths.ensure_directory(Path(output_path).parent)
+        paths.ensure_directory(Path(output_path).parent)
         plt.savefig(output_path, dpi=300, bbox_inches='tight')
         logger.info(f"Variant plot saved to {output_path}")
 

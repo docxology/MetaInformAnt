@@ -250,16 +250,35 @@ class AmalgkitRunLayout:
     This class defines the directory structure and file organization
     for amalgkit workflow executions.
     """
-    work_dir: Path
-    metadata_dir: Path
-    fastq_dir: Path
-    quant_dir: Path
-    merge_dir: Path
-    cstmm_dir: Path
-    curate_dir: Path
-    csca_dir: Path
-    sanity_dir: Path
-    log_dir: Path
+    work_dir: Optional[Path] = None
+    metadata_dir: Optional[Path] = None
+    fastq_dir: Optional[Path] = None
+    quant_dir: Optional[Path] = None
+    merge_dir: Optional[Path] = None
+    cstmm_dir: Optional[Path] = None
+    curate_dir: Optional[Path] = None
+    csca_dir: Optional[Path] = None
+    sanity_dir: Optional[Path] = None
+    log_dir: Optional[Path] = None
+    base_dir: Optional[Path] = None
+
+    def __post_init__(self):
+        if self.base_dir:
+            if not self.work_dir: self.work_dir = self.base_dir / "work"
+            if not self.metadata_dir: self.metadata_dir = self.base_dir / "metadata"
+            if not self.fastq_dir: self.fastq_dir = self.base_dir / "fastq"
+            if not self.quant_dir: self.quant_dir = self.base_dir / "quant"
+            if not self.merge_dir: self.merge_dir = self.base_dir / "merge"
+            if not self.cstmm_dir: self.cstmm_dir = self.base_dir / "cstmm"
+            if not self.curate_dir: self.curate_dir = self.base_dir / "curate"
+            if not self.csca_dir: self.csca_dir = self.base_dir / "csca"
+            if not self.sanity_dir: self.sanity_dir = self.base_dir / "sanity"
+            if not self.log_dir: self.log_dir = self.base_dir / "logs"
+
+    @property
+    def merge_table(self) -> Path:
+        """Get path to the merged expression table."""
+        return self.merge_dir / "expression_matrix.tsv"
 
     @classmethod
     def from_work_dir(cls, work_dir: str | Path) -> 'AmalgkitRunLayout':
@@ -272,19 +291,7 @@ class AmalgkitRunLayout:
             AmalgkitRunLayout instance
         """
         work_path = Path(work_dir)
-
-        return cls(
-            work_dir=work_path,
-            metadata_dir=work_path / "metadata",
-            fastq_dir=work_path / "fastq",
-            quant_dir=work_path / "quant",
-            merge_dir=work_path / "merge",
-            cstmm_dir=work_path / "cstmm",
-            curate_dir=work_path / "curate",
-            csca_dir=work_path / "csca",
-            sanity_dir=work_path / "sanity",
-            log_dir=work_path / "logs"
-        )
+        return cls(base_dir=work_path.parent if work_path.name == "work" else work_path)
 
     def create_directories(self) -> None:
         """Create all directories in the layout."""
@@ -342,7 +349,6 @@ def build_step_params(species: SpeciesProfile, layout: AmalgkitRunLayout) -> Dic
     """
     # Base parameters for all steps
     base_params = {
-        'threads': 8,
         'work_dir': str(layout.work_dir),
         'log_dir': str(layout.log_dir),
     }
@@ -353,7 +359,7 @@ def build_step_params(species: SpeciesProfile, layout: AmalgkitRunLayout) -> Dic
             **base_params,
             'taxon-id': species.taxon_id,
             'species': species.name,
-            'tissues': species.tissues,
+            'tissue': species.tissues,
         },
         'integrate': base_params,
         'config': base_params,
@@ -361,20 +367,34 @@ def build_step_params(species: SpeciesProfile, layout: AmalgkitRunLayout) -> Dic
             **base_params,
             'taxon-id': species.taxon_id,
             'species': species.name,
-            'tissues': species.tissues,
+            'tissue': species.tissues,
         },
         'getfastq': {
             **base_params,
-            'ENA': True,  # Use ENA for downloading
+            'out-dir': layout.fastq_dir,
+            'ENA': True,
         },
         'quant': {
             **base_params,
-            'kallisto': True,  # Use kallisto for quantification
+            'out-dir': layout.quant_dir,
+            'kallisto': True,
         },
-        'merge': base_params,
-        'cstmm': base_params,
-        'curate': base_params,
-        'csca': base_params,
+        'merge': {
+            **base_params,
+            'out': layout.merge_table,
+        },
+        'cstmm': {
+            **base_params,
+            'out-dir': layout.cstmm_dir,
+        },
+        'curate': {
+            **base_params,
+            'out-dir': layout.curate_dir,
+        },
+        'csca': {
+            **base_params,
+            'out-dir': layout.csca_dir,
+        },
         'sanity': base_params,
     }
 

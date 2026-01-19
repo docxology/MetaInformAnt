@@ -81,7 +81,7 @@ def translate_dna(dna_seq: str, genetic_code: int = 1) -> str:
     Returns:
         Amino acid sequence string
     """
-    from metainformant.dna.transcription import transcribe
+    from metainformant.dna.expression.transcription import transcribe
 
     # Transcribe DNA to RNA first
     rna_seq = transcribe(dna_seq)
@@ -173,7 +173,7 @@ def six_frame_translation(dna_seq: str) -> Dict[str, str]:
     Returns:
         Dictionary mapping frame labels to amino acid sequences
     """
-    from metainformant.dna.sequences import reverse_complement
+    from metainformant.dna.sequence.core import reverse_complement
 
     frames = {}
 

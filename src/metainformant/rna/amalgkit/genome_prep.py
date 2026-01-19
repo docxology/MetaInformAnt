@@ -344,3 +344,13 @@ def orchestrate_genome_setup(
             return {"success": False, "messages": messages + ["Index build failed"]}
             
     return {"success": True, "messages": messages, "species": species_name}
+
+
+def prep_genome(*args, **kwargs):
+    """Alias for orchestrate_genome_setup for backward compatibility."""
+    return orchestrate_genome_setup(*args, **kwargs)
+
+
+def prepare_genome_for_quantification(*args, **kwargs):
+    """Alias for orchestrate_genome_setup."""
+    return orchestrate_genome_setup(*args, **kwargs)

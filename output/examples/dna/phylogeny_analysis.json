@@ -28,9 +28,9 @@
     ],
     "results": {
       "bootstrap_analysis": {
-        "newick_string": null,
-        "performed": false,
-        "replicates": 0
+        "newick_string": "((((((species_c:0.0,species_f:0.0):0.0,species_d:0.0):0.0,(species_b:0.0,ancestral:0.0):0.0):0.0,outgroup:0.0):0.0,species_e:0.0):0.0,species_a:0.0);",
+        "performed": true,
+        "replicates": 10
       },
       "kmer_trees": {
         "k2": {
@@ -71,8 +71,8 @@
         }
       },
       "neighbor_joining": {
-        "ascii_visualization": "Root_14\n\u251c\u2500\u2500 Node_13\n\u2502   \u251c\u2500\u2500 Node_12\n\u2502   \u2502   \u251c\u2500\u2500 Node_11\n\u2502   \u2502   \u2502   \u251c\u2500\u2500 Node_10\n\u2502   \u2502   \u2502   \u2502   \u251c\u2500\u2500 species_a\n\u2502   \u2502   \u2502   \u2502   \u2502   species_a\n\u2502   \u2502   \u2502   \u2502   \u2514\u2500\u2500 Node_9\n\u2502   \u2502   \u2502   \u2502       \u251c\u2500\u2500 species_f\n\u2502   \u2502   \u2502   \u2502       \u2502   species_f\n\u2502   \u2502   \u2502   \u2502       \u2514\u2500\u2500 species_d\n\u2502   \u2502   \u2502   \u2502           species_d\n\u2502   \u2502   \u2502   \u2514\u2500\u2500 Node_8\n\u2502   \u2502   \u2502       \u251c\u2500\u2500 species_b\n\u2502   \u2502   \u2502       \u2502   species_b\n\u2502   \u2502   \u2502       \u2514\u2500\u2500 ancestral\n\u2502   \u2502   \u2502           ancestral\n\u2502   \u2502   \u2514\u2500\u2500 species_c\n\u2502   \u2502       species_c\n\u2502   \u2514\u2500\u2500 outgroup\n\u2502       outgroup\n\u2514\u2500\u2500 species_e\n    species_e",
-        "newick_string": "(((((species_a:0.0,(species_f:0.0,species_d:0.0):0.0):0.0,(species_b:0.0,ancestral:0.0):0.0):0.0,species_c:0.0):0.0,outgroup:0.0):0.0,species_e:0.0);",
+        "ascii_visualization": "Root_14\n\u251c\u2500\u2500 Node_13\n\u2502   \u251c\u2500\u2500 Node_12\n\u2502   \u2502   \u251c\u2500\u2500 Node_11\n\u2502   \u2502   \u2502   \u251c\u2500\u2500 Node_10\n\u2502   \u2502   \u2502   \u2502   \u251c\u2500\u2500 Node_9\n\u2502   \u2502   \u2502   \u2502   \u2502   \u251c\u2500\u2500 species_c\n\u2502   \u2502   \u2502   \u2502   \u2502   \u2502   species_c\n\u2502   \u2502   \u2502   \u2502   \u2502   \u2514\u2500\u2500 species_f\n\u2502   \u2502   \u2502   \u2502   \u2502       species_f\n\u2502   \u2502   \u2502   \u2502   \u2514\u2500\u2500 species_d\n\u2502   \u2502   \u2502   \u2502       species_d\n\u2502   \u2502   \u2502   \u2514\u2500\u2500 Node_8\n\u2502   \u2502   \u2502       \u251c\u2500\u2500 species_b\n\u2502   \u2502   \u2502       \u2502   species_b\n\u2502   \u2502   \u2502       \u2514\u2500\u2500 ancestral\n\u2502   \u2502   \u2502           ancestral\n\u2502   \u2502   \u2514\u2500\u2500 outgroup\n\u2502   \u2502       outgroup\n\u2502   \u2514\u2500\u2500 species_e\n\u2502       species_e\n\u2514\u2500\u2500 species_a\n    species_a",
+        "newick_string": "((((((species_c:0.0,species_f:0.0):0.0,species_d:0.0):0.0,(species_b:0.0,ancestral:0.0):0.0):0.0,outgroup:0.0):0.0,species_e:0.0):0.0,species_a:0.0);",
         "statistics": {
           "internal_nodes": 7,
           "leaves": 8,
@@ -252,19 +252,19 @@
             "internal_nodes": 7,
             "leaves": 8,
             "total_nodes": 15,
-            "tree_height": 6
+            "tree_height": 5
           },
           "topology_summary": "Assumes constant molecular clock rate"
         }
       },
       "upgma": {
-        "ascii_visualization": "Cluster_14\n\u251c\u2500\u2500 Cluster_13\n\u2502   \u251c\u2500\u2500 Cluster_12\n\u2502   \u2502   \u251c\u2500\u2500 Cluster_11\n\u2502   \u2502   \u2502   \u251c\u2500\u2500 Cluster_10\n\u2502   \u2502   \u2502   \u2502   \u251c\u2500\u2500 Cluster_8\n\u2502   \u2502   \u2502   \u2502   \u2502   \u251c\u2500\u2500 species_b\n\u2502   \u2502   \u2502   \u2502   \u2502   \u2502   species_b\n\u2502   \u2502   \u2502   \u2502   \u2502   \u2514\u2500\u2500 ancestral\n\u2502   \u2502   \u2502   \u2502   \u2502       ancestral\n\u2502   \u2502   \u2502   \u2502   \u2514\u2500\u2500 species_a\n\u2502   \u2502   \u2502   \u2502       species_a\n\u2502   \u2502   \u2502   \u2514\u2500\u2500 species_c\n\u2502   \u2502   \u2502       species_c\n\u2502   \u2502   \u2514\u2500\u2500 outgroup\n\u2502   \u2502       outgroup\n\u2502   \u2514\u2500\u2500 species_e\n\u2502       species_e\n\u2514\u2500\u2500 Cluster_9\n    \u251c\u2500\u2500 species_f\n    \u2502   species_f\n    \u2514\u2500\u2500 species_d\n        species_d",
-        "newick_string": "((((((species_b:0.0,ancestral:0.0):0.0,species_a:0.0):0.0,species_c:0.0):0.0,outgroup:0.0):0.0,species_e:0.0):0.0,(species_f:0.0,species_d:0.0):0.0);",
+        "ascii_visualization": "Cluster_14\n\u251c\u2500\u2500 Cluster_13\n\u2502   \u251c\u2500\u2500 Cluster_12\n\u2502   \u2502   \u251c\u2500\u2500 Cluster_11\n\u2502   \u2502   \u2502   \u251c\u2500\u2500 Cluster_10\n\u2502   \u2502   \u2502   \u2502   \u251c\u2500\u2500 species_f\n\u2502   \u2502   \u2502   \u2502   \u2502   species_f\n\u2502   \u2502   \u2502   \u2502   \u2514\u2500\u2500 species_d\n\u2502   \u2502   \u2502   \u2502       species_d\n\u2502   \u2502   \u2502   \u2514\u2500\u2500 outgroup\n\u2502   \u2502   \u2502       outgroup\n\u2502   \u2502   \u2514\u2500\u2500 Cluster_9\n\u2502   \u2502       \u251c\u2500\u2500 species_c\n\u2502   \u2502       \u2502   species_c\n\u2502   \u2502       \u2514\u2500\u2500 Cluster_8\n\u2502   \u2502           \u251c\u2500\u2500 species_b\n\u2502   \u2502           \u2502   species_b\n\u2502   \u2502           \u2514\u2500\u2500 ancestral\n\u2502   \u2502               ancestral\n\u2502   \u2514\u2500\u2500 species_e\n\u2502       species_e\n\u2514\u2500\u2500 species_a\n    species_a",
+        "newick_string": "(((((species_f:0.0,species_d:0.0):0.0,outgroup:0.0):0.0,(species_c:0.0,(species_b:0.0,ancestral:0.0):0.0):0.0):0.0,species_e:0.0):0.0,species_a:0.0);",
         "statistics": {
           "internal_nodes": 7,
           "leaves": 8,
           "total_nodes": 15,
-          "tree_height": 6
+          "tree_height": 5
         }
       }
     },
