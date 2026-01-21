@@ -1,0 +1,569 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RNA Workflow Sample Validation Guide &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">RNA Workflow Sample Validation Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/rna/VALIDATION.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="rna-workflow-sample-validation-guide">
+<h1>RNA Workflow Sample Validation Guide<a class="headerlink" href="#rna-workflow-sample-validation-guide" title="Link to this heading"></a></h1>
+<p>Complete guide to understanding and using the RNA-seq workflow sample validation system.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>The validation system tracks samples through the complete pipeline stages:</p>
+<ul class="simple">
+<li><p><strong>Download</strong>: SRA files downloaded</p></li>
+<li><p><strong>Extraction</strong>: FASTQ files extracted</p></li>
+<li><p><strong>Quantification</strong>: Abundance files generated</p></li>
+<li><p><strong>Merge</strong>: Sample included in merged abundance matrix</p></li>
+</ul>
+</section>
+<section id="quick-start">
+<h2>Quick Start<a class="headerlink" href="#quick-start" title="Link to this heading"></a></h2>
+<section id="automatic-validation">
+<h3>Automatic Validation<a class="headerlink" href="#automatic-validation" title="Link to this heading"></a></h3>
+<p>Validation runs automatically after key workflow steps:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Validation runs automatically after getfastq and quant steps</span>
+python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>config/amalgkit/my_species.yaml
+</pre></div>
+</div>
+<p>Validation reports are saved to <code class="docutils literal notranslate"><span class="pre">work_dir/validation/</span></code>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">getfastq_validation.json</span></code> - Download and extraction validation</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">quant_validation.json</span></code> - Quantification validation</p></li>
+</ul>
+</section>
+<section id="standalone-validation">
+<h3>Standalone Validation<a class="headerlink" href="#standalone-validation" title="Link to this heading"></a></h3>
+<p>Run validation without executing the workflow:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Validate all stages</span>
+python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>config/amalgkit/my_species.yaml<span class="w"> </span>--validate
+
+<span class="c1"># Validate specific stage</span>
+python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>config/amalgkit/my_species.yaml<span class="w"> </span>--validate<span class="w"> </span>--validate-stage<span class="w"> </span>quantification
+</pre></div>
+</div>
+</section>
+<section id="programmatic-validation">
+<h3>Programmatic Validation<a class="headerlink" href="#programmatic-validation" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_workflow_config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna.validation</span><span class="w"> </span><span class="kn">import</span> <span class="n">validate_all_samples</span><span class="p">,</span> <span class="n">get_sample_pipeline_status</span>
+
+<span class="c1"># Load config</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">load_workflow_config</span><span class="p">(</span><span class="s2">&quot;config/amalgkit/my_species.yaml&quot;</span><span class="p">)</span>
+
+<span class="c1"># Validate all samples</span>
+<span class="n">result</span> <span class="o">=</span> <span class="n">validate_all_samples</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Validated: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;validated&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;total_samples&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Check specific sample</span>
+<span class="n">status</span> <span class="o">=</span> <span class="n">get_sample_pipeline_status</span><span class="p">(</span><span class="s2">&quot;SRR123456&quot;</span><span class="p">,</span> <span class="n">config</span><span class="o">.</span><span class="n">work_dir</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Stage: </span><span class="si">{</span><span class="n">status</span><span class="p">[</span><span class="s1">&#39;stage&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="validation-report-schema">
+<h2>Validation Report Schema<a class="headerlink" href="#validation-report-schema" title="Link to this heading"></a></h2>
+<section id="report-structure">
+<h3>Report Structure<a class="headerlink" href="#report-structure" title="Link to this heading"></a></h3>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;total_samples&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;validated&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">95</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;failed&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;validation_stage&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;all&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;missing_stages&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;download&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;extraction&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;quantification&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;merge&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;per_sample&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;SRR123456&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;valid&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;sample_id&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;SRR123456&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;stages&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;download&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;extraction&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;quantification&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;merge&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">&quot;missing_stages&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;merge&quot;</span><span class="p">],</span>
+<span class="w">      </span><span class="nt">&quot;current_stage&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quantification&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;diagnostics&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">&quot;sra_file&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;path/to/SRR123456.sra&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;sra_size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">12345678</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;fastq_files&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;path/to/SRR123456_1.fastq.gz&quot;</span><span class="p">,</span><span class="w"> </span><span class="s2">&quot;path/to/SRR123456_2.fastq.gz&quot;</span><span class="p">],</span>
+<span class="w">        </span><span class="nt">&quot;fastq_count&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;fastq_total_size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">98765432</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;abundance_file&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;path/to/abundance.tsv&quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">&quot;abundance_size&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">12345</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">&quot;summary&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;download&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;total&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;complete&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;missing&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;extraction&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;total&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;complete&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">98</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;missing&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;quantification&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;total&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;complete&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">97</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;missing&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">&quot;merge&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">&quot;total&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;complete&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">95</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;missing&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="field-descriptions">
+<h3>Field Descriptions<a class="headerlink" href="#field-descriptions" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>total_samples</strong>: Total number of samples in metadata</p></li>
+<li><p><strong>validated</strong>: Number of samples that passed validation (extraction + quantification)</p></li>
+<li><p><strong>failed</strong>: Number of samples that failed validation</p></li>
+<li><p><strong>validation_stage</strong>: Stage being validated (“all”, “download”, “extraction”, “quantification”, “merge”)</p></li>
+<li><p><strong>missing_stages</strong>: Count of samples missing each stage</p></li>
+<li><p><strong>per_sample</strong>: Detailed status for each sample</p>
+<ul>
+<li><p><strong>valid</strong>: Whether sample passed validation</p></li>
+<li><p><strong>stages</strong>: Boolean status for each pipeline stage</p></li>
+<li><p><strong>missing_stages</strong>: List of incomplete stages</p></li>
+<li><p><strong>current_stage</strong>: Current pipeline stage</p></li>
+<li><p><strong>diagnostics</strong>: File paths, sizes, and detailed information</p></li>
+</ul>
+</li>
+<li><p><strong>summary</strong>: Stage-specific summary statistics</p></li>
+</ul>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="common-issues">
+<h3>Common Issues<a class="headerlink" href="#common-issues" title="Link to this heading"></a></h3>
+<section id="issue-metadata-file-not-found">
+<h4>Issue: “Metadata file not found”<a class="headerlink" href="#issue-metadata-file-not-found" title="Link to this heading"></a></h4>
+<p><strong>Symptoms</strong>:</p>
+<ul class="simple">
+<li><p>Validation returns <code class="docutils literal notranslate"><span class="pre">total_samples:</span> <span class="pre">0</span></code></p></li>
+<li><p>Error message: “Metadata file not found”</p></li>
+</ul>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic">
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">metadata</span></code> step to generate metadata file:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>config/amalgkit/my_species.yaml<span class="w"> </span>--steps<span class="w"> </span>metadata
+</pre></div>
+</div>
+</li>
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">select</span></code> step to create selected metadata:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>config/amalgkit/my_species.yaml<span class="w"> </span>--steps<span class="w"> </span><span class="k">select</span>
+</pre></div>
+</div>
+</li>
+<li><p>Check that metadata files exist:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ls<span class="w"> </span>output/amalgkit/my_species/work/metadata/
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="issue-no-samples-found-in-metadata">
+<h4>Issue: “No samples found in metadata”<a class="headerlink" href="#issue-no-samples-found-in-metadata" title="Link to this heading"></a></h4>
+<p><strong>Symptoms</strong>:</p>
+<ul class="simple">
+<li><p>Validation returns <code class="docutils literal notranslate"><span class="pre">total_samples:</span> <span class="pre">0</span></code></p></li>
+<li><p>Metadata file exists but has no sample IDs</p></li>
+</ul>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic">
+<li><p>Check metadata file format:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>head<span class="w"> </span>output/amalgkit/my_species/work/metadata/metadata.tsv
+</pre></div>
+</div>
+</li>
+<li><p>Ensure metadata has a column named <code class="docutils literal notranslate"><span class="pre">run</span></code>, <code class="docutils literal notranslate"><span class="pre">Run</span></code>, <code class="docutils literal notranslate"><span class="pre">SRA_Run</span></code>, <code class="docutils literal notranslate"><span class="pre">sample_id</span></code>, or <code class="docutils literal notranslate"><span class="pre">accession</span></code></p></li>
+<li><p>Verify samples were selected in <code class="docutils literal notranslate"><span class="pre">select</span></code> step</p></li>
+</ol>
+</section>
+<section id="issue-samples-missing-fastq-files">
+<h4>Issue: Samples Missing FASTQ Files<a class="headerlink" href="#issue-samples-missing-fastq-files" title="Link to this heading"></a></h4>
+<p><strong>Symptoms</strong>:</p>
+<ul class="simple">
+<li><p>Validation shows <code class="docutils literal notranslate"><span class="pre">extraction:</span> <span class="pre">false</span></code> for samples</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">missing_stages</span></code> includes “extraction”</p></li>
+</ul>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic">
+<li><p>Check if <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> step completed:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ls<span class="w"> </span>output/amalgkit/my_species/fastq/getfastq/
+</pre></div>
+</div>
+</li>
+<li><p>Re-run <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> step for failed samples:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>config/amalgkit/my_species.yaml<span class="w"> </span>--steps<span class="w"> </span>getfastq
+</pre></div>
+</div>
+</li>
+<li><p>Check for download errors in logs:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cat<span class="w"> </span>output/amalgkit/my_species/work/logs/getfastq.log
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="issue-samples-missing-quantification-files">
+<h4>Issue: Samples Missing Quantification Files<a class="headerlink" href="#issue-samples-missing-quantification-files" title="Link to this heading"></a></h4>
+<p><strong>Symptoms</strong>:</p>
+<ul class="simple">
+<li><p>Validation shows <code class="docutils literal notranslate"><span class="pre">quantification:</span> <span class="pre">false</span></code> for samples</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">missing_stages</span></code> includes “quantification”</p></li>
+</ul>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic">
+<li><p>Check if <code class="docutils literal notranslate"><span class="pre">quant</span></code> step completed:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ls<span class="w"> </span>output/amalgkit/my_species/quant/
+</pre></div>
+</div>
+</li>
+<li><p>Verify FASTQ files exist for samples:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ls<span class="w"> </span>output/amalgkit/my_species/fastq/getfastq/SRR123456/
+</pre></div>
+</div>
+</li>
+<li><p>Re-run <code class="docutils literal notranslate"><span class="pre">quant</span></code> step:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>config/amalgkit/my_species.yaml<span class="w"> </span>--steps<span class="w"> </span>quant
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="issue-samples-not-in-merged-matrix">
+<h4>Issue: Samples Not in Merged Matrix<a class="headerlink" href="#issue-samples-not-in-merged-matrix" title="Link to this heading"></a></h4>
+<p><strong>Symptoms</strong>:</p>
+<ul class="simple">
+<li><p>Validation shows <code class="docutils literal notranslate"><span class="pre">merge:</span> <span class="pre">false</span></code> for samples</p></li>
+<li><p>Samples quantified but not in merged abundance file</p></li>
+</ul>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic">
+<li><p>Run <code class="docutils literal notranslate"><span class="pre">merge</span></code> step:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>config/amalgkit/my_species.yaml<span class="w"> </span>--steps<span class="w"> </span>merge
+</pre></div>
+</div>
+</li>
+<li><p>Check merged abundance file:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>head<span class="w"> </span>output/amalgkit/my_species/merged/merged_abundance.tsv
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+</section>
+<section id="interpreting-validation-results">
+<h3>Interpreting Validation Results<a class="headerlink" href="#interpreting-validation-results" title="Link to this heading"></a></h3>
+<section id="all-samples-valid">
+<h4>All Samples Valid<a class="headerlink" href="#all-samples-valid" title="Link to this heading"></a></h4>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;total_samples&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;validated&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;failed&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">0</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Meaning</strong>: All samples completed extraction and quantification stages.</p>
+</section>
+<section id="some-samples-failed">
+<h4>Some Samples Failed<a class="headerlink" href="#some-samples-failed" title="Link to this heading"></a></h4>
+<div class="highlight-json notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
+<span class="w">  </span><span class="nt">&quot;total_samples&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">100</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;validated&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">95</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;failed&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">5</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;missing_stages&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">&quot;extraction&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">&quot;quantification&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Meaning</strong>:</p>
+<ul class="simple">
+<li><p>95 samples are valid</p></li>
+<li><p>2 samples missing FASTQ files (extraction stage)</p></li>
+<li><p>3 samples missing abundance files (quantification stage)</p></li>
+</ul>
+<p><strong>Action</strong>: Check <code class="docutils literal notranslate"><span class="pre">per_sample</span></code> details for specific sample IDs and remediation steps.</p>
+</section>
+<section id="stage-specific-validation">
+<h4>Stage-Specific Validation<a class="headerlink" href="#stage-specific-validation" title="Link to this heading"></a></h4>
+<p>When validating a specific stage:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>--validate<span class="w"> </span>--validate-stage<span class="w"> </span>extraction
+</pre></div>
+</div>
+<p>Returns validation for that stage only:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">validated</span></code>: Samples that passed that stage</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">failed</span></code>: Samples that failed that stage</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">missing_stages</span></code>: Only includes the specified stage</p></li>
+</ul>
+</section>
+</section>
+</section>
+<section id="performance">
+<h2>Performance<a class="headerlink" href="#performance" title="Link to this heading"></a></h2>
+<section id="expected-validation-time">
+<h3>Expected Validation Time<a class="headerlink" href="#expected-validation-time" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Small datasets</strong> (&lt; 100 samples): &lt; 1 second</p></li>
+<li><p><strong>Medium datasets</strong> (100-1000 samples): 1-5 seconds</p></li>
+<li><p><strong>Large datasets</strong> (&gt; 1000 samples): 5-30 seconds</p></li>
+</ul>
+</section>
+<section id="optimization">
+<h3>Optimization<a class="headerlink" href="#optimization" title="Link to this heading"></a></h3>
+<p>Validation is optimized for performance:</p>
+<ul class="simple">
+<li><p><strong>Streaming file reading</strong>: Merge validation reads files in chunks</p></li>
+<li><p><strong>Early exit</strong>: Stops searching when sample found</p></li>
+<li><p><strong>Progress indication</strong>: Logs progress for large sample sets (&gt; 10 samples)</p></li>
+</ul>
+</section>
+<section id="impact-on-workflow">
+<h3>Impact on Workflow<a class="headerlink" href="#impact-on-workflow" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Automatic validation</strong>: Adds &lt; 1% overhead to workflow execution</p></li>
+<li><p><strong>Standalone validation</strong>: Runs independently, no workflow impact</p></li>
+<li><p><strong>Large files</strong>: Merge validation limits search to first 1000 rows for very large files</p></li>
+</ul>
+</section>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h2>
+<section id="reading-validation-reports">
+<h3>Reading Validation Reports<a class="headerlink" href="#reading-validation-reports" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.core.io</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="c1"># Load validation report</span>
+<span class="n">report_path</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;output/amalgkit/my_species/work/validation/quant_validation.json&quot;</span><span class="p">)</span>
+<span class="n">report</span> <span class="o">=</span> <span class="n">load_json</span><span class="p">(</span><span class="n">report_path</span><span class="p">)</span>
+
+<span class="c1"># Check overall status</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Validated: </span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">&#39;validated&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">/</span><span class="si">{</span><span class="n">report</span><span class="p">[</span><span class="s1">&#39;total_samples&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Find failed samples</span>
+<span class="n">failed_samples</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">sample_id</span> <span class="k">for</span> <span class="n">sample_id</span><span class="p">,</span> <span class="n">status</span> <span class="ow">in</span> <span class="n">report</span><span class="p">[</span><span class="s1">&#39;per_sample&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">status</span><span class="p">[</span><span class="s1">&#39;valid&#39;</span><span class="p">]</span>
+<span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed samples: </span><span class="si">{</span><span class="n">failed_samples</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Get diagnostics for a specific sample</span>
+<span class="n">sample_status</span> <span class="o">=</span> <span class="n">report</span><span class="p">[</span><span class="s1">&#39;per_sample&#39;</span><span class="p">][</span><span class="s1">&#39;SRR123456&#39;</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Missing stages: </span><span class="si">{</span><span class="n">sample_status</span><span class="p">[</span><span class="s1">&#39;missing_stages&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="k">if</span> <span class="s1">&#39;quantification_issue&#39;</span> <span class="ow">in</span> <span class="n">sample_status</span><span class="p">[</span><span class="s1">&#39;diagnostics&#39;</span><span class="p">]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">sample_status</span><span class="p">[</span><span class="s1">&#39;diagnostics&#39;</span><span class="p">][</span><span class="s1">&#39;quantification_issue&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="custom-validation-logic">
+<h3>Custom Validation Logic<a class="headerlink" href="#custom-validation-logic" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna.validation</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_sample_pipeline_status</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">check_sample_ready_for_analysis</span><span class="p">(</span><span class="n">sample_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">work_dir</span><span class="p">:</span> <span class="n">Path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Check if sample is ready for downstream analysis.&quot;&quot;&quot;</span>
+    <span class="n">status</span> <span class="o">=</span> <span class="n">get_sample_pipeline_status</span><span class="p">(</span><span class="n">sample_id</span><span class="p">,</span> <span class="n">work_dir</span><span class="p">)</span>
+    
+    <span class="c1"># Require at least quantification</span>
+    <span class="k">return</span> <span class="n">status</span><span class="p">[</span><span class="s1">&#39;quantification&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">True</span>
+
+<span class="c1"># Use in workflow</span>
+<span class="n">samples</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;SRR123456&quot;</span><span class="p">,</span> <span class="s2">&quot;SRR789012&quot;</span><span class="p">]</span>
+<span class="n">ready_samples</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">s</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">samples</span> 
+    <span class="k">if</span> <span class="n">check_sample_ready_for_analysis</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">work_dir</span><span class="p">)</span>
+<span class="p">]</span>
+</pre></div>
+</div>
+</section>
+<section id="batch-validation-script">
+<h3>Batch Validation Script<a class="headerlink" href="#batch-validation-script" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python3</span>
+<span class="sd">&quot;&quot;&quot;Validate multiple species workflows.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna.workflow</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_workflow_config</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.rna.validation</span><span class="w"> </span><span class="kn">import</span> <span class="n">validate_all_samples</span>
+
+<span class="n">species_configs</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;config/amalgkit/amalgkit_camponotus_floridanus.yaml&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="k">for</span> <span class="n">config_path</span> <span class="ow">in</span> <span class="n">species_configs</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Validating </span><span class="si">{</span><span class="n">config_path</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+    <span class="n">config</span> <span class="o">=</span> <span class="n">load_workflow_config</span><span class="p">(</span><span class="n">config_path</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">validate_all_samples</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+    
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Total: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;total_samples&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Validated: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;validated&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Failed: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;failed&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    
+    <span class="k">if</span> <span class="n">result</span><span class="p">[</span><span class="s1">&#39;failed&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  Missing stages: </span><span class="si">{</span><span class="n">result</span><span class="p">[</span><span class="s1">&#39;missing_stages&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>Run validation after each major step</strong>: Use automatic validation or run <code class="docutils literal notranslate"><span class="pre">--validate</span></code> after <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> and <code class="docutils literal notranslate"><span class="pre">quant</span></code></p></li>
+<li><p><strong>Check validation reports</strong>: Review JSON reports for detailed diagnostics</p></li>
+<li><p><strong>Address failures promptly</strong>: Fix failed samples before proceeding to next steps</p></li>
+<li><p><strong>Use stage-specific validation</strong>: Validate specific stages during troubleshooting</p></li>
+<li><p><strong>Monitor progress</strong>: Watch for validation progress logs in large workflows</p></li>
+</ol>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong><a class="reference internal" href="amalgkit/steps/04_getfastq.html"><span class="std std-doc">getfastq Step Guide</span></a></strong>: Download and extraction details</p></li>
+<li><p><strong><a class="reference internal" href="workflow.html"><span class="std std-doc">Workflow Guide</span></a></strong>: Complete workflow execution</p></li>
+<li><p><strong><a class="reference internal" href="CONFIGURATION.html"><span class="std std-doc">Configuration Guide</span></a></strong>: Workflow configuration</p></li>
+<li><p><strong><a class="reference internal" href="#../src/metainformant/rna/README.md"><span class="xref myst">README</span></a></strong>: Module overview</p></li>
+</ul>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -10,30 +10,30 @@ The quality control module offers FastQC-like functionality for analyzing FASTQ 
 
 ```mermaid
 flowchart TB
-    subgraph Input[Input Data]
-        A[FASTQ Files]
-        B[Compressed FASTQ.gz]
-        C[Multiple Files]
+    subgraph InputinputData[Input Data]
+        AfastqFiles[FASTQ Files]
+        BcompressedFastq.gz[Compressed FASTQ.gz]
+        CmultipleFiles[Multiple Files]
     end
     
-    subgraph Analysis[Quality Analysis]
-        D[Basic Statistics]
-        E[Per-Base Quality]
-        F[Per-Sequence Quality]
-        G[Sequence Length Distribution]
-        H[GC Content Distribution]
-        I[Adapter Content]
-        J[Overrepresented Sequences]
-        K[Duplication Levels]
-        L[N Content per Position]
-        M[Quality Score Distribution]
+    subgraph AnalysisqualityAnalysis[Quality Analysis]
+        DbasicStatistics[Basic Statistics]
+        Eper-baseQuality[Per-Base Quality]
+        Fper-sequenceQuality[Per-Sequence Quality]
+        GsequenceLengthDistribution[Sequence Length Distribution]
+        HgcContentDistribution[GC Content Distribution]
+        IadapterContent[Adapter Content]
+        JoverrepresentedSequences[Overrepresented Sequences]
+        KduplicationLevels[Duplication Levels]
+        LnContentPerPosition[N Content per Position]
+        MqualityScoreDistribution[Quality Score Distribution]
     end
     
-    subgraph Output[Output & Visualization]
-        N[Quality Metrics]
-        O[Summary Statistics]
-        P[Quality Plots]
-        Q[HTML Report]
+    subgraph Outputoutput&Visualization[Output & Visualization]
+        NqualityMetrics[Quality Metrics]
+        OsummaryStatistics[Summary Statistics]
+        PqualityPlots[Quality Plots]
+        QhtmlReport[HTML Report]
     end
     
     A --> D

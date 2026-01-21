@@ -4,8 +4,8 @@ Function: `find_restriction_sites`
 
 ```mermaid
 flowchart LR
-  A[DNA Sequence] & B[Enzyme->Motif Dict] --> C[find_restriction_sites]
-  C --> D[Enzyme->Positions Dict]
+  AdnaSequence[DNA Sequence] & Benzyme->motifDict[Enzyme->Motif Dict] --> CfindRestrictionSites[find_restriction_sites]
+  C --> Denzyme->positionsDict[Enzyme->Positions Dict]
 ```
 
 Example

@@ -50,9 +50,10 @@ def find_partial_downloads(fastq_dir: Path, quant_dir: Path) -> List[Tuple[str, 
             # Check if sample is quantified
             quant_sample_dir = quant_dir / sample_id
             abundance_file = quant_sample_dir / "abundance.tsv"
+            prefixed_abundance = quant_sample_dir / f"{sample_id}_abundance.tsv"
             quant_sf = quant_sample_dir / "quant.sf"
 
-            if abundance_file.exists() or quant_sf.exists():
+            if abundance_file.exists() or prefixed_abundance.exists() or quant_sf.exists():
                 continue  # Already quantified, skip
 
             # Calculate size
@@ -213,7 +214,7 @@ def cleanup_unquantified_samples(work_dir: Path) -> List[str]:
 
     # Get quantified samples
     quantified_samples = set()
-    for quant_file in quant_dir.glob("*/abundance.tsv"):
+    for quant_file in list(quant_dir.glob("*/abundance.tsv")) + list(quant_dir.glob("*/*_abundance.tsv")):
         quantified_samples.add(quant_file.parent.name)
     for quant_file in quant_dir.glob("*/quant.sf"):
         quantified_samples.add(quant_file.parent.name)

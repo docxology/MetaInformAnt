@@ -1,0 +1,419 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Protein Visualization &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Protein Visualization</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/visualization/protein.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="protein-visualization">
+<h1>Protein Visualization<a class="headerlink" href="#protein-visualization" title="Link to this heading"></a></h1>
+<p>This document provides comprehensive documentation for protein structure and sequence visualization capabilities in METAINFORMANT.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>Protein visualization includes specialized plots for protein sequences, structures, domains, and functional analysis. These tools integrate with protein analysis workflows to create publication-quality figures.</p>
+</section>
+<section id="module-functions">
+<h2>Module Functions<a class="headerlink" href="#module-functions" title="Link to this heading"></a></h2>
+<section id="sequence-visualization">
+<h3>Sequence Visualization<a class="headerlink" href="#sequence-visualization" title="Link to this heading"></a></h3>
+<section id="sequence-logo-plots">
+<h4>Sequence Logo Plots<a class="headerlink" href="#sequence-logo-plots" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.protein</span><span class="w"> </span><span class="kn">import</span> <span class="n">visualization</span> <span class="k">as</span> <span class="n">prot_viz</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Create sequence logo from aligned sequences</span>
+<span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;MVLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;MVLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR&quot;</span><span class="p">,</span>
+    <span class="c1"># ... more aligned sequences</span>
+<span class="p">]</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">prot_viz</span><span class="o">.</span><span class="n">plot_sequence_logo</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">4</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+<section id="domain-architecture">
+<h4>Domain Architecture<a class="headerlink" href="#domain-architecture" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot protein domain architecture</span>
+<span class="n">domains</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;Signal&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;signal&#39;</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">:</span> <span class="mi">120</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;Globular&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;domain&#39;</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="mi">140</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">:</span> <span class="mi">180</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;Transmembrane&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;tm&#39;</span><span class="p">}</span>
+<span class="p">]</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">prot_viz</span><span class="o">.</span><span class="n">plot_domain_architecture</span><span class="p">(</span><span class="n">domains</span><span class="p">,</span> <span class="n">protein_length</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="secondary-structure">
+<h4>Secondary Structure<a class="headerlink" href="#secondary-structure" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Visualize secondary structure along sequence</span>
+<span class="n">sequence</span> <span class="o">=</span> <span class="s2">&quot;MVLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR&quot;</span>
+<span class="n">secondary_structure</span> <span class="o">=</span> <span class="s2">&quot;HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH&quot;</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">prot_viz</span><span class="o">.</span><span class="n">plot_secondary_structure</span><span class="p">(</span><span class="n">sequence</span><span class="p">,</span> <span class="n">secondary_structure</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="structure-visualization">
+<h3>Structure Visualization<a class="headerlink" href="#structure-visualization" title="Link to this heading"></a></h3>
+<section id="contact-maps">
+<h4>Contact Maps<a class="headerlink" href="#contact-maps" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot protein contact map</span>
+<span class="n">contacts</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>  <span class="c1"># 100x100 contact matrix</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">prot_viz</span><span class="o">.</span><span class="n">plot_contact_map</span><span class="p">(</span><span class="n">contacts</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+<section id="ramachandran-plots">
+<h4>Ramachandran Plots<a class="headerlink" href="#ramachandran-plots" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create Ramachandran plot</span>
+<span class="n">phi_angles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>  <span class="c1"># Phi dihedral angles</span>
+<span class="n">psi_angles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>  <span class="c1"># Psi dihedral angles</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">prot_viz</span><span class="o">.</span><span class="n">plot_ramachandran_plot</span><span class="p">(</span><span class="n">phi_angles</span><span class="p">,</span> <span class="n">psi_angles</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="functional-analysis">
+<h3>Functional Analysis<a class="headerlink" href="#functional-analysis" title="Link to this heading"></a></h3>
+<section id="alignment-quality">
+<h4>Alignment Quality<a class="headerlink" href="#alignment-quality" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot sequence alignment quality scores</span>
+<span class="n">quality_scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">150</span><span class="p">)</span>  <span class="c1"># Quality scores along alignment</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">prot_viz</span><span class="o">.</span><span class="n">plot_alignment_quality</span><span class="p">(</span><span class="n">quality_scores</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="conservation-scores">
+<h4>Conservation Scores<a class="headerlink" href="#conservation-scores" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Visualize sequence conservation</span>
+<span class="n">conservation</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">150</span><span class="p">)</span>  <span class="c1"># Conservation scores</span>
+<span class="n">positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">150</span><span class="p">)</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">prot_viz</span><span class="o">.</span><span class="n">plot_conservation_scores</span><span class="p">(</span><span class="n">conservation</span><span class="p">,</span> <span class="n">positions</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="protein-properties">
+<h4>Protein Properties<a class="headerlink" href="#protein-properties" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot physicochemical properties</span>
+<span class="n">sequence</span> <span class="o">=</span> <span class="s2">&quot;MVLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR&quot;</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">prot_viz</span><span class="o">.</span><span class="n">plot_protein_properties</span><span class="p">(</span><span class="n">sequence</span><span class="p">,</span> <span class="n">properties</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;hydrophobicity&#39;</span><span class="p">,</span> <span class="s1">&#39;charge&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="quality-control">
+<h3>Quality Control<a class="headerlink" href="#quality-control" title="Link to this heading"></a></h3>
+<section id="pdb-structure-quality">
+<h4>PDB Structure Quality<a class="headerlink" href="#pdb-structure-quality" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot PDB B-factor distribution</span>
+<span class="n">b_factors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">normal</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">200</span><span class="p">)</span>  <span class="c1"># B-factors for residues</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">prot_viz</span><span class="o">.</span><span class="n">plot_pdb_structure_quality</span><span class="p">({</span><span class="s1">&#39;b_factors&#39;</span><span class="p">:</span> <span class="n">b_factors</span><span class="p">})</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="advanced-features">
+<h3>Advanced Features<a class="headerlink" href="#advanced-features" title="Link to this heading"></a></h3>
+<section id="interactive-structure-viewer">
+<h4>Interactive Structure Viewer<a class="headerlink" href="#interactive-structure-viewer" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create interactive 3D protein structure</span>
+<span class="n">pdb_data</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;atoms&#39;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span><span class="s1">&#39;x&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="s1">&#39;residue_id&#39;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s1">&#39;b_factor&#39;</span><span class="p">:</span> <span class="mf">15.0</span><span class="p">},</span>
+        <span class="c1"># ... more atom data</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+
+<span class="n">fig</span> <span class="o">=</span> <span class="n">prot_viz</span><span class="o">.</span><span class="n">create_interactive_structure_viewer</span><span class="p">(</span><span class="n">pdb_data</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="structure-superposition">
+<h4>Structure Superposition<a class="headerlink" href="#structure-superposition" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Visualize multiple protein structures</span>
+<span class="n">structures</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>  <span class="c1"># Structure 1 coordinates</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>  <span class="c1"># Structure 2 coordinates</span>
+<span class="p">]</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">prot_viz</span><span class="o">.</span><span class="n">plot_structure_superposition</span><span class="p">(</span><span class="n">structures</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;WT&#39;</span><span class="p">,</span> <span class="s1">&#39;Mutant&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="integration-with-protein-module">
+<h2>Integration with Protein Module<a class="headerlink" href="#integration-with-protein-module" title="Link to this heading"></a></h2>
+<section id="with-structure-analysis">
+<h3>With Structure Analysis<a class="headerlink" href="#with-structure-analysis" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.protein</span><span class="w"> </span><span class="kn">import</span> <span class="n">structure</span><span class="p">,</span> <span class="n">visualization</span> <span class="k">as</span> <span class="n">prot_viz</span>
+
+<span class="c1"># Load and analyze protein structure</span>
+<span class="n">pdb_data</span> <span class="o">=</span> <span class="n">structure</span><span class="o">.</span><span class="n">parse_pdb_file</span><span class="p">(</span><span class="s2">&quot;protein.pdb&quot;</span><span class="p">)</span>
+<span class="n">contacts</span> <span class="o">=</span> <span class="n">structure</span><span class="o">.</span><span class="n">calculate_contact_map</span><span class="p">(</span><span class="n">pdb_data</span><span class="p">[</span><span class="s1">&#39;coordinates&#39;</span><span class="p">])</span>
+
+<span class="c1"># Visualize results</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">prot_viz</span><span class="o">.</span><span class="n">plot_contact_map</span><span class="p">(</span><span class="n">contacts</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="with-sequence-analysis">
+<h3>With Sequence Analysis<a class="headerlink" href="#with-sequence-analysis" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.protein</span><span class="w"> </span><span class="kn">import</span> <span class="n">sequences</span><span class="p">,</span> <span class="n">visualization</span> <span class="k">as</span> <span class="n">prot_viz</span>
+
+<span class="c1"># Analyze protein sequence</span>
+<span class="n">seq</span> <span class="o">=</span> <span class="s2">&quot;MVLSPADKTNVKAAWGKVGAHAGEYGAEALERMFLSFPTTKTYFPHFDLSHGSAQVKGHGKKVADALTNAVAHVDDMPNALSALSDLHAHKLRVDPVNFKLLSHCLLVTLAAHLPAEFTPAVHASLDKFLASVSTVLTSKYR&quot;</span>
+<span class="n">properties</span> <span class="o">=</span> <span class="n">sequences</span><span class="o">.</span><span class="n">calculate_hydropathy_score</span><span class="p">(</span><span class="n">seq</span><span class="p">)</span>
+
+<span class="c1"># Visualize properties</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">prot_viz</span><span class="o">.</span><span class="n">plot_protein_properties</span><span class="p">(</span><span class="n">seq</span><span class="p">,</span> <span class="n">properties</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;hydrophobicity&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="with-functional-annotation">
+<h3>With Functional Annotation<a class="headerlink" href="#with-functional-annotation" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.protein</span><span class="w"> </span><span class="kn">import</span> <span class="n">interpro</span><span class="p">,</span> <span class="n">visualization</span> <span class="k">as</span> <span class="n">prot_viz</span>
+
+<span class="c1"># Get domain annotations</span>
+<span class="n">domains</span> <span class="o">=</span> <span class="n">interpro</span><span class="o">.</span><span class="n">fetch_interpro_domains</span><span class="p">(</span><span class="s2">&quot;P68871&quot;</span><span class="p">)</span>  <span class="c1"># Hemoglobin</span>
+
+<span class="c1"># Visualize domain architecture</span>
+<span class="n">domain_list</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;start&#39;</span><span class="p">],</span> <span class="s1">&#39;end&#39;</span><span class="p">:</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;end&#39;</span><span class="p">],</span>
+               <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;name&#39;</span><span class="p">],</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="n">d</span><span class="p">[</span><span class="s1">&#39;type&#39;</span><span class="p">]}</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="n">domains</span><span class="p">]</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">prot_viz</span><span class="o">.</span><span class="n">plot_domain_architecture</span><span class="p">(</span><span class="n">domain_list</span><span class="p">,</span> <span class="n">protein_length</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="output-options">
+<h2>Output Options<a class="headerlink" href="#output-options" title="Link to this heading"></a></h2>
+<p>All visualization functions support:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Save to file</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">prot_viz</span><span class="o">.</span><span class="n">plot_sequence_logo</span><span class="p">(</span><span class="n">sequences</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;sequence_logo.png&quot;</span><span class="p">)</span>
+
+<span class="c1"># Interactive web viewer</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">prot_viz</span><span class="o">.</span><span class="n">create_interactive_structure_viewer</span><span class="p">(</span><span class="n">pdb_data</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;structure.html&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="performance-considerations">
+<h2>Performance Considerations<a class="headerlink" href="#performance-considerations" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Large Structures</strong>: For proteins &gt;1000 residues, consider subsampling for contact maps</p></li>
+<li><p><strong>Multiple Sequences</strong>: Sequence logos work best with 10-100 aligned sequences</p></li>
+<li><p><strong>Interactive Plots</strong>: Require Plotly installation for web-based viewers</p></li>
+<li><p><strong>Memory Usage</strong>: 3D structure visualization can be memory-intensive</p></li>
+</ul>
+</section>
+<section id="file-format-support">
+<h2>File Format Support<a class="headerlink" href="#file-format-support" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>PDB Files</strong>: Standard Protein Data Bank format</p></li>
+<li><p><strong>FASTA Files</strong>: Protein sequence alignments</p></li>
+<li><p><strong>Domain Annotations</strong>: InterPro, Pfam, and custom formats</p></li>
+<li><p><strong>Secondary Structure</strong>: DSSP and prediction formats</p></li>
+</ul>
+</section>
+<section id="dependencies">
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Required</strong>: matplotlib, numpy</p></li>
+<li><p><strong>Optional</strong>: seaborn (enhanced styling), plotly (interactive plots)</p></li>
+<li><p><strong>Integration</strong>: BioPython (sequence handling), NetworkX (structure analysis)</p></li>
+</ul>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h2>
+<section id="complete-protein-analysis-workflow">
+<h3>Complete Protein Analysis Workflow<a class="headerlink" href="#complete-protein-analysis-workflow" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.protein</span><span class="w"> </span><span class="kn">import</span> <span class="n">sequences</span><span class="p">,</span> <span class="n">structure</span><span class="p">,</span> <span class="n">visualization</span> <span class="k">as</span> <span class="n">prot_viz</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Load protein data</span>
+<span class="n">sequence</span> <span class="o">=</span> <span class="n">sequences</span><span class="o">.</span><span class="n">read_fasta</span><span class="p">(</span><span class="s2">&quot;protein.fasta&quot;</span><span class="p">)[</span><span class="s1">&#39;protein1&#39;</span><span class="p">]</span>
+<span class="n">structure_data</span> <span class="o">=</span> <span class="n">structure</span><span class="o">.</span><span class="n">parse_pdb_file</span><span class="p">(</span><span class="s2">&quot;protein.pdb&quot;</span><span class="p">)</span>
+
+<span class="c1"># Create comprehensive visualization</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">12</span><span class="p">))</span>
+
+<span class="c1"># Sequence logo (if multiple sequences available)</span>
+<span class="c1"># ax = prot_viz.plot_sequence_logo(aligned_sequences, ax=axes[0,0])</span>
+
+<span class="c1"># Domain architecture</span>
+<span class="n">domains</span> <span class="o">=</span> <span class="p">[{</span><span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span> <span class="s1">&#39;name&#39;</span><span class="p">:</span> <span class="s1">&#39;Domain1&#39;</span><span class="p">,</span> <span class="s1">&#39;type&#39;</span><span class="p">:</span> <span class="s1">&#39;domain&#39;</span><span class="p">}]</span>
+<span class="n">prot_viz</span><span class="o">.</span><span class="n">plot_domain_architecture</span><span class="p">(</span><span class="n">domains</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">sequence</span><span class="p">),</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+
+<span class="c1"># Contact map</span>
+<span class="n">coords</span> <span class="o">=</span> <span class="n">structure_data</span><span class="p">[</span><span class="s1">&#39;coordinates&#39;</span><span class="p">]</span>
+<span class="n">contacts</span> <span class="o">=</span> <span class="n">structure</span><span class="o">.</span><span class="n">calculate_contact_map</span><span class="p">(</span><span class="n">coords</span><span class="p">)</span>
+<span class="n">prot_viz</span><span class="o">.</span><span class="n">plot_contact_map</span><span class="p">(</span><span class="n">contacts</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+
+<span class="c1"># Properties</span>
+<span class="n">prot_viz</span><span class="o">.</span><span class="n">plot_protein_properties</span><span class="p">(</span><span class="n">sequence</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;protein_analysis.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="common-issues">
+<h3>Common Issues<a class="headerlink" href="#common-issues" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Empty Plots</strong>: Check input data dimensions and formats</p></li>
+<li><p><strong>Memory Errors</strong>: Reduce resolution or subsample large datasets</p></li>
+<li><p><strong>Import Errors</strong>: Ensure optional dependencies are installed for advanced features</p></li>
+<li><p><strong>Color Issues</strong>: Use <code class="docutils literal notranslate"><span class="pre">prot_viz.style.reset_style()</span></code> to reset matplotlib defaults</p></li>
+</ol>
+</section>
+<section id="data-format-requirements">
+<h3>Data Format Requirements<a class="headerlink" href="#data-format-requirements" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Sequences</strong>: List of strings, all same length for logos</p></li>
+<li><p><strong>Coordinates</strong>: Nx3 numpy arrays for 3D structures</p></li>
+<li><p><strong>Domains</strong>: List of dicts with ‘start’, ‘end’, ‘name’, ‘type’ keys</p></li>
+<li><p><strong>Angles</strong>: Numpy arrays in degrees for Ramachandran plots</p></li>
+</ul>
+</section>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong><a class="reference internal" href="#../protein/"><span class="xref myst">Protein Analysis</span></a></strong>: Core protein analysis functions</p></li>
+<li><p><strong><a class="reference internal" href="#../protein/structure_analysis.md"><span class="xref myst">Structure Analysis</span></a></strong>: 3D structure algorithms</p></li>
+<li><p><strong><a class="reference internal" href="#../protein/sequences.md"><span class="xref myst">Sequence Analysis</span></a></strong>: Sequence processing utilities</p></li>
+<li><p><strong><a class="reference internal" href="integration.html"><span class="std std-doc">Visualization Integration</span></a></strong>: Cross-module visualization patterns</p></li>
+</ul>
+<p>This module provides comprehensive protein visualization capabilities integrated with METAINFORMANT’s protein analysis workflows.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

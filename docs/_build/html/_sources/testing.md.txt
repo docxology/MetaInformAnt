@@ -1,10 +1,119 @@
 # Testing
 
-## Testing Policy (STRICTLY NO MOCKS/FAKES)
+## Quality Assurance Framework
 
-**ABSOLUTE PROHIBITION**: Never use fake/mocked/stubbed methods, objects, or network shims in code or tests.
+METAINFORMANT implements a comprehensive quality assurance framework combining automated testing, code quality checks, and validation processes.
 
-**Real Implementation Only**: Tests must exercise real code paths and real external behavior without exceptions:
+### Quality Assurance Architecture
+
+```mermaid
+graph TD
+    AcodeDevelopment[Code Development] --> BstaticAnalysis[Static Analysis]
+    B --> CtypeChecking[Type Checking]
+    C --> D[Linting]
+
+    D --> EunitTesting[Unit Testing]
+    E --> FintegrationTesting[Integration Testing]
+    F --> Gend-to-endTesting[End-to-End Testing]
+
+    G --> HperformanceTesting[Performance Testing]
+    H --> IloadTesting[Load Testing]
+
+    I --> JqualityGates[Quality Gates]
+    J --> K{All Passed?}
+
+    K -->|Yes| LreleaseReady[Release Ready]
+    K -->|No| MissueResolution[Issue Resolution]
+
+    M --> A
+
+
+    subgraph "Automated Checks"
+        N[mypy] -.-> C
+        O[ruff] -.-> D
+        P[black] -.-> D
+        Q[isort] -.-> D
+    end
+
+    subgraph "Test Categories"
+        R[pytest] -.-> E
+        SrealDataOnly[Real Data Only] -.-> E
+        TnoMocks[No Mocks] -.-> E
+        U[Integration] -.-> F
+    end
+
+    subgraph "Quality Metrics"
+        Vcoverage>90%[Coverage >90%] -.-> J
+        WzeroCriticalIssues[Zero Critical Issues] -.-> J
+        XperformanceBenchmarks[Performance Benchmarks] -.-> J
+        YdocumentationComplete[Documentation Complete] -.-> J
+    end
+```
+
+### Test Execution Pipeline
+
+```mermaid
+graph TD
+    AtestSuite[Test Suite] --> BenvironmentSetup[Environment Setup]
+    B --> CdependencyVerification[Dependency Verification]
+
+    C --> DtestDiscovery[Test Discovery]
+    D --> EtestCollection[Test Collection]
+
+    E --> F{Test Category}
+    F -->|Unit| GfastExecution[Fast Execution]
+    F -->|Integration| HworkflowTesting[Workflow Testing]
+    F -->|E2E| IfullPipeline[Full Pipeline]
+
+    G --> JparallelExecution[Parallel Execution]
+    H --> J
+    I --> J
+
+    J --> KresultCollection[Result Collection]
+    K --> LcoverageAnalysis[Coverage Analysis]
+
+    L --> MreportGeneration[Report Generation]
+    M --> N{Quality Standards Met?}
+
+    N -->|Yes| OqualityAssurancePass[Quality Assurance Pass]
+    N -->|No| PfailureAnalysis[Failure Analysis]
+
+    P --> QissueClassification[Issue Classification]
+    Q --> RfixImplementation[Fix Implementation]
+
+    R --> S[Re-testing]
+    S --> N
+
+
+    subgraph "Execution Environment"
+        TuvVenv[uv venv] -.-> B
+        U[Dependencies] -.-> C
+        VtestData[Test Data] -.-> C
+        WexternalTools[External Tools] -.-> C
+    end
+
+    subgraph "Test Organization"
+        Xtests/test*.py[tests/test_*.py] -.-> D
+        Y[Domain-specific] -.-> F
+        ZintegrationTests[Integration Tests] -.-> F
+        AAe2eTests[E2E Tests] -.-> F
+    end
+
+    subgraph "Quality Metrics"
+        BBlineCoverage[Line Coverage] -.-> L
+        CCbranchCoverage[Branch Coverage] -.-> L
+        DDmutationTesting[Mutation Testing] -.-> L
+        EEperformanceBenchmarks[Performance Benchmarks] -.-> L
+    end
+```
+
+## Code Quality Policy (STRICTLY NO MOCKS/FAKES/PLACEHOLDERS)
+
+**ABSOLUTE PROHIBITION**: Never use fake/mocked/stubbed methods, objects, or network shims in **source code** or tests.
+
+**Source Code Policy**: All production functions must perform real computations or make real API calls. **NO DUMMY DATA RETURNS**. Placeholder implementations that return hardcoded values are strictly prohibited.
+
+**Real Implementation Only**: All code must exercise real algorithms and external behavior:
 - **Networked tests**: perform real HTTP requests with short timeouts. If offline, skip gracefully with clear messages.
 - **CLI-dependent tests** (e.g., amalgkit): run only when the dependency is available on PATH; otherwise skip with dependency notes.
 - **Database tests**: use real database connections or skip when unavailable.

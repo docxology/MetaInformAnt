@@ -125,6 +125,36 @@ Rscript<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;
 </pre></div>
 </div>
 </section>
+<section id="configure-r-temp-directory-important">
+<h3>Configure R Temp Directory (IMPORTANT)<a class="headerlink" href="#configure-r-temp-directory-important" title="Link to this heading"></a></h3>
+<p><strong>Problem</strong>: R package installation may fail with “No space left on device” if <code class="docutils literal notranslate"><span class="pre">/tmp</span></code> (tmpfs) is full.</p>
+<p><strong>Solution</strong>: Configure R to use the repository’s <code class="docutils literal notranslate"><span class="pre">.tmp/R</span></code> directory instead of system <code class="docutils literal notranslate"><span class="pre">/tmp</span></code>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Set environment variables for current session</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">TMPDIR</span><span class="o">=</span><span class="s2">&quot;</span><span class="k">$(</span><span class="nb">pwd</span><span class="k">)</span><span class="s2">/.tmp/R&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">TEMP</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$TMPDIR</span><span class="s2">&quot;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">TMP</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$TMPDIR</span><span class="s2">&quot;</span>
+mkdir<span class="w"> </span>-p<span class="w"> </span>.tmp/R
+
+<span class="c1"># Verify configuration</span>
+Rscript<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;cat(&#39;TMPDIR:&#39;, Sys.getenv(&#39;TMPDIR&#39;), &#39;\n&#39;)&quot;</span>
+</pre></div>
+</div>
+<p><strong>Permanent Configuration</strong>: Create <code class="docutils literal notranslate"><span class="pre">.Rprofile</span></code> in repository root:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cat<span class="w"> </span>&gt;<span class="w"> </span>.Rprofile<span class="w"> </span><span class="s">&lt;&lt; &#39;EOF&#39;</span>
+<span class="s"># Set R temp directory to repository .tmp/R instead of system /tmp</span>
+<span class="s">if (Sys.getenv(&quot;TMPDIR&quot;) == &quot;&quot;) {</span>
+<span class="s">  repo_root &lt;- normalizePath(&quot;.&quot;)</span>
+<span class="s">  tmp_dir &lt;- file.path(repo_root, &quot;.tmp&quot;, &quot;R&quot;)</span>
+<span class="s">  dir.create(tmp_dir, recursive = TRUE, showWarnings = FALSE)</span>
+<span class="s">  Sys.setenv(TMPDIR = tmp_dir)</span>
+<span class="s">  Sys.setenv(TEMP = tmp_dir)</span>
+<span class="s">  Sys.setenv(TMP = tmp_dir)</span>
+<span class="s">}</span>
+<span class="s">EOF</span>
+</pre></div>
+</div>
+<p><strong>Note</strong>: The <code class="docutils literal notranslate"><span class="pre">.Rprofile</span></code> file is automatically loaded by R when starting in the repository directory.</p>
+</section>
 </section>
 <section id="alternative-installation-methods">
 <h2>Alternative Installation Methods<a class="headerlink" href="#alternative-installation-methods" title="Link to this heading"></a></h2>

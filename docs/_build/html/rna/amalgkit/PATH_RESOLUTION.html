@@ -1,0 +1,425 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Amalgkit Path Resolution Guide &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/custom.css" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Amalgkit Path Resolution Guide</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../../_sources/rna/amalgkit/PATH_RESOLUTION.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="amalgkit-path-resolution-guide">
+<h1>Amalgkit Path Resolution Guide<a class="headerlink" href="#amalgkit-path-resolution-guide" title="Link to this heading"></a></h1>
+<p><strong>Complete reference for file path resolution in amalgkit RNA-seq workflows</strong></p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>This guide explains how amalgkit resolves file paths for each workflow step, based on the actual working implementation. Understanding these path relationships is critical for configuring workflows correctly.</p>
+</section>
+<section id="key-principles">
+<h2>Key Principles<a class="headerlink" href="#key-principles" title="Link to this heading"></a></h2>
+<ol class="arabic simple">
+<li><p><strong>getfastq creates subdirectories</strong>: The <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> step automatically creates a <code class="docutils literal notranslate"><span class="pre">getfastq/</span></code> subdirectory within its specified <code class="docutils literal notranslate"><span class="pre">out_dir</span></code></p></li>
+<li><p><strong>quant uses work_dir</strong>: The <code class="docutils literal notranslate"><span class="pre">quant</span></code> step should use <code class="docutils literal notranslate"><span class="pre">out_dir</span> <span class="pre">=</span> <span class="pre">work_dir</span></code> (not a separate quant_dir) so it can find getfastq output</p></li>
+<li><p><strong>Path auto-adjustment</strong>: The workflow automatically adjusts paths when possible, but explicit configuration is recommended</p></li>
+<li><p><strong>Relative paths</strong>: All paths in config files are resolved relative to the repository root</p></li>
+</ol>
+</section>
+<section id="directory-structure">
+<h2>Directory Structure<a class="headerlink" href="#directory-structure" title="Link to this heading"></a></h2>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>output/amalgkit/{species}/
+├── work/                          ← Working directory (used as quant.out_dir)
+│   ├── fasta/                     ← Prepared transcriptome
+│   │   └── {Species_Name}_rna.fasta
+│   ├── index/                      ← Kallisto index
+│   │   └── {Species_Name}_transcripts.idx
+│   ├── metadata/                  ← Sample metadata
+│   │   ├── metadata.tsv
+│   │   ├── metadata_selected.tsv
+│   │   └── metadata_integrated.tsv
+│   ├── quant/                      ← Quantification results (when quant.out_dir = work_dir)
+│   │   └── {sample_id}/
+│   │       └── abundance.tsv
+│   ├── getfastq/                   ← Symlink to fastq/getfastq (if needed for quant)
+│   │   └── {sample_id}/
+│   │       └── {sample_id}_1.fastq.gz
+│   └── merge/                      ← Merged expression matrices (if merge.out_dir = work_dir)
+│       └── {Scientific_Name}/
+│           └── {Scientific_Name}_tpm.tsv
+├── fastq/                          ← FASTQ files (getfastq out_dir)
+│   └── getfastq/                   ← Automatically created by amalgkit getfastq
+│       └── {sample_id}/
+│           ├── {sample_id}_1.fastq.gz
+│           └── {sample_id}_2.fastq.gz
+└── merged/                         ← Merged results (if merge uses separate out_dir)
+    └── merge/
+        └── {Scientific_Name}/
+            └── {Scientific_Name}_tpm.tsv
+</pre></div>
+</div>
+</section>
+<section id="step-by-step-path-resolution">
+<h2>Step-by-Step Path Resolution<a class="headerlink" href="#step-by-step-path-resolution" title="Link to this heading"></a></h2>
+<section id="getfastq-step">
+<h3>1. getfastq Step<a class="headerlink" href="#getfastq-step" title="Link to this heading"></a></h3>
+<p><strong>Configuration</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">getfastq</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/{species}/fastq</span>
+</pre></div>
+</div>
+<p><strong>Actual Output Location</strong>:</p>
+<ul class="simple">
+<li><p>FASTQ files are created in: <code class="docutils literal notranslate"><span class="pre">{out_dir}/getfastq/{sample_id}/</span></code></p></li>
+<li><p>Example: <code class="docutils literal notranslate"><span class="pre">output/amalgkit/{species}/fastq/getfastq/SRR12345678/SRR12345678_1.fastq.gz</span></code></p></li>
+</ul>
+<p><strong>Key Points</strong>:</p>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">getfastq/</span></code> subdirectory is <strong>automatically created</strong> by amalgkit</p></li>
+<li><p>FASTQ files are NOT placed directly in <code class="docutils literal notranslate"><span class="pre">{out_dir}/</span></code>, but in <code class="docutils literal notranslate"><span class="pre">{out_dir}/getfastq/</span></code></p></li>
+<li><p>This subdirectory structure is required by amalgkit’s internal logic</p></li>
+</ul>
+<p><strong>Why This Matters</strong>:</p>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">integrate</span></code> step must point to <code class="docutils literal notranslate"><span class="pre">{out_dir}/getfastq/</span></code> (the subdirectory), not just <code class="docutils literal notranslate"><span class="pre">{out_dir}/</span></code></p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">quant</span></code> step looks for FASTQ files in <code class="docutils literal notranslate"><span class="pre">{quant_out_dir}/getfastq/{sample_id}/</span></code></p></li>
+</ul>
+</section>
+<section id="integrate-step">
+<h3>2. integrate Step<a class="headerlink" href="#integrate-step" title="Link to this heading"></a></h3>
+<p><strong>Configuration</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">integrate</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">fastq_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/{species}/fastq/getfastq</span>
+</pre></div>
+</div>
+<p><strong>Path Resolution</strong>:</p>
+<ul class="simple">
+<li><p><strong>Required</strong>: <code class="docutils literal notranslate"><span class="pre">fastq_dir</span></code> must point to the <code class="docutils literal notranslate"><span class="pre">getfastq/</span></code> subdirectory created by the <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> step</p></li>
+<li><p><strong>Auto-adjustment</strong>: The workflow automatically adjusts <code class="docutils literal notranslate"><span class="pre">fastq_dir</span></code> if the <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> subdirectory exists</p></li>
+<li><p><strong>Inference</strong>: If <code class="docutils literal notranslate"><span class="pre">fastq_dir</span></code> is not specified, the workflow infers it from the <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> step’s <code class="docutils literal notranslate"><span class="pre">out_dir</span></code></p></li>
+</ul>
+<p><strong>Example</strong>:</p>
+<ul class="simple">
+<li><p>If <code class="docutils literal notranslate"><span class="pre">getfastq.out_dir:</span> <span class="pre">output/amalgkit/{species}/fastq</span></code></p></li>
+<li><p>Then <code class="docutils literal notranslate"><span class="pre">integrate.fastq_dir</span></code> should be: <code class="docutils literal notranslate"><span class="pre">output/amalgkit/{species}/fastq/getfastq</span></code></p></li>
+</ul>
+<p><strong>What integrate does</strong>:</p>
+<ul class="simple">
+<li><p>Scans <code class="docutils literal notranslate"><span class="pre">fastq_dir</span></code> for FASTQ files</p></li>
+<li><p>Adds file paths and statistics to metadata</p></li>
+<li><p>Creates <code class="docutils literal notranslate"><span class="pre">metadata_integrated.tsv</span></code> with local FASTQ information</p></li>
+</ul>
+</section>
+<section id="quant-step">
+<h3>3. quant Step<a class="headerlink" href="#quant-step" title="Link to this heading"></a></h3>
+<p><strong>Configuration</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">quant</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/{species}/work</span><span class="w">  </span><span class="c1"># ← CRITICAL: Use work_dir, not separate quant_dir</span>
+</pre></div>
+</div>
+<p><strong>Path Resolution</strong>:</p>
+<ul class="simple">
+<li><p><strong>CRITICAL</strong>: <code class="docutils literal notranslate"><span class="pre">out_dir</span></code> should be set to <code class="docutils literal notranslate"><span class="pre">work_dir</span></code> (not a separate quant_dir)</p></li>
+<li><p><strong>FASTQ Location</strong>: <code class="docutils literal notranslate"><span class="pre">amalgkit</span> <span class="pre">quant</span></code> looks for FASTQ files in <code class="docutils literal notranslate"><span class="pre">{out_dir}/getfastq/{sample_id}/</span></code></p></li>
+<li><p><strong>Output Location</strong>: Quantification results are written to <code class="docutils literal notranslate"><span class="pre">{out_dir}/quant/{sample_id}/abundance.tsv</span></code></p></li>
+<li><p><strong>Index Location</strong>: Kallisto index should be in <code class="docutils literal notranslate"><span class="pre">{out_dir}/index/{Scientific_Name}_transcripts.idx</span></code></p></li>
+<li><p><strong>FASTA Location</strong>: Transcriptome FASTA should be in <code class="docutils literal notranslate"><span class="pre">{out_dir}/fasta/{Scientific_Name}_rna.fasta</span></code></p></li>
+</ul>
+<p><strong>Why work_dir is Required</strong>:</p>
+<ol class="arabic simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">amalgkit</span> <span class="pre">quant</span></code> expects to find FASTQ files in <code class="docutils literal notranslate"><span class="pre">{out_dir}/getfastq/{sample_id}/</span></code></p></li>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> used <code class="docutils literal notranslate"><span class="pre">out_dir:</span> <span class="pre">output/amalgkit/{species}/fastq</span></code>, then quant’s <code class="docutils literal notranslate"><span class="pre">out_dir</span></code> must be <code class="docutils literal notranslate"><span class="pre">work_dir</span></code> so it can find the getfastq output</p></li>
+<li><p>The workflow may create a symlink from <code class="docutils literal notranslate"><span class="pre">{work_dir}/getfastq/</span></code> to <code class="docutils literal notranslate"><span class="pre">{fastq_dir}/getfastq/</span></code> to ensure quant can find the files</p></li>
+</ol>
+<p><strong>Incorrect Configuration</strong> (will fail):</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">quant</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/{species}/quant</span><span class="w">  </span><span class="c1"># ← WRONG: quant can&#39;t find getfastq output</span>
+</pre></div>
+</div>
+<p><strong>Correct Configuration</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">quant</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/{species}/work</span><span class="w">  </span><span class="c1"># ← CORRECT: quant can find getfastq output</span>
+</pre></div>
+</div>
+<p><strong>Output Files</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">{out_dir}/quant/{sample_id}/abundance.tsv</span></code> - Transcript abundance estimates</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{out_dir}/quant/{sample_id}/abundance.h5</span></code> - Binary abundance file</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{out_dir}/quant/{sample_id}/run_info.json</span></code> - Run metadata</p></li>
+</ul>
+</section>
+<section id="merge-step">
+<h3>4. merge Step<a class="headerlink" href="#merge-step" title="Link to this heading"></a></h3>
+<p><strong>Configuration</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">merge</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/{species}/work</span><span class="w">  </span><span class="c1"># ← Use same work_dir as quant, OR</span>
+<span class="w">    </span><span class="c1"># out_dir: output/amalgkit/{species}/merged  # ← Use separate merged directory (requires copying files)</span>
+</pre></div>
+</div>
+<p><strong>Path Resolution</strong>:</p>
+<ul class="simple">
+<li><p><strong>Input Location</strong>: <code class="docutils literal notranslate"><span class="pre">amalgkit</span> <span class="pre">merge</span></code> looks for abundance files in <code class="docutils literal notranslate"><span class="pre">{out_dir}/quant/{sample_id}/{sample_id}_abundance.tsv</span></code></p></li>
+<li><p><strong>Output Location</strong>: Merged matrices are written to <code class="docutils literal notranslate"><span class="pre">{out_dir}/merge/{Scientific_Name}/{Scientific_Name}_tpm.tsv</span></code></p></li>
+</ul>
+<p><strong>Two Configuration Options</strong>:</p>
+<p><strong>Option 1: Use same work_dir as quant</strong> (Recommended):</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">quant</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/{species}/work</span>
+<span class="w">  </span><span class="nt">merge</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/{species}/work</span><span class="w">  </span><span class="c1"># Same as quant</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Merge finds quant output directly in <code class="docutils literal notranslate"><span class="pre">{work_dir}/quant/</span></code></p></li>
+<li><p>No file copying needed</p></li>
+</ul>
+<p><strong>Option 2: Use separate merged directory</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">quant</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/{species}/work</span>
+<span class="w">  </span><span class="nt">merge</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/{species}/merged</span><span class="w">  </span><span class="c1"># Different from quant</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>Requires copying abundance files to <code class="docutils literal notranslate"><span class="pre">{merged_dir}/quant/{sample_id}/{sample_id}_abundance.tsv</span></code></p></li>
+<li><p>The workflow may handle this automatically, but explicit configuration is clearer</p></li>
+</ul>
+<p><strong>Output Files</strong>:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">{out_dir}/merge/{Scientific_Name}/{Scientific_Name}_tc.tsv</span></code> - Estimated counts matrix</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{out_dir}/merge/{Scientific_Name}/{Scientific_Name}_tpm.tsv</span></code> - TPM (normalized) matrix</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{out_dir}/merge/{Scientific_Name}/{Scientific_Name}_eff_len.tsv</span></code> - Effective lengths matrix</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">{out_dir}/merge/{Scientific_Name}/{Scientific_Name}_sample_info.tsv</span></code> - Sample metadata</p></li>
+</ul>
+<p><strong>R Dependency</strong>:</p>
+<ul class="simple">
+<li><p>The merge step requires R and <code class="docutils literal notranslate"><span class="pre">ggplot2</span></code> for generating visualization plots</p></li>
+<li><p>If R/ggplot2 is not available, merge will still create expression matrices but will skip plot generation</p></li>
+<li><p>See <a class="reference internal" href="R_INSTALLATION.html"><span class="std std-doc">R_INSTALLATION.md</span></a> for installation instructions</p></li>
+</ul>
+</section>
+</section>
+<section id="common-path-issues-and-solutions">
+<h2>Common Path Issues and Solutions<a class="headerlink" href="#common-path-issues-and-solutions" title="Link to this heading"></a></h2>
+<section id="issue-1-integrate-cant-find-fastq-files">
+<h3>Issue 1: integrate can’t find FASTQ files<a class="headerlink" href="#issue-1-integrate-cant-find-fastq-files" title="Link to this heading"></a></h3>
+<p><strong>Error</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ne">ValueError</span><span class="p">:</span> <span class="n">No</span> <span class="n">detected</span> <span class="n">fastq</span> <span class="n">files</span> <span class="p">(</span><span class="o">...</span><span class="p">)</span> <span class="ow">in</span><span class="p">:</span> <span class="n">output</span><span class="o">/</span><span class="n">amalgkit</span><span class="o">/</span><span class="p">{</span><span class="n">species</span><span class="p">}</span><span class="o">/</span><span class="n">fastq</span>
+</pre></div>
+</div>
+<p><strong>Cause</strong>: <code class="docutils literal notranslate"><span class="pre">fastq_dir</span></code> points to the base fastq directory, not the <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> subdirectory</p>
+<p><strong>Solution</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">integrate</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">fastq_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/{species}/fastq/getfastq</span><span class="w">  </span><span class="c1"># ← Add /getfastq</span>
+</pre></div>
+</div>
+</section>
+<section id="issue-2-quant-cant-find-fastq-files">
+<h3>Issue 2: quant can’t find FASTQ files<a class="headerlink" href="#issue-2-quant-cant-find-fastq-files" title="Link to this heading"></a></h3>
+<p><strong>Error</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">getfastq</span> <span class="n">output</span> <span class="ow">not</span> <span class="n">found</span> <span class="ow">in</span><span class="p">:</span> <span class="p">{</span><span class="n">out_dir</span><span class="p">}</span><span class="o">/</span><span class="n">getfastq</span><span class="o">/</span><span class="p">{</span><span class="n">sample_id</span><span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Cause</strong>: <code class="docutils literal notranslate"><span class="pre">quant.out_dir</span></code> is set to a separate quant_dir instead of work_dir</p>
+<p><strong>Solution</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">quant</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/{species}/work</span><span class="w">  </span><span class="c1"># ← Use work_dir, not quant_dir</span>
+</pre></div>
+</div>
+</section>
+<section id="issue-3-merge-cant-find-abundance-files">
+<h3>Issue 3: merge can’t find abundance files<a class="headerlink" href="#issue-3-merge-cant-find-abundance-files" title="Link to this heading"></a></h3>
+<p><strong>Error</strong>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">quant</span> <span class="n">outfile</span> <span class="ow">not</span> <span class="n">found</span><span class="p">:</span> <span class="p">{</span><span class="n">out_dir</span><span class="p">}</span><span class="o">/</span><span class="n">quant</span><span class="o">/</span><span class="p">{</span><span class="n">sample_id</span><span class="p">}</span><span class="o">/</span><span class="p">{</span><span class="n">sample_id</span><span class="p">}</span><span class="n">_abundance</span><span class="o">.</span><span class="n">tsv</span>
+</pre></div>
+</div>
+<p><strong>Cause</strong>: <code class="docutils literal notranslate"><span class="pre">merge.out_dir</span></code> doesn’t match <code class="docutils literal notranslate"><span class="pre">quant.out_dir</span></code>, or files aren’t in expected location</p>
+<p><strong>Solution</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">quant</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/{species}/work</span>
+<span class="w">  </span><span class="nt">merge</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/{species}/work</span><span class="w">  </span><span class="c1"># ← Use same out_dir as quant</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="configuration-best-practices">
+<h2>Configuration Best Practices<a class="headerlink" href="#configuration-best-practices" title="Link to this heading"></a></h2>
+<section id="recommended-configuration-pattern">
+<h3>Recommended Configuration Pattern<a class="headerlink" href="#recommended-configuration-pattern" title="Link to this heading"></a></h3>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">work_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/{species}/work</span>
+
+<span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">getfastq</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/{species}/fastq</span>
+<span class="w">    </span><span class="c1"># Creates: output/amalgkit/{species}/fastq/getfastq/{sample_id}/</span>
+<span class="w">  </span>
+<span class="w">  </span><span class="nt">integrate</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">fastq_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/{species}/fastq/getfastq</span>
+<span class="w">    </span><span class="c1"># Points to getfastq subdirectory</span>
+<span class="w">  </span>
+<span class="w">  </span><span class="nt">quant</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/{species}/work</span><span class="w">  </span><span class="c1"># ← Use work_dir</span>
+<span class="w">    </span><span class="c1"># Looks for FASTQ in: {work_dir}/getfastq/{sample_id}/</span>
+<span class="w">    </span><span class="c1"># Writes output to: {work_dir}/quant/{sample_id}/abundance.tsv</span>
+<span class="w">  </span>
+<span class="w">  </span><span class="nt">merge</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/{species}/work</span><span class="w">  </span><span class="c1"># ← Use same as quant</span>
+<span class="w">    </span><span class="c1"># Looks for abundance in: {work_dir}/quant/{sample_id}/{sample_id}_abundance.tsv</span>
+<span class="w">    </span><span class="c1"># Writes output to: {work_dir}/merge/{Scientific_Name}/{Scientific_Name}_tpm.tsv</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="path-resolution-in-code">
+<h2>Path Resolution in Code<a class="headerlink" href="#path-resolution-in-code" title="Link to this heading"></a></h2>
+<p>The workflow automatically handles some path adjustments:</p>
+<ol class="arabic simple">
+<li><p><strong>integrate fastq_dir adjustment</strong>: <code class="docutils literal notranslate"><span class="pre">src/metainformant/rna/workflow.py::plan_workflow()</span></code> automatically adjusts <code class="docutils literal notranslate"><span class="pre">fastq_dir</span></code> to include the <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> subdirectory if it exists</p></li>
+<li><p><strong>vdb-config repository path</strong>: <code class="docutils literal notranslate"><span class="pre">src/metainformant/rna/workflow.py::execute_workflow()</span></code> sets <code class="docutils literal notranslate"><span class="pre">vdb-config</span></code> repository root to the getfastq directory so <code class="docutils literal notranslate"><span class="pre">prefetch</span></code> downloads to the correct location</p></li>
+<li><p><strong>Symlink creation</strong>: The workflow may create symlinks from <code class="docutils literal notranslate"><span class="pre">{work_dir}/getfastq/</span></code> to <code class="docutils literal notranslate"><span class="pre">{fastq_dir}/getfastq/</span></code> to ensure quant can find FASTQ files</p></li>
+</ol>
+</section>
+<section id="see-also">
+<h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong><a class="reference internal" href="steps/04_getfastq.html"><span class="std std-doc">getfastq.md</span></a></strong>: Complete getfastq step documentation</p></li>
+<li><p><strong><a class="reference internal" href="steps/05_integrate.html"><span class="std std-doc">integrate.md</span></a></strong>: Complete integrate step documentation</p></li>
+<li><p><strong><a class="reference internal" href="steps/06_quant.html"><span class="std std-doc">quant.md</span></a></strong>: Complete quant step documentation</p></li>
+<li><p><strong><a class="reference internal" href="steps/07_merge.html"><span class="std std-doc">merge.md</span></a></strong>: Complete merge step documentation</p></li>
+<li><p><strong><a class="reference internal" href="../FILE_PATH_STORAGE.html"><span class="std std-doc">FILE_PATH_STORAGE.md</span></a></strong>: Complete file path storage reference</p></li>
+<li><p><strong><a class="reference internal" href="R_INSTALLATION.html"><span class="std std-doc">R_INSTALLATION.md</span></a></strong>: R and ggplot2 installation guide</p></li>
+</ul>
+<hr class="docutils" />
+<p><strong>Last Updated</strong>: January 2026<br />
+<strong>Status</strong>: ✅ Production-ready, comprehensively documented</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

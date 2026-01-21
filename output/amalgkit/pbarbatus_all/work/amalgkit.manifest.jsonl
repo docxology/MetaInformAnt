@@ -1,0 +1,103 @@
+{"step": "metadata", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1768952898.9158988}
+{"step": "select", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1768952898.9159338}
+{"step": "select", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1768952921.272223}
+{"step": "metadata", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1769001038.152501}
+{"step": "select", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1769001038.327297}
+{"step": "metadata", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769011128.8779168}
+{"step": "config", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769011128.877953}
+{"step": "select", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769011128.877957}
+{"step": "getfastq", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1769011128.877959}
+{"step": "integrate", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769011128.877961}
+{"step": "quant", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1769011128.877963}
+{"step": "merge", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1769011128.877964}
+{"step": "cstmm", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1769011128.8779662}
+{"step": "curate", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1769011128.8779671}
+{"step": "csca", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1769011128.8779688}
+{"step": "sanity", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1769011128.87797}
+{"step": "metadata", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1769012056.1366742}
+{"step": "config", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1769012056.186518}
+{"step": "select", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1769012056.243535}
+{"step": "metadata", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012099.670639}
+{"step": "config", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012099.6706638}
+{"step": "select", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012099.67067}
+{"step": "getfastq", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1769012099.670673}
+{"step": "integrate", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1769012099.670677}
+{"step": "quant", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1769012099.670681}
+{"step": "merge", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012099.6706839}
+{"step": "cstmm", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012099.670688}
+{"step": "curate", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012099.670691}
+{"step": "csca", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012099.6706948}
+{"step": "sanity", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012099.670698}
+{"step": "metadata", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1769012166.377973}
+{"step": "config", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1769012166.427222}
+{"step": "select", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1769012166.481225}
+{"step": "metadata", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012190.255955}
+{"step": "config", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012190.255979}
+{"step": "select", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012190.2559848}
+{"step": "getfastq", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1769012190.255989}
+{"step": "integrate", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1769012190.2559931}
+{"step": "quant", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1769012190.255996}
+{"step": "merge", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012190.256}
+{"step": "cstmm", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012190.2560031}
+{"step": "curate", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012190.256007}
+{"step": "csca", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012190.25601}
+{"step": "sanity", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012190.2560132}
+{"step": "metadata", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1769012213.870302}
+{"step": "config", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1769012213.9201112}
+{"step": "select", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1769012213.9670882}
+{"step": "metadata", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012237.49381}
+{"step": "config", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012237.493834}
+{"step": "select", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012237.49384}
+{"step": "getfastq", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1769012237.4938428}
+{"step": "integrate", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1769012237.4938471}
+{"step": "quant", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1769012237.493851}
+{"step": "merge", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012237.493854}
+{"step": "cstmm", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012237.493857}
+{"step": "curate", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012237.4938612}
+{"step": "csca", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012237.4938638}
+{"step": "sanity", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012237.493868}
+{"step": "metadata", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1769012346.607121}
+{"step": "config", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1769012346.654073}
+{"step": "select", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1769012346.705315}
+{"step": "metadata", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012369.798625}
+{"step": "config", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012369.79865}
+{"step": "select", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012369.798655}
+{"step": "getfastq", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1769012369.798659}
+{"step": "integrate", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1769012369.798663}
+{"step": "quant", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1769012369.798666}
+{"step": "merge", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012369.79867}
+{"step": "cstmm", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012369.798673}
+{"step": "curate", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012369.798676}
+{"step": "csca", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012369.798679}
+{"step": "sanity", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769012369.7986822}
+{"step": "metadata", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1769012398.1131258}
+{"step": "config", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1769012398.166591}
+{"step": "select", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1769012398.207603}
+{"step": "metadata", "status": "skipped", "return_code": 126, "duration_seconds": 0, "timestamp": 1769013033.9854121, "note": "Dependency skip: Amalgkit CLI not available: amalgkit CLI not found in PATH"}
+{"step": "config", "status": "skipped", "return_code": 126, "duration_seconds": 0, "timestamp": 1769013033.99105, "note": "Dependency skip: Amalgkit CLI not available: amalgkit CLI not found in PATH"}
+{"step": "select", "status": "skipped", "return_code": 126, "duration_seconds": 0, "timestamp": 1769013033.9960032, "note": "Dependency skip: Amalgkit CLI not available: amalgkit CLI not found in PATH"}
+{"step": "getfastq", "status": "skipped", "return_code": 126, "duration_seconds": 0, "timestamp": 1769013034.002762, "note": "Dependency skip: Amalgkit CLI not available: amalgkit CLI not found in PATH"}
+{"step": "integrate", "status": "skipped", "return_code": 126, "duration_seconds": 0, "timestamp": 1769013034.008387, "note": "Dependency skip: Amalgkit CLI not available: amalgkit CLI not found in PATH"}
+{"step": "quant", "status": "skipped", "return_code": 126, "duration_seconds": 0, "timestamp": 1769013034.013511, "note": "Dependency skip: Amalgkit CLI not available: amalgkit CLI not found in PATH"}
+{"step": "merge", "status": "skipped", "return_code": 126, "duration_seconds": 0, "timestamp": 1769013034.018444, "note": "Dependency skip: Amalgkit CLI not available: amalgkit CLI not found in PATH"}
+{"step": "cstmm", "status": "skipped", "return_code": 126, "duration_seconds": 0, "timestamp": 1769013034.024322, "note": "Dependency skip: Amalgkit CLI not available: amalgkit CLI not found in PATH"}
+{"step": "curate", "status": "skipped", "return_code": 126, "duration_seconds": 0, "timestamp": 1769013034.0280828, "note": "Dependency skip: Amalgkit CLI not available: amalgkit CLI not found in PATH"}
+{"step": "csca", "status": "skipped", "return_code": 126, "duration_seconds": 0, "timestamp": 1769013034.035022, "note": "Dependency skip: Amalgkit CLI not available: amalgkit CLI not found in PATH"}
+{"step": "sanity", "status": "skipped", "return_code": 126, "duration_seconds": 0, "timestamp": 1769013034.04063, "note": "Dependency skip: Amalgkit CLI not available: amalgkit CLI not found in PATH"}
+{"step": "metadata", "return_code": 126, "success": false, "duration_seconds": 0, "timestamp": 1769013034.0425222}
+{"step": "config", "return_code": 126, "success": false, "duration_seconds": 0, "timestamp": 1769013034.0425332}
+{"step": "select", "return_code": 126, "success": false, "duration_seconds": 0, "timestamp": 1769013034.042538}
+{"step": "getfastq", "return_code": 126, "success": false, "duration_seconds": 0, "timestamp": 1769013034.042542}
+{"step": "integrate", "return_code": 126, "success": false, "duration_seconds": 0, "timestamp": 1769013034.0425448}
+{"step": "quant", "return_code": 126, "success": false, "duration_seconds": 0, "timestamp": 1769013034.042549}
+{"step": "merge", "return_code": 126, "success": false, "duration_seconds": 0, "timestamp": 1769013034.042552}
+{"step": "cstmm", "return_code": 126, "success": false, "duration_seconds": 0, "timestamp": 1769013034.0425549}
+{"step": "curate", "return_code": 126, "success": false, "duration_seconds": 0, "timestamp": 1769013034.042558}
+{"step": "csca", "return_code": 126, "success": false, "duration_seconds": 0, "timestamp": 1769013034.042561}
+{"step": "sanity", "return_code": 126, "success": false, "duration_seconds": 0, "timestamp": 1769013034.0425642}
+{"step": "metadata", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1769013099.0450099}
+{"step": "config", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1769013099.093882}
+{"step": "select", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1769013099.1402109}
+{"step": "metadata", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1769028324.845628}
+{"step": "config", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1769028324.9008698}
+{"step": "select", "status": "skipped", "return_code": 0, "duration_seconds": 0, "timestamp": 1769028324.957875}

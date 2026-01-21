@@ -45,43 +45,40 @@ METAINFORMANT follows a layered orchestration architecture where scripts serve a
 
 ```mermaid
 graph TD
-    A[User Interface] --> B{CLI Commands}
+    AuserInterface[User Interface] --> B{CLI Commands}
     A --> C{Script Orchestrators}
     A --> D{API Integration}
 
-    B --> E[metainformant CLI]
-    C --> F[Domain Scripts]
-    D --> G[Python API]
+    B --> EmetainformantCli[metainformant CLI]
+    C --> FdomainScripts[Domain Scripts]
+    D --> GpythonApi[Python API]
 
-    E --> H[Workflow Functions]
+    E --> HworkflowFunctions[Workflow Functions]
     F --> H
     G --> H
 
-    H --> I[Core Utilities]
-    I --> J[Execution Results]
+    H --> IcoreUtilities[Core Utilities]
+    I --> JexecutionResults[Execution Results]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style H fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style J fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Entry Points"
-        K[Command Line] -.-> B
-        L[Batch Processing] -.-> C
-        M[Interactive Analysis] -.-> D
+        KcommandLine[Command Line] -.-> B
+        LbatchProcessing[Batch Processing] -.-> C
+        MinteractiveAnalysis[Interactive Analysis] -.-> D
     end
 
     subgraph "Domain Modules"
-        N[RNA Workflows] -.-> F
-        O[GWAS Pipelines] -.-> F
+        NrnaWorkflows[RNA Workflows] -.-> F
+        OgwasPipelines[GWAS Pipelines] -.-> F
         P[Multi-omics] -.-> F
-        Q[All Domains] -.-> F
+        QallDomains[All Domains] -.-> F
     end
 
     subgraph "Core Infrastructure"
         R[Configuration] -.-> I
         S[Logging] -.-> I
-        T[Parallel Processing] -.-> I
-        U[Path Management] -.-> I
+        TparallelProcessing[Parallel Processing] -.-> I
+        UpathManagement[Path Management] -.-> I
     end
 ```
 
@@ -89,32 +86,30 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Scripts Directory] --> B[Package Management]
-    A --> C[Core Utilities]
-    A --> D[Domain Orchestrators]
+    AscriptsDirectory[Scripts Directory] --> BpackageManagement[Package Management]
+    A --> CcoreUtilities[Core Utilities]
+    A --> DdomainOrchestrators[Domain Orchestrators]
 
     B --> E[setup.sh]
     B --> F[test.sh]
     B --> G[verify.sh]
 
-    C --> H[run_demo.py]
-    C --> I[fix_disk_space.sh]
+    C --> HrunDemo.py[run_demo.py]
+    C --> IfixDiskSpace.sh[fix_disk_space.sh]
 
-    D --> J[RNA Scripts]
-    D --> K[GWAS Scripts]
-    D --> L[Analysis Scripts]
+    D --> JrnaScripts[RNA Scripts]
+    D --> KgwasScripts[GWAS Scripts]
+    D --> LanalysisScripts[Analysis Scripts]
 
-    J --> M[run_workflow.py]
-    J --> N[discover_species.py]
+    J --> MrunWorkflow.py[run_workflow.py]
+    J --> NdiscoverSpecies.py[discover_species.py]
 
-    K --> O[run_genome_scale_gwas.py]
-    K --> P[run_pbarbatus_gwas.py]
+    K --> OrunGenomeScaleGwas.py[run_genome_scale_gwas.py]
+    K --> PrunPbarbatusGwas.py[run_pbarbatus_gwas.py]
 
-    L --> Q[20+ Domain Scripts]
-    L --> R[Thin Orchestrators]
+    L --> Q20+DomainScripts[20+ Domain Scripts]
+    L --> RthinOrchestrators[Thin Orchestrators]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style D fill:#fff3e0,stroke:#e65100,stroke-width:2px
 
     subgraph "Script Categories"
         S[Infrastructure] -.-> B
@@ -123,10 +118,10 @@ graph TD
     end
 
     subgraph "Key Principles"
-        V[Thin Wrappers] -.-> R
-        W[Logic in src/] -.-> R
-        X[Consistent CLI] -.-> R
-        Y[Output to output/] -.-> R
+        VthinWrappers[Thin Wrappers] -.-> R
+        WlogicInSrc/[Logic in src/] -.-> R
+        XconsistentCli[Consistent CLI] -.-> R
+        YoutputToOutput/[Output to output/] -.-> R
     end
 ```
 
@@ -134,51 +129,48 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Development Tasks] --> B{Task Type}
+    AdevelopmentTasks[Development Tasks] --> B{Task Type}
 
-    B -->|Setup| C[Package Scripts]
-    B -->|Testing| D[Test Scripts]
-    B -->|Analysis| E[Domain Scripts]
-    B -->|Deployment| F[Infrastructure Scripts]
+    B -->|Setup| CpackageScripts[Package Scripts]
+    B -->|Testing| DtestScripts[Test Scripts]
+    B -->|Analysis| EdomainScripts[Domain Scripts]
+    B -->|Deployment| FinfrastructureScripts[Infrastructure Scripts]
 
     C --> G[setup.sh]
     C --> H[verify.sh]
 
-    D --> I[run_tests.sh]
-    D --> J[quality_checks.sh]
+    D --> IrunTests.sh[run_tests.sh]
+    D --> JqualityChecks.sh[quality_checks.sh]
 
-    E --> K[RNA Workflows]
-    E --> L[GWAS Pipelines]
-    E --> M[Multi-omic Analysis]
+    E --> KrnaWorkflows[RNA Workflows]
+    E --> LgwasPipelines[GWAS Pipelines]
+    E --> Mmulti-omicAnalysis[Multi-omic Analysis]
 
     F --> N[Documentation]
-    F --> O[Environment Setup]
+    F --> OenvironmentSetup[Environment Setup]
 
-    G --> P[Ready Environment]
+    G --> PreadyEnvironment[Ready Environment]
     I --> P
     K --> P
     N --> P
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style C fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style P fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Setup Phase"
-        Q[Clone Repository] -.-> G
-        R[Install Dependencies] -.-> G
-        S[Configure Environment] -.-> G
+        QcloneRepository[Clone Repository] -.-> G
+        RinstallDependencies[Install Dependencies] -.-> G
+        SconfigureEnvironment[Configure Environment] -.-> G
     end
 
     subgraph "Development Phase"
-        T[Run Tests] -.-> I
-        U[Code Quality] -.-> J
+        TrunTests[Run Tests] -.-> I
+        UcodeQuality[Code Quality] -.-> J
         V[Documentation] -.-> N
     end
 
     subgraph "Analysis Phase"
-        W[RNA-seq Processing] -.-> K
-        X[Genome-scale GWAS] -.-> L
-        Y[Systems Biology] -.-> M
+        Wrna-seqProcessing[RNA-seq Processing] -.-> K
+        Xgenome-scaleGwas[Genome-scale GWAS] -.-> L
+        YsystemsBiology[Systems Biology] -.-> M
     end
 ```
 
@@ -186,58 +178,55 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Script Invocation] --> B[Argument Parsing]
-    B --> C[Configuration Loading]
+    AscriptInvocation[Script Invocation] --> BargumentParsing[Argument Parsing]
+    B --> CconfigurationLoading[Configuration Loading]
 
-    C --> D[Environment Setup]
-    D --> E[Path Resolution]
+    C --> DenvironmentSetup[Environment Setup]
+    D --> EpathResolution[Path Resolution]
 
-    E --> F[Workflow Function Call]
-    F --> G[Progress Monitoring]
+    E --> FworkflowFunctionCall[Workflow Function Call]
+    F --> GprogressMonitoring[Progress Monitoring]
 
     G --> H{Execution Status}
-    H -->|Success| I[Result Processing]
-    H -->|Error| J[Error Handling]
+    H -->|Success| IresultProcessing[Result Processing]
+    H -->|Error| JerrorHandling[Error Handling]
 
-    I --> K[Output Generation]
-    J --> L[Error Reporting]
+    I --> KoutputGeneration[Output Generation]
+    J --> LerrorReporting[Error Reporting]
 
-    K --> M[Script Complete]
+    K --> MscriptComplete[Script Complete]
     L --> M
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style F fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style M fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Standard Pipeline"
-        N[CLI Parsing] -.-> B
-        O[Config Validation] -.-> C
-        P[Working Directory] -.-> D
-        Q[Output Paths] -.-> E
+        NcliParsing[CLI Parsing] -.-> B
+        OconfigValidation[Config Validation] -.-> C
+        PworkingDirectory[Working Directory] -.-> D
+        QoutputPaths[Output Paths] -.-> E
     end
 
     subgraph "Execution Control"
-        R[Logging Setup] -.-> F
-        S[Resource Limits] -.-> F
-        T[Timeout Handling] -.-> F
-        U[Interrupt Handling] -.-> G
+        RloggingSetup[Logging Setup] -.-> F
+        SresourceLimits[Resource Limits] -.-> F
+        TtimeoutHandling[Timeout Handling] -.-> F
+        UinterruptHandling[Interrupt Handling] -.-> G
     end
 
     subgraph "Result Management"
-        V[File Outputs] -.-> K
-        W[Console Reports] -.-> K
-        X[Error Logs] -.-> L
-        Y[Exit Codes] -.-> M
+        VfileOutputs[File Outputs] -.-> K
+        WconsoleReports[Console Reports] -.-> K
+        XerrorLogs[Error Logs] -.-> L
+        YexitCodes[Exit Codes] -.-> M
     end
 ```
 
-    CLI --> CoreOrch[Core Orchestration<br/>core.workflow.BaseWorkflowOrchestrator]
+    CLI --> CoreOrch[Core Orchestration_core.workflow.BaseWorkflowOrchestrator]
     Scripts --> CoreOrch
     API --> CoreOrch
 
-    CoreOrch --> DomainOrch[Domain Workflows<br/>domain.workflow.execute_*]
-    DomainOrch --> Steps[Step Functions<br/>domain.steps.run_*]
-    Steps --> Utils[Core Utilities<br/>core.*]
+    CoreOrch --> DomainOrch[Domain Workflows_domain.workflow.execute_*]
+    DomainOrch --> Steps[Step Functions_domain.steps.run_*]
+    Steps --> Utils[Core Utilities_core.*]
 ```
 
 ### Script Design Pattern

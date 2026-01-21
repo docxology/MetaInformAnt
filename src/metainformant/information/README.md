@@ -20,29 +20,29 @@ This module implements fundamental information theory concepts for biological da
 ```mermaid
 graph TB
     subgraph "Information Module"
-        Syntactic[syntactic<br/>Syntactic Information]
-        Semantic[semantic<br/>Semantic Information]
-        Continuous[continuous<br/>Continuous Measures]
-        Estimation[estimation<br/>Estimation Methods]
-        Analysis[analysis<br/>Analysis Functions]
-        Networks[networks<br/>Network Integration]
-        Visualization[viz<br/>Visualization]
-        Workflows[workflows<br/>Workflow Functions]
+        SyntacticsyntacticSyntacticInformation[syntactic_Syntactic Information]
+        SemanticsemanticSemanticInformation[semantic_Semantic Information]
+        ContinuouscontinuousContinuousMeasures[continuous_Continuous Measures]
+        EstimationestimationEstimationMethods[estimation_Estimation Methods]
+        AnalysisanalysisAnalysisFunctions[analysis_Analysis Functions]
+        NetworksnetworksNetworkIntegration[networks_Network Integration]
+        VisualizationvizVisualization[viz_Visualization]
+        WorkflowsworkflowsWorkflowFunctions[workflows_Workflow Functions]
     end
     
     subgraph "Input Data"
         Sequences[Sequences]
-        Networks_Data[Network Data]
-        Ontology_Data[Ontology Data]
+        networkDatanetworkData[Network Data]
+        ontologyDataontologyData[Ontology Data]
     end
     
     subgraph "Other Modules"
-        DNA_Mod[dna]
-        RNA_Mod[rna]
-        Networks_Mod[networks]
-        Ontology_Mod[ontology]
+        dna[dna]
+        rna[rna]
+        networks[networks]
+        ontology[ontology]
         MultiOmics[multiomics]
-        Viz_Mod[visualization]
+        visualization[visualization]
     end
     
     Sequences --> Syntactic
@@ -54,29 +54,29 @@ graph TB
 
 ```mermaid
 graph TD
-    A[Biological Data] --> B{Data Type}
-    B -->|Sequences| C[Syntactic Information]
-    B -->|Networks| D[Network Information]
-    B -->|Ontology| E[Semantic Information]
-    B -->|Expression| F[Multi-Omics Information]
+    AbiologicalData[Biological Data] --> B{Data Type}
+    B -->|Sequences| CsyntacticInformation[Syntactic Information]
+    B -->|Networks| DnetworkInformation[Network Information]
+    B -->|Ontology| EsemanticInformation[Semantic Information]
+    B -->|Expression| Fmulti-omicsInformation[Multi-Omics Information]
 
     C --> G{Measure Type}
-    G -->|Shannon| H[Shannon Entropy]
-    G -->|Mutual Info| I[Mutual Information]
-    G -->|Transfer| J[Transfer Entropy]
-    G -->|Divergence| K[KL Divergence]
+    G -->|Shannon| HshannonEntropy[Shannon Entropy]
+    G -->|Mutual Info| ImutualInformation[Mutual Information]
+    G -->|Transfer| JtransferEntropy[Transfer Entropy]
+    G -->|Divergence| KklDivergence[KL Divergence]
 
-    D --> L[Network Entropy]
-    D --> M[Information Flow]
-    D --> N[Community Detection]
+    D --> LnetworkEntropy[Network Entropy]
+    D --> MinformationFlow[Information Flow]
+    D --> NcommunityDetection[Community Detection]
 
-    E --> O[Information Content]
-    E --> P[Semantic Similarity]
-    E --> Q[Semantic Entropy]
+    E --> OinformationContent[Information Content]
+    E --> PsemanticSimilarity[Semantic Similarity]
+    E --> QsemanticEntropy[Semantic Entropy]
 
-    F --> R[Cross-Platform MI]
-    F --> S[Platform Entropy]
-    F --> T[Integration Measures]
+    F --> Rcross-platformMi[Cross-Platform MI]
+    F --> SplatformEntropy[Platform Entropy]
+    F --> TintegrationMeasures[Integration Measures]
 
     H --> U[Analysis]
     I --> U
@@ -93,15 +93,12 @@ graph TD
     T --> U
 
     U --> V[Visualization]
-    V --> W[Reports & Insights]
+    V --> Wreports&Insights[Reports & Insights]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style U fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style W fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Estimation Methods"
         X[Histogram] -.-> U
-        Y[Kernel Density] -.-> U
+        YkernelDensity[Kernel Density] -.-> U
         Z[Jackknife] -.-> U
         AA[Bootstrap] -.-> U
     end
@@ -111,32 +108,29 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Input Data] --> B{Data Type}
-    B -->|Discrete| C[Count Frequencies]
-    B -->|Continuous| D[Estimate Distribution]
+    AinputData[Input Data] --> B{Data Type}
+    B -->|Discrete| CcountFrequencies[Count Frequencies]
+    B -->|Continuous| DestimateDistribution[Estimate Distribution]
 
     C --> E{Counts Available?}
-    E -->|Yes| F[Shannon Entropy from Counts]
-    E -->|No| G[Convert to Probabilities]
+    E -->|Yes| FshannonEntropyFromCounts[Shannon Entropy from Counts]
+    E -->|No| GconvertToProbabilities[Convert to Probabilities]
 
-    G --> H[Shannon Entropy from Probs]
-    D --> I[Density Estimation]
-    I --> J[Differential Entropy]
+    G --> HshannonEntropyFromProbs[Shannon Entropy from Probs]
+    D --> IdensityEstimation[Density Estimation]
+    I --> JdifferentialEntropy[Differential Entropy]
 
-    F --> K[Optional Bias Correction]
+    F --> KoptionalBiasCorrection[Optional Bias Correction]
     H --> K
     J --> K
 
     K --> L{Advanced Entropy?}
-    L -->|Yes| M[Rényi Entropy]
-    L -->|No| N[Standard Entropy]
+    L -->|Yes| MrényiEntropy[Rényi Entropy]
+    L -->|No| NstandardEntropy[Standard Entropy]
 
-    M --> O[Output Results]
+    M --> OoutputResults[Output Results]
     N --> O
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style K fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style O fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Bias Correction"
         P[Miller-Madow] -.-> K
@@ -145,9 +139,9 @@ graph TD
     end
 
     subgraph "Rényi Variants"
-        S[α = 2] -.-> M
-        T[α → ∞] -.-> M
-        U[α → 0] -.-> M
+        Sα=2[α = 2] -.-> M
+        Tα→∞[α → ∞] -.-> M
+        Uα→0[α → 0] -.-> M
     end
 ```
 
@@ -155,45 +149,41 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Two Variables X, Y] --> B[Joint Distribution P(X,Y)]
-    B --> C[Marginal Distributions P(X), P(Y)]
+    AtwoVariablesX,Y[Two Variables X, Y] --> BjointDistributionP(x,y)[Joint Distribution P(X,Y)]
+    B --> CmarginalDistributionsP(x),P(y)[Marginal Distributions P(X), P(Y)]
 
-    C --> D[Calculate Entropies]
-    D --> E[H(X) Shannon Entropy X]
-    D --> F[H(Y) Shannon Entropy Y]
-    D --> G[H(X,Y) Joint Entropy]
+    C --> DcalculateEntropies[Calculate Entropies]
+    D --> Eh(x)ShannonEntropyX[H(X) Shannon Entropy X]
+    D --> Fh(y)ShannonEntropyY[H(Y) Shannon Entropy Y]
+    D --> Gh(x,y)JointEntropy[H(X,Y) Joint Entropy]
 
-    E --> H[Mutual Information I(X;Y)]
+    E --> HmutualInformationI(x;y)[Mutual Information I(X;Y)]
     F --> H
     G --> H
 
     H --> I{I(X;Y) = H(X) + H(Y) - H(X,Y)}
     I --> J{Conditional MI?}
-    J -->|Yes| K[Add Condition Z]
-    J -->|No| L[Standard MI]
+    J -->|Yes| KaddConditionZ[Add Condition Z]
+    J -->|No| LstandardMi[Standard MI]
 
-    K --> M[I(X;Y|Z) = H(X,Z) + H(Y,Z) - H(X,Y,Z) - H(Z)]
-    M --> N[Conditional Results]
+    K --> Mi(x;y|z)=H(x,z)+H(y,z)-H(x,y,z)-H(z)[I(X;Y|Z) = H(X,Z) + H(Y,Z) - H(X,Y,Z) - H(Z)]
+    M --> NconditionalResults[Conditional Results]
 
-    L --> O[MI Results]
+    L --> OmiResults[MI Results]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style H fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style N fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
-    style O fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Estimation Methods"
         P[Plug-in] -.-> H
         Q[Histogram] -.-> H
         R[Kernel] -.-> H
-        S[Bias Corrected] -.-> H
+        SbiasCorrected[Bias Corrected] -.-> H
     end
 
     subgraph "Applications"
-        T[Feature Selection] -.-> O
-        U[Dependency Detection] -.-> O
-        V[Network Inference] -.-> O
-        W[Gene Regulation] -.-> O
+        TfeatureSelection[Feature Selection] -.-> O
+        UdependencyDetection[Dependency Detection] -.-> O
+        VnetworkInference[Network Inference] -.-> O
+        WgeneRegulation[Gene Regulation] -.-> O
     end
 ```
 
@@ -201,38 +191,35 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Annotated Entities] --> B[Ontology/Taxonomy]
-    B --> C[Calculate Information Content]
+    AannotatedEntities[Annotated Entities] --> B[Ontology/Taxonomy]
+    B --> CcalculateInformationContent[Calculate Information Content]
 
     C --> D{IC Calculation}
-    D --> E[Frequency-based IC]
-    D --> F[Annotation-based IC]
+    D --> Efrequency-basedIc[Frequency-based IC]
+    D --> Fannotation-basedIc[Annotation-based IC]
 
-    E --> G[Term IC Values]
+    E --> GtermIcValues[Term IC Values]
     F --> G
 
-    G --> H[Semantic Similarity]
+    G --> HsemanticSimilarity[Semantic Similarity]
     H --> I{Similarity Method}
-    I -->|Resnik| J[IC-based Similarity]
-    I -->|Lin| K[Normalized IC Similarity]
-    I -->|Jiang-Conrath| L[Distance-based Similarity]
+    I -->|Resnik| Jic-basedSimilarity[IC-based Similarity]
+    I -->|Lin| KnormalizedIcSimilarity[Normalized IC Similarity]
+    I -->|Jiang-Conrath| Ldistance-basedSimilarity[Distance-based Similarity]
 
-    J --> M[Similarity Matrix]
+    J --> MsimilarityMatrix[Similarity Matrix]
     K --> M
     L --> M
 
     M --> N[Clustering/Analysis]
-    N --> O[Semantic Results]
+    N --> OsemanticResults[Semantic Results]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style G fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style O fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Biological Applications"
-        P[Gene Function] -.-> N
-        Q[Protein Domains] -.-> N
-        R[Pathway Analysis] -.-> N
-        S[Disease Ontology] -.-> N
+        PgeneFunction[Gene Function] -.-> N
+        QproteinDomains[Protein Domains] -.-> N
+        RpathwayAnalysis[Pathway Analysis] -.-> N
+        SdiseaseOntology[Disease Ontology] -.-> N
     end
 ```
     Syntactic --> Analysis
@@ -252,15 +239,15 @@ graph TD
 
 ```mermaid
 flowchart TD
-    Start[Input Data] --> Type{Data Type?}
-    Type -->|Sequences| Syntactic[Calculate Entropy/MI]
-    Type -->|Ontology| Semantic[Calculate IC/Similarity]
-    Type -->|Networks| Network[Network Entropy]
-    Syntactic --> Profile[Information Profile]
+    StartinputData[Input Data] --> Type{Data Type?}
+    Type -->|Sequences| SyntacticcalculateEntropy/mi[Calculate Entropy/MI]
+    Type -->|Ontology| SemanticcalculateIc/similarity[Calculate IC/Similarity]
+    Type -->|Networks| NetworknetworkEntropy[Network Entropy]
+    Syntactic --> ProfileinformationProfile[Information Profile]
     Semantic --> Profile
     Network --> Profile
-    Profile --> Compare[Compare Measures]
-    Compare --> Visualize[Visualize Results]
+    Profile --> ComparecompareMeasures[Compare Measures]
+    Compare --> VisualizevisualizeResults[Visualize Results]
     Visualize --> Output[Results]
 ```
 
@@ -907,7 +894,7 @@ Complete information-theoretic workflow for sequence analysis.
 
 **Issue**: Network functions fail with ImportError
 - **Cause**: NetworkX not installed
-- **Solution**: Install NetworkX: `pip install networkx`
+- **Solution**: Install NetworkX: `uv pip install networkx`
 
 ## Integration Tutorials
 

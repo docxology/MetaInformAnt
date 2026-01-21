@@ -11,24 +11,24 @@ This module handles various types of biological networks and provides algorithms
 ```mermaid
 graph TB
     subgraph "Networks Module"
-        Graph[graph<br/>Graph Operations]
-        PPI[ppi<br/>PPI Networks]
-        Regulatory[regulatory<br/>Regulatory Networks]
-        Pathway[pathway<br/>Pathway Analysis]
-        Community[community<br/>Community Detection]
+        GraphgraphGraphOperations[graph_Graph Operations]
+        PPIppiPpiNetworks[ppi_PPI Networks]
+        RegulatoryregulatoryRegulatoryNetworks[regulatory_Regulatory Networks]
+        PathwaypathwayPathwayAnalysis[pathway_Pathway Analysis]
+        CommunitycommunityCommunityDetection[community_Community Detection]
     end
     
     subgraph "Input Data"
-        Interactions[Interaction Data]
-        Expression[Expression Data]
-        Pathways[Pathway Data]
+        InteractionsinteractionData[Interaction Data]
+        ExpressionexpressionData[Expression Data]
+        PathwayspathwayData[Pathway Data]
     end
     
     subgraph "Other Modules"
-        Protein_Mod[protein]
-        RNA_Mod[rna]
-        Ontology_Mod[ontology]
-        Info_Mod[information]
+        protein[protein]
+        rna[rna]
+        ontology[ontology]
+        information[information]
     end
     
     Interactions --> Graph
@@ -49,43 +49,40 @@ graph TB
 
 ```mermaid
 graph TD
-    A[Interaction Data] --> B{Data Source}
-    B -->|PPI Database| C[Parse PPI Interactions]
-    B -->|Expression Data| D[Infer Regulatory Networks]
-    B -->|Pathway DB| E[Load Pathway Interactions]
-    B -->|Literature| F[Extract Literature Interactions]
+    AinteractionData[Interaction Data] --> B{Data Source}
+    B -->|PPI Database| CparsePpiInteractions[Parse PPI Interactions]
+    B -->|Expression Data| DinferRegulatoryNetworks[Infer Regulatory Networks]
+    B -->|Pathway DB| EloadPathwayInteractions[Load Pathway Interactions]
+    B -->|Literature| FextractLiteratureInteractions[Extract Literature Interactions]
 
-    C --> G[Create Network Graph]
+    C --> GcreateNetworkGraph[Create Network Graph]
     D --> G
     E --> G
     F --> G
 
-    G --> H[Add Node Attributes]
-    G --> I[Add Edge Attributes]
+    G --> HaddNodeAttributes[Add Node Attributes]
+    G --> IaddEdgeAttributes[Add Edge Attributes]
 
-    H --> J[Validate Network]
+    H --> JvalidateNetwork[Validate Network]
     I --> J
 
     J --> K{Clean Network?}
-    K -->|Yes| L[Remove Isolates]
-    K -->|No| M[Keep Original]
+    K -->|Yes| LremoveIsolates[Remove Isolates]
+    K -->|No| MkeepOriginal[Keep Original]
 
-    L --> N[Final Network]
+    L --> NfinalNetwork[Final Network]
     M --> N
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style G fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style N fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Data Formats"
         O[TSV/CSV] -.-> C
-        P[GMT Files] -.-> E
+        PgmtFiles[GMT Files] -.-> E
         Q[PubMed] -.-> F
-        R[STRING DB] -.-> C
+        RstringDb[STRING DB] -.-> C
     end
 
     subgraph "Network Types"
-        S[PPI Networks] -.-> N
+        SppiNetworks[PPI Networks] -.-> N
         T[Regulatory] -.-> N
         U[Metabolic] -.-> N
         V[Co-expression] -.-> N
@@ -96,47 +93,44 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Network Graph] --> B{Community Method}
-    B -->|Modularity| C[Louvain Algorithm]
-    B -->|Label Propagation| D[Label Propagation]
-    B -->|Walktrap| E[Walktrap Algorithm]
-    B -->|Infomap| F[Infomap Algorithm]
+    AnetworkGraph[Network Graph] --> B{Community Method}
+    B -->|Modularity| ClouvainAlgorithm[Louvain Algorithm]
+    B -->|Label Propagation| DlabelPropagation[Label Propagation]
+    B -->|Walktrap| EwalktrapAlgorithm[Walktrap Algorithm]
+    B -->|Infomap| FinfomapAlgorithm[Infomap Algorithm]
 
-    C --> G[Optimize Modularity]
-    D --> H[Propagate Labels]
-    E --> I[Random Walks]
-    F --> J[Information Theory]
+    C --> GoptimizeModularity[Optimize Modularity]
+    D --> HpropagateLabels[Propagate Labels]
+    E --> IrandomWalks[Random Walks]
+    F --> JinformationTheory[Information Theory]
 
-    G --> K[Community Assignment]
+    G --> KcommunityAssignment[Community Assignment]
     H --> K
     I --> K
     J --> K
 
-    K --> L[Community Statistics]
-    L --> M[Community Quality Metrics]
-    M --> N[Modularity Score]
+    K --> LcommunityStatistics[Community Statistics]
+    L --> McommunityQualityMetrics[Community Quality Metrics]
+    M --> NmodularityScore[Modularity Score]
     M --> O[Conductance]
 
-    N --> P[Algorithm Comparison]
+    N --> PalgorithmComparison[Algorithm Comparison]
     O --> P
 
-    P --> Q[Best Communities]
-    Q --> R[Functional Enrichment]
+    P --> QbestCommunities[Best Communities]
+    Q --> RfunctionalEnrichment[Functional Enrichment]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style K fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Quality Metrics"
-        S[Modularity Q] -.-> N
-        T[NMI Score] -.-> P
-        U[ARI Score] -.-> P
+        SmodularityQ[Modularity Q] -.-> N
+        TnmiScore[NMI Score] -.-> P
+        UariScore[ARI Score] -.-> P
     end
 
     subgraph "Applications"
-        V[Protein Complexes] -.-> R
-        W[Functional Modules] -.-> R
-        X[Disease Pathways] -.-> R
+        VproteinComplexes[Protein Complexes] -.-> R
+        WfunctionalModules[Functional Modules] -.-> R
+        XdiseasePathways[Disease Pathways] -.-> R
     end
 ```
 
@@ -144,52 +138,49 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Network Graph] --> B[Basic Statistics]
-    B --> C[Node Count]
-    B --> D[Edge Count]
+    AnetworkGraph[Network Graph] --> BbasicStatistics[Basic Statistics]
+    B --> CnodeCount[Node Count]
+    B --> DedgeCount[Edge Count]
     B --> E[Density]
-    B --> F[Connected Components]
+    B --> FconnectedComponents[Connected Components]
 
-    C --> G[Global Metrics]
+    C --> GglobalMetrics[Global Metrics]
     D --> G
     E --> G
     F --> G
 
-    G --> H[Degree Distribution]
-    G --> I[Clustering Coefficient]
-    G --> J[Average Path Length]
+    G --> HdegreeDistribution[Degree Distribution]
+    G --> IclusteringCoefficient[Clustering Coefficient]
+    G --> JaveragePathLength[Average Path Length]
 
-    H --> K[Centrality Analysis]
+    H --> KcentralityAnalysis[Centrality Analysis]
     I --> K
     J --> K
 
-    K --> L[Node Centrality]
-    K --> M[Edge Betweenness]
+    K --> LnodeCentrality[Node Centrality]
+    K --> MedgeBetweenness[Edge Betweenness]
     K --> N[PageRank]
 
-    L --> O[Key Nodes Identification]
-    M --> P[Bottleneck Edges]
-    N --> Q[Influence Ranking]
+    L --> OkeyNodesIdentification[Key Nodes Identification]
+    M --> PbottleneckEdges[Bottleneck Edges]
+    N --> QinfluenceRanking[Influence Ranking]
 
-    O --> R[Network Summary]
+    O --> RnetworkSummary[Network Summary]
     P --> R
     Q --> R
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style G fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Centrality Measures"
-        S[Degree Centrality] -.-> L
+        SdegreeCentrality[Degree Centrality] -.-> L
         T[Betweenness] -.-> M
         U[Closeness] -.-> L
         V[Eigenvector] -.-> N
     end
 
     subgraph "Applications"
-        W[Hub Proteins] -.-> O
-        X[Essential Genes] -.-> O
-        Y[Drug Targets] -.-> O
+        WhubProteins[Hub Proteins] -.-> O
+        XessentialGenes[Essential Genes] -.-> O
+        YdrugTargets[Drug Targets] -.-> O
     end
 ```
 
@@ -197,29 +188,26 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Gene/Protein Set] --> B[Background Genes]
-    B --> C[Pathway Database]
-    C --> D[Gene Set Collection]
+    Agene/proteinSet[Gene/Protein Set] --> BbackgroundGenes[Background Genes]
+    B --> CpathwayDatabase[Pathway Database]
+    C --> DgeneSetCollection[Gene Set Collection]
 
-    A --> E[Hypergeometric Test]
+    A --> EhypergeometricTest[Hypergeometric Test]
     D --> E
 
-    E --> F[P-value Calculation]
-    F --> G[Multiple Testing Correction]
+    E --> Fp-valueCalculation[P-value Calculation]
+    F --> GmultipleTestingCorrection[Multiple Testing Correction]
 
     G --> H{Enriched Pathways?}
-    H -->|Yes| I[Pathway Ranking]
-    H -->|No| J[No Significant Enrichment]
+    H -->|Yes| IpathwayRanking[Pathway Ranking]
+    H -->|No| JnoSignificantEnrichment[No Significant Enrichment]
 
-    I --> K[Pathway Visualization]
-    K --> L[Gene-Concept Network]
+    I --> KpathwayVisualization[Pathway Visualization]
+    K --> Lgene-conceptNetwork[Gene-Concept Network]
 
-    L --> M[Functional Interpretation]
-    M --> N[Enrichment Results]
+    L --> MfunctionalInterpretation[Functional Interpretation]
+    M --> NenrichmentResults[Enrichment Results]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style E fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style N fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Databases"
         O[KEGG] -.-> C
@@ -229,14 +217,14 @@ graph TD
     end
 
     subgraph "Methods"
-        S[Fisher's Exact] -.-> E
+        Sfisher'sExact[Fisher's Exact] -.-> E
         T[Chi-square] -.-> E
         U[Binomial] -.-> E
     end
 
     subgraph "Corrections"
         V[Bonferroni] -.-> G
-        W[B-H FDR] -.-> G
+        Wb-hFdr[B-H FDR] -.-> G
         X[Holm-Bonferroni] -.-> G
     end
 ```

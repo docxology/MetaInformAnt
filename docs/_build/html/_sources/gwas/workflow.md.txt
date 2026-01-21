@@ -9,17 +9,17 @@ The GWAS module provides comprehensive workflow orchestration for genome-wide as
 ```mermaid
 flowchart TB
     subgraph "GWAS Orchestration"
-        CLI[CLI Interface<br/>metainformant gwas] --> Scripts[Script Orchestrators<br/>scripts/gwas/run_*.py]
-        Scripts --> Workflow[execute_gwas_workflow<br/>gwas.workflow]
-        Workflow --> Steps[Step Functions<br/>gwas.*]
+        CLIcliInterfaceMetainformantGwas[CLI Interface_metainformant gwas] --> ScriptsscriptOrchestratorsScripts/gwas/run*.py[Script Orchestrators_scripts/gwas/run_*.py]
+        Scripts --> WorkflowexecuteGwasWorkflowGwas.workflow[execute_gwas_workflow_gwas.workflow]
+        Workflow --> StepsstepFunctionsGwas.*[Step Functions_gwas.*]
     end
 
     subgraph "Workflow Components"
-        Config[GWASWorkflowConfig<br/>Configuration]
-        Download[Data Acquisition<br/>gwas.download]
-        Quality[Quality Control<br/>gwas.quality]
-        Assoc[Association Testing<br/>gwas.association]
-        Viz[Visualization<br/>gwas.visualization]
+        ConfiggwasworkflowconfigConfiguration[GWASWorkflowConfig_Configuration]
+        DownloaddataAcquisitionGwas.download[Data Acquisition_gwas.download]
+        QualityqualityControlGwas.quality[Quality Control_gwas.quality]
+        AssocassociationTestingGwas.association[Association Testing_gwas.association]
+        VizvisualizationGwas.visualization[Visualization_gwas.visualization]
     end
 
     Workflow --> Config

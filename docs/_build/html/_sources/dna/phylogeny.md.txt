@@ -4,7 +4,7 @@ Functions: `neighbor_joining_tree`, `upgma_tree`, `to_newick`, `to_ascii`, `boot
 
 ```mermaid
 flowchart LR
-  A[Aligned sequences] --> B[Distance Matrix]
+  AalignedSequences[Aligned sequences] --> BdistanceMatrix[Distance Matrix]
   B --> C[NJ]
   B --> D[UPGMA]
   C --> E[Tree]

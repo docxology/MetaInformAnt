@@ -11,23 +11,23 @@ This module offers a cohesive API for creating various types of plots, from stat
 ```mermaid
 graph TB
     subgraph "Visualization Module"
-        Basic[basic<br/>Basic Plots]
-        Statistical[statistical<br/>Statistical Plots]
-        Trees[trees<br/>Phylogenetic Trees]
-        Networks[networks<br/>Network Visualization]
-        Animation[animation<br/>Animations]
-        Style[style<br/>Styling]
+        BasicbasicBasicPlots[basic_Basic Plots]
+        StatisticalstatisticalStatisticalPlots[statistical_Statistical Plots]
+        TreestreesPhylogeneticTrees[trees_Phylogenetic Trees]
+        NetworksnetworksNetworkVisualization[networks_Network Visualization]
+        AnimationanimationAnimations[animation_Animations]
+        StylestyleStyling[style_Styling]
     end
     
     subgraph "Input Data"
-        Data[Data Arrays]
-        Trees_Data[Tree Data]
-        Network_Data[Network Data]
-        TimeSeries[Time Series]
+        DatadataArrays[Data Arrays]
+        treeDatatreeData[Tree Data]
+        networkDatanetworkData[Network Data]
+        TimeSeriestimeSeries[Time Series]
     end
     
     subgraph "All Modules"
-        All[All Domain Modules]
+        AllallDomainModules[All Domain Modules]
     end
     
     Data --> Basic
@@ -46,22 +46,22 @@ graph TB
 
 ```mermaid
 graph TD
-    A[Biological Data] --> B[Data Processing]
-    B --> C[Format Conversion]
+    AbiologicalData[Biological Data] --> BdataProcessing[Data Processing]
+    B --> CformatConversion[Format Conversion]
 
     C --> D{Visualization Category}
-    D -->|Basic| E[Line/Scatter/Bar Plots]
-    D -->|Statistical| F[Distribution/Comparison Plots]
-    D -->|Genomic| G[Manhattan/Volcano Plots]
-    D -->|Expression| H[Heatmaps/Enrichment Plots]
+    D -->|Basic| Eline/scatter/barPlots[Line/Scatter/Bar Plots]
+    D -->|Statistical| Fdistribution/comparisonPlots[Distribution/Comparison Plots]
+    D -->|Genomic| Gmanhattan/volcanoPlots[Manhattan/Volcano Plots]
+    D -->|Expression| Hheatmaps/enrichmentPlots[Heatmaps/Enrichment Plots]
     D -->|Dimension Reduction| I[PCA/UMAP/t-SNE]
-    D -->|Network| J[Graph/Network Visualization]
-    D -->|Time Series| K[Time Series Analysis]
-    D -->|Multi-dimensional| L[Parallel Coordinates/3D]
-    D -->|Quality Control| M[QC Metrics Plots]
-    D -->|Information Theory| N[Entropy/MI Networks]
+    D -->|Network| Jgraph/networkVisualization[Graph/Network Visualization]
+    D -->|Time Series| KtimeSeriesAnalysis[Time Series Analysis]
+    D -->|Multi-dimensional| LparallelCoordinates/3d[Parallel Coordinates/3D]
+    D -->|Quality Control| MqcMetricsPlots[QC Metrics Plots]
+    D -->|Information Theory| Nentropy/miNetworks[Entropy/MI Networks]
 
-    E --> O[Plot Generation]
+    E --> OplotGeneration[Plot Generation]
     F --> O
     G --> O
     H --> O
@@ -72,12 +72,12 @@ graph TD
     M --> O
     N --> O
 
-    O --> P[Styling & Customization]
-    P --> Q[Color Schemes]
-    P --> R[Layout & Annotations]
-    P --> S[Font & Size Settings]
+    O --> Pstyling&Customization[Styling & Customization]
+    P --> QcolorSchemes[Color Schemes]
+    P --> Rlayout&Annotations[Layout & Annotations]
+    P --> Sfont&SizeSettings[Font & Size Settings]
 
-    Q --> T[Figure Assembly]
+    Q --> TfigureAssembly[Figure Assembly]
     R --> T
     S --> T
 
@@ -86,17 +86,14 @@ graph TD
     U -->|Interactive| W[HTML/JavaScript]
     U -->|Animation| X[GIF/MP4]
 
-    V --> Y[Publication Quality]
-    W --> Z[Web Integration]
-    X --> AA[Dynamic Visualization]
+    V --> YpublicationQuality[Publication Quality]
+    W --> ZwebIntegration[Web Integration]
+    X --> AAdynamicVisualization[Dynamic Visualization]
 
-    Y --> BB[Final Output]
+    Y --> BBfinalOutput[Final Output]
     Z --> BB
     AA --> BB
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style O fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style BB fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Data Types"
         CC[Genomic] -.-> A
@@ -107,9 +104,9 @@ graph TD
     end
 
     subgraph "Visualization Categories"
-        HH[20+ Specialized Modules] -.-> D
-        II[100+ Plot Functions] -.-> O
-        JJ[Domain Integrations] -.-> O
+        HH20+SpecializedModules[20+ Specialized Modules] -.-> D
+        II100+PlotFunctions[100+ Plot Functions] -.-> O
+        JJdomainIntegrations[Domain Integrations] -.-> O
     end
 ```
 
@@ -117,52 +114,49 @@ graph TD
 
 ```mermaid
 graph TD
-    A[GWAS Results] --> B[Manhattan Plot]
-    B --> C[Genome-wide Significance]
+    AgwasResults[GWAS Results] --> BmanhattanPlot[Manhattan Plot]
+    B --> Cgenome-wideSignificance[Genome-wide Significance]
 
-    A --> D[Q-Q Plot]
-    D --> E[P-value Distribution]
+    A --> Dq-qPlot[Q-Q Plot]
+    D --> Ep-valueDistribution[P-value Distribution]
 
-    A --> F[Regional Plot]
-    F --> G[Locus Zoom]
+    A --> FregionalPlot[Regional Plot]
+    F --> GlocusZoom[Locus Zoom]
 
-    A --> H[PCA Plot]
-    H --> I[Population Structure]
+    A --> HpcaPlot[PCA Plot]
+    H --> IpopulationStructure[Population Structure]
 
-    A --> J[Kinship Heatmap]
-    J --> K[Relatedness Matrix]
+    A --> JkinshipHeatmap[Kinship Heatmap]
+    J --> KrelatednessMatrix[Relatedness Matrix]
 
-    C --> L[Visualization Suite]
+    C --> LvisualizationSuite[Visualization Suite]
     E --> L
     G --> L
     I --> L
     K --> L
 
     L --> M{Additional Analysis}
-    M -->|Yes| N[Forest Plot]
-    M -->|No| O[Complete Suite]
+    M -->|Yes| NforestPlot[Forest Plot]
+    M -->|No| OcompleteSuite[Complete Suite]
 
     N --> P[Meta-analysis]
     P --> O
 
-    O --> Q[Publication Figures]
-    Q --> R[Interactive Exploration]
+    O --> QpublicationFigures[Publication Figures]
+    Q --> RinteractiveExploration[Interactive Exploration]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style L fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Core GWAS Plots"
         S[Manhattan] -.-> B
         T[Q-Q] -.-> D
         U[Regional/LocusZoom] -.-> F
-        V[Population Structure] -.-> H
+        VpopulationStructure[Population Structure] -.-> H
     end
 
     subgraph "Advanced Plots"
         W[Forest] -.-> N
-        X[Locus Compare] -.-> M
-        Y[Functional Enrichment] -.-> M
+        XlocusCompare[Locus Compare] -.-> M
+        YfunctionalEnrichment[Functional Enrichment] -.-> M
         Z[Replication] -.-> M
     end
 ```
@@ -171,52 +165,49 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Single-Cell Data] --> B[Quality Control Plots]
-    B --> C[Library Size Distribution]
+    Asingle-cellData[Single-Cell Data] --> BqualityControlPlots[Quality Control Plots]
+    B --> ClibrarySizeDistribution[Library Size Distribution]
 
-    A --> D[Preprocessing Visualization]
-    D --> E[Gene Detection vs UMIs]
+    A --> DpreprocessingVisualization[Preprocessing Visualization]
+    D --> EgeneDetectionVsUmis[Gene Detection vs UMIs]
 
-    A --> F[Dimensionality Reduction]
-    F --> G[PCA/UMAP/t-SNE Plots]
+    A --> FdimensionalityReduction[Dimensionality Reduction]
+    F --> Gpca/umap/t-snePlots[PCA/UMAP/t-SNE Plots]
 
-    A --> H[Clustering Results]
-    H --> I[Cluster Visualization]
+    A --> HclusteringResults[Clustering Results]
+    H --> IclusterVisualization[Cluster Visualization]
 
-    A --> J[Differential Expression]
-    J --> K[Volcano Plots]
+    A --> JdifferentialExpression[Differential Expression]
+    J --> KvolcanoPlots[Volcano Plots]
 
-    A --> L[Trajectory Analysis]
-    L --> M[Pseudotime Plots]
+    A --> LtrajectoryAnalysis[Trajectory Analysis]
+    L --> MpseudotimePlots[Pseudotime Plots]
 
-    C --> N[Visualization Dashboard]
+    C --> NvisualizationDashboard[Visualization Dashboard]
     E --> N
     G --> N
     I --> N
     K --> N
     M --> N
 
-    N --> O[Interactive Exploration]
-    O --> P[Cell Type Annotation]
-    P --> Q[Marker Gene Expression]
+    N --> OinteractiveExploration[Interactive Exploration]
+    O --> PcellTypeAnnotation[Cell Type Annotation]
+    P --> QmarkerGeneExpression[Marker Gene Expression]
 
-    Q --> R[Publication Figures]
+    Q --> RpublicationFigures[Publication Figures]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style N fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "QC Visualizations"
-        S[Library Size] -.-> B
-        T[Gene Detection] -.-> B
-        U[MT Content] -.-> B
+        SlibrarySize[Library Size] -.-> B
+        TgeneDetection[Gene Detection] -.-> B
+        UmtContent[MT Content] -.-> B
         V[Complexity] -.-> B
     end
 
     subgraph "Analysis Plots"
-        W[DR Embeddings] -.-> F
-        X[Cluster Markers] -.-> H
-        Y[DE Volcano] -.-> J
+        WdrEmbeddings[DR Embeddings] -.-> F
+        XclusterMarkers[Cluster Markers] -.-> H
+        YdeVolcano[DE Volcano] -.-> J
         Z[Trajectory] -.-> L
     end
 ```
@@ -225,48 +216,45 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Information Data] --> B[Entropy Profiles]
-    B --> C[Shannon Entropy Plot]
+    AinformationData[Information Data] --> BentropyProfiles[Entropy Profiles]
+    B --> CshannonEntropyPlot[Shannon Entropy Plot]
 
-    A --> D[Mutual Information]
-    D --> E[MI Heatmap/Network]
+    A --> DmutualInformation[Mutual Information]
+    D --> EmiHeatmap/network[MI Heatmap/Network]
 
-    A --> F[Complexity Measures]
-    F --> G[Rényi Spectra]
+    A --> FcomplexityMeasures[Complexity Measures]
+    F --> GrényiSpectra[Rényi Spectra]
 
-    A --> H[Sequence Analysis]
-    H --> I[Information Landscapes]
+    A --> HsequenceAnalysis[Sequence Analysis]
+    H --> IinformationLandscapes[Information Landscapes]
 
-    A --> J[Network Information]
-    J --> K[Information Flow Networks]
+    A --> JnetworkInformation[Network Information]
+    J --> KinformationFlowNetworks[Information Flow Networks]
 
-    C --> L[Information Visualization Suite]
+    C --> LinformationVisualizationSuite[Information Visualization Suite]
     E --> L
     G --> L
     I --> L
     K --> L
 
-    L --> M[Statistical Significance]
-    M --> N[Information Landscapes]
+    L --> MstatisticalSignificance[Statistical Significance]
+    M --> NinformationLandscapes[Information Landscapes]
 
-    N --> O[Publication Quality]
-    O --> P[Interactive Exploration]
+    N --> OpublicationQuality[Publication Quality]
+    O --> PinteractiveExploration[Interactive Exploration]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style L fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style P fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Syntactic Information"
-        Q[Shannon Entropy] -.-> B
-        R[Joint Entropy] -.-> B
-        S[Mutual Information] -.-> D
-        T[Transfer Entropy] -.-> D
+        QshannonEntropy[Shannon Entropy] -.-> B
+        RjointEntropy[Joint Entropy] -.-> B
+        SmutualInformation[Mutual Information] -.-> D
+        TtransferEntropy[Transfer Entropy] -.-> D
     end
 
     subgraph "Semantic Information"
-        U[Information Content] -.-> F
-        V[Semantic Similarity] -.-> F
-        W[Semantic Entropy] -.-> F
+        UinformationContent[Information Content] -.-> F
+        VsemanticSimilarity[Semantic Similarity] -.-> F
+        WsemanticEntropy[Semantic Entropy] -.-> F
     end
 
     subgraph "Visualization Types"
@@ -281,50 +269,47 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Time Series Data] --> B[Data Preparation]
-    B --> C[Temporal Ordering]
+    AtimeSeriesData[Time Series Data] --> BdataPreparation[Data Preparation]
+    B --> CtemporalOrdering[Temporal Ordering]
 
     C --> D{Animation Type}
-    D -->|Evolution| E[Progressive Changes]
-    D -->|Clustering| F[Cluster Dynamics]
-    D -->|Network| G[Network Evolution]
-    D -->|Trajectory| H[Cell Trajectories]
+    D -->|Evolution| EprogressiveChanges[Progressive Changes]
+    D -->|Clustering| FclusterDynamics[Cluster Dynamics]
+    D -->|Network| GnetworkEvolution[Network Evolution]
+    D -->|Trajectory| HcellTrajectories[Cell Trajectories]
 
-    E --> I[Frame Generation]
+    E --> IframeGeneration[Frame Generation]
     F --> I
     G --> I
     H --> I
 
-    I --> J[Animation Parameters]
-    J --> K[Frame Rate]
-    J --> L[Transition Effects]
-    J --> M[Color Schemes]
+    I --> JanimationParameters[Animation Parameters]
+    J --> KframeRate[Frame Rate]
+    J --> LtransitionEffects[Transition Effects]
+    J --> McolorSchemes[Color Schemes]
 
-    K --> N[Animation Assembly]
+    K --> NanimationAssembly[Animation Assembly]
     L --> N
     M --> N
 
     N --> O{Output Format}
-    O -->|GIF| P[GIF Animation]
-    O -->|MP4| Q[Video Format]
-    O -->|HTML| R[Interactive Animation]
+    O -->|GIF| PgifAnimation[GIF Animation]
+    O -->|MP4| QvideoFormat[Video Format]
+    O -->|HTML| RinteractiveAnimation[Interactive Animation]
 
-    P --> S[Static Sharing]
+    P --> SstaticSharing[Static Sharing]
     Q --> S
-    R --> T[Web Integration]
+    R --> TwebIntegration[Web Integration]
 
-    S --> U[Complete Animation]
+    S --> UcompleteAnimation[Complete Animation]
     T --> U
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style I fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style U fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Time Series Types"
-        V[Genomic Evolution] -.-> A
-        W[Gene Expression] -.-> A
-        X[Cell Differentiation] -.-> A
-        Y[Population Dynamics] -.-> A
+        VgenomicEvolution[Genomic Evolution] -.-> A
+        WgeneExpression[Gene Expression] -.-> A
+        XcellDifferentiation[Cell Differentiation] -.-> A
+        YpopulationDynamics[Population Dynamics] -.-> A
     end
 
     subgraph "Animation Categories"
@@ -339,54 +324,51 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Multiple Plots] --> B[Layout Design]
-    B --> C[Grid Specification]
+    AmultiplePlots[Multiple Plots] --> BlayoutDesign[Layout Design]
+    B --> CgridSpecification[Grid Specification]
 
-    A --> D[Plot Integration]
-    D --> E[Shared Axes]
-    D --> F[Common Legends]
+    A --> DplotIntegration[Plot Integration]
+    D --> EsharedAxes[Shared Axes]
+    D --> FcommonLegends[Common Legends]
 
-    C --> G[Figure Assembly]
+    C --> GfigureAssembly[Figure Assembly]
     E --> G
     F --> G
 
-    G --> H[Styling Consistency]
-    H --> I[Font Sizes]
-    H --> J[Color Palettes]
-    H --> K[Line Styles]
+    G --> HstylingConsistency[Styling Consistency]
+    H --> IfontSizes[Font Sizes]
+    H --> JcolorPalettes[Color Palettes]
+    H --> KlineStyles[Line Styles]
 
-    I --> L[Final Layout]
+    I --> LfinalLayout[Final Layout]
     J --> L
     K --> L
 
     L --> M{Export Format}
-    M -->|Single Figure| N[Publication Layout]
-    M -->|Multi-Panel| O[Complex Visualization]
-    M -->|Interactive| P[Dashboard Style]
+    M -->|Single Figure| NpublicationLayout[Publication Layout]
+    M -->|Multi-Panel| OcomplexVisualization[Complex Visualization]
+    M -->|Interactive| PdashboardStyle[Dashboard Style]
 
-    N --> Q[Journal Submission]
+    N --> QjournalSubmission[Journal Submission]
     O --> Q
-    P --> R[Web Presentation]
+    P --> RwebPresentation[Web Presentation]
 
-    Q --> S[Complete Visualization]
+    Q --> ScompleteVisualization[Complete Visualization]
     R --> S
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style G fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style S fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Layout Types"
-        T[Grid Layout] -.-> B
+        TgridLayout[Grid Layout] -.-> B
         U[Free-form] -.-> B
-        V[Subplot Mosaic] -.-> B
-        W[Nested Layouts] -.-> B
+        VsubplotMosaic[Subplot Mosaic] -.-> B
+        WnestedLayouts[Nested Layouts] -.-> B
     end
 
     subgraph "Integration Features"
-        X[Shared Legends] -.-> D
-        Y[Common Scales] -.-> D
-        Z[Coordinated Zoom] -.-> D
-        AA[Linked Brushing] -.-> P
+        XsharedLegends[Shared Legends] -.-> D
+        YcommonScales[Common Scales] -.-> D
+        ZcoordinatedZoom[Coordinated Zoom] -.-> D
+        AAlinkedBrushing[Linked Brushing] -.-> P
     end
 ```
 

@@ -20,45 +20,45 @@ METAINFORMANT is a comprehensive bioinformatics toolkit designed for multi-omic 
 graph TB
     %% Core Infrastructure Layer
     subgraph "Core Infrastructure"
-        CORE[Core Utilities<br/>config • io • logging<br/>parallel • paths • cache<br/>workflow • validation]
+        COREcoreUtilitiesConfig•Io•LoggingParallel•Paths•CacheWorkflow•Validation[Core Utilities_config • io • logging_parallel • paths • cache_workflow • validation]
     end
 
     %% Data Processing Layer
     subgraph "Data Processing"
-        DNA[DNA Module<br/>sequences • alignment<br/>phylogeny • population]
-        RNA[RNA Module<br/>amalgkit • quantification<br/>transcriptomics • workflow]
-        PROTEIN[Protein Module<br/>sequences • structure<br/>AlphaFold • analysis]
-        EPIGENOME[Epigenome Module<br/>methylation • ChIP-seq<br/>ATAC-seq • chromatin]
+        DNAdnaModuleSequences•AlignmentPhylogeny•Population[DNA Module_sequences • alignment_phylogeny • population]
+        RNArnaModuleAmalgkit•QuantificationTranscriptomics•Workflow[RNA Module_amalgkit • quantification_transcriptomics • workflow]
+        PROTEINproteinModuleSequences•StructureAlphafold•Analysis[Protein Module_sequences • structure_AlphaFold • analysis]
+        EPIGENOMEepigenomeModuleMethylation•Chip-seqAtac-seq•Chromatin[Epigenome Module_methylation • ChIP-seq_ATAC-seq • chromatin]
     end
 
     %% Analysis Layer
     subgraph "Analysis Methods"
-        GWAS[GWAS Module<br/>association • QC<br/>population • visualization]
-        MATH[Math Module<br/>population genetics<br/>coalescent • selection]
-        ML[ML Module<br/>classification • regression<br/>feature selection]
-        INFO[Info Theory Module<br/>entropy • MI • similarity<br/>semantic measures]
+        GWASgwasModuleAssociation•QcPopulation•Visualization[GWAS Module_association • QC_population • visualization]
+        MATHmathModulePopulationGeneticsCoalescent•Selection[Math Module_population genetics_coalescent • selection]
+        MLmlModuleClassification•RegressionFeatureSelection[ML Module_classification • regression_feature selection]
+        INFOinfoTheoryModuleEntropy•Mi•SimilaritySemanticMeasures[Info Theory Module_entropy • MI • similarity_semantic measures]
     end
 
     %% Systems Biology Layer
     subgraph "Systems Biology"
-        NETWORKS[Networks Module<br/>PPI • pathways<br/>community detection]
-        MULTIOMICS[Multi-Omics Module<br/>integration • harmonization<br/>joint analysis]
-        SINGLECELL[Single-Cell Module<br/>preprocessing • clustering<br/>trajectory • DE]
-        SIMULATION[Simulation Module<br/>sequences • ecosystems<br/>agent-based • evolution]
+        NETWORKSnetworksModulePpi•PathwaysCommunityDetection[Networks Module_PPI • pathways_community detection]
+        MULTIOMICSmulti-omicsModuleIntegration•HarmonizationJointAnalysis[Multi-Omics Module_integration • harmonization_joint analysis]
+        SINGLECELLsingle-cellModulePreprocessing•ClusteringTrajectory•De[Single-Cell Module_preprocessing • clustering_trajectory • DE]
+        SIMULATIONsimulationModuleSequences•EcosystemsAgent-based•Evolution[Simulation Module_sequences • ecosystems_agent-based • evolution]
     end
 
     %% Knowledge Layer
     subgraph "Knowledge & Metadata"
-        ONTOLOGY[Ontology Module<br/>GO • functional annotation<br/>semantic similarity]
-        PHENOTYPE[Phenotype Module<br/>traits • life course<br/>AntWiki • curation]
-        ECOLOGY[Ecology Module<br/>communities • diversity<br/>environmental analysis]
-        LIFEEVENTS[Life Events Module<br/>sequences • embeddings<br/>temporal prediction]
+        ONTOLOGYontologyModuleGo•FunctionalAnnotationSemanticSimilarity[Ontology Module_GO • functional annotation_semantic similarity]
+        PHENOTYPEphenotypeModuleTraits•LifeCourseAntwiki•Curation[Phenotype Module_traits • life course_AntWiki • curation]
+        ECOLOGYecologyModuleCommunities•DiversityEnvironmentalAnalysis[Ecology Module_communities • diversity_environmental analysis]
+        LIFEEVENTSlifeEventsModuleSequences•EmbeddingsTemporalPrediction[Life Events Module_sequences • embeddings_temporal prediction]
     end
 
     %% Utilities Layer
     subgraph "Utilities"
-        QUALITY[Quality Module<br/>FASTQ • assembly<br/>metrics • validation]
-        VISUALIZATION[Visualization Module<br/>plots • animations<br/>trees • networks]
+        QUALITYqualityModuleFastq•AssemblyMetrics•Validation[Quality Module_FASTQ • assembly_metrics • validation]
+        VISUALIZATIONvisualizationModulePlots•AnimationsTrees•Networks[Visualization Module_plots • animations_trees • networks]
     end
 
     %% Data Flow
@@ -100,7 +100,7 @@ graph TB
     INFO --> ONTOLOGY
     NETWORKS --> MULTIOMICS
     SINGLECELL --> MULTIOMICS
-    QUALITY --> ALL_MODULES[All Analysis Modules]
+    QUALITY --> allAnalysisModulesallAnalysisModules[All Analysis Modules]
     VISUALIZATION --> ALL_MODULES
 
     %% External Dependencies
@@ -110,22 +110,15 @@ graph TB
     GWAS -.->|"bcftools, GATK"| GWAS
 
     %% Data Sources
-    NCBI[(NCBI Genomes)] --> DNA
-    SRA[(SRA Sequences)] --> RNA
+    NCBI(ncbiGenomes)[(NCBI Genomes)] --> DNA
+    SRA(sraSequences)[(SRA Sequences)] --> RNA
     SRA --> SINGLECELL
     SRA --> GWAS
-    PDB[(PDB Structures)] --> PROTEIN
-    GEO[(GEO Expression)] --> RNA
-    GO[(Gene Ontology)] --> ONTOLOGY
+    PDB(pdbStructures)[(PDB Structures)] --> PROTEIN
+    GEO(geoExpression)[(GEO Expression)] --> RNA
+    GO(geneOntology)[(Gene Ontology)] --> ONTOLOGY
 
     %% Styling
-    classDef core fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef data fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef analysis fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef systems fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
-    classDef knowledge fill:#fce4ec,stroke:#880e4f,stroke-width:2px
-    classDef utility fill:#f9fbe7,stroke:#827717,stroke-width:2px
-    classDef external fill:#fafafa,stroke:#424242,stroke-width:1px
 
     class CORE core
     class DNA,RNA,PROTEIN,EPIGENOME data
@@ -140,40 +133,37 @@ graph TB
 
 ```mermaid
 graph TD
-    A[Raw Biological Data] --> B[Ingestion Layer]
-    B --> C[Format Detection]
-    C --> D[Data Validation]
+    ArawBiologicalData[Raw Biological Data] --> BingestionLayer[Ingestion Layer]
+    B --> CformatDetection[Format Detection]
+    C --> DdataValidation[Data Validation]
 
     D --> E{Data Type}
-    E -->|Genomic| F[DNA Processing Pipeline]
-    E -->|Transcriptomic| G[RNA Processing Pipeline]
-    E -->|Proteomic| H[Protein Processing Pipeline]
-    E -->|Epigenomic| I[Epigenome Processing Pipeline]
+    E -->|Genomic| FdnaProcessingPipeline[DNA Processing Pipeline]
+    E -->|Transcriptomic| GrnaProcessingPipeline[RNA Processing Pipeline]
+    E -->|Proteomic| HproteinProcessingPipeline[Protein Processing Pipeline]
+    E -->|Epigenomic| IepigenomeProcessingPipeline[Epigenome Processing Pipeline]
 
-    F --> J[Quality Control]
+    F --> JqualityControl[Quality Control]
     G --> J
     H --> J
     I --> J
 
-    J --> K[Feature Extraction]
-    K --> L[Statistical Analysis]
+    J --> KfeatureExtraction[Feature Extraction]
+    K --> LstatisticalAnalysis[Statistical Analysis]
 
     L --> M{Integration Strategy}
-    M -->|Single-omic| N[Individual Analysis]
-    M -->|Multi-omic| O[Joint Analysis]
+    M -->|Single-omic| NindividualAnalysis[Individual Analysis]
+    M -->|Multi-omic| OjointAnalysis[Joint Analysis]
 
-    N --> P[Domain-Specific Results]
-    O --> Q[Systems-Level Results]
+    N --> Pdomain-specificResults[Domain-Specific Results]
+    O --> Qsystems-levelResults[Systems-Level Results]
 
     P --> R[Visualization]
     Q --> R
 
-    R --> S[Publication Figures]
-    S --> T[Scientific Insights]
+    R --> SpublicationFigures[Publication Figures]
+    S --> TscientificInsights[Scientific Insights]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style K fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style T fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Data Sources"
         U[NCBI] -.-> F
@@ -190,9 +180,9 @@ graph TD
     end
 
     subgraph "Analysis Types"
-        CC[Differential Expression] -.-> L
-        DD[Association Testing] -.-> L
-        EE[Network Inference] -.-> L
+        CCdifferentialExpression[Differential Expression] -.-> L
+        DDassociationTesting[Association Testing] -.-> L
+        EEnetworkInference[Network Inference] -.-> L
         FF[Clustering] -.-> L
     end
 ```
@@ -201,49 +191,46 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Module Interfaces] --> B[Standardized APIs]
-    B --> C[Data Format Standards]
+    AmoduleInterfaces[Module Interfaces] --> BstandardizedApis[Standardized APIs]
+    B --> CdataFormatStandards[Data Format Standards]
 
-    C --> D[Interoperability Layer]
-    D --> E[Cross-Module Communication]
+    C --> DinteroperabilityLayer[Interoperability Layer]
+    D --> Ecross-moduleCommunication[Cross-Module Communication]
 
     E --> F{Integration Pattern}
-    F -->|Pipeline| G[Sequential Processing]
-    F -->|Workflow| H[Orchestrated Execution]
-    F -->|Joint| I[Simultaneous Analysis]
+    F -->|Pipeline| GsequentialProcessing[Sequential Processing]
+    F -->|Workflow| HorchestratedExecution[Orchestrated Execution]
+    F -->|Joint| IsimultaneousAnalysis[Simultaneous Analysis]
 
-    G --> J[Result Aggregation]
+    G --> JresultAggregation[Result Aggregation]
     H --> J
     I --> J
 
-    J --> K[Unified Output]
-    K --> L[Quality Assurance]
+    J --> KunifiedOutput[Unified Output]
+    K --> LqualityAssurance[Quality Assurance]
 
-    L --> M[Final Results]
+    L --> MfinalResults[Final Results]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style D fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style M fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "API Standards"
-        N[Function Signatures] -.-> B
-        O[Parameter Types] -.-> B
-        P[Return Formats] -.-> B
-        Q[Error Handling] -.-> B
+        NfunctionSignatures[Function Signatures] -.-> B
+        OparameterTypes[Parameter Types] -.-> B
+        PreturnFormats[Return Formats] -.-> B
+        QerrorHandling[Error Handling] -.-> B
     end
 
     subgraph "Data Standards"
-        R[FASTA Format] -.-> C
-        S[Count Matrices] -.-> C
-        T[Pandas DataFrames] -.-> C
-        U[NetworkX Graphs] -.-> C
+        RfastaFormat[FASTA Format] -.-> C
+        ScountMatrices[Count Matrices] -.-> C
+        TpandasDataframes[Pandas DataFrames] -.-> C
+        UnetworkxGraphs[NetworkX Graphs] -.-> C
     end
 
     subgraph "Integration Mechanisms"
-        V[Core Utilities] -.-> D
-        W[Config Files] -.-> D
-        X[Workflow Orchestration] -.-> D
-        Y[Event System] -.-> D
+        VcoreUtilities[Core Utilities] -.-> D
+        WconfigFiles[Config Files] -.-> D
+        XworkflowOrchestration[Workflow Orchestration] -.-> D
+        YeventSystem[Event System] -.-> D
     end
 ```
 
@@ -251,28 +238,25 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Code Development] --> B[Static Analysis]
-    B --> C[Type Checking]
+    AcodeDevelopment[Code Development] --> BstaticAnalysis[Static Analysis]
+    B --> CtypeChecking[Type Checking]
     C --> D[Linting]
 
-    D --> E[Unit Testing]
-    E --> F[Integration Testing]
-    F --> G[Performance Testing]
+    D --> EunitTesting[Unit Testing]
+    E --> FintegrationTesting[Integration Testing]
+    F --> GperformanceTesting[Performance Testing]
 
     G --> H[Documentation]
     H --> I[Validation]
 
     I --> J{Standards Met?}
-    J -->|Yes| K[Release Ready]
-    J -->|No| L[Issue Resolution]
+    J -->|Yes| KreleaseReady[Release Ready]
+    J -->|No| LissueResolution[Issue Resolution]
 
     L --> A
 
     K --> M[Deployment]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style E fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style M fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Code Quality"
         N[mypy] -.-> C
@@ -283,20 +267,20 @@ graph TD
 
     subgraph "Testing Framework"
         R[pytest] -.-> E
-        S[Real Data] -.-> E
-        T[No Mocks] -.-> E
+        SrealData[Real Data] -.-> E
+        TnoMocks[No Mocks] -.-> E
         U[Integration] -.-> F
     end
 
     subgraph "Performance"
         V[Benchmarks] -.-> G
-        W[Memory Profiling] -.-> G
-        X[Scalability Tests] -.-> G
+        WmemoryProfiling[Memory Profiling] -.-> G
+        XscalabilityTests[Scalability Tests] -.-> G
     end
 
     subgraph "Documentation"
-        Y[README Files] -.-> H
-        Z[API Docs] -.-> H
+        YreadmeFiles[README Files] -.-> H
+        ZapiDocs[API Docs] -.-> H
         AA[Examples] -.-> H
         BB[Guides] -.-> H
     end
@@ -307,9 +291,9 @@ graph TD
 ```mermaid
 flowchart LR
   subgraph CLI
-    A[metainformant.__main__\nargparse CLI]
+    Ametainformant.Main\nargparseCli[metainformant.__main__\nargparse CLI]
   end
-  subgraph Core[Core Utilities]
+  subgraph CorecoreUtilities[Core Utilities]
     C1[config]
     C2[io]
     C3[logging]
@@ -334,13 +318,13 @@ flowchart LR
     R2[workflow]
     R3[configs]
   end
-  subgraph GWAS[Genome-Wide Association]
+  subgraph GWASgenome-wideAssociation[Genome-Wide Association]
     G1[quality]
     G2[structure]
     G3[association]
     G4[visualization]
   end
-  subgraph SingleCell[Single-Cell Genomics]
+  subgraph SingleCellsingle-cellGenomics[Single-Cell Genomics]
     SC1[preprocessing]
     SC2[dimensionality]
     SC3[clustering]
@@ -348,7 +332,7 @@ flowchart LR
     SC5[visualization]
     SC6[integration]
   end
-  subgraph Quality[Quality Control]
+  subgraph QualityqualityControl[Quality Control]
     Q1[fastq]
   end
   subgraph Simulation
@@ -366,12 +350,12 @@ flowchart LR
     V2[plots]
     V3[animations]
   end
-  subgraph Information[Information Theory]
+  subgraph InformationinformationTheory[Information Theory]
     I1[entropy]
     I2[mutual-information]
     I3[profile]
   end
-  subgraph LifeEvents[Life Events]
+  subgraph LifeEventslifeEvents[Life Events]
     L1[embed]
     L2[predict]
     L3[interpret]

@@ -23,10 +23,10 @@ Capabilities
 ```mermaid
 flowchart TD
   A[FASTA] --> B[MSA]
-  A --> C[Pairwise Alignments]
-  B --> D[Distance Matrix]
-  D --> E[NJ/UPGMA Tree]
-  A --> F[Population Stats]
+  A --> CpairwiseAlignments[Pairwise Alignments]
+  B --> DdistanceMatrix[Distance Matrix]
+  D --> Enj/upgmaTree[NJ/UPGMA Tree]
+  A --> FpopulationStats[Population Stats]
   A --> G[Translation/ORF]
   A --> H[Motifs/Restriction]
   A --> I[Mutations/Variants]

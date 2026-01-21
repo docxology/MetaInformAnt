@@ -11,27 +11,27 @@ This module handles protein sequence analysis and integrates with various protei
 ```mermaid
 graph TB
     subgraph "Protein Module"
-        Seq[sequences<br/>Sequence Analysis]
-        Align[alignment<br/>Sequence Alignment]
-        Structure[structure<br/>Structure Analysis]
-        PDB[pdb<br/>PDB I/O]
-        AlphaFold[alphafold<br/>AlphaFold Integration]
-        UniProt[uniprot<br/>UniProt Integration]
-        InterPro[interpro<br/>Domain Annotation]
-        Proteomes[proteomes<br/>Proteome Retrieval]
+        SeqsequencesSequenceAnalysis[sequences_Sequence Analysis]
+        AlignalignmentSequenceAlignment[alignment_Sequence Alignment]
+        StructurestructureStructureAnalysis[structure_Structure Analysis]
+        PDBpdbPdbI/o[pdb_PDB I/O]
+        AlphaFoldalphafoldAlphafoldIntegration[alphafold_AlphaFold Integration]
+        UniProtuniprotUniprotIntegration[uniprot_UniProt Integration]
+        InterProinterproDomainAnnotation[interpro_Domain Annotation]
+        ProteomesproteomesProteomeRetrieval[proteomes_Proteome Retrieval]
     end
     
     subgraph "External Databases"
         UniProtDB[UniProt]
         PDBDB[PDB]
-        AlphaFoldDB[AlphaFold DB]
+        AlphaFoldDBalphafoldDb[AlphaFold DB]
         InterProDB[InterPro]
     end
     
     subgraph "Other Modules"
-        DNA_Mod[dna]
-        Networks_Mod[networks]
-        Ontology_Mod[ontology]
+        dna[dna]
+        networks[networks]
+        ontology[ontology]
     end
     
     UniProtDB --> UniProt
@@ -52,40 +52,37 @@ graph TB
 
 ```mermaid
 graph TD
-    A[Protein Input] --> B{Input Type}
-    B -->|FASTA| C[Parse Sequences]
-    B -->|PDB| D[Load Structures]
-    B -->|UniProt ID| E[Fetch from UniProt]
+    AproteinInput[Protein Input] --> B{Input Type}
+    B -->|FASTA| CparseSequences[Parse Sequences]
+    B -->|PDB| DloadStructures[Load Structures]
+    B -->|UniProt ID| EfetchFromUniprot[Fetch from UniProt]
 
-    C --> F[Sequence Analysis]
-    D --> G[Structure Analysis]
+    C --> FsequenceAnalysis[Sequence Analysis]
+    D --> GstructureAnalysis[Structure Analysis]
     E --> F
 
-    F --> H[Sequence Alignment]
-    F --> I[Domain Prediction]
-    F --> J[Functional Annotation]
+    F --> HsequenceAlignment[Sequence Alignment]
+    F --> IdomainPrediction[Domain Prediction]
+    F --> JfunctionalAnnotation[Functional Annotation]
 
-    G --> K[3D Structure Analysis]
-    G --> L[Contact Analysis]
-    G --> M[Secondary Structure]
+    G --> K3dStructureAnalysis[3D Structure Analysis]
+    G --> LcontactAnalysis[Contact Analysis]
+    G --> MsecondaryStructure[Secondary Structure]
 
-    H --> N[Phylogenetic Analysis]
-    I --> O[GO Enrichment]
+    H --> NphylogeneticAnalysis[Phylogenetic Analysis]
+    I --> OgoEnrichment[GO Enrichment]
     J --> O
 
-    K --> P[PPI Prediction]
+    K --> PppiPrediction[PPI Prediction]
     L --> P
     M --> P
 
-    N --> Q[Comparative Analysis]
+    N --> QcomparativeAnalysis[Comparative Analysis]
     O --> Q
     P --> Q
 
-    Q --> R[Output Results]
+    Q --> RoutputResults[Output Results]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style F fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Databases"
         S[UniProt] -.-> E
@@ -99,31 +96,28 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Protein Sequence] --> B[Check AlphaFold DB]
+    AproteinSequence[Protein Sequence] --> BcheckAlphafoldDb[Check AlphaFold DB]
     B --> C{Structure Available?}
-    C -->|Yes| D[Download AlphaFold Structure]
-    C -->|No| E[Submit to AlphaFold]
-    E --> F[Wait for Prediction]
+    C -->|Yes| DdownloadAlphafoldStructure[Download AlphaFold Structure]
+    C -->|No| EsubmitToAlphafold[Submit to AlphaFold]
+    E --> FwaitForPrediction[Wait for Prediction]
     F --> D
 
-    D --> G[Parse PDB Structure]
-    G --> H[Quality Assessment]
-    H --> I[Structure Analysis]
+    D --> GparsePdbStructure[Parse PDB Structure]
+    G --> HqualityAssessment[Quality Assessment]
+    H --> IstructureAnalysis[Structure Analysis]
 
-    I --> J[Contact Map Generation]
-    I --> K[Secondary Structure Prediction]
-    I --> L[Domain Identification]
+    I --> JcontactMapGeneration[Contact Map Generation]
+    I --> KsecondaryStructurePrediction[Secondary Structure Prediction]
+    I --> LdomainIdentification[Domain Identification]
 
-    J --> M[Interaction Prediction]
+    J --> MinteractionPrediction[Interaction Prediction]
     K --> M
     L --> M
 
-    M --> N[Functional Annotation]
-    N --> O[Output Results]
+    M --> NfunctionalAnnotation[Functional Annotation]
+    N --> OoutputResults[Output Results]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style H fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style O fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 ```
 
 ## Submodules

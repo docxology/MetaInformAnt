@@ -1,0 +1,433 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ontology Visualization &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Ontology Visualization</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/visualization/ontology.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="ontology-visualization">
+<h1>Ontology Visualization<a class="headerlink" href="#ontology-visualization" title="Link to this heading"></a></h1>
+<p>This document provides comprehensive documentation for gene ontology and functional annotation visualization capabilities in METAINFORMANT.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>Ontology visualization includes specialized plots for gene ontology (GO) analysis, semantic similarity, functional enrichment, and biological knowledge representation. These tools create publication-quality figures for functional genomics research.</p>
+</section>
+<section id="module-functions">
+<h2>Module Functions<a class="headerlink" href="#module-functions" title="Link to this heading"></a></h2>
+<section id="gene-ontology-structure">
+<h3>Gene Ontology Structure<a class="headerlink" href="#gene-ontology-structure" title="Link to this heading"></a></h3>
+<section id="go-dag-visualization">
+<h4>GO DAG Visualization<a class="headerlink" href="#go-dag-visualization" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.ontology</span><span class="w"> </span><span class="kn">import</span> <span class="n">go</span><span class="p">,</span> <span class="n">visualization</span> <span class="k">as</span> <span class="n">ont_viz</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
+
+<span class="c1"># Load GO ontology</span>
+<span class="n">go_graph</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">load_go_obo</span><span class="p">(</span><span class="s2">&quot;go.obo&quot;</span><span class="p">)</span>
+
+<span class="c1"># Plot GO directed acyclic graph</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">ont_viz</span><span class="o">.</span><span class="n">plot_go_dag</span><span class="p">(</span><span class="n">go_graph</span><span class="p">,</span> <span class="n">terms</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;GO:0008150&#39;</span><span class="p">,</span> <span class="s1">&#39;GO:0003674&#39;</span><span class="p">,</span> <span class="s1">&#39;GO:0005575&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="go-term-hierarchy">
+<h4>GO Term Hierarchy<a class="headerlink" href="#go-term-hierarchy" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Visualize hierarchy from root term</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">ont_viz</span><span class="o">.</span><span class="n">plot_go_term_hierarchy</span><span class="p">(</span><span class="n">go_graph</span><span class="p">,</span> <span class="n">root_term</span><span class="o">=</span><span class="s1">&#39;GO:0008150&#39;</span><span class="p">,</span> <span class="n">max_depth</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="semantic-similarity">
+<h3>Semantic Similarity<a class="headerlink" href="#semantic-similarity" title="Link to this heading"></a></h3>
+<section id="similarity-matrices">
+<h4>Similarity Matrices<a class="headerlink" href="#similarity-matrices" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot semantic similarity heatmap</span>
+<span class="n">term_ic</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;GO:0008150&#39;</span><span class="p">:</span> <span class="mf">8.5</span><span class="p">,</span> <span class="s1">&#39;GO:0003674&#39;</span><span class="p">:</span> <span class="mf">9.2</span><span class="p">,</span> <span class="s1">&#39;GO:0005575&#39;</span><span class="p">:</span> <span class="mf">7.8</span><span class="p">}</span>
+<span class="n">similarity_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>  <span class="c1"># Pre-computed similarity matrix</span>
+<span class="n">term_labels</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;GO:</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">)]</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">ont_viz</span><span class="o">.</span><span class="n">plot_semantic_similarity_matrix</span><span class="p">(</span><span class="n">similarity_matrix</span><span class="p">,</span> <span class="n">term_labels</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="similarity-clustermap">
+<h4>Similarity Clustermap<a class="headerlink" href="#similarity-clustermap" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create hierarchical clustering of similarities</span>
+<span class="n">g</span> <span class="o">=</span> <span class="n">ont_viz</span><span class="o">.</span><span class="n">plot_semantic_similarity_clustermap</span><span class="p">(</span><span class="n">similarity_matrix</span><span class="p">,</span> <span class="n">term_labels</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="functional-enrichment">
+<h3>Functional Enrichment<a class="headerlink" href="#functional-enrichment" title="Link to this heading"></a></h3>
+<section id="enrichment-bar-plots">
+<h4>Enrichment Bar Plots<a class="headerlink" href="#enrichment-bar-plots" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Visualize GO enrichment results</span>
+<span class="n">enrichment_results</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s1">&#39;term&#39;</span><span class="p">:</span> <span class="s1">&#39;GO:0008150&#39;</span><span class="p">,</span> <span class="s1">&#39;pvalue&#39;</span><span class="p">:</span> <span class="mf">1e-15</span><span class="p">,</span> <span class="s1">&#39;fold_change&#39;</span><span class="p">:</span> <span class="mf">3.2</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">&#39;term&#39;</span><span class="p">:</span> <span class="s1">&#39;GO:0003674&#39;</span><span class="p">,</span> <span class="s1">&#39;pvalue&#39;</span><span class="p">:</span> <span class="mf">1e-12</span><span class="p">,</span> <span class="s1">&#39;fold_change&#39;</span><span class="p">:</span> <span class="mf">2.8</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">&#39;term&#39;</span><span class="p">:</span> <span class="s1">&#39;GO:0005575&#39;</span><span class="p">,</span> <span class="s1">&#39;pvalue&#39;</span><span class="p">:</span> <span class="mf">1e-8</span><span class="p">,</span> <span class="s1">&#39;fold_change&#39;</span><span class="p">:</span> <span class="mf">2.1</span><span class="p">}</span>
+<span class="p">]</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">ont_viz</span><span class="o">.</span><span class="n">plot_go_enrichment_barplot</span><span class="p">(</span><span class="n">enrichment_results</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="enrichment-dot-plots">
+<h4>Enrichment Dot Plots<a class="headerlink" href="#enrichment-dot-plots" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Bubble plot with gene counts</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">ont_viz</span><span class="o">.</span><span class="n">plot_go_enrichment_dotplot</span><span class="p">(</span><span class="n">enrichment_results</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="information-content">
+<h3>Information Content<a class="headerlink" href="#information-content" title="Link to this heading"></a></h3>
+<section id="ic-profile-plots">
+<h4>IC Profile Plots<a class="headerlink" href="#ic-profile-plots" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot information content across terms</span>
+<span class="n">term_ic</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;GO:0008150&#39;</span><span class="p">:</span> <span class="mf">8.5</span><span class="p">,</span> <span class="s1">&#39;GO:0003674&#39;</span><span class="p">:</span> <span class="mf">9.2</span><span class="p">,</span> <span class="s1">&#39;GO:0005575&#39;</span><span class="p">:</span> <span class="mf">7.8</span><span class="p">}</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">ont_viz</span><span class="o">.</span><span class="n">plot_information_content_profile</span><span class="p">(</span><span class="n">term_ic</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="ontology-networks">
+<h3>Ontology Networks<a class="headerlink" href="#ontology-networks" title="Link to this heading"></a></h3>
+<section id="relationship-networks">
+<h4>Relationship Networks<a class="headerlink" href="#relationship-networks" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Visualize ontology relationship network</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">ont_viz</span><span class="o">.</span><span class="n">plot_ontology_network</span><span class="p">(</span><span class="n">go_graph</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+<section id="functional-annotation-heatmaps">
+<h4>Functional Annotation Heatmaps<a class="headerlink" href="#functional-annotation-heatmaps" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot gene-term annotation matrix</span>
+<span class="n">annotation_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">20</span><span class="p">))</span>  <span class="c1"># Genes x GO terms</span>
+<span class="n">gene_labels</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;Gene_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">50</span><span class="p">)]</span>
+<span class="n">term_labels</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;GO:</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">20</span><span class="p">)]</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">ont_viz</span><span class="o">.</span><span class="n">plot_functional_annotation_heatmap</span><span class="p">(</span><span class="n">annotation_matrix</span><span class="p">,</span> <span class="n">term_labels</span><span class="p">,</span> <span class="n">gene_labels</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="advanced-features">
+<h3>Advanced Features<a class="headerlink" href="#advanced-features" title="Link to this heading"></a></h3>
+<section id="interactive-go-networks">
+<h4>Interactive GO Networks<a class="headerlink" href="#interactive-go-networks" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create 3D interactive GO network</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">ont_viz</span><span class="o">.</span><span class="n">create_interactive_go_network</span><span class="p">(</span><span class="n">go_graph</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;go_network.html&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="integration-with-ontology-module">
+<h2>Integration with Ontology Module<a class="headerlink" href="#integration-with-ontology-module" title="Link to this heading"></a></h2>
+<section id="with-go-enrichment-analysis">
+<h3>With GO Enrichment Analysis<a class="headerlink" href="#with-go-enrichment-analysis" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.ontology</span><span class="w"> </span><span class="kn">import</span> <span class="n">go</span><span class="p">,</span> <span class="n">visualization</span> <span class="k">as</span> <span class="n">ont_viz</span>
+
+<span class="c1"># Perform GO enrichment</span>
+<span class="n">gene_list</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;gene1&#39;</span><span class="p">,</span> <span class="s1">&#39;gene2&#39;</span><span class="p">,</span> <span class="s1">&#39;gene3&#39;</span><span class="p">]</span>  <span class="c1"># Your genes of interest</span>
+<span class="n">background</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;gene1&#39;</span><span class="p">,</span> <span class="s1">&#39;gene2&#39;</span><span class="p">,</span> <span class="o">...</span><span class="p">,</span> <span class="s1">&#39;gene1000&#39;</span><span class="p">]</span>  <span class="c1"># Background gene set</span>
+<span class="n">annotations</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;gene1&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;GO:0008150&#39;</span><span class="p">},</span> <span class="s1">&#39;gene2&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;GO:0003674&#39;</span><span class="p">}}</span>  <span class="c1"># Gene annotations</span>
+
+<span class="n">results</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">enrich_genes</span><span class="p">(</span><span class="n">gene_list</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">annotations</span><span class="p">)</span>
+
+<span class="c1"># Visualize enrichment</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">ont_viz</span><span class="o">.</span><span class="n">plot_go_enrichment_barplot</span><span class="p">(</span><span class="n">results</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="with-semantic-similarity">
+<h3>With Semantic Similarity<a class="headerlink" href="#with-semantic-similarity" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.ontology</span><span class="w"> </span><span class="kn">import</span> <span class="n">go</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">visualization</span> <span class="k">as</span> <span class="n">ont_viz</span>
+
+<span class="c1"># Load ontology and compute IC</span>
+<span class="n">go_graph</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">load_go_obo</span><span class="p">(</span><span class="s2">&quot;go.obo&quot;</span><span class="p">)</span>
+<span class="n">ic_map</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">calculate_ic_map</span><span class="p">(</span><span class="n">go_graph</span><span class="p">)</span>
+
+<span class="c1"># Compute similarities</span>
+<span class="n">terms</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;GO:0008150&#39;</span><span class="p">,</span> <span class="s1">&#39;GO:0003674&#39;</span><span class="p">,</span> <span class="s1">&#39;GO:0005575&#39;</span><span class="p">]</span>
+<span class="n">similarity_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">terms</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">terms</span><span class="p">)))</span>
+
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">term1</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">terms</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="n">term2</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">terms</span><span class="p">):</span>
+        <span class="n">similarity_matrix</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">semantic_similarity</span><span class="p">(</span><span class="n">term1</span><span class="p">,</span> <span class="n">term2</span><span class="p">,</span> <span class="n">ic_map</span><span class="p">,</span> <span class="n">go_graph</span><span class="p">)</span>
+
+<span class="c1"># Visualize</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">ont_viz</span><span class="o">.</span><span class="n">plot_semantic_similarity_matrix</span><span class="p">(</span><span class="n">similarity_matrix</span><span class="p">,</span> <span class="n">terms</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="with-functional-annotations">
+<h3>With Functional Annotations<a class="headerlink" href="#with-functional-annotations" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.ontology</span><span class="w"> </span><span class="kn">import</span> <span class="n">go</span><span class="p">,</span> <span class="n">visualization</span> <span class="k">as</span> <span class="n">ont_viz</span>
+
+<span class="c1"># Create annotation matrix</span>
+<span class="n">genes</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;gene1&#39;</span><span class="p">,</span> <span class="s1">&#39;gene2&#39;</span><span class="p">,</span> <span class="s1">&#39;gene3&#39;</span><span class="p">]</span>
+<span class="n">go_terms</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;GO:0008150&#39;</span><span class="p">,</span> <span class="s1">&#39;GO:0003674&#39;</span><span class="p">,</span> <span class="s1">&#39;GO:0005575&#39;</span><span class="p">]</span>
+
+<span class="c1"># Binary annotation matrix (gene x term)</span>
+<span class="n">annotations</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">genes</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">go_terms</span><span class="p">)))</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">ont_viz</span><span class="o">.</span><span class="n">plot_functional_annotation_heatmap</span><span class="p">(</span><span class="n">annotations</span><span class="p">,</span> <span class="n">go_terms</span><span class="p">,</span> <span class="n">genes</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="output-options">
+<h2>Output Options<a class="headerlink" href="#output-options" title="Link to this heading"></a></h2>
+<p>All visualization functions support:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Save static plots</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">ont_viz</span><span class="o">.</span><span class="n">plot_go_dag</span><span class="p">(</span><span class="n">go_graph</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;go_dag.png&quot;</span><span class="p">)</span>
+
+<span class="c1"># Save interactive networks</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">ont_viz</span><span class="o">.</span><span class="n">create_interactive_go_network</span><span class="p">(</span><span class="n">go_graph</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;go_network.html&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="file-format-support">
+<h2>File Format Support<a class="headerlink" href="#file-format-support" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>OBO Files</strong>: Open Biological Ontology format for GO</p></li>
+<li><p><strong>GAF Files</strong>: Gene Association File format for annotations</p></li>
+<li><p><strong>JSON/CSV</strong>: Custom annotation and enrichment result formats</p></li>
+<li><p><strong>Network Formats</strong>: GraphML, GML for ontology networks</p></li>
+</ul>
+</section>
+<section id="performance-considerations">
+<h2>Performance Considerations<a class="headerlink" href="#performance-considerations" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Large Ontologies</strong>: GO has &gt;40,000 terms; consider subgraph visualization</p></li>
+<li><p><strong>Dense Networks</strong>: Use hierarchical layout for complex relationship networks</p></li>
+<li><p><strong>Similarity Matrices</strong>: Work best with &lt;100 terms for readability</p></li>
+<li><p><strong>Interactive Plots</strong>: Require Plotly for web-based 3D networks</p></li>
+</ul>
+</section>
+<section id="dependencies">
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Required</strong>: matplotlib, numpy, networkx</p></li>
+<li><p><strong>Optional</strong>: seaborn (enhanced styling), plotly (interactive plots)</p></li>
+<li><p><strong>Integration</strong>: obonet (OBO parsing), goatools (enrichment analysis)</p></li>
+</ul>
+</section>
+<section id="color-schemes">
+<h2>Color Schemes<a class="headerlink" href="#color-schemes" title="Link to this heading"></a></h2>
+<p>Recommended color schemes for ontology data:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># GO aspect colors</span>
+<span class="n">go_colors</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;biological_process&#39;</span><span class="p">:</span> <span class="s1">&#39;#FF6B6B&#39;</span><span class="p">,</span>    <span class="c1"># Red</span>
+    <span class="s1">&#39;molecular_function&#39;</span><span class="p">:</span> <span class="s1">&#39;#4ECDC4&#39;</span><span class="p">,</span>    <span class="c1"># Teal</span>
+    <span class="s1">&#39;cellular_component&#39;</span><span class="p">:</span> <span class="s1">&#39;#45B7D1&#39;</span>     <span class="c1"># Blue</span>
+<span class="p">}</span>
+
+<span class="c1"># Semantic similarity</span>
+<span class="n">similarity_cmap</span> <span class="o">=</span> <span class="s1">&#39;YlOrRd&#39;</span>  <span class="c1"># Yellow to red gradient</span>
+
+<span class="c1"># Information content</span>
+<span class="n">ic_cmap</span> <span class="o">=</span> <span class="s1">&#39;viridis&#39;</span>  <span class="c1"># Blue to yellow colormap</span>
+</pre></div>
+</div>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h2>
+<section id="complete-ontology-analysis-workflow">
+<h3>Complete Ontology Analysis Workflow<a class="headerlink" href="#complete-ontology-analysis-workflow" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.ontology</span><span class="w"> </span><span class="kn">import</span> <span class="n">go</span><span class="p">,</span> <span class="n">query</span><span class="p">,</span> <span class="n">visualization</span> <span class="k">as</span> <span class="n">ont_viz</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Load ontology</span>
+<span class="n">go_graph</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">load_go_obo</span><span class="p">(</span><span class="s2">&quot;go.obo&quot;</span><span class="p">)</span>
+<span class="n">ic_map</span> <span class="o">=</span> <span class="n">query</span><span class="o">.</span><span class="n">calculate_ic_map</span><span class="p">(</span><span class="n">go_graph</span><span class="p">)</span>
+
+<span class="c1"># Perform enrichment analysis</span>
+<span class="n">gene_list</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;gene1&#39;</span><span class="p">,</span> <span class="s1">&#39;gene2&#39;</span><span class="p">,</span> <span class="s1">&#39;gene3&#39;</span><span class="p">]</span>
+<span class="n">background</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;gene</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">)]</span>
+<span class="n">annotations</span> <span class="o">=</span> <span class="p">{</span><span class="sa">f</span><span class="s1">&#39;gene</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;GO:0008150&#39;</span><span class="p">,</span> <span class="s1">&#39;GO:0003674&#39;</span><span class="p">}</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">)}</span>
+
+<span class="n">enrichment_results</span> <span class="o">=</span> <span class="n">go</span><span class="o">.</span><span class="n">enrich_genes</span><span class="p">(</span><span class="n">gene_list</span><span class="p">,</span> <span class="n">background</span><span class="p">,</span> <span class="n">annotations</span><span class="p">)</span>
+
+<span class="c1"># Create comprehensive visualization</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">12</span><span class="p">))</span>
+
+<span class="c1"># GO DAG</span>
+<span class="n">ont_viz</span><span class="o">.</span><span class="n">plot_go_dag</span><span class="p">(</span><span class="n">go_graph</span><span class="p">,</span> <span class="n">terms</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;GO:0008150&#39;</span><span class="p">],</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+
+<span class="c1"># Enrichment results</span>
+<span class="n">ont_viz</span><span class="o">.</span><span class="n">plot_go_enrichment_barplot</span><span class="p">(</span><span class="n">enrichment_results</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+
+<span class="c1"># Semantic similarity (if multiple enriched terms)</span>
+<span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">enrichment_results</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+    <span class="n">terms</span> <span class="o">=</span> <span class="p">[</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;term&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">enrichment_results</span><span class="p">]</span>
+    <span class="n">sim_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">terms</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">terms</span><span class="p">))</span>  <span class="c1"># Placeholder</span>
+    <span class="n">ont_viz</span><span class="o">.</span><span class="n">plot_semantic_similarity_matrix</span><span class="p">(</span><span class="n">sim_matrix</span><span class="p">,</span> <span class="n">terms</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+
+<span class="c1"># Information content profile</span>
+<span class="n">term_ic</span> <span class="o">=</span> <span class="p">{</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;term&#39;</span><span class="p">]:</span> <span class="n">ic_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;term&#39;</span><span class="p">],</span> <span class="mf">5.0</span><span class="p">)</span> <span class="k">for</span> <span class="n">r</span> <span class="ow">in</span> <span class="n">enrichment_results</span><span class="p">}</span>
+<span class="n">ont_viz</span><span class="o">.</span><span class="n">plot_information_content_profile</span><span class="p">(</span><span class="n">term_ic</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;ontology_analysis.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="common-issues">
+<h3>Common Issues<a class="headerlink" href="#common-issues" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Missing GO Terms</strong>: Ensure OBO file is current and terms exist</p></li>
+<li><p><strong>Empty Enrichment Results</strong>: Check gene annotation quality and background set</p></li>
+<li><p><strong>Network Layout Issues</strong>: Try different layout algorithms for complex graphs</p></li>
+<li><p><strong>Memory Errors</strong>: Subsample large ontologies for visualization</p></li>
+</ol>
+</section>
+<section id="data-requirements">
+<h3>Data Requirements<a class="headerlink" href="#data-requirements" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>GO Terms</strong>: Valid GO identifiers (GO:####### format)</p></li>
+<li><p><strong>P-values</strong>: -log10 transformed for bar plot scaling</p></li>
+<li><p><strong>Similarity Matrices</strong>: Square matrices with values 0-1</p></li>
+<li><p><strong>IC Values</strong>: Information content in bits (typically 0-15)</p></li>
+</ul>
+</section>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong><a class="reference internal" href="#../ontology/"><span class="xref myst">Ontology Analysis</span></a></strong>: Core ontology analysis functions</p></li>
+<li><p><strong><a class="reference internal" href="../ontology/go.html"><span class="std std-doc">GO Enrichment</span></a></strong>: Gene ontology enrichment workflows</p></li>
+<li><p><strong><a class="reference internal" href="../ontology/go.html"><span class="std std-doc">Semantic Similarity</span></a></strong>: Similarity calculation methods</p></li>
+<li><p><strong><a class="reference internal" href="integration.html"><span class="std std-doc">Visualization Integration</span></a></strong>: Cross-module visualization patterns</p></li>
+</ul>
+<p>This module provides comprehensive ontology visualization capabilities integrated with METAINFORMANT’s functional annotation workflows.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

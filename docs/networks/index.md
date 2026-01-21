@@ -52,16 +52,16 @@ Biological pathway enrichment and analysis:
 
 ```mermaid
 flowchart TD
-    A[Input Data] --> B[Network Construction]
-    B --> C[Graph Analysis]
-    C --> D[Community Detection]
-    C --> E[Pathway Enrichment]
-    C --> F[Regulatory Analysis]
-    D --> G[Functional Analysis]
+    AinputData[Input Data] --> BnetworkConstruction[Network Construction]
+    B --> CgraphAnalysis[Graph Analysis]
+    C --> DcommunityDetection[Community Detection]
+    C --> EpathwayEnrichment[Pathway Enrichment]
+    C --> FregulatoryAnalysis[Regulatory Analysis]
+    D --> GfunctionalAnalysis[Functional Analysis]
     E --> G
     F --> G
     G --> H[Visualization]
-    H --> I[Biological Insights]
+    H --> IbiologicalInsights[Biological Insights]
 ```
 
 ## Key Features

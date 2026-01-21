@@ -18,20 +18,20 @@ METAINFORMANT's AMALGKIT integration provides:
 
 ```mermaid
 flowchart TD
-    A[NCBI SRA Database] --> B[metadata: Sample Discovery]
-    B --> C[select: Quality Filtering]
-    C --> D[getfastq: Data Extraction]
-    D --> E[quant: Kallisto Quantification]
-    E --> F[merge: Expression Matrices]
-    F --> G[curate: Batch Correction]
-    G --> H[sanity: Quality Assurance]
-    H --> I[PDF Visualizations]
+    AncbiSraDatabase[NCBI SRA Database] --> Bmetadata:SampleDiscovery[metadata: Sample Discovery]
+    B --> Cselect:QualityFiltering[select: Quality Filtering]
+    C --> Dgetfastq:DataExtraction[getfastq: Data Extraction]
+    D --> Equant:KallistoQuantification[quant: Kallisto Quantification]
+    E --> Fmerge:ExpressionMatrices[merge: Expression Matrices]
+    F --> Gcurate:BatchCorrection[curate: Batch Correction]
+    G --> Hsanity:QualityAssurance[sanity: Quality Assurance]
+    H --> IpdfVisualizations[PDF Visualizations]
     
-    J[Progress Monitoring] --> D
-    K[Error Recovery] --> D
-    L[R Environment] --> F
+    JprogressMonitoring[Progress Monitoring] --> D
+    KerrorRecovery[Error Recovery] --> D
+    LrEnvironment[R Environment] --> F
     L --> G
-    M[Reference Genomes] --> E
+    MreferenceGenomes[Reference Genomes] --> E
 ```
 
 ## 🚀 Quick Start
@@ -613,6 +613,75 @@ result = execute_workflow(cfg)
 - Archive large intermediate files
 - Document data sources and processing steps
 - Validate data integrity at each step
+
+### Troubleshooting
+
+#### Files Being Re-downloaded Unnecessarily
+
+**Problem**: The workflow is re-downloading SRA files that already exist locally, wasting bandwidth and time.
+
+**Symptoms**:
+- Log messages show "Previously-downloaded sra file was not detected" for files that exist
+- Download progress bars appear for files that should be skipped
+- High bandwidth usage during getfastq step
+
+**Solutions**:
+
+1. **Check `redo` parameter in configuration**:
+   ```yaml
+   steps:
+     getfastq:
+       redo: no  # Should be 'no' for normal operation
+   ```
+
+2. **Verify file detection**:
+   - Check that SRA files exist in expected location: `{out_dir}/getfastq/{SRR_ID}/{SRR_ID}.sra`
+   - Ensure files are not corrupted (check file sizes)
+   - Verify write permissions on output directory
+
+3. **Check step summary**:
+   After getfastq completes, look for summary log:
+   ```
+   Step getfastq summary: X file(s) skipped (already exists), Y file(s) downloaded
+   ```
+   - If all files show as "downloaded" when they should be skipped, check `redo` setting
+   - If some files are skipped correctly, the issue may be with specific files
+
+4. **Force skip with `redo: no`**:
+   ```bash
+   # Edit config to set redo: no
+   # Then re-run getfastq step
+   python3 scripts/rna/run_workflow.py config/amalgkit/your_config.yaml --steps getfastq
+   ```
+
+5. **When to use `redo: yes`**:
+   - Only use `redo: yes` if:
+     - Files are corrupted and need re-download
+     - You're testing download functionality
+     - You want to refresh data from SRA (rarely needed)
+   - **Warning**: This will re-download ALL files, even if they exist
+
+#### Checking if Files Are Being Skipped
+
+**Method 1: Check step summary log**
+After getfastq completes, the workflow logs a summary:
+```
+Step getfastq summary: 1 file(s) skipped (already exists), 14 file(s) downloaded (total: 15 samples)
+```
+
+**Method 2: Check amalgkit output**
+Look for these messages in the logs:
+- `"Previously-downloaded sra file was detected"` = File skipped (good)
+- `"Previously-downloaded sra file was not detected. New sra file will be downloaded."` = File downloaded
+
+**Method 3: Check file system**
+```bash
+# List SRA files that exist
+find output/amalgkit/your_species/fastq/getfastq -name "*.sra" | wc -l
+
+# Compare with metadata sample count
+wc -l output/amalgkit/your_species/work/metadata/metadata_selected.tsv
+```
 
 ---
 

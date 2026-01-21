@@ -1,0 +1,20 @@
+{
+  "bytes_downloaded": 36762987,
+  "destination": "output/amalgkit/pbarbatus_all/work/quant",
+  "errors": [],
+  "eta_seconds": null,
+  "last_update": "2026-01-21T19:40:49Z",
+  "progress": {
+    "current": 0,
+    "percent": 0.0,
+    "total": 4,
+    "type": "sample_count"
+  },
+  "progress_percent": 0.0,
+  "speed_mbps": 34.60325103884855,
+  "started_at": "2026-01-21T19:40:48Z",
+  "status": "failed",
+  "step": "amalgkit quant",
+  "total_bytes": null,
+  "url": "['amalgkit', 'quant', '--out_dir', 'output/amalgkit/pbarbatus_all/work', '--threads', '6', '--redo', 'no', '--build_index', 'yes', '--index_dir', 'output/amalgkit/pbarbatus_test25/work/index', '--fasta_dir', 'output/amalgkit/pbarbatus_test25/genome', '--metadata', 'output/amalgkit/pbarbatus_all/work/metadata/metadata_chunk_8.tsv']"
+}

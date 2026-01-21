@@ -4,7 +4,7 @@ This directory contains comprehensive documentation for METAINFORMANT's plotting
 
 ## Overview
 
-The visualization domain provides unified plotting and animation utilities for creating publication-quality figures and interactive visualizations across all METAINFORMANT domains.
+The visualization domain provides comprehensive plotting, animation, and interactive visualization utilities for creating publication-quality figures across all METAINFORMANT domains, from basic statistical plots to advanced specialized visualizations for complex biological data.
 
 ## Documentation Files
 
@@ -27,6 +27,17 @@ The visualization domain provides unified plotting and animation utilities for c
 ### Specialized Modules
 - **`trees.md`**: Phylogenetic tree visualization
 - **`animations.md`**: Time-series and dynamic data animation
+- **`specialized.md`**: Advanced plot types (Venn, Sankey, chord diagrams)
+
+### Domain-Specific Modules
+- **`protein.md`**: Protein structure and sequence visualization
+- **`epigenome.md`**: Epigenetic data visualization (methylation, ChIP-seq, ATAC-seq)
+- **`ontology.md`**: Gene ontology and functional annotation visualization
+- **`phenotype.md`**: Phenotypic trait and life course visualization
+- **`ecology.md`**: Biodiversity and community ecology visualization
+- **`math.md`**: Mathematical biology and population genetics visualization
+- **`multiomics.md`**: Multi-omics integration visualization
+- **`simulation.md`**: Simulation results and synthetic data visualization
 
 ### Utilities and Integration
 - **`styling.md`**: Styling and customization guide

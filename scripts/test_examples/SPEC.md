@@ -20,7 +20,7 @@ graph TD
     A --> F(reporting.py)
     F --> G[JSON]
     F --> H[HTML]
-    F --> I[JUnit XML]
+    F --> IjunitXml[JUnit XML]
     A --> J(validator.py)
 ```
 

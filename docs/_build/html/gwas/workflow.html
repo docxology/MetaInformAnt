@@ -107,17 +107,17 @@
 <h2>Architecture<a class="headerlink" href="#architecture" title="Link to this heading"></a></h2>
 <div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart TB
     subgraph &quot;GWAS Orchestration&quot;
-        CLI[CLI Interface&lt;br/&gt;metainformant gwas] --&gt; Scripts[Script Orchestrators&lt;br/&gt;scripts/gwas/run_*.py]
-        Scripts --&gt; Workflow[execute_gwas_workflow&lt;br/&gt;gwas.workflow]
-        Workflow --&gt; Steps[Step Functions&lt;br/&gt;gwas.*]
+        CLIcliInterfaceMetainformantGwas[CLI Interface_metainformant gwas] --&gt; ScriptsscriptOrchestratorsScripts/gwas/run*.py[Script Orchestrators_scripts/gwas/run_*.py]
+        Scripts --&gt; WorkflowexecuteGwasWorkflowGwas.workflow[execute_gwas_workflow_gwas.workflow]
+        Workflow --&gt; StepsstepFunctionsGwas.*[Step Functions_gwas.*]
     end
 
     subgraph &quot;Workflow Components&quot;
-        Config[GWASWorkflowConfig&lt;br/&gt;Configuration]
-        Download[Data Acquisition&lt;br/&gt;gwas.download]
-        Quality[Quality Control&lt;br/&gt;gwas.quality]
-        Assoc[Association Testing&lt;br/&gt;gwas.association]
-        Viz[Visualization&lt;br/&gt;gwas.visualization]
+        ConfiggwasworkflowconfigConfiguration[GWASWorkflowConfig_Configuration]
+        DownloaddataAcquisitionGwas.download[Data Acquisition_gwas.download]
+        QualityqualityControlGwas.quality[Quality Control_gwas.quality]
+        AssocassociationTestingGwas.association[Association Testing_gwas.association]
+        VizvisualizationGwas.visualization[Visualization_gwas.visualization]
     end
 
     Workflow --&gt; Config

@@ -34,51 +34,44 @@ METAINFORMANT analyzes biological data across genomics, transcriptomics, proteom
 ### System Architecture
 
 ```mermaid
-graph TB
-    %% Core Infrastructure
-    subgraph "Core Infrastructure"
-        CORE[Core Utilities<br/>I/O • Config • Logging<br/>Parallel • Paths • Cache]
+flowchart TB
+    subgraph coreInfra[coreInfrastructure]
+        CORE[coreUtilities]
     end
 
-    %% Molecular Analysis
-    subgraph "Molecular Analysis"
-        DNA[DNA Analysis<br/>Sequences • Alignment<br/>Phylogeny • Population]
-        RNA[RNA Analysis<br/>RNA-seq • Amalgkit<br/>Transcriptomics • Quantification]
-        PROT[Protein Analysis<br/>Sequences • Structure<br/>AlphaFold • Proteomics]
-        EPI[Epigenome<br/>Methylation • ChIP-seq<br/>ATAC-seq • Chromatin]
+    subgraph molecular[molecularAnalysis]
+        DNA[dnaAnalysis]
+        RNA[rnaAnalysis]
+        PROT[proteinAnalysis]
+        EPI[epigenomeAnalysis]
     end
 
-    %% Statistical & ML Methods
-    subgraph "Statistical & ML"
-        GWAS[GWAS<br/>Association • QC<br/>Visualization • SRA]
-        MATH[Math Biology<br/>Population Genetics<br/>Coalescent • Selection]
-        ML[Machine Learning<br/>Classification • Regression<br/>Feature Selection]
-        INFO[Information Theory<br/>Entropy • MI • Similarity<br/>Semantic Measures]
+    subgraph statsML[statisticalAndML]
+        GWAS[gwasAnalysis]
+        MATH[mathAnalysis]
+        ML[machineLearning]
+        INFO[informationAnalysis]
     end
 
-    %% Systems Biology
-    subgraph "Systems Biology"
-        NET[Networks<br/>PPI • Pathways<br/>Community Detection]
-        MULTI[Multi-Omics<br/>Integration • Harmonization<br/>Joint Analysis]
-        SC[Single-Cell<br/>Preprocessing • Clustering<br/>Trajectory • DE]
-        SIM[Simulation<br/>Sequence • Ecosystem<br/>Agent-based • Evolution]
+    subgraph systems[systemsBiology]
+        NET[networksAnalysis]
+        MULTI[multiomicsAnalysis]
+        SC[singlecellAnalysis]
+        SIM[simulationAnalysis]
     end
 
-    %% Annotation & Metadata
-    subgraph "Annotation & Metadata"
-        ONT[Ontology<br/>Gene Ontology<br/>Functional Annotation]
-        PHEN[Phenotype<br/>Trait Analysis<br/>Life Course • AntWiki]
-        ECO[Ecology<br/>Community • Diversity<br/>Environmental Analysis]
-        LE[Life Events<br/>Event Sequences<br/>Embeddings • Prediction]
+    subgraph annotation[annotationAndMetadata]
+        ONT[ontologyAnalysis]
+        PHEN[phenotypeAnalysis]
+        ECO[ecologyAnalysis]
+        LE[lifeEventsAnalysis]
     end
 
-    %% Utilities
-    subgraph "Utilities"
-        QUAL[Quality Control<br/>FASTQ • Assembly<br/>Metrics • Validation]
-        VIZ[Visualization<br/>Plots • Animations<br/>Trees • Networks]
+    subgraph utilities[utilities]
+        QUAL[qualityControl]
+        VIZ[visualization]
     end
 
-    %% Data Flow
     CORE --> DNA
     CORE --> RNA
     CORE --> PROT
@@ -97,105 +90,41 @@ graph TB
     CORE --> LE
     CORE --> QUAL
     CORE --> VIZ
-
-    %% Module Integration Paths
-    DNA --> RNA
-    DNA --> PROT
-    DNA --> GWAS
-    DNA --> MATH
-    RNA --> SC
-    RNA --> MULTI
-    PROT --> NET
-    PROT --> ONT
-    EPI --> DNA
-    EPI --> NET
-    ONT --> MULTI
-    PHEN --> GWAS
-    PHEN --> LE
-    ECO --> NET
-    MATH --> GWAS
-    MATH --> DNA
-    INFO --> NET
-    INFO --> ONT
-    NET --> MULTI
-    SC --> MULTI
-    QUAL --> ALL_MODULES[All Modules]
-    VIZ --> ALL_MODULES
-
-    %% External Dependencies
-    RNA -.->|"Amalgkit CLI"| RNA
-    GWAS -.->|"bcftools, GATK"| GWAS
-    SC -.->|"scanpy, anndata"| SC
-    PROT -.->|"AlphaFold"| PROT
-
-    %% Data Sources
-    NCBI[(NCBI<br/>Genomes)] --> DNA
-    SRA[(SRA<br/>Sequencing)] --> RNA
-    SRA --> SC
-    SRA --> GWAS
-    PDB[(PDB<br/>Structures)] --> PROT
-    GEO[(GEO<br/>Expression)] --> RNA
-    GO[(Gene<br/>Ontology)] --> ONT
-
-    %% Output Formats
-    DNA -.->|FASTA/FASTQ| OUTPUT[Output Formats]
-    RNA -.->|Count Matrices| OUTPUT
-    PROT -.->|PDB/PDBx| OUTPUT
-    GWAS -.->|Manhattan Plots| OUTPUT
-    NET -.->|GraphML| OUTPUT
-    VIZ -.->|PNG/SVG/PDF| OUTPUT
-
-    %% Styling
-    classDef core fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef molecular fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    classDef stats fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    classDef systems fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
-    classDef annotation fill:#fce4ec,stroke:#880e4f,stroke-width:2px
-    classDef utility fill:#f9fbe7,stroke:#827717,stroke-width:2px
-    classDef external fill:#fafafa,stroke:#424242,stroke-width:1px
-
-    class CORE core
-    class DNA,RNA,PROT,EPI molecular
-    class GWAS,MATH,ML,INFO stats
-    class NET,MULTI,SC,SIM systems
-    class ONT,PHEN,ECO,LE annotation
-    class QUAL,VIZ utility
-    class NCBI,SRA,PDB,GEO,GO,RNA,GWAS,SC,PROT external
 ```
 
 ### Data Flow and Integration Architecture
 
 ```mermaid
 graph TD
-    A[Raw Biological Data] --> B[Data Ingestion]
+    ArawBiologicalData[Raw Biological Data] --> BdataIngestion[Data Ingestion]
     B --> C{Data Type}
 
-    C -->|DNA| D[DNA Module<br/>Sequences • Variants]
-    C -->|RNA| E[RNA Module<br/>Expression • Amalgkit]
-    C -->|Protein| F[Protein Module<br/>Sequences • Structures]
-    C -->|Epigenome| G[Epigenome Module<br/>Methylation • ChIP-seq]
-    C -->|Phenotype| H[Phenotype Module<br/>Traits • Life Course]
-    C -->|Environmental| I[Ecology Module<br/>Communities • Diversity]
+    C -->|DNA| D[dnaModule]
+    C -->|RNA| E[rnaModule]
+    C -->|Protein| F[proteinModule]
+    C -->|Epigenome| G[epigenomeModule]
+    C -->|Phenotype| H[phenotypeModule]
+    C -->|Environmental| I[ecologyModule]
 
-    D --> J[Quality Control]
+    D --> JqualityControl[Quality Control]
     E --> J
     F --> J
     G --> J
     H --> J
     I --> J
 
-    J --> K[Core Processing]
+    J --> KcoreProcessing[Core Processing]
     K --> L{Analysis Type}
 
-    L -->|Statistical| M[GWAS Module<br/>Association • Population]
-    L -->|ML| N[ML Module<br/>Classification • Features]
-    L -->|Information| O[Information Module<br/>Entropy • MI]
-    L -->|Networks| P[Networks Module<br/>PPI • Pathways]
-    L -->|Systems| Q[Multi-omics Module<br/>Integration • Joint Analysis]
-    L -->|Single-cell| R[Single-cell Module<br/>Clustering • DE]
-    L -->|Simulation| S[Simulation Module<br/>Synthetic Data]
+    L -->|Statistical| M[gwasModule]
+    L -->|ML| N[mlModule]
+    L -->|Information| O[informationModule]
+    L -->|Networks| P[networksModule]
+    L -->|Systems| Q[multiomicsModule]
+    L -->|Singlecell| R[singlecellModule]
+    L -->|Simulation| S[simulationModule]
 
-    M --> T[Results Integration]
+    M --> TresultsIntegration[Results Integration]
     N --> T
     O --> T
     P --> T
@@ -204,12 +133,8 @@ graph TD
     S --> T
 
     T --> U[Visualization]
-    U --> V[Publication Figures]
-    V --> W[Scientific Insights]
-
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style K fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style W fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    U --> VpublicationFigures[Publication Figures]
+    V --> WscientificInsights[Scientific Insights]
 
     subgraph "Primary Data Types"
         X[Genomic] -.-> D
@@ -219,18 +144,18 @@ graph TD
     end
 
     subgraph "Analysis Workflows"
-        BB[Population Genetics] -.-> M
-        CC[Feature Selection] -.-> N
-        DD[Mutual Information] -.-> O
-        EE[Community Detection] -.-> P
-        FF[Joint PCA] -.-> Q
-        GG[Trajectory Analysis] -.-> R
+        BBpopulationGenetics[Population Genetics] -.-> M
+        CCfeatureSelection[Feature Selection] -.-> N
+        DDmutualInformation[Mutual Information] -.-> O
+        EEcommunityDetection[Community Detection] -.-> P
+        FFjointPca[Joint PCA] -.-> Q
+        GGtrajectoryAnalysis[Trajectory Analysis] -.-> R
     end
 
     subgraph "Output Formats"
-        HH[Manhattan Plots] -.-> V
+        HHmanhattanPlots[Manhattan Plots] -.-> V
         II[Heatmaps] -.-> V
-        JJ[Network Graphs] -.-> V
+        JJnetworkGraphs[Network Graphs] -.-> V
         KK[Animations] -.-> V
     end
 ```
@@ -239,35 +164,31 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Multi-Omic Datasets] --> B[Sample Alignment]
-    B --> C[Batch Effect Correction]
+    Amulti-omicDatasets[Multi-Omic Datasets] --> BsampleAlignment[Sample Alignment]
+    B --> CbatchEffectCorrection[Batch Effect Correction]
 
     C --> D{Integration Strategy}
-    D -->|Early| E[Concatenated Matrix]
-    D -->|Late| F[Separate Models]
+    D -->|Early| EconcatenatedMatrix[Concatenated Matrix]
+    D -->|Late| FseparateModels[Separate Models]
     D -->|Intermediate| G[Meta-Analysis]
 
-    E --> H[Joint Dimensionality Reduction]
-    F --> I[Individual Analysis]
-    G --> J[Result Integration]
+    E --> HjointDimensionalityReduction[Joint Dimensionality Reduction]
+    F --> IindividualAnalysis[Individual Analysis]
+    G --> JresultIntegration[Result Integration]
 
-    H --> K[Unified Clustering]
-    I --> L[Individual Clustering]
-    J --> M[Consensus Clustering]
+    H --> KunifiedClustering[Unified Clustering]
+    I --> LindividualClustering[Individual Clustering]
+    J --> MconsensusClustering[Consensus Clustering]
 
-    K --> N[Functional Enrichment]
+    K --> NfunctionalEnrichment[Functional Enrichment]
     L --> N
     M --> N
 
-    N --> O[Pathway Analysis]
-    O --> P[Network Construction]
+    N --> OpathwayAnalysis[Pathway Analysis]
+    O --> PnetworkConstruction[Network Construction]
 
-    P --> Q[Biological Interpretation]
-    Q --> R[Systems Biology Insights]
-
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style H fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    P --> QbiologicalInterpretation[Biological Interpretation]
+    Q --> RsystemsBiologyInsights[Systems Biology Insights]
 
     subgraph "Omic Layers"
         S[Genomics] -.-> A
@@ -279,14 +200,14 @@ graph TD
 
     subgraph "Integration Methods"
         X[MOFA] -.-> H
-        Y[Joint PCA] -.-> H
-        Z[Similarity Networks] -.-> H
+        YjointPca[Joint PCA] -.-> H
+        ZsimilarityNetworks[Similarity Networks] -.-> H
     end
 
     subgraph "Biological Outputs"
-        AA[Gene Modules] -.-> Q
-        BB[Regulatory Networks] -.-> Q
-        CC[Disease Pathways] -.-> Q
+        AAgeneModules[Gene Modules] -.-> Q
+        BBregulatoryNetworks[Regulatory Networks] -.-> Q
+        CCdiseasePathways[Disease Pathways] -.-> Q
         DD[Biomarkers] -.-> Q
     end
 ```
@@ -295,54 +216,50 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Data Processing Pipeline] --> B[Input Validation]
-    B --> C[Type Checking]
-    C --> D[Schema Validation]
+    AdataProcessingPipeline[Data Processing Pipeline] --> BinputValidation[Input Validation]
+    B --> CtypeChecking[Type Checking]
+    C --> DschemaValidation[Schema Validation]
 
-    D --> E[Processing Logic]
-    E --> F[Error Handling]
-    F --> G[Recovery Mechanisms]
+    D --> EprocessingLogic[Processing Logic]
+    E --> FerrorHandling[Error Handling]
+    F --> GrecoveryMechanisms[Recovery Mechanisms]
 
-    G --> H[Output Validation]
-    H --> I[Result Verification]
-    I --> J[Quality Metrics]
+    G --> HoutputValidation[Output Validation]
+    H --> IresultVerification[Result Verification]
+    I --> JqualityMetrics[Quality Metrics]
 
     J --> K{Acceptable Quality?}
-    K -->|Yes| L[Pipeline Success]
-    K -->|No| M[Quality Issues]
+    K -->|Yes| LpipelineSuccess[Pipeline Success]
+    K -->|No| MqualityIssues[Quality Issues]
 
-    M --> N[Diagnostic Analysis]
-    N --> O[Error Classification]
+    M --> NdiagnosticAnalysis[Diagnostic Analysis]
+    N --> OerrorClassification[Error Classification]
 
     O --> P{Recoverable?}
-    P -->|Yes| Q[Data Correction]
-    P -->|No| R[Pipeline Failure]
+    P -->|Yes| QdataCorrection[Data Correction]
+    P -->|No| RpipelineFailure[Pipeline Failure]
 
     Q --> E
-    L --> S[Validated Results]
-    R --> T[Error Reporting]
-
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style E fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style S fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    L --> SvalidatedResults[Validated Results]
+    R --> TerrorReporting[Error Reporting]
 
     subgraph "Validation Layers"
-        U[Data Integrity] -.-> B
-        V[Business Logic] -.-> E
-        W[Statistical Validity] -.-> H
+        UdataIntegrity[Data Integrity] -.-> B
+        VbusinessLogic[Business Logic] -.-> E
+        WstatisticalValidity[Statistical Validity] -.-> H
     end
 
     subgraph "Quality Controls"
-        X[Unit Tests] -.-> F
-        Y[Integration Tests] -.-> I
-        Z[Performance Benchmarks] -.-> J
+        XunitTests[Unit Tests] -.-> F
+        YintegrationTests[Integration Tests] -.-> I
+        ZperformanceBenchmarks[Performance Benchmarks] -.-> J
     end
 
     subgraph "Error Types"
-        AA[Data Errors] -.-> O
-        BB[Logic Errors] -.-> O
-        CC[System Errors] -.-> O
-        DD[External Errors] -.-> O
+        AAdataErrors[Data Errors] -.-> O
+        BBlogicErrors[Logic Errors] -.-> O
+        CCsystemErrors[System Errors] -.-> O
+        DDexternalErrors[External Errors] -.-> O
     end
 ```
 

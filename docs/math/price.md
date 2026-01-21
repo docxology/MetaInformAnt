@@ -4,9 +4,9 @@ Functions: `expectation`, `variance`, `standard_deviation`, `weighted_variance`,
 
 ```mermaid
 graph TD
-  A[fitness w] & B[trait z] --> C[covariance]
-  D[offspring trait z'] --> E[transmission]
-  C & E --> F[total change]
+  AfitnessW[fitness w] & BtraitZ[trait z] --> C[covariance]
+  DoffspringTraitZ'[offspring trait z'] --> E[transmission]
+  C & E --> FtotalChange[total change]
 ```
 
 Examples

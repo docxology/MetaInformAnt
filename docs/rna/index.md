@@ -12,11 +12,11 @@ Thin, modular wrapper over the external `amalgkit` CLI with a plan/execute workf
 
 ```mermaid
 flowchart LR
-  A[Workflow Config] --> B[plan_workflow]
-  B --> C[Ordered Steps]
-  C --> D[execute_workflow]
-  D --> E[amalgkit subcommands]
-  E --> F[Logs + Manifest]
+  AworkflowConfig[Workflow Config] --> BplanWorkflow[plan_workflow]
+  B --> CorderedSteps[Ordered Steps]
+  C --> DexecuteWorkflow[execute_workflow]
+  D --> EamalgkitSubcommands[amalgkit subcommands]
+  E --> Flogs+Manifest[Logs + Manifest]
 ```
 
 See: [amalgkit/README.md](amalgkit/README.md), [workflow.md](workflow.md), [CONFIGURATION.md](CONFIGURATION.md).

@@ -4,8 +4,8 @@ Functions: `find_motif_positions`, `_iupac_to_regex`
 
 ```mermaid
 flowchart LR
-  A[DNA Sequence] & B[Motif Pattern] --> C[find_motif_positions]
-  B --> D[_iupac_to_regex] --> E[Regex Pattern]
+  AdnaSequence[DNA Sequence] & BmotifPattern[Motif Pattern] --> CfindMotifPositions[find_motif_positions]
+  B --> DIupacToRegex[_iupac_to_regex] --> EregexPattern[Regex Pattern]
 ```
 
 Example

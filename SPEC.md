@@ -24,9 +24,9 @@ graph TD
     Root --> Tests
     Root --> Docs
 
-    subgraph src_layer [Source Layer]
+    subgraph src_layer sourceLayer[Source Layer]
         Core["core/"]
-        Domains["domains (dna, rna, etc.)"]
+        Domains"domains(dna,Rna,Etc.)"["domains (dna, rna, etc.)"]
         Viz["visualization/"]
     end
 

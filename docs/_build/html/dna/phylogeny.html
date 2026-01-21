@@ -101,7 +101,7 @@
 <h1>DNA: Phylogeny<a class="headerlink" href="#dna-phylogeny" title="Link to this heading"></a></h1>
 <p>Functions: <code class="docutils literal notranslate"><span class="pre">neighbor_joining_tree</span></code>, <code class="docutils literal notranslate"><span class="pre">upgma_tree</span></code>, <code class="docutils literal notranslate"><span class="pre">to_newick</span></code>, <code class="docutils literal notranslate"><span class="pre">to_ascii</span></code>, <code class="docutils literal notranslate"><span class="pre">bootstrap_support</span></code>, <code class="docutils literal notranslate"><span class="pre">basic_tree_stats</span></code>.</p>
 <div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart LR
-  A[Aligned sequences] --&gt; B[Distance Matrix]
+  AalignedSequences[Aligned sequences] --&gt; BdistanceMatrix[Distance Matrix]
   B --&gt; C[NJ]
   B --&gt; D[UPGMA]
   C --&gt; E[Tree]

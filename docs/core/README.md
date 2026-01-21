@@ -21,27 +21,27 @@ The core module provides essential utilities used across all METAINFORMANT domai
 ```mermaid
 graph TD
     subgraph "Configuration Management"
-        CONFIG[config.py<br/>YAML/TOML parsing<br/>Env overrides<br/>Validation]
-        SYMBOLS[symbols.py<br/>Function discovery<br/>AST parsing<br/>Signature extraction]
-        DISCOVERY[discovery.py<br/>Config discovery<br/>Workflow mapping<br/>Module integration]
+        CONFIGconfig.pyYaml/tomlParsingEnvOverridesValidation[config.py_YAML/TOML parsing_Env overrides_Validation]
+        SYMBOLSsymbols.pyFunctionDiscoveryAstParsingSignatureExtraction[symbols.py_Function discovery_AST parsing_Signature extraction]
+        DISCOVERYdiscovery.pyConfigDiscoveryWorkflowMappingModuleIntegration[discovery.py_Config discovery_Workflow mapping_Module integration]
     end
 
     subgraph "I/O & Data"
-        IO[io.py<br/>JSON/CSV/Parquet<br/>Gzip handling<br/>Atomic writes]
-        CACHE[cache.py<br/>TTL caching<br/>Thread safety<br/>JSON storage]
-        DB[db.py<br/>PostgreSQL<br/>Connection pooling<br/>Query execution]
+        IOio.pyJson/csv/parquetGzipHandlingAtomicWrites[io.py_JSON/CSV/Parquet_Gzip handling_Atomic writes]
+        CACHEcache.pyTtlCachingThreadSafetyJsonStorage[cache.py_TTL caching_Thread safety_JSON storage]
+        DBdb.pyPostgresqlConnectionPoolingQueryExecution[db.py_PostgreSQL_Connection pooling_Query execution]
     end
 
     subgraph "System Utilities"
-        PATHS[paths.py<br/>Path resolution<br/>Security validation<br/>Containment checks]
-        TEXT[text.py<br/>Text processing<br/>Normalization<br/>Encoding]
-        HASH[hash.py<br/>SHA-256<br/>File integrity<br/>Content hashing]
+        PATHSpaths.pyPathResolutionSecurityValidationContainmentChecks[paths.py_Path resolution_Security validation_Containment checks]
+        TEXTtext.pyTextProcessingNormalizationEncoding[text.py_Text processing_Normalization_Encoding]
+        HASHhash.pySha-256FileIntegrityContentHashing[hash.py_SHA-256_File integrity_Content hashing]
     end
 
     subgraph "Execution & Control"
-        LOGGING[logging.py<br/>Structured logging<br/>Context support<br/>Multiple outputs]
-        PARALLEL[parallel.py<br/>Thread pools<br/>Map operations<br/>Resource management]
-        WORKFLOW[workflow.py<br/>Config-based workflows<br/>Step orchestration<br/>Error handling]
+        LOGGINGlogging.pyStructuredLoggingContextSupportMultipleOutputs[logging.py_Structured logging_Context support_Multiple outputs]
+        PARALLELparallel.pyThreadPoolsMapOperationsResourceManagement[parallel.py_Thread pools_Map operations_Resource management]
+        WORKFLOWworkflow.pyConfig-basedWorkflowsStepOrchestrationErrorHandling[workflow.py_Config-based workflows_Step orchestration_Error handling]
     end
 
     CONFIG --> IO
@@ -55,15 +55,13 @@ graph TD
     LOGGING --> WORKFLOW
     PARALLEL --> WORKFLOW
 
-    CONFIG -->|Configuration| DNA[DNA Module]
-    IO -->|I/O Operations| RNA[RNA Module]
-    LOGGING -->|Logging| GWAS[GWAS Module]
-    PARALLEL -->|Parallel Processing| MATH[Math Module]
+    CONFIG -->|Configuration| DNAdnaModule[DNA Module]
+    IO -->|I/O Operations| RNArnaModule[RNA Module]
+    LOGGING -->|Logging| GWASgwasModule[GWAS Module]
+    PARALLEL -->|Parallel Processing| MATHmathModule[Math Module]
     PATHS -->|Path Management| VIZ[Visualization]
-    CACHE -->|Caching| ML[ML Module]
+    CACHE -->|Caching| MLmlModule[ML Module]
 
-    classDef core fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef domain fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
 
     class CONFIG,SYMBOLS,DISCOVERY,IO,CACHE,DB,PATHS,TEXT,HASH,LOGGING,PARALLEL,WORKFLOW core
     class DNA,RNA,GWAS,MATH,VIZ,ML domain

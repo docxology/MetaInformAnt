@@ -335,18 +335,18 @@
 <h2>Workflow Order<a class="headerlink" href="#workflow-order" title="Link to this heading"></a></h2>
 <p>Standard workflow progression:</p>
 <div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart TD
-    A[01. metadata] --&gt; B[02. config]
-    A --&gt; C[03. select]
+    A01.Metadata[01. metadata] --&gt; B02.Config[02. config]
+    A --&gt; C03.Select[03. select]
     B --&gt; C
-    C --&gt; D[04. getfastq]
-    D --&gt; E[05. integrate]
-    E --&gt; F[06. quant]
-    F --&gt; G[07. merge]
-    G --&gt; H1[08. cstmm]
-    G --&gt; H2[09. curate]
-    H1 --&gt; I[10. csca]
+    C --&gt; D04.Getfastq[04. getfastq]
+    D --&gt; E05.Integrate[05. integrate]
+    E --&gt; F06.Quant[06. quant]
+    F --&gt; G07.Merge[07. merge]
+    G --&gt; H108.Cstmm[08. cstmm]
+    G --&gt; H209.Curate[09. curate]
+    H1 --&gt; I10.Csca[10. csca]
     H2 --&gt; I
-    H2 --&gt; J[11. sanity]
+    H2 --&gt; J11.Sanity[11. sanity]
 </pre></div>
 </div>
 </section>

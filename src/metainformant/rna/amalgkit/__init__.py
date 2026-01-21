@@ -21,6 +21,7 @@ from .amalgkit import (
 )
 from . import genome_prep
 from . import metadata_filter
+from . import metadata_utils
 
 __all__ = [
     "AmalgkitParams",

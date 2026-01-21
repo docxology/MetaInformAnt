@@ -84,24 +84,56 @@ def filter_selected_metadata(
         df = df[df['is_qualified'] == 'yes']
         logger.debug(f"After is_qualified=yes filter: {len(df)} samples")
 
+    # Explicitly filter for RNA-Seq/TRANSCRIPTOMIC if it's an RNA workflow
+    if 'lib_strategy' in df.columns:
+        initial_count = len(df)
+        df = df[df['lib_strategy'].str.contains('RNA-Seq|cDNA', case=False, na=False)]
+        filtered_count = initial_count - len(df)
+        if filtered_count > 0:
+            logger.info(f"Filtered out {filtered_count} non-RNA-Seq samples based on lib_strategy")
+            
+    if 'lib_source' in df.columns:
+        initial_count = len(df)
+        df = df[df['lib_source'].str.contains('TRANSCRIPTOMIC', case=False, na=False)]
+        filtered_count = initial_count - len(df)
+        if filtered_count > 0:
+            logger.info(f"Filtered out {filtered_count} non-TRANSCRIPTOMIC samples based on lib_source")
+
     if exclude_excluded:
         # Exclude rows where exclusion column has values (not empty/NaN and not "no")
         df = df[df['exclusion'].isna() | (df['exclusion'] == '') | (df['exclusion'] == 'no')]
         logger.debug(f"After exclusion filter: {len(df)} samples")
 
     if exclude_lite_files:
-        # Exclude LITE SRA files (metadata-only, no sequence data)
-        # Check AWS_Link, NCBI_Link, and GCP_Link columns for "lite" in URL
-        lite_mask = pd.Series([False] * len(df), index=df.index)
-        for link_col in ['AWS_Link', 'NCBI_Link', 'GCP_Link']:
-            if link_col in df.columns:
-                lite_mask |= df[link_col].astype(str).str.contains('lite', case=False, na=False)
-        
-        if lite_mask.any():
-            lite_count = lite_mask.sum()
-            logger.warning(f"Excluding {lite_count} LITE SRA files (metadata-only, no sequence data)")
-            df = df[~lite_mask]
-            logger.debug(f"After LITE file filter: {len(df)} samples")
+        # Only exclude if ALL available links contain 'lite'
+        # If any link is NOT lite (e.g. AWS has full data but NCBI is lite), we should keep it
+        link_cols = [col for col in ['AWS_Link', 'NCBI_Link', 'GCP_Link'] if col in df.columns]
+        if link_cols:
+            # A row is 'all_lite' if every link it has contains 'lite'
+            # We initialize all_lite_mask as True for all rows
+            all_lite_mask = pd.Series([True] * len(df), index=df.index)
+            
+            for link_col in link_cols:
+                # A row is NOT all_lite if this link is NOT lite (and not empty)
+                is_link_lite = df[link_col].astype(str).str.contains('lite', case=False, na=False)
+                is_link_empty = df[link_col].isna() | (df[link_col].astype(str) == 'nan') | (df[link_col].astype(str) == '')
+                
+                # We can't say it's lite if the link is empty; empty link means we can't use it.
+                # If a link is not empty AND not lite, then the whole row is NOT all_lite.
+                all_lite_mask &= (is_link_lite | is_link_empty)
+            
+            # Additional check: if it's all empty, that's also effectively "lite" (no data)
+            all_empty = pd.Series([True] * len(df), index=df.index)
+            for link_col in link_cols:
+                all_empty &= (df[link_col].isna() | (df[link_col].astype(str) == 'nan') | (df[link_col].astype(str) == ''))
+            
+            exclude_mask = all_lite_mask | all_empty
+            
+            if exclude_mask.any():
+                lite_count = exclude_mask.sum()
+                logger.warning(f"Excluding {lite_count} samples with only LITE or missing cloud sequence data")
+                df = df[~exclude_mask]
+                logger.debug(f"After LITE/empty file filter: {len(df)} samples")
 
     filtered_count = len(df)
 

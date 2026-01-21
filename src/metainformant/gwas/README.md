@@ -11,30 +11,30 @@ This module provides GWAS functionality integrated with METAINFORMANT's bioinfor
 ```mermaid
 graph TB
     subgraph "GWAS Module"
-        Quality[quality<br/>Quality Control]
-        Structure[structure<br/>Population Structure]
-        Association[association<br/>Association Testing]
-        Correction[correction<br/>Multiple Testing]
-        Visualization[visualization<br/>Visualization]
-        Calling[calling<br/>Variant Calling]
-        Download[download<br/>Data Download]
-        Config[config<br/>Configuration]
-        Workflow[workflow<br/>Workflow Orchestration]
+        QualityqualityQualityControl[quality_Quality Control]
+        StructurestructurePopulationStructure[structure_Population Structure]
+        AssociationassociationAssociationTesting[association_Association Testing]
+        CorrectioncorrectionMultipleTesting[correction_Multiple Testing]
+        VisualizationvisualizationVisualization[visualization_Visualization]
+        CallingcallingVariantCalling[calling_Variant Calling]
+        DownloaddownloadDataDownload[download_Data Download]
+        ConfigconfigConfiguration[config_Configuration]
+        WorkflowworkflowWorkflowOrchestration[workflow_Workflow Orchestration]
     end
     
     subgraph "Input Data"
-        VCF[VCF Files]
-        BAM[BAM Files]
-        Phenotypes[Phenotype Data]
-        SRA[SRA Data]
+        VCFvcfFiles[VCF Files]
+        BAMbamFiles[BAM Files]
+        PhenotypesphenotypeData[Phenotype Data]
+        SRAsraData[SRA Data]
     end
     
     subgraph "Other Modules"
-        DNA_Mod[dna]
-        Math_Mod[math]
-        Phenotype_Mod[phenotype]
-        Viz_Mod[visualization]
-        QC_Mod[quality]
+        dna[dna]
+        math[math]
+        phenotype[phenotype]
+        visualization[visualization]
+        quality[quality]
     end
     
     VCF --> Quality
@@ -57,56 +57,53 @@ graph TB
 
 ```mermaid
 graph TD
-    A[Input Data] --> B{Data Source}
-    B -->|VCF File| C[Parse VCF]
-    B -->|BAM Files| D[Variant Calling]
-    B -->|SRA Accession| E[SRA Download]
+    AinputData[Input Data] --> B{Data Source}
+    B -->|VCF File| CparseVcf[Parse VCF]
+    B -->|BAM Files| DvariantCalling[Variant Calling]
+    B -->|SRA Accession| EsraDownload[SRA Download]
 
-    C --> F[Quality Control]
+    C --> FqualityControl[Quality Control]
     D --> F
     E --> D
 
-    F --> G[QC Filtering]
-    G --> H[Population Structure]
+    F --> GqcFiltering[QC Filtering]
+    G --> HpopulationStructure[Population Structure]
 
-    H --> I[PCA Analysis]
-    H --> J[Kinship Matrix]
+    H --> IpcaAnalysis[PCA Analysis]
+    H --> JkinshipMatrix[Kinship Matrix]
 
-    I --> K[Association Testing]
+    I --> KassociationTesting[Association Testing]
     J --> K
 
     K --> L{Model Type}
-    L -->|Linear| M[Linear Regression]
-    L -->|Logistic| N[Logistic Regression]
+    L -->|Linear| MlinearRegression[Linear Regression]
+    L -->|Logistic| NlogisticRegression[Logistic Regression]
 
-    M --> O[Multiple Testing Correction]
+    M --> OmultipleTestingCorrection[Multiple Testing Correction]
     N --> O
 
     O --> P{Bonferroni}
     O --> Q{FDR}
     O --> R{Genomic Control}
 
-    P --> S[Visualization Suite]
+    P --> SvisualizationSuite[Visualization Suite]
     Q --> S
     R --> S
 
-    S --> T[32 Visualization Types]
-    T --> U[Results Output]
+    S --> T32VisualizationTypes[32 Visualization Types]
+    T --> UresultsOutput[Results Output]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style K fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style S fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Quality Control"
-        V[MAF Filter] -.-> G
+        VmafFilter[MAF Filter] -.-> G
         W[Missingness] -.-> G
-        X[HWE Test] -.-> G
+        XhweTest[HWE Test] -.-> G
     end
 
     subgraph "Covariates"
         Y[PCs] -.-> K
         Z[Kinship] -.-> K
-        AA[Other Covs] -.-> K
+        AAotherCovs[Other Covs] -.-> K
     end
 ```
 
@@ -114,7 +111,7 @@ graph TD
 
 ```mermaid
 graph TD
-    A[GWAS Results] --> B{Population Structure}
+    AgwasResults[GWAS Results] --> B{Population Structure}
     A --> C{Variant Effects}
     A --> D{Genome-wide Views}
     A --> E{Regional Analysis}
@@ -122,42 +119,42 @@ graph TD
     A --> G{Comparison Views}
     A --> H{Variant-level Analysis}
 
-    B --> I[PCA Plot]
-    B --> J[Kinship Heatmap]
-    B --> K[Population Admixture]
-    B --> L[Structure Plot]
+    B --> IpcaPlot[PCA Plot]
+    B --> JkinshipHeatmap[Kinship Heatmap]
+    B --> KpopulationAdmixture[Population Admixture]
+    B --> LstructurePlot[Structure Plot]
 
-    C --> M[Effect Size Distribution]
-    C --> N[Odds Ratio Plot]
-    C --> O[Allele Frequency vs Effect]
-    C --> P[Beta Coefficient Plot]
+    C --> MeffectSizeDistribution[Effect Size Distribution]
+    C --> NoddsRatioPlot[Odds Ratio Plot]
+    C --> OalleleFrequencyVsEffect[Allele Frequency vs Effect]
+    C --> PbetaCoefficientPlot[Beta Coefficient Plot]
 
-    D --> Q[Manhattan Plot]
-    D --> R[QQ Plot]
-    D --> S[Genome-wide Significance]
-    D --> T[P-value Histogram]
+    D --> QmanhattanPlot[Manhattan Plot]
+    D --> RqqPlot[QQ Plot]
+    D --> Sgenome-wideSignificance[Genome-wide Significance]
+    D --> Tp-valueHistogram[P-value Histogram]
 
-    E --> U[Regional Manhattan]
-    E --> V[Regional Association]
-    E --> W[Linkage Disequilibrium]
-    E --> X[Recombination Rate]
+    E --> UregionalManhattan[Regional Manhattan]
+    E --> VregionalAssociation[Regional Association]
+    E --> WlinkageDisequilibrium[Linkage Disequilibrium]
+    E --> XrecombinationRate[Recombination Rate]
 
-    F --> Y[Genomic Inflation Factor]
-    F --> Z[Lambda GC Plot]
-    F --> AA[P-value Distribution]
-    F --> BB[Power Analysis]
+    F --> YgenomicInflationFactor[Genomic Inflation Factor]
+    F --> ZlambdaGcPlot[Lambda GC Plot]
+    F --> AAp-valueDistribution[P-value Distribution]
+    F --> BBpowerAnalysis[Power Analysis]
 
-    G --> CC[Meta-analysis Plot]
-    G --> DD[Cross-study Comparison]
-    G --> EE[Cohort Effect Sizes]
-    G --> FF[Replication Analysis]
+    G --> CCmeta-analysisPlot[Meta-analysis Plot]
+    G --> DDcross-studyComparison[Cross-study Comparison]
+    G --> EEcohortEffectSizes[Cohort Effect Sizes]
+    G --> FFreplicationAnalysis[Replication Analysis]
 
-    H --> GG[Variant Annotation]
-    H --> HH[Functional Impact]
-    H --> II[Conservation Scores]
-    H --> JJ[Expression QTL]
+    H --> GGvariantAnnotation[Variant Annotation]
+    H --> HHfunctionalImpact[Functional Impact]
+    H --> IIconservationScores[Conservation Scores]
+    H --> JJexpressionQtl[Expression QTL]
 
-    I --> KK[Output Suite]
+    I --> KKoutputSuite[Output Suite]
     J --> KK
     K --> KK
     L --> KK
@@ -186,48 +183,43 @@ graph TD
     II --> KK
     JJ --> KK
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style KK fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 ```
 
 ### Population Structure Analysis
 
 ```mermaid
 graph TD
-    A[Genotype Matrix] --> B[Quality Filtering]
-    B --> C[Missing Data Imputation]
-    C --> D[MAF Filtering]
+    AgenotypeMatrix[Genotype Matrix] --> BqualityFiltering[Quality Filtering]
+    B --> CmissingDataImputation[Missing Data Imputation]
+    C --> DmafFiltering[MAF Filtering]
 
     D --> E{Structure Method}
-    E -->|PCA| F[Principal Component Analysis]
-    E -->|Kinship| G[Kinship Matrix Computation]
-    E -->|Admixture| H[Admixture Analysis]
+    E -->|PCA| FprincipalComponentAnalysis[Principal Component Analysis]
+    E -->|Kinship| GkinshipMatrixComputation[Kinship Matrix Computation]
+    E -->|Admixture| HadmixtureAnalysis[Admixture Analysis]
 
-    F --> I[PCA Components]
-    G --> J[Kinship Matrix]
-    H --> K[Ancestry Proportions]
+    F --> IpcaComponents[PCA Components]
+    G --> JkinshipMatrix[Kinship Matrix]
+    H --> KancestryProportions[Ancestry Proportions]
 
-    I --> L[Covariates for Association]
+    I --> LcovariatesForAssociation[Covariates for Association]
     J --> L
     K --> L
 
-    L --> M[Association Testing]
-    M --> N[Population-corrected Results]
+    L --> MassociationTesting[Association Testing]
+    M --> Npopulation-correctedResults[Population-corrected Results]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style L fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style N fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Methods"
         O[VanRaden] -.-> G
-        P[Centered IBS] -.-> G
+        PcenteredIbs[Centered IBS] -.-> G
         Q[GCTA] -.-> G
     end
 
     subgraph "PCA Details"
-        R[SVD Decomposition] -.-> F
-        S[Eigenvalue Analysis] -.-> F
-        T[Component Selection] -.-> F
+        RsvdDecomposition[SVD Decomposition] -.-> F
+        SeigenvalueAnalysis[Eigenvalue Analysis] -.-> F
+        TcomponentSelection[Component Selection] -.-> F
     end
 ```
 
@@ -235,53 +227,50 @@ graph TD
 
 ```mermaid
 graph TD
-    A[SRA Accession] --> B[ENA Direct Download]
-    B --> C[FASTQ Files]
+    AsraAccession[SRA Accession] --> BenaDirectDownload[ENA Direct Download]
+    B --> CfastqFiles[FASTQ Files]
 
     C --> D{Alignment Method}
-    D -->|BWA| E[BWA Alignment]
-    D -->|Bowtie2| F[Bowtie2 Alignment]
-    D -->|STAR| G[STAR Alignment]
+    D -->|BWA| EbwaAlignment[BWA Alignment]
+    D -->|Bowtie2| Fbowtie2Alignment[Bowtie2 Alignment]
+    D -->|STAR| GstarAlignment[STAR Alignment]
 
-    E --> H[BAM Files]
+    E --> HbamFiles[BAM Files]
     F --> H
     G --> H
 
-    H --> I[Variant Calling]
+    H --> IvariantCalling[Variant Calling]
     I --> J{bcftools}
     I --> K{GATK}
 
-    J --> L[VCF Files]
+    J --> LvcfFiles[VCF Files]
     K --> L
 
-    L --> M[VCF Parsing]
-    M --> N[Quality Control]
+    L --> MvcfParsing[VCF Parsing]
+    M --> NqualityControl[Quality Control]
 
-    N --> O[MAF Filter]
-    N --> P[Missingness Filter]
-    N --> Q[HWE Test]
+    N --> OmafFilter[MAF Filter]
+    N --> PmissingnessFilter[Missingness Filter]
+    N --> QhweTest[HWE Test]
 
-    O --> R[Filtered VCF]
+    O --> RfilteredVcf[Filtered VCF]
     P --> R
     Q --> R
 
-    R --> S[Population Structure]
+    R --> SpopulationStructure[Population Structure]
     S --> T[PCA/Kinship]
 
-    T --> U[Association Testing]
-    U --> V[Linear/Logistic Regression]
+    T --> UassociationTesting[Association Testing]
+    U --> Vlinear/logisticRegression[Linear/Logistic Regression]
 
-    V --> W[Multiple Testing Correction]
+    V --> WmultipleTestingCorrection[Multiple Testing Correction]
     W --> X[Bonferroni/FDR]
 
-    X --> Y[Visualization Suite]
-    Y --> Z[32 Plot Types]
+    X --> YvisualizationSuite[Visualization Suite]
+    Y --> Z32PlotTypes[32 Plot Types]
 
-    Z --> AA[GWAS Results]
+    Z --> AAgwasResults[GWAS Results]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style U fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style AA fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 ```
     Calling --> Load
     Load --> QC[Quality Control]

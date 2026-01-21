@@ -4,8 +4,8 @@ Functions: `ddm_analytic_accuracy`, `ddm_mean_decision_time`.
 
 ```mermaid
 flowchart LR
-  A[drift v, boundary a, noise sigma] --> B[accuracy]
-  A --> C[mean decision time]
+  AdriftV,BoundaryA,NoiseSigma[drift v, boundary a, noise sigma] --> B[accuracy]
+  A --> CmeanDecisionTime[mean decision time]
 ```
 
 Example

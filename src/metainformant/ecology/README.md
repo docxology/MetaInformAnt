@@ -11,22 +11,22 @@ This module handles ecological data including species diversity, community compo
 ```mermaid
 graph TB
     subgraph "Ecology Module"
-        Community[community<br/>Community Analysis]
-        Environmental[environmental<br/>Environmental Data]
-        Interactions[interactions<br/>Species Interactions]
-        Workflow[workflow<br/>Workflow Orchestration]
+        CommunitycommunityCommunityAnalysis[community_Community Analysis]
+        EnvironmentalenvironmentalEnvironmentalData[environmental_Environmental Data]
+        InteractionsinteractionsSpeciesInteractions[interactions_Species Interactions]
+        WorkflowworkflowWorkflowOrchestration[workflow_Workflow Orchestration]
     end
     
     subgraph "Input Data"
-        Abundance[Abundance Tables]
-        EnvData[Environmental Data]
-        InteractionData[Interaction Data]
+        AbundanceabundanceTables[Abundance Tables]
+        EnvDataenvironmentalData[Environmental Data]
+        InteractionDatainteractionData[Interaction Data]
     end
     
     subgraph "Other Modules"
-        Networks_Mod[networks]
-        DNA_Mod[dna]
-        Info_Mod[information]
+        networks[networks]
+        dna[dna]
+        information[information]
     end
     
     Abundance --> Community
@@ -44,38 +44,35 @@ graph TB
 
 ```mermaid
 graph TD
-    A[Community Data] --> B[Abundance Matrix]
-    B --> C[Species Richness]
+    AcommunityData[Community Data] --> BabundanceMatrix[Abundance Matrix]
+    B --> CspeciesRichness[Species Richness]
 
     C --> D{Index Type}
-    D -->|Alpha Diversity| E[Shannon Index]
-    D -->|Species Richness| F[Observed Species]
-    D -->|Evenness| G[Simpson Index]
+    D -->|Alpha Diversity| EshannonIndex[Shannon Index]
+    D -->|Species Richness| FobservedSpecies[Observed Species]
+    D -->|Evenness| GsimpsonIndex[Simpson Index]
     D -->|Dominance| H[Berger-Parker]
 
-    E --> I[Diversity Metrics]
+    E --> IdiversityMetrics[Diversity Metrics]
     F --> I
     G --> I
     H --> I
 
-    I --> J[Rarefaction Curves]
-    J --> K[Sample Size Standardization]
+    I --> JrarefactionCurves[Rarefaction Curves]
+    J --> KsampleSizeStandardization[Sample Size Standardization]
 
-    K --> L[Statistical Comparison]
-    L --> M[Significance Testing]
+    K --> LstatisticalComparison[Statistical Comparison]
+    L --> MsignificanceTesting[Significance Testing]
 
-    M --> N[Diversity Results]
-    N --> O[Community Interpretation]
+    M --> NdiversityResults[Diversity Results]
+    N --> OcommunityInterpretation[Community Interpretation]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style I fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style O fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Data Types"
-        P[Count Data] -.-> B
+        PcountData[Count Data] -.-> B
         Q[Presence/Absence] -.-> B
-        R[Biomass Data] -.-> B
-        S[Cover Data] -.-> B
+        RbiomassData[Biomass Data] -.-> B
+        ScoverData[Cover Data] -.-> B
     end
 
     subgraph "Diversity Measures"
@@ -95,20 +92,20 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Multiple Communities] --> B[Distance Matrix]
+    AmultipleCommunities[Multiple Communities] --> BdistanceMatrix[Distance Matrix]
     B --> C{Dissimilarity Measure}
 
     C -->|Bray-Curtis| D[Abundance-based]
     C -->|Jaccard| E[Presence/Absence]
     C -->|Unifrac| F[Phylogenetic]
-    C -->|Sorensen| G[Quantitative Sorensen]
+    C -->|Sorensen| GquantitativeSorensen[Quantitative Sorensen]
 
-    D --> H[Dissimilarity Values]
+    D --> HdissimilarityValues[Dissimilarity Values]
     E --> H
     F --> H
     G --> H
 
-    H --> I[Ordination Analysis]
+    H --> IordinationAnalysis[Ordination Analysis]
     I --> J[NMDS]
     I --> K[PCoA]
     I --> L[MDS]
@@ -117,21 +114,18 @@ graph TD
     K --> M
     L --> M
 
-    M --> N[Cluster Analysis]
-    N --> O[Hierarchical Clustering]
-    N --> P[K-means Clustering]
+    M --> NclusterAnalysis[Cluster Analysis]
+    N --> OhierarchicalClustering[Hierarchical Clustering]
+    N --> Pk-meansClustering[K-means Clustering]
 
-    O --> Q[Community Groups]
+    O --> QcommunityGroups[Community Groups]
     P --> Q
 
-    Q --> R[Indicator Species]
-    R --> S[Characteristic Taxa]
+    Q --> RindicatorSpecies[Indicator Species]
+    R --> ScharacteristicTaxa[Characteristic Taxa]
 
-    S --> T[Community Classification]
+    S --> TcommunityClassification[Community Classification]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style H fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style T fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Distance Measures"
         U[Euclidean] -.-> B
@@ -156,44 +150,41 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Species Data] --> B[Environmental Data]
-    B --> C[Variable Selection]
+    AspeciesData[Species Data] --> BenvironmentalData[Environmental Data]
+    B --> CvariableSelection[Variable Selection]
 
-    A --> D[Community Matrix]
+    A --> DcommunityMatrix[Community Matrix]
     D --> E[Transformation]
 
-    C --> F[Collinearity Check]
-    F --> G[Variable Reduction]
+    C --> FcollinearityCheck[Collinearity Check]
+    F --> GvariableReduction[Variable Reduction]
 
-    E --> H[Statistical Modeling]
+    E --> HstatisticalModeling[Statistical Modeling]
     G --> H
 
     H --> I{Method}
-    I -->|CCA| J[Canonical Correlation]
-    I -->|RDA| K[Redundancy Analysis]
-    I -->|PLS| L[Partial Least Squares]
-    I -->|GLM| M[Generalized Linear Models]
+    I -->|CCA| JcanonicalCorrelation[Canonical Correlation]
+    I -->|RDA| KredundancyAnalysis[Redundancy Analysis]
+    I -->|PLS| LpartialLeastSquares[Partial Least Squares]
+    I -->|GLM| MgeneralizedLinearModels[Generalized Linear Models]
 
-    J --> N[Environment-Community Relations]
+    J --> Nenvironment-communityRelations[Environment-Community Relations]
     K --> N
     L --> N
     M --> N
 
-    N --> O[Significance Testing]
-    O --> P[Permutation Tests]
+    N --> OsignificanceTesting[Significance Testing]
+    O --> PpermutationTests[Permutation Tests]
     O --> Q[ANOVA]
 
-    P --> R[Significant Relationships]
+    P --> RsignificantRelationships[Significant Relationships]
     Q --> R
 
-    R --> S[Variable Importance]
-    S --> T[Key Environmental Drivers]
+    R --> SvariableImportance[Variable Importance]
+    S --> TkeyEnvironmentalDrivers[Key Environmental Drivers]
 
-    T --> U[Management Implications]
+    T --> UmanagementImplications[Management Implications]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style H fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style U fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Environmental Variables"
         V[Climate] -.-> B
@@ -219,36 +210,33 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Species Interaction Data] --> B[Network Construction]
-    B --> C[Interaction Matrix]
+    AspeciesInteractionData[Species Interaction Data] --> BnetworkConstruction[Network Construction]
+    B --> CinteractionMatrix[Interaction Matrix]
 
-    C --> D[Network Properties]
+    C --> DnetworkProperties[Network Properties]
     D --> E[Connectivity]
     D --> F[Modularity]
-    D --> G[Centrality Measures]
+    D --> GcentralityMeasures[Centrality Measures]
 
-    E --> H[Network Metrics]
+    E --> HnetworkMetrics[Network Metrics]
     F --> H
     G --> H
 
-    H --> I[Community Detection]
-    I --> J[Modules Identification]
+    H --> IcommunityDetection[Community Detection]
+    I --> JmodulesIdentification[Modules Identification]
 
-    J --> K[Keystone Species]
-    K --> L[Network Hubs]
+    J --> KkeystoneSpecies[Keystone Species]
+    K --> LnetworkHubs[Network Hubs]
 
-    L --> M[Trophic Levels]
-    M --> N[Food Web Analysis]
+    L --> MtrophicLevels[Trophic Levels]
+    M --> NfoodWebAnalysis[Food Web Analysis]
 
-    N --> O[Stability Analysis]
-    O --> P[Resilience Measures]
+    N --> OstabilityAnalysis[Stability Analysis]
+    O --> PresilienceMeasures[Resilience Measures]
 
-    P --> Q[Conservation Priorities]
-    Q --> R[Management Strategies]
+    P --> QconservationPriorities[Conservation Priorities]
+    Q --> RmanagementStrategies[Management Strategies]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style H fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Interaction Types"
         S[Predation] -.-> C
@@ -258,8 +246,8 @@ graph TD
     end
 
     subgraph "Network Metrics"
-        W[Degree Distribution] -.-> H
-        X[Clustering Coefficient] -.-> H
+        WdegreeDistribution[Degree Distribution] -.-> H
+        XclusteringCoefficient[Clustering Coefficient] -.-> H
         Y[Betweenness] -.-> H
         Z[Closeness] -.-> H
     end
@@ -275,49 +263,46 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Temporal Community Data] --> B[Time Series Analysis]
-    B --> C[Succession Patterns]
+    AtemporalCommunityData[Temporal Community Data] --> BtimeSeriesAnalysis[Time Series Analysis]
+    B --> CsuccessionPatterns[Succession Patterns]
 
-    C --> D[Community Trajectories]
-    D --> E[Directional Changes]
-    E --> F[Convergence Analysis]
+    C --> DcommunityTrajectories[Community Trajectories]
+    D --> EdirectionalChanges[Directional Changes]
+    E --> FconvergenceAnalysis[Convergence Analysis]
 
-    F --> G[Successional Stages]
-    G --> H[Transition Probabilities]
+    F --> GsuccessionalStages[Successional Stages]
+    G --> HtransitionProbabilities[Transition Probabilities]
 
-    H --> I[Markov Chain Models]
-    I --> J[Stable States]
+    H --> ImarkovChainModels[Markov Chain Models]
+    I --> JstableStates[Stable States]
 
-    J --> K[Disturbance Response]
-    K --> L[Recovery Trajectories]
+    J --> KdisturbanceResponse[Disturbance Response]
+    K --> LrecoveryTrajectories[Recovery Trajectories]
 
-    L --> M[Resilience Metrics]
-    M --> N[Vulnerability Assessment]
+    L --> MresilienceMetrics[Resilience Metrics]
+    M --> NvulnerabilityAssessment[Vulnerability Assessment]
 
-    N --> O[Conservation Strategies]
-    O --> P[Adaptive Management]
+    N --> OconservationStrategies[Conservation Strategies]
+    O --> PadaptiveManagement[Adaptive Management]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style F fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style P fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Temporal Patterns"
-        Q[Seasonal Changes] -.-> C
+        QseasonalChanges[Seasonal Changes] -.-> C
         R[Succession] -.-> C
-        S[Cyclic Dynamics] -.-> C
-        T[Irregular Changes] -.-> C
+        ScyclicDynamics[Cyclic Dynamics] -.-> C
+        TirregularChanges[Irregular Changes] -.-> C
     end
 
     subgraph "Analytical Methods"
-        U[Time Series Decomposition] -.-> B
-        V[Change Point Detection] -.-> E
-        W[Trend Analysis] -.-> F
+        UtimeSeriesDecomposition[Time Series Decomposition] -.-> B
+        VchangePointDetection[Change Point Detection] -.-> E
+        WtrendAnalysis[Trend Analysis] -.-> F
     end
 
     subgraph "Management Applications"
         X[Restoration] -.-> O
         Y[Monitoring] -.-> O
-        Z[Impact Assessment] -.-> O
+        ZimpactAssessment[Impact Assessment] -.-> O
     end
 ```
 
@@ -325,39 +310,36 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Biodiversity Data] --> B[Scale Definition]
+    AbiodiversityData[Biodiversity Data] --> BscaleDefinition[Scale Definition]
     B --> C{Assessment Level}
 
-    C -->|Alpha| D[Local Diversity]
+    C -->|Alpha| DlocalDiversity[Local Diversity]
     C -->|Beta| E[Between-Habitat]
-    C -->|Gamma| F[Regional Diversity]
+    C -->|Gamma| FregionalDiversity[Regional Diversity]
 
-    D --> G[Diversity Indices]
-    E --> H[Turnover Measures]
-    F --> I[Species Pool]
+    D --> GdiversityIndices[Diversity Indices]
+    E --> HturnoverMeasures[Turnover Measures]
+    F --> IspeciesPool[Species Pool]
 
-    G --> J[Richness Estimation]
-    H --> K[Dissimilarity Metrics]
-    I --> L[Species-Area Relationships]
+    G --> JrichnessEstimation[Richness Estimation]
+    H --> KdissimilarityMetrics[Dissimilarity Metrics]
+    I --> Lspecies-areaRelationships[Species-Area Relationships]
 
     J --> M[Rarefaction]
     K --> N[Nestedness]
-    L --> O[Endemism Analysis]
+    L --> OendemismAnalysis[Endemism Analysis]
 
-    M --> P[Sampling Completeness]
-    N --> Q[Community Structure]
-    O --> R[Conservation Priority]
+    M --> PsamplingCompleteness[Sampling Completeness]
+    N --> QcommunityStructure[Community Structure]
+    O --> RconservationPriority[Conservation Priority]
 
-    P --> S[Assessment Results]
+    P --> SassessmentResults[Assessment Results]
     Q --> S
     R --> S
 
-    S --> T[Biodiversity Status]
-    T --> U[Management Recommendations]
+    S --> TbiodiversityStatus[Biodiversity Status]
+    T --> UmanagementRecommendations[Management Recommendations]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style J fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style U fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Taxonomic Groups"
         V[Plants] -.-> A

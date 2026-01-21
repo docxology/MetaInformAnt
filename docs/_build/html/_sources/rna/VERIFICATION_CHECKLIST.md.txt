@@ -5,12 +5,7 @@
 To remove warnings about missing optional dependencies:
 
 ```bash
-cd /media/q/ext6/github/MetaInformAnt
-
 # Install ncbi-datasets-pylib (biopython is already in main dependencies)
-/tmp/metainformant_venv/bin/python3 -m pip install ncbi-datasets-pylib
-
-# Or using uv (preferred)
 uv pip install ncbi-datasets-pylib --python /tmp/metainformant_venv/bin/python3
 ```
 
@@ -19,7 +14,6 @@ uv pip install ncbi-datasets-pylib --python /tmp/metainformant_venv/bin/python3
 The conversion script now supports parallel processing with detailed progress logging:
 
 ```bash
-cd /media/q/ext6/github/MetaInformAnt
 /tmp/metainformant_venv/bin/python3 scripts/rna/convert_existing_sra.py
 ```
 
@@ -35,8 +29,6 @@ cd /media/q/ext6/github/MetaInformAnt
 Run these commands to verify everything is working:
 
 ```bash
-cd /media/q/ext6/github/MetaInformAnt
-
 # 1. Check workflow status
 python3 scripts/rna/run_workflow.py config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml --status
 

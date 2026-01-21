@@ -72,7 +72,12 @@
 <p class="caption" role="heading"><span class="caption-text">Development</span></p>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Testing</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#testing-policy-strictly-no-mocks-fakes">Testing Policy (STRICTLY NO MOCKS/FAKES)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#quality-assurance-framework">Quality Assurance Framework</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#quality-assurance-architecture">Quality Assurance Architecture</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#test-execution-pipeline">Test Execution Pipeline</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#code-quality-policy-strictly-no-mocks-fakes-placeholders">Code Quality Policy (STRICTLY NO MOCKS/FAKES/PLACEHOLDERS)</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#uv-based-testing-workflow">UV-Based Testing Workflow</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#environment-setup">Environment Setup</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#test-dependency-groups">Test Dependency Groups</a></li>
@@ -172,10 +177,118 @@
              
   <section class="tex2jax_ignore mathjax_ignore" id="testing">
 <h1>Testing<a class="headerlink" href="#testing" title="Link to this heading"></a></h1>
-<section id="testing-policy-strictly-no-mocks-fakes">
-<h2>Testing Policy (STRICTLY NO MOCKS/FAKES)<a class="headerlink" href="#testing-policy-strictly-no-mocks-fakes" title="Link to this heading"></a></h2>
-<p><strong>ABSOLUTE PROHIBITION</strong>: Never use fake/mocked/stubbed methods, objects, or network shims in code or tests.</p>
-<p><strong>Real Implementation Only</strong>: Tests must exercise real code paths and real external behavior without exceptions:</p>
+<section id="quality-assurance-framework">
+<h2>Quality Assurance Framework<a class="headerlink" href="#quality-assurance-framework" title="Link to this heading"></a></h2>
+<p>METAINFORMANT implements a comprehensive quality assurance framework combining automated testing, code quality checks, and validation processes.</p>
+<section id="quality-assurance-architecture">
+<h3>Quality Assurance Architecture<a class="headerlink" href="#quality-assurance-architecture" title="Link to this heading"></a></h3>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TD
+    AcodeDevelopment[Code Development] --&gt; BstaticAnalysis[Static Analysis]
+    B --&gt; CtypeChecking[Type Checking]
+    C --&gt; D[Linting]
+
+    D --&gt; EunitTesting[Unit Testing]
+    E --&gt; FintegrationTesting[Integration Testing]
+    F --&gt; Gend-to-endTesting[End-to-End Testing]
+
+    G --&gt; HperformanceTesting[Performance Testing]
+    H --&gt; IloadTesting[Load Testing]
+
+    I --&gt; JqualityGates[Quality Gates]
+    J --&gt; K{All Passed?}
+
+    K --&gt;|Yes| LreleaseReady[Release Ready]
+    K --&gt;|No| MissueResolution[Issue Resolution]
+
+    M --&gt; A
+
+
+    subgraph &quot;Automated Checks&quot;
+        N[mypy] -.-&gt; C
+        O[ruff] -.-&gt; D
+        P[black] -.-&gt; D
+        Q[isort] -.-&gt; D
+    end
+
+    subgraph &quot;Test Categories&quot;
+        R[pytest] -.-&gt; E
+        SrealDataOnly[Real Data Only] -.-&gt; E
+        TnoMocks[No Mocks] -.-&gt; E
+        U[Integration] -.-&gt; F
+    end
+
+    subgraph &quot;Quality Metrics&quot;
+        Vcoverage&gt;90%[Coverage &gt;90%] -.-&gt; J
+        WzeroCriticalIssues[Zero Critical Issues] -.-&gt; J
+        XperformanceBenchmarks[Performance Benchmarks] -.-&gt; J
+        YdocumentationComplete[Documentation Complete] -.-&gt; J
+    end
+</pre></div>
+</div>
+</section>
+<section id="test-execution-pipeline">
+<h3>Test Execution Pipeline<a class="headerlink" href="#test-execution-pipeline" title="Link to this heading"></a></h3>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TD
+    AtestSuite[Test Suite] --&gt; BenvironmentSetup[Environment Setup]
+    B --&gt; CdependencyVerification[Dependency Verification]
+
+    C --&gt; DtestDiscovery[Test Discovery]
+    D --&gt; EtestCollection[Test Collection]
+
+    E --&gt; F{Test Category}
+    F --&gt;|Unit| GfastExecution[Fast Execution]
+    F --&gt;|Integration| HworkflowTesting[Workflow Testing]
+    F --&gt;|E2E| IfullPipeline[Full Pipeline]
+
+    G --&gt; JparallelExecution[Parallel Execution]
+    H --&gt; J
+    I --&gt; J
+
+    J --&gt; KresultCollection[Result Collection]
+    K --&gt; LcoverageAnalysis[Coverage Analysis]
+
+    L --&gt; MreportGeneration[Report Generation]
+    M --&gt; N{Quality Standards Met?}
+
+    N --&gt;|Yes| OqualityAssurancePass[Quality Assurance Pass]
+    N --&gt;|No| PfailureAnalysis[Failure Analysis]
+
+    P --&gt; QissueClassification[Issue Classification]
+    Q --&gt; RfixImplementation[Fix Implementation]
+
+    R --&gt; S[Re-testing]
+    S --&gt; N
+
+
+    subgraph &quot;Execution Environment&quot;
+        TuvVenv[uv venv] -.-&gt; B
+        U[Dependencies] -.-&gt; C
+        VtestData[Test Data] -.-&gt; C
+        WexternalTools[External Tools] -.-&gt; C
+    end
+
+    subgraph &quot;Test Organization&quot;
+        Xtests/test*.py[tests/test_*.py] -.-&gt; D
+        Y[Domain-specific] -.-&gt; F
+        ZintegrationTests[Integration Tests] -.-&gt; F
+        AAe2eTests[E2E Tests] -.-&gt; F
+    end
+
+    subgraph &quot;Quality Metrics&quot;
+        BBlineCoverage[Line Coverage] -.-&gt; L
+        CCbranchCoverage[Branch Coverage] -.-&gt; L
+        DDmutationTesting[Mutation Testing] -.-&gt; L
+        EEperformanceBenchmarks[Performance Benchmarks] -.-&gt; L
+    end
+</pre></div>
+</div>
+</section>
+</section>
+<section id="code-quality-policy-strictly-no-mocks-fakes-placeholders">
+<h2>Code Quality Policy (STRICTLY NO MOCKS/FAKES/PLACEHOLDERS)<a class="headerlink" href="#code-quality-policy-strictly-no-mocks-fakes-placeholders" title="Link to this heading"></a></h2>
+<p><strong>ABSOLUTE PROHIBITION</strong>: Never use fake/mocked/stubbed methods, objects, or network shims in <strong>source code</strong> or tests.</p>
+<p><strong>Source Code Policy</strong>: All production functions must perform real computations or make real API calls. <strong>NO DUMMY DATA RETURNS</strong>. Placeholder implementations that return hardcoded values are strictly prohibited.</p>
+<p><strong>Real Implementation Only</strong>: All code must exercise real algorithms and external behavior:</p>
 <ul class="simple">
 <li><p><strong>Networked tests</strong>: perform real HTTP requests with short timeouts. If offline, skip gracefully with clear messages.</p></li>
 <li><p><strong>CLI-dependent tests</strong> (e.g., amalgkit): run only when the dependency is available on PATH; otherwise skip with dependency notes.</p></li>

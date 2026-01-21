@@ -1,5 +1,6 @@
 ### Phenotype: Overview
 
-Phenotype curation and scraping helpers (e.g., AntWiki dataset use).
+Phenotype creation, curation, and analysis tools.
 
-See: [AntWiki](./antwiki.md).
+- **[Phenotype Documentation](README.md)**: Module overview and usage patterns.
+- **[AntWiki](antwiki.md)**: AntWiki integration.

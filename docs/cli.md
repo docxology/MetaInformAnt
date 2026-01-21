@@ -88,7 +88,7 @@ sequenceDiagram
   participant RNA as rna/*
   U->>CLI: uv run metainformant rna plan --work-dir W
   CLI->>RNA: plan_workflow(config)
-  RNA-->>CLI: steps: [(name, params)...]
+  RNA-->>CLI: steps: (name,Params)...[(name, params)...]
   U->>CLI: uv run metainformant rna run --work-dir W --check
   CLI->>RNA: execute_workflow(config, check=True)
   RNA->>RNA: run_amalgkit(step, params)

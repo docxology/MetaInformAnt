@@ -8,7 +8,7 @@ This module offers a comprehensive toolkit for applying machine learning techniq
 
 ## Core Components
 
-### [Classification](./classification.md)
+### Classification
 Supervised learning methods for biological prediction tasks:
 - Binary and multi-class classification
 - Biological sequence classification
@@ -16,7 +16,7 @@ Supervised learning methods for biological prediction tasks:
 - Model interpretability tools
 - Cross-validation and ensemble methods
 
-### [Regression](./regression.md)
+### Regression
 Continuous trait prediction and modeling:
 - Linear and non-linear regression
 - Regularization methods (Lasso, Ridge, Elastic Net)
@@ -24,7 +24,7 @@ Continuous trait prediction and modeling:
 - Feature importance analysis
 - Model comparison and selection
 
-### [Feature Selection](./features.md)
+### Feature Selection
 Dimensionality reduction and feature importance analysis:
 - Univariate statistical tests
 - Recursive feature elimination
@@ -32,7 +32,7 @@ Dimensionality reduction and feature importance analysis:
 - Biological feature ranking
 - Stability-based selection methods
 
-### [Model Validation](./validation.md)
+### Model Validation
 Comprehensive model assessment and validation:
 - Cross-validation strategies
 - Bootstrap resampling and confidence intervals
@@ -40,7 +40,7 @@ Comprehensive model assessment and validation:
 - Learning curves and validation curves
 - Model comparison and statistical testing
 
-### [Dimensionality Reduction](./dimensionality.md)
+### Dimensionality Reduction
 Manifold learning and dimensionality reduction:
 - Principal Component Analysis (PCA)
 - t-SNE and UMAP
@@ -52,18 +52,18 @@ Manifold learning and dimensionality reduction:
 
 ```mermaid
 flowchart TD
-    A[Biological Data] --> B[Preprocessing]
-    B --> C[Feature Engineering]
-    C --> D[Model Training]
+    AbiologicalData[Biological Data] --> B[Preprocessing]
+    B --> CfeatureEngineering[Feature Engineering]
+    C --> DmodelTraining[Model Training]
     D --> E[Validation]
     E --> F[Interpretation]
-    F --> G[Biological Insights]
+    F --> GbiologicalInsights[Biological Insights]
 
-    subgraph Methods[ML Methods]
+    subgraph MethodsmlMethods[ML Methods]
         H[Classification]
         I[Regression]
-        J[Feature Selection]
-        K[Dimensionality Reduction]
+        JfeatureSelection[Feature Selection]
+        KdimensionalityReduction[Dimensionality Reduction]
         L[Validation]
     end
 
@@ -354,8 +354,4 @@ uv run pytest tests/test_ml_validation.py::test_cross_validate -v
 
 ## Related Documentation
 
-- [Classification Methods](./classification.md): Supervised classification algorithms
-- [Regression Methods](./regression.md): Continuous prediction models
-- [Feature Selection](./features.md): Dimensionality reduction and selection
-- [Model Validation](./validation.md): Model assessment and validation
-- [Dimensionality Reduction](./dimensionality.md): Manifold learning methods
+- [ML Module Guide](README.md): Full module documentation and examples

@@ -380,8 +380,18 @@
 <p><strong>Key Points</strong>:</p>
 <ol class="arabic simple">
 <li><p><strong>Metadata TSV does NOT store local file paths</strong> - only remote URLs</p></li>
-<li><p><strong>Local FASTQ paths</strong> are derived from run accessions: <code class="docutils literal notranslate"><span class="pre">{fastq_dir}/getfastq/{run}/{run}_1.fastq.gz</span></code></p></li>
-<li><p><strong>Local quant paths</strong> are derived from run accessions: <code class="docutils literal notranslate"><span class="pre">{quant_dir}/{run}/abundance.tsv</span></code></p></li>
+<li><p><strong>Local FASTQ paths</strong> are derived from run accessions: <code class="docutils literal notranslate"><span class="pre">{getfastq_out_dir}/getfastq/{run}/{run}_1.fastq.gz</span></code></p>
+<ul class="simple">
+<li><p><strong>Important</strong>: The <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> step automatically creates a <code class="docutils literal notranslate"><span class="pre">getfastq/</span></code> subdirectory within the specified <code class="docutils literal notranslate"><span class="pre">out_dir</span></code></p></li>
+<li><p>Example: If <code class="docutils literal notranslate"><span class="pre">getfastq.out_dir:</span> <span class="pre">output/amalgkit/{species}/fastq</span></code>, then FASTQ files are in <code class="docutils literal notranslate"><span class="pre">output/amalgkit/{species}/fastq/getfastq/{run}/</span></code></p></li>
+</ul>
+</li>
+<li><p><strong>Local quant paths</strong> are derived from run accessions: <code class="docutils literal notranslate"><span class="pre">{quant_out_dir}/quant/{run}/abundance.tsv</span></code></p>
+<ul class="simple">
+<li><p><strong>Important</strong>: <code class="docutils literal notranslate"><span class="pre">quant.out_dir</span></code> should be set to <code class="docutils literal notranslate"><span class="pre">work_dir</span></code> (not a separate quant_dir) so quant can find getfastq output in <code class="docutils literal notranslate"><span class="pre">{out_dir}/getfastq/</span></code></p></li>
+<li><p>Example: If <code class="docutils literal notranslate"><span class="pre">quant.out_dir:</span> <span class="pre">output/amalgkit/{species}/work</span></code>, then quant output is in <code class="docutils literal notranslate"><span class="pre">output/amalgkit/{species}/work/quant/{run}/abundance.tsv</span></code></p></li>
+</ul>
+</li>
 </ol>
 </section>
 <section id="reading-metadata">
@@ -458,7 +468,7 @@
 <span class="w">  </span><span class="nt">&quot;species&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;Pogonomyrmex_barbatus&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;work_dir&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;output/amalgkit/pogonomyrmex_barbatus/work&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;fastq_dir&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;output/amalgkit/pogonomyrmex_barbatus/fastq&quot;</span><span class="p">,</span>
-<span class="w">  </span><span class="nt">&quot;quant_dir&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;output/amalgkit/pogonomyrmex_barbatus/quant&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">&quot;quant_dir&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;output/amalgkit/pogonomyrmex_barbatus/work/quant&quot;</span><span class="p">,</span><span class="w">  </span><span class="err">#</span><span class="w"> </span><span class="err">Whe</span><span class="kc">n</span><span class="w"> </span><span class="err">qua</span><span class="kc">nt</span><span class="err">.ou</span><span class="kc">t</span><span class="err">_dir</span><span class="w"> </span><span class="err">=</span><span class="w"> </span><span class="err">work_dir</span>
 <span class="w">  </span><span class="nt">&quot;metadata_path&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;output/amalgkit/pogonomyrmex_barbatus/work/metadata/metadata.tsv&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;last_updated&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-11-15T12:45:00Z&quot;</span><span class="p">,</span>
 <span class="w">  </span><span class="nt">&quot;total_samples&quot;</span><span class="p">:</span><span class="w"> </span><span class="mi">83</span><span class="p">,</span>
@@ -467,7 +477,7 @@
 <span class="w">      </span><span class="nt">&quot;state&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;quantified&quot;</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">&quot;fastq_exists&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">false</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">&quot;quant_exists&quot;</span><span class="p">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
-<span class="w">      </span><span class="nt">&quot;abundance_file&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;output/amalgkit/pogonomyrmex_barbatus/quant/SRR1234567/abundance.tsv&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">&quot;abundance_file&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;output/amalgkit/pogonomyrmex_barbatus/work/quant/SRR1234567/abundance.tsv&quot;</span><span class="p">,</span>
 <span class="w">      </span><span class="nt">&quot;last_modified&quot;</span><span class="p">:</span><span class="w"> </span><span class="s2">&quot;2025-11-15T11:20:00Z&quot;</span>
 <span class="w">    </span><span class="p">},</span>
 <span class="w">    </span><span class="nt">&quot;SRR1234568&quot;</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
@@ -528,7 +538,7 @@
 │   │               ├── genomic.gff.gz          ← GFF annotation
 │   │               └── genomic.gtf.gz          ← GTF annotation
 │   └── download_record.json                    ← Download metadata
-├── work/                                        ← Working directory
+├── work/                                        ← Working directory (used as quant.out_dir)
 │   ├── fasta/
 │   │   └── {Species_Name}_rna.fasta            ← Prepared transcriptome
 │   ├── index/
@@ -539,23 +549,25 @@
 │   │   └── metadata_integrated.tsv             ← With local FASTQs
 │   ├── config_base/
 │   │   └── {species}_config.tsv                ← Amalgkit config files
+│   ├── quant/                                   ← Quantification results (when quant.out_dir = work_dir)
+│   │   ├── SRR1234567/
+│   │   │   ├── abundance.tsv                   ← Kallisto/Salmon output
+│   │   │   ├── abundance.h5                    ← Binary abundance
+│   │   │   └── run_info.json                   ← Run metadata
+│   │   └── SRR1234568/
+│   │       └── abundance.tsv
+│   ├── getfastq/                                ← Symlink to fastq/getfastq (if needed for quant)
+│   │   └── SRR1234567/                         ← Points to fastq/getfastq/SRR1234567/
 │   ├── amalgkit.manifest.jsonl                 ← Execution history
 │   └── progress_state.json                     ← Progress tracking
-├── fastq/                                       ← Raw FASTQ files
-│   └── getfastq/
+├── fastq/                                       ← Raw FASTQ files (getfastq out_dir)
+│   └── getfastq/                                ← Automatically created by amalgkit getfastq
 │       ├── SRR1234567/
 │       │   ├── SRR1234567_1.fastq.gz           ← Forward reads
 │       │   └── SRR1234567_2.fastq.gz           ← Reverse reads
 │       └── SRR1234568/
 │           ├── SRR1234568_1.fastq.gz
 │           └── SRR1234568_2.fastq.gz
-├── quant/                                       ← Quantification results
-│   ├── SRR1234567/
-│   │   ├── abundance.tsv                       ← Kallisto/Salmon output
-│   │   ├── abundance.h5                        ← Binary abundance
-│   │   └── run_info.json                       ← Run metadata
-│   └── SRR1234568/
-│       └── abundance.tsv
 ├── merged/                                      ← Merged expression matrix
 │   ├── merged_abundance.tsv                    ← All samples combined
 │   └── merged_tpm.tsv                          ← TPM values
@@ -605,8 +617,8 @@
 <td><p><code class="docutils literal notranslate"><span class="pre">output/.../fastq/getfastq/SRR1234567/SRR1234567_2.fastq.gz</span></code></p></td>
 </tr>
 <tr class="row-odd"><td><p>Sample Abundance</p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">{quant_dir}/{run}/abundance.tsv</span></code></p></td>
-<td><p><code class="docutils literal notranslate"><span class="pre">output/.../quant/SRR1234567/abundance.tsv</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">{quant_out_dir}/quant/{run}/abundance.tsv</span></code></p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">output/.../work/quant/SRR1234567/abundance.tsv</span></code> (when quant.out_dir = work_dir)</p></td>
 </tr>
 <tr class="row-even"><td><p>Merged Matrix</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">{merge_out_dir}/merged_abundance.tsv</span></code></p></td>

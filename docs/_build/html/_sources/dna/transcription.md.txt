@@ -4,8 +4,8 @@ Functions: `transcribe_dna_to_rna`, `reverse_transcribe_rna_to_dna`
 
 ```mermaid
 flowchart LR
-  A[DNA] --> B[transcribe_dna_to_rna] --> C[RNA]
-  C --> D[reverse_transcribe_rna_to_dna] --> A
+  A[DNA] --> BtranscribeDnaToRna[transcribe_dna_to_rna] --> C[RNA]
+  C --> DreverseTranscribeRnaToDna[reverse_transcribe_rna_to_dna] --> A
 ```
 
 Example

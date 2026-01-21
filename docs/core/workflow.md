@@ -103,14 +103,14 @@ stateDiagram-v2
 
 ```mermaid
 flowchart TD
-    A[get_steps()] --> B[for each step]
-    B --> C[execute_step(step_name, config)]
+    AgetSteps()[get_steps()] --> BforEachStep[for each step]
+    B --> CexecuteStep(stepName,Config)[execute_step(step_name, config)]
     C --> D{status == 'completed'?}
-    D --> E[Record success<br/>Continue to next step] --> B
+    D --> ErecordSuccessContinueToNextStep[Record success_Continue to next step] --> B
     D --> F{status == 'failed'?}
-    F --> G[Record error<br/>Stop execution<br/>Mark workflow failed] --> H[post_workflow()]
+    F --> GrecordErrorStopExecutionMarkWorkflowFailed[Record error_Stop execution_Mark workflow failed] --> HpostWorkflow()[post_workflow()]
     F --> I{status == 'skipped'?}
-    I --> J[Record skip reason<br/>Continue to next step] --> B
+    I --> JrecordSkipReasonContinueToNextStep[Record skip reason_Continue to next step] --> B
 ```
 
 ## Result Structure

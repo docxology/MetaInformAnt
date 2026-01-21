@@ -125,6 +125,8 @@
 <span class="w">  </span>--threads<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--pfd<span class="w"> </span>yes<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--fastp<span class="w"> </span>yes
+
+<span class="c1"># Note: FASTQ files will be in output/amalgkit/work/fastq/getfastq/{SRR_ID}/</span>
 </pre></div>
 </div>
 <p><strong>Important</strong>: The metadata file must be in row-per-sample format (with a <code class="docutils literal notranslate"><span class="pre">run</span></code> column), NOT a pivot table. The step automatically looks for <code class="docutils literal notranslate"><span class="pre">metadata.filtered.tissue.tsv</span></code> or <code class="docutils literal notranslate"><span class="pre">metadata.tsv</span></code> in the metadata directory.</p>
@@ -152,6 +154,8 @@
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">getfastq</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/amellifera/fastq</span>
+<span class="w">    </span><span class="c1"># Note: FASTQ files will be in {out_dir}/getfastq/{SRR_ID}/</span>
+<span class="w">    </span><span class="c1"># Example: output/amalgkit/amellifera/fastq/getfastq/SRR12345678/SRR12345678_1.fastq.gz</span>
 <span class="w">    </span><span class="nt">metadata</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/amellifera/work/metadata/metadata.tsv</span><span class="w">  </span><span class="c1"># Row-per-sample format</span>
 <span class="w">    </span><span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
 <span class="w">    </span><span class="nt">pfd</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">yes</span><span class="w">                </span><span class="c1"># Use parallel-fastq-dump (auto-detected if available)</span>
@@ -161,6 +165,7 @@
 <span class="w">    </span><span class="nt">aws</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">yes</span>
 <span class="w">    </span><span class="nt">gcp</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">yes</span>
 <span class="w">    </span><span class="nt">min_read_length</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">25</span>
+<span class="w">    </span><span class="nt">max_bp</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10000000000</span><span class="w">  </span><span class="c1"># Optional: Limit download size per sample (10GB)</span>
 </pre></div>
 </div>
 </section>
@@ -196,7 +201,7 @@
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--redo</span></code></p></td>
 <td><p>yes/no</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">no</span></code></p></td>
-<td><p>Re-download even if FASTQs exist.</p></td>
+<td><p>Re-download behavior. See “When to Use <code class="docutils literal notranslate"><span class="pre">redo</span></code>” section below for details.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--batch</span></code></p></td>
 <td><p>INT</p></td>
@@ -226,7 +231,7 @@
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--max_bp</span></code></p></td>
 <td><p>INT</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">999999999999999</span></code></p></td>
-<td><p>Target sequence size (bp) to download.</p></td>
+<td><p>Target sequence size (bp) to download per sample. Use to limit download size for testing or disk space constraints. After quantification, only small abundance files (~few MB) remain, so large downloads are temporary.</p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--min_read_length</span></code></p></td>
 <td><p>INT</p></td>
@@ -351,6 +356,70 @@
 </table>
 </section>
 </section>
+<section id="when-to-use-redo-yes-vs-redo-no">
+<h2>When to Use <code class="docutils literal notranslate"><span class="pre">redo:</span> <span class="pre">yes</span></code> vs <code class="docutils literal notranslate"><span class="pre">redo:</span> <span class="pre">no</span></code><a class="headerlink" href="#when-to-use-redo-yes-vs-redo-no" title="Link to this heading"></a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">redo</span></code> parameter controls whether amalgkit re-downloads SRA files that already exist locally.</p>
+<section id="default-behavior-redo-no-recommended">
+<h3>Default Behavior: <code class="docutils literal notranslate"><span class="pre">redo:</span> <span class="pre">no</span></code> (Recommended)<a class="headerlink" href="#default-behavior-redo-no-recommended" title="Link to this heading"></a></h3>
+<p><strong>Use <code class="docutils literal notranslate"><span class="pre">redo:</span> <span class="pre">no</span></code> for normal operations.</strong> This is the default and recommended setting.</p>
+<p>With <code class="docutils literal notranslate"><span class="pre">redo:</span> <span class="pre">no</span></code>:</p>
+<ul class="simple">
+<li><p>✅ <strong>Skips already-downloaded SRA files</strong> - Amalgkit automatically detects existing <code class="docutils literal notranslate"><span class="pre">.sra</span></code> files and skips re-downloading them</p></li>
+<li><p>✅ <strong>Saves bandwidth and time</strong> - Only downloads missing files</p></li>
+<li><p>✅ <strong>Still processes existing files</strong> - Even if SRA files exist, amalgkit will still:</p>
+<ul>
+<li><p>Extract FASTQ files if they don’t exist</p></li>
+<li><p>Run quality filtering with fastp if enabled</p></li>
+<li><p>Generate output files as needed</p></li>
+</ul>
+</li>
+</ul>
+<p><strong>Example output with <code class="docutils literal notranslate"><span class="pre">redo:</span> <span class="pre">no</span></code>:</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Processing</span> <span class="n">SRA</span> <span class="n">ID</span><span class="p">:</span> <span class="n">SRR34065661</span>
+<span class="n">Previously</span><span class="o">-</span><span class="n">downloaded</span> <span class="n">sra</span> <span class="n">file</span> <span class="n">was</span> <span class="n">detected</span> <span class="n">at</span><span class="p">:</span> <span class="o">.../</span><span class="n">SRR34065661</span><span class="o">.</span><span class="n">sra</span>
+<span class="n">Time</span> <span class="n">elapsed</span> <span class="k">for</span> <span class="mi">1</span><span class="n">st</span><span class="o">-</span><span class="nb">round</span> <span class="n">sequence</span> <span class="n">extraction</span><span class="p">:</span> <span class="n">SRR34065661</span><span class="p">,</span> <span class="mf">0.0</span> <span class="n">sec</span>
+</pre></div>
+</div>
+</section>
+<section id="when-to-use-redo-yes">
+<h3>When to Use <code class="docutils literal notranslate"><span class="pre">redo:</span> <span class="pre">yes</span></code><a class="headerlink" href="#when-to-use-redo-yes" title="Link to this heading"></a></h3>
+<p><strong>Use <code class="docutils literal notranslate"><span class="pre">redo:</span> <span class="pre">yes</span></code> only in specific situations:</strong></p>
+<ol class="arabic simple">
+<li><p><strong>Corrupted files</strong> - If SRA files are corrupted and need to be re-downloaded</p></li>
+<li><p><strong>Data refresh</strong> - If you want to ensure you have the latest version from SRA (rarely needed, as SRA data is typically stable)</p></li>
+<li><p><strong>Testing</strong> - When testing download functionality or troubleshooting download issues</p></li>
+<li><p><strong>Configuration changes</strong> - If you changed download settings (e.g., switching from NCBI to AWS) and want fresh downloads</p></li>
+</ol>
+<p><strong>Warning</strong>: Using <code class="docutils literal notranslate"><span class="pre">redo:</span> <span class="pre">yes</span></code> will:</p>
+<ul class="simple">
+<li><p>⚠️ Re-download ALL files, even if they already exist</p></li>
+<li><p>⚠️ Use significant bandwidth and time</p></li>
+<li><p>⚠️ May overwrite existing files</p></li>
+</ul>
+</section>
+<section id="file-detection-behavior">
+<h3>File Detection Behavior<a class="headerlink" href="#file-detection-behavior" title="Link to this heading"></a></h3>
+<p>Amalgkit detects existing files by checking for <code class="docutils literal notranslate"><span class="pre">.sra</span></code> files in the expected location:</p>
+<ul class="simple">
+<li><p>Pattern: <code class="docutils literal notranslate"><span class="pre">{out_dir}/getfastq/{SRR_ID}/{SRR_ID}.sra</span></code></p></li>
+<li><p>Detection message: <code class="docutils literal notranslate"><span class="pre">&quot;Previously-downloaded</span> <span class="pre">sra</span> <span class="pre">file</span> <span class="pre">was</span> <span class="pre">detected</span> <span class="pre">at:</span> <span class="pre">{path}&quot;</span></code></p></li>
+<li><p>Skip message: <code class="docutils literal notranslate"><span class="pre">&quot;Previously-downloaded</span> <span class="pre">sra</span> <span class="pre">file</span> <span class="pre">was</span> <span class="pre">not</span> <span class="pre">detected.</span> <span class="pre">New</span> <span class="pre">sra</span> <span class="pre">file</span> <span class="pre">will</span> <span class="pre">be</span> <span class="pre">downloaded.&quot;</span></code></p></li>
+</ul>
+</section>
+<section id="summary-logging">
+<h3>Summary Logging<a class="headerlink" href="#summary-logging" title="Link to this heading"></a></h3>
+<p>After the <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> step completes, METAINFORMANT logs a summary showing:</p>
+<ul class="simple">
+<li><p>Number of files skipped (already exists)</p></li>
+<li><p>Number of files downloaded</p></li>
+<li><p>Total samples processed</p></li>
+</ul>
+<p>Example summary:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Step</span> <span class="n">getfastq</span> <span class="n">summary</span><span class="p">:</span> <span class="mi">1</span> <span class="n">file</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="n">skipped</span> <span class="p">(</span><span class="n">already</span> <span class="n">exists</span><span class="p">),</span> <span class="mi">14</span> <span class="n">file</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="n">downloaded</span> <span class="p">(</span><span class="n">total</span><span class="p">:</span> <span class="mi">15</span> <span class="n">samples</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
 <section id="input-requirements">
 <h2>Input Requirements<a class="headerlink" href="#input-requirements" title="Link to this heading"></a></h2>
 <section id="prerequisites">
@@ -398,15 +467,22 @@
 <h2>Output Files<a class="headerlink" href="#output-files" title="Link to this heading"></a></h2>
 <section id="directory-structure">
 <h3>Directory Structure<a class="headerlink" href="#directory-structure" title="Link to this heading"></a></h3>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>out_dir/getfastq/
-└── SRR12345678/
-    ├── SRR12345678_1.fastq.gz         # Paired-end read 1
-    ├── SRR12345678_2.fastq.gz         # Paired-end read 2
-    ├── SRR12345678.fastq.gz           # Single-end (if applicable)
-    ├── fastp.json                     # Quality control report
-    └── fastp.html                     # HTML QC report
+<p><strong>Important</strong>: The <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> step automatically creates a <code class="docutils literal notranslate"><span class="pre">getfastq/</span></code> subdirectory within the specified <code class="docutils literal notranslate"><span class="pre">out_dir</span></code>. FASTQ files are NOT placed directly in <code class="docutils literal notranslate"><span class="pre">out_dir/</span></code>, but rather in <code class="docutils literal notranslate"><span class="pre">out_dir/getfastq/{sample_id}/</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>out_dir/
+└── getfastq/                          # ← Automatically created by amalgkit
+    └── SRR12345678/
+        ├── SRR12345678_1.fastq.gz     # Paired-end read 1
+        ├── SRR12345678_2.fastq.gz     # Paired-end read 2
+        ├── SRR12345678.fastq.gz       # Single-end (if applicable)
+        ├── fastp.json                 # Quality control report
+        └── fastp.html                 # HTML QC report
 </pre></div>
 </div>
+<p><strong>Example</strong>: If <code class="docutils literal notranslate"><span class="pre">out_dir:</span> <span class="pre">output/amalgkit/pbarbatus/fastq</span></code>, then FASTQ files will be in:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">output/amalgkit/pbarbatus/fastq/getfastq/SRR12345678/SRR12345678_1.fastq.gz</span></code></p></li>
+</ul>
+<p><strong>Key Point</strong>: The <code class="docutils literal notranslate"><span class="pre">getfastq/</span></code> subdirectory is created automatically by amalgkit. When configuring the <code class="docutils literal notranslate"><span class="pre">integrate</span></code> step, the <code class="docutils literal notranslate"><span class="pre">fastq_dir</span></code> parameter must point to <code class="docutils literal notranslate"><span class="pre">{out_dir}/getfastq/</span></code> (the getfastq subdirectory), not just <code class="docutils literal notranslate"><span class="pre">{out_dir}/</span></code>.</p>
 </section>
 <section id="fastq-file-naming">
 <h3>FASTQ File Naming<a class="headerlink" href="#fastq-file-naming" title="Link to this heading"></a></h3>
@@ -519,6 +595,27 @@
 <li><p><strong>Recommendation</strong>: Use high-speed network connection</p></li>
 </ul>
 </section>
+<section id="download-size-limits">
+<h3>Download Size Limits<a class="headerlink" href="#download-size-limits" title="Link to this heading"></a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">--max_bp</span></code> parameter allows you to limit the download size per sample. This is useful for:</p>
+<ul class="simple">
+<li><p><strong>Testing workflows</strong>: Limit downloads to validate pipeline without full data</p></li>
+<li><p><strong>Disk space constraints</strong>: Control peak disk usage during processing</p></li>
+<li><p><strong>Network bandwidth management</strong>: Reduce download time and bandwidth usage</p></li>
+</ul>
+<p><strong>Important Notes</strong>:</p>
+<ul class="simple">
+<li><p>After quantification, only small abundance files remain (~few MB per sample)</p></li>
+<li><p>Large downloads are <strong>temporary</strong> - quantified samples don’t need re-download</p></li>
+<li><p>The <code class="docutils literal notranslate"><span class="pre">max_bp</span></code> limit applies per sample, not total workflow size</p></li>
+</ul>
+<p><strong>Example</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">getfastq</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">max_bp</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">10000000000</span><span class="w">  </span><span class="c1"># Limit to 10GB per sample</span>
+</pre></div>
+</div>
+</section>
 <section id="parallelization">
 <h3>Parallelization<a class="headerlink" href="#parallelization" title="Link to this heading"></a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Good: Moderate parallelization</span>
@@ -604,11 +701,22 @@ amalgkit<span class="w"> </span>getfastq<span class="w"> </span><span class="se"
 <h3>Robust SRA Download with Retries<a class="headerlink" href="#robust-sra-download-with-retries" title="Link to this heading"></a></h3>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># From src/metainformant/rna/steps/getfastq.py</span>
 <span class="c1"># Automatic retry logic for failed downloads:</span>
-<span class="c1"># 1. Try amalgkit getfastq (uses parallel-fastq-dump)</span>
-<span class="c1"># 2. If fails, retry with prefetch + fasterq-dump</span>
-<span class="c1"># 3. Up to 3 attempts per sample</span>
+<span class="c1"># 1. NEW (Jan 2026): Checks for &quot;LITE&quot; files and uses `curl` to fetch full SRA objects directly from AWS Open Data (`https://sra-pub-run-odp.s3.amazonaws.com/...`).</span>
+<span class="c1">#    - This bypasses `prefetch`/`sra-tools` entirely for the download phase.</span>
+<span class="c1">#    - Supports resume (`-C -`) and retries.</span>
+<span class="c1"># 2. Falls back to amalgkit&#39;s default methods if direct download fails.</span>
 </pre></div>
 </div>
+</section>
+<section id="lite-file-bypass-jan-2026">
+<h3>LITE File Bypass (Jan 2026)<a class="headerlink" href="#lite-file-bypass-jan-2026" title="Link to this heading"></a></h3>
+<p>Older SRA entries often have “LITE” versions (metadata only) in NCBI/GCP. The workflow now automatically:</p>
+<ol class="arabic simple">
+<li><p>Detects LITE metadata.</p></li>
+<li><p>Intercepts the download process.</p></li>
+<li><p>Downloads the <strong>full</strong> SRA file from AWS using <code class="docutils literal notranslate"><span class="pre">curl</span></code>.</p></li>
+<li><p>Places it where <code class="docutils literal notranslate"><span class="pre">amalgkit</span></code> expects it, allowing <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> to proceed with extraction only.</p></li>
+</ol>
 </section>
 <section id="cloud-acceleration-metainformant-specific">
 <h3>Cloud Acceleration (METAINFORMANT-specific)<a class="headerlink" href="#cloud-acceleration-metainformant-specific" title="Link to this heading"></a></h3>
@@ -685,6 +793,50 @@ amalgkit<span class="w"> </span>getfastq<span class="w"> </span><span class="se"
 <li><p><strong>Wrapper mechanism</strong>: For <code class="docutils literal notranslate"><span class="pre">amalgkit</span></code> calls, a wrapper script injects <code class="docutils literal notranslate"><span class="pre">--size-check</span> <span class="pre">off</span></code> into <code class="docutils literal notranslate"><span class="pre">fasterq-dump</span></code> commands to prevent “disk-limit exceeded” errors. The wrapper is automatically created in <code class="docutils literal notranslate"><span class="pre">{fastq_dir}/temp/fasterq-dump</span></code> and added to PATH for <code class="docutils literal notranslate"><span class="pre">amalgkit</span></code> processes.</p></li>
 </ol>
 </section>
+<section id="validation">
+<h2>Validation<a class="headerlink" href="#validation" title="Link to this heading"></a></h2>
+<p>After the <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> step completes, validation automatically runs to verify that samples were successfully downloaded and extracted.</p>
+<section id="automatic-validation">
+<h3>Automatic Validation<a class="headerlink" href="#automatic-validation" title="Link to this heading"></a></h3>
+<p>Validation runs automatically after <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> completes:</p>
+<ul class="simple">
+<li><p>Checks that FASTQ files exist for each sample</p></li>
+<li><p>Validates file sizes and counts</p></li>
+<li><p>Generates validation report: <code class="docutils literal notranslate"><span class="pre">work_dir/validation/getfastq_validation.json</span></code></p></li>
+</ul>
+</section>
+<section id="validation-results">
+<h3>Validation Results<a class="headerlink" href="#validation-results" title="Link to this heading"></a></h3>
+<p>Check validation results:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># View validation report</span>
+cat<span class="w"> </span>output/amalgkit/my_species/work/validation/getfastq_validation.json
+
+<span class="c1"># Run standalone validation</span>
+python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>config/amalgkit/my_species.yaml<span class="w"> </span>--validate<span class="w"> </span>--validate-stage<span class="w"> </span>extraction
+</pre></div>
+</div>
+</section>
+<section id="common-validation-issues">
+<h3>Common Validation Issues<a class="headerlink" href="#common-validation-issues" title="Link to this heading"></a></h3>
+<p><strong>Issue</strong>: Samples show <code class="docutils literal notranslate"><span class="pre">extraction:</span> <span class="pre">false</span></code> in validation</p>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic">
+<li><p>Check if FASTQ files exist:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>ls<span class="w"> </span>output/amalgkit/my_species/fastq/getfastq/SRR123456/
+</pre></div>
+</div>
+</li>
+<li><p>Verify <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> step completed successfully</p></li>
+<li><p>Check logs for download errors:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>cat<span class="w"> </span>output/amalgkit/my_species/work/logs/getfastq.log
+</pre></div>
+</div>
+</li>
+<li><p>Re-run <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> step if needed</p></li>
+</ol>
+<p>For detailed validation troubleshooting, see <a class="reference internal" href="../../VALIDATION.html"><span class="std std-doc">Validation Guide</span></a>.</p>
+</section>
+</section>
 <section id="troubleshooting">
 <h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
 <section id="issue-getfastq-reports-success-but-produces-0-reads">
@@ -693,6 +845,16 @@ amalgkit<span class="w"> </span>getfastq<span class="w"> </span><span class="se"
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">amalgkit</span> <span class="pre">getfastq</span></code> returns exit code 0 (success)</p></li>
 <li><p>Log shows “Sum of fastp input reads: 0 bp” and “Sum of fastp output reads: 0 bp”</p></li>
+</ul>
+<p><strong>Root Cause</strong>: fasterq-dump is failing due to disk space issues in <code class="docutils literal notranslate"><span class="pre">/tmp</span></code> (tmpfs may be full).</p>
+<p><strong>Solution</strong>: The workflow now automatically sets <code class="docutils literal notranslate"><span class="pre">TMPDIR</span></code> to the repository’s <code class="docutils literal notranslate"><span class="pre">.tmp/fasterq-dump</span></code> directory (on external drive with sufficient space) before running getfastq step. This prevents “disk-limit exceeded” and “storage exhausted” errors.</p>
+<p><strong>Verification</strong>: Check that TMPDIR is set correctly:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># During getfastq execution, TMPDIR should point to repository .tmp directory</span>
+<span class="nb">echo</span><span class="w"> </span><span class="nv">$TMPDIR</span>
+<span class="c1"># Should show: /path/to/repo/.tmp/fasterq-dump</span>
+</pre></div>
+</div>
+<ul class="simple">
 <li><p>No FASTQ files are created</p></li>
 <li><p>SRA file may be deleted after “successful” download</p></li>
 </ul>
@@ -757,10 +919,55 @@ grep<span class="w"> </span><span class="s2">&quot;SRR123456&quot;</span><span c
 <li><p>SRA file exists but extraction fails</p></li>
 <li><p>Even though disk has sufficient space</p></li>
 </ul>
-<p><strong>Root Cause</strong>: <code class="docutils literal notranslate"><span class="pre">fasterq-dump</span></code> has an internal disk space check that can fail even when sufficient space is available, especially if the default temporary directory is small.</p>
+<p><strong>Root Cause</strong>: <code class="docutils literal notranslate"><span class="pre">fasterq-dump</span></code> has an internal disk space check that can fail even when sufficient space is available, especially if the default temporary directory (<code class="docutils literal notranslate"><span class="pre">/tmp</span></code>) is small or full. Additionally, <code class="docutils literal notranslate"><span class="pre">/tmp</span></code> may be a tmpfs (RAM-based filesystem) with limited space.</p>
 <p><strong>Solutions Implemented</strong>:</p>
 <ol class="arabic">
-<li><p><strong>Wrapper Script for <code class="docutils literal notranslate"><span class="pre">amalgkit</span></code> Calls</strong>:</p>
+<li><p><strong>Automatic TMPDIR Configuration</strong> (Primary Fix):</p>
+<ul class="simple">
+<li><p><strong>Location</strong>: <code class="docutils literal notranslate"><span class="pre">src/metainformant/rna/amalgkit.py::run_amalgkit()</span></code></p></li>
+<li><p><strong>Purpose</strong>: Automatically sets <code class="docutils literal notranslate"><span class="pre">TMPDIR</span></code>, <code class="docutils literal notranslate"><span class="pre">TEMP</span></code>, and <code class="docutils literal notranslate"><span class="pre">TMP</span></code> environment variables to repository’s <code class="docutils literal notranslate"><span class="pre">.tmp/fasterq-dump</span></code> directory before running getfastq step</p></li>
+<li><p><strong>Implementation</strong>:</p>
+<ul>
+<li><p>Detects when <code class="docutils literal notranslate"><span class="pre">subcommand</span> <span class="pre">==</span> <span class="pre">&quot;getfastq&quot;</span></code></p></li>
+<li><p>Sets <code class="docutils literal notranslate"><span class="pre">TMPDIR</span></code> to <code class="docutils literal notranslate"><span class="pre">{repo_root}/.tmp/fasterq-dump</span></code> (on external drive with sufficient space)</p></li>
+<li><p>Creates directory if it doesn’t exist</p></li>
+<li><p>Passes environment to subprocess calls</p></li>
+</ul>
+</li>
+<li><p><strong>Benefits</strong>:</p>
+<ul>
+<li><p>Prevents “disk-limit exceeded” errors when <code class="docutils literal notranslate"><span class="pre">/tmp</span></code> is full</p></li>
+<li><p>Uses external drive space instead of limited tmpfs</p></li>
+<li><p>Works automatically without user configuration</p></li>
+</ul>
+</li>
+<li><p><strong>Code Location</strong>: <code class="docutils literal notranslate"><span class="pre">src/metainformant/rna/amalgkit.py::run_amalgkit()</span></code> (lines 299-318 and 392-406)</p></li>
+</ul>
+</li>
+<li><p><strong>Automatic vdb-config Repository Path Configuration</strong> (For Prefetch Downloads):</p>
+<ul class="simple">
+<li><p><strong>Location</strong>: <code class="docutils literal notranslate"><span class="pre">src/metainformant/rna/workflow.py::execute_workflow()</span></code></p></li>
+<li><p><strong>Purpose</strong>: Configures vdb-config repository root to point to amalgkit fastq output directory</p></li>
+<li><p><strong>Implementation</strong>:</p>
+<ul>
+<li><p>Detects when getfastq step is in workflow</p></li>
+<li><p>Gets fastq output directory from getfastq step parameters</p></li>
+<li><p>Sets vdb-config repository root to <code class="docutils literal notranslate"><span class="pre">{fastq_dir}/getfastq</span></code> (where amalgkit expects SRA files)</p></li>
+<li><p>This ensures <code class="docutils literal notranslate"><span class="pre">prefetch</span></code> downloads SRA files to the correct location</p></li>
+</ul>
+</li>
+<li><p><strong>Benefits</strong>:</p>
+<ul>
+<li><p>Prevents “SRA file download failed” errors where prefetch downloads to wrong location</p></li>
+<li><p>Ensures SRA files are in the location amalgkit expects them</p></li>
+<li><p>Works automatically without user configuration</p></li>
+</ul>
+</li>
+<li><p><strong>Code Location</strong>: <code class="docutils literal notranslate"><span class="pre">src/metainformant/rna/workflow.py::execute_workflow()</span></code> (lines 422-460)</p></li>
+<li><p><strong>Note</strong>: vdb-config repository root (for prefetch) is different from VDB_CONFIG environment variable (for cache/temp)</p></li>
+</ul>
+</li>
+<li><p><strong>Wrapper Script for <code class="docutils literal notranslate"><span class="pre">amalgkit</span></code> Calls</strong> (Legacy/Alternative):</p>
 <ul>
 <li><p><strong>Location</strong>: <code class="docutils literal notranslate"><span class="pre">{fastq_dir}/temp/fasterq-dump</span></code></p></li>
 <li><p><strong>Purpose</strong>: Automatically injects <code class="docutils literal notranslate"><span class="pre">--size-check</span> <span class="pre">off</span></code> into all <code class="docutils literal notranslate"><span class="pre">fasterq-dump</span></code> calls made by <code class="docutils literal notranslate"><span class="pre">amalgkit</span></code></p></li>
@@ -860,8 +1067,12 @@ cat<span class="w"> </span>&gt;<span class="w"> </span>output/amalgkit/work/fast
 <span class="s">EOF</span>
 chmod<span class="w"> </span>+x<span class="w"> </span>output/amalgkit/work/fastq/temp/fasterq-dump
 
-<span class="c1"># Or configure vdb-config to use a large temp directory</span>
-vdb-config<span class="w"> </span>--set<span class="w"> </span>/repository/user/default-path<span class="o">=</span>/path/to/large/disk
+<span class="c1"># Or configure vdb-config repository root manually (for prefetch downloads)</span>
+<span class="c1"># This should point to where amalgkit expects SRA files: {fastq_dir}/getfastq</span>
+vdb-config<span class="w"> </span>-s<span class="w"> </span>/repository/user/main/public/root<span class="o">=</span>/path/to/amalgkit/fastq/getfastq
+
+<span class="c1"># Note: The workflow automatically configures vdb-config repository root to the correct location.</span>
+<span class="c1"># Manual configuration is rarely needed.</span>
 </pre></div>
 </div>
 <p><strong>Note</strong>: The workflow handles this automatically - manual intervention is rarely needed.</p>
@@ -1153,9 +1364,9 @@ amalgkit<span class="w"> </span>getfastq<span class="w"> </span>--metadata<span 
 <section id="see-also">
 <h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
 <ul class="simple">
-<li><p><strong>Previous Step</strong>: <a class="reference internal" href="#select.md"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">select.md</span></code></span></a> - Selecting samples for download</p></li>
-<li><p><strong>Next Step</strong>: <a class="reference internal" href="#integrate.md"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">integrate.md</span></code></span></a> - Integrating FASTQ info into metadata</p></li>
-<li><p><strong>Next Step</strong>: <a class="reference internal" href="#quant.md"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">quant.md</span></code></span></a> - Quantifying gene expression</p></li>
+<li><p><strong>Previous Step</strong>: <a class="reference internal" href="03_select.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">03_select.md</span></code></span></a> - Selecting samples for download</p></li>
+<li><p><strong>Next Step</strong>: <a class="reference internal" href="05_integrate.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">05_integrate.md</span></code></span></a> - Integrating FASTQ info into metadata</p></li>
+<li><p><strong>Next Step</strong>: <a class="reference internal" href="06_quant.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">06_quant.md</span></code></span></a> - Quantifying gene expression</p></li>
 <li><p><strong>Workflow Overview</strong>: <a class="reference internal" href="../amalgkit.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">../amalgkit.md</span></code></span></a></p></li>
 <li><p><strong>Testing</strong>: <code class="docutils literal notranslate"><span class="pre">tests/test_rna_amalgkit_steps.py::test_getfastq_basic_execution</span></code></p></li>
 </ul>

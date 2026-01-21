@@ -203,14 +203,14 @@
 <section id="step-execution-details">
 <h3>Step Execution Details<a class="headerlink" href="#step-execution-details" title="Link to this heading"></a></h3>
 <div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart TD
-    A[get_steps()] --&gt; B[for each step]
-    B --&gt; C[execute_step(step_name, config)]
+    AgetSteps()[get_steps()] --&gt; BforEachStep[for each step]
+    B --&gt; CexecuteStep(stepName,Config)[execute_step(step_name, config)]
     C --&gt; D{status == &#39;completed&#39;?}
-    D --&gt; E[Record success&lt;br/&gt;Continue to next step] --&gt; B
+    D --&gt; ErecordSuccessContinueToNextStep[Record success_Continue to next step] --&gt; B
     D --&gt; F{status == &#39;failed&#39;?}
-    F --&gt; G[Record error&lt;br/&gt;Stop execution&lt;br/&gt;Mark workflow failed] --&gt; H[post_workflow()]
+    F --&gt; GrecordErrorStopExecutionMarkWorkflowFailed[Record error_Stop execution_Mark workflow failed] --&gt; HpostWorkflow()[post_workflow()]
     F --&gt; I{status == &#39;skipped&#39;?}
-    I --&gt; J[Record skip reason&lt;br/&gt;Continue to next step] --&gt; B
+    I --&gt; JrecordSkipReasonContinueToNextStep[Record skip reason_Continue to next step] --&gt; B
 </pre></div>
 </div>
 </section>

@@ -4,15 +4,15 @@ Functions: `apply_point_mutations`, `hamming_distance`, `random_point_mutations`
 
 ```mermaid
 flowchart TD
-  A[Original Sequence] --> B[apply_point_mutations]
-  C[Mutation Map] --> B
-  B --> D[Mutated Sequence]
+  AoriginalSequence[Original Sequence] --> BapplyPointMutations[apply_point_mutations]
+  CmutationMap[Mutation Map] --> B
+  B --> DmutatedSequence[Mutated Sequence]
   
-  E[Sequence 1] & F[Sequence 2] --> G[hamming_distance]
+  Esequence1[Sequence 1] & Fsequence2[Sequence 2] --> GhammingDistance[hamming_distance]
   
-  H[Original Sequence] --> I[random_point_mutations]
-  J[Number & Seed] --> I
-  I --> K[Randomly Mutated Sequence]
+  HoriginalSequence[Original Sequence] --> IrandomPointMutations[random_point_mutations]
+  Jnumber&Seed[Number & Seed] --> I
+  I --> KrandomlyMutatedSequence[Randomly Mutated Sequence]
 ```
 
 Example

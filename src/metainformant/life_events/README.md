@@ -11,26 +11,26 @@ This module treats life courses as sequences of events (similar to how NLP treat
 ```mermaid
 graph TB
     subgraph "Life Events Module"
-        Events[events<br/>Event Data Structures]
-        Embeddings[embeddings<br/>Event Embeddings]
-        Models[models<br/>Prediction Models]
-        Interpret[interpretability<br/>Model Interpretation]
-        Viz[visualization<br/>Visualization]
-        Workflow[workflow<br/>Workflow Functions]
-        Config[config<br/>Configuration]
-        Utils[utils<br/>Utilities]
+        EventseventsEventDataStructures[events_Event Data Structures]
+        EmbeddingsembeddingsEventEmbeddings[embeddings_Event Embeddings]
+        ModelsmodelsPredictionModels[models_Prediction Models]
+        InterpretinterpretabilityModelInterpretation[interpretability_Model Interpretation]
+        VizvisualizationVisualization[visualization_Visualization]
+        WorkflowworkflowWorkflowFunctions[workflow_Workflow Functions]
+        ConfigconfigConfiguration[config_Configuration]
+        UtilsutilsUtilities[utils_Utilities]
     end
     
     subgraph "Input Data"
-        EventSeqs[Event Sequences]
+        EventSeqseventSequences[Event Sequences]
         Outcomes[Outcomes]
     end
     
     subgraph "Other Modules"
-        Phenotype_Mod[phenotype]
-        ML_Mod[ml]
-        Info_Mod[information]
-        Viz_Mod[visualization]
+        phenotype[phenotype]
+        ml[ml]
+        information[information]
+        visualization[visualization]
     end
     
     EventSeqs --> Events
@@ -49,11 +49,11 @@ graph TB
 
 ```mermaid
 flowchart LR
-    Start[Event Sequences] --> Load[Load Sequences]
-    Load --> Embed[Learn Embeddings]
-    Embed --> Train[Train Model]
-    Train --> Predict[Make Predictions]
-    Predict --> Interpret[Interpret Results]
+    StarteventSequences[Event Sequences] --> LoadloadSequences[Load Sequences]
+    Load --> EmbedlearnEmbeddings[Learn Embeddings]
+    Embed --> TraintrainModel[Train Model]
+    Train --> PredictmakePredictions[Make Predictions]
+    Predict --> InterpretinterpretResults[Interpret Results]
     Interpret --> Visualize[Visualize]
     Visualize --> Output[Results]
 ```
@@ -1556,14 +1556,14 @@ If configuration loading fails:
 ### Missing Optional Dependencies
 
 If visualization functions fail:
-- Install matplotlib: `pip install matplotlib`
+- Install matplotlib: `uv pip install matplotlib`
 - Visualization functions are optional and will gracefully degrade
 - Check that output directory is writable
 
 ### Synthetic Data Generation Issues
 
 If synthetic data generation fails:
-- Ensure numpy is installed: `pip install numpy`
+- Ensure numpy is installed: `uv pip install numpy`
 - Check that date ranges are valid (start_date < end_date)
 - Verify domain and event_type dictionaries are properly formatted
 - Use `random_state` parameter for reproducibility

@@ -1504,14 +1504,14 @@ If configuration loading fails:
 ### Missing Optional Dependencies
 
 If visualization functions fail:
-- Install matplotlib: `pip install matplotlib`
+- Install matplotlib: `uv pip install matplotlib`
 - Visualization functions are optional and will gracefully degrade
 - Check that output directory is writable
 
 ### Synthetic Data Generation Issues
 
 If synthetic data generation fails:
-- Ensure numpy is installed: `pip install numpy`
+- Ensure numpy is installed: `uv pip install numpy`
 - Check that date ranges are valid (start_date < end_date)
 - Verify domain and event_type dictionaries are properly formatted
 - Use `random_state` parameter for reproducibility

@@ -135,7 +135,7 @@
 <li><p><code class="docutils literal notranslate"><span class="pre">**kwargs</span></code>: Additional arguments passed to <code class="docutils literal notranslate"><span class="pre">run_amalgkit</span></code> (e.g., <code class="docutils literal notranslate"><span class="pre">work_dir</span></code>, <code class="docutils literal notranslate"><span class="pre">log_dir</span></code>, <code class="docutils literal notranslate"><span class="pre">check</span></code>)</p></li>
 </ul>
 <p><strong>Returns</strong>: <code class="docutils literal notranslate"><span class="pre">subprocess.CompletedProcess[str]</span></code> with execution results</p>
-<p><strong>See Also</strong>: <a class="reference internal" href="#amalgkit/steps/metadata.md"><span class="xref myst">Step Documentation: metadata</span></a></p>
+<p><strong>See Also</strong>: <a class="reference internal" href="amalgkit/steps/01_metadata.html"><span class="std std-doc">Step Documentation: metadata</span></a></p>
 </section>
 <hr class="docutils" />
 <section id="integrate">
@@ -147,7 +147,7 @@
 </pre></div>
 </div>
 <p><strong>Purpose</strong>: Integrate FASTQ file paths into metadata tables.</p>
-<p><strong>See Also</strong>: <a class="reference internal" href="#amalgkit/steps/integrate.md"><span class="xref myst">Step Documentation: integrate</span></a></p>
+<p><strong>See Also</strong>: <a class="reference internal" href="amalgkit/steps/05_integrate.html"><span class="std std-doc">Step Documentation: integrate</span></a></p>
 </section>
 <hr class="docutils" />
 <section id="config">
@@ -159,7 +159,7 @@
 </pre></div>
 </div>
 <p><strong>Purpose</strong>: Generate configuration files for metadata selection.</p>
-<p><strong>See Also</strong>: <a class="reference internal" href="#amalgkit/steps/config.md"><span class="xref myst">Step Documentation: config</span></a></p>
+<p><strong>See Also</strong>: <a class="reference internal" href="amalgkit/steps/02_config.html"><span class="std std-doc">Step Documentation: config</span></a></p>
 </section>
 <hr class="docutils" />
 <section id="select">
@@ -171,7 +171,7 @@
 </pre></div>
 </div>
 <p><strong>Purpose</strong>: Select and filter SRA entries based on quality criteria.</p>
-<p><strong>See Also</strong>: <a class="reference internal" href="#amalgkit/steps/select.md"><span class="xref myst">Step Documentation: select</span></a></p>
+<p><strong>See Also</strong>: <a class="reference internal" href="amalgkit/steps/03_select.html"><span class="std std-doc">Step Documentation: select</span></a></p>
 </section>
 <hr class="docutils" />
 <section id="getfastq">
@@ -183,7 +183,7 @@
 </pre></div>
 </div>
 <p><strong>Purpose</strong>: Download and convert SRA files to FASTQ format.</p>
-<p><strong>See Also</strong>: <a class="reference internal" href="#amalgkit/steps/getfastq.md"><span class="xref myst">Step Documentation: getfastq</span></a></p>
+<p><strong>See Also</strong>: <a class="reference internal" href="amalgkit/steps/04_getfastq.html"><span class="std std-doc">Step Documentation: getfastq</span></a></p>
 </section>
 <hr class="docutils" />
 <section id="quant">
@@ -195,7 +195,7 @@
 </pre></div>
 </div>
 <p><strong>Purpose</strong>: Quantify transcript abundances using kallisto or salmon.</p>
-<p><strong>See Also</strong>: <a class="reference internal" href="#amalgkit/steps/quant.md"><span class="xref myst">Step Documentation: quant</span></a></p>
+<p><strong>See Also</strong>: <a class="reference internal" href="amalgkit/steps/06_quant.html"><span class="std std-doc">Step Documentation: quant</span></a></p>
 </section>
 <hr class="docutils" />
 <section id="merge">
@@ -207,7 +207,7 @@
 </pre></div>
 </div>
 <p><strong>Purpose</strong>: Merge per-sample quantification results into expression matrices.</p>
-<p><strong>See Also</strong>: <a class="reference internal" href="#amalgkit/steps/merge.md"><span class="xref myst">Step Documentation: merge</span></a></p>
+<p><strong>See Also</strong>: <a class="reference internal" href="amalgkit/steps/07_merge.html"><span class="std std-doc">Step Documentation: merge</span></a></p>
 </section>
 <hr class="docutils" />
 <section id="cstmm">
@@ -219,7 +219,7 @@
 </pre></div>
 </div>
 <p><strong>Purpose</strong>: Cross-species TMM (Trimmed Mean of M-values) normalization.</p>
-<p><strong>See Also</strong>: <a class="reference internal" href="#amalgkit/steps/cstmm.md"><span class="xref myst">Step Documentation: cstmm</span></a></p>
+<p><strong>See Also</strong>: <a class="reference internal" href="amalgkit/steps/08_cstmm.html"><span class="std std-doc">Step Documentation: cstmm</span></a></p>
 </section>
 <hr class="docutils" />
 <section id="curate">
@@ -231,7 +231,7 @@
 </pre></div>
 </div>
 <p><strong>Purpose</strong>: Quality control, outlier detection, and batch effect correction.</p>
-<p><strong>See Also</strong>: <a class="reference internal" href="#amalgkit/steps/curate.md"><span class="xref myst">Step Documentation: curate</span></a></p>
+<p><strong>See Also</strong>: <a class="reference internal" href="amalgkit/steps/09_curate.html"><span class="std std-doc">Step Documentation: curate</span></a></p>
 </section>
 <hr class="docutils" />
 <section id="csca">
@@ -243,7 +243,7 @@
 </pre></div>
 </div>
 <p><strong>Purpose</strong>: Cross-species correlation analysis and visualization.</p>
-<p><strong>See Also</strong>: <a class="reference internal" href="#amalgkit/steps/csca.md"><span class="xref myst">Step Documentation: csca</span></a></p>
+<p><strong>See Also</strong>: <a class="reference internal" href="amalgkit/steps/10_csca.html"><span class="std std-doc">Step Documentation: csca</span></a></p>
 </section>
 <hr class="docutils" />
 <section id="sanity">
@@ -255,7 +255,7 @@
 </pre></div>
 </div>
 <p><strong>Purpose</strong>: Validate workflow outputs and check data integrity.</p>
-<p><strong>See Also</strong>: <a class="reference internal" href="#amalgkit/steps/sanity.md"><span class="xref myst">Step Documentation: sanity</span></a></p>
+<p><strong>See Also</strong>: <a class="reference internal" href="amalgkit/steps/11_sanity.html"><span class="std std-doc">Step Documentation: sanity</span></a></p>
 </section>
 </section>
 <hr class="docutils" />

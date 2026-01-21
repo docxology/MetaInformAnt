@@ -39,7 +39,7 @@ def metadata(
 
 **Returns**: `subprocess.CompletedProcess[str]` with execution results
 
-**See Also**: [Step Documentation: metadata](amalgkit/steps/metadata.md)
+**See Also**: [Step Documentation: metadata](amalgkit/steps/01_metadata.md)
 
 ---
 
@@ -54,7 +54,7 @@ def integrate(
 
 **Purpose**: Integrate FASTQ file paths into metadata tables.
 
-**See Also**: [Step Documentation: integrate](amalgkit/steps/integrate.md)
+**See Also**: [Step Documentation: integrate](amalgkit/steps/05_integrate.md)
 
 ---
 
@@ -69,7 +69,7 @@ def config(
 
 **Purpose**: Generate configuration files for metadata selection.
 
-**See Also**: [Step Documentation: config](amalgkit/steps/config.md)
+**See Also**: [Step Documentation: config](amalgkit/steps/02_config.md)
 
 ---
 
@@ -84,7 +84,7 @@ def select(
 
 **Purpose**: Select and filter SRA entries based on quality criteria.
 
-**See Also**: [Step Documentation: select](amalgkit/steps/select.md)
+**See Also**: [Step Documentation: select](amalgkit/steps/03_select.md)
 
 ---
 
@@ -99,7 +99,7 @@ def getfastq(
 
 **Purpose**: Download and convert SRA files to FASTQ format.
 
-**See Also**: [Step Documentation: getfastq](amalgkit/steps/getfastq.md)
+**See Also**: [Step Documentation: getfastq](amalgkit/steps/04_getfastq.md)
 
 ---
 
@@ -114,7 +114,7 @@ def quant(
 
 **Purpose**: Quantify transcript abundances using kallisto or salmon.
 
-**See Also**: [Step Documentation: quant](amalgkit/steps/quant.md)
+**See Also**: [Step Documentation: quant](amalgkit/steps/06_quant.md)
 
 ---
 
@@ -129,7 +129,7 @@ def merge(
 
 **Purpose**: Merge per-sample quantification results into expression matrices.
 
-**See Also**: [Step Documentation: merge](amalgkit/steps/merge.md)
+**See Also**: [Step Documentation: merge](amalgkit/steps/07_merge.md)
 
 ---
 
@@ -144,7 +144,7 @@ def cstmm(
 
 **Purpose**: Cross-species TMM (Trimmed Mean of M-values) normalization.
 
-**See Also**: [Step Documentation: cstmm](amalgkit/steps/cstmm.md)
+**See Also**: [Step Documentation: cstmm](amalgkit/steps/08_cstmm.md)
 
 ---
 
@@ -159,7 +159,7 @@ def curate(
 
 **Purpose**: Quality control, outlier detection, and batch effect correction.
 
-**See Also**: [Step Documentation: curate](amalgkit/steps/curate.md)
+**See Also**: [Step Documentation: curate](amalgkit/steps/09_curate.md)
 
 ---
 
@@ -174,7 +174,7 @@ def csca(
 
 **Purpose**: Cross-species correlation analysis and visualization.
 
-**See Also**: [Step Documentation: csca](amalgkit/steps/csca.md)
+**See Also**: [Step Documentation: csca](amalgkit/steps/10_csca.md)
 
 ---
 
@@ -189,7 +189,7 @@ def sanity(
 
 **Purpose**: Validate workflow outputs and check data integrity.
 
-**See Also**: [Step Documentation: sanity](amalgkit/steps/sanity.md)
+**See Also**: [Step Documentation: sanity](amalgkit/steps/11_sanity.md)
 
 ---
 

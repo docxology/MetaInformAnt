@@ -105,36 +105,38 @@
 <p>The RNA domain provides RNA-seq analysis workflows, integrating with external tools like Amalgkit for transcriptomic analysis.</p>
 <section id="rna-seq-analysis-workflow">
 <h3>RNA-seq Analysis Workflow<a class="headerlink" href="#rna-seq-analysis-workflow" title="Link to this heading"></a></h3>
+<p><strong>New in Jan 2026:</strong></p>
+<ul class="simple">
+<li><p><strong>Automated Genome Indexing</strong>: Automatically downloads and builds kallisto reference indices.</p></li>
+<li><p><strong>Robust SRA Download</strong>: Intercepts “LITE” files and performs parallel, resumable downloads via AWS Open Data.</p></li>
+<li><p><strong>Intelligent Redo</strong>: Automatically detects existing SRA files and overrides <code class="docutils literal notranslate"><span class="pre">redo:</span> <span class="pre">yes</span></code> to prevent unnecessary redownloads.</p></li>
+<li><p><strong>Pre-flight Checks</strong>: Validates inputs before long-running steps.</p></li>
+</ul>
 <div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TD
-    A[Raw Reads&lt;br/&gt;FASTQ files] --&gt; B[Quality Control&lt;br/&gt;FastQC, quality metrics]
-    B --&gt; C[Trimming&lt;br/&gt;Adapter removal, quality filtering]
+    ArawReadsFastqFiles[Raw Reads_FASTQ files] --&gt; BqualityControlFastqc,QualityMetrics[Quality Control_FastQC, quality metrics]
+    B --&gt; CtrimmingAdapterRemoval,QualityFiltering[Trimming_Adapter removal, quality filtering]
 
-    C --&gt; D[Genome Preparation&lt;br/&gt;Reference indexing]
-    D --&gt; E[Read Mapping&lt;br/&gt;STAR, HISAT2 alignment]
+    C --&gt; DgenomePreparationReferenceIndexing[Genome Preparation_Reference indexing]
+    D --&gt; EreadMappingStar,Hisat2Alignment[Read Mapping_STAR, HISAT2 alignment]
 
-    E --&gt; F[Quantification&lt;br/&gt;FeatureCounts, HTSeq]
-    F --&gt; G[Transcript Assembly&lt;br/&gt;StringTie, Cufflinks]
+    E --&gt; FquantificationFeaturecounts,Htseq[Quantification_FeatureCounts, HTSeq]
+    F --&gt; GtranscriptAssemblyStringtie,Cufflinks[Transcript Assembly_StringTie, Cufflinks]
 
-    G --&gt; H[Quality Assessment&lt;br/&gt;MultiQC reports]
-    H --&gt; I[Differential Expression&lt;br/&gt;DESeq2, edgeR]
+    G --&gt; HqualityAssessmentMultiqcReports[Quality Assessment_MultiQC reports]
+    H --&gt; IdifferentialExpressionDeseq2,Edger[Differential Expression_DESeq2, edgeR]
 
-    I --&gt; J[Functional Analysis&lt;br/&gt;GO enrichment, pathway analysis]
-    J --&gt; K[Visualization&lt;br/&gt;Heatmaps, volcano plots]
+    I --&gt; JfunctionalAnalysisGoEnrichment,PathwayAnalysis[Functional Analysis_GO enrichment, pathway analysis]
+    J --&gt; KvisualizationHeatmaps,VolcanoPlots[Visualization_Heatmaps, volcano plots]
 
-    L[Configuration&lt;br/&gt;YAML templates] --&gt; M[Workflow Planning&lt;br/&gt;Step orchestration]
-    M --&gt; N[Parallel Execution&lt;br/&gt;Resource management]
+    LconfigurationYamlTemplates[Configuration_YAML templates] --&gt; MworkflowPlanningStepOrchestration[Workflow Planning_Step orchestration]
+    M --&gt; NparallelExecutionResourceManagement[Parallel Execution_Resource management]
 
-    O[Amalgkit Integration] --&gt; P[CLI Wrapper&lt;br/&gt;Command execution]
-    P --&gt; Q[Result Parsing&lt;br/&gt;Standardized outputs]
+    OamalgkitIntegration[Amalgkit Integration] --&gt; PcliWrapperCommandExecution[CLI Wrapper_Command execution]
+    P --&gt; QresultParsingStandardizedOutputs[Result Parsing_Standardized outputs]
 
-    R[External Tools&lt;br/&gt;STAR, DESeq2] -.-&gt; S[Tool Detection&lt;br/&gt;PATH validation]
-    S --&gt; T[Error Handling&lt;br/&gt;Retry logic]
+    RexternalToolsStar,Deseq2[External Tools_STAR, DESeq2] -.-&gt; StoolDetectionPathValidation[Tool Detection_PATH validation]
+    S --&gt; TerrorHandlingRetryLogic[Error Handling_Retry logic]
 
-    classDef input fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
-    classDef process fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
-    classDef analysis fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
-    classDef output fill:#fce4ec,stroke:#c2185b,stroke-width:2px
-    classDef config fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
 
     class A,L input
     class B,C,D,E,F,G,P,T process
@@ -315,6 +317,19 @@
 <li><p><a class="reference internal" href="API.html#genome-preparation-functions"><span class="std std-ref">API.md</span></a> - Function reference</p></li>
 </ul>
 </section>
+<section id="robustness-features-jan-2026">
+<h3>Robustness Features (Jan 2026)<a class="headerlink" href="#robustness-features-jan-2026" title="Link to this heading"></a></h3>
+<ul>
+<li><p><strong>Robust Download Interceptor</strong>: Automatically detects “LITE” SRA files and fetches full data from AWS Open Data.</p></li>
+<li><p><strong>Intelligent Redo</strong>: Prevents accidental deletion of downloaded files by verifying presence before <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> execution.</p>
+<blockquote>
+<div><p>[!IMPORTANT]
+<strong>Directory Structure Nuance</strong>: <code class="docutils literal notranslate"><span class="pre">amalgkit</span></code>’s internal skipping logic checks for the existence of the output directory/files. If <code class="docutils literal notranslate"><span class="pre">download_robust</span></code> creates a directory structure, <code class="docutils literal notranslate"><span class="pre">amalgkit</span></code> with <code class="docutils literal notranslate"><span class="pre">redo:</span> <span class="pre">no</span></code> may assume extraction is complete even if FASTQ files are missing. The orchestrator handles this by defaulting to <code class="docutils literal notranslate"><span class="pre">redo:</span> <span class="pre">no</span></code> only when <em>files</em> are verified, but provides alerts (<code class="docutils literal notranslate"><span class="pre">redo:</span> <span class="pre">yes</span></code> override warnings) to guide manual intervention if needed.</p>
+</div></blockquote>
+</li>
+<li><p><strong>Automated Indexing</strong>: <code class="docutils literal notranslate"><span class="pre">prepare_reference_genome</span></code> runs automatically before quantification steps.</p></li>
+</ul>
+</section>
 </section>
 <hr class="docutils" />
 <section id="id1">
@@ -478,8 +493,8 @@ python3<span class="w"> </span>scripts/rna/discover_species.py
 </ul>
 </section>
 <hr class="docutils" />
-<section id="current-status-november-2025">
-<h2>Current Status (November 2025)<a class="headerlink" href="#current-status-november-2025" title="Link to this heading"></a></h2>
+<section id="current-status-january-2026">
+<h2>Current Status (January 2026)<a class="headerlink" href="#current-status-january-2026" title="Link to this heading"></a></h2>
 <ul class="simple">
 <li><p><strong>Ant Species Discovery</strong>: 55 species discovered, 20 validated genomes</p></li>
 <li><p><strong>Batch 1</strong>: 10 species (3,820 samples) processing</p></li>
@@ -515,9 +530,9 @@ python3<span class="w"> </span>scripts/rna/discover_species.py
 <li><p><strong><a class="reference internal" href="CONFIGURATION.html"><span class="std std-doc">CONFIGURATION.md</span></a></strong> - Configuration management</p></li>
 </ul>
 <hr class="docutils" />
-<p><strong>Last Updated</strong>: November 2025<br />
-<strong>Documentation Status</strong>: Complete and organized<br />
-<strong>Production Status</strong>: Validated with 4,548 samples across 20 ant species</p>
+<p><strong>Last Updated</strong>: January 2026
+<strong>Documentation Status</strong>: Complete and organized
+<strong>Production Status</strong>: Validated with 4,548 samples across 20 ant species (Robust SRA Download Active)</p>
 </section>
 </section>
 

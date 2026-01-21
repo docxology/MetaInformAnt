@@ -16,35 +16,30 @@ The RNA domain provides RNA-seq analysis workflows, integrating with external to
 
 ```mermaid
 graph TD
-    A[Raw Reads<br/>FASTQ files] --> B[Quality Control<br/>FastQC, quality metrics]
-    B --> C[Trimming<br/>Adapter removal, quality filtering]
+    ArawReadsFastqFiles[Raw Reads_FASTQ files] --> BqualityControlFastqc,QualityMetrics[Quality Control_FastQC, quality metrics]
+    B --> CtrimmingAdapterRemoval,QualityFiltering[Trimming_Adapter removal, quality filtering]
 
-    C --> D[Genome Preparation<br/>Reference indexing]
-    D --> E[Read Mapping<br/>STAR, HISAT2 alignment]
+    C --> DgenomePreparationReferenceIndexing[Genome Preparation_Reference indexing]
+    D --> EreadMappingStar,Hisat2Alignment[Read Mapping_STAR, HISAT2 alignment]
 
-    E --> F[Quantification<br/>FeatureCounts, HTSeq]
-    F --> G[Transcript Assembly<br/>StringTie, Cufflinks]
+    E --> FquantificationFeaturecounts,Htseq[Quantification_FeatureCounts, HTSeq]
+    F --> GtranscriptAssemblyStringtie,Cufflinks[Transcript Assembly_StringTie, Cufflinks]
 
-    G --> H[Quality Assessment<br/>MultiQC reports]
-    H --> I[Differential Expression<br/>DESeq2, edgeR]
+    G --> HqualityAssessmentMultiqcReports[Quality Assessment_MultiQC reports]
+    H --> IdifferentialExpressionDeseq2,Edger[Differential Expression_DESeq2, edgeR]
 
-    I --> J[Functional Analysis<br/>GO enrichment, pathway analysis]
-    J --> K[Visualization<br/>Heatmaps, volcano plots]
+    I --> JfunctionalAnalysisGoEnrichment,PathwayAnalysis[Functional Analysis_GO enrichment, pathway analysis]
+    J --> KvisualizationHeatmaps,VolcanoPlots[Visualization_Heatmaps, volcano plots]
 
-    L[Configuration<br/>YAML templates] --> M[Workflow Planning<br/>Step orchestration]
-    M --> N[Parallel Execution<br/>Resource management]
+    LconfigurationYamlTemplates[Configuration_YAML templates] --> MworkflowPlanningStepOrchestration[Workflow Planning_Step orchestration]
+    M --> NparallelExecutionResourceManagement[Parallel Execution_Resource management]
 
-    O[Amalgkit Integration] --> P[CLI Wrapper<br/>Command execution]
-    P --> Q[Result Parsing<br/>Standardized outputs]
+    OamalgkitIntegration[Amalgkit Integration] --> PcliWrapperCommandExecution[CLI Wrapper_Command execution]
+    P --> QresultParsingStandardizedOutputs[Result Parsing_Standardized outputs]
 
-    R[External Tools<br/>STAR, DESeq2] -.-> S[Tool Detection<br/>PATH validation]
-    S --> T[Error Handling<br/>Retry logic]
+    RexternalToolsStar,Deseq2[External Tools_STAR, DESeq2] -.-> StoolDetectionPathValidation[Tool Detection_PATH validation]
+    S --> TerrorHandlingRetryLogic[Error Handling_Retry logic]
 
-    classDef input fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
-    classDef process fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
-    classDef analysis fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
-    classDef output fill:#fce4ec,stroke:#c2185b,stroke-width:2px
-    classDef config fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
 
     class A,L input
     class B,C,D,E,F,G,P,T process

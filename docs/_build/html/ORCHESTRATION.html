@@ -107,18 +107,18 @@
 <h2>Orchestration Layers<a class="headerlink" href="#orchestration-layers" title="Link to this heading"></a></h2>
 <div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart TB
     subgraph &quot;User Interfaces&quot;
-        CLI[CLI Interface&lt;br/&gt;metainformant command]
-        Scripts[Script Orchestrators&lt;br/&gt;scripts/*/run_*.py]
+        CLIcliInterfaceMetainformantCommand[CLI Interface_metainformant command]
+        ScriptsscriptOrchestratorsScripts/*/run*.py[Script Orchestrators_scripts/*/run_*.py]
     end
 
     subgraph &quot;Orchestration Framework&quot;
-        CoreOrch[BaseWorkflowOrchestrator&lt;br/&gt;core.workflow]
-        DomainOrch[Domain Workflows&lt;br/&gt;domain.workflow]
+        CoreOrchbaseworkfloworchestratorCore.workflow[BaseWorkflowOrchestrator_core.workflow]
+        DomainOrchdomainWorkflowsDomain.workflow[Domain Workflows_domain.workflow]
     end
 
     subgraph &quot;Execution Layer&quot;
-        Steps[Step Functions&lt;br/&gt;domain.steps]
-        Utils[Core Utilities&lt;br/&gt;core.*]
+        StepsstepFunctionsDomain.steps[Step Functions_domain.steps]
+        UtilscoreUtilitiesCore.*[Core Utilities_core.*]
     end
 
     CLI --&gt; Scripts
@@ -128,11 +128,11 @@
     DomainOrch --&gt; Steps
     Steps --&gt; Utils
 
-    DomainOrch --&gt; RNA[RNA Workflow&lt;br/&gt;rna.workflow]
-    DomainOrch --&gt; GWAS[GWAS Workflow&lt;br/&gt;gwas.workflow]
-    DomainOrch --&gt; EPI[Epigenome&lt;br/&gt;epigenome.workflow]
-    DomainOrch --&gt; ECO[Ecology&lt;br/&gt;ecology.workflow]
-    DomainOrch --&gt; SIM[Simulation&lt;br/&gt;simulation.workflow]
+    DomainOrch --&gt; RNArnaWorkflowRna.workflow[RNA Workflow_rna.workflow]
+    DomainOrch --&gt; GWASgwasWorkflowGwas.workflow[GWAS Workflow_gwas.workflow]
+    DomainOrch --&gt; EPIepigenomeEpigenome.workflow[Epigenome_epigenome.workflow]
+    DomainOrch --&gt; ECOecologyEcology.workflow[Ecology_ecology.workflow]
+    DomainOrch --&gt; SIMsimulationSimulation.workflow[Simulation_simulation.workflow]
 </pre></div>
 </div>
 </section>
@@ -141,16 +141,16 @@
 <section id="decision-tree">
 <h3>Decision Tree<a class="headerlink" href="#decision-tree" title="Link to this heading"></a></h3>
 <div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart TD
-    A[Need to run workflow?] --&gt; B{What level of control?}
-    B --&gt; C[Full programmatic control&lt;br/&gt;Direct API calls]
-    B --&gt; D[Config-driven automation&lt;br/&gt;Domain workflows]
-    B --&gt; E[Command-line convenience&lt;br/&gt;Script orchestrators]
-    B --&gt; F[Interactive exploration&lt;br/&gt;CLI interface]
+    AneedToRunWorkflow?[Need to run workflow?] --&gt; B{What level of control?}
+    B --&gt; CfullProgrammaticControlDirectApiCalls[Full programmatic control_Direct API calls]
+    B --&gt; Dconfig-drivenAutomationDomainWorkflows[Config-driven automation_Domain workflows]
+    B --&gt; Ecommand-lineConvenienceScriptOrchestrators[Command-line convenience_Script orchestrators]
+    B --&gt; FinteractiveExplorationCliInterface[Interactive exploration_CLI interface]
 
-    C --&gt; G[Use domain.workflow&lt;br/&gt;execute_* functions]
-    D --&gt; H[Use scripts/*/run_*.py&lt;br/&gt;with config files]
-    E --&gt; I[Use metainformant CLI&lt;br/&gt;with subcommands]
-    F --&gt; J[Use metainformant CLI&lt;br/&gt;interactive mode]
+    C --&gt; GuseDomain.workflowExecute*Functions[Use domain.workflow_execute_* functions]
+    D --&gt; HuseScripts/*/run*.pyWithConfigFiles[Use scripts/*/run_*.py_with config files]
+    E --&gt; IuseMetainformantCliWithSubcommands[Use metainformant CLI_with subcommands]
+    F --&gt; JuseMetainformantCliInteractiveMode[Use metainformant CLI_interactive mode]
 </pre></div>
 </div>
 </section>

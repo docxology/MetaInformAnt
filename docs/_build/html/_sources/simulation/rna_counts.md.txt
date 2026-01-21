@@ -4,8 +4,8 @@ Function: `simulate_counts_negative_binomial`
 
 ```mermaid
 flowchart LR
-  A[NB mean, dispersion] --> B[simulate_counts_negative_binomial]
-  B --> C[genes x samples matrix]
+  AnbMean,Dispersion[NB mean, dispersion] --> BsimulateCountsNegativeBinomial[simulate_counts_negative_binomial]
+  B --> CgenesXSamplesMatrix[genes x samples matrix]
 ```
 
 Example

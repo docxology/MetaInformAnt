@@ -4,7 +4,7 @@ Function: `parse_vcf`
 
 ```mermaid
 flowchart LR
-  A[VCF File] --> B[parse_vcf] --> C[Sample & Variant Counts]
+  AvcfFile[VCF File] --> BparseVcf[parse_vcf] --> Csample&VariantCounts[Sample & Variant Counts]
 ```
 
 Example

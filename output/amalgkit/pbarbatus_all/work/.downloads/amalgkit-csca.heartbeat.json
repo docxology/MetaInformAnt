@@ -1,0 +1,20 @@
+{
+  "bytes_downloaded": 12020345,
+  "destination": "output/amalgkit/pbarbatus_all/work/csca",
+  "errors": [],
+  "eta_seconds": null,
+  "last_update": "2026-01-21T19:41:09Z",
+  "progress": {
+    "current": 0,
+    "percent": 0.0,
+    "total": 1,
+    "type": "file_count"
+  },
+  "progress_percent": 0.0,
+  "speed_mbps": 11.399915973081038,
+  "started_at": "2026-01-21T19:41:08Z",
+  "status": "completed",
+  "step": "amalgkit csca",
+  "total_bytes": null,
+  "url": "['amalgkit', 'csca', '--out_dir', 'output/amalgkit/pbarbatus_all/work', '--orthogroup_table', '']"
+}

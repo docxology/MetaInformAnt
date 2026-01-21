@@ -1,0 +1,14 @@
+{
+  "bytes_downloaded": 69987267,
+  "destination": "output/amalgkit/pbarbatus_all/work",
+  "errors": [],
+  "eta_seconds": null,
+  "last_update": "2026-01-21T19:40:45Z",
+  "progress_percent": null,
+  "speed_mbps": 22.06916757928766,
+  "started_at": "2026-01-21T19:40:42Z",
+  "status": "completed",
+  "step": "amalgkit integrate",
+  "total_bytes": null,
+  "url": "['amalgkit', 'integrate', '--out_dir', 'output/amalgkit/pbarbatus_all/work', '--threads', '12', '--fastq_dir', 'output/amalgkit/pbarbatus_all/fastq/getfastq', '--metadata', 'output/amalgkit/pbarbatus_all/work/metadata/metadata_chunk_8.tsv']"
+}

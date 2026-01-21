@@ -257,18 +257,18 @@ Standard workflow progression:
 
 ```mermaid
 flowchart TD
-    A[01. metadata] --> B[02. config]
-    A --> C[03. select]
+    A01.Metadata[01. metadata] --> B02.Config[02. config]
+    A --> C03.Select[03. select]
     B --> C
-    C --> D[04. getfastq]
-    D --> E[05. integrate]
-    E --> F[06. quant]
-    F --> G[07. merge]
-    G --> H1[08. cstmm]
-    G --> H2[09. curate]
-    H1 --> I[10. csca]
+    C --> D04.Getfastq[04. getfastq]
+    D --> E05.Integrate[05. integrate]
+    E --> F06.Quant[06. quant]
+    F --> G07.Merge[07. merge]
+    G --> H108.Cstmm[08. cstmm]
+    G --> H209.Curate[09. curate]
+    H1 --> I10.Csca[10. csca]
     H2 --> I
-    H2 --> J[11. sanity]
+    H2 --> J11.Sanity[11. sanity]
 ```
 
 ## Quick Reference Table

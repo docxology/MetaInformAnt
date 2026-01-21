@@ -107,22 +107,22 @@
 <h2>Architecture<a class="headerlink" href="#architecture" title="Link to this heading"></a></h2>
 <div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart TB
     subgraph &quot;RNA Orchestration&quot;
-        CLI[CLI Interface&lt;br/&gt;metainformant rna] --&gt; Scripts[Script Orchestrators&lt;br/&gt;scripts/rna/run_*.py]
-        Scripts --&gt; Workflow[execute_amalgkit_workflow&lt;br/&gt;rna.workflow]
-        Workflow --&gt; Steps[Step Functions&lt;br/&gt;rna.steps.run_*]
+        CLIcliInterfaceMetainformantRna[CLI Interface_metainformant rna] --&gt; ScriptsscriptOrchestratorsScripts/rna/run*.py[Script Orchestrators_scripts/rna/run_*.py]
+        Scripts --&gt; WorkflowexecuteAmalgkitWorkflowRna.workflow[execute_amalgkit_workflow_rna.workflow]
+        Workflow --&gt; StepsstepFunctionsRna.steps.run*[Step Functions_rna.steps.run_*]
     end
 
     subgraph &quot;Workflow Components&quot;
-        Config[AmalgkitWorkflowConfig&lt;br/&gt;Configuration]
-        Monitoring[Monitoring&lt;br/&gt;rna.monitoring]
-        Genome[Genome Prep&lt;br/&gt;rna.genome_prep]
+        ConfigamalgkitworkflowconfigConfiguration[AmalgkitWorkflowConfig_Configuration]
+        MonitoringmonitoringRna.monitoring[Monitoring_rna.monitoring]
+        GenomegenomePrepRna.genomePrep[Genome Prep_rna.genome_prep]
         Steps
     end
 
     Workflow --&gt; Config
     Workflow --&gt; Monitoring
     Workflow --&gt; Genome
-    Steps --&gt; Amalgkit[Amalgkit CLI&lt;br/&gt;External Tool]
+    Steps --&gt; AmalgkitamalgkitCliExternalTool[Amalgkit CLI_External Tool]
 </pre></div>
 </div>
 </section>
@@ -444,14 +444,14 @@
 <section id="data-flow">
 <h3>Data Flow<a class="headerlink" href="#data-flow" title="Link to this heading"></a></h3>
 <div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart LR
-    RNA[RNA Workflow] --&gt; Expr[Expression Matrix&lt;br/&gt;rna/output/quant]
-    Expr --&gt; Prot[Protein Workflow&lt;br/&gt;protein/input/]
-    Expr --&gt; Multi[Multi-Omics&lt;br/&gt;multiomics/input/]
+    RNArnaWorkflow[RNA Workflow] --&gt; ExprexpressionMatrixRna/output/quant[Expression Matrix_rna/output/quant]
+    Expr --&gt; ProtproteinWorkflowProtein/input/[Protein Workflow_protein/input/]
+    Expr --&gt; Multimulti-omicsMultiomics/input/[Multi-Omics_multiomics/input/]
 
-    RNA --&gt; Qual[Quality Control&lt;br/&gt;quality/input/]
+    RNA --&gt; QualqualityControlQuality/input/[Quality Control_quality/input/]
     Qual --&gt; RNA
 
-    RNA --&gt; Viz[Visualization&lt;br/&gt;visualization/input/]
+    RNA --&gt; VizvisualizationVisualization/input/[Visualization_visualization/input/]
 </pre></div>
 </div>
 </section>
@@ -608,10 +608,10 @@ python3<span class="w"> </span>scripts/rna/setup_genome.py<span class="w"> </spa
 <ul class="simple">
 <li><p><strong><a class="reference internal" href="README.html"><span class="std std-doc">RNA Overview</span></a></strong> - RNA module overview</p></li>
 <li><p><strong><a class="reference internal" href="#../rna/amalgkit/"><span class="xref myst">Amalgkit Integration</span></a></strong> - Amalgkit-specific documentation</p></li>
-<li><p><strong><a class="reference internal" href="#../rna/config.md"><span class="xref myst">Configuration</span></a></strong> - Configuration management</p></li>
-<li><p><strong><a class="reference internal" href="#../rna/monitoring.md"><span class="xref myst">Monitoring</span></a></strong> - Progress tracking and monitoring</p></li>
-<li><p><strong><a class="reference internal" href="#../../ORCHESTRATION.md"><span class="xref myst">Orchestration Guide</span></a></strong> - Overall orchestration paradigm</p></li>
-<li><p><strong><a class="reference internal" href="#../../core/workflow.md"><span class="xref myst">Core Workflow</span></a></strong> - BaseWorkflowOrchestrator details</p></li>
+<li><p><strong><a class="reference internal" href="CONFIGURATION.html"><span class="std std-doc">Configuration</span></a></strong> - Configuration management</p></li>
+<li><p><strong><a class="reference internal" href="amalgkit/monitoring.html"><span class="std std-doc">Monitoring</span></a></strong> - Progress tracking and monitoring</p></li>
+<li><p><strong><a class="reference internal" href="../ORCHESTRATION.html"><span class="std std-doc">Orchestration Guide</span></a></strong> - Overall orchestration paradigm</p></li>
+<li><p><strong><a class="reference internal" href="../core/workflow.html"><span class="std std-doc">Core Workflow</span></a></strong> - BaseWorkflowOrchestrator details</p></li>
 </ul>
 </section>
 </section>

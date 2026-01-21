@@ -11,29 +11,29 @@ This module enables systems-level biological analysis by combining data from dif
 ```mermaid
 graph TB
     subgraph "Multi-omics Module"
-        Integration[integration<br/>Data Integration]
+        IntegrationintegrationDataIntegration[integration_Data Integration]
     end
     
     subgraph "Input Data"
-        Genomics[Genomics Data]
-        Transcriptomics[Transcriptomics Data]
-        Proteomics[Proteomics Data]
-        Epigenomics[Epigenomics Data]
+        GenomicsgenomicsData[Genomics Data]
+        TranscriptomicstranscriptomicsData[Transcriptomics Data]
+        ProteomicsproteomicsData[Proteomics Data]
+        EpigenomicsepigenomicsData[Epigenomics Data]
     end
     
     subgraph "Analysis Methods"
-        JointPCA[Joint PCA]
-        JointNMF[Joint NMF]
-        CCA[Canonical Correlation]
+        JointPCAjointPca[Joint PCA]
+        JointNMFjointNmf[Joint NMF]
+        CCAcanonicalCorrelation[Canonical Correlation]
     end
     
     subgraph "Other Modules"
-        DNA_Mod[dna]
-        RNA_Mod[rna]
-        Protein_Mod[protein]
-        Epigenome_Mod[epigenome]
-        Networks_Mod[networks]
-        Viz_Mod[visualization]
+        dna[dna]
+        rna[rna]
+        protein[protein]
+        epigenome[epigenome]
+        networks[networks]
+        visualization[visualization]
     end
     
     Genomics --> Integration
@@ -56,44 +56,41 @@ graph TB
 
 ```mermaid
 graph TD
-    A[Raw Multi-Omic Data] --> B{Data Type}
-    B -->|Genomics| C[Variant Calling]
-    B -->|Transcriptomics| D[Expression Quantification]
-    B -->|Proteomics| E[Protein Identification]
-    B -->|Epigenomics| F[Methylation Analysis]
+    ArawMulti-omicData[Raw Multi-Omic Data] --> B{Data Type}
+    B -->|Genomics| CvariantCalling[Variant Calling]
+    B -->|Transcriptomics| DexpressionQuantification[Expression Quantification]
+    B -->|Proteomics| EproteinIdentification[Protein Identification]
+    B -->|Epigenomics| FmethylationAnalysis[Methylation Analysis]
 
-    C --> G[Feature Extraction]
+    C --> GfeatureExtraction[Feature Extraction]
     D --> G
     E --> G
     F --> G
 
-    G --> H[Sample Alignment]
-    H --> I[Batch Effect Correction]
+    G --> HsampleAlignment[Sample Alignment]
+    H --> IbatchEffectCorrection[Batch Effect Correction]
 
     I --> J[Normalization]
-    J --> K[Feature Scaling]
+    J --> KfeatureScaling[Feature Scaling]
 
-    K --> L[Quality Control]
+    K --> LqualityControl[Quality Control]
     L --> M{Data Quality?}
-    M -->|Poor| N[Data Filtering]
-    M -->|Good| O[Harmonized Data]
+    M -->|Poor| NdataFiltering[Data Filtering]
+    M -->|Good| OharmonizedData[Harmonized Data]
 
     N --> L
-    O --> P[Integration Ready]
+    O --> PintegrationReady[Integration Ready]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style H fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style P fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Alignment Methods"
-        Q[Sample Matching] -.-> H
-        R[ID Mapping] -.-> H
-        S[Time Points] -.-> H
+        QsampleMatching[Sample Matching] -.-> H
+        RidMapping[ID Mapping] -.-> H
+        StimePoints[Time Points] -.-> H
     end
 
     subgraph "Normalization"
         T[Quantile] -.-> J
-        U[Median Ratio] -.-> J
+        UmedianRatio[Median Ratio] -.-> J
         V[Z-score] -.-> K
     end
 ```
@@ -102,45 +99,42 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Harmonized Data] --> B{Integration Method}
-    B -->|Joint PCA| C[Concatenated Matrix]
-    B -->|MOFA| D[Multi-Omics Factor Analysis]
-    B -->|Similarity Network| E[Network Fusion]
-    B -->|Canonical Correlation| F[CCA Analysis]
+    AharmonizedData[Harmonized Data] --> B{Integration Method}
+    B -->|Joint PCA| CconcatenatedMatrix[Concatenated Matrix]
+    B -->|MOFA| Dmulti-omicsFactorAnalysis[Multi-Omics Factor Analysis]
+    B -->|Similarity Network| EnetworkFusion[Network Fusion]
+    B -->|Canonical Correlation| FccaAnalysis[CCA Analysis]
 
-    C --> G[Standard PCA]
-    D --> H[Factor Model]
-    E --> I[Similarity Calculation]
-    F --> J[Correlation Analysis]
+    C --> GstandardPca[Standard PCA]
+    D --> HfactorModel[Factor Model]
+    E --> IsimilarityCalculation[Similarity Calculation]
+    F --> JcorrelationAnalysis[Correlation Analysis]
 
-    G --> K[Joint Components]
+    G --> KjointComponents[Joint Components]
     H --> K
     I --> K
     J --> K
 
-    K --> L[Component Interpretation]
-    L --> M[Biological Insights]
+    K --> LcomponentInterpretation[Component Interpretation]
+    L --> MbiologicalInsights[Biological Insights]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style K fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style M fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Joint PCA"
-        N[Data Concatenation] -.-> C
-        O[Dimension Reduction] -.-> G
-        P[Component Loading] -.-> K
+        NdataConcatenation[Data Concatenation] -.-> C
+        OdimensionReduction[Dimension Reduction] -.-> G
+        PcomponentLoading[Component Loading] -.-> K
     end
 
     subgraph "MOFA"
-        Q[Factor Model] -.-> D
-        R[Latent Factors] -.-> H
-        S[Factor Weights] -.-> K
+        QfactorModel[Factor Model] -.-> D
+        RlatentFactors[Latent Factors] -.-> H
+        SfactorWeights[Factor Weights] -.-> K
     end
 
     subgraph "Network Fusion"
-        T[Similarity Networks] -.-> E
-        U[Network Integration] -.-> I
-        V[Consensus Network] -.-> K
+        TsimilarityNetworks[Similarity Networks] -.-> E
+        UnetworkIntegration[Network Integration] -.-> I
+        VconsensusNetwork[Consensus Network] -.-> K
     end
 ```
 
@@ -148,48 +142,45 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Multi-Omic Dataset] --> B[Data Preprocessing]
-    B --> C[Feature Selection]
+    Amulti-omicDataset[Multi-Omic Dataset] --> BdataPreprocessing[Data Preprocessing]
+    B --> CfeatureSelection[Feature Selection]
 
     C --> D{Integration Strategy}
-    D -->|Early Integration| E[Concatenated Analysis]
-    D -->|Late Integration| F[Separate Analysis]
+    D -->|Early Integration| EconcatenatedAnalysis[Concatenated Analysis]
+    D -->|Late Integration| FseparateAnalysis[Separate Analysis]
     D -->|Intermediate| G[Meta-Analysis]
 
-    E --> H[Joint Dimensionality Reduction]
-    F --> I[Individual Analysis]
-    G --> J[Integration of Results]
+    E --> HjointDimensionalityReduction[Joint Dimensionality Reduction]
+    F --> IindividualAnalysis[Individual Analysis]
+    G --> JintegrationOfResults[Integration of Results]
 
-    H --> K[Multi-Omic Clustering]
-    I --> L[Individual Clustering]
-    J --> M[Consensus Clustering]
+    H --> Kmulti-omicClustering[Multi-Omic Clustering]
+    I --> LindividualClustering[Individual Clustering]
+    J --> MconsensusClustering[Consensus Clustering]
 
-    K --> N[Cluster Validation]
+    K --> NclusterValidation[Cluster Validation]
     L --> N
     M --> N
 
     N --> O{Biological Validation}
-    O -->|Yes| P[Functional Enrichment]
-    O -->|No| Q[Refine Clustering]
+    O -->|Yes| PfunctionalEnrichment[Functional Enrichment]
+    O -->|No| QrefineClustering[Refine Clustering]
 
     Q --> K
-    P --> R[Pathway Analysis]
-    R --> S[Network Construction]
-    S --> T[Systems Biology Insights]
+    P --> RpathwayAnalysis[Pathway Analysis]
+    R --> SnetworkConstruction[Network Construction]
+    S --> TsystemsBiologyInsights[Systems Biology Insights]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style H fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style T fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Early Integration"
-        U[Data Concatenation] -.-> E
-        V[Joint Normalization] -.-> E
-        W[Unified Feature Space] -.-> E
+        UdataConcatenation[Data Concatenation] -.-> E
+        VjointNormalization[Joint Normalization] -.-> E
+        WunifiedFeatureSpace[Unified Feature Space] -.-> E
     end
 
     subgraph "Late Integration"
-        X[Separate Models] -.-> F
-        Y[Result Integration] -.-> J
+        XseparateModels[Separate Models] -.-> F
+        YresultIntegration[Result Integration] -.-> J
         Z[Meta-analysis] -.-> J
     end
 ```
@@ -198,32 +189,29 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Multi-Omic Measurements] --> B[Platform Matching]
-    B --> C[Gene/Protein Mapping]
+    Amulti-omicMeasurements[Multi-Omic Measurements] --> BplatformMatching[Platform Matching]
+    B --> Cgene/proteinMapping[Gene/Protein Mapping]
 
     C --> D{Correlation Method}
-    D -->|Pearson| E[Linear Correlation]
-    D -->|Spearman| F[Rank Correlation]
-    D -->|Kendall| G[Kendall Tau]
+    D -->|Pearson| ElinearCorrelation[Linear Correlation]
+    D -->|Spearman| FrankCorrelation[Rank Correlation]
+    D -->|Kendall| GkendallTau[Kendall Tau]
 
-    E --> H[Correlation Matrix]
+    E --> HcorrelationMatrix[Correlation Matrix]
     F --> H
     G --> H
 
-    H --> I[Significance Testing]
-    I --> J[P-value Correction]
+    H --> IsignificanceTesting[Significance Testing]
+    I --> Jp-valueCorrection[P-value Correction]
 
-    J --> K[Significant Associations]
-    K --> L[Association Networks]
+    J --> KsignificantAssociations[Significant Associations]
+    K --> LassociationNetworks[Association Networks]
 
-    L --> M[Module Detection]
-    M --> N[Functional Annotation]
+    L --> MmoduleDetection[Module Detection]
+    M --> NfunctionalAnnotation[Functional Annotation]
 
-    N --> O[Cross-Platform Insights]
+    N --> Ocross-platformInsights[Cross-Platform Insights]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style H fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style O fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Correlation Types"
         P[mRNA-Protein] -.-> H
@@ -233,9 +221,9 @@ graph TD
     end
 
     subgraph "Network Analysis"
-        T[Correlation Networks] -.-> L
-        U[Community Detection] -.-> M
-        V[Hub Identification] -.-> N
+        TcorrelationNetworks[Correlation Networks] -.-> L
+        UcommunityDetection[Community Detection] -.-> M
+        VhubIdentification[Hub Identification] -.-> N
     end
 ```
     PCA --> Integrate[Integration Analysis]

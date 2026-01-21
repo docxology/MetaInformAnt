@@ -9,18 +9,18 @@ METAINFORMANT provides a layered orchestration architecture for running bioinfor
 ```mermaid
 flowchart TB
     subgraph "User Interfaces"
-        CLI[CLI Interface<br/>metainformant command]
-        Scripts[Script Orchestrators<br/>scripts/*/run_*.py]
+        CLIcliInterfaceMetainformantCommand[CLI Interface_metainformant command]
+        ScriptsscriptOrchestratorsScripts/*/run*.py[Script Orchestrators_scripts/*/run_*.py]
     end
 
     subgraph "Orchestration Framework"
-        CoreOrch[BaseWorkflowOrchestrator<br/>core.workflow]
-        DomainOrch[Domain Workflows<br/>domain.workflow]
+        CoreOrchbaseworkfloworchestratorCore.workflow[BaseWorkflowOrchestrator_core.workflow]
+        DomainOrchdomainWorkflowsDomain.workflow[Domain Workflows_domain.workflow]
     end
 
     subgraph "Execution Layer"
-        Steps[Step Functions<br/>domain.steps]
-        Utils[Core Utilities<br/>core.*]
+        StepsstepFunctionsDomain.steps[Step Functions_domain.steps]
+        UtilscoreUtilitiesCore.*[Core Utilities_core.*]
     end
 
     CLI --> Scripts
@@ -30,11 +30,11 @@ flowchart TB
     DomainOrch --> Steps
     Steps --> Utils
 
-    DomainOrch --> RNA[RNA Workflow<br/>rna.workflow]
-    DomainOrch --> GWAS[GWAS Workflow<br/>gwas.workflow]
-    DomainOrch --> EPI[Epigenome<br/>epigenome.workflow]
-    DomainOrch --> ECO[Ecology<br/>ecology.workflow]
-    DomainOrch --> SIM[Simulation<br/>simulation.workflow]
+    DomainOrch --> RNArnaWorkflowRna.workflow[RNA Workflow_rna.workflow]
+    DomainOrch --> GWASgwasWorkflowGwas.workflow[GWAS Workflow_gwas.workflow]
+    DomainOrch --> EPIepigenomeEpigenome.workflow[Epigenome_epigenome.workflow]
+    DomainOrch --> ECOecologyEcology.workflow[Ecology_ecology.workflow]
+    DomainOrch --> SIMsimulationSimulation.workflow[Simulation_simulation.workflow]
 ```
 
 ## When to Use Each Layer
@@ -43,16 +43,16 @@ flowchart TB
 
 ```mermaid
 flowchart TD
-    A[Need to run workflow?] --> B{What level of control?}
-    B --> C[Full programmatic control<br/>Direct API calls]
-    B --> D[Config-driven automation<br/>Domain workflows]
-    B --> E[Command-line convenience<br/>Script orchestrators]
-    B --> F[Interactive exploration<br/>CLI interface]
+    AneedToRunWorkflow?[Need to run workflow?] --> B{What level of control?}
+    B --> CfullProgrammaticControlDirectApiCalls[Full programmatic control_Direct API calls]
+    B --> Dconfig-drivenAutomationDomainWorkflows[Config-driven automation_Domain workflows]
+    B --> Ecommand-lineConvenienceScriptOrchestrators[Command-line convenience_Script orchestrators]
+    B --> FinteractiveExplorationCliInterface[Interactive exploration_CLI interface]
 
-    C --> G[Use domain.workflow<br/>execute_* functions]
-    D --> H[Use scripts/*/run_*.py<br/>with config files]
-    E --> I[Use metainformant CLI<br/>with subcommands]
-    F --> J[Use metainformant CLI<br/>interactive mode]
+    C --> GuseDomain.workflowExecute*Functions[Use domain.workflow_execute_* functions]
+    D --> HuseScripts/*/run*.pyWithConfigFiles[Use scripts/*/run_*.py_with config files]
+    E --> IuseMetainformantCliWithSubcommands[Use metainformant CLI_with subcommands]
+    F --> JuseMetainformantCliInteractiveMode[Use metainformant CLI_interactive mode]
 ```
 
 ### Layer Descriptions

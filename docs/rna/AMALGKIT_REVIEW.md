@@ -447,7 +447,7 @@ def check_step_dependencies(step: str) -> StepDependencyStatus:
 
 **Feature**: ✅ **Automatic amalgkit installation**
 
-From `src/metainformant/rna/amalgkit.py`:
+From `src/metainformant/rna/amalgkit/amalgkit.py`:
 
 ```python
 def ensure_cli_available(*, auto_install: bool = False) -> tuple[bool, str, dict | None]:
@@ -459,16 +459,8 @@ def ensure_cli_available(*, auto_install: bool = False) -> tuple[bool, str, dict
     if ok or not auto_install:
         return ok, msg, None
 
-    # Attempt installation via pip
-    cmd = [
-        sys.executable,
-        "-m",
-        "pip",
-        "install",
-        "--no-input",
-        "--no-warn-script-location",
-        "git+https://github.com/kfuku52/amalgkit",
-    ]
+    # Attempt installation via uv
+    cmd = ["uv", "pip", "install", "amalgkit"]
     # ... real installation attempt
 ```
 
@@ -839,7 +831,7 @@ The RNA and Amalgkit module requires no immediate changes and demonstrates exemp
 ### Amalgkit CLI Verification
 
 **Repository**: https://github.com/kfuku52/amalgkit  
-**Installation Method**: `pip install git+https://github.com/kfuku52/amalgkit`  
+**Installation Method**: `uv pip install git+https://github.com/kfuku52/amalgkit`  
 **Verification Status**: ✅ Confirmed match with repository
 
 ### Command Structure Validation

@@ -6,11 +6,11 @@ Population genetic analysis and diversity metrics for DNA sequences.
 
 ```mermaid
 graph TD
-  A[Sequences/Genotypes] --> B[Summary Stats]
+  A[Sequences/Genotypes] --> BsummaryStats[Summary Stats]
   B --> C[pi]
-  B --> D[Tajima's D]
+  B --> Dtajima'sD[Tajima's D]
   B --> E[Fst]
-  B --> F[S, theta_w]
+  B --> Fs,ThetaW[S, theta_w]
 ```
 
 ## Overview

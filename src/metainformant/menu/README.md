@@ -16,19 +16,19 @@ The menu module enables users to:
 ```mermaid
 graph TB
     subgraph "Menu Module"
-        Display[display.py<br/>Menu Rendering]
-        Nav[navigation.py<br/>Navigation State]
-        Disc[discovery.py<br/>Script Discovery]
-        Exec[executor.py<br/>Script Execution]
+        Displaydisplay.pyMenuRendering[display.py_Menu Rendering]
+        Navnavigation.pyNavigationState[navigation.py_Navigation State]
+        Discdiscovery.pyScriptDiscovery[discovery.py_Script Discovery]
+        Execexecutor.pyScriptExecution[executor.py_Script Execution]
     end
     
     subgraph "User Interface"
-        Orchestrator[metainformant.sh<br/>Orchestrator]
-        CLI[Command Line]
+        Orchestratormetainformant.shOrchestrator[metainformant.sh_Orchestrator]
+        CLIcommandLine[Command Line]
     end
     
     subgraph "Scripts"
-        Scripts[scripts/*/<br/>Domain Scripts]
+        Scriptsscripts/*/DomainScripts[scripts/*/_Domain Scripts]
     end
     
     CLI --> Orchestrator

@@ -18,20 +18,20 @@ METAINFORMANT's AMALGKIT integration provides:
 
 ```mermaid
 flowchart TD
-    A[NCBI SRA Database] --> B[metadata: Sample Discovery]
-    B --> C[select: Quality Filtering]
-    C --> D[getfastq: Data Extraction]
-    D --> E[quant: Kallisto Quantification]
-    E --> F[merge: Expression Matrices]
-    F --> G[curate: Batch Correction]
-    G --> H[sanity: Quality Assurance]
-    H --> I[PDF Visualizations]
+    AncbiSraDatabase[NCBI SRA Database] --> Bmetadata:SampleDiscovery[metadata: Sample Discovery]
+    B --> Cselect:QualityFiltering[select: Quality Filtering]
+    C --> Dgetfastq:DataExtraction[getfastq: Data Extraction]
+    D --> Equant:KallistoQuantification[quant: Kallisto Quantification]
+    E --> Fmerge:ExpressionMatrices[merge: Expression Matrices]
+    F --> Gcurate:BatchCorrection[curate: Batch Correction]
+    G --> Hsanity:QualityAssurance[sanity: Quality Assurance]
+    H --> IpdfVisualizations[PDF Visualizations]
     
-    J[Progress Monitoring] --> D
-    K[Error Recovery] --> D
-    L[R Environment] --> F
+    JprogressMonitoring[Progress Monitoring] --> D
+    KerrorRecovery[Error Recovery] --> D
+    LrEnvironment[R Environment] --> F
     L --> G
-    M[Reference Genomes] --> E
+    MreferenceGenomes[Reference Genomes] --> E
 ```
 
 ## 🚀 Quick Start

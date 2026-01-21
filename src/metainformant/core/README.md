@@ -11,22 +11,22 @@ This module contains foundational components that are used throughout the METAIN
 ```mermaid
 graph TB
     subgraph "Core Utilities"
-        Config[config<br/>Configuration Management]
-        IO[io<br/>File I/O Operations]
-        Log[logging<br/>Structured Logging]
-        Path[paths<br/>Path Management]
-        Cache[cache<br/>JSON Caching]
-        Parallel[parallel<br/>Parallel Processing]
-        Hash[hash<br/>Content Hashing]
-        Text[text<br/>Text Processing]
-        DB[db<br/>Database Integration]
-        Workflow[workflow<br/>Workflow Orchestration]
-        Discovery[discovery<br/>Symbol Discovery]
-        Symbols[symbols<br/>Symbol Indexing]
-        Errors[errors<br/>Error Handling]
-        Validation[validation<br/>Data Validation]
-        Progress[progress<br/>Progress Tracking]
-        Disk[disk<br/>Disk Operations]
+        ConfigconfigConfigurationManagement[config_Configuration Management]
+        IOioFileI/oOperations[io_File I/O Operations]
+        LogloggingStructuredLogging[logging_Structured Logging]
+        PathpathsPathManagement[paths_Path Management]
+        CachecacheJsonCaching[cache_JSON Caching]
+        ParallelparallelParallelProcessing[parallel_Parallel Processing]
+        HashhashContentHashing[hash_Content Hashing]
+        TexttextTextProcessing[text_Text Processing]
+        DBdbDatabaseIntegration[db_Database Integration]
+        WorkflowworkflowWorkflowOrchestration[workflow_Workflow Orchestration]
+        DiscoverydiscoverySymbolDiscovery[discovery_Symbol Discovery]
+        SymbolssymbolsSymbolIndexing[symbols_Symbol Indexing]
+        ErrorserrorsErrorHandling[errors_Error Handling]
+        ValidationvalidationDataValidation[validation_Data Validation]
+        ProgressprogressProgressTracking[progress_Progress Tracking]
+        DiskdiskDiskOperations[disk_Disk Operations]
     end
     
     subgraph "Domain Modules"
@@ -34,7 +34,7 @@ graph TB
         RNA[rna]
         Protein[protein]
         GWAS[gwas]
-        Other[Other Modules...]
+        OtherotherModules...[Other Modules...]
     end
     
     Config -.-> DNA
@@ -73,24 +73,20 @@ graph TB
 
 ```mermaid
 flowchart LR
-    Start[Application Start] --> Config[Load Config]
-    Config --> Validate[Validate Config]
-    Validate --> Setup[Setup Logging]
-    Setup --> PathCheck[Path Validation]
-    PathCheck --> Process[Process Data]
-    Process --> IO[I/O Operations]
+    StartapplicationStart[Application Start] --> ConfigloadConfig[Load Config]
+    Config --> ValidatevalidateConfig[Validate Config]
+    Validate --> SetupsetupLogging[Setup Logging]
+    Setup --> PathCheckpathValidation[Path Validation]
+    PathCheck --> ProcessprocessData[Process Data]
+    Process --> IOi/oOperations[I/O Operations]
     IO --> Cache{Cache Hit?}
-    Cache -->|Yes| Return[Return Cached]
-    Cache -->|No| Compute[Compute Result]
-    Compute --> Store[Store in Cache]
+    Cache -->|Yes| ReturnreturnCached[Return Cached]
+    Cache -->|No| ComputecomputeResult[Compute Result]
+    Compute --> StorestoreInCache[Store in Cache]
     Store --> Return
-    Return --> Log[Log Results]
+    Return --> LoglogResults[Log Results]
     Log --> End[End]
     
-    style Config fill:#e1f5ff
-    style IO fill:#e1f5ff
-    style Log fill:#e1f5ff
-    style Cache fill:#fff4e1
 ```
 
 ## Submodules
@@ -639,36 +635,33 @@ Symbolic mapping and context discovery utilities for repo-wide navigation and se
 
 ```mermaid
 graph TD
-    A[Repository Scan] --> B{Scan Type}
-    B -->|Functions| C[AST Parse Files]
-    B -->|Configs| D[Config Discovery]
-    B -->|Output Patterns| E[Pattern Analysis]
-    B -->|Dependencies| F[Import Analysis]
-    B -->|Workflows| G[Workflow Discovery]
+    ArepositoryScan[Repository Scan] --> B{Scan Type}
+    B -->|Functions| CastParseFiles[AST Parse Files]
+    B -->|Configs| DconfigDiscovery[Config Discovery]
+    B -->|Output Patterns| EpatternAnalysis[Pattern Analysis]
+    B -->|Dependencies| FimportAnalysis[Import Analysis]
+    B -->|Workflows| GworkflowDiscovery[Workflow Discovery]
 
-    C --> H[Extract Signatures]
-    D --> I[Extract Metadata]
-    E --> J[Pattern Matching]
-    F --> K[Dependency Graph]
-    G --> L[Entry Points]
+    C --> HextractSignatures[Extract Signatures]
+    D --> IextractMetadata[Extract Metadata]
+    E --> JpatternMatching[Pattern Matching]
+    F --> KdependencyGraph[Dependency Graph]
+    G --> LentryPoints[Entry Points]
 
-    H --> M[FunctionInfo Objects]
-    I --> N[ConfigInfo Objects]
-    J --> O[OutputPattern Objects]
-    K --> P[ModuleDependency Objects]
-    L --> Q[Workflow Objects]
+    H --> MfunctioninfoObjects[FunctionInfo Objects]
+    I --> NconfiginfoObjects[ConfigInfo Objects]
+    J --> OoutputpatternObjects[OutputPattern Objects]
+    K --> PmoduledependencyObjects[ModuleDependency Objects]
+    L --> QworkflowObjects[Workflow Objects]
 
-    M --> R[Search/Filter Results]
+    M --> Rsearch/filterResults[Search/Filter Results]
     N --> R
     O --> R
     P --> R
     Q --> R
 
-    R --> S[Return Structured Data]
+    R --> SreturnStructuredData[Return Structured Data]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style B fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 ```
 
 **Key Features:**
@@ -724,35 +717,32 @@ Symbol indexing and cross-referencing for functions, classes, and other symbols.
 
 ```mermaid
 graph TD
-    A[Repository Input] --> B[Index Type Selection]
-    B -->|Functions| C[AST Parse Python Files]
-    B -->|Classes| D[AST Parse Class Definitions]
+    ArepositoryInput[Repository Input] --> BindexTypeSelection[Index Type Selection]
+    B -->|Functions| CastParsePythonFiles[AST Parse Python Files]
+    B -->|Classes| DastParseClassDefinitions[AST Parse Class Definitions]
 
-    C --> E[Extract Function Info]
-    D --> F[Extract Class Info]
+    C --> EextractFunctionInfo[Extract Function Info]
+    D --> FextractClassInfo[Extract Class Info]
 
-    E --> G[Build Function Index]
-    F --> H[Build Class Index]
+    E --> GbuildFunctionIndex[Build Function Index]
+    F --> HbuildClassIndex[Build Class Index]
 
-    G --> I[Cache Index]
+    G --> IcacheIndex[Cache Index]
     H --> I
 
-    I --> J[Search Operations]
-    J -->|Find Symbol| K[Lookup Definition]
-    J -->|Find References| L[Cross-Reference Search]
-    J -->|Get Signature| M[Signature Extraction]
-    J -->|Get Metadata| N[Metadata Retrieval]
-    J -->|Fuzzy Match| O[Fuzzy Search]
+    I --> JsearchOperations[Search Operations]
+    J -->|Find Symbol| KlookupDefinition[Lookup Definition]
+    J -->|Find References| Lcross-referenceSearch[Cross-Reference Search]
+    J -->|Get Signature| MsignatureExtraction[Signature Extraction]
+    J -->|Get Metadata| NmetadataRetrieval[Metadata Retrieval]
+    J -->|Fuzzy Match| OfuzzySearch[Fuzzy Search]
 
-    K --> P[Return SymbolDefinition]
-    L --> Q[Return SymbolReference List]
-    M --> R[Return Signature String]
-    N --> S[Return Metadata Dict]
-    O --> T[Return Match Tuples]
+    K --> PreturnSymboldefinition[Return SymbolDefinition]
+    L --> QreturnSymbolreferenceList[Return SymbolReference List]
+    M --> RreturnSignatureString[Return Signature String]
+    N --> SreturnMetadataDict[Return Metadata Dict]
+    O --> TreturnMatchTuples[Return Match Tuples]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style I fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style J fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 ```
 
 **Key Features:**
@@ -896,49 +886,46 @@ The core module provides foundational utilities used throughout METAINFORMANT:
 
 ```mermaid
 graph TD
-    A[YAML/JSON Config] --> B[Config Validation]
-    B --> C[Environment Override]
+    Ayaml/jsonConfig[YAML/JSON Config] --> BconfigValidation[Config Validation]
+    B --> CenvironmentOverride[Environment Override]
 
-    C --> D[Step Resolution]
-    D --> E[Dependency Analysis]
+    C --> DstepResolution[Step Resolution]
+    D --> EdependencyAnalysis[Dependency Analysis]
 
-    E --> F[Execution Planning]
-    F --> G[Parallel Scheduling]
+    E --> FexecutionPlanning[Execution Planning]
+    F --> GparallelScheduling[Parallel Scheduling]
 
-    G --> H[Step Execution]
-    H --> I[Result Collection]
+    G --> HstepExecution[Step Execution]
+    H --> IresultCollection[Result Collection]
 
-    I --> J[Output Processing]
-    J --> K[Quality Assurance]
+    I --> JoutputProcessing[Output Processing]
+    J --> KqualityAssurance[Quality Assurance]
 
     K --> L{Success?}
-    L -->|Yes| M[Workflow Complete]
-    L -->|No| N[Error Handling]
+    L -->|Yes| MworkflowComplete[Workflow Complete]
+    L -->|No| NerrorHandling[Error Handling]
 
     N --> O[Retry/Fallback]
     O --> P{Re-attempt?}
     P -->|Yes| H
-    P -->|No| Q[Workflow Failure]
+    P -->|No| QworkflowFailure[Workflow Failure]
 
-    M --> R[Results Summary]
+    M --> RresultsSummary[Results Summary]
     Q --> R
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style H fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Configuration Features"
-        S[Schema Validation] -.-> B
-        T[Parameter Types] -.-> B
-        U[Default Values] -.-> C
-        V[Env Overrides] -.-> C
+        SschemaValidation[Schema Validation] -.-> B
+        TparameterTypes[Parameter Types] -.-> B
+        UdefaultValues[Default Values] -.-> C
+        VenvOverrides[Env Overrides] -.-> C
     end
 
     subgraph "Execution Control"
-        W[Thread Pool] -.-> G
-        X[Resource Limits] -.-> G
-        Y[Timeout Handling] -.-> H
-        Z[Progress Monitoring] -.-> H
+        WthreadPool[Thread Pool] -.-> G
+        XresourceLimits[Resource Limits] -.-> G
+        YtimeoutHandling[Timeout Handling] -.-> H
+        ZprogressMonitoring[Progress Monitoring] -.-> H
     end
 ```
 
@@ -946,50 +933,47 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Raw Data Sources] --> B[Domain-specific Processing]
+    ArawDataSources[Raw Data Sources] --> Bdomain-specificProcessing[Domain-specific Processing]
 
     B --> C{Domain Module}
-    C -->|DNA| D[Sequence Analysis]
-    C -->|RNA| E[Expression Analysis]
-    C -->|Protein| F[Structure Analysis]
-    C -->|GWAS| G[Association Testing]
+    C -->|DNA| DsequenceAnalysis[Sequence Analysis]
+    C -->|RNA| EexpressionAnalysis[Expression Analysis]
+    C -->|Protein| FstructureAnalysis[Structure Analysis]
+    C -->|GWAS| GassociationTesting[Association Testing]
 
-    D --> H[Quality Control]
+    D --> HqualityControl[Quality Control]
     E --> H
     F --> H
     G --> H
 
-    H --> I[Core Integration]
-    I --> J[Data Harmonization]
-    J --> K[Cross-domain Analysis]
+    H --> IcoreIntegration[Core Integration]
+    I --> JdataHarmonization[Data Harmonization]
+    J --> Kcross-domainAnalysis[Cross-domain Analysis]
 
-    K --> L[Results Generation]
-    L --> M[Output Formatting]
+    K --> LresultsGeneration[Results Generation]
+    L --> MoutputFormatting[Output Formatting]
 
     M --> N{Output Type}
-    N -->|Files| O[Structured Files]
-    N -->|Database| P[Database Storage]
-    N -->|API| Q[Programmatic Access]
+    N -->|Files| OstructuredFiles[Structured Files]
+    N -->|Database| PdatabaseStorage[Database Storage]
+    N -->|API| QprogrammaticAccess[Programmatic Access]
 
-    O --> R[Workflow Complete]
+    O --> RworkflowComplete[Workflow Complete]
     P --> R
     Q --> R
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style I fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Core Utilities Integration"
         S[Configuration] -.-> I
         T[Logging] -.-> I
-        U[Parallel Processing] -.-> I
-        V[Path Management] -.-> I
+        UparallelProcessing[Parallel Processing] -.-> I
+        VpathManagement[Path Management] -.-> I
     end
 
     subgraph "Quality Assurance"
         W[Validation] -.-> H
-        X[Error Handling] -.-> H
-        Y[Progress Tracking] -.-> H
+        XerrorHandling[Error Handling] -.-> H
+        YprogressTracking[Progress Tracking] -.-> H
         Z[Caching] -.-> H
     end
 ```
@@ -998,55 +982,52 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Repository Analysis] --> B[Discovery Engine]
+    ArepositoryAnalysis[Repository Analysis] --> BdiscoveryEngine[Discovery Engine]
     B --> C{Target Type}
 
-    C -->|Functions| D[Function Discovery]
-    C -->|Classes| E[Class Discovery]
-    C -->|Configs| F[Config Discovery]
-    C -->|Workflows| G[Workflow Discovery]
+    C -->|Functions| DfunctionDiscovery[Function Discovery]
+    C -->|Classes| EclassDiscovery[Class Discovery]
+    C -->|Configs| FconfigDiscovery[Config Discovery]
+    C -->|Workflows| GworkflowDiscovery[Workflow Discovery]
 
-    D --> H[AST Parsing]
+    D --> HastParsing[AST Parsing]
     E --> H
-    F --> I[File Scanning]
+    F --> IfileScanning[File Scanning]
     G --> I
 
-    H --> J[Symbol Extraction]
-    I --> K[Metadata Collection]
+    H --> JsymbolExtraction[Symbol Extraction]
+    I --> KmetadataCollection[Metadata Collection]
 
-    J --> L[Indexing System]
+    J --> LindexingSystem[Indexing System]
     K --> L
 
-    L --> M[Query Interface]
+    L --> MqueryInterface[Query Interface]
     M --> N{Query Type}
 
-    N -->|Signature| O[Function Signatures]
-    N -->|References| P[Symbol References]
-    N -->|Dependencies| Q[Module Dependencies]
-    N -->|Call Graph| R[Workflow Call Graph]
+    N -->|Signature| OfunctionSignatures[Function Signatures]
+    N -->|References| PsymbolReferences[Symbol References]
+    N -->|Dependencies| QmoduleDependencies[Module Dependencies]
+    N -->|Call Graph| RworkflowCallGraph[Workflow Call Graph]
 
     O --> S[Documentation]
     P --> S
     Q --> S
     R --> S
 
-    S --> T[Repository Intelligence]
+    S --> TrepositoryIntelligence[Repository Intelligence]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style L fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style T fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Discovery Methods"
-        U[AST Analysis] -.-> H
-        V[Regex Patterns] -.-> I
-        W[Import Analysis] -.-> K
-        X[File Structure] -.-> K
+        UastAnalysis[AST Analysis] -.-> H
+        VregexPatterns[Regex Patterns] -.-> I
+        WimportAnalysis[Import Analysis] -.-> K
+        XfileStructure[File Structure] -.-> K
     end
 
     subgraph "Indexing Features"
-        Y[Fuzzy Matching] -.-> L
+        YfuzzyMatching[Fuzzy Matching] -.-> L
         Z[Caching] -.-> L
         AA[Cross-references] -.-> L
-        BB[Metadata Storage] -.-> L
+        BBmetadataStorage[Metadata Storage] -.-> L
     end
 ```

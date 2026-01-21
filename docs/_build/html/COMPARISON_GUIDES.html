@@ -1,0 +1,1042 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>METAINFORMANT Comparison Guides &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/custom.css" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">METAINFORMANT Comparison Guides</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/COMPARISON_GUIDES.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="metainformant-comparison-guides">
+<h1>METAINFORMANT Comparison Guides<a class="headerlink" href="#metainformant-comparison-guides" title="Link to this heading"></a></h1>
+<p>Decision-making guides for choosing between different analysis methods, algorithms, and approaches in METAINFORMANT.</p>
+<section id="method-comparison-guides">
+<h2>Method Comparison Guides<a class="headerlink" href="#method-comparison-guides" title="Link to this heading"></a></h2>
+<section id="sequence-alignment-methods">
+<h3>1. Sequence Alignment Methods<a class="headerlink" href="#sequence-alignment-methods" title="Link to this heading"></a></h3>
+<p>Choose the right alignment algorithm based on your sequence data and analysis goals.</p>
+<section id="when-to-use-each-method">
+<h4>When to Use Each Method<a class="headerlink" href="#when-to-use-each-method" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Best For</p></th>
+<th class="head"><p>Advantages</p></th>
+<th class="head"><p>Limitations</p></th>
+<th class="head"><p>Performance</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Global Alignment</strong>_(Needleman-Wunsch)</p></td>
+<td><p>Similar sequences,_full-length alignment</p></td>
+<td><p>Finds optimal alignment_of entire sequences</p></td>
+<td><p>Poor with dissimilar_sequences</p></td>
+<td><p>O(n×m) time</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Local Alignment</strong>_(Smith-Waterman)</p></td>
+<td><p>Subsequence similarity,_database searching</p></td>
+<td><p>Finds best matching_subsequences</p></td>
+<td><p>May miss global_similarity</p></td>
+<td><p>O(n×m) time</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Semi-global</strong></p></td>
+<td><p>Sequences with different_lengths, one complete</p></td>
+<td><p>Handles terminal gaps_appropriately</p></td>
+<td><p>Limited use cases</p></td>
+<td><p>O(n×m) time</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="decision-tree">
+<h4>Decision Tree<a class="headerlink" href="#decision-tree" title="Link to this heading"></a></h4>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TD
+    AsequenceAlignmentNeeded[Sequence Alignment Needed] --&gt; B{Sequence Lengths?}
+    B --&gt;|Similar| C{Full vs Partial Match?}
+    B --&gt;|Different| Dsemi-globalAlignment[Semi-global Alignment]
+
+    C --&gt;|Full sequence| EglobalAlignmentNeedleman-wunsch[Global Alignment_Needleman-Wunsch]
+    C --&gt;|Local regions| FlocalAlignmentSmith-waterman[Local Alignment_Smith-Waterman]
+
+    E --&gt; Gmetainformant.dna.alignment.globalAlign[metainformant.dna.alignment.global_align]
+    F --&gt; Hmetainformant.dna.alignment.localAlign[metainformant.dna.alignment.local_align]
+    D --&gt; Imetainformant.dna.alignment.semiGlobalAlign[metainformant.dna.alignment.semi_global_align]
+</pre></div>
+</div>
+</section>
+<section id="example-usage">
+<h4>Example Usage<a class="headerlink" href="#example-usage" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.dna</span><span class="w"> </span><span class="kn">import</span> <span class="n">alignment</span>
+
+<span class="c1"># Short, similar sequences → Global alignment</span>
+<span class="n">seq1</span> <span class="o">=</span> <span class="s2">&quot;ATCGATCGATCG&quot;</span>
+<span class="n">seq2</span> <span class="o">=</span> <span class="s2">&quot;ATCGATCGATCG&quot;</span>
+<span class="n">global_result</span> <span class="o">=</span> <span class="n">alignment</span><span class="o">.</span><span class="n">global_align</span><span class="p">(</span><span class="n">seq1</span><span class="p">,</span> <span class="n">seq2</span><span class="p">)</span>
+
+<span class="c1"># Database search → Local alignment</span>
+<span class="n">query</span> <span class="o">=</span> <span class="s2">&quot;ATCGATCG&quot;</span>
+<span class="n">database_seq</span> <span class="o">=</span> <span class="s2">&quot;TTTTATCGATCGTTTT&quot;</span>
+<span class="n">local_result</span> <span class="o">=</span> <span class="n">alignment</span><span class="o">.</span><span class="n">local_align</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">database_seq</span><span class="p">)</span>
+
+<span class="c1"># Different length sequences → Semi-global</span>
+<span class="n">short_seq</span> <span class="o">=</span> <span class="s2">&quot;ATCG&quot;</span>
+<span class="n">long_seq</span> <span class="o">=</span> <span class="s2">&quot;TTTTATCGTTTT&quot;</span>
+<span class="n">semi_result</span> <span class="o">=</span> <span class="n">alignment</span><span class="o">.</span><span class="n">semi_global_align</span><span class="p">(</span><span class="n">short_seq</span><span class="p">,</span> <span class="n">long_seq</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="population-genetics-statistics">
+<h3>2. Population Genetics Statistics<a class="headerlink" href="#population-genetics-statistics" title="Link to this heading"></a></h3>
+<p>Compare different measures of genetic diversity and selection.</p>
+<section id="diversity-measures-comparison">
+<h4>Diversity Measures Comparison<a class="headerlink" href="#diversity-measures-comparison" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Statistic</p></th>
+<th class="head"><p>Measures</p></th>
+<th class="head"><p>Best For</p></th>
+<th class="head"><p>Formula</p></th>
+<th class="head"><p>Interpretation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>π (Pi)</strong></p></td>
+<td><p>Average pairwise differences</p></td>
+<td><p>Total diversity</p></td>
+<td><p>Σ d_ij / (n(n-1)/2)</p></td>
+<td><p>Raw nucleotide diversity</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>θ (Theta)</strong></p></td>
+<td><p>Population mutation rate</p></td>
+<td><p>Expected diversity</p></td>
+<td><p>4Nμ</p></td>
+<td><p>Theoretical diversity</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Watterson’s θ</strong></p></td>
+<td><p>Segregating sites</p></td>
+<td><p>Sample diversity</p></td>
+<td><p>S / Σ(1/i)</p></td>
+<td><p>Sites-based diversity</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="selection-tests-comparison">
+<h4>Selection Tests Comparison<a class="headerlink" href="#selection-tests-comparison" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Test</p></th>
+<th class="head"><p>Detects</p></th>
+<th class="head"><p>Method</p></th>
+<th class="head"><p>Assumptions</p></th>
+<th class="head"><p>Power</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Tajima’s D</strong></p></td>
+<td><p>Deviation from neutrality</p></td>
+<td><p>π vs θ comparison</p></td>
+<td><p>Neutral evolution</p></td>
+<td><p>High for sweeps</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Fu &amp; Li’s D</strong></p></td>
+<td><p>Recent selective sweeps</p></td>
+<td><p>External mutations</p></td>
+<td><p>No recombination</p></td>
+<td><p>High for recent events</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Fay &amp; Wu’s H</strong></p></td>
+<td><p>Old selective sweeps</p></td>
+<td><p>High-frequency variants</p></td>
+<td><p>No recombination</p></td>
+<td><p>High for old events</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="decision-guide">
+<h4>Decision Guide<a class="headerlink" href="#decision-guide" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.dna</span><span class="w"> </span><span class="kn">import</span> <span class="n">population</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.math</span><span class="w"> </span><span class="kn">import</span> <span class="n">coalescent</span>
+
+<span class="c1"># Calculate comprehensive population statistics</span>
+<span class="n">sequences</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ATCG...&quot;</span><span class="p">,</span> <span class="s2">&quot;GCTA...&quot;</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>  <span class="c1"># Your sequences</span>
+
+<span class="c1"># Basic diversity</span>
+<span class="n">pi</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">nucleotide_diversity</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span>
+<span class="n">theta_w</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">wattersons_theta</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Observed diversity (π): </span><span class="si">{</span><span class="n">pi</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected diversity (θ_W): </span><span class="si">{</span><span class="n">theta_w</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Selection tests</span>
+<span class="n">tajima_d</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">tajimas_d</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span>
+<span class="n">fu_li_d</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">fu_and_li_d_star_from_sequences</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span>
+<span class="n">fay_wu_h</span> <span class="o">=</span> <span class="n">population</span><span class="o">.</span><span class="n">fay_wu_h_from_sequences</span><span class="p">(</span><span class="n">sequences</span><span class="p">)</span>
+
+<span class="c1"># Interpretation</span>
+<span class="k">if</span> <span class="n">tajima_d</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mi">2</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Possible selective sweep or population expansion&quot;</span><span class="p">)</span>
+<span class="k">elif</span> <span class="n">tajima_d</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Possible balancing selection or bottleneck&quot;</span><span class="p">)</span>
+<span class="k">else</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Neutral evolution&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="distance-similarity-measures">
+<h3>3. Distance/Similarity Measures<a class="headerlink" href="#distance-similarity-measures" title="Link to this heading"></a></h3>
+<p>Choose appropriate distance metrics for different data types.</p>
+<section id="sequence-distance-methods">
+<h4>Sequence Distance Methods<a class="headerlink" href="#sequence-distance-methods" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Data Type</p></th>
+<th class="head"><p>Properties</p></th>
+<th class="head"><p>Use Case</p></th>
+<th class="head"><p>Implementation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Hamming</strong></p></td>
+<td><p>Equal length sequences</p></td>
+<td><p>Counts differences</p></td>
+<td><p>SNP analysis</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">dna.distances.hamming_distance</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Jukes-Cantor</strong></p></td>
+<td><p>DNA sequences</p></td>
+<td><p>Corrects multiple hits</p></td>
+<td><p>Evolutionary distance</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">dna.distances.jukes_cantor_distance</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Kimura 2-parameter</strong></p></td>
+<td><p>DNA/RNA</p></td>
+<td><p>Transition/transversion</p></td>
+<td><p>Nucleotide evolution</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">dna.distances.kimura_2p_distance</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Levenshtein</strong></p></td>
+<td><p>Any strings</p></td>
+<td><p>Insertions/deletions</p></td>
+<td><p>Sequence editing</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">text.levenshtein_distance</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="decision-factors">
+<h4>Decision Factors<a class="headerlink" href="#decision-factors" title="Link to this heading"></a></h4>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TD
+    AchooseDistanceMethod[Choose Distance Method] --&gt; B{Data Type?}
+    B --&gt;|DNA/RNA sequences| C{Evolutionary model?}
+    B --&gt;|Equal length| DhammingDistance[Hamming Distance]
+    B --&gt;|Any strings| ElevenshteinDistance[Levenshtein Distance]
+
+    C --&gt;|Simple| F[Jukes-Cantor]
+    C --&gt;|Transitions ≠ Transversions| Gkimura2-parameter[Kimura 2-parameter]
+    C --&gt;|Complex model| H[Tamura-Nei]
+
+    D --&gt; Imetainformant.dna.distances.hammingDistance[metainformant.dna.distances.hamming_distance]
+    E --&gt; Jmetainformant.text.levenshteinDistance[metainformant.text.levenshtein_distance]
+    F --&gt; Kmetainformant.dna.distances.jukesCantorDistance[metainformant.dna.distances.jukes_cantor_distance]
+    G --&gt; Lmetainformant.dna.distances.kimura2pDistance[metainformant.dna.distances.kimura_2p_distance]
+</pre></div>
+</div>
+</section>
+</section>
+<section id="machine-learning-methods">
+<h3>4. Machine Learning Methods<a class="headerlink" href="#machine-learning-methods" title="Link to this heading"></a></h3>
+<p>Compare classification and regression approaches for biological data.</p>
+<section id="classification-methods">
+<h4>Classification Methods<a class="headerlink" href="#classification-methods" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Strengths</p></th>
+<th class="head"><p>Weaknesses</p></th>
+<th class="head"><p>Best For</p></th>
+<th class="head"><p>Implementation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Random Forest</strong></p></td>
+<td><p>Handles mixed data, feature selection</p></td>
+<td><p>Can overfit, less interpretable</p></td>
+<td><p>Complex biological data</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ml.classification.train_classifier(method=&quot;rf&quot;)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>SVM</strong></p></td>
+<td><p>Effective in high dimensions</p></td>
+<td><p>Slow training, kernel choice</p></td>
+<td><p>Gene expression classification</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ml.classification.train_classifier(method=&quot;svm&quot;)</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Logistic Regression</strong></p></td>
+<td><p>Interpretable, fast</p></td>
+<td><p>Assumes linear relationships</p></td>
+<td><p>Simple feature sets</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ml.classification.train_classifier(method=&quot;lr&quot;)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Naive Bayes</strong></p></td>
+<td><p>Fast, works with small data</p></td>
+<td><p>Independence assumption</p></td>
+<td><p>Text/protein classification</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ml.classification.train_classifier(method=&quot;nb&quot;)</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="feature-selection-methods">
+<h4>Feature Selection Methods<a class="headerlink" href="#feature-selection-methods" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Best For</p></th>
+<th class="head"><p>Speed</p></th>
+<th class="head"><p>Implementation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Mutual Information</strong></p></td>
+<td><p>Filter</p></td>
+<td><p>Non-linear relationships</p></td>
+<td><p>Fast</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ml.features.select_features(method=&quot;mutual_info&quot;)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Recursive Elimination</strong></p></td>
+<td><p>Wrapper</p></td>
+<td><p>Any classifier</p></td>
+<td><p>Slow</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ml.features.select_features(method=&quot;rfe&quot;)</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>LASSO</strong></p></td>
+<td><p>Embedded</p></td>
+<td><p>Linear relationships</p></td>
+<td><p>Medium</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ml.features.select_features(method=&quot;lasso&quot;)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Variance Threshold</strong></p></td>
+<td><p>Filter</p></td>
+<td><p>High variance features</p></td>
+<td><p>Fast</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">ml.features.select_features(method=&quot;variance&quot;)</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="usage-example">
+<h4>Usage Example<a class="headerlink" href="#usage-example" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant</span><span class="w"> </span><span class="kn">import</span> <span class="n">ml</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Prepare data</span>
+<span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randn</span><span class="p">(</span><span class="mi">1000</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>  <span class="c1"># Features</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>  <span class="c1"># Binary labels</span>
+
+<span class="c1"># Compare methods</span>
+<span class="n">methods</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;rf&quot;</span><span class="p">,</span> <span class="s2">&quot;svm&quot;</span><span class="p">,</span> <span class="s2">&quot;lr&quot;</span><span class="p">]</span>
+<span class="n">results</span> <span class="o">=</span> <span class="p">{}</span>
+
+<span class="k">for</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">methods</span><span class="p">:</span>
+    <span class="c1"># Train classifier</span>
+    <span class="n">clf</span> <span class="o">=</span> <span class="n">ml</span><span class="o">.</span><span class="n">classification</span><span class="o">.</span><span class="n">train_classifier</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">)</span>
+
+    <span class="c1"># Cross-validate</span>
+    <span class="n">cv_scores</span> <span class="o">=</span> <span class="n">ml</span><span class="o">.</span><span class="n">classification</span><span class="o">.</span><span class="n">cross_validate_classifier</span><span class="p">(</span><span class="n">clf</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+    <span class="n">results</span><span class="p">[</span><span class="n">method</span><span class="p">]</span> <span class="o">=</span> <span class="n">cv_scores</span>
+
+<span class="c1"># Compare results</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Classification Method Comparison:&quot;</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">method</span><span class="p">,</span> <span class="n">scores</span> <span class="ow">in</span> <span class="n">results</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">: Mean accuracy = </span><span class="si">{</span><span class="n">scores</span><span class="p">[</span><span class="s1">&#39;accuracy&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2"> (+/- </span><span class="si">{</span><span class="n">scores</span><span class="p">[</span><span class="s1">&#39;accuracy_std&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+
+<span class="c1"># Feature selection comparison</span>
+<span class="n">feature_methods</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;mutual_info&quot;</span><span class="p">,</span> <span class="s2">&quot;variance&quot;</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">method</span> <span class="ow">in</span> <span class="n">feature_methods</span><span class="p">:</span>
+    <span class="n">selected_X</span><span class="p">,</span> <span class="n">mask</span> <span class="o">=</span> <span class="n">ml</span><span class="o">.</span><span class="n">features</span><span class="o">.</span><span class="n">select_features</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">: Selected </span><span class="si">{</span><span class="n">selected_X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2"> features&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="gwas-analysis-methods">
+<h3>5. GWAS Analysis Methods<a class="headerlink" href="#gwas-analysis-methods" title="Link to this heading"></a></h3>
+<p>Compare different approaches to genome-wide association studies.</p>
+<section id="association-test-methods">
+<h4>Association Test Methods<a class="headerlink" href="#association-test-methods" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Data Type</p></th>
+<th class="head"><p>Advantages</p></th>
+<th class="head"><p>Disadvantages</p></th>
+<th class="head"><p>Use Case</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Linear Regression</strong></p></td>
+<td><p>Quantitative traits</p></td>
+<td><p>Fast, interpretable</p></td>
+<td><p>Assumes normality</p></td>
+<td><p>Most GWAS</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Logistic Regression</strong></p></td>
+<td><p>Binary traits</p></td>
+<td><p>Handles case-control</p></td>
+<td><p>Slower than linear</p></td>
+<td><p>Disease studies</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Mixed Linear Model</strong></p></td>
+<td><p>Related individuals</p></td>
+<td><p>Controls population structure</p></td>
+<td><p>Computationally intensive</p></td>
+<td><p>Family studies</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Score Test</strong></p></td>
+<td><p>Large datasets</p></td>
+<td><p>Memory efficient</p></td>
+<td><p>Less powerful</p></td>
+<td><p>Biobank data</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="population-structure-control">
+<h4>Population Structure Control<a class="headerlink" href="#population-structure-control" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Approach</p></th>
+<th class="head"><p>Best For</p></th>
+<th class="head"><p>Implementation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>PCA</strong></p></td>
+<td><p>Dimensionality reduction</p></td>
+<td><p>Simple structure</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">gwas.structure.compute_pca</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Kinship Matrix</strong></p></td>
+<td><p>Relatedness estimation</p></td>
+<td><p>Complex pedigrees</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">gwas.structure.compute_kinship_matrix</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Admixture</strong></p></td>
+<td><p>Ancestry proportions</p></td>
+<td><p>Admixed populations</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">gwas.structure.admixture_analysis</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="multiple-testing-correction">
+<h4>Multiple Testing Correction<a class="headerlink" href="#multiple-testing-correction" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Conservative?</p></th>
+<th class="head"><p>Power</p></th>
+<th class="head"><p>Implementation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Bonferroni</strong></p></td>
+<td><p>Family-wise</p></td>
+<td><p>Very conservative</p></td>
+<td><p>Low power</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">gwas.correction.bonferroni_correction</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>FDR (BH)</strong></p></td>
+<td><p>False discovery</p></td>
+<td><p>Balanced</p></td>
+<td><p>Good power</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">gwas.correction.fdr_correction</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Genomic Control</strong></p></td>
+<td><p>Inflation correction</p></td>
+<td><p>Adaptive</p></td>
+<td><p>Medium power</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">gwas.correction.genomic_control</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="gwas-workflow-decision-tree">
+<h4>GWAS Workflow Decision Tree<a class="headerlink" href="#gwas-workflow-decision-tree" title="Link to this heading"></a></h4>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TD
+    AgwasAnalysis[GWAS Analysis] --&gt; B{Trait Type?}
+    B --&gt;|Quantitative| ClinearRegression[Linear Regression]
+    B --&gt;|Binary| DlogisticRegression[Logistic Regression]
+
+    C --&gt; E{Population Structure?}
+    D --&gt; E
+
+    E --&gt;|Simple| FpcaCorrection[PCA Correction]
+    E --&gt;|Complex| GmixedLinearModel[Mixed Linear Model]
+
+    F --&gt; H{Multiple Testing?}
+    G --&gt; H
+
+    H --&gt;|Stringent| IbonferroniCorrection[Bonferroni Correction]
+    H --&gt;|Balanced| JfdrCorrection[FDR Correction]
+    H --&gt;|Adaptive| KgenomicControl[Genomic Control]
+
+    I --&gt; Lmetainformant.gwas.workflow.runGwas[metainformant.gwas.workflow.run_gwas]
+    J --&gt; L
+    K --&gt; L
+</pre></div>
+</div>
+</section>
+</section>
+<section id="information-theory-measures">
+<h3>6. Information Theory Measures<a class="headerlink" href="#information-theory-measures" title="Link to this heading"></a></h3>
+<p>Compare different information-theoretic approaches to biological data analysis.</p>
+<section id="entropy-measures">
+<h4>Entropy Measures<a class="headerlink" href="#entropy-measures" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Measure</p></th>
+<th class="head"><p>Formula</p></th>
+<th class="head"><p>Interpretation</p></th>
+<th class="head"><p>Best For</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Shannon Entropy</strong></p></td>
+<td><p>H(X) = -Σ p(x) log p(x)</p></td>
+<td><p>Information content</p></td>
+<td><p>Sequence complexity</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Rényi Entropy</strong></p></td>
+<td><p>H_α(X) = (1/(1-α)) log Σ p(x)^α</p></td>
+<td><p>Generalized entropy</p></td>
+<td><p>Fractal analysis</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Tsallis Entropy</strong></p></td>
+<td><p>S_q(X) = (1/(q-1)) (Σ p(x)^q - 1)</p></td>
+<td><p>Non-extensive entropy</p></td>
+<td><p>Complex systems</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="mutual-information-measures">
+<h4>Mutual Information Measures<a class="headerlink" href="#mutual-information-measures" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Measure</p></th>
+<th class="head"><p>Properties</p></th>
+<th class="head"><p>Use Case</p></th>
+<th class="head"><p>Implementation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>MI</strong></p></td>
+<td><p>Symmetric, non-negative</p></td>
+<td><p>Feature selection</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">information.syntactic.mutual_information</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>CMI</strong></p></td>
+<td><p>Conditional independence</p></td>
+<td><p>Causal inference</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">information.syntactic.conditional_mutual_information</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Normalized MI</strong></p></td>
+<td><p>Bounded [0,1]</p></td>
+<td><p>Similarity comparison</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">information.syntactic.normalized_mutual_information</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="usage-comparison">
+<h4>Usage Comparison<a class="headerlink" href="#usage-comparison" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.information</span><span class="w"> </span><span class="kn">import</span> <span class="n">syntactic</span>
+
+<span class="c1"># Compare entropy measures</span>
+<span class="n">sequence</span> <span class="o">=</span> <span class="s2">&quot;ATCGATCGATCGATCG&quot;</span>
+<span class="n">prob_dist</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">]</span>  <span class="c1"># Uniform</span>
+
+<span class="n">shannon</span> <span class="o">=</span> <span class="n">syntactic</span><span class="o">.</span><span class="n">shannon_entropy</span><span class="p">(</span><span class="n">prob_dist</span><span class="p">)</span>
+<span class="n">renyi</span> <span class="o">=</span> <span class="n">syntactic</span><span class="o">.</span><span class="n">renyi_entropy</span><span class="p">(</span><span class="n">prob_dist</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
+<span class="n">tsallis</span> <span class="o">=</span> <span class="n">syntactic</span><span class="o">.</span><span class="n">tsallis_entropy</span><span class="p">(</span><span class="n">prob_dist</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="mf">2.0</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Shannon entropy: </span><span class="si">{</span><span class="n">shannon</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Rényi entropy (α=2): </span><span class="si">{</span><span class="n">renyi</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Tsallis entropy (q=2): </span><span class="si">{</span><span class="n">tsallis</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+<span class="c1"># Compare MI measures</span>
+<span class="n">x</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>  <span class="c1"># Binary variable 1</span>
+<span class="n">y</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>  <span class="c1"># Binary variable 2</span>
+<span class="n">z</span> <span class="o">=</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>  <span class="c1"># Conditional variable</span>
+
+<span class="n">mi</span> <span class="o">=</span> <span class="n">syntactic</span><span class="o">.</span><span class="n">mutual_information</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+<span class="n">cmi</span> <span class="o">=</span> <span class="n">syntactic</span><span class="o">.</span><span class="n">conditional_mutual_information</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">z</span><span class="p">)</span>
+<span class="n">nmi</span> <span class="o">=</span> <span class="n">syntactic</span><span class="o">.</span><span class="n">normalized_mutual_information</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Mutual Information: </span><span class="si">{</span><span class="n">mi</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Conditional MI: </span><span class="si">{</span><span class="n">cmi</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Normalized MI: </span><span class="si">{</span><span class="n">nmi</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="network-analysis-methods">
+<h3>7. Network Analysis Methods<a class="headerlink" href="#network-analysis-methods" title="Link to this heading"></a></h3>
+<p>Compare graph algorithms for biological network analysis.</p>
+<section id="community-detection">
+<h4>Community Detection<a class="headerlink" href="#community-detection" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Algorithm</p></th>
+<th class="head"><p>Method</p></th>
+<th class="head"><p>Strengths</p></th>
+<th class="head"><p>Weaknesses</p></th>
+<th class="head"><p>Implementation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Louvain</strong></p></td>
+<td><p>Modularity optimization</p></td>
+<td><p>Fast, hierarchical</p></td>
+<td><p>Resolution limit</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">networks.community.louvain_communities</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Leiden</strong></p></td>
+<td><p>Louvain improvement</p></td>
+<td><p>Faster, more accurate</p></td>
+<td><p>Less established</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">networks.community.leiden_communities</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Girvan-Newman</strong></p></td>
+<td><p>Edge betweenness</p></td>
+<td><p>Intuitive</p></td>
+<td><p>Slow, no hierarchy</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">networks.community.girvan_newman</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="centrality-measures">
+<h4>Centrality Measures<a class="headerlink" href="#centrality-measures" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Measure</p></th>
+<th class="head"><p>Calculates</p></th>
+<th class="head"><p>Best For</p></th>
+<th class="head"><p>Example Use</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Degree</strong></p></td>
+<td><p>Node connectivity</p></td>
+<td><p>Hub identification</p></td>
+<td><p>Protein interaction hubs</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Betweenness</strong></p></td>
+<td><p>Bridge importance</p></td>
+<td><p>Information flow</p></td>
+<td><p>Key regulatory genes</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Closeness</strong></p></td>
+<td><p>Average distance</p></td>
+<td><p>Efficiency</p></td>
+<td><p>Central metabolites</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Eigenvector</strong></p></td>
+<td><p>Influence importance</p></td>
+<td><p>Prestige</p></td>
+<td><p>Important pathways</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="network-construction-methods">
+<h4>Network Construction Methods<a class="headerlink" href="#network-construction-methods" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Data Source</p></th>
+<th class="head"><p>Properties</p></th>
+<th class="head"><p>Use Case</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>PPI Networks</strong></p></td>
+<td><p>Protein interactions</p></td>
+<td><p>Undirected, weighted</p></td>
+<td><p>Functional modules</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Regulatory Networks</strong></p></td>
+<td><p>TF-target relationships</p></td>
+<td><p>Directed, signed</p></td>
+<td><p>Gene regulation</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Co-expression</strong></p></td>
+<td><p>Correlation networks</p></td>
+<td><p>Undirected, weighted</p></td>
+<td><p>Expression modules</p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Metabolic Networks</strong></p></td>
+<td><p>Biochemical reactions</p></td>
+<td><p>Directed, bipartite</p></td>
+<td><p>Pathway analysis</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="multi-omics-integration-methods">
+<h3>8. Multi-Omics Integration Methods<a class="headerlink" href="#multi-omics-integration-methods" title="Link to this heading"></a></h3>
+<p>Compare approaches for combining multiple biological data types.</p>
+<section id="integration-strategies">
+<h4>Integration Strategies<a class="headerlink" href="#integration-strategies" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Strategy</p></th>
+<th class="head"><p>Method</p></th>
+<th class="head"><p>Advantages</p></th>
+<th class="head"><p>Disadvantages</p></th>
+<th class="head"><p>Implementation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Early Integration</strong></p></td>
+<td><p>Concatenation</p></td>
+<td><p>Simple, preserves features</p></td>
+<td><p>High dimensionality</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">multiomics.integration.concatenate</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Intermediate</strong></p></td>
+<td><p>Joint dimensionality reduction</p></td>
+<td><p>Balances complexity</p></td>
+<td><p>Information loss</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">multiomics.integration.joint_pca</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Late Integration</strong></p></td>
+<td><p>Separate models + ensemble</p></td>
+<td><p>Preserves data types</p></td>
+<td><p>Complex optimization</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">multiomics.integration.ensemble_integration</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="dimensionality-reduction">
+<h4>Dimensionality Reduction<a class="headerlink" href="#dimensionality-reduction" title="Link to this heading"></a></h4>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Properties</p></th>
+<th class="head"><p>Best For</p></th>
+<th class="head"><p>Implementation</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>PCA</strong></p></td>
+<td><p>Linear, unsupervised</p></td>
+<td><p>Global structure</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">multiomics.integration.pca_integration</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>CCA</strong></p></td>
+<td><p>Linear, supervised</p></td>
+<td><p>Cross-modal correlation</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">multiomics.integration.cca_integration</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><strong>NMF</strong></p></td>
+<td><p>Parts-based</p></td>
+<td><p>Non-negative data</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">multiomics.integration.nmf_integration</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><strong>Autoencoders</strong></p></td>
+<td><p>Non-linear</p></td>
+<td><p>Complex relationships</p></td>
+<td><p><code class="docutils literal notranslate"><span class="pre">multiomics.integration.ae_integration</span></code></p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+</section>
+<section id="performance-comparison-tables">
+<h2>Performance Comparison Tables<a class="headerlink" href="#performance-comparison-tables" title="Link to this heading"></a></h2>
+<section id="computational-complexity">
+<h3>Computational Complexity<a class="headerlink" href="#computational-complexity" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Method</p></th>
+<th class="head"><p>Time Complexity</p></th>
+<th class="head"><p>Space Complexity</p></th>
+<th class="head"><p>Scalability</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>Sequence alignment</p></td>
+<td><p>O(n×m)</p></td>
+<td><p>O(n×m)</p></td>
+<td><p>Low (1000s bp)</p></td>
+</tr>
+<tr class="row-odd"><td><p>GWAS association</p></td>
+<td><p>O(n×p)</p></td>
+<td><p>O(n×p)</p></td>
+<td><p>Medium (10^5 SNPs)</p></td>
+</tr>
+<tr class="row-even"><td><p>Network analysis</p></td>
+<td><p>O(v+e)</p></td>
+<td><p>O(v+e)</p></td>
+<td><p>High (10^4 nodes)</p></td>
+</tr>
+<tr class="row-odd"><td><p>ML classification</p></td>
+<td><p>O(n×f)</p></td>
+<td><p>O(n×f)</p></td>
+<td><p>High (10^6 samples)</p></td>
+</tr>
+<tr class="row-even"><td><p>Information theory</p></td>
+<td><p>O(n)</p></td>
+<td><p>O(n)</p></td>
+<td><p>Very high</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="memory-requirements">
+<h3>Memory Requirements<a class="headerlink" href="#memory-requirements" title="Link to this heading"></a></h3>
+<table class="docutils align-default">
+<thead>
+<tr class="row-odd"><th class="head"><p>Analysis Type</p></th>
+<th class="head"><p>Minimum RAM</p></th>
+<th class="head"><p>Recommended RAM</p></th>
+<th class="head"><p>Example Dataset</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>DNA alignment</p></td>
+<td><p>1GB</p></td>
+<td><p>4GB</p></td>
+<td><p>100 sequences × 10kb</p></td>
+</tr>
+<tr class="row-odd"><td><p>GWAS</p></td>
+<td><p>8GB</p></td>
+<td><p>32GB</p></td>
+<td><p>10^4 samples × 10^6 SNPs</p></td>
+</tr>
+<tr class="row-even"><td><p>RNA-seq</p></td>
+<td><p>16GB</p></td>
+<td><p>64GB</p></td>
+<td><p>100 samples × 50M reads</p></td>
+</tr>
+<tr class="row-odd"><td><p>Single-cell</p></td>
+<td><p>32GB</p></td>
+<td><p>128GB</p></td>
+<td><p>10^4 cells × 20K genes</p></td>
+</tr>
+<tr class="row-even"><td><p>Network analysis</p></td>
+<td><p>4GB</p></td>
+<td><p>16GB</p></td>
+<td><p>10^4 nodes × 10^5 edges</p></td>
+</tr>
+</tbody>
+</table>
+</section>
+</section>
+<section id="decision-frameworks">
+<h2>Decision Frameworks<a class="headerlink" href="#decision-frameworks" title="Link to this heading"></a></h2>
+<section id="data-size-decision-tree">
+<h3>Data Size Decision Tree<a class="headerlink" href="#data-size-decision-tree" title="Link to this heading"></a></h3>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TD
+    AanalysisNeeded[Analysis Needed] --&gt; B{Data Size?}
+    B --&gt;|Small &lt; 1000| CuseExactMethods[Use exact methods]
+    B --&gt;|Medium 1000-10000| DuseEfficientApproximations[Use efficient approximations]
+    B --&gt;|Large &gt; 10000| EuseSampling/scalingMethods[Use sampling/scaling methods]
+
+    C --&gt; Fmetainformant.core.parallelDisabled[metainformant.core.parallel disabled]
+    D --&gt; Gmetainformant.core.parallelEnabled[metainformant.core.parallel enabled]
+    E --&gt; HuseDistributedProcessing[Use distributed processing]
+
+    F --&gt; IstandardImplementations[Standard implementations]
+    G --&gt; JvectorizedNumpyImplementations[Vectorized NumPy implementations]
+    H --&gt; Kchunked/streamingProcessing[Chunked/streaming processing]
+</pre></div>
+</div>
+</section>
+<section id="accuracy-vs-speed-trade-off">
+<h3>Accuracy vs Speed Trade-off<a class="headerlink" href="#accuracy-vs-speed-trade-off" title="Link to this heading"></a></h3>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TD
+    AchooseMethod[Choose Method] --&gt; B{Accuracy Priority?}
+    B --&gt;|High accuracy| CexactMethods[Exact methods]
+    B --&gt;|Balanced| DapproximationMethods[Approximation methods]
+    B --&gt;|High speed| EheuristicMethods[Heuristic methods]
+
+    C --&gt; Fexamples:FullDynamicProgramming[Examples: Full dynamic programming]
+    D --&gt; Gexamples:McmcSampling,EmAlgorithm[Examples: MCMC sampling, EM algorithm]
+    E --&gt; Hexamples:GreedyAlgorithms,Heuristics[Examples: Greedy algorithms, heuristics]
+
+    F --&gt; Islower,MoreAccurate[Slower, more accurate]
+    G --&gt; JbalancedPerformance[Balanced performance]
+    H --&gt; Kfaster,LessAccurate[Faster, less accurate]
+</pre></div>
+</div>
+</section>
+</section>
+<section id="best-practices">
+<h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
+<section id="method-selection-guidelines">
+<h3>Method Selection Guidelines<a class="headerlink" href="#method-selection-guidelines" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Start Simple</strong>: Begin with basic methods to establish baseline results</p></li>
+<li><p><strong>Validate Assumptions</strong>: Ensure your data meets method assumptions</p></li>
+<li><p><strong>Compare Methods</strong>: Use multiple approaches to validate findings</p></li>
+<li><p><strong>Consider Scale</strong>: Choose methods appropriate for your data size</p></li>
+<li><p><strong>Validate Results</strong>: Cross-check results with known biological expectations</p></li>
+</ol>
+</section>
+<section id="performance-optimization">
+<h3>Performance Optimization<a class="headerlink" href="#performance-optimization" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Profile First</strong>: Identify bottlenecks before optimizing</p></li>
+<li><p><strong>Use Appropriate Data Structures</strong>: Choose efficient representations</p></li>
+<li><p><strong>Leverage Parallelization</strong>: Use multiple cores when possible</p></li>
+<li><p><strong>Implement Caching</strong>: Cache expensive computations</p></li>
+<li><p><strong>Consider Streaming</strong>: Process large files incrementally</p></li>
+</ol>
+</section>
+<section id="result-validation">
+<h3>Result Validation<a class="headerlink" href="#result-validation" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Biological Plausibility</strong>: Do results make biological sense?</p></li>
+<li><p><strong>Statistical Rigor</strong>: Are p-values and confidence intervals appropriate?</p></li>
+<li><p><strong>Reproducibility</strong>: Can results be reproduced with different methods?</p></li>
+<li><p><strong>Sensitivity Analysis</strong>: How robust are results to parameter changes?</p></li>
+</ol>
+<hr class="docutils" />
+<p>These comparison guides help users make informed decisions about which METAINFORMANT methods to use for their specific biological analysis needs.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -62,7 +62,7 @@ This document provides a comprehensive overview of dependencies required by META
 #### `examples/core/example_config.py`
 - **Required**: metainformant.core
 - **Optional**: pyyaml (for YAML config files)
-- **Install**: `pip install pyyaml`
+- **Install**: `uv pip install pyyaml`
 
 #### `examples/core/example_io.py`
 - **Required**: metainformant.core
@@ -82,14 +82,14 @@ This document provides a comprehensive overview of dependencies required by META
 #### `examples/core/example_workflow.py`
 - **Required**: metainformant.core
 - **Optional**: pyyaml
-- **Install**: `pip install pyyaml`
+- **Install**: `uv pip install pyyaml`
 
 ### DNA Examples
 
 #### `examples/dna/example_sequences.py`
 - **Required**: metainformant.dna, numpy
 - **Optional**: biopython (for advanced sequence operations)
-- **Install**: `pip install numpy biopython`
+- **Install**: `uv pip install numpy biopython`
 
 #### `examples/dna/example_alignment.py`
 - **Required**: metainformant.dna, numpy
@@ -118,50 +118,50 @@ This document provides a comprehensive overview of dependencies required by META
 #### `examples/rna/example_quantification.py`
 - **Required**: metainformant.rna
 - **Optional**: pandas, numpy
-- **Install**: `pip install pandas numpy`
+- **Install**: `uv pip install pandas numpy`
 
 ### GWAS Examples
 
 #### `examples/gwas/example_association.py`
 - **Required**: metainformant.gwas, numpy, pandas
 - **Optional**: scikit-learn
-- **Install**: `pip install numpy pandas scikit-learn matplotlib`
+- **Install**: `uv pip install numpy pandas scikit-learn matplotlib`
 
 #### `examples/gwas/example_visualization.py`
 - **Required**: metainformant.gwas, numpy, pandas, matplotlib
 - **Optional**: seaborn
-- **Install**: `pip install numpy pandas matplotlib seaborn`
+- **Install**: `uv pip install numpy pandas matplotlib seaborn`
 
 ### ML Examples
 
 #### `examples/ml/example_pipeline.py`
 - **Required**: metainformant.ml, numpy, scikit-learn
 - **Optional**: pandas, matplotlib
-- **Install**: `pip install numpy scikit-learn pandas matplotlib`
+- **Install**: `uv pip install numpy scikit-learn pandas matplotlib`
 
 ### Integration Examples
 
 #### `examples/integration/example_multiomics.py`
 - **Required**: metainformant, numpy
 - **Optional**: pandas, scikit-learn
-- **Install**: `pip install numpy pandas scikit-learn`
+- **Install**: `uv pip install numpy pandas scikit-learn`
 
 #### `examples/integration/example_dna_rna.py`
 - **Required**: metainformant.dna, metainformant.rna, numpy
 - **Optional**: pandas
-- **Install**: `pip install numpy pandas`
+- **Install**: `uv pip install numpy pandas`
 
 #### `examples/integration/example_complete_workflow.py`
 - **Required**: metainformant (multiple modules), numpy, pandas
 - **Optional**: matplotlib, scikit-learn
-- **Install**: `pip install numpy pandas matplotlib scikit-learn`
+- **Install**: `uv pip install numpy pandas matplotlib scikit-learn`
 
 ## Installation Commands
 
 ### Minimal Installation (Core Examples Only)
 ```bash
 # Install METAINFORMANT
-pip install -e .
+uv pip install -e .
 
 # Test core examples
 python scripts/test_examples.py --domain core
@@ -170,46 +170,46 @@ python scripts/test_examples.py --domain core
 ### Full Scientific Stack
 ```bash
 # Install METAINFORMANT with scientific dependencies
-pip install -e ".[scientific]"
+uv pip install -e ".[scientific]"
 
 # Additional bioinformatics packages
-pip install biopython scanpy anndata networkx
+uv pip install biopython scanpy anndata networkx
 
 # Visualization
-pip install matplotlib seaborn plotly
+uv pip install matplotlib seaborn plotly
 ```
 
 ### Domain-Specific Installations
 
 #### DNA Analysis
 ```bash
-pip install numpy biopython
+uv pip install numpy biopython
 ```
 
 #### RNA Analysis
 ```bash
-pip install pandas numpy
+uv pip install pandas numpy
 # Install amalgkit separately (see RNA docs)
 ```
 
 #### GWAS Analysis
 ```bash
-pip install numpy pandas matplotlib scikit-learn
+uv pip install numpy pandas matplotlib scikit-learn
 ```
 
 #### ML Analysis
 ```bash
-pip install numpy scikit-learn pandas matplotlib
+uv pip install numpy scikit-learn pandas matplotlib
 ```
 
 #### Single-Cell Analysis
 ```bash
-pip install scanpy anndata numpy pandas matplotlib
+uv pip install scanpy anndata numpy pandas matplotlib
 ```
 
 #### Network Analysis
 ```bash
-pip install networkx numpy
+uv pip install networkx numpy
 ```
 
 ### Conda Installation (Alternative)
@@ -223,10 +223,10 @@ conda activate metainformant
 conda install numpy scipy pandas matplotlib scikit-learn
 
 # Install pip packages
-pip install biopython scanpy anndata networkx
+uv pip install biopython scanpy anndata networkx
 
 # Install METAINFORMANT
-pip install -e .
+uv pip install -e .
 ```
 
 ## Dependency Checking
@@ -283,8 +283,8 @@ which seqkit  # For sequence processing
 **Problem**: `ModuleNotFoundError` for scientific packages
 **Solution**:
 ```bash
-pip install --upgrade pip
-pip install numpy scipy pandas matplotlib scikit-learn
+uv pip install --upgrade pip  # (not usually needed with uv)
+uv pip install numpy scipy pandas matplotlib scikit-learn
 ```
 
 #### Version Conflicts
@@ -297,10 +297,10 @@ source fresh_env/bin/activate  # Linux/Mac
 # fresh_env\Scripts\activate   # Windows
 
 # Install in correct order
-pip install numpy
-pip install scipy
-pip install pandas
-pip install -e .
+uv pip install numpy
+uv pip install scipy
+uv pip install pandas
+uv pip install -e .
 ```
 
 #### Missing System Libraries
@@ -442,19 +442,19 @@ python scripts/test_examples.py --continue-on-error
 ### Most Common Dependencies
 ```bash
 # Essential for most examples
-pip install numpy pandas matplotlib
+uv pip install numpy pandas matplotlib
 
 # For ML examples
-pip install scikit-learn
+uv pip install scikit-learn
 
 # For bioinformatics
-pip install biopython
+uv pip install biopython
 
 # For single-cell
-pip install scanpy anndata
+uv pip install scanpy anndata
 
 # For networks
-pip install networkx
+uv pip install networkx
 ```
 
 ### Dependency Checking Commands

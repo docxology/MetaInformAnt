@@ -8,28 +8,25 @@ METAINFORMANT implements a comprehensive quality assurance framework combining a
 
 ```mermaid
 graph TD
-    A[Code Development] --> B[Static Analysis]
-    B --> C[Type Checking]
+    AcodeDevelopment[Code Development] --> BstaticAnalysis[Static Analysis]
+    B --> CtypeChecking[Type Checking]
     C --> D[Linting]
 
-    D --> E[Unit Testing]
-    E --> F[Integration Testing]
-    F --> G[End-to-End Testing]
+    D --> EunitTesting[Unit Testing]
+    E --> FintegrationTesting[Integration Testing]
+    F --> Gend-to-endTesting[End-to-End Testing]
 
-    G --> H[Performance Testing]
-    H --> I[Load Testing]
+    G --> HperformanceTesting[Performance Testing]
+    H --> IloadTesting[Load Testing]
 
-    I --> J[Quality Gates]
+    I --> JqualityGates[Quality Gates]
     J --> K{All Passed?}
 
-    K -->|Yes| L[Release Ready]
-    K -->|No| M[Issue Resolution]
+    K -->|Yes| LreleaseReady[Release Ready]
+    K -->|No| MissueResolution[Issue Resolution]
 
     M --> A
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style E fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style L fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Automated Checks"
         N[mypy] -.-> C
@@ -40,16 +37,16 @@ graph TD
 
     subgraph "Test Categories"
         R[pytest] -.-> E
-        S[Real Data Only] -.-> E
-        T[No Mocks] -.-> E
+        SrealDataOnly[Real Data Only] -.-> E
+        TnoMocks[No Mocks] -.-> E
         U[Integration] -.-> F
     end
 
     subgraph "Quality Metrics"
-        V[Coverage >90%] -.-> J
-        W[Zero Critical Issues] -.-> J
-        X[Performance Benchmarks] -.-> J
-        Y[Documentation Complete] -.-> J
+        Vcoverage>90%[Coverage >90%] -.-> J
+        WzeroCriticalIssues[Zero Critical Issues] -.-> J
+        XperformanceBenchmarks[Performance Benchmarks] -.-> J
+        YdocumentationComplete[Documentation Complete] -.-> J
     end
 ```
 
@@ -57,59 +54,56 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Test Suite] --> B[Environment Setup]
-    B --> C[Dependency Verification]
+    AtestSuite[Test Suite] --> BenvironmentSetup[Environment Setup]
+    B --> CdependencyVerification[Dependency Verification]
 
-    C --> D[Test Discovery]
-    D --> E[Test Collection]
+    C --> DtestDiscovery[Test Discovery]
+    D --> EtestCollection[Test Collection]
 
     E --> F{Test Category}
-    F -->|Unit| G[Fast Execution]
-    F -->|Integration| H[Workflow Testing]
-    F -->|E2E| I[Full Pipeline]
+    F -->|Unit| GfastExecution[Fast Execution]
+    F -->|Integration| HworkflowTesting[Workflow Testing]
+    F -->|E2E| IfullPipeline[Full Pipeline]
 
-    G --> J[Parallel Execution]
+    G --> JparallelExecution[Parallel Execution]
     H --> J
     I --> J
 
-    J --> K[Result Collection]
-    K --> L[Coverage Analysis]
+    J --> KresultCollection[Result Collection]
+    K --> LcoverageAnalysis[Coverage Analysis]
 
-    L --> M[Report Generation]
+    L --> MreportGeneration[Report Generation]
     M --> N{Quality Standards Met?}
 
-    N -->|Yes| O[Quality Assurance Pass]
-    N -->|No| P[Failure Analysis]
+    N -->|Yes| OqualityAssurancePass[Quality Assurance Pass]
+    N -->|No| PfailureAnalysis[Failure Analysis]
 
-    P --> Q[Issue Classification]
-    Q --> R[Fix Implementation]
+    P --> QissueClassification[Issue Classification]
+    Q --> RfixImplementation[Fix Implementation]
 
     R --> S[Re-testing]
     S --> N
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style J fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style O fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Execution Environment"
-        T[uv venv] -.-> B
+        TuvVenv[uv venv] -.-> B
         U[Dependencies] -.-> C
-        V[Test Data] -.-> C
-        W[External Tools] -.-> C
+        VtestData[Test Data] -.-> C
+        WexternalTools[External Tools] -.-> C
     end
 
     subgraph "Test Organization"
-        X[tests/test_*.py] -.-> D
+        Xtests/test*.py[tests/test_*.py] -.-> D
         Y[Domain-specific] -.-> F
-        Z[Integration Tests] -.-> F
-        AA[E2E Tests] -.-> F
+        ZintegrationTests[Integration Tests] -.-> F
+        AAe2eTests[E2E Tests] -.-> F
     end
 
     subgraph "Quality Metrics"
-        BB[Line Coverage] -.-> L
-        CC[Branch Coverage] -.-> L
-        DD[Mutation Testing] -.-> L
-        EE[Performance Benchmarks] -.-> L
+        BBlineCoverage[Line Coverage] -.-> L
+        CCbranchCoverage[Branch Coverage] -.-> L
+        DDmutationTesting[Mutation Testing] -.-> L
+        EEperformanceBenchmarks[Performance Benchmarks] -.-> L
     end
 ```
 

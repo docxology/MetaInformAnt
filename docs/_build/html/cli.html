@@ -217,7 +217,7 @@ uv run metainformant tests -q
   participant RNA as rna/*
   U-&gt;&gt;CLI: uv run metainformant rna plan --work-dir W
   CLI-&gt;&gt;RNA: plan_workflow(config)
-  RNA--&gt;&gt;CLI: steps: [(name, params)...]
+  RNA--&gt;&gt;CLI: steps: (name,Params)...[(name, params)...]
   U-&gt;&gt;CLI: uv run metainformant rna run --work-dir W --check
   CLI-&gt;&gt;RNA: execute_workflow(config, check=True)
   RNA-&gt;&gt;RNA: run_amalgkit(step, params)

@@ -4,8 +4,8 @@ Functions: `codon_counts`, `codon_frequencies`
 
 ```mermaid
 flowchart LR
-  A[DNA Sequence] --> B[codon_counts] --> C[Codon Counts Dict]
-  A --> D[codon_frequencies] --> E[Codon Frequencies Dict]
+  AdnaSequence[DNA Sequence] --> BcodonCounts[codon_counts] --> CcodonCountsDict[Codon Counts Dict]
+  A --> DcodonFrequencies[codon_frequencies] --> EcodonFrequenciesDict[Codon Frequencies Dict]
 ```
 
 Example

@@ -4,8 +4,8 @@ Functions: `get_genome_from_ncbi` (Entrez), CLI validation via `is_valid_assembl
 
 ```mermaid
 flowchart LR
-  A[Accession/ID] --> B[Entrez efetch]
-  B --> C[SeqRecord (FASTA)]
+  A[Accession/ID] --> BentrezEfetch[Entrez efetch]
+  B --> Cseqrecord(fasta)[SeqRecord (FASTA)]
 ```
 
 Example

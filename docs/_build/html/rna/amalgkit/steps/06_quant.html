@@ -173,19 +173,44 @@
 <h3>Configuration File<a class="headerlink" href="#configuration-file" title="Link to this heading"></a></h3>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">quant</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># CRITICAL: out_dir must be work_dir (not separate quant_dir)</span>
+<span class="w">    </span><span class="c1"># This allows quant to find getfastq output in {out_dir}/getfastq/</span>
 <span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/amellifera/work</span>
 <span class="w">    </span><span class="nt">metadata</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/amellifera/work/metadata/pivot_qualified.tsv</span>
 <span class="w">    </span><span class="nt">index_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/amellifera/work/index</span>
 <span class="w">    </span><span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">8</span>
 <span class="w">    </span><span class="nt">clean_fastq</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">yes</span>
 <span class="w">    </span><span class="nt">build_index</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">yes</span>
-<span class="w">    </span><span class="nt">fasta_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/amellifera/fasta</span>
+<span class="w">    </span><span class="nt">fasta_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/amellifera/work/fasta</span>
 </pre></div>
 </div>
 </section>
 </section>
 <section id="parameters">
 <h2>Parameters<a class="headerlink" href="#parameters" title="Link to this heading"></a></h2>
+<section id="critical-out-dir-configuration">
+<h3>CRITICAL: out_dir Configuration<a class="headerlink" href="#critical-out-dir-configuration" title="Link to this heading"></a></h3>
+<p><strong>IMPORTANT</strong>: For <code class="docutils literal notranslate"><span class="pre">amalgkit</span> <span class="pre">quant</span></code>, the <code class="docutils literal notranslate"><span class="pre">out_dir</span></code> parameter should be set to the <code class="docutils literal notranslate"><span class="pre">work_dir</span></code> (not a separate quant directory). This is because:</p>
+<ol class="arabic simple">
+<li><p><strong>FASTQ Location</strong>: <code class="docutils literal notranslate"><span class="pre">amalgkit</span> <span class="pre">quant</span></code> looks for FASTQ files in <code class="docutils literal notranslate"><span class="pre">{out_dir}/getfastq/{sample_id}/</span></code>. If <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> used <code class="docutils literal notranslate"><span class="pre">out_dir:</span> <span class="pre">output/amalgkit/{species}/fastq</span></code>, then quant’s <code class="docutils literal notranslate"><span class="pre">out_dir</span></code> must be set to <code class="docutils literal notranslate"><span class="pre">work_dir</span></code> so it can find the getfastq output via a symlink or the same directory structure.</p></li>
+<li><p><strong>Output Location</strong>: Quantification results are written to <code class="docutils literal notranslate"><span class="pre">{out_dir}/quant/{sample_id}/abundance.tsv</span></code>. If <code class="docutils literal notranslate"><span class="pre">out_dir</span></code> is <code class="docutils literal notranslate"><span class="pre">work_dir</span></code>, results will be in <code class="docutils literal notranslate"><span class="pre">work_dir/quant/</span></code>.</p></li>
+<li><p><strong>Path Resolution</strong>: Setting <code class="docutils literal notranslate"><span class="pre">out_dir</span></code> to <code class="docutils literal notranslate"><span class="pre">work_dir</span></code> ensures that all workflow steps can find files in expected locations relative to the working directory.</p></li>
+</ol>
+<p><strong>Correct Configuration</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">quant</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/{species}/work</span><span class="w">  </span><span class="c1"># ← Use work_dir, not separate quant_dir</span>
+<span class="w">    </span><span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">12</span>
+</pre></div>
+</div>
+<p><strong>Incorrect Configuration</strong> (will fail to find FASTQ files):</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">quant</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/{species}/quant</span><span class="w">  </span><span class="c1"># ← WRONG: quant can&#39;t find getfastq output</span>
+<span class="w">    </span><span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">12</span>
+</pre></div>
+</div>
+</section>
 <section id="optional-parameters">
 <h3>Optional Parameters<a class="headerlink" href="#optional-parameters" title="Link to this heading"></a></h3>
 <table class="docutils align-default">
@@ -200,7 +225,7 @@
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--out_dir</span></code></p></td>
 <td><p>PATH</p></td>
 <td><p><code class="docutils literal notranslate"><span class="pre">./</span></code></p></td>
-<td><p>Directory for intermediate and output files.</p></td>
+<td><p>Directory for intermediate and output files. <strong>Should be set to <code class="docutils literal notranslate"><span class="pre">work_dir</span></code></strong> (not a separate quant directory) so quant can find getfastq output in <code class="docutils literal notranslate"><span class="pre">{out_dir}/getfastq/</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">--metadata</span></code></p></td>
 <td><p>PATH</p></td>
@@ -251,8 +276,19 @@
 <section id="prerequisites">
 <h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h3>
 <ul class="simple">
-<li><p><strong>FASTQ Files</strong>: From <code class="docutils literal notranslate"><span class="pre">amalgkit</span> <span class="pre">getfastq</span></code> (in <code class="docutils literal notranslate"><span class="pre">out_dir/getfastq/</span></code>)</p></li>
-<li><p><strong>Kallisto Index</strong>: Pre-built index for the species OR FASTA file with <code class="docutils literal notranslate"><span class="pre">--build_index</span> <span class="pre">yes</span></code></p></li>
+<li><p><strong>FASTQ Files</strong>: From <code class="docutils literal notranslate"><span class="pre">amalgkit</span> <span class="pre">getfastq</span></code> (in <code class="docutils literal notranslate"><span class="pre">{out_dir}/getfastq/{sample_id}/</span></code>)</p>
+<ul>
+<li><p><strong>Path Resolution</strong>: <code class="docutils literal notranslate"><span class="pre">amalgkit</span> <span class="pre">quant</span></code> looks for FASTQ files in <code class="docutils literal notranslate"><span class="pre">{out_dir}/getfastq/{sample_id}/</span></code> relative to its <code class="docutils literal notranslate"><span class="pre">out_dir</span></code> parameter</p></li>
+<li><p><strong>Critical</strong>: If <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> used <code class="docutils literal notranslate"><span class="pre">out_dir:</span> <span class="pre">output/amalgkit/{species}/fastq</span></code>, then quant’s <code class="docutils literal notranslate"><span class="pre">out_dir</span></code> must be set to <code class="docutils literal notranslate"><span class="pre">work_dir</span></code> (e.g., <code class="docutils literal notranslate"><span class="pre">output/amalgkit/{species}/work</span></code>) so it can find the getfastq output</p></li>
+<li><p>The workflow may create symlinks from <code class="docutils literal notranslate"><span class="pre">{work_dir}/getfastq/</span></code> to <code class="docutils literal notranslate"><span class="pre">{fastq_dir}/getfastq/</span></code> to ensure quant can find the files</p></li>
+</ul>
+</li>
+<li><p><strong>Kallisto Index</strong>: Pre-built index for the species OR FASTA file with <code class="docutils literal notranslate"><span class="pre">--build_index</span> <span class="pre">yes</span></code></p>
+<ul>
+<li><p>Index location: <code class="docutils literal notranslate"><span class="pre">{out_dir}/index/{Scientific_Name}_transcripts.idx</span></code></p></li>
+<li><p>FASTA location: <code class="docutils literal notranslate"><span class="pre">{out_dir}/fasta/{Scientific_Name}_rna.fasta</span></code></p></li>
+</ul>
+</li>
 <li><p><strong>kallisto</strong>: Installed and available on PATH</p></li>
 </ul>
 </section>

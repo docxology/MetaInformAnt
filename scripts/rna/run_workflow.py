@@ -322,32 +322,42 @@ def main() -> int:
     # Run robust download if getfastq is in steps (or steps is None/all)
     should_run_download = args.steps is None or 'getfastq' in args.steps
     
-    if should_run_download and not args.validate: # Skip if validating
+    # Skip robust download if we are redoing select or metadata, as the selected file might be stale
+    is_redoing_select = args.redo and (args.steps is None or 'select' in args.steps or 'metadata' in args.steps)
+    
+    if should_run_download and not args.validate and not is_redoing_select: # Skip if validating or redoing
         # Determine metadata path and fastq dir
         # We need to load config to get work_dir
         from metainformant.rna.engine.workflow import load_workflow_config
         cfg = load_workflow_config(config_path)
         
-        metadata_path = cfg.work_dir / "metadata" / "metadata_selected.tsv"
-        fastq_dir = cfg.work_dir.parent / "fastq" / "getfastq" # Default layout assumption
+        # Skip robust pre-download if max_bp limit is set (to avoid downloading too much)
+        getfastq_params = cfg.extra_config.get('steps', {}).get('getfastq', {})
+        has_size_limit = 'max_bp' in getfastq_params
         
-        steps_config = cfg.extra_config.get('steps', {})
-        if 'getfastq' in steps_config and 'out_dir' in steps_config['getfastq']:
-             fastq_dir = Path(steps_config['getfastq']['out_dir'])
-             if fastq_dir.name != "getfastq":
-                 fastq_dir = fastq_dir / "getfastq"
-
-        should_run_download = (args.steps is None or 'getfastq' in args.steps)
-        if metadata_path.exists() and should_run_download:
-            print(f"DEBUG: Metadata found at {metadata_path}, running robust download...")
-            logger.info(f"Running robust pre-download for SRA files to {fastq_dir}...")
-            from metainformant.core.io.download_robust import download_sra_files_from_metadata
-            download_sra_files_from_metadata(metadata_path, fastq_dir)
+        if not has_size_limit:
+            metadata_path = cfg.work_dir / "metadata" / "metadata_selected.tsv"
+            fastq_dir = cfg.work_dir.parent / "fastq" / "getfastq"
+            
+            steps_config = cfg.extra_config.get('steps', {})
+            if 'getfastq' in steps_config and 'out_dir' in steps_config['getfastq']:
+                fastq_dir = Path(steps_config['getfastq']['out_dir'])
+                if fastq_dir.name != "getfastq":
+                    fastq_dir = fastq_dir / "getfastq"
+    
+            if metadata_path.exists():
+                print(f"DEBUG: Metadata found at {metadata_path}, running robust download...")
+                logger.info(f"Running robust pre-download for SRA files to {fastq_dir}...")
+                from metainformant.core.io.download_robust import download_sra_files_from_metadata
+                download_sra_files_from_metadata(metadata_path, fastq_dir)
+            else:
+                print(f"DEBUG: Metadata NOT found at {metadata_path}")
+                logger.info("Metadata selected file not found yet, skipping robust pre-download (will run in normal flow)")
         else:
-            print(f"DEBUG: Metadata NOT found at {metadata_path}")
-            logger.info("Metadata selected file not found yet, skipping robust pre-download (will run in normal flow)")
+            logger.info("Skipping robust pre-download because max_bp limit is set (will use amalgkit's internal robust download)")
     else:
-        print(f"DEBUG: Skipping robust download. should_run_download={should_run_download}")
+        reason = "redo requested" if is_redoing_select else "skipping"
+        print(f"DEBUG: Skipping robust download. should_run_download={should_run_download}, reason={reason}")
 
     # Run workflow
     logger.info(f"Running workflow for {config_path.name}")

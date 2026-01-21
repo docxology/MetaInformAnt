@@ -1,0 +1,475 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Epigenome Visualization &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Epigenome Visualization</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/visualization/epigenome.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="epigenome-visualization">
+<h1>Epigenome Visualization<a class="headerlink" href="#epigenome-visualization" title="Link to this heading"></a></h1>
+<p>This document provides comprehensive documentation for epigenetic data visualization capabilities in METAINFORMANT, including DNA methylation, histone modifications, and chromatin accessibility analysis.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>Epigenome visualization includes specialized plots for genomic epigenetic marks, including methylation profiles, ChIP-seq peaks, ATAC-seq signals, and chromatin state analysis. These tools create publication-quality figures for epigenetic research.</p>
+</section>
+<section id="module-functions">
+<h2>Module Functions<a class="headerlink" href="#module-functions" title="Link to this heading"></a></h2>
+<section id="dna-methylation">
+<h3>DNA Methylation<a class="headerlink" href="#dna-methylation" title="Link to this heading"></a></h3>
+<section id="methylation-profiles">
+<h4>Methylation Profiles<a class="headerlink" href="#methylation-profiles" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.epigenome</span><span class="w"> </span><span class="kn">import</span> <span class="n">visualization</span> <span class="k">as</span> <span class="n">epi_viz</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Plot methylation levels across CpG sites</span>
+<span class="n">methylation_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>  <span class="c1"># 0-1 methylation levels</span>
+<span class="n">positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>  <span class="c1"># Genomic positions</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">epi_viz</span><span class="o">.</span><span class="n">plot_methylation_profile</span><span class="p">(</span><span class="n">methylation_data</span><span class="p">,</span> <span class="n">positions</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+<section id="differential-methylation">
+<h4>Differential Methylation<a class="headerlink" href="#differential-methylation" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Volcano plot for differential methylation analysis</span>
+<span class="n">dm_results</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s1">&#39;delta&#39;</span><span class="p">:</span> <span class="mf">0.3</span><span class="p">,</span> <span class="s1">&#39;pvalue&#39;</span><span class="p">:</span> <span class="mf">1e-10</span><span class="p">,</span> <span class="s1">&#39;position&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">&#39;delta&#39;</span><span class="p">:</span> <span class="o">-</span><span class="mf">0.2</span><span class="p">,</span> <span class="s1">&#39;pvalue&#39;</span><span class="p">:</span> <span class="mf">1e-5</span><span class="p">,</span> <span class="s1">&#39;position&#39;</span><span class="p">:</span> <span class="mi">2000</span><span class="p">},</span>
+    <span class="c1"># ... more results</span>
+<span class="p">]</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">epi_viz</span><span class="o">.</span><span class="n">plot_differential_methylation</span><span class="p">(</span><span class="n">dm_results</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="methylation-clustering">
+<h4>Methylation Clustering<a class="headerlink" href="#methylation-clustering" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Cluster methylation data across samples</span>
+<span class="n">methylation_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>  <span class="c1"># Samples x CpG sites</span>
+<span class="n">cluster_labels</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">50</span><span class="p">)</span>  <span class="c1"># Cluster assignments</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">epi_viz</span><span class="o">.</span><span class="n">plot_dna_methylation_clusters</span><span class="p">(</span><span class="n">methylation_matrix</span><span class="p">,</span> <span class="n">cluster_labels</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="histone-modifications">
+<h3>Histone Modifications<a class="headerlink" href="#histone-modifications" title="Link to this heading"></a></h3>
+<section id="chip-seq-peaks">
+<h4>ChIP-seq Peaks<a class="headerlink" href="#chip-seq-peaks" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Visualize ChIP-seq peaks along chromosome</span>
+<span class="n">peaks</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">{</span><span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">:</span> <span class="mi">1500</span><span class="p">,</span> <span class="s1">&#39;score&#39;</span><span class="p">:</span> <span class="mf">25.0</span><span class="p">},</span>
+    <span class="p">{</span><span class="s1">&#39;start&#39;</span><span class="p">:</span> <span class="mi">3000</span><span class="p">,</span> <span class="s1">&#39;end&#39;</span><span class="p">:</span> <span class="mi">3500</span><span class="p">,</span> <span class="s1">&#39;score&#39;</span><span class="p">:</span> <span class="mf">18.5</span><span class="p">},</span>
+    <span class="c1"># ... more peaks</span>
+<span class="p">]</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">epi_viz</span><span class="o">.</span><span class="n">plot_chipseq_peaks</span><span class="p">(</span><span class="n">peaks</span><span class="p">,</span> <span class="n">chromosome</span><span class="o">=</span><span class="s2">&quot;chr1&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="histone-modification-heatmaps">
+<h4>Histone Modification Heatmaps<a class="headerlink" href="#histone-modification-heatmaps" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot multiple histone modifications</span>
+<span class="n">histone_data</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;H3K4me3&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1000</span><span class="p">),</span>
+    <span class="s1">&#39;H3K27me3&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1000</span><span class="p">),</span>
+    <span class="s1">&#39;H3K36me3&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">epi_viz</span><span class="o">.</span><span class="n">plot_histone_modification_heatmap</span><span class="p">(</span><span class="n">histone_data</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="chromatin-accessibility">
+<h3>Chromatin Accessibility<a class="headerlink" href="#chromatin-accessibility" title="Link to this heading"></a></h3>
+<section id="atac-seq-signals">
+<h4>ATAC-seq Signals<a class="headerlink" href="#atac-seq-signals" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot chromatin accessibility signal</span>
+<span class="n">signal_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">2000</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.5</span>  <span class="c1"># Accessibility scores</span>
+<span class="n">positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">2000</span><span class="p">)</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">epi_viz</span><span class="o">.</span><span class="n">plot_atacseq_signal</span><span class="p">(</span><span class="n">signal_data</span><span class="p">,</span> <span class="n">positions</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="chromatin-states">
+<h3>Chromatin States<a class="headerlink" href="#chromatin-states" title="Link to this heading"></a></h3>
+<section id="state-segmentation">
+<h4>State Segmentation<a class="headerlink" href="#state-segmentation" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Visualize chromatin state annotations</span>
+<span class="n">states</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1000</span><span class="p">)</span>  <span class="c1"># 1-5 state assignments</span>
+<span class="n">positions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>
+<span class="n">state_labels</span> <span class="o">=</span> <span class="p">{</span><span class="mi">1</span><span class="p">:</span> <span class="s1">&#39;Active&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span> <span class="s1">&#39;Repressed&#39;</span><span class="p">,</span> <span class="mi">3</span><span class="p">:</span> <span class="s1">&#39;Heterochromatin&#39;</span><span class="p">,</span> <span class="mi">4</span><span class="p">:</span> <span class="s1">&#39;Enhancer&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">:</span> <span class="s1">&#39;Promoter&#39;</span><span class="p">}</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">epi_viz</span><span class="o">.</span><span class="n">plot_chromatin_states</span><span class="p">(</span><span class="n">states</span><span class="p">,</span> <span class="n">positions</span><span class="p">,</span> <span class="n">state_labels</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="multi-omic-integration">
+<h3>Multi-omic Integration<a class="headerlink" href="#multi-omic-integration" title="Link to this heading"></a></h3>
+<section id="genome-browser-tracks">
+<h4>Genome Browser Tracks<a class="headerlink" href="#genome-browser-tracks" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create genome browser-style multi-track view</span>
+<span class="n">tracks</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;methylation&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1000</span><span class="p">),</span>
+        <span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;blue&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;Methylation&#39;</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;H3K4me3&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1000</span><span class="p">),</span>
+        <span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;red&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;H3K4me3&#39;</span>
+    <span class="p">},</span>
+    <span class="s1">&#39;accessibility&#39;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1000</span><span class="p">),</span>
+        <span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;green&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;ATAC-seq&#39;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">epi_viz</span><span class="o">.</span><span class="n">plot_genome_browser_tracks</span><span class="p">(</span><span class="n">tracks</span><span class="p">,</span> <span class="n">region_start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">region_end</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="epigenetic-correlation-analysis">
+<h4>Epigenetic Correlation Analysis<a class="headerlink" href="#epigenetic-correlation-analysis" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Analyze correlations between epigenetic marks</span>
+<span class="n">epigenetic_data</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;DNA_methylation&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">),</span>
+    <span class="s1">&#39;H3K4me3&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">),</span>
+    <span class="s1">&#39;H3K27me3&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">),</span>
+    <span class="s1">&#39;ATAC_signal&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">epi_viz</span><span class="o">.</span><span class="n">plot_epigenetic_correlation_heatmap</span><span class="p">(</span><span class="n">epigenetic_data</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="advanced-features">
+<h3>Advanced Features<a class="headerlink" href="#advanced-features" title="Link to this heading"></a></h3>
+<section id="interactive-genome-browser">
+<h4>Interactive Genome Browser<a class="headerlink" href="#interactive-genome-browser" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create interactive epigenetic data browser</span>
+<span class="n">epigenetic_tracks</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;methylation&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;positions&#39;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">)),</span> <span class="s1">&#39;values&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1000</span><span class="p">)},</span>
+    <span class="s1">&#39;chipseq&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;positions&#39;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">)),</span> <span class="s1">&#39;values&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1000</span><span class="p">)},</span>
+    <span class="s1">&#39;atacseq&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;positions&#39;</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">)),</span> <span class="s1">&#39;values&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1000</span><span class="p">)}</span>
+<span class="p">}</span>
+
+<span class="n">fig</span> <span class="o">=</span> <span class="n">epi_viz</span><span class="o">.</span><span class="n">create_interactive_epigenome_browser</span><span class="p">(</span><span class="n">epigenetic_tracks</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="integration-with-epigenome-module">
+<h2>Integration with Epigenome Module<a class="headerlink" href="#integration-with-epigenome-module" title="Link to this heading"></a></h2>
+<section id="with-methylation-analysis">
+<h3>With Methylation Analysis<a class="headerlink" href="#with-methylation-analysis" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.epigenome</span><span class="w"> </span><span class="kn">import</span> <span class="n">methylation</span><span class="p">,</span> <span class="n">visualization</span> <span class="k">as</span> <span class="n">epi_viz</span>
+
+<span class="c1"># Load methylation data</span>
+<span class="n">methylation_sites</span> <span class="o">=</span> <span class="n">methylation</span><span class="o">.</span><span class="n">load_methylation_bedgraph</span><span class="p">(</span><span class="s2">&quot;methylation.bedgraph&quot;</span><span class="p">)</span>
+
+<span class="c1"># Convert to visualization format</span>
+<span class="n">positions</span> <span class="o">=</span> <span class="p">[</span><span class="n">site</span><span class="p">[</span><span class="s1">&#39;position&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">methylation_sites</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+<span class="n">levels</span> <span class="o">=</span> <span class="p">[</span><span class="n">site</span><span class="p">[</span><span class="s1">&#39;methylation_level&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">methylation_sites</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+
+<span class="c1"># Visualize</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">epi_viz</span><span class="o">.</span><span class="n">plot_methylation_profile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">levels</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">positions</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+<section id="with-chip-seq-analysis">
+<h3>With ChIP-seq Analysis<a class="headerlink" href="#with-chip-seq-analysis" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.epigenome</span><span class="w"> </span><span class="kn">import</span> <span class="n">chipseq</span><span class="p">,</span> <span class="n">visualization</span> <span class="k">as</span> <span class="n">epi_viz</span>
+
+<span class="c1"># Load ChIP-seq peaks</span>
+<span class="n">peaks</span> <span class="o">=</span> <span class="n">chipseq</span><span class="o">.</span><span class="n">load_chip_peaks</span><span class="p">(</span><span class="s2">&quot;peaks.narrowPeak&quot;</span><span class="p">)</span>
+
+<span class="c1"># Visualize peak distribution</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">epi_viz</span><span class="o">.</span><span class="n">plot_chipseq_peaks</span><span class="p">(</span><span class="n">peaks</span><span class="p">,</span> <span class="n">chromosome</span><span class="o">=</span><span class="s2">&quot;chr1&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="with-atac-seq-analysis">
+<h3>With ATAC-seq Analysis<a class="headerlink" href="#with-atac-seq-analysis" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.epigenome</span><span class="w"> </span><span class="kn">import</span> <span class="n">atacseq</span><span class="p">,</span> <span class="n">visualization</span> <span class="k">as</span> <span class="n">epi_viz</span>
+
+<span class="c1"># Load ATAC-seq peaks</span>
+<span class="n">peaks</span> <span class="o">=</span> <span class="n">atacseq</span><span class="o">.</span><span class="n">load_atac_peaks</span><span class="p">(</span><span class="s2">&quot;atac_peaks.narrowPeak&quot;</span><span class="p">)</span>
+
+<span class="c1"># Create accessibility profile</span>
+<span class="c1"># (Note: would need signal data for full profile)</span>
+<span class="n">signal_data</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">1000</span><span class="p">)</span>  <span class="c1"># Placeholder</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">epi_viz</span><span class="o">.</span><span class="n">plot_atacseq_signal</span><span class="p">(</span><span class="n">signal_data</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">1000</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="output-options">
+<h2>Output Options<a class="headerlink" href="#output-options" title="Link to this heading"></a></h2>
+<p>All visualization functions support:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Save to file</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">epi_viz</span><span class="o">.</span><span class="n">plot_methylation_profile</span><span class="p">(</span><span class="n">methylation_data</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;methylation.png&quot;</span><span class="p">)</span>
+
+<span class="c1"># Interactive browser</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">epi_viz</span><span class="o">.</span><span class="n">create_interactive_epigenome_browser</span><span class="p">(</span><span class="n">tracks</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;browser.html&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="data-format-support">
+<h2>Data Format Support<a class="headerlink" href="#data-format-support" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>BED Files</strong>: Standard genomic interval format</p></li>
+<li><p><strong>BedGraph Files</strong>: Continuous genomic signal data</p></li>
+<li><p><strong>NarrowPeak Files</strong>: ChIP-seq and ATAC-seq peak calls</p></li>
+<li><p><strong>Methylation Data</strong>: Bismark or custom methylation formats</p></li>
+<li><p><strong>Chromatin States</strong>: Segway, ChromHMM, or custom state annotations</p></li>
+</ul>
+</section>
+<section id="performance-considerations">
+<h2>Performance Considerations<a class="headerlink" href="#performance-considerations" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Large Genomic Regions</strong>: For whole chromosomes, consider tiling or subsampling</p></li>
+<li><p><strong>Multiple Samples</strong>: Heatmaps work best with 10-100 samples</p></li>
+<li><p><strong>Interactive Plots</strong>: Require Plotly for web-based genome browsers</p></li>
+<li><p><strong>Memory Usage</strong>: High-resolution tracks can be memory-intensive</p></li>
+</ul>
+</section>
+<section id="dependencies">
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Required</strong>: matplotlib, numpy, pandas</p></li>
+<li><p><strong>Optional</strong>: seaborn (enhanced styling), plotly (interactive plots)</p></li>
+<li><p><strong>Integration</strong>: pybedtools (genomic intervals), pyBigWig (signal files)</p></li>
+</ul>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h2>
+<section id="complete-epigenetic-analysis-workflow">
+<h3>Complete Epigenetic Analysis Workflow<a class="headerlink" href="#complete-epigenetic-analysis-workflow" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.epigenome</span><span class="w"> </span><span class="kn">import</span> <span class="n">methylation</span><span class="p">,</span> <span class="n">chipseq</span><span class="p">,</span> <span class="n">visualization</span> <span class="k">as</span> <span class="n">epi_viz</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="c1"># Load epigenetic data</span>
+<span class="n">methylation_data</span> <span class="o">=</span> <span class="n">methylation</span><span class="o">.</span><span class="n">load_methylation_bedgraph</span><span class="p">(</span><span class="s2">&quot;sample.methylation.bedgraph&quot;</span><span class="p">)</span>
+<span class="n">chip_peaks</span> <span class="o">=</span> <span class="n">chipseq</span><span class="o">.</span><span class="n">load_chip_peaks</span><span class="p">(</span><span class="s2">&quot;H3K4me3_peaks.narrowPeak&quot;</span><span class="p">)</span>
+
+<span class="c1"># Create comprehensive visualization</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">15</span><span class="p">,</span> <span class="mi">12</span><span class="p">))</span>
+
+<span class="c1"># Methylation profile</span>
+<span class="n">positions</span> <span class="o">=</span> <span class="p">[</span><span class="n">site</span><span class="p">[</span><span class="s1">&#39;position&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">methylation_data</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+<span class="n">levels</span> <span class="o">=</span> <span class="p">[</span><span class="n">site</span><span class="p">[</span><span class="s1">&#39;methylation_level&#39;</span><span class="p">]</span> <span class="k">for</span> <span class="n">site</span> <span class="ow">in</span> <span class="n">methylation_data</span><span class="o">.</span><span class="n">values</span><span class="p">()]</span>
+<span class="n">epi_viz</span><span class="o">.</span><span class="n">plot_methylation_profile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">levels</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">positions</span><span class="p">),</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+
+<span class="c1"># ChIP-seq peaks</span>
+<span class="n">epi_viz</span><span class="o">.</span><span class="n">plot_chipseq_peaks</span><span class="p">(</span><span class="n">chip_peaks</span><span class="p">,</span> <span class="n">chromosome</span><span class="o">=</span><span class="s2">&quot;chr1&quot;</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+
+<span class="c1"># Multi-track browser</span>
+<span class="n">tracks</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;methylation&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">levels</span><span class="p">),</span> <span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;blue&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;DNAme&#39;</span><span class="p">},</span>
+    <span class="s1">&#39;H3K4me3&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;data&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">levels</span><span class="p">)),</span> <span class="s1">&#39;color&#39;</span><span class="p">:</span> <span class="s1">&#39;red&#39;</span><span class="p">,</span> <span class="s1">&#39;label&#39;</span><span class="p">:</span> <span class="s1">&#39;H3K4me3&#39;</span><span class="p">}</span>
+<span class="p">}</span>
+<span class="n">epi_viz</span><span class="o">.</span><span class="n">plot_genome_browser_tracks</span><span class="p">(</span><span class="n">tracks</span><span class="p">,</span> <span class="n">region_start</span><span class="o">=</span><span class="nb">min</span><span class="p">(</span><span class="n">positions</span><span class="p">),</span> <span class="n">region_end</span><span class="o">=</span><span class="nb">max</span><span class="p">(</span><span class="n">positions</span><span class="p">),</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+
+<span class="c1"># Correlation analysis</span>
+<span class="n">epi_data</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;DNA_methylation&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">levels</span><span class="p">),</span>
+    <span class="s1">&#39;H3K4me3_signal&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">levels</span><span class="p">)),</span>
+    <span class="s1">&#39;accessibility&#39;</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">levels</span><span class="p">))</span>
+<span class="p">}</span>
+<span class="n">epi_viz</span><span class="o">.</span><span class="n">plot_epigenetic_correlation_heatmap</span><span class="p">(</span><span class="n">epi_data</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;epigenetic_analysis.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="color-schemes">
+<h2>Color Schemes<a class="headerlink" href="#color-schemes" title="Link to this heading"></a></h2>
+<p>Recommended color schemes for epigenetic data:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># DNA methylation</span>
+<span class="n">methylation_cmap</span> <span class="o">=</span> <span class="s1">&#39;RdYlBu_r&#39;</span>  <span class="c1"># Blue for unmethylated, red for methylated</span>
+
+<span class="c1"># Histone modifications</span>
+<span class="n">histone_colors</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;H3K4me3&#39;</span><span class="p">:</span> <span class="s1">&#39;#FF6B6B&#39;</span><span class="p">,</span>    <span class="c1"># Red for active promoters</span>
+    <span class="s1">&#39;H3K27me3&#39;</span><span class="p">:</span> <span class="s1">&#39;#4ECDC4&#39;</span><span class="p">,</span>   <span class="c1"># Teal for repressed regions</span>
+    <span class="s1">&#39;H3K36me3&#39;</span><span class="p">:</span> <span class="s1">&#39;#45B7D1&#39;</span><span class="p">,</span>   <span class="c1"># Blue for gene bodies</span>
+    <span class="s1">&#39;H3K9me3&#39;</span><span class="p">:</span> <span class="s1">&#39;#96CEB4&#39;</span><span class="p">,</span>    <span class="c1"># Green for heterochromatin</span>
+<span class="p">}</span>
+
+<span class="c1"># Chromatin states</span>
+<span class="n">state_colors</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="mi">1</span><span class="p">:</span> <span class="s1">&#39;#FF6B6B&#39;</span><span class="p">,</span>   <span class="c1"># Active</span>
+    <span class="mi">2</span><span class="p">:</span> <span class="s1">&#39;#4ECDC4&#39;</span><span class="p">,</span>   <span class="c1"># Repressed</span>
+    <span class="mi">3</span><span class="p">:</span> <span class="s1">&#39;#45B7D1&#39;</span><span class="p">,</span>   <span class="c1"># Heterochromatin</span>
+    <span class="mi">4</span><span class="p">:</span> <span class="s1">&#39;#96CEB4&#39;</span><span class="p">,</span>   <span class="c1"># Enhancer</span>
+    <span class="mi">5</span><span class="p">:</span> <span class="s1">&#39;#FFEAA7&#39;</span>    <span class="c1"># Promoter</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="common-issues">
+<h3>Common Issues<a class="headerlink" href="#common-issues" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Empty Plots</strong>: Check data ranges and genomic coordinates</p></li>
+<li><p><strong>Memory Errors</strong>: Subsample large genomic regions for visualization</p></li>
+<li><p><strong>File Format Errors</strong>: Ensure BED/BedGraph files have correct column formats</p></li>
+<li><p><strong>Color Scaling</strong>: Use appropriate colormaps for different data types</p></li>
+</ol>
+</section>
+<section id="data-requirements">
+<h3>Data Requirements<a class="headerlink" href="#data-requirements" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Genomic Coordinates</strong>: Must be sorted and non-overlapping for proper display</p></li>
+<li><p><strong>Signal Values</strong>: Should be normalized for comparison across samples</p></li>
+<li><p><strong>Peak Scores</strong>: Higher scores typically indicate stronger enrichment</p></li>
+<li><p><strong>Methylation Levels</strong>: Values should be in 0-1 range for proper color scaling</p></li>
+</ul>
+</section>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong><a class="reference internal" href="#../epigenome/"><span class="xref myst">Epigenome Analysis</span></a></strong>: Core epigenetic analysis functions</p></li>
+<li><p><strong><a class="reference internal" href="#../epigenome/methylation.md"><span class="xref myst">Methylation Analysis</span></a></strong>: DNA methylation workflows</p></li>
+<li><p><strong><a class="reference internal" href="#../epigenome/chipseq.md"><span class="xref myst">ChIP-seq Analysis</span></a></strong>: Histone modification analysis</p></li>
+<li><p><strong><a class="reference internal" href="integration.html"><span class="std std-doc">Visualization Integration</span></a></strong>: Cross-module visualization patterns</p></li>
+</ul>
+<p>This module provides comprehensive epigenetic visualization capabilities integrated with METAINFORMANT’s epigenomic analysis workflows.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

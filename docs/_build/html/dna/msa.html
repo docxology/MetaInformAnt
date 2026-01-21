@@ -101,9 +101,9 @@
 <h1>DNA: Multiple Sequence Alignment (MSA)<a class="headerlink" href="#dna-multiple-sequence-alignment-msa" title="Link to this heading"></a></h1>
 <p>Functions: <code class="docutils literal notranslate"><span class="pre">align_msa</span></code> (progressive, no external deps), <code class="docutils literal notranslate"><span class="pre">align_with_cli</span></code> (MUSCLE/Clustal if available).</p>
 <div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart TD
-  A[id-&gt;seq map] --&gt; B[align_msa]
-  A --&gt; C[align_with_cli]
-  B --&gt; D[aligned id-&gt;seq]
+  Aid-&gt;seqMap[id-&gt;seq map] --&gt; BalignMsa[align_msa]
+  A --&gt; CalignWithCli[align_with_cli]
+  B --&gt; DalignedId-&gt;seq[aligned id-&gt;seq]
   C --&gt; D
 </pre></div>
 </div>

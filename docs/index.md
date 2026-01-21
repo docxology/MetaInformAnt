@@ -9,39 +9,36 @@
 
 ```mermaid
 graph TD
-    A[METAINFORMANT Documentation] --> B[Getting Started]
-    A --> C[User Guides]
-    A --> D[Module Documentation]
-    A --> E[Developer Resources]
+    AmetainformantDocumentation[METAINFORMANT Documentation] --> BgettingStarted[Getting Started]
+    A --> CuserGuides[User Guides]
+    A --> DmoduleDocumentation[Module Documentation]
+    A --> EdeveloperResources[Developer Resources]
     A --> F[Reference]
 
     B --> B1[Installation]
-    B --> B2[Quick Start]
+    B --> B2quickStart[Quick Start]
     B --> B3[Tutorials]
 
-    C --> C1[Workflow Guides]
-    C --> C2[Best Practices]
+    C --> C1workflowGuides[Workflow Guides]
+    C --> C2bestPractices[Best Practices]
     C --> C3[Troubleshooting]
 
-    D --> D1[Core Modules]
-    D --> D2[Molecular Analysis]
-    D --> D3[Statistical Methods]
-    D --> D4[Systems Biology]
-    D --> D5[Annotation & Metadata]
+    D --> D1coreModules[Core Modules]
+    D --> D2molecularAnalysis[Molecular Analysis]
+    D --> D3statisticalMethods[Statistical Methods]
+    D --> D4systemsBiology[Systems Biology]
+    D --> D5annotation&Metadata[Annotation & Metadata]
     D --> D6[Utilities]
 
     E --> E1[Architecture]
     E --> E2[Contributing]
     E --> E3[Testing]
-    E --> E4[API Reference]
+    E --> E4apiReference[API Reference]
 
-    F --> F1[CLI Reference]
+    F --> F1cliReference[CLI Reference]
     F --> F2[Configuration]
-    F --> F3[Error Codes]
+    F --> F3errorCodes[Error Codes]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style D fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style F fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Primary Entry Points"
         G1[README.md] -.-> B
@@ -51,18 +48,18 @@ graph TD
 
     subgraph "Module Categories"
         H1[core/] -.-> D1
-        H2[dna/, rna/, protein/, epigenome/] -.-> D2
-        H3[gwas/, math/, ml/, information/] -.-> D3
-        H4[networks/, multiomics/, singlecell/, simulation/] -.-> D4
-        H5[ontology/, phenotype/, ecology/, life_events/] -.-> D5
-        H6[quality/, visualization/] -.-> D6
+        H2dna/,Rna/,Protein/,Epigenome/[dna/, rna/, protein/, epigenome/] -.-> D2
+        H3gwas/,Math/,Ml/,Information/[gwas/, math/, ml/, information/] -.-> D3
+        H4networks/,Multiomics/,Singlecell/,Simulation/[networks/, multiomics/, singlecell/, simulation/] -.-> D4
+        H5ontology/,Phenotype/,Ecology/,LifeEvents/[ontology/, phenotype/, ecology/, life_events/] -.-> D5
+        H6quality/,Visualization/[quality/, visualization/] -.-> D6
     end
 
     subgraph "Key Documents"
         I1[architecture.md] -.-> E1
         I2[testing.md] -.-> E3
         I3[cli.md] -.-> F1
-        I4[UV_SETUP.md] -.-> B1
+        I4uvSetup.md[UV_SETUP.md] -.-> B1
     end
 ```
 
@@ -94,16 +91,16 @@ graph TD
 
 ```mermaid
 graph LR
-    A[Raw Data] --> B[Ingestion]
+    ArawData[Raw Data] --> B[Ingestion]
     B --> C[Validation]
     C --> D{Data Type}
 
-    D -->|Genomic| E[DNA Pipeline]
-    D -->|Transcriptomic| F[RNA Pipeline]
-    D -->|Proteomic| G[Protein Pipeline]
-    D -->|Phenotypic| H[Phenotype Pipeline]
+    D -->|Genomic| EdnaPipeline[DNA Pipeline]
+    D -->|Transcriptomic| FrnaPipeline[RNA Pipeline]
+    D -->|Proteomic| GproteinPipeline[Protein Pipeline]
+    D -->|Phenotypic| HphenotypePipeline[Phenotype Pipeline]
 
-    E --> I[Quality Control]
+    E --> IqualityControl[Quality Control]
     F --> I
     G --> I
     H --> I
@@ -111,18 +108,15 @@ graph LR
     I --> J[Analysis]
     J --> K{Integration Level}
 
-    K -->|Single-omic| L[Individual Results]
-    K -->|Multi-omic| M[Integrated Results]
+    K -->|Single-omic| LindividualResults[Individual Results]
+    K -->|Multi-omic| MintegratedResults[Integrated Results]
 
     L --> N[Visualization]
     M --> N
 
     N --> O[Publication]
-    O --> P[Scientific Insights]
+    O --> PscientificInsights[Scientific Insights]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style I fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style P fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Data Sources"
         Q[NCBI] -.-> E
@@ -132,17 +126,17 @@ graph LR
     end
 
     subgraph "Analysis Types"
-        U[Sequence Analysis] -.-> E
-        V[Expression Analysis] -.-> F
-        W[Structure Analysis] -.-> G
-        X[Trait Analysis] -.-> H
+        UsequenceAnalysis[Sequence Analysis] -.-> E
+        VexpressionAnalysis[Expression Analysis] -.-> F
+        WstructureAnalysis[Structure Analysis] -.-> G
+        XtraitAnalysis[Trait Analysis] -.-> H
     end
 
     subgraph "Integration Methods"
         Y[GWAS] -.-> K
         Z[Networks] -.-> K
         AA[ML] -.-> K
-        BB[Systems Biology] -.-> K
+        BBsystemsBiology[Systems Biology] -.-> K
     end
 ```
 
@@ -150,14 +144,11 @@ graph LR
 
 ### Installation
 
-METAINFORMANT can be installed via pip, uv, or from source:
+METAINFORMANT uses `uv` for Python package management. Install with `uv`, or install from source with `uv pip install -e .`:
 
 ```bash
-# Via pip
-pip install metainformant
-
-# Via uv (recommended)
-uv add metainformant
+# Install into the active environment
+uv pip install metainformant
 
 # From source
 git clone https://github.com/your-org/metainformant.git
@@ -176,12 +167,13 @@ gc_content = mi.dna.composition.gc_content(seq)
 print(f"GC content: {gc_content:.2f}")
 
 # RNA-seq workflow
-import metainformant.rna.workflow as rna_workflow
-config = rna_workflow.AmalgkitWorkflowConfig(
+from metainformant.rna import AmalgkitWorkflowConfig, execute_workflow
+
+config = AmalgkitWorkflowConfig(
     work_dir="output/rna_analysis",
     species_list=["Apis_mellifera"]
 )
-results = rna_workflow.execute_amalgkit_workflow(config)
+results = execute_workflow(config)
 ```
 
 ### Command Line Interface
@@ -312,35 +304,35 @@ api_design
 ```{mermaid}
 graph TB
     subgraph "User Interfaces"
-        CLI[Command Line Interface<br/>metainformant]
-        API[Python API<br/>import metainformant]
-        Scripts[Workflow Scripts<br/>scripts/*/]
+        CLI[commandLineInterface]
+        API[pythonAPI]
+        Scripts[workflowScripts]
     end
 
     subgraph "Core Framework"
-        Workflow[Workflow Orchestration<br/>core.workflow]
-        Config[Configuration Management<br/>core.config]
-        IO[I/O Utilities<br/>core.io]
-        Logging[Structured Logging<br/>core.logging]
+        Workflow[workflowOrchestration]
+        Config[configurationManagement]
+        IO[inputOutputUtilities]
+        Logging[structuredLogging]
     end
 
     subgraph "Domain Modules"
-        DNA[DNA Analysis<br/>dna.*]
-        RNA[RNA Analysis<br/>rna.*]
-        PROT[Protein Analysis<br/>protein.*]
-        GWAS[GWAS<br/>gwas.*]
-        EPI[Epigenomics<br/>epigenome.*]
-        ONT[Ontology<br/>ontology.*]
-        PHENO[Phenotype<br/>phenotype.*]
-        ECOL[Ecology<br/>ecology.*]
-        MATH[Math Biology<br/>math.*]
-        ML[ML/AI<br/>ml.*]
-        NET[Networks<br/>networks.*]
-        SC[Single Cell<br/>singlecell.*]
-        QUAL[Quality Control<br/>quality.*]
-        VIZ[Visualization<br/>visualization.*]
-        SIM[Simulation<br/>simulation.*]
-        LE[Life Events<br/>life_events.*]
+        DNA[dnaAnalysis]
+        RNA[rnaAnalysis]
+        PROT[proteinAnalysis]
+        GWAS[gwasAnalysis]
+        EPI[epigenomicsAnalysis]
+        ONT[ontologyAnalysis]
+        PHENO[phenotypeAnalysis]
+        ECOL[ecologyAnalysis]
+        MATH[mathBiology]
+        ML[machineLearning]
+        NET[networksAnalysis]
+        SC[singleCellAnalysis]
+        QUAL[qualityControl]
+        VIZ[visualizationModule]
+        SIM[simulationModule]
+        LE[lifeEventsAnalysis]
     end
 
     CLI --> Workflow

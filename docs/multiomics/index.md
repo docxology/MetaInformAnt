@@ -42,24 +42,24 @@ flowchart TD
     D[Proteomics] --> B
     E[Epigenomics] --> B
 
-    B --> F[Data Integration]
-    F --> G[Joint Analysis]
-    F --> H[Biomarker Discovery]
-    F --> I[Pathway Integration]
+    B --> FdataIntegration[Data Integration]
+    F --> GjointAnalysis[Joint Analysis]
+    F --> HbiomarkerDiscovery[Biomarker Discovery]
+    F --> IpathwayIntegration[Pathway Integration]
 
-    G --> J[Joint PCA/NMF]
-    G --> K[Canonical Correlation]
-    G --> L[Multi-view Clustering]
+    G --> JjointPca/nmf[Joint PCA/NMF]
+    G --> KcanonicalCorrelation[Canonical Correlation]
+    G --> Lmulti-viewClustering[Multi-view Clustering]
 
-    H --> M[Cross-omics Signatures]
-    H --> N[Integrated Features]
+    H --> Mcross-omicsSignatures[Cross-omics Signatures]
+    H --> NintegratedFeatures[Integrated Features]
     H --> O[Validation]
 
-    I --> P[Pathway Activity]
-    I --> Q[Crosstalk Analysis]
-    I --> R[Systems Networks]
+    I --> PpathwayActivity[Pathway Activity]
+    I --> QcrosstalkAnalysis[Crosstalk Analysis]
+    I --> RsystemsNetworks[Systems Networks]
 
-    J --> S[Biological Insights]
+    J --> SbiologicalInsights[Biological Insights]
     K --> S
     L --> S
     M --> S

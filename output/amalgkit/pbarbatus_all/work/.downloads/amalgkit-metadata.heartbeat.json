@@ -1,0 +1,20 @@
+{
+  "bytes_downloaded": 148407,
+  "destination": "output/amalgkit/pbarbatus_all/work/metadata",
+  "errors": [],
+  "eta_seconds": null,
+  "last_update": "2026-01-20T23:48:16Z",
+  "progress": {
+    "current": 1,
+    "percent": 25.0,
+    "total": 4,
+    "type": "file_count"
+  },
+  "progress_percent": 25.0,
+  "speed_mbps": 0.028120261502307165,
+  "started_at": "2026-01-20T23:48:11Z",
+  "status": "completed",
+  "step": "amalgkit metadata",
+  "total_bytes": null,
+  "url": "['amalgkit', 'metadata', '--out_dir', 'output/amalgkit/pbarbatus_all/work', '--search_string', '\"Pogonomyrmex barbatus\"[Organism]', '--redo', 'no']"
+}

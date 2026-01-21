@@ -653,7 +653,7 @@ Complete information-theoretic workflow for sequence analysis.
 
 **Issue**: Network functions fail with ImportError
 - **Cause**: NetworkX not installed
-- **Solution**: Install NetworkX: `pip install networkx`
+- **Solution**: Install NetworkX: `uv pip install networkx`
 
 ## Integration Tutorials
 

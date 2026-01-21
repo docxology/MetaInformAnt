@@ -106,34 +106,30 @@
 <section id="dna-analysis-workflow">
 <h3>DNA Analysis Workflow<a class="headerlink" href="#dna-analysis-workflow" title="Link to this heading"></a></h3>
 <div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TD
-    A[Input Sequences&lt;br/&gt;FASTA/FASTQ] --&gt; B[Sequence Validation&lt;br/&gt;validate_dna_sequence]
-    B --&gt; C[Basic Analysis&lt;br/&gt;gc_content, kmer_counts]
+    AinputSequencesFasta/fastq[Input Sequences_FASTA/FASTQ] --&gt; BsequenceValidationValidateDnaSequence[Sequence Validation_validate_dna_sequence]
+    B --&gt; CbasicAnalysisGcContent,KmerCounts[Basic Analysis_gc_content, kmer_counts]
 
-    C --&gt; D[Alignment&lt;br/&gt;Global/Local MSA]
-    C --&gt; E[Composition&lt;br/&gt;GC skew, motifs]
+    C --&gt; DalignmentGlobal/localMsa[Alignment_Global/Local MSA]
+    C --&gt; EcompositionGcSkew,Motifs[Composition_GC skew, motifs]
 
-    D --&gt; F[Phylogenetics&lt;br/&gt;Neighbor Joining&lt;br/&gt;UPGMA trees]
-    E --&gt; G[Population Genetics&lt;br/&gt;π, Tajima&#39;s D, Fst]
+    D --&gt; FphylogeneticsNeighborJoiningUpgmaTrees[Phylogenetics_Neighbor Joining_UPGMA trees]
+    E --&gt; GpopulationGeneticsΠ,Tajima&#39;sD,Fst[Population Genetics_π, Tajima&#39;s D, Fst]
 
-    F --&gt; H[Visualization&lt;br/&gt;Tree plots, networks]
-    G --&gt; I[Statistical Analysis&lt;br/&gt;Neutrality tests]
+    F --&gt; HvisualizationTreePlots,Networks[Visualization_Tree plots, networks]
+    G --&gt; IstatisticalAnalysisNeutralityTests[Statistical Analysis_Neutrality tests]
 
-    H --&gt; J[Integration&lt;br/&gt;RNA, Protein, GWAS]
+    H --&gt; JintegrationRna,Protein,Gwas[Integration_RNA, Protein, GWAS]
     I --&gt; J
 
-    K[NCBI Data] --&gt; L[Genome Download&lt;br/&gt;fetch_genome]
+    KncbiData[NCBI Data] --&gt; LgenomeDownloadFetchGenome[Genome Download_fetch_genome]
     L --&gt; A
 
-    M[Variant Data&lt;br/&gt;VCF files] --&gt; N[Variant Analysis&lt;br/&gt;parse_vcf, effect prediction]
+    MvariantDataVcfFiles[Variant Data_VCF files] --&gt; NvariantAnalysisParseVcf,EffectPrediction[Variant Analysis_parse_vcf, effect prediction]
     N --&gt; G
 
-    O[Quality Control&lt;br/&gt;FASTQ metrics] --&gt; P[Filtering&lt;br/&gt;quality_filter]
+    OqualityControlFastqMetrics[Quality Control_FASTQ metrics] --&gt; PfilteringQualityFilter[Filtering_quality_filter]
     P --&gt; A
 
-    classDef input fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
-    classDef process fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
-    classDef analysis fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
-    classDef output fill:#fce4ec,stroke:#c2185b,stroke-width:2px
 
     class A,K,M,O input
     class B,C,D,E,L,N,P process

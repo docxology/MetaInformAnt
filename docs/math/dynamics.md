@@ -4,8 +4,8 @@ Functions: `logistic_growth`, `lotka_volterra_competition`.
 
 ```mermaid
 flowchart LR
-  A[population dynamics models] --> B[logistic growth]
-  A --> C[Lotka-Volterra competition]
+  ApopulationDynamicsModels[population dynamics models] --> BlogisticGrowth[logistic growth]
+  A --> Clotka-volterraCompetition[Lotka-Volterra competition]
 ```
 
 Mathematical models of population dynamics and ecological interactions.

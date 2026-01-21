@@ -10,33 +10,30 @@ METAINFORMANT examples are organized by domain to match the module structure, pr
 
 ```mermaid
 graph TD
-    A[Examples Directory] --> B[Core Utilities]
+    AexamplesDirectory[Examples Directory] --> BcoreUtilities[Core Utilities]
     A --> C[Domain-Specific]
-    A --> D[Integration Patterns]
+    A --> DintegrationPatterns[Integration Patterns]
 
-    B --> E[Configuration Management]
-    B --> F[File I/O Patterns]
-    B --> G[Logging Systems]
-    B --> H[Path Operations]
+    B --> EconfigurationManagement[Configuration Management]
+    B --> FfileI/oPatterns[File I/O Patterns]
+    B --> GloggingSystems[Logging Systems]
+    B --> HpathOperations[Path Operations]
 
-    C --> I[DNA Sequence Analysis]
-    C --> J[RNA Transcriptomics]
-    C --> K[GWAS Association]
-    C --> L[Protein Structure]
-    C --> M[15+ Domain Modules]
+    C --> IdnaSequenceAnalysis[DNA Sequence Analysis]
+    C --> JrnaTranscriptomics[RNA Transcriptomics]
+    C --> KgwasAssociation[GWAS Association]
+    C --> LproteinStructure[Protein Structure]
+    C --> M15+DomainModules[15+ Domain Modules]
 
-    D --> N[Multi-Omics Integration]
-    D --> O[End-to-End Workflows]
-    D --> P[Cross-Domain Analysis]
+    D --> Nmulti-omicsIntegration[Multi-Omics Integration]
+    D --> Oend-to-endWorkflows[End-to-End Workflows]
+    D --> Pcross-domainAnalysis[Cross-Domain Analysis]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style C fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style D fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Learning Progression"
         Q[Foundation] -.-> B
-        R[Domain Knowledge] -.-> C
-        S[Integration Skills] -.-> D
+        RdomainKnowledge[Domain Knowledge] -.-> C
+        SintegrationSkills[Integration Skills] -.-> D
     end
 
     subgraph "Example Types"
@@ -47,8 +44,8 @@ graph TD
 
     subgraph "Output Convention"
         W[output/examples/] -.-> T
-        X[Informative Names] -.-> T
-        Y[Publication Ready] -.-> T
+        XinformativeNames[Informative Names] -.-> T
+        YpublicationReady[Publication Ready] -.-> T
     end
 ```
 
@@ -56,55 +53,53 @@ graph TD
 
 ```mermaid
 graph LR
-    A[Beginner] --> B[Core Concepts]
-    B --> C[Domain Basics]
-    C --> D[Advanced Methods]
+    A[Beginner] --> BcoreConcepts[Core Concepts]
+    B --> CdomainBasics[Domain Basics]
+    C --> DadvancedMethods[Advanced Methods]
     D --> E[Integration]
 
-    B --> F[example_config.py]
-    B --> G[example_io.py]
-    B --> H[example_logging.py]
+    B --> FexampleConfig.py[example_config.py]
+    B --> GexampleIo.py[example_io.py]
+    B --> HexampleLogging.py[example_logging.py]
 
-    C --> I[example_sequences.py]
-    C --> J[example_alignment.py]
-    C --> K[example_phylogeny.py]
+    C --> IexampleSequences.py[example_sequences.py]
+    C --> JexampleAlignment.py[example_alignment.py]
+    C --> KexamplePhylogeny.py[example_phylogeny.py]
 
-    D --> L[example_gwas.py]
-    D --> M[example_multiomics.py]
-    D --> N[example_networks.py]
+    D --> LexampleGwas.py[example_gwas.py]
+    D --> MexampleMultiomics.py[example_multiomics.py]
+    D --> NexampleNetworks.py[example_networks.py]
 
-    E --> O[example_complete_workflow.py]
-    E --> P[example_cross_domain.py]
+    E --> OexampleCompleteWorkflow.py[example_complete_workflow.py]
+    E --> PexampleCrossDomain.py[example_cross_domain.py]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style E fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Skill Levels"
         Q[Configuration] -.-> B
-        R[File I/O] -.-> B
+        RfileI/o[File I/O] -.-> B
         S[Logging] -.-> B
-        T[Path Management] -.-> B
+        TpathManagement[Path Management] -.-> B
     end
 
     subgraph "Domain Skills"
-        U[Sequence Analysis] -.-> C
+        UsequenceAnalysis[Sequence Analysis] -.-> C
         V[Alignment] -.-> C
         W[Phylogenetics] -.-> C
-        X[Population Genetics] -.-> C
+        XpopulationGenetics[Population Genetics] -.-> C
     end
 
     subgraph "Advanced Skills"
-        Y[Association Testing] -.-> D
-        Z[Systems Biology] -.-> D
+        YassociationTesting[Association Testing] -.-> D
+        ZsystemsBiology[Systems Biology] -.-> D
         AA[Multi-Omics] -.-> D
-        BB[Network Analysis] -.-> D
+        BBnetworkAnalysis[Network Analysis] -.-> D
     end
 
     subgraph "Integration Skills"
-        CC[End-to-End Pipelines] -.-> E
-        DD[Cross-Domain Analysis] -.-> E
-        EE[Workflow Orchestration] -.-> E
-        FF[Production Deployment] -.-> E
+        CCend-to-endPipelines[End-to-End Pipelines] -.-> E
+        DDcross-domainAnalysis[Cross-Domain Analysis] -.-> E
+        EEworkflowOrchestration[Workflow Orchestration] -.-> E
+        FFproductionDeployment[Production Deployment] -.-> E
     end
 ```
 
@@ -112,43 +107,40 @@ graph LR
 
 ```mermaid
 graph TD
-    A[Example Script] --> B[Import Dependencies]
-    B --> C[Setup Configuration]
+    AexampleScript[Example Script] --> BimportDependencies[Import Dependencies]
+    B --> CsetupConfiguration[Setup Configuration]
 
-    C --> D[Load Sample Data]
-    D --> E[Execute Analysis]
+    C --> DloadSampleData[Load Sample Data]
+    D --> EexecuteAnalysis[Execute Analysis]
 
-    E --> F[Generate Results]
-    F --> G[Create Visualizations]
+    E --> FgenerateResults[Generate Results]
+    F --> GcreateVisualizations[Create Visualizations]
 
-    G --> H[Save Outputs]
-    H --> I[Display Summary]
+    G --> HsaveOutputs[Save Outputs]
+    H --> IdisplaySummary[Display Summary]
 
-    I --> J[Example Complete]
+    I --> JexampleComplete[Example Complete]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style E fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style J fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Execution Pattern"
         K[Self-Contained] -.-> A
-        L[Minimal Setup] -.-> A
-        M[Educational Focus] -.-> A
-        N[Demonstrates Concept] -.-> A
+        LminimalSetup[Minimal Setup] -.-> A
+        MeducationalFocus[Educational Focus] -.-> A
+        NdemonstratesConcept[Demonstrates Concept] -.-> A
     end
 
     subgraph "Output Convention"
         O[output/examples/] -.-> H
-        P[Informative Names] -.-> H
-        Q[Publication Quality] -.-> H
-        R[Structured Format] -.-> H
+        PinformativeNames[Informative Names] -.-> H
+        QpublicationQuality[Publication Quality] -.-> H
+        RstructuredFormat[Structured Format] -.-> H
     end
 
     subgraph "Quality Standards"
-        S[Working Code] -.-> I
-        T[Clear Documentation] -.-> I
-        U[Educational Value] -.-> I
-        V[Best Practices] -.-> I
+        SworkingCode[Working Code] -.-> I
+        TclearDocumentation[Clear Documentation] -.-> I
+        UeducationalValue[Educational Value] -.-> I
+        VbestPractices[Best Practices] -.-> I
     end
 ```
 
@@ -156,49 +148,46 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Domain Examples] --> B[Core Infrastructure]
-    A --> C[Molecular Biology]
-    A --> D[Statistical Genetics]
-    A --> E[Systems Biology]
-    A --> F[Applied Biology]
+    AdomainExamples[Domain Examples] --> BcoreInfrastructure[Core Infrastructure]
+    A --> CmolecularBiology[Molecular Biology]
+    A --> DstatisticalGenetics[Statistical Genetics]
+    A --> EsystemsBiology[Systems Biology]
+    A --> FappliedBiology[Applied Biology]
 
-    B --> G[Configuration & I/O]
-    B --> H[Logging & Paths]
-    B --> I[Workflow Orchestration]
+    B --> Gconfiguration&I/o[Configuration & I/O]
+    B --> Hlogging&Paths[Logging & Paths]
+    B --> IworkflowOrchestration[Workflow Orchestration]
 
-    C --> J[DNA Sequences]
-    C --> K[RNA Expression]
-    C --> L[Protein Structure]
+    C --> JdnaSequences[DNA Sequences]
+    C --> KrnaExpression[RNA Expression]
+    C --> LproteinStructure[Protein Structure]
     C --> M[Epigenetics]
 
-    D --> N[GWAS Analysis]
-    D --> O[Population Genetics]
-    D --> P[Statistical Modeling]
+    D --> NgwasAnalysis[GWAS Analysis]
+    D --> OpopulationGenetics[Population Genetics]
+    D --> PstatisticalModeling[Statistical Modeling]
 
-    E --> Q[Networks & Pathways]
-    E --> R[Multi-Omics Integration]
-    E --> S[Single-Cell Analysis]
+    E --> Qnetworks&Pathways[Networks & Pathways]
+    E --> Rmulti-omicsIntegration[Multi-Omics Integration]
+    E --> Ssingle-cellAnalysis[Single-Cell Analysis]
 
-    F --> T[Ontology & Annotation]
-    F --> U[Phenotype Analysis]
-    F --> V[Ecology & Diversity]
-    F --> W[Life Events]
+    F --> Tontology&Annotation[Ontology & Annotation]
+    F --> UphenotypeAnalysis[Phenotype Analysis]
+    F --> Vecology&Diversity[Ecology & Diversity]
+    F --> WlifeEvents[Life Events]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style E fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style F fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Coverage Areas"
-        X[20+ Example Categories] -.-> A
-        Y[50+ Individual Examples] -.-> A
-        Z[Educational Progression] -.-> A
+        X20+ExampleCategories[20+ Example Categories] -.-> A
+        Y50+IndividualExamples[50+ Individual Examples] -.-> A
+        ZeducationalProgression[Educational Progression] -.-> A
     end
 
     subgraph "Quality Assurance"
-        AA[Runnable Code] -.-> A
-        BB[Real Data] -.-> A
-        CC[Comprehensive Docs] -.-> A
-        DD[Testing Validation] -.-> A
+        AArunnableCode[Runnable Code] -.-> A
+        BBrealData[Real Data] -.-> A
+        CCcomprehensiveDocs[Comprehensive Docs] -.-> A
+        DDtestingValidation[Testing Validation] -.-> A
     end
 ```
 

@@ -45,8 +45,8 @@ The toolkit is designed to support end-to-end workflows from raw data (FASTQ/VCF
 
 ```mermaid
 graph LR
-    RawData[Raw Data] --> Preprocessing[Preprocessing & QC]
-    Preprocessing --> Analysis[Domain-Specific Analysis]
-    Analysis --> Integration[Multi-Omic Integration]
-    Integration --> Visualization[Visualization & Reporting]
+    RawDatarawData[Raw Data] --> Preprocessingpreprocessing&Qc[Preprocessing & QC]
+    Preprocessing --> Analysisdomain-specificAnalysis[Domain-Specific Analysis]
+    Analysis --> Integrationmulti-omicIntegration[Multi-Omic Integration]
+    Integration --> Visualizationvisualization&Reporting[Visualization & Reporting]
 ```

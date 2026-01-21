@@ -119,27 +119,27 @@
 </ul>
 <div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TD
     subgraph &quot;Configuration Management&quot;
-        CONFIG[config.py&lt;br/&gt;YAML/TOML parsing&lt;br/&gt;Env overrides&lt;br/&gt;Validation]
-        SYMBOLS[symbols.py&lt;br/&gt;Function discovery&lt;br/&gt;AST parsing&lt;br/&gt;Signature extraction]
-        DISCOVERY[discovery.py&lt;br/&gt;Config discovery&lt;br/&gt;Workflow mapping&lt;br/&gt;Module integration]
+        CONFIGconfig.pyYaml/tomlParsingEnvOverridesValidation[config.py_YAML/TOML parsing_Env overrides_Validation]
+        SYMBOLSsymbols.pyFunctionDiscoveryAstParsingSignatureExtraction[symbols.py_Function discovery_AST parsing_Signature extraction]
+        DISCOVERYdiscovery.pyConfigDiscoveryWorkflowMappingModuleIntegration[discovery.py_Config discovery_Workflow mapping_Module integration]
     end
 
     subgraph &quot;I/O &amp; Data&quot;
-        IO[io.py&lt;br/&gt;JSON/CSV/Parquet&lt;br/&gt;Gzip handling&lt;br/&gt;Atomic writes]
-        CACHE[cache.py&lt;br/&gt;TTL caching&lt;br/&gt;Thread safety&lt;br/&gt;JSON storage]
-        DB[db.py&lt;br/&gt;PostgreSQL&lt;br/&gt;Connection pooling&lt;br/&gt;Query execution]
+        IOio.pyJson/csv/parquetGzipHandlingAtomicWrites[io.py_JSON/CSV/Parquet_Gzip handling_Atomic writes]
+        CACHEcache.pyTtlCachingThreadSafetyJsonStorage[cache.py_TTL caching_Thread safety_JSON storage]
+        DBdb.pyPostgresqlConnectionPoolingQueryExecution[db.py_PostgreSQL_Connection pooling_Query execution]
     end
 
     subgraph &quot;System Utilities&quot;
-        PATHS[paths.py&lt;br/&gt;Path resolution&lt;br/&gt;Security validation&lt;br/&gt;Containment checks]
-        TEXT[text.py&lt;br/&gt;Text processing&lt;br/&gt;Normalization&lt;br/&gt;Encoding]
-        HASH[hash.py&lt;br/&gt;SHA-256&lt;br/&gt;File integrity&lt;br/&gt;Content hashing]
+        PATHSpaths.pyPathResolutionSecurityValidationContainmentChecks[paths.py_Path resolution_Security validation_Containment checks]
+        TEXTtext.pyTextProcessingNormalizationEncoding[text.py_Text processing_Normalization_Encoding]
+        HASHhash.pySha-256FileIntegrityContentHashing[hash.py_SHA-256_File integrity_Content hashing]
     end
 
     subgraph &quot;Execution &amp; Control&quot;
-        LOGGING[logging.py&lt;br/&gt;Structured logging&lt;br/&gt;Context support&lt;br/&gt;Multiple outputs]
-        PARALLEL[parallel.py&lt;br/&gt;Thread pools&lt;br/&gt;Map operations&lt;br/&gt;Resource management]
-        WORKFLOW[workflow.py&lt;br/&gt;Config-based workflows&lt;br/&gt;Step orchestration&lt;br/&gt;Error handling]
+        LOGGINGlogging.pyStructuredLoggingContextSupportMultipleOutputs[logging.py_Structured logging_Context support_Multiple outputs]
+        PARALLELparallel.pyThreadPoolsMapOperationsResourceManagement[parallel.py_Thread pools_Map operations_Resource management]
+        WORKFLOWworkflow.pyConfig-basedWorkflowsStepOrchestrationErrorHandling[workflow.py_Config-based workflows_Step orchestration_Error handling]
     end
 
     CONFIG --&gt; IO
@@ -153,15 +153,13 @@
     LOGGING --&gt; WORKFLOW
     PARALLEL --&gt; WORKFLOW
 
-    CONFIG --&gt;|Configuration| DNA[DNA Module]
-    IO --&gt;|I/O Operations| RNA[RNA Module]
-    LOGGING --&gt;|Logging| GWAS[GWAS Module]
-    PARALLEL --&gt;|Parallel Processing| MATH[Math Module]
+    CONFIG --&gt;|Configuration| DNAdnaModule[DNA Module]
+    IO --&gt;|I/O Operations| RNArnaModule[RNA Module]
+    LOGGING --&gt;|Logging| GWASgwasModule[GWAS Module]
+    PARALLEL --&gt;|Parallel Processing| MATHmathModule[Math Module]
     PATHS --&gt;|Path Management| VIZ[Visualization]
-    CACHE --&gt;|Caching| ML[ML Module]
+    CACHE --&gt;|Caching| MLmlModule[ML Module]
 
-    classDef core fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    classDef domain fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
 
     class CONFIG,SYMBOLS,DISCOVERY,IO,CACHE,DB,PATHS,TEXT,HASH,LOGGING,PARALLEL,WORKFLOW core
     class DNA,RNA,GWAS,MATH,VIZ,ML domain

@@ -9,6 +9,8 @@ from __future__ import annotations
 import json
 import shutil
 import os
+import math
+import csv
 import time as time_mod
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -17,6 +19,7 @@ from dataclasses import dataclass
 from metainformant.core import io, logging
 from metainformant.core.utils.config import load_mapping_from_file
 from metainformant.rna.amalgkit.metadata_filter import filter_selected_metadata
+from metainformant.rna.amalgkit.metadata_utils import deduplicate_metadata
 
 logger = logging.get_logger(__name__)
 
@@ -266,12 +269,12 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
 
     # Check if cstmm/csca required parameters are provided
     has_ortholog_params = (
-        (per_step_dict.get('cstmm', {}).get('orthogroup_table') or
-         per_step_dict.get('cstmm', {}).get('dir_busco')) or
-        (per_step_dict.get('csca', {}).get('orthogroup_table') or
-         per_step_dict.get('csca', {}).get('dir_busco')) or
-        config.extra_config.get('orthogroup_table') or
-        config.extra_config.get('dir_busco')
+        (per_step_dict.get('cstmm', {}).get('orthogroup_table') is not None or
+         per_step_dict.get('cstmm', {}).get('dir_busco') is not None) or
+        (per_step_dict.get('csca', {}).get('orthogroup_table') is not None or
+         per_step_dict.get('csca', {}).get('dir_busco') is not None) or
+        config.extra_config.get('orthogroup_table') is not None or
+        config.extra_config.get('dir_busco') is not None
     )
 
     # Filter out cstmm and csca if required parameters not provided
@@ -290,11 +293,14 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
         step_params = {
             'out_dir': str(config.work_dir),
         }
+        # Propagate global redo flag if set
+        if config.extra_config.get('redo'):
+            step_params['redo'] = 'yes'
         # Only add threads for steps that support it (merge, curate, metadata don't)
-        if step not in ('merge', 'curate', 'metadata'):
+        if step not in ('merge', 'curate', 'metadata', 'sanity', 'select', 'cstmm', 'csca', 'config'):
             step_params['threads'] = config.threads
         # Only add species for steps that support it (merge, curate, integrate, getfastq, quant don't)
-        if config.species_list and step not in ('integrate', 'merge', 'curate', 'metadata', 'getfastq', 'quant'):
+        if config.species_list and step not in ('integrate', 'merge', 'curate', 'metadata', 'getfastq', 'quant', 'sanity', 'select', 'cstmm', 'csca', 'config'):
             step_params['species'] = config.species_list
 
         # Apply step-specific overrides
@@ -303,6 +309,7 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
             
                 
             step_params.update(overrides)
+            print(f"DEBUG workflow step {step} params: {step_params}")
             
             # Warn if redo: yes is set for getfastq (usually unnecessary)
             if step == 'getfastq':
@@ -586,7 +593,7 @@ def _cleanup_temp_files(tmp_dir: Path, max_size_gb: float = 50.0) -> None:
         logger.warning(f"Could not clean up temporary directory {tmp_dir}: {e}")
 
 
-def _check_disk_space(path: Path, min_free_gb: float = 10.0) -> bool:
+def _check_disk_space(path: Path, min_free_gb: float = 10.0) -> Tuple[bool, float]:
     """Check if there's sufficient disk space.
     
     Args:
@@ -594,7 +601,7 @@ def _check_disk_space(path: Path, min_free_gb: float = 10.0) -> bool:
         min_free_gb: Minimum free space required in GB
         
     Returns:
-        True if sufficient space, False otherwise
+        Tuple of (is_sufficient, free_gb)
     """
     try:
         stat = os.statvfs(path)
@@ -602,13 +609,40 @@ def _check_disk_space(path: Path, min_free_gb: float = 10.0) -> bool:
         
         if free_gb < min_free_gb:
             logger.warning(f"Low disk space: {free_gb:.2f} GB free (minimum: {min_free_gb} GB) at {path}")
-            return False
+            return False, free_gb
         else:
             logger.debug(f"Disk space check: {free_gb:.2f} GB free at {path}")
-            return True
+            return True, free_gb
     except Exception as e:
         logger.warning(f"Could not check disk space: {e}")
-        return True  # Assume OK if we can't check
+        return True, 100.0  # Assume OK if we can't check
+
+
+def _check_disk_space_or_fail(path: Path, min_free_gb: float = 5.0, step_name: str = "") -> float:
+    ok, free_gb = _check_disk_space(path, min_free_gb)
+    if not ok and free_gb >= 0:
+        raise RuntimeError(
+            f"CRITICAL: Disk space too low to continue {step_name}. "
+            f"Only {free_gb:.2f} GB free (need {min_free_gb} GB minimum). "
+            f"Free up disk space and re-run with --steps {step_name} to resume."
+        )
+    return free_gb
+
+def _log_heartbeat(step_name: str, start_time: float, message: str = "") -> None:
+    elapsed = time_mod.time() - start_time
+    elapsed_str = f"{int(elapsed // 3600)}h{int((elapsed % 3600) // 60)}m{int(elapsed % 60)}s"
+    
+    # Check disk space
+    ok, free_gb = _check_disk_space(Path.cwd(), min_free_gb=5.0)
+    disk_status = f"{free_gb:.1f}GB free" if free_gb >= 0 else "unknown"
+    
+    msg = f"[HEARTBEAT] {step_name}: {elapsed_str} elapsed, disk: {disk_status}"
+    if message:
+        msg += f" | {message}"
+    logger.info(msg)
+    # Force flush to ensure visibility during long blocking operations
+    for handler in logger.handlers:
+        handler.flush()
 
 
 def prepare_extraction_directories(getfastq_dir: Path) -> int:
@@ -798,8 +832,23 @@ def prepare_reference_genome(config: AmalgkitWorkflowConfig) -> bool:
         index_dir = config.work_dir / 'index'
         index_file = index_dir / f"{species_name}_transcripts.idx"
         
+        # Also check if it exists in the genome dest_dir/index
+        dest_dir = Path(config.genome.get('dest_dir', config.work_dir.parent / 'genome'))
+        shared_index_dir = dest_dir / 'index'
+        shared_index_file = shared_index_dir / f"{species_name}_transcripts.idx"
+
         if index_file.exists():
             logger.info(f"Reference genome index found at: {index_file}")
+            return True
+            
+        if shared_index_file.exists():
+            logger.info(f"Found shared reference genome index at: {shared_index_file}")
+            # Ensure work index dir exists
+            index_dir.mkdir(parents=True, exist_ok=True)
+            # Link or copy it to the work index dir
+            import shutil
+            logger.info(f"Copying shared index to: {index_file}")
+            shutil.copy2(shared_index_file, index_file)
             return True
             
         logger.info(f"Reference index missing at {index_file}. Preparing reference genome...")
@@ -846,6 +895,14 @@ def prepare_reference_genome(config: AmalgkitWorkflowConfig) -> bool:
         
         if result.returncode == 0:
             logger.info("Genome index built successfully")
+            # Also copy it back to shared index dir for future use
+            try:
+                import shutil
+                shared_index_dir.mkdir(parents=True, exist_ok=True)
+                logger.info(f"Saving a copy of index to shared directory: {shared_index_file}")
+                shutil.copy2(index_file, shared_index_file)
+            except Exception as e:
+                logger.warning(f"Failed to save copy to shared index dir: {e}")
             return True
         else:
             logger.error(f"Kallisto index failed: {result.stderr}")
@@ -1037,6 +1094,183 @@ def _is_step_completed(step_name: str, step_params: dict, config: AmalgkitWorkfl
     return False, None
 
 
+def _execute_streaming_mode(config: AmalgkitWorkflowConfig, 
+                           steps_remaining: List[Tuple[str, Any]],
+                           metadata_file: Path,
+                           chunk_size: int,
+                           step_functions: Dict[str, Any],
+                           check: bool = False,
+                           walk: bool = False,
+                           progress: bool = True,
+                           show_commands: bool = False) -> WorkflowExecutionResult:
+    """Execute remaining steps in streaming mode (chunked by sample).
+    
+    This handles the getfastq -> integrate -> quant loop for small batches of samples
+    to preserve disk space.
+    """
+    import csv
+    
+    logger.info(f"ENTERING STREAMING MODE: Processing remaining steps in chunks of {chunk_size} samples")
+    
+    # Identify which steps are per-chunk (getfastq, integrate, quant) and which are post-process (merge, etc)
+    chunk_steps = []
+    post_process_steps = []
+    
+    for name, params in steps_remaining:
+        if name in ('getfastq', 'integrate', 'quant'):
+            chunk_steps.append((name, params))
+        else:
+            post_process_steps.append((name, params))
+            
+    logger.info(f"Chunk loop steps: {[s[0] for s in chunk_steps]}")
+    logger.info(f"Post-process steps: {[s[0] for s in post_process_steps]}")
+    
+    # Read samples
+    with open(metadata_file, 'r') as f:
+        reader = csv.DictReader(f, delimiter='\t')
+        fieldnames = reader.fieldnames
+        samples = list(reader)
+        
+    total_samples = len(samples)
+    num_chunks = math.ceil(total_samples / chunk_size)
+    
+    all_step_results = []
+    success = True
+    
+    # Chunk loop
+    for chunk_idx in range(num_chunks):
+        start_idx = chunk_idx * chunk_size
+        end_idx = min((chunk_idx + 1) * chunk_size, total_samples)
+        chunk_samples = samples[start_idx:end_idx]
+        
+        logger.info(f"Processing chunk {chunk_idx+1}/{num_chunks} (Samples {start_idx+1}-{end_idx})")
+        
+        # Create chunk metadata
+        chunk_meta_file = config.work_dir / 'metadata' / f'metadata_chunk_{chunk_idx}.tsv'
+        with open(chunk_meta_file, 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames, delimiter='\t')
+            writer.writeheader()
+            writer.writerows(chunk_samples)
+            
+        # Run chunk steps
+        for step_name, step_params in chunk_steps:
+            logger.info(f"  > Chunk step: {step_name}")
+            
+            # Override params with chunk metadata
+            chunk_params = step_params.copy()
+            chunk_params['metadata'] = str(chunk_meta_file)
+            
+            # Sanitization and command building just for logging/dry run
+            if show_commands or walk:
+                from metainformant.rna.amalgkit.amalgkit import build_amalgkit_command
+                sanitized = sanitize_params_for_cli(step_name, chunk_params)
+                cmd = build_amalgkit_command(step_name, sanitized)
+                if show_commands:
+                    logger.info(f"  Command: {' '.join(cmd)}")
+                
+            if walk:
+                all_step_results.append(WorkflowStepResult(step_name=f"{step_name}_chunk{chunk_idx}", return_code=0, success=True))
+                continue
+                
+            # Execute
+            try:
+                # Add check/fail logic for disk space within the chunk loop too
+                if step_name == 'getfastq':
+                     _check_disk_space_or_fail(config.work_dir, min_free_gb=5.0, step_name=f"{step_name} (chunk {chunk_idx})")
+
+                step_func = step_functions.get(step_name)
+                # Call step function (returns CompletedProcess)
+                # Note: step_func in amalgkit.py handles CLI arg building internally from dict
+                result = step_func(chunk_params)
+                
+                step_res = WorkflowStepResult(
+                    step_name=f"{step_name}_chunk{chunk_idx}",
+                    return_code=result.returncode,
+                    success=result.returncode == 0,
+                    error_message=result.stderr if result.returncode != 0 else None
+                )
+                all_step_results.append(step_res)
+                
+                if result.returncode != 0:
+                    logger.error(f"  Step {step_name} failed for chunk {chunk_idx}")
+                    success = False
+                    if check: 
+                        return WorkflowExecutionResult(all_step_results, False, len(all_step_results), 0, 1)
+                    # Break chunk loop to prevents cascading failures (e.g. running quant on empty inputs)
+                    break
+            except Exception as e:
+                logger.error(f"  Exception in {step_name} chunk {chunk_idx}: {e}")
+                all_step_results.append(WorkflowStepResult(f"{step_name}_chunk{chunk_idx}", 1, False, str(e)))
+                success = False
+                
+        # Aggressive cleanup after chunk
+        # Delete fastq files for this chunk to free space
+        # Note: 'quant' usually handles this if keep_fastq: no is set.
+        # But we force it here to be safe
+        logger.info(f"  Cleaning up chunk {chunk_idx} FASTQ files...")
+        chunk_ids = [row.get('run', '') for row in chunk_samples]
+        cleanup_fastqs(config, chunk_ids)
+        
+    # After all chunks, run post-process steps (merge, etc)
+    if success or not check:
+        logger.info("Streaming chunks completed. processing post-chunk steps...")
+        for step_name, step_params in post_process_steps:
+             # Logic same as main loop... 
+             # We should probably recurse or just execute them here
+             # For simplicity, let's just execute them using the main metadata (selected)
+             # because merge needs ALL samples.
+             
+             logger.info(f"Step: {step_name}")
+             if walk:
+                 all_step_results.append(WorkflowStepResult(step_name, 0, True))
+                 continue
+                 
+             try:
+                 step_func = step_functions.get(step_name)
+                 result = step_func(step_params) # Use original params with full metadata
+                 all_step_results.append(WorkflowStepResult(step_name, result.returncode, result.returncode==0))
+             except Exception as e:
+                 all_step_results.append(WorkflowStepResult(step_name, 1, False, str(e)))
+                 
+    return WorkflowExecutionResult(
+        steps_executed=all_step_results,
+        success=success and all(s.return_code == 0 for s in all_step_results),
+        total_steps=len(all_step_results),
+        successful_steps=sum(1 for s in all_step_results if s.success),
+        failed_steps=sum(1 for s in all_step_results if not s.success)
+    )
+
+def cleanup_fastqs(config, sample_ids):
+    """Delete FASTQ files for specific samples."""
+    # Determine configured getfastq output directory
+    getfastq_conf_dir = None
+    if config.per_step and 'getfastq' in config.per_step:
+        gf_out = config.per_step['getfastq'].get('out_dir')
+        if gf_out:
+            getfastq_conf_dir = Path(gf_out)
+
+    for sample_id in sample_ids:
+        if not sample_id: continue
+        # Possible locations
+        paths = [
+            config.work_dir / 'fastq' / 'getfastq' / sample_id,
+            config.work_dir / 'fastq' / sample_id,
+            config.work_dir / 'getfastq' / sample_id
+        ]
+        
+        # Add configured path if available (amalgkit adds 'getfastq' subdir)
+        if getfastq_conf_dir:
+            paths.append(getfastq_conf_dir / 'getfastq' / sample_id)
+            
+        for p in paths:
+            if p.exists() and p.is_dir():
+                import shutil
+                try:
+                    shutil.rmtree(p, ignore_errors=True)
+                except Exception as e:
+                    pass # Best effort cleanup
+
+
 def execute_workflow(config: AmalgkitWorkflowConfig, 
                     steps: Optional[List[str]] = None,
                     check: bool = False,
@@ -1123,9 +1357,10 @@ def execute_workflow(config: AmalgkitWorkflowConfig,
                 getfastq_dir = fastq_dir / "getfastq" if fastq_dir.name != "getfastq" else fastq_dir
                 getfastq_dir.mkdir(parents=True, exist_ok=True)
                 
-                # Check disk space before proceeding
-                if not _check_disk_space(getfastq_dir, min_free_gb=20.0):
-                    logger.warning("Low disk space detected, but continuing with getfastq step")
+                # CRITICAL: Check disk space before proceeding - fail if too low
+                free_gb = _check_disk_space_or_fail(getfastq_dir, min_free_gb=5.0, step_name="getfastq")
+                if free_gb < 20.0:
+                    logger.warning(f"Low disk space ({free_gb:.1f}GB) - workflow may fail during downloads")
                 
                 # Clean up any incorrectly placed SRA files before configuring vdb-config
                 _cleanup_incorrectly_placed_sra_files(getfastq_dir)
@@ -1364,6 +1599,21 @@ def execute_workflow(config: AmalgkitWorkflowConfig,
                           logger.warning(f"Could not symlink getfastq dir: {e}")
 
         try:
+            # Late-binding metadata path: if metadata_selected.tsv was created after planning, use it
+            if step_name in ('getfastq', 'integrate', 'merge', 'quant', 'curate', 'sanity'):
+                selected_metadata = (config.work_dir / 'metadata' / 'metadata_selected.tsv').absolute()
+                planned_metadata = step_params.get('metadata')
+                if selected_metadata.exists() and (not planned_metadata or 'metadata_selected.tsv' not in str(planned_metadata)):
+                     # For quant, only override if integrated metadata doesn't exist yet
+                     if step_name == 'quant':
+                         integrated_metadata = config.work_dir / 'metadata' / 'metadata_updated_for_private_fastq.tsv'
+                         if not integrated_metadata.exists():
+                              step_params['metadata'] = str(selected_metadata)
+                              logger.info(f"Dynamically updated {step_name} metadata to filtered version: {selected_metadata}")
+                     else:
+                         step_params['metadata'] = str(selected_metadata)
+                         logger.info(f"Dynamically updated {step_name} metadata to filtered version: {selected_metadata}")
+
             # Get step function
             step_func = step_functions.get(step_name)
             if not step_func:
@@ -1418,9 +1668,64 @@ def execute_workflow(config: AmalgkitWorkflowConfig,
                     step_params['config_dir'] = str(config_base_dir.absolute())
                     logger.debug(f"Using config_base directory (fallback): {config_base_dir.absolute()}")
             
+            # STREAMING MODE DETECTION
+            # If we are about to run getfastq, check if we should switch to streaming mode
+            # This happens if we have many samples and limited disk space
+            if step_name == 'getfastq' and any(s[0] == 'quant' for s in steps_planned):
+                # We have getfastq AND quant in the plan - candidate for streaming
+                
+                # Check remaining samples
+                unquantified_metadata = config.work_dir / 'metadata' / 'metadata_unquantified.tsv'
+                if not unquantified_metadata.exists():
+                    # Try to create it if selected metadata exists
+                    selected_metadata = config.work_dir / 'metadata' / 'metadata_selected.tsv'
+                    if selected_metadata.exists():
+                        filter_metadata_for_unquantified(config, selected_metadata, unquantified_metadata)
+                
+                if unquantified_metadata.exists():
+                    # Count samples
+                    with open(unquantified_metadata, 'r') as f:
+                        reader = csv.DictReader(f, delimiter='\t')
+                        remaining_count = sum(1 for _ in reader)
+                    
+                    # Check disk space
+                    ok, free_gb = _check_disk_space(config.work_dir, min_free_gb=10.0)
+                    estimated_need = remaining_count * 3.0 # 3GB per sample conservative estimate
+                    
+                    logger.info(f"DEBUG: Streaming detection - Remaining: {remaining_count}, Free: {free_gb:.2f}GB, Need: {estimated_need:.2f}GB")
+                    
+                    if remaining_count > 5 and estimated_need > (free_gb * 0.8):
+                        logger.warning(f"Insufficient disk space for all-at-once processing: "
+                                     f"Need ~{estimated_need:.1f}GB, have {free_gb:.1f}GB. "
+                                     f"Switching to STREAMING MODE (chunk size 5).")
+                        
+                        # EXECUTE STREAMING MODE
+                        # This processes the remaining steps (getfastq, integrate, quant) in chunks
+                        # Returns the combined result
+                        streaming_result = _execute_streaming_mode(
+                            config, steps_planned[i-1:], unquantified_metadata, 
+                            chunk_size=5, step_functions=step_functions,
+                            check=check, walk=walk, progress=progress, show_commands=show_commands
+                        )
+                        
+                        # Merge results and return complete workflow result
+                        # Note: we need to merge with any steps already executed (steps 0 to i-1)
+                        # But execute_workflow returns WorkflowExecutionResult which aggregates.
+                        # We'll just return the streaming result combined with what we have?
+                        # Actually easier to just break here and return combined list
+                        combined_steps = step_results + streaming_result.steps_executed
+                        
+                        return WorkflowExecutionResult(
+                            steps_executed=combined_steps,
+                            success=streaming_result.success and all(s.return_code == 0 for s in step_results),
+                            total_steps=len(combined_steps),
+                            successful_steps=sum(1 for s in combined_steps if s.return_code == 0),
+                            failed_steps=sum(1 for s in combined_steps if s.return_code != 0)
+                        )
+            
             # Validate filtered metadata exists for steps that need it
             if step_name in ('getfastq', 'integrate', 'merge'):
-                filtered_metadata = config.work_dir / 'metadata' / 'metadata_selected.tsv'
+                filtered_metadata = (config.work_dir / 'metadata' / 'metadata_selected.tsv').absolute()
                 if not filtered_metadata.exists():
                     error_msg = f"Filtered metadata not found: {filtered_metadata}. Run 'select' step first."
                     logger.error(error_msg)
@@ -1745,6 +2050,20 @@ def execute_workflow(config: AmalgkitWorkflowConfig,
                 heartbeat_interval=5,
                 check=check,
             )
+
+            # After integrate step, deduplicate metadata to avoid quant failure
+            # amalgkit integrate often duplicates rows when adding private FASTQ paths
+            if step_name == 'integrate' and result.returncode == 0:
+                metadata_dir = config.work_dir / 'metadata'
+                # Check for common metadata filenames produced/used by integrate
+                metadata_files = [
+                    metadata_dir / 'metadata_updated_for_private_fastq.tsv',
+                    metadata_dir / 'metadata.tsv'
+                ]
+                for m_file in metadata_files:
+                    if m_file.exists():
+                        logger.info(f"Deduplicating metadata after integrate: {m_file}")
+                        deduplicate_metadata(m_file)
 
             # After config step, create symlink from config/ to config_base/ for select step compatibility
             if step_name == 'config':

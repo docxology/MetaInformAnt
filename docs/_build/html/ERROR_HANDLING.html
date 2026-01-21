@@ -1,0 +1,615 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Error Handling Policy &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="_static/css/custom.css" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="visualization/index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Error Handling Policy</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/ERROR_HANDLING.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="error-handling-policy">
+<h1>Error Handling Policy<a class="headerlink" href="#error-handling-policy" title="Link to this heading"></a></h1>
+<p>This document defines the comprehensive error handling policy for the METAINFORMANT codebase, ensuring consistent error reporting, graceful failure recovery, and user experience across all modules.</p>
+<section id="error-handling-architecture">
+<h2>Error Handling Architecture<a class="headerlink" href="#error-handling-architecture" title="Link to this heading"></a></h2>
+<section id="error-classification-framework">
+<h3>Error Classification Framework<a class="headerlink" href="#error-classification-framework" title="Link to this heading"></a></h3>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TD
+    AerrorConditions[Error Conditions] --&gt; B{Error Type}
+
+    B --&gt;|Input Validation| C[ValueError]
+    B --&gt;|Dependency Issues| D[ImportError]
+    B --&gt;|Missing Implementation| E[NotImplementedError]
+    B --&gt;|Runtime Failures| F[RuntimeError]
+    B --&gt;|File System Issues| G[FileNotFoundError]
+    B --&gt;|Network Problems| H[ConnectionError]
+    B --&gt;|Configuration Errors| I[ConfigurationError]
+
+    C --&gt; JparameterValidation[Parameter Validation]
+    D --&gt; KoptionalDependencies[Optional Dependencies]
+    E --&gt; LdevelopmentPlaceholders[Development Placeholders]
+    F --&gt; MoperationalFailures[Operational Failures]
+    G --&gt; NpathResolution[Path Resolution]
+    H --&gt; OnetworkOperations[Network Operations]
+    I --&gt; PconfigManagement[Config Management]
+
+    J --&gt; QerrorResponse[Error Response]
+    K --&gt; Q
+    L --&gt; Q
+    M --&gt; Q
+    N --&gt; Q
+    O --&gt; Q
+    P --&gt; Q
+
+
+    subgraph &quot;Error Categories&quot;
+        RdataErrors[Data Errors] -.-&gt; C
+        SsystemErrors[System Errors] -.-&gt; F
+        TconfigurationErrors[Configuration Errors] -.-&gt; I
+        UdependencyErrors[Dependency Errors] -.-&gt; D
+    end
+
+    subgraph &quot;Response Strategies&quot;
+        VimmediateFailure[Immediate Failure] -.-&gt; Q
+        WgracefulDegradation[Graceful Degradation] -.-&gt; Q
+        XuserGuidance[User Guidance] -.-&gt; Q
+        YrecoveryOptions[Recovery Options] -.-&gt; Q
+    end
+</pre></div>
+</div>
+</section>
+<section id="error-propagation-and-recovery">
+<h3>Error Propagation and Recovery<a class="headerlink" href="#error-propagation-and-recovery" title="Link to this heading"></a></h3>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TD
+    AerrorOccurrence[Error Occurrence] --&gt; BerrorCapture[Error Capture]
+    B --&gt; CcontextPreservation[Context Preservation]
+
+    C --&gt; D{Error Severity}
+    D --&gt;|Critical| EimmediateTermination[Immediate Termination]
+    D --&gt;|Recoverable| FrecoveryAttempt[Recovery Attempt]
+    D --&gt;|Warning| GcontinueWithWarning[Continue with Warning]
+
+    E --&gt; HcleanShutdown[Clean Shutdown]
+    F --&gt; I{Recovery Possible?}
+    G --&gt; JlogWarning[Log Warning]
+
+    I --&gt;|Yes| KerrorRecovery[Error Recovery]
+    I --&gt;|No| LgracefulDegradation[Graceful Degradation]
+
+    K --&gt; MresumeOperation[Resume Operation]
+    L --&gt; NreducedFunctionality[Reduced Functionality]
+
+    H --&gt; OerrorReporting[Error Reporting]
+    M --&gt; O
+    N --&gt; O
+    J --&gt; O
+
+
+    subgraph &quot;Error Context&quot;
+        PstackTrace[Stack Trace] -.-&gt; C
+        QinputParameters[Input Parameters] -.-&gt; C
+        RsystemState[System State] -.-&gt; C
+        SenvironmentInfo[Environment Info] -.-&gt; C
+    end
+
+    subgraph &quot;Recovery Mechanisms&quot;
+        TretryLogic[Retry Logic] -.-&gt; K
+        UfallbackMethods[Fallback Methods] -.-&gt; K
+        VdefaultValues[Default Values] -.-&gt; L
+        WpartialResults[Partial Results] -.-&gt; L
+    end
+
+    subgraph &quot;Reporting Channels&quot;
+        XconsoleOutput[Console Output] -.-&gt; O
+        YlogFiles[Log Files] -.-&gt; O
+        ZerrorFiles[Error Files] -.-&gt; O
+        AAuserNotifications[User Notifications] -.-&gt; O
+    end
+</pre></div>
+</div>
+</section>
+<section id="error-message-standardization">
+<h3>Error Message Standardization<a class="headerlink" href="#error-message-standardization" title="Link to this heading"></a></h3>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TD
+    AerrorGeneration[Error Generation] --&gt; BmessageConstruction[Message Construction]
+    B --&gt; CcontextInclusion[Context Inclusion]
+
+    C --&gt; DformatStandardization[Format Standardization]
+    D --&gt; EclarityCheck[Clarity Check]
+
+    E --&gt; F{Message Quality}
+    F --&gt;|Clear| GerrorRaising[Error Raising]
+    F --&gt;|Unclear| HmessageRefinement[Message Refinement]
+
+    H --&gt; B
+
+    G --&gt; IuserPresentation[User Presentation]
+    I --&gt; JhelpfulGuidance[Helpful Guidance]
+
+
+    subgraph &quot;Message Components&quot;
+        KerrorType[Error Type] -.-&gt; B
+        LparameterName[Parameter Name] -.-&gt; B
+        MexpectedValue[Expected Value] -.-&gt; B
+        NactualValue[Actual Value] -.-&gt; B
+        O[Suggestion] -.-&gt; B
+    end
+
+    subgraph &quot;Quality Standards&quot;
+        P[Descriptive] -.-&gt; E
+        Q[Actionable] -.-&gt; E
+        R[Consistent] -.-&gt; E
+        S[Helpful] -.-&gt; E
+    end
+
+    subgraph &quot;Presentation Formats&quot;
+        TconsoleMessages[Console Messages] -.-&gt; I
+        UlogEntries[Log Entries] -.-&gt; I
+        VexceptionDetails[Exception Details] -.-&gt; I
+        W[Documentation] -.-&gt; J
+    end
+</pre></div>
+</div>
+</section>
+<section id="validation-and-error-prevention">
+<h3>Validation and Error Prevention<a class="headerlink" href="#validation-and-error-prevention" title="Link to this heading"></a></h3>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TD
+    AinputProcessing[Input Processing] --&gt; B[Pre-validation]
+    B --&gt; CtypeChecking[Type Checking]
+
+    C --&gt; D{Validation Result}
+    D --&gt;|Pass| EprocessingContinue[Processing Continue]
+    D --&gt;|Fail| FerrorGeneration[Error Generation]
+
+    F --&gt; GerrorClassification[Error Classification]
+    G --&gt; HmessageConstruction[Message Construction]
+
+    H --&gt; IexceptionRaising[Exception Raising]
+    I --&gt; JerrorPropagation[Error Propagation]
+
+    E --&gt; K[Post-validation]
+    K --&gt; LresultVerification[Result Verification]
+
+    L --&gt; M{Processing Success}
+    M --&gt;|Yes| NsuccessfulCompletion[Successful Completion]
+    M --&gt;|No| OerrorHandling[Error Handling]
+
+    O --&gt; PrecoveryLogic[Recovery Logic]
+    P --&gt; Q{Re-attempt Possible?}
+
+    Q --&gt;|Yes| RretryOperation[Retry Operation]
+    Q --&gt;|No| SfinalError[Final Error]
+
+    R --&gt; A
+    S --&gt; TerrorReporting[Error Reporting]
+
+
+    subgraph &quot;Validation Layers&quot;
+        UinputSanitization[Input Sanitization] -.-&gt; B
+        VparameterValidation[Parameter Validation] -.-&gt; C
+        WbusinessLogic[Business Logic] -.-&gt; K
+        XoutputVerification[Output Verification] -.-&gt; L
+    end
+
+    subgraph &quot;Error Prevention&quot;
+        YtypeHints[Type Hints] -.-&gt; B
+        ZinputSanitization[Input Sanitization] -.-&gt; B
+        AAparameterBounds[Parameter Bounds] -.-&gt; C
+        BBdataIntegrity[Data Integrity] -.-&gt; K
+    end
+
+    subgraph &quot;Recovery Strategies&quot;
+        CCinputCorrection[Input Correction] -.-&gt; P
+        DDalternativeMethods[Alternative Methods] -.-&gt; P
+        EEdefaultValues[Default Values] -.-&gt; P
+        FFpartialResults[Partial Results] -.-&gt; P
+    end
+</pre></div>
+</div>
+</section>
+</section>
+<section id="error-handling-principles">
+<h2>Error Handling Principles<a class="headerlink" href="#error-handling-principles" title="Link to this heading"></a></h2>
+<section id="error-types-and-usage">
+<h3>1. Error Types and Usage<a class="headerlink" href="#error-types-and-usage" title="Link to this heading"></a></h3>
+<section id="valueerror">
+<h4>ValueError<a class="headerlink" href="#valueerror" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>When to use</strong>: Invalid input parameters or data that violates domain constraints</p></li>
+<li><p><strong>Examples</strong>:</p>
+<ul>
+<li><p>Empty sequences when non-empty required</p></li>
+<li><p>Mismatched array lengths</p></li>
+<li><p>Invalid parameter values (negative where positive required)</p></li>
+<li><p>Malformed data structures</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="importerror">
+<h4>ImportError<a class="headerlink" href="#importerror" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>When to use</strong>: Missing optional dependencies required for functionality</p></li>
+<li><p><strong>Examples</strong>:</p>
+<ul>
+<li><p>scipy not available for statistical functions</p></li>
+<li><p>matplotlib not available for plotting</p></li>
+<li><p>External tools not on PATH (bcftools, GATK, amalgkit)</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="notimplementederror">
+<h4>NotImplementedError<a class="headerlink" href="#notimplementederror" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>When to use</strong>: Functionality not yet implemented (placeholders)</p></li>
+<li><p><strong>Examples</strong>:</p>
+<ul>
+<li><p>Placeholder functions awaiting implementation</p></li>
+<li><p>Optional features not yet developed</p></li>
+<li><p>API methods without concrete implementation</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="runtimeerror">
+<h4>RuntimeError<a class="headerlink" href="#runtimeerror" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>When to use</strong>: Runtime failures in valid operations</p></li>
+<li><p><strong>Examples</strong>:</p>
+<ul>
+<li><p>Network failures during downloads</p></li>
+<li><p>File system errors during I/O</p></li>
+<li><p>External tool execution failures</p></li>
+</ul>
+</li>
+</ul>
+</section>
+<section id="filenotfounderror">
+<h4>FileNotFoundError<a class="headerlink" href="#filenotfounderror" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>When to use</strong>: Required files or directories not found</p></li>
+<li><p><strong>Examples</strong>:</p>
+<ul>
+<li><p>Missing input data files</p></li>
+<li><p>Invalid output directory paths</p></li>
+</ul>
+</li>
+</ul>
+</section>
+</section>
+<section id="error-message-guidelines">
+<h3>2. Error Message Guidelines<a class="headerlink" href="#error-message-guidelines" title="Link to this heading"></a></h3>
+<section id="format">
+<h4>Format<a class="headerlink" href="#format" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Parameter &#39;</span><span class="si">{</span><span class="n">param_name</span><span class="si">}</span><span class="s2">&#39; must be </span><span class="si">{</span><span class="n">requirement</span><span class="si">}</span><span class="s2">, got </span><span class="si">{</span><span class="n">actual_value</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="requirements">
+<h4>Requirements<a class="headerlink" href="#requirements" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Clear</strong>: Explain what went wrong and why</p></li>
+<li><p><strong>Actionable</strong>: Suggest how to fix the problem</p></li>
+<li><p><strong>Consistent</strong>: Use similar phrasing for similar errors</p></li>
+<li><p><strong>Contextual</strong>: Include relevant parameter names and values</p></li>
+</ul>
+</section>
+<section id="examples">
+<h4>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Good</span>
+<span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sequence cannot be empty for correlation calculation&quot;</span><span class="p">)</span>
+
+<span class="c1"># Good</span>
+<span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
+    <span class="s2">&quot;scipy is required for fisher_exact_test(). &quot;</span>
+    <span class="s2">&quot;Install with: uv pip install metainformant[scientific] or uv pip install scipy&quot;</span>
+<span class="p">)</span>
+
+<span class="c1"># Good</span>
+<span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+    <span class="s2">&quot;Full attention weight extraction not yet implemented. &quot;</span>
+    <span class="s2">&quot;This function returns uniform weights as placeholder.&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="function-return-behavior">
+<h3>3. Function Return Behavior<a class="headerlink" href="#function-return-behavior" title="Link to this heading"></a></h3>
+<section id="invalid-input-handling">
+<h4>Invalid Input Handling<a class="headerlink" href="#invalid-input-handling" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Validation functions</strong>: Raise exceptions for invalid inputs</p></li>
+<li><p><strong>Computational functions</strong>: Validate inputs, raise exceptions for violations</p></li>
+<li><p><strong>I/O functions</strong>: Raise specific exceptions (FileNotFoundError, PermissionError)</p></li>
+</ul>
+</section>
+<section id="edge-cases">
+<h4>Edge Cases<a class="headerlink" href="#edge-cases" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Empty inputs</strong>: Raise ValueError unless mathematically valid (e.g., empty sum = 0)</p></li>
+<li><p><strong>Zero variance</strong>: Return 0.0 (mathematically correct) or raise ValueError based on context</p></li>
+<li><p><strong>Division by zero</strong>: Raise ValueError or return appropriate sentinel value</p></li>
+</ul>
+</section>
+</section>
+<section id="optional-dependencies">
+<h3>4. Optional Dependencies<a class="headerlink" href="#optional-dependencies" title="Link to this heading"></a></h3>
+<section id="import-patterns">
+<h4>Import Patterns<a class="headerlink" href="#import-patterns" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">try</span><span class="p">:</span>
+    <span class="kn">import</span><span class="w"> </span><span class="nn">scipy.stats</span>
+    <span class="n">SCIPY_AVAILABLE</span> <span class="o">=</span> <span class="kc">True</span>
+<span class="k">except</span> <span class="ne">ImportError</span><span class="p">:</span>
+    <span class="n">SCIPY_AVAILABLE</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">scipy</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: ignore</span>
+</pre></div>
+</div>
+</section>
+<section id="function-implementation">
+<h4>Function Implementation<a class="headerlink" href="#function-implementation" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">statistical_function</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">SCIPY_AVAILABLE</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ImportError</span><span class="p">(</span>
+            <span class="s2">&quot;scipy required for statistical functions. &quot;</span>
+            <span class="s2">&quot;Install with: uv pip install scipy&quot;</span>
+        <span class="p">)</span>
+    <span class="c1"># Use scipy functionality</span>
+</pre></div>
+</div>
+</section>
+<section id="documentation">
+<h4>Documentation<a class="headerlink" href="#documentation" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p>Clearly indicate optional dependencies in docstrings</p></li>
+<li><p>Provide installation instructions in error messages</p></li>
+<li><p>Use conditional imports to avoid hard failures</p></li>
+</ul>
+</section>
+</section>
+<section id="logging-integration">
+<h3>5. Logging Integration<a class="headerlink" href="#logging-integration" title="Link to this heading"></a></h3>
+<section id="error-logging">
+<h4>Error Logging<a class="headerlink" href="#error-logging" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Operation failed: </span><span class="si">{</span><span class="n">error</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">extra</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;context&quot;</span><span class="p">:</span> <span class="n">relevant_data</span><span class="p">})</span>
+<span class="k">raise</span>  <span class="c1"># Re-raise after logging</span>
+</pre></div>
+</div>
+</section>
+<section id="warning-for-degraded-functionality">
+<h4>Warning for Degraded Functionality<a class="headerlink" href="#warning-for-degraded-functionality" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Optional dependency unavailable, using fallback method&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="testing-error-conditions">
+<h3>6. Testing Error Conditions<a class="headerlink" href="#testing-error-conditions" title="Link to this heading"></a></h3>
+<section id="error-test-patterns">
+<h4>Error Test Patterns<a class="headerlink" href="#error-test-patterns" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">test_invalid_input</span><span class="p">():</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;cannot be empty&quot;</span><span class="p">):</span>
+        <span class="n">function_with_validation</span><span class="p">(</span><span class="n">empty_input</span><span class="p">)</span>
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_missing_dependency</span><span class="p">():</span>
+    <span class="c1"># Mock import failure</span>
+    <span class="k">with</span> <span class="n">patch</span><span class="o">.</span><span class="n">dict</span><span class="p">(</span><span class="s1">&#39;sys.modules&#39;</span><span class="p">,</span> <span class="p">{</span><span class="s1">&#39;scipy&#39;</span><span class="p">:</span> <span class="kc">None</span><span class="p">}):</span>
+        <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ImportError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="s2">&quot;scipy required&quot;</span><span class="p">):</span>
+            <span class="n">scipy_dependent_function</span><span class="p">()</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="module-specific-guidelines">
+<h3>7. Module-Specific Guidelines<a class="headerlink" href="#module-specific-guidelines" title="Link to this heading"></a></h3>
+<section id="core-utilities">
+<h4>Core Utilities<a class="headerlink" href="#core-utilities" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>I/O functions</strong>: Raise specific exceptions (FileNotFoundError, PermissionError)</p></li>
+<li><p><strong>Validation functions</strong>: Raise ValueError with clear parameter names</p></li>
+<li><p><strong>Caching</strong>: Log warnings for cache misses, raise exceptions for corruption</p></li>
+</ul>
+</section>
+<section id="domain-modules-dna-rna-etc">
+<h4>Domain Modules (DNA, RNA, etc.)<a class="headerlink" href="#domain-modules-dna-rna-etc" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Data validation</strong>: ValueError for invalid biological data</p></li>
+<li><p><strong>External tools</strong>: ImportError with installation instructions</p></li>
+<li><p><strong>Computational limits</strong>: ValueError for sequences too large to process</p></li>
+</ul>
+</section>
+<section id="statistical-modules-math-ml">
+<h4>Statistical Modules (Math, ML)<a class="headerlink" href="#statistical-modules-math-ml" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Invalid parameters</strong>: ValueError with mathematical context</p></li>
+<li><p><strong>Numerical instability</strong>: Warning logs, return NaN or appropriate fallback</p></li>
+<li><p><strong>Convergence failures</strong>: RuntimeError with convergence details</p></li>
+</ul>
+</section>
+</section>
+<section id="user-experience-considerations">
+<h3>8. User Experience Considerations<a class="headerlink" href="#user-experience-considerations" title="Link to this heading"></a></h3>
+<section id="error-message-quality">
+<h4>Error Message Quality<a class="headerlink" href="#error-message-quality" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Helpful</strong>: Include parameter names, expected vs actual values</p></li>
+<li><p><strong>Educational</strong>: Explain why the constraint exists when relevant</p></li>
+<li><p><strong>Recoverable</strong>: Suggest alternative approaches when possible</p></li>
+</ul>
+</section>
+<section id="graceful-degradation">
+<h4>Graceful Degradation<a class="headerlink" href="#graceful-degradation" title="Link to this heading"></a></h4>
+<ul class="simple">
+<li><p><strong>Optional features</strong>: Warn and continue with reduced functionality</p></li>
+<li><p><strong>Fallback methods</strong>: Use simpler algorithms when advanced ones fail</p></li>
+<li><p><strong>Partial results</strong>: Return partial results with warnings when possible</p></li>
+</ul>
+</section>
+</section>
+<section id="implementation-checklist">
+<h3>9. Implementation Checklist<a class="headerlink" href="#implementation-checklist" title="Link to this heading"></a></h3>
+<p>For new functions, ensure:</p>
+<ul class="contains-task-list simple">
+<li class="task-list-item"><p><input class="task-list-item-checkbox" disabled="disabled" type="checkbox"> Input validation with appropriate exceptions</p></li>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" disabled="disabled" type="checkbox"> Clear error messages following guidelines</p></li>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" disabled="disabled" type="checkbox"> Optional dependency handling</p></li>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" disabled="disabled" type="checkbox"> Logging for significant errors</p></li>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" disabled="disabled" type="checkbox"> Tests for error conditions</p></li>
+<li class="task-list-item"><p><input class="task-list-item-checkbox" disabled="disabled" type="checkbox"> Documentation of error behavior</p></li>
+</ul>
+</section>
+<section id="migration-guide">
+<h3>10. Migration Guide<a class="headerlink" href="#migration-guide" title="Link to this heading"></a></h3>
+<section id="updating-existing-code">
+<h4>Updating Existing Code<a class="headerlink" href="#updating-existing-code" title="Link to this heading"></a></h4>
+<ol class="arabic simple">
+<li><p><strong>Identify silent failures</strong>: Functions returning 0.0/None for errors</p></li>
+<li><p><strong>Add proper validation</strong>: Raise ValueError for invalid inputs</p></li>
+<li><p><strong>Update tests</strong>: Add tests for new exception behavior</p></li>
+<li><p><strong>Update documentation</strong>: Document new error conditions</p></li>
+<li><p><strong>Consider backward compatibility</strong>: Use deprecation warnings if needed</p></li>
+</ol>
+</section>
+<section id="example-migration">
+<h4>Example Migration<a class="headerlink" href="#example-migration" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Before</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">covariance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">):</span>
+        <span class="k">return</span> <span class="mf">0.0</span>  <span class="c1"># Silent failure</span>
+    <span class="c1"># ...</span>
+
+<span class="c1"># After</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">covariance</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">):</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Sequences must have same length: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">x</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Sequences cannot be empty&quot;</span><span class="p">)</span>
+    <span class="c1"># ...</span>
+</pre></div>
+</div>
+<p>This policy ensures consistent, helpful error handling throughout METAINFORMANT, improving both developer experience and user reliability.</p>
+</section>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

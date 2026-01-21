@@ -103,7 +103,21 @@
 <p><strong>⚠️ Package Management</strong>: All setup and dependency installation uses <code class="docutils literal notranslate"><span class="pre">uv</span></code>. Use <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">venv</span></code>, <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">pip</span> <span class="pre">install</span></code>, <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">run</span></code>, <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">sync</span></code>, <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">add</span></code>, and <code class="docutils literal notranslate"><span class="pre">uv</span> <span class="pre">remove</span></code> - never use <code class="docutils literal notranslate"><span class="pre">pip</span></code> directly. See <strong><a class="reference internal" href="../UV_SETUP.html"><span class="std std-doc">UV Setup Guide</span></a></strong> for details.</p>
 <section id="overview">
 <h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
-<p>The phenotype domain provides tools for morphological and behavioral phenotype data analysis, including automated curation from web sources like AntWiki.</p>
+<p>behavioral phenotype data analysis, including automated curation from web sources like AntWiki.</p>
+<section id="module-architecture">
+<h3>Module Architecture<a class="headerlink" href="#module-architecture" title="Link to this heading"></a></h3>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>    subgraph &quot;Phenotype Module&quot;
+        AntWikiantwikiAntwikiIntegration[antwiki_AntWiki Integration]
+        LifeCourselifeCourseLifeCourseAnalysis[life_course_Life Course Analysis]
+        BehaviorbehaviorBehavioralAnalysis[behavior_Behavioral Analysis]
+        ChemicalchemicalChemotypes[chemical_Chemotypes]
+        SonicsonicAcousticSignals[sonic_Acoustic Signals]
+        MorphmorphologicalMorphometrics[morphological_Morphometrics]
+        ElectronicelectronicTrackingData[electronic_Tracking Data]
+    end
+</pre></div>
+</div>
+</section>
 </section>
 <section id="documentation-files">
 <h2>Documentation Files<a class="headerlink" href="#documentation-files" title="Link to this heading"></a></h2>

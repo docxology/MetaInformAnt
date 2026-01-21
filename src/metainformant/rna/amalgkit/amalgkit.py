@@ -19,8 +19,10 @@ import subprocess
 import sys
 import csv
 import math
+import time
 import tempfile
 import concurrent.futures
+import shutil
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
@@ -45,10 +47,11 @@ class AmalgkitParams:
         """Initialize amalgkit parameters.
 
         Args:
-            work_dir: Working directory for amalgkit
-            threads: Number of threads to use
-            species_list: List of species to process
-            **kwargs: Additional parameters
+            work_dir: Working directory for amalgkit operations. Output will be structured here.
+            threads: Number of CPU threads to use for parallel operations. Defaults to 8.
+            species_list: List of scientific names (e.g. ['Pogonomyrmex barbatus']) to process.
+            **kwargs: Additional parameters passed directly to the amalgkit CLI.
+                     Common keys: 'redo', 'pfd', 'aws', 'jobs', etc.
         """
         self.work_dir = Path(work_dir)
         self.threads = threads
@@ -96,14 +99,7 @@ def build_cli_args(params: AmalgkitParams | Dict[str, Any] | None, subcommand: s
                      'genome', 'filters', 'taxon_id', 'auto_install_amalgkit', 'log_dir',
                      'num_download_workers'}
         
-        # List of flags that should use underscores instead of hyphens for amalgkit CLI
-        underscore_flags = {
-            "out_dir", "fastq_dir", "quant_dir", "metadata_dir", "config_dir", 
-            "cstmm_dir", "curate_dir", "csca_dir", "genome_dir", "index_dir",
-            "taxon_id", "species_list", "resolve_names", 
-            "mark_missing_rank", "mark_redundant_biosamples", "min_nspots", 
-            "max_sample", "build_index", "fasta_dir"
-        }
+        pass
         
         # Flags that expect explicit yes/no instead of just being present/absent
         yes_no_flags = {
@@ -117,16 +113,12 @@ def build_cli_args(params: AmalgkitParams | Dict[str, Any] | None, subcommand: s
                 continue
             
             # Skip arguments not supported by specific subcommands
-            if subcommand == 'merge' and key in ('out', 'threads'):
+            if subcommand in ('merge', 'sanity', 'select', 'curate') and key in ('out', 'threads', 'priority', 'redo'):
                 continue
             
-            # Normalize key: replace _ with - unless it's in underscore_flags
-            if key in underscore_flags:
-                cli_key = key
-            elif '-' in key:
-                cli_key = key
-            else:
-                cli_key = key.replace('_', '-')
+            # Amalgkit 0.12.20+ generally uses underscores for its CLI flags.
+            # We'll normalize to underscores to ensure compatibility.
+            cli_key = key.replace('-', '_')
             
             if isinstance(value, bool):
                 if cli_key in yes_no_flags:
@@ -134,13 +126,13 @@ def build_cli_args(params: AmalgkitParams | Dict[str, Any] | None, subcommand: s
                 elif value:
                     args.append(f'--{cli_key}')
             elif isinstance(value, (int, float)):
-                if key == 'threads' and subcommand in ('merge', 'metadata', 'config'):
+                if key == 'threads' and subcommand in ('merge', 'metadata', 'config', 'sanity', 'select', 'curate'):
                     continue
                 args.extend([f'--{cli_key}', str(value)])
             elif isinstance(value, list):
                 # Handle lists (multiple arguments)
                 if (key == 'species-list' or key == 'species_list' or key == 'species'):
-                    if subcommand not in ('integrate', 'config', 'help', 'merge', 'metadata', 'getfastq', 'quant'):
+                    if subcommand not in ('integrate', 'config', 'help', 'merge', 'metadata', 'getfastq', 'quant', 'sanity', 'select'):
                         for val in value:
                             args.extend(['--species', str(val)])
                 else:
@@ -768,20 +760,35 @@ def _run_parallel_getfastq(jobs: int, params: AmalgkitParams | Dict[str, Any] | 
         # But we disabled their monitor loop (heartbeat), not the logging.
         # run_amalgkit logs "Running amalgkit command..."
         
-        # Wait for all
-        for future in concurrent.futures.as_completed(worker_futures):
-            try:
-                res = future.result()
-                results.append(res)
-                # Log worker output immediately for visibility
-                logger.debug(f"Worker completed with rc={res.returncode}")
-                if res.stdout:
-                    logger.debug(f"Worker stdout:\n{res.stdout}")
-                if res.stderr:
-                    logger.debug(f"Worker stderr:\n{res.stderr}")
-            except Exception as e:
-                logger.error(f"Worker failed: {e}")
-                results.append(subprocess.CompletedProcess(args=[], returncode=1, stderr=str(e)))
+        # Wait for all with heartbeat
+        start_time = time.time()
+        while True:
+            # Check for completion
+            done, not_done = concurrent.futures.wait(worker_futures, timeout=60, return_when=concurrent.futures.FIRST_COMPLETED)
+            
+            # Log heartbeat
+            # NOTE: Local import to avoid circular dependency with workflow.py
+            from metainformant.rna.engine.workflow import _log_heartbeat
+            _log_heartbeat(f"getfastq parallel ({len(done)}/{len(chunk_paths)} chunks done)", start_time=start_time)
+            
+            # Process completed
+            for future in done:
+                if future in worker_futures:
+                    worker_futures.remove(future)
+                    try:
+                        res = future.result()
+                        results.append(res)
+                        logger.debug(f"Worker completed with rc={res.returncode}")
+                        if res.stdout:
+                            logger.debug(f"Worker stdout:\n{res.stdout}")
+                        if res.stderr:
+                            logger.debug(f"Worker stderr:\n{res.stderr}")
+                    except Exception as e:
+                        logger.error(f"Worker failed: {e}")
+                        results.append(subprocess.CompletedProcess(args=[], returncode=1, stderr=str(e)))
+            
+            if not worker_futures:
+                break
 
     # Cleanup temp chunks
     try:

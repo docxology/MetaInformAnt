@@ -586,9 +586,9 @@ steps:
 
 ## See Also
 
-- **Previous Step**: [`merge.md`](merge.md) - Merging abundance estimates
-- **Next Step**: [`sanity.md`](sanity.md) - Integrity checking
-- **Next Step**: [`csca.md`](csca.md) - Cross-species correlation analysis
+- **Previous Step**: [`07_merge.md`](07_merge.md) - Merging abundance estimates
+- **Next Step**: [`11_sanity.md`](11_sanity.md) - Integrity checking
+- **Next Step**: [`10_csca.md`](10_csca.md) - Cross-species correlation analysis
 - **Workflow Overview**: [`../amalgkit.md`](../amalgkit.md)
 - **Testing**: `tests/test_rna_amalgkit_steps.py::test_curate_basic_execution`
 

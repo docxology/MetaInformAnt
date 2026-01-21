@@ -202,7 +202,7 @@ def analyze_species_status(species_dir: Path | str) -> Dict[str, Any]:
         q_count = 0
         if quant_dir.exists():
             for sample_dir in quant_dir.glob("*"):
-                if sample_dir.is_dir() and (sample_dir / "abundance.tsv").exists():
+                if sample_dir.is_dir() and (len(list(sample_dir.glob("abundance.tsv"))) > 0 or len(list(sample_dir.glob("*_abundance.tsv"))) > 0):
                     q_count += 1
         status['quantified'] = q_count
 

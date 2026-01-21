@@ -19,13 +19,13 @@ This module is organized into domain-specific submodules:
 ```mermaid
 graph TB
     subgraph "Math Module"
-        PopGen[Population Genetics]
+        PopGenpopulationGenetics[Population Genetics]
         Epi[Epidemiology]
-        QuantGen[Quantitative Genetics]
-        EvoDyn[Evolutionary Dynamics]
+        QuantGenquantitativeGenetics[Quantitative Genetics]
+        EvoDynevolutionaryDynamics[Evolutionary Dynamics]
         Perception[Perception]
-        Decision[Decision Theory]
-        Core[Core Utilities]
+        DecisiondecisionTheory[Decision Theory]
+        CorecoreUtilities[Core Utilities]
     end
     
     PopGen --> Core

@@ -76,8 +76,8 @@ steps:
     out_dir: output/amalgkit/pbarbatus_test5/work
     # Uses NCBI_EMAIL from environment; override here if needed
     # entrez_email: you@example.com
-    search_string: '"Pogonomyrmex barbatus"[Organism] AND RNA-Seq[Strategy] AND Illumina[Platform]'
-    redo: no
+    search_string: '"Pogonomyrmex barbatus"[Organism]'
+    redo: yes
   integrate:
     # IMPORTANT: fastq_dir must point to the getfastq subdirectory created by getfastq step
     # If getfastq used out_dir: output/amalgkit/pbarbatus_test5/fastq,
@@ -86,10 +86,14 @@ steps:
     fastq_dir: output/amalgkit/pbarbatus_test5/fastq/getfastq
   config: {}
   select:
-    max_sample: 5  # Increased to 5 for test validation
+    max_sample: 1
+    mark_missing_rank: none
+    # Force diverse selection if possible
+    priority: "completeness"
+    redo: yes
   getfastq:
     out_dir: output/amalgkit/pbarbatus_test5/fastq
-    threads: 4  # Reduced for limited samples
+    threads: 8  # Increased for multi-sample test
     redo: no    # Skip re-downloading for verification run
     # Cloud acceleration: AWS only (full SRA files)
     # NOTE: NCBI and GCP have LITE files (metadata-only, no sequence data) for this species
@@ -99,7 +103,7 @@ steps:
     ncbi: no           # DISABLED: NCBI has lite files (no sequence data)
     pfd: no           # DISABLED: parallel-fastq-dump usually not needed
     fastp: yes        # ENABLED: fastp QC tool
-    max_bp: 10000000  # Limit download size to 10MB for rapid verification
+    max_bp: 50000000  # Increase to 50MB for better multi-sample quantification coverage
     #                       # After quantification, only small abundance files remain (~few MB per sample)
     #                       # Large downloads are temporary - quantified samples don't need re-download
     # IMPORTANT: vdb-config must be set to use a location with sufficient disk space
@@ -114,7 +118,7 @@ steps:
     # - Therefore: out_dir should be work_dir (not a separate quant_dir)
     out_dir: output/amalgkit/pbarbatus_test5/work
     threads: 6
-    redo: no
+    redo: yes
     # Build kallisto index if not present
     # Index location: {out_dir}/index/{Scientific_Name}_transcripts.idx
     build_index: yes
@@ -128,10 +132,12 @@ steps:
     # This config uses a separate merged directory, so files may need to be copied/symlinked
     out: output/amalgkit/pbarbatus_test5/merged/merged_abundance.tsv
     out_dir: output/amalgkit/pbarbatus_test5/merged
-  # cstmm:  # Skipped: requires orthogroup_table or dir_busco parameters
-  #   out_dir: output/amalgkit/pbarbatus_test5/cstmm
+  cstmm:
+    out_dir: output/amalgkit/pbarbatus_test5/work
+    orthogroup_table: ""
   curate:
-    out_dir: output/amalgkit/pbarbatus_test5/curate
-  # csca:   # Skipped: requires orthogroup_table or dir_busco parameters
-  #   out_dir: output/amalgkit/pbarbatus_test5/csca
+    out_dir: output/amalgkit/pbarbatus_test5/work
+  csca:
+    out_dir: output/amalgkit/pbarbatus_test5/work
+    orthogroup_table: ""
   sanity: {}

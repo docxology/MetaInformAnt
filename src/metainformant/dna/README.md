@@ -17,28 +17,28 @@ This module covers the full spectrum of DNA analysis needs:
 ```mermaid
 graph TB
     subgraph "DNA Module"
-        Seq[sequences<br/>Sequence I/O]
-        Align[alignment<br/>Pairwise Alignment]
-        MSA[msa<br/>Multiple Alignment]
-        Phylo[phylogeny<br/>Tree Construction]
-        Pop[population<br/>Population Genetics]
-        Variants[variants<br/>Variant Analysis]
-        Genomes[genomes<br/>Genome Retrieval]
-        NCBI[ncbi<br/>NCBI Integration]
-        Motifs[motifs<br/>Motif Discovery]
-        Restrict[restriction<br/>Restriction Enzymes]
+        Seq[sequencesIO]
+        Align[pairwiseAlignment]
+        MSA[multipleAlignment]
+        Phylo[treeConstruction]
+        Pop[populationGenetics]
+        Variants[variantAnalysis]
+        Genomes[genomeRetrieval]
+        NCBI[ncbiIntegration]
+        Motifs[motifDiscovery]
+        Restrict[restrictionEnzymes]
     end
     
     subgraph "External"
-        NCBI_DB[NCBI Databases]
-        Files[FASTA/FASTQ Files]
+        ncbidatabases[ncbiDatabases]
+        Files[fastaFastqFiles]
     end
-    
+
     subgraph "Other Modules"
-        RNA_Mod[rna]
-        Protein_Mod[protein]
-        GWAS_Mod[gwas]
-        Math_Mod[math]
+        rnamodule[rnaModule]
+        proteinmodule[proteinModule]
+        gwasmodule[gwasModule]
+        mathmodule[mathModule]
     end
     
     Files --> Seq
@@ -60,19 +60,19 @@ graph TB
 
 ```mermaid
 flowchart TD
-    Start[Input Data] --> InputType{Input Type?}
-    InputType -->|FASTA/FASTQ| ReadSeq[Read Sequences]
-    InputType -->|Accession| FetchNCBI[Fetch from NCBI]
+    StartinputData[Input Data] --> InputType{Input Type?}
+    InputType -->|FASTA/FASTQ| ReadSeqreadSequences[Read Sequences]
+    InputType -->|Accession| FetchNCBIfetchFromNcbi[Fetch from NCBI]
     FetchNCBI --> ReadSeq
     ReadSeq --> Process{Analysis Type?}
     Process -->|Alignment| Align[Pairwise/MSA]
-    Process -->|Phylogeny| BuildTree[Build Tree]
-    Process -->|Population| PopGen[Population Analysis]
-    Process -->|Variants| VarCall[Variant Calling]
+    Process -->|Phylogeny| BuildTreebuildTree[Build Tree]
+    Process -->|Population| PopGenpopulationAnalysis[Population Analysis]
+    Process -->|Variants| VarCallvariantCalling[Variant Calling]
     Align --> BuildTree
-    BuildTree --> Visualize[Visualize Tree]
-    PopGen --> Stats[Calculate Statistics]
-    VarCall --> QC[Quality Control]
+    BuildTree --> VisualizevisualizeTree[Visualize Tree]
+    PopGen --> StatscalculateStatistics[Calculate Statistics]
+    VarCall --> QCqualityControl[Quality Control]
     Stats --> Output[Results]
     QC --> Output
     Visualize --> Output
@@ -87,39 +87,36 @@ Core sequence reading, writing, and manipulation utilities.
 
 ```mermaid
 graph TD
-    A[Input File] --> B{Format Type}
-    B -->|FASTA| C[Parse FASTA Headers]
-    B -->|FASTQ| D[Parse FASTQ Quality]
+    AinputFile[Input File] --> B{Format Type}
+    B -->|FASTA| CparseFastaHeaders[Parse FASTA Headers]
+    B -->|FASTQ| DparseFastqQuality[Parse FASTQ Quality]
 
-    C --> E[Extract Sequences]
+    C --> EextractSequences[Extract Sequences]
     D --> E
 
-    E --> F[Validate DNA Alphabet]
+    E --> FvalidateDnaAlphabet[Validate DNA Alphabet]
     F --> G{Clean Sequences?}
-    G -->|Yes| H[Remove Non-DNA Chars]
-    G -->|No| I[Keep Original]
+    G -->|Yes| HremoveNon-dnaChars[Remove Non-DNA Chars]
+    G -->|No| IkeepOriginal[Keep Original]
 
-    H --> J[Sequence Operations]
+    H --> JsequenceOperations[Sequence Operations]
     I --> J
 
     J --> K{Operation Type}
-    K -->|Basic| L[Length, GC Content, Reverse Complement]
-    K -->|Advanced| M[K-mers, Complexity, ORF Finding]
-    K -->|Quality| N[Quality Scores, Filtering]
+    K -->|Basic| Llength,GcContent,ReverseComplement[Length, GC Content, Reverse Complement]
+    K -->|Advanced| Mk-mers,Complexity,OrfFinding[K-mers, Complexity, ORF Finding]
+    K -->|Quality| NqualityScores,Filtering[Quality Scores, Filtering]
 
-    L --> O[Output Results]
+    L --> OoutputResults[Output Results]
     M --> O
     N --> O
 
-    O --> P[Write Output]
+    O --> PwriteOutput[Write Output]
     P --> Q{Output Format}
-    Q -->|FASTA| R[Write FASTA]
-    Q -->|FASTQ| S[Write FASTQ]
-    Q -->|JSON| T[Write JSON]
+    Q -->|FASTA| RwriteFasta[Write FASTA]
+    Q -->|FASTQ| SwriteFastq[Write FASTQ]
+    Q -->|JSON| TwriteJson[Write JSON]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style F fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style O fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 ```
 
 **Key Features:**
@@ -704,37 +701,34 @@ with open("output.nwk", "w") as f:
 
 ```mermaid
 graph TD
-    A[DNA Sequences] --> B[Load Sequences]
-    B --> C[Calculate Diversity Metrics]
+    AdnaSequences[DNA Sequences] --> BloadSequences[Load Sequences]
+    B --> CcalculateDiversityMetrics[Calculate Diversity Metrics]
 
     C --> D{Nucleotide Diversity π}
     C --> E{Segregating Sites}
     C --> F{Watterson's θ}
 
-    D --> G[Neutrality Tests]
+    D --> GneutralityTests[Neutrality Tests]
     E --> G
     F --> G
 
-    G --> H[Tajima's D]
+    G --> Htajima'sD[Tajima's D]
     G --> I{Fu & Li Tests}
     G --> J{Fay & Wu H}
 
-    H --> K[Demographic Inference]
+    H --> KdemographicInference[Demographic Inference]
     I --> K
     J --> K
 
-    A --> L[Multiple Populations]
-    L --> M[Calculate F_ST]
-    M --> N[Genetic Differentiation]
+    A --> LmultiplePopulations[Multiple Populations]
+    L --> McalculateFSt[Calculate F_ST]
+    M --> NgeneticDifferentiation[Genetic Differentiation]
 
-    K --> O[Selection Analysis]
+    K --> OselectionAnalysis[Selection Analysis]
     N --> O
 
-    O --> P[Output Results]
+    O --> PoutputResults[Output Results]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style G fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style O fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 ```
 
 ### Population Genetic Analysis

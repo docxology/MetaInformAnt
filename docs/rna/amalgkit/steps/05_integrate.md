@@ -126,7 +126,7 @@ The metadata table gains additional columns:
 ```mermaid
 flowchart LR
     A[metadata] --> B[integrate]
-    C[Local FASTQs] --> B
+    ClocalFastqs[Local FASTQs] --> B
     B --> D[quant]
 ```
 

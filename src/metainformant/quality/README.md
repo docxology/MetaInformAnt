@@ -11,21 +11,21 @@ This module handles quality assessment, filtering, and validation for biological
 ```mermaid
 graph TB
     subgraph "Quality Module"
-        FASTQ[fastq<br/>FASTQ Quality]
-        Metrics[metrics<br/>Quality Metrics]
-        Contamination[contamination<br/>Contamination Detection]
+        FASTQfastqFastqQuality[fastq_FASTQ Quality]
+        MetricsmetricsQualityMetrics[metrics_Quality Metrics]
+        ContaminationcontaminationContaminationDetection[contamination_Contamination Detection]
     end
     
     subgraph "Input Data"
-        FASTQFiles[FASTQ Files]
-        Expression[Expression Data]
+        FASTQFilesfastqFiles[FASTQ Files]
+        ExpressionexpressionData[Expression Data]
         Sequences[Sequences]
     end
     
     subgraph "Other Modules"
-        DNA_Mod[dna]
-        RNA_Mod[rna]
-        All[All Modules]
+        dna[dna]
+        rna[rna]
+        AllallModules[All Modules]
     end
     
     FASTQFiles --> FASTQ
@@ -42,58 +42,55 @@ graph TB
 
 ```mermaid
 graph TD
-    A[Raw FASTQ Files] --> B[Per-Base Quality Scores]
-    B --> C[Quality Distribution Analysis]
+    ArawFastqFiles[Raw FASTQ Files] --> Bper-baseQualityScores[Per-Base Quality Scores]
+    B --> CqualityDistributionAnalysis[Quality Distribution Analysis]
 
-    A --> D[Read Length Distribution]
-    D --> E[Length Statistics]
+    A --> DreadLengthDistribution[Read Length Distribution]
+    D --> ElengthStatistics[Length Statistics]
 
-    A --> F[Base Composition Analysis]
-    F --> G[GC Content & Bias]
+    A --> FbaseCompositionAnalysis[Base Composition Analysis]
+    F --> GgcContent&Bias[GC Content & Bias]
 
-    A --> H[Adapter Content Detection]
-    H --> I[Adapter Trimming Assessment]
+    A --> HadapterContentDetection[Adapter Content Detection]
+    H --> IadapterTrimmingAssessment[Adapter Trimming Assessment]
 
-    A --> J[Duplicate Read Analysis]
-    J --> K[PCR Duplicate Estimation]
+    A --> JduplicateReadAnalysis[Duplicate Read Analysis]
+    J --> KpcrDuplicateEstimation[PCR Duplicate Estimation]
 
-    C --> L[Quality Metrics Aggregation]
+    C --> LqualityMetricsAggregation[Quality Metrics Aggregation]
     E --> L
     G --> L
     I --> L
     K --> L
 
     L --> M{Overall Quality}
-    M -->|High| N[Pass Quality Control]
-    M -->|Medium| O[Flag for Review]
-    M -->|Low| P[Fail Quality Control]
+    M -->|High| NpassQualityControl[Pass Quality Control]
+    M -->|Medium| OflagForReview[Flag for Review]
+    M -->|Low| PfailQualityControl[Fail Quality Control]
 
-    N --> Q[Proceed to Analysis]
-    O --> R[Manual Inspection]
-    P --> S[Data Rejection]
+    N --> QproceedToAnalysis[Proceed to Analysis]
+    O --> RmanualInspection[Manual Inspection]
+    P --> SdataRejection[Data Rejection]
 
     R --> T{Acceptable?}
     T -->|Yes| Q
     T -->|No| S
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style L fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style Q fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Quality Dimensions"
-        U[Per-Base Quality] -.-> B
-        V[Per-Sequence Quality] -.-> C
-        W[Sequence Length] -.-> D
-        X[Base Content] -.-> F
-        Y[Sequence Duplication] -.-> J
+        Uper-baseQuality[Per-Base Quality] -.-> B
+        Vper-sequenceQuality[Per-Sequence Quality] -.-> C
+        WsequenceLength[Sequence Length] -.-> D
+        XbaseContent[Base Content] -.-> F
+        YsequenceDuplication[Sequence Duplication] -.-> J
     end
 
     subgraph "Assessment Criteria"
-        Z[Mean Quality Score] -.-> M
-        AA[Quality Score Distribution] -.-> M
-        BB[Adapter Content %] -.-> M
-        CC[GC Content Range] -.-> M
-        DD[Duplicate Rate] -.-> M
+        ZmeanQualityScore[Mean Quality Score] -.-> M
+        AAqualityScoreDistribution[Quality Score Distribution] -.-> M
+        BBadapterContent%[Adapter Content %] -.-> M
+        CCgcContentRange[GC Content Range] -.-> M
+        DDduplicateRate[Duplicate Rate] -.-> M
     end
 ```
 
@@ -101,29 +98,29 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Multi-Omics Datasets] --> B{Data Type}
-    B -->|Genomic| C[Variant Quality Control]
-    B -->|Transcriptomic| D[Expression Quality Control]
-    B -->|Proteomic| E[Protein Quality Control]
-    B -->|Epigenomic| F[Methylation Quality Control]
+    Amulti-omicsDatasets[Multi-Omics Datasets] --> B{Data Type}
+    B -->|Genomic| CvariantQualityControl[Variant Quality Control]
+    B -->|Transcriptomic| DexpressionQualityControl[Expression Quality Control]
+    B -->|Proteomic| EproteinQualityControl[Protein Quality Control]
+    B -->|Epigenomic| FmethylationQualityControl[Methylation Quality Control]
 
-    C --> G[Genotype Calling Quality]
-    C --> H[Missing Data Analysis]
-    C --> I[Allele Frequency Checks]
+    C --> GgenotypeCallingQuality[Genotype Calling Quality]
+    C --> HmissingDataAnalysis[Missing Data Analysis]
+    C --> IalleleFrequencyChecks[Allele Frequency Checks]
 
-    D --> J[Library Size Normalization]
-    D --> K[Gene Detection Rate]
-    D --> L[Expression Distribution]
+    D --> JlibrarySizeNormalization[Library Size Normalization]
+    D --> KgeneDetectionRate[Gene Detection Rate]
+    D --> LexpressionDistribution[Expression Distribution]
 
-    E --> M[Peptide Identification]
-    E --> N[Protein Quantification]
-    E --> O[Contamination Assessment]
+    E --> MpeptideIdentification[Peptide Identification]
+    E --> NproteinQuantification[Protein Quantification]
+    E --> OcontaminationAssessment[Contamination Assessment]
 
-    F --> P[Methylation Beta Values]
-    F --> Q[Detection P-values]
-    F --> R[Probe Performance]
+    F --> PmethylationBetaValues[Methylation Beta Values]
+    F --> QdetectionP-values[Detection P-values]
+    F --> RprobePerformance[Probe Performance]
 
-    G --> S[Quality Metrics]
+    G --> SqualityMetrics[Quality Metrics]
     H --> S
     I --> S
     J --> S
@@ -136,34 +133,31 @@ graph TD
     Q --> S
     R --> S
 
-    S --> T[Platform-Specific QC]
-    S --> U[Cross-Platform QC]
+    S --> Tplatform-specificQc[Platform-Specific QC]
+    S --> Ucross-platformQc[Cross-Platform QC]
 
-    T --> V[Intra-Platform Assessment]
-    U --> W[Inter-Platform Assessment]
+    T --> Vintra-platformAssessment[Intra-Platform Assessment]
+    U --> Winter-platformAssessment[Inter-Platform Assessment]
 
-    V --> X[Platform-Specific Filters]
-    W --> Y[Harmonization Adjustments]
+    V --> Xplatform-specificFilters[Platform-Specific Filters]
+    W --> YharmonizationAdjustments[Harmonization Adjustments]
 
-    X --> Z[Filtered Datasets]
+    X --> ZfilteredDatasets[Filtered Datasets]
     Y --> Z
 
-    Z --> AA[Integrated Quality Report]
+    Z --> AAintegratedQualityReport[Integrated Quality Report]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style S fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style AA fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "QC Metrics Categories"
-        BB[Technical Metrics] -.-> S
-        CC[Biological Metrics] -.-> S
+        BBtechnicalMetrics[Technical Metrics] -.-> S
+        CCbiologicalMetrics[Biological Metrics] -.-> S
         DD[Platform-Specific] -.-> T
         EE[Cross-Platform] -.-> U
     end
 
     subgraph "Quality Control Actions"
-        FF[Filter Low-Quality Data] -.-> X
-        GG[Batch Effect Correction] -.-> Y
+        FFfilterLow-qualityData[Filter Low-Quality Data] -.-> X
+        GGbatchEffectCorrection[Batch Effect Correction] -.-> Y
         HH[Normalization] -.-> Y
         II[Imputation] -.-> Y
     end
@@ -173,24 +167,24 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Genome/Transcriptome Assembly] --> B[N50 Statistics]
-    B --> C[Contig Length Distribution]
+    Agenome/transcriptomeAssembly[Genome/Transcriptome Assembly] --> Bn50Statistics[N50 Statistics]
+    B --> CcontigLengthDistribution[Contig Length Distribution]
 
-    A --> D[Coverage Analysis]
-    D --> E[Read Mapping Statistics]
+    A --> DcoverageAnalysis[Coverage Analysis]
+    D --> EreadMappingStatistics[Read Mapping Statistics]
 
-    A --> F[Completeness Assessment]
-    F --> G[BUSCO Analysis]
-    F --> H[Core Gene Coverage]
+    A --> FcompletenessAssessment[Completeness Assessment]
+    F --> GbuscoAnalysis[BUSCO Analysis]
+    F --> HcoreGeneCoverage[Core Gene Coverage]
 
-    A --> I[Contamination Screening]
-    I --> J[Foreign Sequence Detection]
+    A --> IcontaminationScreening[Contamination Screening]
+    I --> JforeignSequenceDetection[Foreign Sequence Detection]
 
-    A --> K[Structural Validation]
-    K --> L[Synteny Analysis]
-    K --> M[Gene Model Quality]
+    A --> KstructuralValidation[Structural Validation]
+    K --> LsyntenyAnalysis[Synteny Analysis]
+    K --> MgeneModelQuality[Gene Model Quality]
 
-    C --> N[Assembly Metrics]
+    C --> NassemblyMetrics[Assembly Metrics]
     E --> N
     G --> N
     J --> N
@@ -198,34 +192,31 @@ graph TD
     M --> N
 
     N --> O{Assembly Quality}
-    O -->|High| P[Publishable Assembly]
-    O -->|Medium| Q[Improved Assembly Needed]
-    O -->|Low| R[Re-assembly Required]
+    O -->|High| PpublishableAssembly[Publishable Assembly]
+    O -->|Medium| QimprovedAssemblyNeeded[Improved Assembly Needed]
+    O -->|Low| Rre-assemblyRequired[Re-assembly Required]
 
-    P --> S[Downstream Analysis]
-    Q --> T[Gap Filling]
-    R --> U[Additional Sequencing]
+    P --> SdownstreamAnalysis[Downstream Analysis]
+    Q --> TgapFilling[Gap Filling]
+    R --> UadditionalSequencing[Additional Sequencing]
 
     T --> V{Re-assembly?}
     V -->|Yes| R
     V -->|No| S
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style N fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style S fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Assembly Statistics"
-        W[Total Length] -.-> B
-        X[Number of Contigs] -.-> B
-        Y[Largest Contig] -.-> B
-        Z[GC Content] -.-> C
+        WtotalLength[Total Length] -.-> B
+        XnumberOfContigs[Number of Contigs] -.-> B
+        YlargestContig[Largest Contig] -.-> B
+        ZgcContent[GC Content] -.-> C
     end
 
     subgraph "Validation Methods"
-        AA[Read Alignment] -.-> D
-        BB[Reference Comparison] -.-> F
-        CC[BLAST Searches] -.-> I
-        DD[Ortholog Detection] -.-> K
+        AAreadAlignment[Read Alignment] -.-> D
+        BBreferenceComparison[Reference Comparison] -.-> F
+        CCblastSearches[BLAST Searches] -.-> I
+        DDorthologDetection[Ortholog Detection] -.-> K
     end
 ```
 
@@ -233,64 +224,61 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Multi-Batch Dataset] --> B[Principal Component Analysis]
-    B --> C[Batch Effect Visualization]
+    Amulti-batchDataset[Multi-Batch Dataset] --> BprincipalComponentAnalysis[Principal Component Analysis]
+    B --> CbatchEffectVisualization[Batch Effect Visualization]
 
-    A --> D[Differential Expression Analysis]
-    D --> E[Batch-Associated Genes]
+    A --> DdifferentialExpressionAnalysis[Differential Expression Analysis]
+    D --> Ebatch-associatedGenes[Batch-Associated Genes]
 
-    A --> F[Correlation Analysis]
-    F --> G[Batch Correlation Patterns]
+    A --> FcorrelationAnalysis[Correlation Analysis]
+    F --> GbatchCorrelationPatterns[Batch Correlation Patterns]
 
-    A --> H[Clustering Analysis]
-    H --> I[Batch-Specific Clusters]
+    A --> HclusteringAnalysis[Clustering Analysis]
+    H --> Ibatch-specificClusters[Batch-Specific Clusters]
 
-    C --> J[Batch Effect Assessment]
+    C --> JbatchEffectAssessment[Batch Effect Assessment]
     E --> J
     G --> J
     I --> J
 
     J --> K{Batch Effects Present?}
-    K -->|Strong| L[Correction Required]
-    K -->|Moderate| M[Optional Correction]
-    K -->|None| N[Proceed to Analysis]
+    K -->|Strong| LcorrectionRequired[Correction Required]
+    K -->|Moderate| MoptionalCorrection[Optional Correction]
+    K -->|None| NproceedToAnalysis[Proceed to Analysis]
 
     L --> O{Correction Method}
     M --> O
 
-    O -->|ComBat| P[Empirical Bayes Framework]
-    O -->|limma| Q[Linear Mixed Models]
-    O -->|PEER| R[Probabilistic Estimation]
+    O -->|ComBat| PempiricalBayesFramework[Empirical Bayes Framework]
+    O -->|limma| QlinearMixedModels[Linear Mixed Models]
+    O -->|PEER| RprobabilisticEstimation[Probabilistic Estimation]
     O -->|SVA| Q
 
-    P --> S[Corrected Data]
+    P --> ScorrectedData[Corrected Data]
     Q --> S
     R --> S
 
-    S --> T[Post-Correction Validation]
+    S --> Tpost-correctionValidation[Post-Correction Validation]
     T --> U{Correction Successful?}
 
-    U -->|Yes| V[Analysis Ready]
-    U -->|No| W[Alternative Method]
+    U -->|Yes| VanalysisReady[Analysis Ready]
+    U -->|No| WalternativeMethod[Alternative Method]
     W --> O
 
     N --> V
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style J fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style V fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Detection Methods"
-        X[PCA Visualization] -.-> C
+        XpcaVisualization[PCA Visualization] -.-> C
         Y[Heatmaps] -.-> C
         Z[ANOVA] -.-> E
-        AA[Spearman Correlation] -.-> G
+        AAspearmanCorrelation[Spearman Correlation] -.-> G
     end
 
     subgraph "Correction Approaches"
-        BB[Location/Scale Adjustment] -.-> P
+        BBlocation/scaleAdjustment[Location/Scale Adjustment] -.-> P
         CC[Regression-Based] -.-> Q
-        DD[Factor Analysis] -.-> R
+        DDfactorAnalysis[Factor Analysis] -.-> R
     end
 ```
 
@@ -298,53 +286,50 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Quality Assessment Results] --> B[Metric Summarization]
-    B --> C[Quality Score Calculation]
+    AqualityAssessmentResults[Quality Assessment Results] --> BmetricSummarization[Metric Summarization]
+    B --> CqualityScoreCalculation[Quality Score Calculation]
 
-    A --> D[Visualization Generation]
-    D --> E[Quality Plots]
-    D --> F[Summary Statistics]
+    A --> DvisualizationGeneration[Visualization Generation]
+    D --> EqualityPlots[Quality Plots]
+    D --> FsummaryStatistics[Summary Statistics]
 
-    A --> G[Threshold Evaluation]
-    G --> H[Pass/Fail Criteria]
+    A --> GthresholdEvaluation[Threshold Evaluation]
+    G --> Hpass/failCriteria[Pass/Fail Criteria]
 
-    C --> I[Quality Report]
+    C --> IqualityReport[Quality Report]
     E --> I
     F --> I
     H --> I
 
     I --> J{Report Format}
-    J -->|HTML| K[Interactive Report]
-    J -->|PDF| L[Static Report]
-    J -->|JSON| M[Structured Data]
-    J -->|MultiQC| N[Multi-Sample Report]
+    J -->|HTML| KinteractiveReport[Interactive Report]
+    J -->|PDF| LstaticReport[Static Report]
+    J -->|JSON| MstructuredData[Structured Data]
+    J -->|MultiQC| Nmulti-sampleReport[Multi-Sample Report]
 
-    K --> O[Web-Based QC Review]
-    L --> P[Archival Documentation]
-    M --> Q[Programmatic Access]
-    N --> R[Batch Processing Results]
+    K --> Oweb-basedQcReview[Web-Based QC Review]
+    L --> ParchivalDocumentation[Archival Documentation]
+    M --> QprogrammaticAccess[Programmatic Access]
+    N --> RbatchProcessingResults[Batch Processing Results]
 
-    O --> S[Quality Assurance Complete]
+    O --> SqualityAssuranceComplete[Quality Assurance Complete]
     P --> S
     Q --> S
     R --> S
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style I fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style S fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Report Components"
-        T[Executive Summary] -.-> I
-        U[Detailed Metrics] -.-> I
+        TexecutiveSummary[Executive Summary] -.-> I
+        UdetailedMetrics[Detailed Metrics] -.-> I
         V[Visualizations] -.-> I
         W[Recommendations] -.-> I
     end
 
     subgraph "Quality Metrics"
-        X[Pass Rate %] -.-> C
-        Y[Mean Quality Score] -.-> C
-        Z[Failure Reasons] -.-> H
-        AA[Improvement Suggestions] -.-> H
+        XpassRate%[Pass Rate %] -.-> C
+        YmeanQualityScore[Mean Quality Score] -.-> C
+        ZfailureReasons[Failure Reasons] -.-> H
+        AAimprovementSuggestions[Improvement Suggestions] -.-> H
     end
 ```
 

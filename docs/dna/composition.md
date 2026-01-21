@@ -4,9 +4,9 @@ Functions: `gc_skew`, `cumulative_gc_skew`, `melting_temperature`
 
 ```mermaid
 flowchart TD
-  A[DNA Sequence] --> B[gc_skew] --> C[Skew Value]
-  A --> D[cumulative_gc_skew] --> E[Skew Profile]
-  A --> F[melting_temperature] --> G[Tm Estimate]
+  AdnaSequence[DNA Sequence] --> BgcSkew[gc_skew] --> CskewValue[Skew Value]
+  A --> DcumulativeGcSkew[cumulative_gc_skew] --> EskewProfile[Skew Profile]
+  A --> FmeltingTemperature[melting_temperature] --> GtmEstimate[Tm Estimate]
 ```
 
 Example

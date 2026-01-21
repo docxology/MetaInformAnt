@@ -106,32 +106,27 @@
 <section id="gwas-analysis-pipeline">
 <h3>GWAS Analysis Pipeline<a class="headerlink" href="#gwas-analysis-pipeline" title="Link to this heading"></a></h3>
 <div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TD
-    A[Input Data&lt;br/&gt;VCF + Phenotypes] --&gt; B[Data Acquisition&lt;br/&gt;Download variants&lt;br/&gt;Reference genomes]
-    B --&gt; C[Quality Control&lt;br/&gt;MAF filtering&lt;br/&gt;Missing data&lt;br/&gt;HWE testing]
+    AinputDataVcf+Phenotypes[Input Data_VCF + Phenotypes] --&gt; BdataAcquisitionDownloadVariantsReferenceGenomes[Data Acquisition_Download variants_Reference genomes]
+    B --&gt; CqualityControlMafFilteringMissingDataHweTesting[Quality Control_MAF filtering_Missing data_HWE testing]
 
-    C --&gt; D[Population Structure&lt;br/&gt;PCA analysis&lt;br/&gt;Kinship matrix]
-    D --&gt; E[Association Testing&lt;br/&gt;Linear/Logistic regression&lt;br/&gt;Covariate adjustment]
+    C --&gt; DpopulationStructurePcaAnalysisKinshipMatrix[Population Structure_PCA analysis_Kinship matrix]
+    D --&gt; EassociationTestingLinear/logisticRegressionCovariateAdjustment[Association Testing_Linear/Logistic regression_Covariate adjustment]
 
-    E --&gt; F[Multiple Testing&lt;br/&gt;Bonferroni correction&lt;br/&gt;FDR control&lt;br/&gt;Genomic control]
-    F --&gt; G[Results Visualization&lt;br/&gt;Manhattan plots&lt;br/&gt;Q-Q plots&lt;br/&gt;Regional plots]
+    E --&gt; FmultipleTestingBonferroniCorrectionFdrControlGenomicControl[Multiple Testing_Bonferroni correction_FDR control_Genomic control]
+    F --&gt; GresultsVisualizationManhattanPlotsQ-qPlotsRegionalPlots[Results Visualization_Manhattan plots_Q-Q plots_Regional plots]
 
-    H[Configuration&lt;br/&gt;YAML templates] --&gt; I[Workflow Execution&lt;br/&gt;Parallel processing]
-    I --&gt; J[Results Output&lt;br/&gt;Statistics tables&lt;br/&gt;Visualizations]
+    HconfigurationYamlTemplates[Configuration_YAML templates] --&gt; IworkflowExecutionParallelProcessing[Workflow Execution_Parallel processing]
+    I --&gt; JresultsOutputStatisticsTablesVisualizations[Results Output_Statistics tables_Visualizations]
 
-    K[Variant Calling&lt;br/&gt;bcftools, GATK] -.-&gt; L[Integration&lt;br/&gt;BAM/CRAM input]
+    KvariantCallingBcftools,Gatk[Variant Calling_bcftools, GATK] -.-&gt; LintegrationBam/cramInput[Integration_BAM/CRAM input]
     L --&gt; B
 
-    M[Statistical Models&lt;br/&gt;Linear, Logistic&lt;br/&gt;Mixed models] --&gt; N[Model Selection&lt;br/&gt;Based on trait type]
+    MstatisticalModelsLinear,LogisticMixedModels[Statistical Models_Linear, Logistic_Mixed models] --&gt; NmodelSelectionBasedOnTraitType[Model Selection_Based on trait type]
     N --&gt; E
 
-    O[External Tools] -.-&gt; P[Tool Validation&lt;br/&gt;PATH checking&lt;br/&gt;Version compatibility]
+    OexternalTools[External Tools] -.-&gt; PtoolValidationPathCheckingVersionCompatibility[Tool Validation_PATH checking_Version compatibility]
     P --&gt; I
 
-    classDef input fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
-    classDef process fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
-    classDef analysis fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
-    classDef output fill:#fce4ec,stroke:#c2185b,stroke-width:2px
-    classDef config fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
 
     class A,H input
     class B,C,D,E,F,K,L process

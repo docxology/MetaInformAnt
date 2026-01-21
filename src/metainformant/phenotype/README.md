@@ -11,19 +11,19 @@ This module handles morphological and behavioral phenotype data, including loadi
 ```mermaid
 graph TB
     subgraph "Phenotype Module"
-        AntWiki[antwiki<br/>AntWiki Integration]
-        LifeCourse[life_course<br/>Life Course Analysis]
+        AntWikiantwikiAntwikiIntegration[antwiki_AntWiki Integration]
+        LifeCourselifeCourseLifeCourseAnalysis[life_course_Life Course Analysis]
     end
     
     subgraph "Input Data"
-        AntWikiJSON[AntWiki JSON]
-        EventSeqs[Event Sequences]
+        AntWikiJSONantwikiJson[AntWiki JSON]
+        EventSeqseventSequences[Event Sequences]
     end
     
     subgraph "Other Modules"
-        LifeEvents[life_events]
-        GWAS_Mod[gwas]
-        Networks_Mod[networks]
+        LifeEventslifeEvents[life_events]
+        gwas[gwas]
+        networks[networks]
     end
     
     AntWikiJSON --> AntWiki
@@ -38,42 +38,39 @@ graph TB
 
 ```mermaid
 graph TD
-    A[AntWiki Data Sources] --> B{Data Type}
-    B -->|JSON Files| C[Load JSON Files]
-    B -->|Web Scraping| D[Scrape AntWiki]
+    AantwikiDataSources[AntWiki Data Sources] --> B{Data Type}
+    B -->|JSON Files| CloadJsonFiles[Load JSON Files]
+    B -->|Web Scraping| DscrapeAntwiki[Scrape AntWiki]
 
-    C --> E[Parse JSON Structure]
-    D --> F[HTML Parsing]
+    C --> EparseJsonStructure[Parse JSON Structure]
+    D --> FhtmlParsing[HTML Parsing]
 
-    E --> G[Extract Fields]
+    E --> GextractFields[Extract Fields]
     F --> G
 
-    G --> H[Validate Data]
+    G --> HvalidateData[Validate Data]
     H --> I{Clean Data?}
 
-    I -->|Yes| J[Data Cleaning]
-    I -->|No| K[Raw Data]
+    I -->|Yes| JdataCleaning[Data Cleaning]
+    I -->|No| KrawData[Raw Data]
 
-    J --> L[Standardized Format]
+    J --> LstandardizedFormat[Standardized Format]
     K --> L
 
-    L --> M[Phenotype Categories]
-    M --> N[Morphological Traits]
-    M --> O[Behavioral Traits]
-    M --> P[Ecological Traits]
+    L --> MphenotypeCategories[Phenotype Categories]
+    M --> NmorphologicalTraits[Morphological Traits]
+    M --> ObehavioralTraits[Behavioral Traits]
+    M --> PecologicalTraits[Ecological Traits]
 
-    N --> Q[Measurements DB]
+    N --> QmeasurementsDb[Measurements DB]
     O --> Q
     P --> Q
 
-    Q --> R[Analysis Ready]
+    Q --> RanalysisReady[Analysis Ready]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style L fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Data Fields"
-        S[Species Info] -.-> G
+        SspeciesInfo[Species Info] -.-> G
         T[Measurements] -.-> G
         U[Traits] -.-> G
         V[Taxonomy] -.-> G
@@ -81,9 +78,9 @@ graph TD
     end
 
     subgraph "Quality Control"
-        X[Missing Values] -.-> H
+        XmissingValues[Missing Values] -.-> H
         Y[Outliers] -.-> H
-        Z[Data Types] -.-> H
+        ZdataTypes[Data Types] -.-> H
         AA[Consistency] -.-> H
     end
 
@@ -99,34 +96,31 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Event Sequences] --> B[Event Parsing]
-    B --> C[Extract Phenotypes]
+    AeventSequences[Event Sequences] --> BeventParsing[Event Parsing]
+    B --> CextractPhenotypes[Extract Phenotypes]
 
-    C --> D[Temporal Windows]
-    D --> E[Window Aggregation]
+    C --> DtemporalWindows[Temporal Windows]
+    D --> EwindowAggregation[Window Aggregation]
 
-    E --> F[Trait Categories]
-    F --> G[Morphological Changes]
-    F --> H[Behavioral Patterns]
-    F --> I[Developmental Stages]
+    E --> FtraitCategories[Trait Categories]
+    F --> GmorphologicalChanges[Morphological Changes]
+    F --> HbehavioralPatterns[Behavioral Patterns]
+    F --> IdevelopmentalStages[Developmental Stages]
 
-    G --> J[Growth Trajectories]
-    H --> K[Activity Patterns]
-    I --> L[Life Stage Transitions]
+    G --> JgrowthTrajectories[Growth Trajectories]
+    H --> KactivityPatterns[Activity Patterns]
+    I --> LlifeStageTransitions[Life Stage Transitions]
 
-    J --> M[Statistical Analysis]
+    J --> MstatisticalAnalysis[Statistical Analysis]
     K --> M
     L --> M
 
-    M --> N[Phenotype Networks]
-    N --> O[Association Mining]
+    M --> NphenotypeNetworks[Phenotype Networks]
+    N --> OassociationMining[Association Mining]
 
-    O --> P[Key Phenotypes]
-    P --> Q[Biological Insights]
+    O --> PkeyPhenotypes[Key Phenotypes]
+    P --> QbiologicalInsights[Biological Insights]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style E fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style Q fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Event Types"
         R[Developmental] -.-> B
@@ -136,17 +130,17 @@ graph TD
     end
 
     subgraph "Time Windows"
-        V[Early Development] -.-> D
+        VearlyDevelopment[Early Development] -.-> D
         W[Juvenile] -.-> D
         X[Adult] -.-> D
         Y[Senescence] -.-> D
     end
 
     subgraph "Analysis Methods"
-        Z[Trajectory Modeling] -.-> M
-        AA[Pattern Recognition] -.-> M
-        BB[Network Analysis] -.-> N
-        CC[Association Rules] -.-> O
+        ZtrajectoryModeling[Trajectory Modeling] -.-> M
+        AApatternRecognition[Pattern Recognition] -.-> M
+        BBnetworkAnalysis[Network Analysis] -.-> N
+        CCassociationRules[Association Rules] -.-> O
     end
 ```
 
@@ -154,44 +148,41 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Phenotype Data] --> B[Genotype Data]
-    B --> C[Sample Matching]
+    AphenotypeData[Phenotype Data] --> BgenotypeData[Genotype Data]
+    B --> CsampleMatching[Sample Matching]
 
-    A --> D[Phenotype Processing]
-    D --> E[Normalize Traits]
-    E --> F[Quality Control]
+    A --> DphenotypeProcessing[Phenotype Processing]
+    D --> EnormalizeTraits[Normalize Traits]
+    E --> FqualityControl[Quality Control]
 
-    C --> G[Association Testing]
+    C --> GassociationTesting[Association Testing]
     F --> G
 
     G --> H{Association Method}
-    H -->|Linear Regression| I[Quantitative Traits]
-    H -->|Logistic Regression| J[Binary Traits]
-    H -->|ANOVA| K[Categorical Traits]
-    H -->|Correlation| L[Continuous Traits]
+    H -->|Linear Regression| IquantitativeTraits[Quantitative Traits]
+    H -->|Logistic Regression| JbinaryTraits[Binary Traits]
+    H -->|ANOVA| KcategoricalTraits[Categorical Traits]
+    H -->|Correlation| LcontinuousTraits[Continuous Traits]
 
-    I --> M[Statistical Results]
+    I --> MstatisticalResults[Statistical Results]
     J --> M
     K --> M
     L --> M
 
-    M --> N[Multiple Testing Correction]
-    N --> O[Significant Associations]
+    M --> NmultipleTestingCorrection[Multiple Testing Correction]
+    N --> OsignificantAssociations[Significant Associations]
 
-    O --> P[Manhattan Plot]
-    O --> Q[QQ Plot]
-    O --> R[Regional Plot]
+    O --> PmanhattanPlot[Manhattan Plot]
+    O --> QqqPlot[QQ Plot]
+    O --> RregionalPlot[Regional Plot]
 
-    P --> S[Genome-wide View]
+    P --> Sgenome-wideView[Genome-wide View]
     Q --> S
     R --> S
 
-    S --> T[Candidate Genes]
-    T --> U[Functional Validation]
+    S --> TcandidateGenes[Candidate Genes]
+    T --> UfunctionalValidation[Functional Validation]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style G fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style U fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Phenotype Types"
         V[Morphometric] -.-> D
@@ -201,9 +192,9 @@ graph TD
     end
 
     subgraph "Genotype Data"
-        Z[VCF Files] -.-> B
-        AA[PLINK Format] -.-> B
-        BB[Genotype Matrix] -.-> B
+        ZvcfFiles[VCF Files] -.-> B
+        AAplinkFormat[PLINK Format] -.-> B
+        BBgenotypeMatrix[Genotype Matrix] -.-> B
     end
 
     subgraph "Correction Methods"
@@ -217,56 +208,53 @@ graph TD
 
 ```mermaid
 graph TD
-    A[AntWiki Website] --> B[Discover Species]
-    B --> C[Species List]
+    AantwikiWebsite[AntWiki Website] --> BdiscoverSpecies[Discover Species]
+    B --> CspeciesList[Species List]
 
     C --> D{Scraping Strategy}
-    D -->|Single Species| E[Scrape One Page]
-    D -->|Batch Scraping| F[Scrape Multiple]
+    D -->|Single Species| EscrapeOnePage[Scrape One Page]
+    D -->|Batch Scraping| FscrapeMultiple[Scrape Multiple]
 
-    E --> G[Parse HTML]
-    F --> H[Queue Management]
+    E --> GparseHtml[Parse HTML]
+    F --> HqueueManagement[Queue Management]
 
-    G --> I[Extract Content]
+    G --> IextractContent[Extract Content]
     H --> I
 
-    I --> J[Data Sections]
-    J --> K[Morphological Data]
-    J --> L[Behavioral Data]
-    J --> M[Ecological Data]
-    J --> N[Taxonomic Data]
+    I --> JdataSections[Data Sections]
+    J --> KmorphologicalData[Morphological Data]
+    J --> LbehavioralData[Behavioral Data]
+    J --> MecologicalData[Ecological Data]
+    J --> NtaxonomicData[Taxonomic Data]
 
-    K --> O[Structured Format]
+    K --> OstructuredFormat[Structured Format]
     L --> O
     M --> O
     N --> O
 
-    O --> P[Quality Validation]
+    O --> PqualityValidation[Quality Validation]
     P --> Q{Save Results}
-    Q -->|Individual Files| R[Per Species File]
-    Q -->|Combined| S[Master Dataset]
+    Q -->|Individual Files| RperSpeciesFile[Per Species File]
+    Q -->|Combined| SmasterDataset[Master Dataset]
 
     R --> T[Storage]
     S --> T
 
-    T --> U[Analysis Pipeline]
+    T --> UanalysisPipeline[Analysis Pipeline]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style I fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style U fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Scraping Controls"
-        V[Rate Limiting] -.-> D
-        W[Error Handling] -.-> D
-        X[Progress Tracking] -.-> F
+        VrateLimiting[Rate Limiting] -.-> D
+        WerrorHandling[Error Handling] -.-> D
+        XprogressTracking[Progress Tracking] -.-> F
         Y[Checkpoint/Resume] -.-> F
     end
 
     subgraph "Content Sections"
-        Z[Measurements Table] -.-> K
-        AA[Trait Descriptions] -.-> L
-        BB[Distribution Maps] -.-> M
-        CC[Taxonomy Info] -.-> N
+        ZmeasurementsTable[Measurements Table] -.-> K
+        AAtraitDescriptions[Trait Descriptions] -.-> L
+        BBdistributionMaps[Distribution Maps] -.-> M
+        CCtaxonomyInfo[Taxonomy Info] -.-> N
     end
 
     subgraph "Output Formats"
@@ -280,55 +268,52 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Multiple Phenotype Sources] --> B[Data Harmonization]
-    B --> C[Standard Schema]
+    AmultiplePhenotypeSources[Multiple Phenotype Sources] --> BdataHarmonization[Data Harmonization]
+    B --> CstandardSchema[Standard Schema]
 
-    A --> D[Source-specific Processing]
-    D --> E[Format Conversion]
-    E --> F[Unit Standardization]
+    A --> Dsource-specificProcessing[Source-specific Processing]
+    D --> EformatConversion[Format Conversion]
+    E --> FunitStandardization[Unit Standardization]
 
-    C --> G[Integrated Dataset]
+    C --> GintegratedDataset[Integrated Dataset]
     F --> G
 
-    G --> H[Quality Assessment]
-    H --> I[Completeness Check]
-    I --> J[Consistency Check]
-    J --> K[Outlier Detection]
+    G --> HqualityAssessment[Quality Assessment]
+    H --> IcompletenessCheck[Completeness Check]
+    I --> JconsistencyCheck[Consistency Check]
+    J --> KoutlierDetection[Outlier Detection]
 
     K --> L{Clean Data?}
-    L -->|Yes| M[Data Cleaning]
-    L -->|No| N[Flag Issues]
+    L -->|Yes| MdataCleaning[Data Cleaning]
+    L -->|No| NflagIssues[Flag Issues]
 
-    M --> O[Final Dataset]
+    M --> OfinalDataset[Final Dataset]
     N --> O
 
-    O --> P[Cross-source Validation]
-    P --> Q[Integrated Phenotypes]
+    O --> Pcross-sourceValidation[Cross-source Validation]
+    P --> QintegratedPhenotypes[Integrated Phenotypes]
 
-    Q --> R[Downstream Analysis]
-    R --> S[Biological Insights]
+    Q --> RdownstreamAnalysis[Downstream Analysis]
+    R --> SbiologicalInsights[Biological Insights]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style G fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style S fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Data Sources"
         T[AntWiki] -.-> A
-        U[Field Observations] -.-> A
+        UfieldObservations[Field Observations] -.-> A
         V[Literature] -.-> A
         W[Databases] -.-> A
     end
 
     subgraph "Harmonization Steps"
-        X[Term Mapping] -.-> B
-        Y[Unit Conversion] -.-> F
-        Z[Scale Normalization] -.-> F
+        XtermMapping[Term Mapping] -.-> B
+        YunitConversion[Unit Conversion] -.-> F
+        ZscaleNormalization[Scale Normalization] -.-> F
     end
 
     subgraph "Quality Metrics"
-        AA[Missing Rate] -.-> H
-        BB[Measurement Error] -.-> H
-        CC[Biological Plausibility] -.-> H
+        AAmissingRate[Missing Rate] -.-> H
+        BBmeasurementError[Measurement Error] -.-> H
+        CCbiologicalPlausibility[Biological Plausibility] -.-> H
     end
 ```
 
@@ -371,9 +356,9 @@ Comprehensive web scraping of AntWiki species pages to extract all sections incl
 
 **Cloudflare Protection:** The scraper automatically uses `cloudscraper` if available to bypass Cloudflare protection. Install with:
 ```bash
-pip install cloudscraper
+uv pip install cloudscraper
 # Or install optional dependencies:
-pip install metainformant[scraping]
+uv pip install metainformant[scraping]
 ```
 
 If `cloudscraper` is not available, the scraper falls back to `requests` but may fail on Cloudflare-protected sites.

@@ -11,23 +11,23 @@ This module handles the single-cell RNA sequencing analysis pipeline from raw co
 ```mermaid
 graph TB
     subgraph "Single Cell Module"
-        Preprocess[preprocessing<br/>Preprocessing]
-        DimRed[dimensionality<br/>Dimensionality Reduction]
-        Cluster[clustering<br/>Clustering]
-        Trajectory[trajectory<br/>Trajectory Inference]
-        Integration[integration<br/>Integration]
+        PreprocesspreprocessingPreprocessing[preprocessing_Preprocessing]
+        DimReddimensionalityDimensionalityReduction[dimensionality_Dimensionality Reduction]
+        ClusterclusteringClustering[clustering_Clustering]
+        TrajectorytrajectoryTrajectoryInference[trajectory_Trajectory Inference]
+        IntegrationintegrationIntegration[integration_Integration]
     end
     
     subgraph "Input Data"
-        CountMatrix[Count Matrix]
-        Metadata[Cell Metadata]
+        CountMatrixcountMatrix[Count Matrix]
+        MetadatacellMetadata[Cell Metadata]
     end
     
     subgraph "Other Modules"
-        RNA_Mod[rna]
+        rna[rna]
         MultiOmics[multiomics]
-        ML_Mod[ml]
-        QC_Mod[quality]
+        ml[ml]
+        quality[quality]
     end
     
     CountMatrix --> Preprocess
@@ -47,16 +47,16 @@ graph TB
 
 ```mermaid
 graph TD
-    A[Raw Count Matrix] --> B[Quality Control]
-    B --> C[Cell Filtering]
-    B --> D[Gene Filtering]
+    ArawCountMatrix[Raw Count Matrix] --> BqualityControl[Quality Control]
+    B --> CcellFiltering[Cell Filtering]
+    B --> DgeneFiltering[Gene Filtering]
 
     C --> E{Mitochondrial Content}
     C --> F{Ribosomal Content}
     C --> G{UMIs per Cell}
     C --> H{Genes per Cell}
 
-    E --> I[Remove High MT Cells]
+    E --> IremoveHighMtCells[Remove High MT Cells]
     F --> I
     G --> I
     H --> I
@@ -65,47 +65,44 @@ graph TD
     D --> K{Expression Variability}
     D --> L{Technical Genes}
 
-    J --> M[Remove Low Expression Genes]
+    J --> MremoveLowExpressionGenes[Remove Low Expression Genes]
     K --> M
     L --> M
 
-    I --> N[Filtered Matrix]
+    I --> NfilteredMatrix[Filtered Matrix]
     M --> N
 
     N --> O[Normalization]
     O --> P{Method}
-    P -->|Log Normalization| Q[Library Size Normalization]
-    P -->|SCTransform| R[Regularized Negative Binomial]
-    P -->|Pearson Residuals| S[Pearson Residual Analysis]
+    P -->|Log Normalization| QlibrarySizeNormalization[Library Size Normalization]
+    P -->|SCTransform| RregularizedNegativeBinomial[Regularized Negative Binomial]
+    P -->|Pearson Residuals| SpearsonResidualAnalysis[Pearson Residual Analysis]
 
-    Q --> T[Log Transformation]
+    Q --> TlogTransformation[Log Transformation]
     R --> T
     S --> T
 
-    T --> U[Feature Selection]
+    T --> UfeatureSelection[Feature Selection]
     U --> V{Highly Variable Genes}
     U --> W{Spike-ins}
     U --> X{Cell Cycle Genes}
 
-    V --> Y[Selected Genes]
+    V --> YselectedGenes[Selected Genes]
     W --> Y
     X --> Y
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style N fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style Y fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "QC Metrics"
-        AA[Library Size] -.-> B
-        BB[Gene Detection] -.-> B
-        CC[MT Percentage] -.-> B
+        AAlibrarySize[Library Size] -.-> B
+        BBgeneDetection[Gene Detection] -.-> B
+        CCmtPercentage[MT Percentage] -.-> B
         DD[Complexity] -.-> B
     end
 
     subgraph "Normalization Methods"
-        EE[Total Count] -.-> Q
+        EEtotalCount[Total Count] -.-> Q
         FF[Median] -.-> Q
-        GG[DESeq2 Style] -.-> Q
+        GGdeseq2Style[DESeq2 Style] -.-> Q
     end
 ```
 
@@ -113,57 +110,54 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Normalized Matrix] --> B[Scaling]
+    AnormalizedMatrix[Normalized Matrix] --> B[Scaling]
     B --> C{Z-score Scaling}
     B --> D{Pearson Residuals}
 
-    C --> E[Dimensionality Reduction]
+    C --> EdimensionalityReduction[Dimensionality Reduction]
     D --> E
 
     E --> F{Method}
-    F -->|PCA| G[Principal Component Analysis]
-    F -->|t-SNE| H[t-Distributed Stochastic Neighbor Embedding]
-    F -->|UMAP| I[Uniform Manifold Approximation]
+    F -->|PCA| GprincipalComponentAnalysis[Principal Component Analysis]
+    F -->|t-SNE| Ht-distributedStochasticNeighborEmbedding[t-Distributed Stochastic Neighbor Embedding]
+    F -->|UMAP| IuniformManifoldApproximation[Uniform Manifold Approximation]
 
-    G --> J[Component Selection]
+    G --> JcomponentSelection[Component Selection]
     H --> J
     I --> J
 
-    J --> K[Neighborhood Graph]
+    J --> KneighborhoodGraph[Neighborhood Graph]
     K --> L[Clustering]
 
     L --> M{Algorithm}
-    M -->|Leiden| N[Leiden Algorithm]
-    M -->|Louvain| O[Louvain Algorithm]
-    M -->|K-means| P[K-means Clustering]
+    M -->|Leiden| NleidenAlgorithm[Leiden Algorithm]
+    M -->|Louvain| OlouvainAlgorithm[Louvain Algorithm]
+    M -->|K-means| Pk-meansClustering[K-means Clustering]
 
-    N --> Q[Cluster Assignments]
+    N --> QclusterAssignments[Cluster Assignments]
     O --> Q
     P --> Q
 
-    Q --> R[Cluster Evaluation]
-    R --> S[Adjusted Rand Index]
-    R --> T[Silhouette Score]
-    R --> U[Calinski-Harabasz Index]
+    Q --> RclusterEvaluation[Cluster Evaluation]
+    R --> SadjustedRandIndex[Adjusted Rand Index]
+    R --> TsilhouetteScore[Silhouette Score]
+    R --> Ucalinski-harabaszIndex[Calinski-Harabasz Index]
 
-    S --> V[Optimal Clustering]
+    S --> VoptimalClustering[Optimal Clustering]
     T --> V
     U --> V
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style J fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style V fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "DR Parameters"
-        W[n_components] -.-> G
+        WnComponents[n_components] -.-> G
         X[perplexity] -.-> H
-        Y[n_neighbors] -.-> I
+        YnNeighbors[n_neighbors] -.-> I
     end
 
     subgraph "Graph Construction"
-        Z[kNN Graph] -.-> K
-        AA[Distance Matrix] -.-> K
-        BB[Similarity Matrix] -.-> K
+        ZknnGraph[kNN Graph] -.-> K
+        AAdistanceMatrix[Distance Matrix] -.-> K
+        BBsimilarityMatrix[Similarity Matrix] -.-> K
     end
 ```
 
@@ -171,44 +165,41 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Clustered Data] --> B[Trajectory Inference]
+    AclusteredData[Clustered Data] --> BtrajectoryInference[Trajectory Inference]
     B --> C{Method}
-    C -->|Monocle| D[Reversed Graph Embedding]
-    C -->|Slingshot| E[Minimum Spanning Tree]
-    C -->|PAGA| F[Partition-based Graph Abstraction]
-    C -->|Palantir| G[Diffusion Maps]
+    C -->|Monocle| DreversedGraphEmbedding[Reversed Graph Embedding]
+    C -->|Slingshot| EminimumSpanningTree[Minimum Spanning Tree]
+    C -->|PAGA| Fpartition-basedGraphAbstraction[Partition-based Graph Abstraction]
+    C -->|Palantir| GdiffusionMaps[Diffusion Maps]
 
-    D --> H[Trajectory Reconstruction]
+    D --> HtrajectoryReconstruction[Trajectory Reconstruction]
     E --> H
     F --> H
     G --> H
 
-    H --> I[Branch Points]
+    H --> IbranchPoints[Branch Points]
     H --> J[Pseudotime]
-    H --> K[Trajectory Paths]
+    H --> KtrajectoryPaths[Trajectory Paths]
 
-    I --> L[Bifurcation Analysis]
-    J --> M[Temporal Dynamics]
-    K --> N[Path-specific Genes]
+    I --> LbifurcationAnalysis[Bifurcation Analysis]
+    J --> MtemporalDynamics[Temporal Dynamics]
+    K --> Npath-specificGenes[Path-specific Genes]
 
-    L --> O[Differential Expression]
+    L --> OdifferentialExpression[Differential Expression]
     M --> O
     N --> O
 
     O --> P{Gene Expression}
-    P -->|Branch-specific| Q[Branch DE Genes]
-    P -->|Trajectory| R[Pseudotime DE Genes]
-    P -->|Endpoint| S[Terminal DE Genes]
+    P -->|Branch-specific| QbranchDeGenes[Branch DE Genes]
+    P -->|Trajectory| RpseudotimeDeGenes[Pseudotime DE Genes]
+    P -->|Endpoint| SterminalDeGenes[Terminal DE Genes]
 
-    Q --> T[Functional Enrichment]
+    Q --> TfunctionalEnrichment[Functional Enrichment]
     R --> T
     S --> T
 
-    T --> U[Biological Interpretation]
+    T --> UbiologicalInterpretation[Biological Interpretation]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style H fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style U fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Trajectory Methods"
         V[Graph-based] -.-> D
@@ -218,9 +209,9 @@ graph TD
     end
 
     subgraph "Analysis Outputs"
-        Z[Cell Ordering] -.-> J
-        AA[Branch Probabilities] -.-> I
-        BB[Transition States] -.-> L
+        ZcellOrdering[Cell Ordering] -.-> J
+        AAbranchProbabilities[Branch Probabilities] -.-> I
+        BBtransitionStates[Transition States] -.-> L
     end
 ```
 
@@ -228,38 +219,35 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Multiple scRNA-seq Datasets] --> B[Batch Effect Detection]
-    B --> C[Integration Method]
+    AmultipleScrna-seqDatasets[Multiple scRNA-seq Datasets] --> BbatchEffectDetection[Batch Effect Detection]
+    B --> CintegrationMethod[Integration Method]
 
     C --> D{Approach}
-    D -->|Mutual KNN| E[Mutual Nearest Neighbors]
-    D -->|Harmony| F[Harmony Algorithm]
+    D -->|Mutual KNN| EmutualNearestNeighbors[Mutual Nearest Neighbors]
+    D -->|Harmony| FharmonyAlgorithm[Harmony Algorithm]
     D -->|Scanorama| G[Scanorama]
-    D -->|BBKNN| H[Batch Balanced KNN]
+    D -->|BBKNN| HbatchBalancedKnn[Batch Balanced KNN]
 
-    E --> I[Integrated Space]
+    E --> IintegratedSpace[Integrated Space]
     F --> I
     G --> I
     H --> I
 
-    I --> J[Unified Clustering]
-    J --> K[Cross-dataset Comparison]
-    K --> L[Biological Insights]
+    I --> JunifiedClustering[Unified Clustering]
+    J --> Kcross-datasetComparison[Cross-dataset Comparison]
+    K --> LbiologicalInsights[Biological Insights]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style I fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style L fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Integration Quality"
-        M[Batch Mixing] -.-> I
-        N[Biological Preservation] -.-> I
-        O[Local Structure] -.-> I
+        MbatchMixing[Batch Mixing] -.-> I
+        NbiologicalPreservation[Biological Preservation] -.-> I
+        OlocalStructure[Local Structure] -.-> I
     end
 
     subgraph "Evaluation Metrics"
-        P[ARI Score] -.-> K
-        Q[ASW Score] -.-> K
-        R[LISI Score] -.-> K
+        PariScore[ARI Score] -.-> K
+        QaswScore[ASW Score] -.-> K
+        RlisiScore[LISI Score] -.-> K
     end
 ```
 
@@ -267,37 +255,34 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Single-Cell Data] --> B[DE Test Selection]
+    Asingle-cellData[Single-Cell Data] --> BdeTestSelection[DE Test Selection]
     B --> C{Method}
-    C -->|Wilcoxon| D[Wilcoxon Rank Sum]
-    C -->|t-test| E[Welch's t-test]
-    C -->|Logistic| F[Logistic Regression]
+    C -->|Wilcoxon| DwilcoxonRankSum[Wilcoxon Rank Sum]
+    C -->|t-test| Ewelch'sT-test[Welch's t-test]
+    C -->|Logistic| FlogisticRegression[Logistic Regression]
     C -->|MAST| G[MAST]
 
-    D --> H[Statistical Testing]
+    D --> HstatisticalTesting[Statistical Testing]
     E --> H
     F --> H
     G --> H
 
-    H --> I[P-value Calculation]
-    I --> J[Multiple Testing Correction]
+    H --> Ip-valueCalculation[P-value Calculation]
+    I --> JmultipleTestingCorrection[Multiple Testing Correction]
 
-    J --> K[Significant Genes]
-    K --> L[Effect Size Calculation]
-    L --> M[Gene Ranking]
+    J --> KsignificantGenes[Significant Genes]
+    K --> LeffectSizeCalculation[Effect Size Calculation]
+    L --> MgeneRanking[Gene Ranking]
 
     M --> N{Interpretation}
-    N -->|Pathway| O[Pathway Enrichment]
-    N -->|TF| P[Transcription Factor Analysis]
-    N -->|Surface| Q[Cell Surface Markers]
+    N -->|Pathway| OpathwayEnrichment[Pathway Enrichment]
+    N -->|TF| PtranscriptionFactorAnalysis[Transcription Factor Analysis]
+    N -->|Surface| QcellSurfaceMarkers[Cell Surface Markers]
 
-    O --> R[Biological Insights]
+    O --> RbiologicalInsights[Biological Insights]
     P --> R
     Q --> R
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style K fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "DE Test Types"
         S[Two-group] -.-> B
@@ -308,7 +293,7 @@ graph TD
 
     subgraph "Correction Methods"
         W[Bonferroni] -.-> J
-        X[B-H FDR] -.-> J
+        Xb-hFdr[B-H FDR] -.-> J
         Y[Holm-Bonferroni] -.-> J
     end
 ```

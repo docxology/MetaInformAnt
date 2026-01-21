@@ -99,12 +99,300 @@
              
   <section class="tex2jax_ignore mathjax_ignore" id="architecture">
 <h1>Architecture<a class="headerlink" href="#architecture" title="Link to this heading"></a></h1>
-<p>High-level architecture of METAINFORMANT.</p>
+<p>Comprehensive system architecture of METAINFORMANT, showing the modular design, data flow patterns, and integration relationships across all biological domains.</p>
+<section id="system-overview">
+<h2>System Overview<a class="headerlink" href="#system-overview" title="Link to this heading"></a></h2>
+<p>METAINFORMANT is a comprehensive bioinformatics toolkit designed for multi-omic data analysis. The architecture follows a modular, domain-driven design with clear separation of concerns and extensive integration capabilities.</p>
+<section id="core-design-principles">
+<h3>Core Design Principles<a class="headerlink" href="#core-design-principles" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Modular Architecture</strong>: Each biological domain is self-contained with well-defined interfaces</p></li>
+<li><p><strong>Data Flow Integration</strong>: Seamless data exchange between modules through standardized formats</p></li>
+<li><p><strong>Quality Assurance</strong>: Comprehensive validation and error handling throughout</p></li>
+<li><p><strong>Extensibility</strong>: Easy addition of new analysis methods and data types</p></li>
+<li><p><strong>Performance</strong>: Optimized algorithms for large-scale biological data processing</p></li>
+</ul>
+</section>
+</section>
+<section id="module-architecture">
+<h2>Module Architecture<a class="headerlink" href="#module-architecture" title="Link to this heading"></a></h2>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TB
+    %% Core Infrastructure Layer
+    subgraph &quot;Core Infrastructure&quot;
+        COREcoreUtilitiesConfig•Io•LoggingParallel•Paths•CacheWorkflow•Validation[Core Utilities_config • io • logging_parallel • paths • cache_workflow • validation]
+    end
+
+    %% Data Processing Layer
+    subgraph &quot;Data Processing&quot;
+        DNAdnaModuleSequences•AlignmentPhylogeny•Population[DNA Module_sequences • alignment_phylogeny • population]
+        RNArnaModuleAmalgkit•QuantificationTranscriptomics•Workflow[RNA Module_amalgkit • quantification_transcriptomics • workflow]
+        PROTEINproteinModuleSequences•StructureAlphafold•Analysis[Protein Module_sequences • structure_AlphaFold • analysis]
+        EPIGENOMEepigenomeModuleMethylation•Chip-seqAtac-seq•Chromatin[Epigenome Module_methylation • ChIP-seq_ATAC-seq • chromatin]
+    end
+
+    %% Analysis Layer
+    subgraph &quot;Analysis Methods&quot;
+        GWASgwasModuleAssociation•QcPopulation•Visualization[GWAS Module_association • QC_population • visualization]
+        MATHmathModulePopulationGeneticsCoalescent•Selection[Math Module_population genetics_coalescent • selection]
+        MLmlModuleClassification•RegressionFeatureSelection[ML Module_classification • regression_feature selection]
+        INFOinfoTheoryModuleEntropy•Mi•SimilaritySemanticMeasures[Info Theory Module_entropy • MI • similarity_semantic measures]
+    end
+
+    %% Systems Biology Layer
+    subgraph &quot;Systems Biology&quot;
+        NETWORKSnetworksModulePpi•PathwaysCommunityDetection[Networks Module_PPI • pathways_community detection]
+        MULTIOMICSmulti-omicsModuleIntegration•HarmonizationJointAnalysis[Multi-Omics Module_integration • harmonization_joint analysis]
+        SINGLECELLsingle-cellModulePreprocessing•ClusteringTrajectory•De[Single-Cell Module_preprocessing • clustering_trajectory • DE]
+        SIMULATIONsimulationModuleSequences•EcosystemsAgent-based•Evolution[Simulation Module_sequences • ecosystems_agent-based • evolution]
+    end
+
+    %% Knowledge Layer
+    subgraph &quot;Knowledge &amp; Metadata&quot;
+        ONTOLOGYontologyModuleGo•FunctionalAnnotationSemanticSimilarity[Ontology Module_GO • functional annotation_semantic similarity]
+        PHENOTYPEphenotypeModuleTraits•LifeCourseAntwiki•Curation[Phenotype Module_traits • life course_AntWiki • curation]
+        ECOLOGYecologyModuleCommunities•DiversityEnvironmentalAnalysis[Ecology Module_communities • diversity_environmental analysis]
+        LIFEEVENTSlifeEventsModuleSequences•EmbeddingsTemporalPrediction[Life Events Module_sequences • embeddings_temporal prediction]
+    end
+
+    %% Utilities Layer
+    subgraph &quot;Utilities&quot;
+        QUALITYqualityModuleFastq•AssemblyMetrics•Validation[Quality Module_FASTQ • assembly_metrics • validation]
+        VISUALIZATIONvisualizationModulePlots•AnimationsTrees•Networks[Visualization Module_plots • animations_trees • networks]
+    end
+
+    %% Data Flow
+    CORE --&gt; DNA
+    CORE --&gt; RNA
+    CORE --&gt; PROTEIN
+    CORE --&gt; EPIGENOME
+    CORE --&gt; GWAS
+    CORE --&gt; MATH
+    CORE --&gt; ML
+    CORE --&gt; INFO
+    CORE --&gt; NETWORKS
+    CORE --&gt; MULTIOMICS
+    CORE --&gt; SINGLECELL
+    CORE --&gt; SIMULATION
+    CORE --&gt; ONTOLOGY
+    CORE --&gt; PHENOTYPE
+    CORE --&gt; ECOLOGY
+    CORE --&gt; LIFEEVENTS
+    CORE --&gt; QUALITY
+    CORE --&gt; VISUALIZATION
+
+    DNA --&gt; RNA
+    DNA --&gt; PROTEIN
+    DNA --&gt; GWAS
+    RNA --&gt; SINGLECELL
+    RNA --&gt; MULTIOMICS
+    PROTEIN --&gt; NETWORKS
+    PROTEIN --&gt; ONTOLOGY
+    EPIGENOME --&gt; DNA
+    EPIGENOME --&gt; NETWORKS
+    ONTOLOGY --&gt; MULTIOMICS
+    PHENOTYPE --&gt; GWAS
+    PHENOTYPE --&gt; LIFEEVENTS
+    ECOLOGY --&gt; NETWORKS
+    MATH --&gt; GWAS
+    MATH --&gt; DNA
+    INFO --&gt; NETWORKS
+    INFO --&gt; ONTOLOGY
+    NETWORKS --&gt; MULTIOMICS
+    SINGLECELL --&gt; MULTIOMICS
+    QUALITY --&gt; allAnalysisModulesallAnalysisModules[All Analysis Modules]
+    VISUALIZATION --&gt; ALL_MODULES
+
+    %% External Dependencies
+    RNA -.-&gt;|&quot;Amalgkit CLI&quot;| RNA
+    SINGLECELL -.-&gt;|&quot;scanpy, anndata&quot;| SINGLECELL
+    PROTEIN -.-&gt;|&quot;AlphaFold&quot;| PROTEIN
+    GWAS -.-&gt;|&quot;bcftools, GATK&quot;| GWAS
+
+    %% Data Sources
+    NCBI(ncbiGenomes)[(NCBI Genomes)] --&gt; DNA
+    SRA(sraSequences)[(SRA Sequences)] --&gt; RNA
+    SRA --&gt; SINGLECELL
+    SRA --&gt; GWAS
+    PDB(pdbStructures)[(PDB Structures)] --&gt; PROTEIN
+    GEO(geoExpression)[(GEO Expression)] --&gt; RNA
+    GO(geneOntology)[(Gene Ontology)] --&gt; ONTOLOGY
+
+    %% Styling
+
+    class CORE core
+    class DNA,RNA,PROTEIN,EPIGENOME data
+    class GWAS,MATH,ML,INFO analysis
+    class NETWORKS,MULTIOMICS,SINGLECELL,SIMULATION systems
+    class ONTOLOGY,PHENOTYPE,ECOLOGY,LIFEEVENTS knowledge
+    class QUALITY,VISUALIZATION utility
+    class NCBI,SRA,PDB,GEO,GO external
+</pre></div>
+</div>
+<section id="data-flow-architecture">
+<h3>Data Flow Architecture<a class="headerlink" href="#data-flow-architecture" title="Link to this heading"></a></h3>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TD
+    ArawBiologicalData[Raw Biological Data] --&gt; BingestionLayer[Ingestion Layer]
+    B --&gt; CformatDetection[Format Detection]
+    C --&gt; DdataValidation[Data Validation]
+
+    D --&gt; E{Data Type}
+    E --&gt;|Genomic| FdnaProcessingPipeline[DNA Processing Pipeline]
+    E --&gt;|Transcriptomic| GrnaProcessingPipeline[RNA Processing Pipeline]
+    E --&gt;|Proteomic| HproteinProcessingPipeline[Protein Processing Pipeline]
+    E --&gt;|Epigenomic| IepigenomeProcessingPipeline[Epigenome Processing Pipeline]
+
+    F --&gt; JqualityControl[Quality Control]
+    G --&gt; J
+    H --&gt; J
+    I --&gt; J
+
+    J --&gt; KfeatureExtraction[Feature Extraction]
+    K --&gt; LstatisticalAnalysis[Statistical Analysis]
+
+    L --&gt; M{Integration Strategy}
+    M --&gt;|Single-omic| NindividualAnalysis[Individual Analysis]
+    M --&gt;|Multi-omic| OjointAnalysis[Joint Analysis]
+
+    N --&gt; Pdomain-specificResults[Domain-Specific Results]
+    O --&gt; Qsystems-levelResults[Systems-Level Results]
+
+    P --&gt; R[Visualization]
+    Q --&gt; R
+
+    R --&gt; SpublicationFigures[Publication Figures]
+    S --&gt; TscientificInsights[Scientific Insights]
+
+
+    subgraph &quot;Data Sources&quot;
+        U[NCBI] -.-&gt; F
+        V[SRA] -.-&gt; G
+        W[PDB] -.-&gt; H
+        X[ENCODE] -.-&gt; I
+    end
+
+    subgraph &quot;Processing Stages&quot;
+        Y[Normalization] -.-&gt; K
+        Z[Transformation] -.-&gt; K
+        AA[Filtering] -.-&gt; K
+        BB[Scaling] -.-&gt; K
+    end
+
+    subgraph &quot;Analysis Types&quot;
+        CCdifferentialExpression[Differential Expression] -.-&gt; L
+        DDassociationTesting[Association Testing] -.-&gt; L
+        EEnetworkInference[Network Inference] -.-&gt; L
+        FF[Clustering] -.-&gt; L
+    end
+</pre></div>
+</div>
+</section>
+<section id="integration-framework">
+<h3>Integration Framework<a class="headerlink" href="#integration-framework" title="Link to this heading"></a></h3>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TD
+    AmoduleInterfaces[Module Interfaces] --&gt; BstandardizedApis[Standardized APIs]
+    B --&gt; CdataFormatStandards[Data Format Standards]
+
+    C --&gt; DinteroperabilityLayer[Interoperability Layer]
+    D --&gt; Ecross-moduleCommunication[Cross-Module Communication]
+
+    E --&gt; F{Integration Pattern}
+    F --&gt;|Pipeline| GsequentialProcessing[Sequential Processing]
+    F --&gt;|Workflow| HorchestratedExecution[Orchestrated Execution]
+    F --&gt;|Joint| IsimultaneousAnalysis[Simultaneous Analysis]
+
+    G --&gt; JresultAggregation[Result Aggregation]
+    H --&gt; J
+    I --&gt; J
+
+    J --&gt; KunifiedOutput[Unified Output]
+    K --&gt; LqualityAssurance[Quality Assurance]
+
+    L --&gt; MfinalResults[Final Results]
+
+
+    subgraph &quot;API Standards&quot;
+        NfunctionSignatures[Function Signatures] -.-&gt; B
+        OparameterTypes[Parameter Types] -.-&gt; B
+        PreturnFormats[Return Formats] -.-&gt; B
+        QerrorHandling[Error Handling] -.-&gt; B
+    end
+
+    subgraph &quot;Data Standards&quot;
+        RfastaFormat[FASTA Format] -.-&gt; C
+        ScountMatrices[Count Matrices] -.-&gt; C
+        TpandasDataframes[Pandas DataFrames] -.-&gt; C
+        UnetworkxGraphs[NetworkX Graphs] -.-&gt; C
+    end
+
+    subgraph &quot;Integration Mechanisms&quot;
+        VcoreUtilities[Core Utilities] -.-&gt; D
+        WconfigFiles[Config Files] -.-&gt; D
+        XworkflowOrchestration[Workflow Orchestration] -.-&gt; D
+        YeventSystem[Event System] -.-&gt; D
+    end
+</pre></div>
+</div>
+</section>
+<section id="quality-assurance-architecture">
+<h3>Quality Assurance Architecture<a class="headerlink" href="#quality-assurance-architecture" title="Link to this heading"></a></h3>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph TD
+    AcodeDevelopment[Code Development] --&gt; BstaticAnalysis[Static Analysis]
+    B --&gt; CtypeChecking[Type Checking]
+    C --&gt; D[Linting]
+
+    D --&gt; EunitTesting[Unit Testing]
+    E --&gt; FintegrationTesting[Integration Testing]
+    F --&gt; GperformanceTesting[Performance Testing]
+
+    G --&gt; H[Documentation]
+    H --&gt; I[Validation]
+
+    I --&gt; J{Standards Met?}
+    J --&gt;|Yes| KreleaseReady[Release Ready]
+    J --&gt;|No| LissueResolution[Issue Resolution]
+
+    L --&gt; A
+
+    K --&gt; M[Deployment]
+
+
+    subgraph &quot;Code Quality&quot;
+        N[mypy] -.-&gt; C
+        O[ruff] -.-&gt; D
+        P[black] -.-&gt; D
+        Q[isort] -.-&gt; D
+    end
+
+    subgraph &quot;Testing Framework&quot;
+        R[pytest] -.-&gt; E
+        SrealData[Real Data] -.-&gt; E
+        TnoMocks[No Mocks] -.-&gt; E
+        U[Integration] -.-&gt; F
+    end
+
+    subgraph &quot;Performance&quot;
+        V[Benchmarks] -.-&gt; G
+        WmemoryProfiling[Memory Profiling] -.-&gt; G
+        XscalabilityTests[Scalability Tests] -.-&gt; G
+    end
+
+    subgraph &quot;Documentation&quot;
+        YreadmeFiles[README Files] -.-&gt; H
+        ZapiDocs[API Docs] -.-&gt; H
+        AA[Examples] -.-&gt; H
+        BB[Guides] -.-&gt; H
+    end
+</pre></div>
+</div>
+</section>
+</section>
+<section id="detailed-module-relationships">
+<h2>Detailed Module Relationships<a class="headerlink" href="#detailed-module-relationships" title="Link to this heading"></a></h2>
 <div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart LR
   subgraph CLI
-    A[metainformant.__main__\nargparse CLI]
+    Ametainformant.Main\nargparseCli[metainformant.__main__\nargparse CLI]
   end
-  subgraph Core[Core Utilities]
+  subgraph CorecoreUtilities[Core Utilities]
     C1[config]
     C2[io]
     C3[logging]
@@ -129,13 +417,13 @@
     R2[workflow]
     R3[configs]
   end
-  subgraph GWAS[Genome-Wide Association]
+  subgraph GWASgenome-wideAssociation[Genome-Wide Association]
     G1[quality]
     G2[structure]
     G3[association]
     G4[visualization]
   end
-  subgraph SingleCell[Single-Cell Genomics]
+  subgraph SingleCellsingle-cellGenomics[Single-Cell Genomics]
     SC1[preprocessing]
     SC2[dimensionality]
     SC3[clustering]
@@ -143,7 +431,7 @@
     SC5[visualization]
     SC6[integration]
   end
-  subgraph Quality[Quality Control]
+  subgraph QualityqualityControl[Quality Control]
     Q1[fastq]
   end
   subgraph Simulation
@@ -161,12 +449,12 @@
     V2[plots]
     V3[animations]
   end
-  subgraph Information[Information Theory]
+  subgraph InformationinformationTheory[Information Theory]
     I1[entropy]
     I2[mutual-information]
     I3[profile]
   end
-  subgraph LifeEvents[Life Events]
+  subgraph LifeEventslifeEvents[Life Events]
     L1[embed]
     L2[predict]
     L3[interpret]
@@ -212,6 +500,7 @@
   C2 -.-&gt; O8
 </pre></div>
 </div>
+</section>
 <section id="project-directories-and-conventions">
 <h2>Project directories and conventions<a class="headerlink" href="#project-directories-and-conventions" title="Link to this heading"></a></h2>
 <ul class="simple">

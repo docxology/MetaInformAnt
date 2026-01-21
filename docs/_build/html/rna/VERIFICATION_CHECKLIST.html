@@ -102,12 +102,7 @@
 <section id="install-optional-dependencies">
 <h2>Install Optional Dependencies<a class="headerlink" href="#install-optional-dependencies" title="Link to this heading"></a></h2>
 <p>To remove warnings about missing optional dependencies:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>/media/q/ext6/github/MetaInformAnt
-
-<span class="c1"># Install ncbi-datasets-pylib (biopython is already in main dependencies)</span>
-/tmp/metainformant_venv/bin/python3<span class="w"> </span>-m<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>ncbi-datasets-pylib
-
-<span class="c1"># Or using uv (preferred)</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Install ncbi-datasets-pylib (biopython is already in main dependencies)</span>
 uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </span>ncbi-datasets-pylib<span class="w"> </span>--python<span class="w"> </span>/tmp/metainformant_venv/bin/python3
 </pre></div>
 </div>
@@ -115,8 +110,7 @@ uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </s
 <section id="convert-existing-sra-files-parallel-processing">
 <h2>Convert Existing SRA Files (Parallel Processing)<a class="headerlink" href="#convert-existing-sra-files-parallel-processing" title="Link to this heading"></a></h2>
 <p>The conversion script now supports parallel processing with detailed progress logging:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>/media/q/ext6/github/MetaInformAnt
-/tmp/metainformant_venv/bin/python3<span class="w"> </span>scripts/rna/convert_existing_sra.py
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>/tmp/metainformant_venv/bin/python3<span class="w"> </span>scripts/rna/convert_existing_sra.py
 </pre></div>
 </div>
 <p><strong>Features</strong>:</p>
@@ -131,9 +125,7 @@ uv<span class="w"> </span>pip<span class="w"> </span>install<span class="w"> </s
 <section id="quick-status-check">
 <h2>Quick Status Check<a class="headerlink" href="#quick-status-check" title="Link to this heading"></a></h2>
 <p>Run these commands to verify everything is working:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>/media/q/ext6/github/MetaInformAnt
-
-<span class="c1"># 1. Check workflow status</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># 1. Check workflow status</span>
 python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>config/amalgkit/amalgkit_pogonomyrmex_barbatus.yaml<span class="w"> </span>--status
 
 <span class="c1"># 2. Check active processes</span>

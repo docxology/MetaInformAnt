@@ -10,34 +10,30 @@ The DNA domain provides tools for sequence analysis, alignment, phylogenetics, p
 
 ```mermaid
 graph TD
-    A[Input Sequences<br/>FASTA/FASTQ] --> B[Sequence Validation<br/>validate_dna_sequence]
-    B --> C[Basic Analysis<br/>gc_content, kmer_counts]
+    AinputSequencesFasta/fastq[Input Sequences_FASTA/FASTQ] --> BsequenceValidationValidateDnaSequence[Sequence Validation_validate_dna_sequence]
+    B --> CbasicAnalysisGcContent,KmerCounts[Basic Analysis_gc_content, kmer_counts]
 
-    C --> D[Alignment<br/>Global/Local MSA]
-    C --> E[Composition<br/>GC skew, motifs]
+    C --> DalignmentGlobal/localMsa[Alignment_Global/Local MSA]
+    C --> EcompositionGcSkew,Motifs[Composition_GC skew, motifs]
 
-    D --> F[Phylogenetics<br/>Neighbor Joining<br/>UPGMA trees]
-    E --> G[Population Genetics<br/>π, Tajima's D, Fst]
+    D --> FphylogeneticsNeighborJoiningUpgmaTrees[Phylogenetics_Neighbor Joining_UPGMA trees]
+    E --> GpopulationGeneticsΠ,Tajima'sD,Fst[Population Genetics_π, Tajima's D, Fst]
 
-    F --> H[Visualization<br/>Tree plots, networks]
-    G --> I[Statistical Analysis<br/>Neutrality tests]
+    F --> HvisualizationTreePlots,Networks[Visualization_Tree plots, networks]
+    G --> IstatisticalAnalysisNeutralityTests[Statistical Analysis_Neutrality tests]
 
-    H --> J[Integration<br/>RNA, Protein, GWAS]
+    H --> JintegrationRna,Protein,Gwas[Integration_RNA, Protein, GWAS]
     I --> J
 
-    K[NCBI Data] --> L[Genome Download<br/>fetch_genome]
+    KncbiData[NCBI Data] --> LgenomeDownloadFetchGenome[Genome Download_fetch_genome]
     L --> A
 
-    M[Variant Data<br/>VCF files] --> N[Variant Analysis<br/>parse_vcf, effect prediction]
+    MvariantDataVcfFiles[Variant Data_VCF files] --> NvariantAnalysisParseVcf,EffectPrediction[Variant Analysis_parse_vcf, effect prediction]
     N --> G
 
-    O[Quality Control<br/>FASTQ metrics] --> P[Filtering<br/>quality_filter]
+    OqualityControlFastqMetrics[Quality Control_FASTQ metrics] --> PfilteringQualityFilter[Filtering_quality_filter]
     P --> A
 
-    classDef input fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
-    classDef process fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
-    classDef analysis fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
-    classDef output fill:#fce4ec,stroke:#c2185b,stroke-width:2px
 
     class A,K,M,O input
     class B,C,D,E,L,N,P process

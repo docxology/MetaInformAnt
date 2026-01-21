@@ -7,45 +7,42 @@ Comprehensive test suite for the METAINFORMANT bioinformatics toolkit. This docu
 
 ```mermaid
 graph TD
-    A[Test Categories] --> B[Unit Tests]
-    A --> C[Integration Tests]
-    A --> D[End-to-End Tests]
+    AtestCategories[Test Categories] --> BunitTests[Unit Tests]
+    A --> CintegrationTests[Integration Tests]
+    A --> Dend-to-endTests[End-to-End Tests]
 
-    B --> E[Function Testing]
-    B --> F[Module Testing]
-    C --> G[Workflow Testing]
-    C --> H[API Testing]
-    D --> I[Full Pipeline Testing]
+    B --> EfunctionTesting[Function Testing]
+    B --> FmoduleTesting[Module Testing]
+    C --> GworkflowTesting[Workflow Testing]
+    C --> HapiTesting[API Testing]
+    D --> IfullPipelineTesting[Full Pipeline Testing]
 
-    E --> J[pytest Execution]
+    E --> JpytestExecution[pytest Execution]
     F --> J
     G --> J
     H --> J
     I --> J
 
-    J --> K[Coverage Analysis]
-    K --> L[Report Generation]
+    J --> KcoverageAnalysis[Coverage Analysis]
+    K --> LreportGeneration[Report Generation]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style J fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style L fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Test Organization"
-        M[tests/test_*.py] -.-> B
+        Mtests/test*.py[tests/test_*.py] -.-> B
         N[tests/integration/] -.-> C
-        O[scripts/test_*.py] -.-> D
+        Oscripts/test*.py[scripts/test_*.py] -.-> D
     end
 
     subgraph "Test Principles"
-        P[Real Data Only] -.-> B
-        Q[No Mocks] -.-> B
-        R[Real Implementations] -.-> B
+        PrealDataOnly[Real Data Only] -.-> B
+        QnoMocks[No Mocks] -.-> B
+        RrealImplementations[Real Implementations] -.-> B
     end
 
     subgraph "Coverage Goals"
-        S[Core Utilities] -.-> K
-        T[Domain Modules] -.-> K
-        U[Workflow Integration] -.-> K
+        ScoreUtilities[Core Utilities] -.-> K
+        TdomainModules[Domain Modules] -.-> K
+        UworkflowIntegration[Workflow Integration] -.-> K
     end
 ```
 
@@ -53,37 +50,34 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Test Invocation] --> B[pytest Discovery]
-    B --> C[Test Collection]
+    AtestInvocation[Test Invocation] --> BpytestDiscovery[pytest Discovery]
+    B --> CtestCollection[Test Collection]
 
     C --> D{Test Type}
-    D -->|Unit| E[Function Tests]
-    D -->|Integration| F[Workflow Tests]
-    D -->|E2E| G[Pipeline Tests]
+    D -->|Unit| EfunctionTests[Function Tests]
+    D -->|Integration| FworkflowTests[Workflow Tests]
+    D -->|E2E| GpipelineTests[Pipeline Tests]
 
-    E --> H[Execution Environment]
+    E --> HexecutionEnvironment[Execution Environment]
     F --> H
     G --> H
 
-    H --> I[Real Data Setup]
-    I --> J[Dependency Verification]
+    H --> IrealDataSetup[Real Data Setup]
+    I --> JdependencyVerification[Dependency Verification]
 
-    J --> K[Test Execution]
-    K --> L[Result Collection]
+    J --> KtestExecution[Test Execution]
+    K --> LresultCollection[Result Collection]
 
     L --> M{Success?}
-    M -->|Yes| N[Coverage Analysis]
-    M -->|No| O[Failure Analysis]
+    M -->|Yes| NcoverageAnalysis[Coverage Analysis]
+    M -->|No| OfailureAnalysis[Failure Analysis]
 
-    N --> P[Report Generation]
-    O --> Q[Error Reporting]
+    N --> PreportGeneration[Report Generation]
+    O --> QerrorReporting[Error Reporting]
 
-    P --> R[Test Complete]
+    P --> RtestComplete[Test Complete]
     Q --> R
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style K fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Execution Phases"
         S[Setup] -.-> I
@@ -92,15 +86,15 @@ graph TD
     end
 
     subgraph "Quality Gates"
-        V[Code Coverage] -.-> N
-        W[Error Handling] -.-> N
+        VcodeCoverage[Code Coverage] -.-> N
+        WerrorHandling[Error Handling] -.-> N
         X[Performance] -.-> N
     end
 
     subgraph "Failure Modes"
-        Y[Assertion Errors] -.-> O
-        Z[Import Errors] -.-> O
-        AA[Timeout Errors] -.-> O
+        YassertionErrors[Assertion Errors] -.-> O
+        ZimportErrors[Import Errors] -.-> O
+        AAtimeoutErrors[Timeout Errors] -.-> O
     end
 ```
 
@@ -108,50 +102,47 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Tests Directory] --> B[Core Tests]
-    A --> C[Domain Tests]
-    A --> D[Integration Tests]
+    AtestsDirectory[Tests Directory] --> BcoreTests[Core Tests]
+    A --> CdomainTests[Domain Tests]
+    A --> DintegrationTests[Integration Tests]
 
-    B --> E[test_core_*.py]
-    C --> F[test_dna_*.py]
-    C --> G[test_rna_*.py]
-    C --> H[test_gwas_*.py]
+    B --> EtestCore*.py[test_core_*.py]
+    C --> FtestDna*.py[test_dna_*.py]
+    C --> GtestRna*.py[test_rna_*.py]
+    C --> HtestGwas*.py[test_gwas_*.py]
 
-    D --> I[test_workflow_*.py]
-    D --> J[test_integration_*.py]
+    D --> ItestWorkflow*.py[test_workflow_*.py]
+    D --> JtestIntegration*.py[test_integration_*.py]
 
-    E --> K[Unit Test Execution]
+    E --> KunitTestExecution[Unit Test Execution]
     F --> K
     G --> K
     H --> K
     I --> K
     J --> K
 
-    K --> L[Coverage Collection]
-    L --> M[Quality Metrics]
+    K --> LcoverageCollection[Coverage Collection]
+    L --> MqualityMetrics[Quality Metrics]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style K fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style M fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Test Categories"
-        N[Unit Tests] -.-> E
-        O[Module Tests] -.-> F
-        P[Workflow Tests] -.-> I
-        Q[Integration Tests] -.-> J
+        NunitTests[Unit Tests] -.-> E
+        OmoduleTests[Module Tests] -.-> F
+        PworkflowTests[Workflow Tests] -.-> I
+        QintegrationTests[Integration Tests] -.-> J
     end
 
     subgraph "Naming Convention"
-        R[test_<module>_<component>.py] -.-> E
-        S[test_<domain>_<function>.py] -.-> F
-        T[test_workflow_<workflow>.py] -.-> I
-        U[test_integration_<feature>.py] -.-> J
+        Rtest<module><component>.py[test_<module>_<component>.py] -.-> E
+        Stest<domain><function>.py[test_<domain>_<function>.py] -.-> F
+        TtestWorkflow<workflow>.py[test_workflow_<workflow>.py] -.-> I
+        UtestIntegration<feature>.py[test_integration_<feature>.py] -.-> J
     end
 
     subgraph "Quality Standards"
-        V[Real Data Only] -.-> N
-        W[Comprehensive Coverage] -.-> N
-        X[Performance Benchmarks] -.-> N
+        VrealDataOnly[Real Data Only] -.-> N
+        WcomprehensiveCoverage[Comprehensive Coverage] -.-> N
+        XperformanceBenchmarks[Performance Benchmarks] -.-> N
     end
 ```
 
@@ -168,125 +159,125 @@ graph TD
 
 | Test File | Source Modules | Coverage | Purpose | Status |
 |-----------|----------------|----------|---------|---------|
-| [`test_cli.py`](test_cli.py) | [`__main__.py`](../src/metainformant/__main__.py) | CLI entry points | Module invocation and help display | ✅ PASS |
-| [`test_core_cache.py`](test_core_cache.py) | [`core/cache.py`](../src/metainformant/core/cache.py) | JSON caching system | Cache roundtrip and TTL expiration | ✅ PASS |
-| [`test_core_config.py`](test_core_config.py) | [`core/config.py`](../src/metainformant/core/config.py) | Configuration management | Environment variable loading, PostgreSQL config | ✅ PASS |
-| [`test_core_hash.py`](test_core_hash.py) | [`core/hash.py`](../src/metainformant/core/hash.py) | Content hashing | SHA256 for files and byte content | ✅ PASS |
-| [`test_core_io.py`](test_core_io.py) | [`core/io.py`](../src/metainformant/core/io.py) | I/O utilities | JSON/JSONL/TSV, gzip handling, directory creation | ✅ PASS |
-| [`test_core_logging.py`](test_core_logging.py) | [`core/logging.py`](../src/metainformant/core/logging.py) | Logging infrastructure | Logger configuration and handlers | ✅ PASS |
-| [`test_core_parallel.py`](test_core_parallel.py) | [`core/parallel.py`](../src/metainformant/core/parallel.py) | Parallelization | Thread-based mapping with order preservation | ✅ PASS |
-| [`test_core_paths.py`](test_core_paths.py) | [`core/paths.py`](../src/metainformant/core/paths.py) | Path utilities | Path expansion, resolution, containment checks | ✅ PASS |
-| [`test_core_text.py`](test_core_text.py) | [`core/text.py`](../src/metainformant/core/text.py) | Text processing | Slugification, whitespace normalization, filename safety | ✅ PASS |
+| [`test_cli.py`](test_cli.py) | ``__main__.py`` | CLI entry points | Module invocation and help display | ✅ PASS |
+| [`test_core_cache.py`](test_core_cache.py) | ``core/cache.py`` | JSON caching system | Cache roundtrip and TTL expiration | ✅ PASS |
+| [`test_core_config.py`](test_core_config.py) | ``core/config.py`` | Configuration management | Environment variable loading, PostgreSQL config | ✅ PASS |
+| [`test_core_hash.py`](test_core_hash.py) | ``core/hash.py`` | Content hashing | SHA256 for files and byte content | ✅ PASS |
+| [`test_core_io.py`](test_core_io.py) | ``core/io.py`` | I/O utilities | JSON/JSONL/TSV, gzip handling, directory creation | ✅ PASS |
+| [`test_core_logging.py`](test_core_logging.py) | ``core/logging.py`` | Logging infrastructure | Logger configuration and handlers | ✅ PASS |
+| [`test_core_parallel.py`](test_core_parallel.py) | ``core/parallel.py`` | Parallelization | Thread-based mapping with order preservation | ✅ PASS |
+| [`test_core_paths.py`](test_core_paths.py) | ``core/paths.py`` | Path utilities | Path expansion, resolution, containment checks | ✅ PASS |
+| [`test_core_text.py`](test_core_text.py) | ``core/text.py`` | Text processing | Slugification, whitespace normalization, filename safety | ✅ PASS |
 
 ### DNA Analysis Tests
 
 | Test File | Source Modules | Coverage | Purpose | Status |
 |-----------|----------------|----------|---------|---------|
-| [`test_dna_accession.py`](test_dna_accession.py) | [`dna/genomes.py`](../src/metainformant/dna/genomes.py) | Assembly accession validation | NCBI assembly accession pattern validation | ✅ PASS |
-| [`test_dna_alignment.py`](test_dna_alignment.py) | [`dna/alignment.py`](../src/metainformant/dna/alignment.py) | Sequence alignment | Global and local pairwise alignment algorithms | ✅ PASS |
-| [`test_dna_codon_usage.py`](test_dna_codon_usage.py) | [`dna/codon.py`](../src/metainformant/dna/codon.py) | Codon analysis | Codon counting and frequency calculations | ✅ PASS |
-| [`test_dna_consensus.py`](test_dna_consensus.py) | [`dna/consensus.py`](../src/metainformant/dna/consensus.py) | Consensus sequences | Majority consensus from multiple sequence alignments | ✅ PASS |
-| [`test_dna_distances.py`](test_dna_distances.py) | [`dna/distances.py`](../src/metainformant/dna/distances.py) | Evolutionary distances | P-distance, Jukes-Cantor corrections | ✅ PASS |
-| [`test_dna_entrez_integration.py`](test_dna_entrez_integration.py) | [`dna/entrez.py`](../src/metainformant/dna/entrez.py) | NCBI Entrez integration | Genome fetching from NCBI databases | ⏭️ SKIP (email) |
-| [`test_dna_fastq.py`](test_dna_fastq.py) | [`dna/fastq.py`](../src/metainformant/dna/fastq.py) | FASTQ file processing | Quality score analysis, iteration, compression | ❌ FAIL |
-| [`test_dna_gc_skew_tm.py`](test_dna_gc_skew_tm.py) | [`dna/composition.py`](../src/metainformant/dna/composition.py) | Compositional analysis | GC skew calculation and melting temperature | ✅ PASS |
-| [`test_dna_kmer_distances.py`](test_dna_kmer_distances.py) | [`dna/distances.py`](../src/metainformant/dna/distances.py) | K-mer based distances | Cosine and other k-mer similarity metrics | ✅ PASS |
-| [`test_dna_motifs.py`](test_dna_motifs.py) | [`dna/motifs.py`](../src/metainformant/dna/motifs.py) | Motif finding | IUPAC pattern matching in sequences | ✅ PASS |
-| [`test_dna_msa.py`](test_dna_msa.py) | [`dna/msa.py`](../src/metainformant/dna/msa.py) | Multiple sequence alignment | Built-in MSA algorithm | ✅ PASS |
-| [`test_dna_msa_cli.py`](test_dna_msa_cli.py) | [`dna/msa.py`](../src/metainformant/dna/msa.py) | External MSA tools | MUSCLE integration | ⏭️ SKIP (MUSCLE) |
-| [`test_dna_mutations.py`](test_dna_mutations.py) | [`dna/mutations.py`](../src/metainformant/dna/mutations.py) | Mutation modeling | Point mutations, Hamming distance | ✅ PASS |
-| [`test_dna_ncbi.py`](test_dna_ncbi.py) | [`dna/ncbi.py`](../src/metainformant/dna/ncbi.py) | NCBI datasets integration | Optional dependency error handling | ⏭️ SKIP (dep) |
-| [`test_dna_phylogeny.py`](test_dna_phylogeny.py) | [`dna/phylogeny.py`](../src/metainformant/dna/phylogeny.py) | Phylogenetic trees | Neighbor-joining tree construction | ✅ PASS |
-| [`test_dna_phylogeny_bootstrap.py`](test_dna_phylogeny_bootstrap.py) | [`dna/phylogeny.py`](../src/metainformant/dna/phylogeny.py) | Bootstrap support | Phylogenetic confidence estimation | ✅ PASS |
-| [`test_dna_phylogeny_extra.py`](test_dna_phylogeny_extra.py) | [`dna/phylogeny.py`](../src/metainformant/dna/phylogeny.py) | Additional phylogeny | UPGMA and bootstrap methods | ✅ PASS |
-| [`test_dna_phylogeny_kmer.py`](test_dna_phylogeny_kmer.py) | [`dna/phylogeny.py`](../src/metainformant/dna/phylogeny.py) | K-mer phylogeny | Distance-based trees from k-mer profiles | ✅ PASS |
-| [`test_dna_population_genetics.py`](test_dna_population_genetics.py) | [`dna/population.py`](../src/metainformant/dna/population.py) | Population genetics | Allele frequencies, heterozygosity | ✅ PASS |
-| [`test_dna_population_more.py`](test_dna_population_more.py) | [`dna/population.py`](../src/metainformant/dna/population.py) | Advanced pop gen | Segregating sites, Watterson's theta | ✅ PASS |
-| [`test_dna_population_stats.py`](test_dna_population_stats.py) | [`dna/population.py`](../src/metainformant/dna/population.py) | Population statistics | Nucleotide diversity, Tajima's D, F_ST | ✅ PASS |
-| [`test_dna_restriction_sites.py`](test_dna_restriction_sites.py) | [`dna/restriction.py`](../src/metainformant/dna/restriction.py) | Restriction analysis | Restriction enzyme site finding | ✅ PASS |
-| [`test_dna_sequence_utils.py`](test_dna_sequence_utils.py) | [`dna/sequences.py`](../src/metainformant/dna/sequences.py) | Basic sequence ops | Reverse complement, GC content, k-mers | ✅ PASS |
-| [`test_dna_sequences.py`](test_dna_sequences.py) | [`dna/sequences.py`](../src/metainformant/dna/sequences.py) | FASTA parsing | Sequence file format handling | ✅ PASS |
-| [`test_dna_transcription.py`](test_dna_transcription.py) | [`dna/transcription.py`](../src/metainformant/dna/transcription.py) | Transcription | DNA to RNA conversion and reverse | ✅ PASS |
-| [`test_dna_translation.py`](test_dna_translation.py) | [`dna/translation.py`](../src/metainformant/dna/translation.py) | Protein synthesis | Genetic code translation, ORF finding | ✅ PASS |
-| [`test_dna_variants_vcf.py`](test_dna_variants_vcf.py) | [`dna/variants.py`](../src/metainformant/dna/variants.py) | Variant analysis | VCF file parsing and variant calling | ✅ PASS |
+| [`test_dna_accession.py`](test_dna_accession.py) | ``dna/genomes.py`` | Assembly accession validation | NCBI assembly accession pattern validation | ✅ PASS |
+| [`test_dna_alignment.py`](test_dna_alignment.py) | ``dna/alignment.py`` | Sequence alignment | Global and local pairwise alignment algorithms | ✅ PASS |
+| [`test_dna_codon_usage.py`](test_dna_codon_usage.py) | ``dna/codon.py`` | Codon analysis | Codon counting and frequency calculations | ✅ PASS |
+| [`test_dna_consensus.py`](test_dna_consensus.py) | ``dna/consensus.py`` | Consensus sequences | Majority consensus from multiple sequence alignments | ✅ PASS |
+| [`test_dna_distances.py`](test_dna_distances.py) | ``dna/distances.py`` | Evolutionary distances | P-distance, Jukes-Cantor corrections | ✅ PASS |
+| [`test_dna_entrez_integration.py`](test_dna_entrez_integration.py) | ``dna/entrez.py`` | NCBI Entrez integration | Genome fetching from NCBI databases | ⏭️ SKIP (email) |
+| [`test_dna_fastq.py`](test_dna_fastq.py) | ``dna/fastq.py`` | FASTQ file processing | Quality score analysis, iteration, compression | ❌ FAIL |
+| [`test_dna_gc_skew_tm.py`](test_dna_gc_skew_tm.py) | ``dna/composition.py`` | Compositional analysis | GC skew calculation and melting temperature | ✅ PASS |
+| [`test_dna_kmer_distances.py`](test_dna_kmer_distances.py) | ``dna/distances.py`` | K-mer based distances | Cosine and other k-mer similarity metrics | ✅ PASS |
+| [`test_dna_motifs.py`](test_dna_motifs.py) | ``dna/motifs.py`` | Motif finding | IUPAC pattern matching in sequences | ✅ PASS |
+| [`test_dna_msa.py`](test_dna_msa.py) | ``dna/msa.py`` | Multiple sequence alignment | Built-in MSA algorithm | ✅ PASS |
+| [`test_dna_msa_cli.py`](test_dna_msa_cli.py) | ``dna/msa.py`` | External MSA tools | MUSCLE integration | ⏭️ SKIP (MUSCLE) |
+| [`test_dna_mutations.py`](test_dna_mutations.py) | ``dna/mutations.py`` | Mutation modeling | Point mutations, Hamming distance | ✅ PASS |
+| [`test_dna_ncbi.py`](test_dna_ncbi.py) | ``dna/ncbi.py`` | NCBI datasets integration | Optional dependency error handling | ⏭️ SKIP (dep) |
+| [`test_dna_phylogeny.py`](test_dna_phylogeny.py) | ``dna/phylogeny.py`` | Phylogenetic trees | Neighbor-joining tree construction | ✅ PASS |
+| [`test_dna_phylogeny_bootstrap.py`](test_dna_phylogeny_bootstrap.py) | ``dna/phylogeny.py`` | Bootstrap support | Phylogenetic confidence estimation | ✅ PASS |
+| [`test_dna_phylogeny_extra.py`](test_dna_phylogeny_extra.py) | ``dna/phylogeny.py`` | Additional phylogeny | UPGMA and bootstrap methods | ✅ PASS |
+| [`test_dna_phylogeny_kmer.py`](test_dna_phylogeny_kmer.py) | ``dna/phylogeny.py`` | K-mer phylogeny | Distance-based trees from k-mer profiles | ✅ PASS |
+| [`test_dna_population_genetics.py`](test_dna_population_genetics.py) | ``dna/population.py`` | Population genetics | Allele frequencies, heterozygosity | ✅ PASS |
+| [`test_dna_population_more.py`](test_dna_population_more.py) | ``dna/population.py`` | Advanced pop gen | Segregating sites, Watterson's theta | ✅ PASS |
+| [`test_dna_population_stats.py`](test_dna_population_stats.py) | ``dna/population.py`` | Population statistics | Nucleotide diversity, Tajima's D, F_ST | ✅ PASS |
+| [`test_dna_restriction_sites.py`](test_dna_restriction_sites.py) | ``dna/restriction.py`` | Restriction analysis | Restriction enzyme site finding | ✅ PASS |
+| [`test_dna_sequence_utils.py`](test_dna_sequence_utils.py) | ``dna/sequences.py`` | Basic sequence ops | Reverse complement, GC content, k-mers | ✅ PASS |
+| [`test_dna_sequences.py`](test_dna_sequences.py) | ``dna/sequences.py`` | FASTA parsing | Sequence file format handling | ✅ PASS |
+| [`test_dna_transcription.py`](test_dna_transcription.py) | ``dna/transcription.py`` | Transcription | DNA to RNA conversion and reverse | ✅ PASS |
+| [`test_dna_translation.py`](test_dna_translation.py) | ``dna/translation.py`` | Protein synthesis | Genetic code translation, ORF finding | ✅ PASS |
+| [`test_dna_variants_vcf.py`](test_dna_variants_vcf.py) | ``dna/variants.py`` | Variant analysis | VCF file parsing and variant calling | ✅ PASS |
 
 ### Mathematical Models Tests
 
 | Test File | Source Modules | Coverage | Purpose | Status |
 |-----------|----------------|----------|---------|---------|
-| [`test_math_coalescent.py`](test_math_coalescent.py) | [`math/coalescent.py`](../src/metainformant/math/coalescent.py) | Coalescent theory | MRCA times, branch lengths, SFS | ✅ PASS |
-| [`test_math_coalescent_expectations.py`](test_math_coalescent_expectations.py) | [`math/coalescent.py`](../src/metainformant/math/coalescent.py) | Expected values | Segregating sites expectations | ✅ PASS |
-| [`test_math_coalescent_extras.py`](test_math_coalescent_extras.py) | [`math/coalescent.py`](../src/metainformant/math/coalescent.py) | Advanced coalescent | Tajima's constants and statistics | ✅ PASS |
-| [`test_math_drift_migration.py`](test_math_drift_migration.py) | [`math/ddm.py`](../src/metainformant/math/ddm.py) | Population processes | Genetic drift, migration models | ✅ PASS |
-| [`test_math_dynamics.py`](test_math_dynamics.py) | [`math/dynamics.py`](../src/metainformant/math/dynamics.py) | Dynamical systems | Logistic maps, Lotka-Volterra | ✅ PASS |
-| [`test_math_effective_size_extras.py`](test_math_effective_size_extras.py) | [`math/effective_size.py`](../src/metainformant/math/effective_size.py) | Effective population | Family size variance effects | ✅ PASS |
-| [`test_math_egt_epi_fst_ne.py`](test_math_egt_epi_fst_ne.py) | [`math/egt.py`](../src/metainformant/math/egt.py), [`math/epidemiology.py`](../src/metainformant/math/epidemiology.py), [`math/fst.py`](../src/metainformant/math/fst.py) | Multi-domain math | Game theory, epidemiology, F_ST | ✅ PASS |
-| [`test_math_epidemiology_extras.py`](test_math_epidemiology_extras.py) | [`math/epidemiology.py`](../src/metainformant/math/epidemiology.py) | Disease modeling | SEIR models, herd immunity | ✅ PASS |
-| [`test_math_epidemiology_more.py`](test_math_epidemiology_more.py) | [`math/epidemiology.py`](../src/metainformant/math/epidemiology.py) | Additional epi models | SIS models, effective reproduction | ✅ PASS |
-| [`test_math_extensions.py`](test_math_extensions.py) | [`math/__init__.py`](../src/metainformant/math/__init__.py) | Mathematical extensions | LD decay, realized heritability | ✅ PASS |
-| [`test_math_ld.py`](test_math_ld.py) | [`math/ld.py`](../src/metainformant/math/ld.py) | Linkage disequilibrium | LD coefficients, r² calculations | ✅ PASS |
-| [`test_math_ld_maps.py`](test_math_ld_maps.py) | [`math/ld.py`](../src/metainformant/math/ld.py) | Genetic mapping | Haldane/Kosambi mapping functions | ✅ PASS |
-| [`test_math_popgen.py`](test_math_popgen.py) | [`math/popgen.py`](../src/metainformant/math/popgen.py) | Population genetics | Hardy-Weinberg, selection, mutation | ✅ PASS |
-| [`test_math_price.py`](test_math_price.py) | [`math/price.py`](../src/metainformant/math/price.py) | Price equation | Selection analysis, covariance decomposition | ✅ PASS |
-| [`test_math_quantgen.py`](test_math_quantgen.py) | [`math/quantgen.py`](../src/metainformant/math/quantgen.py) | Quantitative genetics | Heritability, breeder's equation | ✅ PASS |
-| [`test_math_selection.py`](test_math_selection.py) | [`math/selection.py`](../src/metainformant/math/selection.py) | Selection theory | Hamilton's rule, multilevel selection | ✅ PASS |
-| [`test_math_selection_cli.py`](test_math_selection_cli.py) | [`math/selection_experiments/`](../src/metainformant/math/selection_experiments/) | Selection experiments | CLI for selection model replays | ✅ PASS |
+| [`test_math_coalescent.py`](test_math_coalescent.py) | ``math/coalescent.py`` | Coalescent theory | MRCA times, branch lengths, SFS | ✅ PASS |
+| [`test_math_coalescent_expectations.py`](test_math_coalescent_expectations.py) | ``math/coalescent.py`` | Expected values | Segregating sites expectations | ✅ PASS |
+| [`test_math_coalescent_extras.py`](test_math_coalescent_extras.py) | ``math/coalescent.py`` | Advanced coalescent | Tajima's constants and statistics | ✅ PASS |
+| [`test_math_drift_migration.py`](test_math_drift_migration.py) | ``math/ddm.py`` | Population processes | Genetic drift, migration models | ✅ PASS |
+| [`test_math_dynamics.py`](test_math_dynamics.py) | ``math/dynamics.py`` | Dynamical systems | Logistic maps, Lotka-Volterra | ✅ PASS |
+| [`test_math_effective_size_extras.py`](test_math_effective_size_extras.py) | ``math/effective_size.py`` | Effective population | Family size variance effects | ✅ PASS |
+| [`test_math_egt_epi_fst_ne.py`](test_math_egt_epi_fst_ne.py) | ``math/egt.py``, ``math/epidemiology.py``, ``math/fst.py`` | Multi-domain math | Game theory, epidemiology, F_ST | ✅ PASS |
+| [`test_math_epidemiology_extras.py`](test_math_epidemiology_extras.py) | ``math/epidemiology.py`` | Disease modeling | SEIR models, herd immunity | ✅ PASS |
+| [`test_math_epidemiology_more.py`](test_math_epidemiology_more.py) | ``math/epidemiology.py`` | Additional epi models | SIS models, effective reproduction | ✅ PASS |
+| [`test_math_extensions.py`](test_math_extensions.py) | ``math/__init__.py`` | Mathematical extensions | LD decay, realized heritability | ✅ PASS |
+| [`test_math_ld.py`](test_math_ld.py) | ``math/ld.py`` | Linkage disequilibrium | LD coefficients, r² calculations | ✅ PASS |
+| [`test_math_ld_maps.py`](test_math_ld_maps.py) | ``math/ld.py`` | Genetic mapping | Haldane/Kosambi mapping functions | ✅ PASS |
+| [`test_math_popgen.py`](test_math_popgen.py) | ``math/popgen.py`` | Population genetics | Hardy-Weinberg, selection, mutation | ✅ PASS |
+| [`test_math_price.py`](test_math_price.py) | ``math/price.py`` | Price equation | Selection analysis, covariance decomposition | ✅ PASS |
+| [`test_math_quantgen.py`](test_math_quantgen.py) | ``math/quantgen.py`` | Quantitative genetics | Heritability, breeder's equation | ✅ PASS |
+| [`test_math_selection.py`](test_math_selection.py) | ``math/selection.py`` | Selection theory | Hamilton's rule, multilevel selection | ✅ PASS |
+| [`test_math_selection_cli.py`](test_math_selection_cli.py) | ``math/selection_experiments/`` | Selection experiments | CLI for selection model replays | ✅ PASS |
 
 ### RNA Analysis Tests
 
 | Test File | Source Modules | Coverage | Purpose | Status |
 |-----------|----------------|----------|---------|---------|
-| [`test_rna_amalgkit.py`](test_rna_amalgkit.py) | [`rna/amalgkit.py`](../src/metainformant/rna/amalgkit.py) | AMALGKIT integration | CLI argument building, availability checks | ✅ PASS |
-| [`test_rna_amalgkit_cli_args.py`](test_rna_amalgkit_cli_args.py) | [`rna/amalgkit.py`](../src/metainformant/rna/amalgkit.py) | CLI argument handling | Flag normalization and ordering | ✅ PASS |
-| [`test_rna_cli.py`](test_rna_cli.py) | [`__main__.py`](../src/metainformant/__main__.py) | RNA CLI commands | Workflow planning CLI interface | ✅ PASS |
-| [`test_rna_config_load_plan.py`](test_rna_config_load_plan.py) | [`rna/workflow.py`](../src/metainformant/rna/workflow.py) | Configuration loading | YAML config parsing and planning | ✅ PASS |
-| [`test_rna_configs.py`](test_rna_configs.py) | [`rna/configs.py`](../src/metainformant/rna/configs.py) | Species configuration | Profile and layout generation | ✅ PASS |
-| [`test_rna_manifest.py`](test_rna_manifest.py) | [`rna/workflow.py`](../src/metainformant/rna/workflow.py) | Execution manifests | Workflow logging and tracking | ✅ PASS |
-| [`test_rna_preflight_manifest.py`](test_rna_preflight_manifest.py) | [`rna/workflow.py`](../src/metainformant/rna/workflow.py) | Dependency checking | Missing CLI scenario handling | ⏭️ SKIP (AMALGKIT) |
-| [`test_rna_run_amalgkit_logging.py`](test_rna_run_amalgkit_logging.py) | [`rna/amalgkit.py`](../src/metainformant/rna/amalgkit.py) | Execution logging | Log file generation and management | ✅ PASS |
-| [`test_rna_run_config_cli.py`](test_rna_run_config_cli.py) | [`__main__.py`](../src/metainformant/__main__.py) | Config-driven runs | Full workflow execution from config | ✅ PASS |
-| [`test_rna_step_runners_dispatch.py`](test_rna_step_runners_dispatch.py) | [`rna/steps/`](../src/metainformant/rna/steps/) | Step execution | Individual workflow step runners | ✅ PASS |
-| [`test_rna_workflow.py`](test_rna_workflow.py) | [`rna/workflow.py`](../src/metainformant/rna/workflow.py) | Workflow orchestration | Step ordering and parameter inheritance | ✅ PASS |
-| [`test_rna_workflow_config.py`](test_rna_workflow_config.py) | [`rna/workflow.py`](../src/metainformant/rna/workflow.py) | Workflow configuration | YAML config loading and validation | ✅ PASS |
-| [`test_rna_workflow_deps.py`](test_rna_workflow_deps.py) | [`rna/deps.py`](../src/metainformant/rna/deps.py) | Dependency management | Step dependency checking | ✅ PASS |
-| [`test_rna_workflow_manifest.py`](test_rna_workflow_manifest.py) | [`rna/workflow.py`](../src/metainformant/rna/workflow.py) | Manifest generation | Execution record creation | ✅ PASS |
-| [`test_rna_pipeline.py`](test_rna_pipeline.py) | [`rna/pipeline.py`](../src/metainformant/rna/pipeline.py) | Pipeline configuration | RNA pipeline config and table summarization | ✅ PASS |
-| [`test_rna_amalgkit_comprehensive.py`](test_rna_amalgkit_comprehensive.py) | [`rna/amalgkit.py`](../src/metainformant/rna/amalgkit.py), [`rna/workflow.py`](../src/metainformant/rna/workflow.py) | Comprehensive integration | Full workflow integration tests | ✅ PASS |
-| [`test_rna_amalgkit_end_to_end.py`](test_rna_amalgkit_end_to_end.py) | [`rna/amalgkit.py`](../src/metainformant/rna/amalgkit.py) | End-to-end workflows | Complete pipeline execution | ✅ PASS |
-| [`test_rna_ena_workflow.py`](test_rna_ena_workflow.py) | [`scripts/rna/workflow_ena_integrated.py`](../scripts/rna/workflow_ena_integrated.py) | ENA workflow | ENA-based download and quantification | ✅ PASS |
-| [`test_rna_orchestrators.py`](test_rna_orchestrators.py) | [`scripts/rna/`](../scripts/rna/) | Orchestrator scripts | Script configuration and methods | ✅ PASS |
+| [`test_rna_amalgkit.py`](test_rna_amalgkit.py) | ``rna/amalgkit.py`` | AMALGKIT integration | CLI argument building, availability checks | ✅ PASS |
+| [`test_rna_amalgkit_cli_args.py`](test_rna_amalgkit_cli_args.py) | ``rna/amalgkit.py`` | CLI argument handling | Flag normalization and ordering | ✅ PASS |
+| [`test_rna_cli.py`](test_rna_cli.py) | ``__main__.py`` | RNA CLI commands | Workflow planning CLI interface | ✅ PASS |
+| [`test_rna_config_load_plan.py`](test_rna_config_load_plan.py) | ``rna/workflow.py`` | Configuration loading | YAML config parsing and planning | ✅ PASS |
+| [`test_rna_configs.py`](test_rna_configs.py) | ``rna/configs.py`` | Species configuration | Profile and layout generation | ✅ PASS |
+| [`test_rna_manifest.py`](test_rna_manifest.py) | ``rna/workflow.py`` | Execution manifests | Workflow logging and tracking | ✅ PASS |
+| [`test_rna_preflight_manifest.py`](test_rna_preflight_manifest.py) | ``rna/workflow.py`` | Dependency checking | Missing CLI scenario handling | ⏭️ SKIP (AMALGKIT) |
+| [`test_rna_run_amalgkit_logging.py`](test_rna_run_amalgkit_logging.py) | ``rna/amalgkit.py`` | Execution logging | Log file generation and management | ✅ PASS |
+| [`test_rna_run_config_cli.py`](test_rna_run_config_cli.py) | ``__main__.py`` | Config-driven runs | Full workflow execution from config | ✅ PASS |
+| [`test_rna_step_runners_dispatch.py`](test_rna_step_runners_dispatch.py) | ``rna/steps/`` | Step execution | Individual workflow step runners | ✅ PASS |
+| [`test_rna_workflow.py`](test_rna_workflow.py) | ``rna/workflow.py`` | Workflow orchestration | Step ordering and parameter inheritance | ✅ PASS |
+| [`test_rna_workflow_config.py`](test_rna_workflow_config.py) | ``rna/workflow.py`` | Workflow configuration | YAML config loading and validation | ✅ PASS |
+| [`test_rna_workflow_deps.py`](test_rna_workflow_deps.py) | ``rna/deps.py`` | Dependency management | Step dependency checking | ✅ PASS |
+| [`test_rna_workflow_manifest.py`](test_rna_workflow_manifest.py) | ``rna/workflow.py`` | Manifest generation | Execution record creation | ✅ PASS |
+| [`test_rna_pipeline.py`](test_rna_pipeline.py) | ``rna/pipeline.py`` | Pipeline configuration | RNA pipeline config and table summarization | ✅ PASS |
+| [`test_rna_amalgkit_comprehensive.py`](test_rna_amalgkit_comprehensive.py) | ``rna/amalgkit.py``, ``rna/workflow.py`` | Comprehensive integration | Full workflow integration tests | ✅ PASS |
+| [`test_rna_amalgkit_end_to_end.py`](test_rna_amalgkit_end_to_end.py) | ``rna/amalgkit.py`` | End-to-end workflows | Complete pipeline execution | ✅ PASS |
+| [`test_rna_ena_workflow.py`](test_rna_ena_workflow.py) | ``scripts/rna/workflow_ena_integrated.py`` | ENA workflow | ENA-based download and quantification | ✅ PASS |
+| [`test_rna_orchestrators.py`](test_rna_orchestrators.py) | ``scripts/rna/`` | Orchestrator scripts | Script configuration and methods | ✅ PASS |
 
 ### Protein Analysis Tests
 
 | Test File | Source Modules | Coverage | Purpose | Status |
 |-----------|----------------|----------|---------|---------|
-| [`test_protein_alphafold_fetch.py`](test_protein_alphafold_fetch.py) | [`protein/alphafold.py`](../src/metainformant/protein/alphafold.py) | AlphaFold integration | Structure fetching from AlphaFold DB | ✅ PASS |
-| [`test_protein_cli.py`](test_protein_cli.py) | [`__main__.py`](../src/metainformant/__main__.py) | Protein CLI commands | Taxon ID processing commands | ✅ PASS |
-| [`test_protein_cli_comp.py`](test_protein_cli_comp.py) | [`__main__.py`](../src/metainformant/__main__.py) | Composition analysis | Amino acid composition CLI | ❌ FAIL |
-| [`test_protein_cli_structure.py`](test_protein_cli_structure.py) | [`__main__.py`](../src/metainformant/__main__.py) | Structure analysis | RMSD calculation CLI | ❌ FAIL |
-| [`test_protein_contacts.py`](test_protein_contacts.py) | [`protein/contacts.py`](../src/metainformant/protein/contacts.py) | Contact analysis | C-alpha contact pair detection | ✅ PASS |
-| [`test_protein_identity_alignment.py`](test_protein_identity_alignment.py) | [`protein/alignment.py`](../src/metainformant/protein/alignment.py) | Protein alignment | Pairwise identity, Needleman-Wunsch | ✅ PASS |
-| [`test_protein_interpro.py`](test_protein_interpro.py) | [`protein/interpro.py`](../src/metainformant/protein/interpro.py) | Domain annotation | InterPro domain fetching | ✅ PASS |
-| [`test_protein_sequences.py`](test_protein_sequences.py) | [`protein/sequences.py`](../src/metainformant/protein/sequences.py) | Sequence analysis | FASTA parsing, composition, k-mers | ✅ PASS |
-| [`test_protein_structure_io_rmsd.py`](test_protein_structure_io_rmsd.py) | [`protein/structure_io.py`](../src/metainformant/protein/structure_io.py), [`protein/structure.py`](../src/metainformant/protein/structure.py) | Structure I/O | PDB reading, RMSD calculations | ✅ PASS |
-| [`test_protein_structure_rmsd.py`](test_protein_structure_rmsd.py) | [`protein/structure.py`](../src/metainformant/protein/structure.py) | Structure comparison | Kabsch algorithm, rotation/translation | ✅ PASS |
-| [`test_protein_structure_secondary.py`](test_protein_structure_secondary.py) | [`protein/secondary.py`](../src/metainformant/protein/secondary.py) | Secondary structure | Helix-coil propensity prediction | ✅ PASS |
-| [`test_protein_uniprot_pdb.py`](test_protein_uniprot_pdb.py) | [`protein/uniprot.py`](../src/metainformant/protein/uniprot.py), [`protein/pdb.py`](../src/metainformant/protein/pdb.py) | Database integration | UniProt mapping, PDB downloads | ❌ FAIL |
+| [`test_protein_alphafold_fetch.py`](test_protein_alphafold_fetch.py) | ``protein/alphafold.py`` | AlphaFold integration | Structure fetching from AlphaFold DB | ✅ PASS |
+| [`test_protein_cli.py`](test_protein_cli.py) | ``__main__.py`` | Protein CLI commands | Taxon ID processing commands | ✅ PASS |
+| [`test_protein_cli_comp.py`](test_protein_cli_comp.py) | ``__main__.py`` | Composition analysis | Amino acid composition CLI | ❌ FAIL |
+| [`test_protein_cli_structure.py`](test_protein_cli_structure.py) | ``__main__.py`` | Structure analysis | RMSD calculation CLI | ❌ FAIL |
+| [`test_protein_contacts.py`](test_protein_contacts.py) | ``protein/contacts.py`` | Contact analysis | C-alpha contact pair detection | ✅ PASS |
+| [`test_protein_identity_alignment.py`](test_protein_identity_alignment.py) | ``protein/alignment.py`` | Protein alignment | Pairwise identity, Needleman-Wunsch | ✅ PASS |
+| [`test_protein_interpro.py`](test_protein_interpro.py) | ``protein/interpro.py`` | Domain annotation | InterPro domain fetching | ✅ PASS |
+| [`test_protein_sequences.py`](test_protein_sequences.py) | ``protein/sequences.py`` | Sequence analysis | FASTA parsing, composition, k-mers | ✅ PASS |
+| [`test_protein_structure_io_rmsd.py`](test_protein_structure_io_rmsd.py) | ``protein/structure_io.py``, ``protein/structure.py`` | Structure I/O | PDB reading, RMSD calculations | ✅ PASS |
+| [`test_protein_structure_rmsd.py`](test_protein_structure_rmsd.py) | ``protein/structure.py`` | Structure comparison | Kabsch algorithm, rotation/translation | ✅ PASS |
+| [`test_protein_structure_secondary.py`](test_protein_structure_secondary.py) | ``protein/secondary.py`` | Secondary structure | Helix-coil propensity prediction | ✅ PASS |
+| [`test_protein_uniprot_pdb.py`](test_protein_uniprot_pdb.py) | ``protein/uniprot.py``, ``protein/pdb.py`` | Database integration | UniProt mapping, PDB downloads | ❌ FAIL |
 
 ### Specialized Domain Tests
 
 | Test File | Source Modules | Coverage | Purpose | Status |
 |-----------|----------------|----------|---------|---------|
 | [`test_domain_modules.py`](test_domain_modules.py) | Multi-domain | Cross-module integration | Domain module API integration | ✅ PASS |
-| [`test_epigenome.py`](test_epigenome.py) | [`epigenome/`](../src/metainformant/epigenome/) | Epigenetic analysis | BedGraph parsing, methylation analysis | ✅ PASS |
-| [`test_life_events.py`](test_life_events.py) | [`life_events/events.py`](../src/metainformant/life_events/events.py) | Life events | Event sequence data structures | ✅ PASS |
-| [`test_ontology_go_basic.py`](test_ontology_go_basic.py) | [`ontology/go.py`](../src/metainformant/ontology/go.py) | Gene Ontology | GO term loading, traversal, summaries | ✅ PASS |
-| [`test_ontology_obo_parser.py`](test_ontology_obo_parser.py) | [`ontology/obo.py`](../src/metainformant/ontology/obo.py) | OBO format parsing | Ontology file format handling | ✅ PASS |
-| [`test_ontology_query.py`](test_ontology_query.py) | [`ontology/query.py`](../src/metainformant/ontology/query.py) | Ontology queries | Ancestor/descendant queries, subgraph extraction | ✅ PASS |
-| [`test_ontology_types.py`](test_ontology_types.py) | [`ontology/types.py`](../src/metainformant/ontology/types.py) | Ontology types | Term and Ontology dataclasses | ✅ PASS |
+| [`test_epigenome.py`](test_epigenome.py) | ``epigenome/`` | Epigenetic analysis | BedGraph parsing, methylation analysis | ✅ PASS |
+| [`test_life_events.py`](test_life_events.py) | ``life_events/events.py`` | Life events | Event sequence data structures | ✅ PASS |
+| [`test_ontology_go_basic.py`](test_ontology_go_basic.py) | ``ontology/go.py`` | Gene Ontology | GO term loading, traversal, summaries | ✅ PASS |
+| [`test_ontology_obo_parser.py`](test_ontology_obo_parser.py) | ``ontology/obo.py`` | OBO format parsing | Ontology file format handling | ✅ PASS |
+| [`test_ontology_query.py`](test_ontology_query.py) | ``ontology/query.py`` | Ontology queries | Ancestor/descendant queries, subgraph extraction | ✅ PASS |
+| [`test_ontology_types.py`](test_ontology_types.py) | ``ontology/types.py`` | Ontology types | Term and Ontology dataclasses | ✅ PASS |
 | [`test_repo_structure.py`](test_repo_structure.py) | Repository structure | Package organization | Directory structure validation | ✅ PASS |
-| [`test_visualization.py`](test_visualization.py) | [`visualization/`](../src/metainformant/visualization/) | Data visualization | Line plots, heatmaps, animations | ✅ PASS |
-| [`test_visualization_phylo.py`](test_visualization_phylo.py) | [`visualization/trees.py`](../src/metainformant/visualization/trees.py) | Phylogenetic visualization | Phylogenetic tree plotting | ✅ PASS |
+| [`test_visualization.py`](test_visualization.py) | ``visualization/`` | Data visualization | Line plots, heatmaps, animations | ✅ PASS |
+| [`test_visualization_phylo.py`](test_visualization_phylo.py) | ``visualization/trees.py`` | Phylogenetic visualization | Phylogenetic tree plotting | ✅ PASS |
 
 ## Coverage Analysis
 
@@ -311,17 +302,17 @@ graph TD
 ### ⚠️ Coverage Gaps Identified
 
 #### Recently Added (2024-12-28)
-- ✅ `test_life_events.py` - Added for [`life_events/events.py`](../src/metainformant/life_events/events.py) module
-- ✅ `test_rna_pipeline.py` - Added for [`rna/pipeline.py`](../src/metainformant/rna/pipeline.py) module
-- ✅ `test_gwas_sra_download.py` - Added for [`gwas/sra_download.py`](../src/metainformant/gwas/sra_download.py) module
-- ✅ `test_ontology_query.py` - Added for [`ontology/query.py`](../src/metainformant/ontology/query.py) module
-- ✅ `test_ontology_types.py` - Added for [`ontology/types.py`](../src/metainformant/ontology/types.py) module
-- ✅ `test_math_selection.py` - Added for [`math/selection.py`](../src/metainformant/math/selection.py) module
+- ✅ `test_life_events.py` - Added for ``life_events/events.py`` module
+- ✅ `test_rna_pipeline.py` - Added for ``rna/pipeline.py`` module
+- ✅ `test_gwas_sra_download.py` - Added for ``gwas/sra_download.py`` module
+- ✅ `test_ontology_query.py` - Added for ``ontology/query.py`` module
+- ✅ `test_ontology_types.py` - Added for ``ontology/types.py`` module
+- ✅ `test_math_selection.py` - Added for ``math/selection.py`` module
 
 #### Remaining Coverage Gaps
 - **GWAS Visualization Modules**: Multiple `gwas/visualization_*.py` modules exist (genome, statistical, regional, population, variants, effects, comparison, suite, enhanced) but only basic `visualization.py` is tested in `test_gwas_visualization.py`. Additional visualization modules should be tested or documented as covered by comprehensive tests.
-- **RNA steps**: Individual step modules in [`rna/steps/`](../src/metainformant/rna/steps/) partially covered by `test_rna_steps_comprehensive.py` but could benefit from dedicated tests
-- **Protein proteomes**: [`protein/proteomes.py`](../src/metainformant/protein/proteomes.py) has minimal coverage
+- **RNA steps**: Individual step modules in ``rna/steps/`` partially covered by `test_rna_steps_comprehensive.py` but could benefit from dedicated tests
+- **Protein proteomes**: ``protein/proteomes.py`` has minimal coverage
 - **Simulation domains**: Basic tests exist in `test_simulation.py` but comprehensive coverage could be expanded
 - **Ecology**: Basic tests exist in `test_ecology_basic.py` but could be expanded
 - **Single-cell modules**: Some modules (trajectory, integration, visualization) have limited coverage

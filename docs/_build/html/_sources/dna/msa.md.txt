@@ -4,9 +4,9 @@ Functions: `align_msa` (progressive, no external deps), `align_with_cli` (MUSCLE
 
 ```mermaid
 flowchart TD
-  A[id->seq map] --> B[align_msa]
-  A --> C[align_with_cli]
-  B --> D[aligned id->seq]
+  Aid->seqMap[id->seq map] --> BalignMsa[align_msa]
+  A --> CalignWithCli[align_with_cli]
+  B --> DalignedId->seq[aligned id->seq]
   C --> D
 ```
 

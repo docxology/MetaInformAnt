@@ -11,20 +11,20 @@ This module offers a toolkit for applying machine learning techniques to biologi
 ```mermaid
 graph TB
     subgraph "ML Module"
-        Classification[classification<br/>Classification]
-        Regression[regression<br/>Regression]
-        Features[features<br/>Feature Selection]
-        Validation[validation<br/>Model Validation]
-        DimRed[dimensionality<br/>Dimensionality Reduction]
+        ClassificationclassificationClassification[classification_Classification]
+        RegressionregressionRegression[regression_Regression]
+        FeaturesfeaturesFeatureSelection[features_Feature Selection]
+        ValidationvalidationModelValidation[validation_Model Validation]
+        DimReddimensionalityDimensionalityReduction[dimensionality_Dimensionality Reduction]
     end
     
     subgraph "Input Data"
-        Features_Data[Feature Matrix]
+        featureMatrixfeatureMatrix[Feature Matrix]
         Labels[Labels/Outcomes]
     end
     
     subgraph "Other Modules"
-        All[All Modules]
+        AllallModules[All Modules]
         SingleCell[singlecell]
         Networks[networks]
     end
@@ -46,63 +46,60 @@ graph TB
 
 ```mermaid
 graph TD
-    A[Biological Data] --> B[Data Preprocessing]
-    B --> C[Feature Engineering]
+    AbiologicalData[Biological Data] --> BdataPreprocessing[Data Preprocessing]
+    B --> CfeatureEngineering[Feature Engineering]
 
     C --> D{Task Type}
-    D -->|Classification| E[Classification Pipeline]
-    D -->|Regression| F[Regression Pipeline]
+    D -->|Classification| EclassificationPipeline[Classification Pipeline]
+    D -->|Regression| FregressionPipeline[Regression Pipeline]
 
-    E --> G[Train/Test Split]
+    E --> Gtrain/testSplit[Train/Test Split]
     F --> G
 
-    G --> H[Model Training]
-    H --> I[Hyperparameter Tuning]
+    G --> HmodelTraining[Model Training]
+    H --> IhyperparameterTuning[Hyperparameter Tuning]
 
-    I --> J[Model Evaluation]
-    J --> K[Performance Metrics]
+    I --> JmodelEvaluation[Model Evaluation]
+    J --> KperformanceMetrics[Performance Metrics]
 
     K --> L{Cross-Validation}
-    L --> M[Validation Scores]
-    L --> N[Performance Plots]
+    L --> MvalidationScores[Validation Scores]
+    L --> NperformancePlots[Performance Plots]
 
-    M --> O[Model Selection]
+    M --> OmodelSelection[Model Selection]
     N --> O
 
     O --> P{Deploy/Interpret}
-    P -->|Deploy| Q[Model Deployment]
-    P -->|Interpret| R[Feature Importance]
-    P -->|Ensemble| S[Model Combination]
+    P -->|Deploy| QmodelDeployment[Model Deployment]
+    P -->|Interpret| RfeatureImportance[Feature Importance]
+    P -->|Ensemble| SmodelCombination[Model Combination]
 
     Q --> T[Predictions]
-    R --> U[Biological Insights]
+    R --> UbiologicalInsights[Biological Insights]
     S --> T
 
     T --> V[Results]
     U --> V
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style H fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style V fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Feature Selection"
-        W[Filter Methods] -.-> C
-        X[Wrapper Methods] -.-> C
-        Y[Embedded Methods] -.-> C
+        WfilterMethods[Filter Methods] -.-> C
+        XwrapperMethods[Wrapper Methods] -.-> C
+        YembeddedMethods[Embedded Methods] -.-> C
     end
 
     subgraph "Algorithms"
-        Z[Random Forest] -.-> H
+        ZrandomForest[Random Forest] -.-> H
         AA[SVM] -.-> H
-        BB[Neural Networks] -.-> H
-        CC[Gradient Boosting] -.-> H
+        BBneuralNetworks[Neural Networks] -.-> H
+        CCgradientBoosting[Gradient Boosting] -.-> H
     end
 
     subgraph "Evaluation Metrics"
         DD[Accuracy/F1] -.-> K
         EE[MSE/R²] -.-> K
         FF[AUC-ROC] -.-> K
-        GG[Confusion Matrix] -.-> K
+        GGconfusionMatrix[Confusion Matrix] -.-> K
     end
 ```
 
@@ -110,25 +107,25 @@ graph TD
 
 ```mermaid
 graph TD
-    A[High-dimensional Data] --> B[Feature Assessment]
+    Ahigh-dimensionalData[High-dimensional Data] --> BfeatureAssessment[Feature Assessment]
     B --> C{Selection Method}
 
-    C -->|Filter| D[Statistical Tests]
-    C -->|Wrapper| E[Model-based Selection]
-    C -->|Embedded| F[Regularization Methods]
+    C -->|Filter| DstatisticalTests[Statistical Tests]
+    C -->|Wrapper| Emodel-basedSelection[Model-based Selection]
+    C -->|Embedded| FregularizationMethods[Regularization Methods]
 
-    D --> G[Univariate Tests]
-    D --> H[Mutual Information]
-    D --> I[Variance Threshold]
+    D --> GunivariateTests[Univariate Tests]
+    D --> HmutualInformation[Mutual Information]
+    D --> IvarianceThreshold[Variance Threshold]
 
-    E --> J[Recursive Elimination]
-    E --> K[Sequential Selection]
+    E --> JrecursiveElimination[Recursive Elimination]
+    E --> KsequentialSelection[Sequential Selection]
 
-    F --> L[LASSO Regression]
-    F --> M[Ridge Regression]
-    F --> N[Elastic Net]
+    F --> LlassoRegression[LASSO Regression]
+    F --> MridgeRegression[Ridge Regression]
+    F --> NelasticNet[Elastic Net]
 
-    G --> O[Feature Ranking]
+    G --> OfeatureRanking[Feature Ranking]
     H --> O
     I --> O
     J --> O
@@ -137,24 +134,21 @@ graph TD
     M --> O
     N --> O
 
-    O --> P[Optimal Feature Set]
-    P --> Q[Reduced Dimensionality]
+    O --> PoptimalFeatureSet[Optimal Feature Set]
+    P --> QreducedDimensionality[Reduced Dimensionality]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style O fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style Q fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Biological Applications"
-        R[Gene Expression] -.-> A
-        S[Protein Features] -.-> A
-        T[Genomic Variants] -.-> A
-        U[Metabolomic Data] -.-> A
+        RgeneExpression[Gene Expression] -.-> A
+        SproteinFeatures[Protein Features] -.-> A
+        TgenomicVariants[Genomic Variants] -.-> A
+        UmetabolomicData[Metabolomic Data] -.-> A
     end
 
     subgraph "Validation"
         V[Cross-validation] -.-> P
-        W[Biological Relevance] -.-> P
-        X[Stability Assessment] -.-> P
+        WbiologicalRelevance[Biological Relevance] -.-> P
+        XstabilityAssessment[Stability Assessment] -.-> P
     end
 ```
 
@@ -162,49 +156,46 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Training Data] --> B[Cross-Validation Strategy]
+    AtrainingData[Training Data] --> Bcross-validationStrategy[Cross-Validation Strategy]
     B --> C{K-fold CV}
     B --> D{Stratified CV}
     B --> E{Time Series CV}
 
-    C --> F[Fold Creation]
+    C --> FfoldCreation[Fold Creation]
     D --> F
     E --> F
 
-    F --> G[Model Training]
-    G --> H[Performance Evaluation]
+    F --> GmodelTraining[Model Training]
+    G --> HperformanceEvaluation[Performance Evaluation]
 
-    H --> I[Average Metrics]
-    H --> J[Variance Estimation]
-    H --> K[Overfitting Detection]
+    H --> IaverageMetrics[Average Metrics]
+    H --> JvarianceEstimation[Variance Estimation]
+    H --> KoverfittingDetection[Overfitting Detection]
 
-    I --> L[Model Comparison]
+    I --> LmodelComparison[Model Comparison]
     J --> L
     K --> L
 
-    L --> M[Best Model Selection]
-    M --> N[Final Model Training]
+    L --> MbestModelSelection[Best Model Selection]
+    M --> NfinalModelTraining[Final Model Training]
 
-    N --> O[Test Set Evaluation]
-    O --> P[Generalization Assessment]
+    N --> OtestSetEvaluation[Test Set Evaluation]
+    O --> PgeneralizationAssessment[Generalization Assessment]
 
-    P --> Q[Model Confidence]
-    Q --> R[Deployment Decision]
+    P --> QmodelConfidence[Model Confidence]
+    Q --> RdeploymentDecision[Deployment Decision]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style G fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style R fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Validation Techniques"
-        S[Holdout Validation] -.-> O
-        T[Bootstrap Validation] -.-> O
-        U[Permutation Testing] -.-> O
+        SholdoutValidation[Holdout Validation] -.-> O
+        TbootstrapValidation[Bootstrap Validation] -.-> O
+        UpermutationTesting[Permutation Testing] -.-> O
     end
 
     subgraph "Performance Measures"
-        V[Bias-Variance Tradeoff] -.-> L
-        W[Confidence Intervals] -.-> Q
-        X[Prediction Intervals] -.-> Q
+        Vbias-varianceTradeoff[Bias-Variance Tradeoff] -.-> L
+        WconfidenceIntervals[Confidence Intervals] -.-> Q
+        XpredictionIntervals[Prediction Intervals] -.-> Q
     end
 ```
     FeatureSel --> Split[Train/Test Split]

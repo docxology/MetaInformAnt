@@ -149,7 +149,9 @@
 <p>Enable automatic index building:</p>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">quant</span><span class="p">:</span>
-<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/camponotus_floridanus/quant</span>
+<span class="w">    </span><span class="c1"># CRITICAL: out_dir should be work_dir (not separate quant_dir)</span>
+<span class="w">    </span><span class="c1"># This allows quant to find getfastq output in {out_dir}/getfastq/</span>
+<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/camponotus_floridanus/work</span>
 <span class="w">    </span><span class="nt">build_index</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">yes</span><span class="w">  </span><span class="c1"># Automatically build kallisto index</span>
 <span class="w">    </span><span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">12</span>
 </pre></div>

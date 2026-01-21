@@ -593,9 +593,9 @@ print(f"Loaded expression matrix: {tpm.shape[1]} samples, {tpm.shape[0]} transcr
 
 ## See Also
 
-- **Previous Step**: [`quant.md`](quant.md) - Transcript quantification
-- **Next Step**: [`curate.md`](curate.md) - Quality control and batch correction
-- **Next Step**: [`cstmm.md`](cstmm.md) - Cross-species TMM normalization
+- **Previous Step**: [`06_quant.md`](06_quant.md) - Transcript quantification
+- **Next Step**: [`09_curate.md`](09_curate.md) - Quality control and batch correction
+- **Next Step**: [`08_cstmm.md`](08_cstmm.md) - Cross-species TMM normalization
 - **Workflow Overview**: [`../amalgkit.md`](../amalgkit.md)
 - **Testing**: `tests/test_rna_amalgkit_steps.py::test_merge_basic_execution`
 

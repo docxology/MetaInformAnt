@@ -112,7 +112,9 @@
 <li><p>Produces multiple output formats (counts, TPM, effective lengths)</p></li>
 <li><p>Handles missing samples gracefully</p></li>
 <li><p>Creates sample-by-transcript matrices</p></li>
+<li><p><strong>Requires R and ggplot2</strong>: For generating visualization plots (PCA, correlation heatmaps)</p></li>
 </ul>
+<p><strong>R Dependency</strong>: The merge step requires R and the <code class="docutils literal notranslate"><span class="pre">ggplot2</span></code> package for plotting. If R is not installed, merge will still create expression matrices but will skip plot generation. See <a class="reference internal" href="../R_INSTALLATION.html"><span class="std std-doc">R_INSTALLATION.md</span></a> for installation instructions.</p>
 </section>
 <section id="usage">
 <h2>Usage<a class="headerlink" href="#usage" title="Link to this heading"></a></h2>
@@ -139,9 +141,11 @@
 <h3>Configuration File<a class="headerlink" href="#configuration-file" title="Link to this heading"></a></h3>
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">merge</span><span class="p">:</span>
+<span class="w">    </span><span class="c1"># If quant used out_dir: work_dir, merge should use work_dir or copy files</span>
+<span class="w">    </span><span class="c1"># Option 1: Use same work_dir as quant</span>
 <span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/amellifera/work</span>
-<span class="w">    </span><span class="nt">out</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/amellifera/merged/merged_abundance.tsv</span>
-<span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/amellifera/merged</span>
+<span class="w">    </span><span class="c1"># Option 2: Use separate merged directory (requires copying abundance files)</span>
+<span class="w">    </span><span class="c1"># out_dir: output/amalgkit/amellifera/merged</span>
 <span class="w">    </span><span class="nt">metadata</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/amellifera/work/metadata/pivot_qualified.tsv</span>
 </pre></div>
 </div>
@@ -179,21 +183,44 @@
 <section id="prerequisites">
 <h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h3>
 <ul class="simple">
-<li><p><strong>Quantification Results</strong>: <code class="docutils literal notranslate"><span class="pre">abundance.tsv</span></code> files from <code class="docutils literal notranslate"><span class="pre">amalgkit</span> <span class="pre">quant</span></code> (in <code class="docutils literal notranslate"><span class="pre">out_dir/quant/SRR*/</span></code>)</p></li>
+<li><p><strong>Quantification Results</strong>: <code class="docutils literal notranslate"><span class="pre">abundance.tsv</span></code> files from <code class="docutils literal notranslate"><span class="pre">amalgkit</span> <span class="pre">quant</span></code> (in <code class="docutils literal notranslate"><span class="pre">{quant_out_dir}/quant/{sample_id}/abundance.tsv</span></code>)</p>
+<ul>
+<li><p><strong>Path Resolution</strong>: <code class="docutils literal notranslate"><span class="pre">amalgkit</span> <span class="pre">merge</span></code> looks for abundance files in <code class="docutils literal notranslate"><span class="pre">{out_dir}/quant/{sample_id}/{sample_id}_abundance.tsv</span></code> relative to its <code class="docutils literal notranslate"><span class="pre">out_dir</span></code> parameter</p></li>
+<li><p><strong>Critical</strong>: If <code class="docutils literal notranslate"><span class="pre">quant</span></code> used <code class="docutils literal notranslate"><span class="pre">out_dir:</span> <span class="pre">work_dir</span></code> (e.g., <code class="docutils literal notranslate"><span class="pre">output/amalgkit/{species}/work</span></code>), then merge’s <code class="docutils literal notranslate"><span class="pre">out_dir</span></code> should either:</p>
+<ul>
+<li><p>Be set to the same <code class="docutils literal notranslate"><span class="pre">work_dir</span></code> so it can find quant output in <code class="docutils literal notranslate"><span class="pre">{work_dir}/quant/</span></code>, OR</p></li>
+<li><p>Point to a location where abundance files have been copied/symlinked</p></li>
+</ul>
+</li>
+<li><p>The workflow may copy abundance files to <code class="docutils literal notranslate"><span class="pre">{merge_out_dir}/quant/{sample_id}/{sample_id}_abundance.tsv</span></code> to ensure merge can find them</p></li>
+</ul>
+</li>
 <li><p><strong>Metadata Table</strong>: Sample metadata with SRA IDs</p></li>
+<li><p><strong>R and ggplot2</strong> (optional but recommended): For generating visualization plots</p></li>
 </ul>
 </section>
 <section id="expected-input-structure">
 <h3>Expected Input Structure<a class="headerlink" href="#expected-input-structure" title="Link to this heading"></a></h3>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>out_dir/quant/
+<p><strong>Important</strong>: <code class="docutils literal notranslate"><span class="pre">amalgkit</span> <span class="pre">merge</span></code> looks for abundance files in <code class="docutils literal notranslate"><span class="pre">{out_dir}/quant/{sample_id}/{sample_id}_abundance.tsv</span></code>. If quant used <code class="docutils literal notranslate"><span class="pre">out_dir:</span> <span class="pre">work_dir</span></code>, the files will be in <code class="docutils literal notranslate"><span class="pre">{work_dir}/quant/{sample_id}/abundance.tsv</span></code>. Merge’s <code class="docutils literal notranslate"><span class="pre">out_dir</span></code> should be set accordingly.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>{out_dir}/quant/
 ├── SRR12345678/
-│   └── abundance.tsv
+│   └── SRR12345678_abundance.tsv  # Note: filename includes sample_id prefix
 ├── SRR12345679/
-│   └── abundance.tsv
+│   └── SRR12345679_abundance.tsv
 └── SRR12345680/
-    └── abundance.tsv
+    └── SRR12345680_abundance.tsv
 </pre></div>
 </div>
+<p><strong>Example</strong>: If quant used <code class="docutils literal notranslate"><span class="pre">out_dir:</span> <span class="pre">output/amalgkit/pbarbatus/work</span></code>, then:</p>
+<ul class="simple">
+<li><p>Quant output: <code class="docutils literal notranslate"><span class="pre">output/amalgkit/pbarbatus/work/quant/SRR12345678/abundance.tsv</span></code></p></li>
+<li><p>Merge should either:</p>
+<ul>
+<li><p>Use <code class="docutils literal notranslate"><span class="pre">out_dir:</span> <span class="pre">output/amalgkit/pbarbatus/work</span></code> (same as quant), OR</p></li>
+<li><p>Copy files to <code class="docutils literal notranslate"><span class="pre">output/amalgkit/pbarbatus/merged/quant/SRR12345678/SRR12345678_abundance.tsv</span></code></p></li>
+</ul>
+</li>
+</ul>
 </section>
 </section>
 <section id="output-files">
@@ -528,6 +555,41 @@ wc<span class="w"> </span>-l<span class="w"> </span>output/work/merge/Species_na
 </li>
 </ol>
 </section>
+<section id="issue-r-ggplot2-not-found-plotting-fails">
+<h3>Issue: R/ggplot2 not found (plotting fails)<a class="headerlink" href="#issue-r-ggplot2-not-found-plotting-fails" title="Link to this heading"></a></h3>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Error</span> <span class="ow">in</span> <span class="n">library</span><span class="p">(</span><span class="n">ggplot2</span><span class="p">,</span> <span class="n">quietly</span> <span class="o">=</span> <span class="n">TRUE</span><span class="p">)</span> <span class="p">:</span> <span class="n">there</span> <span class="ow">is</span> <span class="n">no</span> <span class="n">package</span> <span class="n">called</span> <span class="s1">&#39;ggplot2&#39;</span>
+</pre></div>
+</div>
+<p><strong>Diagnosis</strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Check if R is installed</span>
+which<span class="w"> </span>R
+R<span class="w"> </span>--version
+
+<span class="c1"># Check if ggplot2 is installed</span>
+Rscript<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;library(ggplot2)&quot;</span>
+</pre></div>
+</div>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic">
+<li><p>Install R (if not installed):</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo<span class="w"> </span>apt-get<span class="w"> </span>update
+sudo<span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>r-base<span class="w"> </span>r-base-dev
+</pre></div>
+</div>
+</li>
+<li><p>Install ggplot2:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>Rscript<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;install.packages(&#39;ggplot2&#39;, repos=&#39;https://cloud.r-project.org&#39;)&quot;</span>
+</pre></div>
+</div>
+</li>
+<li><p>Verify installation:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>Rscript<span class="w"> </span>-e<span class="w"> </span><span class="s2">&quot;library(ggplot2); cat(&#39;ggplot2 version:&#39;, packageVersion(&#39;ggplot2&#39;), &#39;\n&#39;)&quot;</span>
+</pre></div>
+</div>
+</li>
+</ol>
+<p><strong>Note</strong>: If R/ggplot2 is not available, merge will still create expression matrices but will skip plot generation. The core functionality (matrix creation) does not require R.</p>
+</section>
 </section>
 <section id="best-practices">
 <h2>Best Practices<a class="headerlink" href="#best-practices" title="Link to this heading"></a></h2>
@@ -715,9 +777,9 @@ cat<span class="w"> </span>output/work/merge/Species_name/merge_summary.txt
 <section id="see-also">
 <h2>See Also<a class="headerlink" href="#see-also" title="Link to this heading"></a></h2>
 <ul class="simple">
-<li><p><strong>Previous Step</strong>: <a class="reference internal" href="#quant.md"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">quant.md</span></code></span></a> - Transcript quantification</p></li>
-<li><p><strong>Next Step</strong>: <a class="reference internal" href="#curate.md"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">curate.md</span></code></span></a> - Quality control and batch correction</p></li>
-<li><p><strong>Next Step</strong>: <a class="reference internal" href="#cstmm.md"><span class="xref myst"><code class="docutils literal notranslate"><span class="pre">cstmm.md</span></code></span></a> - Cross-species TMM normalization</p></li>
+<li><p><strong>Previous Step</strong>: <a class="reference internal" href="06_quant.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">06_quant.md</span></code></span></a> - Transcript quantification</p></li>
+<li><p><strong>Next Step</strong>: <a class="reference internal" href="09_curate.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">09_curate.md</span></code></span></a> - Quality control and batch correction</p></li>
+<li><p><strong>Next Step</strong>: <a class="reference internal" href="08_cstmm.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">08_cstmm.md</span></code></span></a> - Cross-species TMM normalization</p></li>
 <li><p><strong>Workflow Overview</strong>: <a class="reference internal" href="../amalgkit.html"><span class="std std-doc"><code class="docutils literal notranslate"><span class="pre">../amalgkit.md</span></code></span></a></p></li>
 <li><p><strong>Testing</strong>: <code class="docutils literal notranslate"><span class="pre">tests/test_rna_amalgkit_steps.py::test_merge_basic_execution</span></code></p></li>
 </ul>

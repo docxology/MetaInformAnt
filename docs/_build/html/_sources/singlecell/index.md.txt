@@ -18,42 +18,42 @@ The single-cell module is designed around a lightweight `SingleCellData` class t
 
 ```mermaid
 flowchart TB
-  subgraph Data[Data Management]
+  subgraph DatadataManagement[Data Management]
     A[SingleCellData]
-    B[load_count_matrix]
+    BloadCountMatrix[load_count_matrix]
   end
   
   subgraph Preprocessing
-    C[calculate_qc_metrics]
-    D[filter_cells]
-    E[filter_genes]
-    F[normalize_counts]
-    G[log_transform]
-    H[scale_data]
+    CcalculateQcMetrics[calculate_qc_metrics]
+    DfilterCells[filter_cells]
+    EfilterGenes[filter_genes]
+    FnormalizeCounts[normalize_counts]
+    GlogTransform[log_transform]
+    HscaleData[scale_data]
   end
   
-  subgraph Dimensionality[Dimensionality Reduction]
-    I[select_hvgs]
-    J[compute_pca]
-    K[compute_neighbors]
-    L[compute_umap]
-    M[compute_tsne]
-    N[compute_diffusion_map]
+  subgraph DimensionalitydimensionalityReduction[Dimensionality Reduction]
+    IselectHvgs[select_hvgs]
+    JcomputePca[compute_pca]
+    KcomputeNeighbors[compute_neighbors]
+    LcomputeUmap[compute_umap]
+    McomputeTsne[compute_tsne]
+    NcomputeDiffusionMap[compute_diffusion_map]
   end
   
   subgraph Clustering
-    O[leiden_clustering]
-    P[louvain_clustering]
-    Q[kmeans_clustering]
-    R[hierarchical_clustering]
-    S[find_markers]
+    OleidenClustering[leiden_clustering]
+    PlouvainClustering[louvain_clustering]
+    QkmeansClustering[kmeans_clustering]
+    RhierarchicalClustering[hierarchical_clustering]
+    SfindMarkers[find_markers]
   end
   
-  subgraph Analysis[Advanced Analysis]
-    T[compute_pseudotime]
-    U[trajectory_analysis]
-    V[gene_trends]
-    W[batch_correction]
+  subgraph AnalysisadvancedAnalysis[Advanced Analysis]
+    TcomputePseudotime[compute_pseudotime]
+    UtrajectoryAnalysis[trajectory_analysis]
+    VgeneTrends[gene_trends]
+    WbatchCorrection[batch_correction]
   end
   
   A --> C

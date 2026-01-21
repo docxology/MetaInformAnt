@@ -36,10 +36,10 @@ This prevents the common issue where `getfastq` would download all samples in th
 ```mermaid
 graph TB
     subgraph "RNA Module"
-        Amalgkit[amalgkit<br/>CLI Wrapper]
-        Workflow[workflow<br/>Pipeline Orchestration]
-        MetadataFilter[metadata_filter<br/>Sample Filtering]
-        Configs[configs<br/>Configuration]
+        AmalgkitamalgkitCliWrapper[amalgkit_CLI Wrapper]
+        WorkflowworkflowPipelineOrchestration[workflow_Pipeline Orchestration]
+        MetadataFiltermetadataFilterSampleFiltering[metadata_filter_Sample Filtering]
+        ConfigsconfigsConfiguration[configs_Configuration]
     end
 
     subgraph "Workflow Steps"
@@ -51,12 +51,12 @@ graph TB
     end
 
     subgraph "External"
-        AmalgkitCLI[amalgkit CLI]
-        SRA[SRA Database]
+        AmalgkitCLIamalgkitCli[amalgkit CLI]
+        SRAsraDatabase[SRA Database]
     end
 
     subgraph "Other Modules"
-        DNA_Mod[dna]
+        dna[dna]
         SingleCell[singlecell]
         MultiOmics[multiomics]
     end
@@ -76,27 +76,24 @@ graph TB
 
 ```mermaid
 graph TD
-    A[Start] --> B[metadata<br/>NCBI SRA Search]
-    B --> C[integrate<br/>Local FASTQ Integration]
-    C --> D[config<br/>Workflow Configuration]
-    D --> E[select<br/>Sample Selection]
-    E --> F{getfastq<br/>ENA Direct Download}
-    F --> G[quant<br/>Expression Quantification]
-    G --> H[merge<br/>Matrix Construction]
-    H --> I[cstmm<br/>Cross-Species Normalization]
-    I --> J[curate<br/>Bias Correction]
-    J --> K[csca<br/>Correlation Analysis]
-    K --> L[sanity<br/>Final Validation]
+    A[Start] --> BmetadataNcbiSraSearch[metadata_NCBI SRA Search]
+    B --> CintegrateLocalFastqIntegration[integrate_Local FASTQ Integration]
+    C --> DconfigWorkflowConfiguration[config_Workflow Configuration]
+    D --> EselectSampleSelection[select_Sample Selection]
+    E --> F{getfastq_ENA Direct Download}
+    F --> GquantExpressionQuantification[quant_Expression Quantification]
+    G --> HmergeMatrixConstruction[merge_Matrix Construction]
+    H --> IcstmmCross-speciesNormalization[cstmm_Cross-Species Normalization]
+    I --> JcurateBiasCorrection[curate_Bias Correction]
+    J --> KcscaCorrelationAnalysis[csca_Correlation Analysis]
+    K --> LsanityFinalValidation[sanity_Final Validation]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style F fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style L fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Data Flow"
-        M[SRA Metadata] -.-> B
-        N[Local FASTQ] -.-> C
-        O[ENA Direct] -.-> F
-        P[Reference Genome] -.-> G
+        MsraMetadata[SRA Metadata] -.-> B
+        NlocalFastq[Local FASTQ] -.-> C
+        OenaDirect[ENA Direct] -.-> F
+        PreferenceGenome[Reference Genome] -.-> G
     end
 ```
 
@@ -104,44 +101,41 @@ graph TD
 
 ```mermaid
 flowchart LR
-    Start[Workflow Start] --> Plan[Plan Execution Order]
-    Plan --> Check[Check Dependencies]
-    Check --> Config[Execute config]
-    Config --> Meta[Execute metadata]
-    Meta --> Select[Execute select]
-    Select --> Integrate[Execute integrate]
-    Integrate --> Parallel[Parallel Processing]
-    Parallel --> GetFastq[Execute getfastq<br/>ENA Direct Download]
-    GetFastq --> Quant[Execute quant<br/>Immediate Processing]
-    Quant --> Cleanup[Delete FASTQ<br/>Disk Management]
-    Cleanup --> Sequential[Sequential Steps]
-    Sequential --> Merge[Execute merge]
-    Merge --> CSTMM[Execute cstmm]
-    CSTMM --> Curate[Execute curate]
-    Curate --> CSCA[Execute csca]
-    CSCA --> Sanity[Execute sanity]
-    Sanity --> Complete[Workflow Complete]
+    StartworkflowStart[Workflow Start] --> PlanplanExecutionOrder[Plan Execution Order]
+    Plan --> CheckcheckDependencies[Check Dependencies]
+    Check --> ConfigexecuteConfig[Execute config]
+    Config --> MetaexecuteMetadata[Execute metadata]
+    Meta --> SelectexecuteSelect[Execute select]
+    Select --> IntegrateexecuteIntegrate[Execute integrate]
+    Integrate --> ParallelparallelProcessing[Parallel Processing]
+    Parallel --> GetFastqexecuteGetfastqEnaDirectDownload[Execute getfastq_ENA Direct Download]
+    GetFastq --> QuantexecuteQuantImmediateProcessing[Execute quant_Immediate Processing]
+    Quant --> CleanupdeleteFastqDiskManagement[Delete FASTQ_Disk Management]
+    Cleanup --> SequentialsequentialSteps[Sequential Steps]
+    Sequential --> MergeexecuteMerge[Execute merge]
+    Merge --> CSTMMexecuteCstmm[Execute cstmm]
+    CSTMM --> CurateexecuteCurate[Execute curate]
+    Curate --> CSCAexecuteCsca[Execute csca]
+    CSCA --> SanityexecuteSanity[Execute sanity]
+    Sanity --> CompleteworkflowComplete[Workflow Complete]
 
-    style Start fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style Parallel fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style Complete fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 ```
 
 ### RNA-seq Workflow Pipeline
 
 ```mermaid
 flowchart LR
-    Start[Start] --> Config[Load Config]
-    Config --> Plan[Plan Workflow]
-    Plan --> Meta[Metadata Download]
-    Meta --> QC[Quality Control]
+    Start[Start] --> ConfigloadConfig[Load Config]
+    Config --> PlanplanWorkflow[Plan Workflow]
+    Plan --> MetametadataDownload[Metadata Download]
+    Meta --> QCqualityControl[Quality Control]
     QC --> Align[Alignment]
     Align --> Quant[Quantification]
-    Quant --> Merge[Merge Results]
-    Merge --> Sanity[Sanity Check]
+    Quant --> MergemergeResults[Merge Results]
+    Merge --> SanitysanityCheck[Sanity Check]
     Sanity --> Results{Valid?}
-    Results -->|Yes| Output[Output Results]
-    Results -->|No| Error[Error Report]
+    Results -->|Yes| OutputoutputResults[Output Results]
+    Results -->|No| ErrorerrorReport[Error Report]
     Output --> End[End]
     Error --> End
 ```

@@ -4,10 +4,10 @@ Functions: `read_fasta`, `reverse_complement`, `gc_content`, `kmer_counts`, `kme
 
 ```mermaid
 flowchart LR
-  A[FASTA] --> B[read_fasta]
-  B --> C[GC content]
-  B --> D[k-mer counts]
-  B --> E[reverse complement]
+  A[FASTA] --> BreadFasta[read_fasta]
+  B --> CgcContent[GC content]
+  B --> Dk-merCounts[k-mer counts]
+  B --> EreverseComplement[reverse complement]
 ```
 
 Examples

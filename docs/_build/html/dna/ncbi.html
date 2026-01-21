@@ -101,8 +101,8 @@
 <h1>DNA: Entrez / NCBI<a class="headerlink" href="#dna-entrez-ncbi" title="Link to this heading"></a></h1>
 <p>Functions: <code class="docutils literal notranslate"><span class="pre">get_genome_from_ncbi</span></code> (Entrez), CLI validation via <code class="docutils literal notranslate"><span class="pre">is_valid_assembly_accession</span></code>.</p>
 <div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart LR
-  A[Accession/ID] --&gt; B[Entrez efetch]
-  B --&gt; C[SeqRecord (FASTA)]
+  A[Accession/ID] --&gt; BentrezEfetch[Entrez efetch]
+  B --&gt; Cseqrecord(fasta)[SeqRecord (FASTA)]
 </pre></div>
 </div>
 <p>Example</p>

@@ -235,8 +235,8 @@ AI helped ensure:
 
 This DNA module integrates with:
 - **[README.md](README.md)**: DNA module overview and quick start
-- **[docs/dna/](../../docs/dna/)**: Comprehensive DNA analysis documentation
-- **[tests/test_dna_*.py](../../tests/)**: DNA module test suite
+- **[docs/dna/](../../../docs/dna/)**: Comprehensive DNA analysis documentation
+- **[tests/](../../../tests/)**: Test suite (see `tests/test_dna_*.py`)
 - **Core Utilities**: Integration with `metainformant.core` for I/O and parallel processing
 
 ## Module Statistics

@@ -1,0 +1,493 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Specialized Visualization &mdash; METAINFORMANT 0.2.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/custom.css" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=938c9ccc"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search"  style="background: #2980B9" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            METAINFORMANT
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Modules</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../dna/index.html">DNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../rna/index.html">RNA: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../protein/index.html">Protein: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../gwas/index.html">GWAS (Genome-Wide Association Studies)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html">Epigenome: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#integration-with-genomics">Integration with Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../epigenome/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ontology/index.html">Ontology Module Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../phenotype/index.html">Phenotype: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html">Ecology: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#key-components">Key Components</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#analysis-workflows">Analysis Workflows</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#integration-with-other-modules">Integration with Other Modules</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ecology/index.html#planned-extensions">Planned Extensions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../math/index.html">Math: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../ml/index.html">Machine Learning: Biological Data Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../networks/index.html">Networks: Biological Network Analysis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../singlecell/index.html">Single-Cell Genomics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../quality/index.html">Quality Control</a></li>
+<li class="toctree-l1"><a class="reference internal" href="index.html">Visualization: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../simulation/index.html">Simulation: Overview</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../life_events/index.html">Life Events Module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../testing.html">Testing</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu"  style="background: #2980B9" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">METAINFORMANT</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Specialized Visualization</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/visualization/specialized.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section class="tex2jax_ignore mathjax_ignore" id="specialized-visualization">
+<h1>Specialized Visualization<a class="headerlink" href="#specialized-visualization" title="Link to this heading"></a></h1>
+<p>This document provides comprehensive documentation for specialized visualization types in METAINFORMANT, including Venn diagrams, Sankey diagrams, chord diagrams, alluvial plots, and other advanced chart types used in bioinformatics.</p>
+<section id="overview">
+<h2>Overview<a class="headerlink" href="#overview" title="Link to this heading"></a></h2>
+<p>Specialized visualization includes advanced plotting types commonly used in systems biology, set analysis, flow visualization, and complex data relationships. These tools complement the core plotting modules with publication-quality specialized charts.</p>
+</section>
+<section id="module-functions">
+<h2>Module Functions<a class="headerlink" href="#module-functions" title="Link to this heading"></a></h2>
+<section id="set-analysis">
+<h3>Set Analysis<a class="headerlink" href="#set-analysis" title="Link to this heading"></a></h3>
+<section id="venn-diagrams">
+<h4>Venn Diagrams<a class="headerlink" href="#venn-diagrams" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">specialized</span> <span class="k">as</span> <span class="n">spec_viz</span>
+
+<span class="c1"># Create Venn diagram for set intersections</span>
+<span class="n">sets</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;Dataset_A&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;gene1&#39;</span><span class="p">,</span> <span class="s1">&#39;gene2&#39;</span><span class="p">,</span> <span class="s1">&#39;gene3&#39;</span><span class="p">,</span> <span class="s1">&#39;gene4&#39;</span><span class="p">},</span>
+    <span class="s1">&#39;Dataset_B&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;gene2&#39;</span><span class="p">,</span> <span class="s1">&#39;gene3&#39;</span><span class="p">,</span> <span class="s1">&#39;gene5&#39;</span><span class="p">,</span> <span class="s1">&#39;gene6&#39;</span><span class="p">},</span>
+    <span class="s1">&#39;Dataset_C&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;gene1&#39;</span><span class="p">,</span> <span class="s1">&#39;gene3&#39;</span><span class="p">,</span> <span class="s1">&#39;gene5&#39;</span><span class="p">,</span> <span class="s1">&#39;gene7&#39;</span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">spec_viz</span><span class="o">.</span><span class="n">plot_venn_diagram</span><span class="p">(</span><span class="n">sets</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+<section id="upset-plots">
+<h4>UpSet Plots<a class="headerlink" href="#upset-plots" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create UpSet plot for complex set intersections</span>
+<span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;Condition_1&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;D&#39;</span><span class="p">},</span>
+    <span class="s1">&#39;Condition_2&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;E&#39;</span><span class="p">,</span> <span class="s1">&#39;F&#39;</span><span class="p">},</span>
+    <span class="s1">&#39;Condition_3&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;E&#39;</span><span class="p">,</span> <span class="s1">&#39;G&#39;</span><span class="p">},</span>
+    <span class="s1">&#39;Condition_4&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;D&#39;</span><span class="p">,</span> <span class="s1">&#39;F&#39;</span><span class="p">,</span> <span class="s1">&#39;H&#39;</span><span class="p">}</span>
+<span class="p">}</span>
+
+<span class="n">fig</span> <span class="o">=</span> <span class="n">spec_viz</span><span class="o">.</span><span class="n">plot_upset_plot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="flow-visualization">
+<h3>Flow Visualization<a class="headerlink" href="#flow-visualization" title="Link to this heading"></a></h3>
+<section id="sankey-diagrams">
+<h4>Sankey Diagrams<a class="headerlink" href="#sankey-diagrams" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create Sankey diagram for flow data</span>
+<span class="n">flows</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s1">&#39;Source_A&#39;</span><span class="p">,</span> <span class="s1">&#39;Target_X&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Source_A&#39;</span><span class="p">,</span> <span class="s1">&#39;Target_Y&#39;</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Source_B&#39;</span><span class="p">,</span> <span class="s1">&#39;Target_X&#39;</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Source_B&#39;</span><span class="p">,</span> <span class="s1">&#39;Target_Z&#39;</span><span class="p">,</span> <span class="mi">12</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Source_C&#39;</span><span class="p">,</span> <span class="s1">&#39;Target_Y&#39;</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+<span class="p">]</span>
+
+<span class="c1"># Static matplotlib version</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">spec_viz</span><span class="o">.</span><span class="n">plot_sankey_diagram</span><span class="p">(</span><span class="n">flows</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+
+<span class="c1"># Interactive Plotly version</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">spec_viz</span><span class="o">.</span><span class="n">plot_sankey_diagram</span><span class="p">(</span><span class="n">flows</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span> <span class="n">interactive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="alluvial-diagrams">
+<h4>Alluvial Diagrams<a class="headerlink" href="#alluvial-diagrams" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create alluvial diagram for transitions</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+    <span class="s1">&#39;Stage_1&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">],</span>
+    <span class="s1">&#39;Stage_2&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;X&#39;</span><span class="p">,</span> <span class="s1">&#39;Y&#39;</span><span class="p">,</span> <span class="s1">&#39;X&#39;</span><span class="p">,</span> <span class="s1">&#39;Y&#39;</span><span class="p">,</span> <span class="s1">&#39;X&#39;</span><span class="p">,</span> <span class="s1">&#39;Z&#39;</span><span class="p">],</span>
+    <span class="s1">&#39;Stage_3&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;P&#39;</span><span class="p">,</span> <span class="s1">&#39;P&#39;</span><span class="p">,</span> <span class="s1">&#39;Q&#39;</span><span class="p">,</span> <span class="s1">&#39;Q&#39;</span><span class="p">,</span> <span class="s1">&#39;R&#39;</span><span class="p">,</span> <span class="s1">&#39;R&#39;</span><span class="p">],</span>
+    <span class="s1">&#39;Count&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">8</span><span class="p">]</span>
+<span class="p">})</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">spec_viz</span><span class="o">.</span><span class="n">plot_alluvial_diagram</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;Stage_1&#39;</span><span class="p">,</span> <span class="s1">&#39;Stage_2&#39;</span><span class="p">,</span> <span class="s1">&#39;Stage_3&#39;</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="network-analysis">
+<h3>Network Analysis<a class="headerlink" href="#network-analysis" title="Link to this heading"></a></h3>
+<section id="chord-diagrams">
+<h4>Chord Diagrams<a class="headerlink" href="#chord-diagrams" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create chord diagram for relationships</span>
+<span class="n">matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span>
+    <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">],</span>
+    <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+    <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">6</span><span class="p">],</span>
+    <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+<span class="p">])</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Group_A&#39;</span><span class="p">,</span> <span class="s1">&#39;Group_B&#39;</span><span class="p">,</span> <span class="s1">&#39;Group_C&#39;</span><span class="p">,</span> <span class="s1">&#39;Group_D&#39;</span><span class="p">]</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">spec_viz</span><span class="o">.</span><span class="n">plot_chord_diagram</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+<section id="circular-network-layout">
+<h4>Circular Network Layout<a class="headerlink" href="#circular-network-layout" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Plot network in circular layout</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">networkx</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">nx</span>
+
+<span class="n">G</span> <span class="o">=</span> <span class="n">nx</span><span class="o">.</span><span class="n">erdos_renyi_graph</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">spec_viz</span><span class="o">.</span><span class="n">plot_network_circular_layout</span><span class="p">(</span><span class="n">G</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="multi-dimensional-data">
+<h3>Multi-dimensional Data<a class="headerlink" href="#multi-dimensional-data" title="Link to this heading"></a></h3>
+<section id="radar-charts">
+<h4>Radar Charts<a class="headerlink" href="#radar-charts" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create radar chart for multi-dimensional data</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+    <span class="s1">&#39;Sample_1&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">],</span>
+    <span class="s1">&#39;Sample_2&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">],</span>
+    <span class="s1">&#39;Sample_3&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">]</span>
+<span class="p">},</span> <span class="n">index</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Trait_A&#39;</span><span class="p">,</span> <span class="s1">&#39;Trait_B&#39;</span><span class="p">,</span> <span class="s1">&#39;Trait_C&#39;</span><span class="p">,</span> <span class="s1">&#39;Trait_D&#39;</span><span class="p">,</span> <span class="s1">&#39;Trait_E&#39;</span><span class="p">])</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">spec_viz</span><span class="o">.</span><span class="n">plot_radar_chart</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+<section id="circular-bar-plots">
+<h4>Circular Bar Plots<a class="headerlink" href="#circular-bar-plots" title="Link to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Create circular bar plot</span>
+<span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">12</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;Category_</span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">12</span><span class="p">)]</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">spec_viz</span><span class="o">.</span><span class="n">plot_circular_barplot</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">8</span><span class="p">))</span>
+</pre></div>
+</div>
+</section>
+</section>
+</section>
+<section id="integration-examples">
+<h2>Integration Examples<a class="headerlink" href="#integration-examples" title="Link to this heading"></a></h2>
+<section id="with-multi-omics-data">
+<h3>With Multi-Omics Data<a class="headerlink" href="#with-multi-omics-data" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.multiomics</span><span class="w"> </span><span class="kn">import</span> <span class="n">integration</span><span class="p">,</span> <span class="n">visualization</span> <span class="k">as</span> <span class="n">multi_viz</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">specialized</span> <span class="k">as</span> <span class="n">spec_viz</span>
+
+<span class="c1"># Integrate multi-omics data</span>
+<span class="n">omics_data</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;rna&#39;</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">50</span><span class="p">)),</span>
+    <span class="s1">&#39;protein&#39;</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">30</span><span class="p">)),</span>
+    <span class="s1">&#39;metabolomics&#39;</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="mi">20</span><span class="p">))</span>
+<span class="p">}</span>
+
+<span class="n">integrated</span> <span class="o">=</span> <span class="n">integration</span><span class="o">.</span><span class="n">integrate_omics_data</span><span class="p">(</span><span class="o">**</span><span class="n">omics_data</span><span class="p">)</span>
+
+<span class="c1"># Create specialized visualizations</span>
+<span class="c1"># UpSet plot for feature overlaps</span>
+<span class="n">feature_sets</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;RNA&#39;</span><span class="p">:</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">50</span><span class="p">)),</span>
+    <span class="s1">&#39;Protein&#39;</span><span class="p">:</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">50</span><span class="p">,</span> <span class="mi">80</span><span class="p">)),</span>
+    <span class="s1">&#39;Metabolites&#39;</span><span class="p">:</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span> <span class="mi">100</span><span class="p">))</span>
+<span class="p">}</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">spec_viz</span><span class="o">.</span><span class="n">plot_upset_plot</span><span class="p">(</span><span class="n">feature_sets</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="with-gwas-results">
+<h3>With GWAS Results<a class="headerlink" href="#with-gwas-results" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.gwas</span><span class="w"> </span><span class="kn">import</span> <span class="n">visualization</span> <span class="k">as</span> <span class="n">gwas_viz</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">specialized</span> <span class="k">as</span> <span class="n">spec_viz</span>
+
+<span class="c1"># GWAS analysis results</span>
+<span class="c1"># Create Sankey diagram for workflow steps</span>
+<span class="n">workflow_flows</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s1">&#39;Raw_Variants&#39;</span><span class="p">,</span> <span class="s1">&#39;QC_Filtered&#39;</span><span class="p">,</span> <span class="mi">950000</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Raw_Variants&#39;</span><span class="p">,</span> <span class="s1">&#39;Removed_LowQual&#39;</span><span class="p">,</span> <span class="mi">50000</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;QC_Filtered&#39;</span><span class="p">,</span> <span class="s1">&#39;Associated_SNPs&#39;</span><span class="p">,</span> <span class="mi">5000</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;QC_Filtered&#39;</span><span class="p">,</span> <span class="s1">&#39;Non_Associated&#39;</span><span class="p">,</span> <span class="mi">945000</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Associated_SNPs&#39;</span><span class="p">,</span> <span class="s1">&#39;Significant_Hits&#39;</span><span class="p">,</span> <span class="mi">500</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Associated_SNPs&#39;</span><span class="p">,</span> <span class="s1">&#39;Suggestive_Hits&#39;</span><span class="p">,</span> <span class="mi">4500</span><span class="p">)</span>
+<span class="p">]</span>
+
+<span class="n">fig</span> <span class="o">=</span> <span class="n">spec_viz</span><span class="o">.</span><span class="n">plot_sankey_diagram</span><span class="p">(</span><span class="n">workflow_flows</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="with-ontology-analysis">
+<h3>With Ontology Analysis<a class="headerlink" href="#with-ontology-analysis" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.ontology</span><span class="w"> </span><span class="kn">import</span> <span class="n">go</span><span class="p">,</span> <span class="n">visualization</span> <span class="k">as</span> <span class="n">ont_viz</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">specialized</span> <span class="k">as</span> <span class="n">spec_viz</span>
+
+<span class="c1"># GO enrichment results</span>
+<span class="c1"># Create chord diagram for GO term relationships</span>
+<span class="n">go_terms</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;GO:0008150&#39;</span><span class="p">,</span> <span class="s1">&#39;GO:0003674&#39;</span><span class="p">,</span> <span class="s1">&#39;GO:0005575&#39;</span><span class="p">,</span> <span class="s1">&#39;GO:0009987&#39;</span><span class="p">]</span>
+<span class="n">relationship_matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+<span class="n">relationship_matrix</span> <span class="o">=</span> <span class="p">(</span><span class="n">relationship_matrix</span> <span class="o">+</span> <span class="n">relationship_matrix</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+<span class="n">np</span><span class="o">.</span><span class="n">fill_diagonal</span><span class="p">(</span><span class="n">relationship_matrix</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+<span class="n">ax</span> <span class="o">=</span> <span class="n">spec_viz</span><span class="o">.</span><span class="n">plot_chord_diagram</span><span class="p">(</span><span class="n">relationship_matrix</span><span class="p">,</span> <span class="n">go_terms</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="output-options">
+<h2>Output Options<a class="headerlink" href="#output-options" title="Link to this heading"></a></h2>
+<p>All specialized visualization functions support:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Save static plots</span>
+<span class="n">ax</span> <span class="o">=</span> <span class="n">spec_viz</span><span class="o">.</span><span class="n">plot_venn_diagram</span><span class="p">(</span><span class="n">sets</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;venn_diagram.png&quot;</span><span class="p">)</span>
+
+<span class="c1"># Save interactive plots</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">spec_viz</span><span class="o">.</span><span class="n">plot_sankey_diagram</span><span class="p">(</span><span class="n">flows</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;sankey.html&quot;</span><span class="p">)</span>
+
+<span class="c1"># UpSet plots</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">spec_viz</span><span class="o">.</span><span class="n">plot_upset_plot</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">output_path</span><span class="o">=</span><span class="s2">&quot;upset.png&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+<section id="dependencies">
+<h2>Dependencies<a class="headerlink" href="#dependencies" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Required</strong>: matplotlib, numpy</p></li>
+<li><p><strong>Venn Diagrams</strong>: matplotlib-venn (optional, fallback provided)</p></li>
+<li><p><strong>UpSet Plots</strong>: upsetplot (optional)</p></li>
+<li><p><strong>Alluvial Diagrams</strong>: alluvial (optional)</p></li>
+<li><p><strong>Interactive Plots</strong>: plotly (optional)</p></li>
+<li><p><strong>Network Analysis</strong>: networkx (optional)</p></li>
+</ul>
+</section>
+<section id="performance-considerations">
+<h2>Performance Considerations<a class="headerlink" href="#performance-considerations" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Large Datasets</strong>: Venn diagrams work best with &lt;5 sets</p></li>
+<li><p><strong>Complex Networks</strong>: Circular layouts scale to ~100 nodes</p></li>
+<li><p><strong>Interactive Plots</strong>: Plotly Sankey diagrams handle thousands of flows</p></li>
+<li><p><strong>Memory Usage</strong>: Chord diagrams require O(n²) memory for dense matrices</p></li>
+</ul>
+</section>
+<section id="color-schemes">
+<h2>Color Schemes<a class="headerlink" href="#color-schemes" title="Link to this heading"></a></h2>
+<p>Recommended color schemes for specialized plots:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Venn diagrams</span>
+<span class="n">venn_colors</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;#FF6B6B&#39;</span><span class="p">,</span> <span class="s1">&#39;#4ECDC4&#39;</span><span class="p">,</span> <span class="s1">&#39;#45B7D1&#39;</span><span class="p">,</span> <span class="s1">&#39;#96CEB4&#39;</span><span class="p">,</span> <span class="s1">&#39;#FFEAA7&#39;</span><span class="p">]</span>
+
+<span class="c1"># Sankey diagrams</span>
+<span class="n">sankey_colors</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;source&#39;</span><span class="p">:</span> <span class="s1">&#39;#FF6B6B&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;target&#39;</span><span class="p">:</span> <span class="s1">&#39;#4ECDC4&#39;</span><span class="p">,</span>
+    <span class="s1">&#39;intermediate&#39;</span><span class="p">:</span> <span class="s1">&#39;#45B7D1&#39;</span>
+<span class="p">}</span>
+
+<span class="c1"># Chord diagrams</span>
+<span class="n">chord_cmap</span> <span class="o">=</span> <span class="s1">&#39;coolwarm&#39;</span>  <span class="c1"># Diverging colormap for relationships</span>
+
+<span class="c1"># Radar charts</span>
+<span class="n">radar_colors</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">tab10</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>  <span class="c1"># Up to 10 series</span>
+</pre></div>
+</div>
+</section>
+<section id="examples">
+<h2>Examples<a class="headerlink" href="#examples" title="Link to this heading"></a></h2>
+<section id="complete-specialized-visualization-workflow">
+<h3>Complete Specialized Visualization Workflow<a class="headerlink" href="#complete-specialized-visualization-workflow" title="Link to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">metainformant.visualization</span><span class="w"> </span><span class="kn">import</span> <span class="n">specialized</span> <span class="k">as</span> <span class="n">spec_viz</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+
+<span class="c1"># Create comprehensive specialized visualization suite</span>
+<span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">18</span><span class="p">,</span> <span class="mi">12</span><span class="p">))</span>
+
+<span class="c1"># Venn diagram</span>
+<span class="n">sets</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;Group_A&#39;</span><span class="p">:</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">50</span><span class="p">)),</span>
+    <span class="s1">&#39;Group_B&#39;</span><span class="p">:</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">25</span><span class="p">,</span> <span class="mi">75</span><span class="p">)),</span>
+    <span class="s1">&#39;Group_C&#39;</span><span class="p">:</span> <span class="nb">set</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">40</span><span class="p">,</span> <span class="mi">90</span><span class="p">))</span>
+<span class="p">}</span>
+<span class="n">spec_viz</span><span class="o">.</span><span class="n">plot_venn_diagram</span><span class="p">(</span><span class="n">sets</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+
+<span class="c1"># Chord diagram</span>
+<span class="n">matrix</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+<span class="n">matrix</span> <span class="o">=</span> <span class="p">(</span><span class="n">matrix</span> <span class="o">+</span> <span class="n">matrix</span><span class="o">.</span><span class="n">T</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span>
+<span class="n">np</span><span class="o">.</span><span class="n">fill_diagonal</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;D&#39;</span><span class="p">,</span> <span class="s1">&#39;E&#39;</span><span class="p">]</span>
+<span class="n">spec_viz</span><span class="o">.</span><span class="n">plot_chord_diagram</span><span class="p">(</span><span class="n">matrix</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+
+<span class="c1"># Radar chart</span>
+<span class="n">radar_data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span>
+    <span class="s1">&#39;Sample1&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">],</span>
+    <span class="s1">&#39;Sample2&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">],</span>
+    <span class="s1">&#39;Sample3&#39;</span><span class="p">:</span> <span class="p">[</span><span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.7</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.6</span><span class="p">]</span>
+<span class="p">})</span>
+<span class="n">spec_viz</span><span class="o">.</span><span class="n">plot_radar_chart</span><span class="p">(</span><span class="n">radar_data</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="p">])</span>
+
+<span class="c1"># Circular bar plot</span>
+<span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="mi">8</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;Jan&#39;</span><span class="p">,</span> <span class="s1">&#39;Feb&#39;</span><span class="p">,</span> <span class="s1">&#39;Mar&#39;</span><span class="p">,</span> <span class="s1">&#39;Apr&#39;</span><span class="p">,</span> <span class="s1">&#39;May&#39;</span><span class="p">,</span> <span class="s1">&#39;Jun&#39;</span><span class="p">,</span> <span class="s1">&#39;Jul&#39;</span><span class="p">,</span> <span class="s1">&#39;Aug&#39;</span><span class="p">]</span>
+<span class="n">spec_viz</span><span class="o">.</span><span class="n">plot_circular_barplot</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">labels</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+
+<span class="c1"># Alluvial diagram (placeholder - requires alluvial package)</span>
+<span class="c1"># alluvial_data = pd.DataFrame({</span>
+<span class="c1">#     &#39;Stage1&#39;: [&#39;A&#39;, &#39;B&#39;, &#39;C&#39;] * 10,</span>
+<span class="c1">#     &#39;Stage2&#39;: [&#39;X&#39;, &#39;Y&#39;, &#39;Z&#39;] * 10,</span>
+<span class="c1">#     &#39;Count&#39;: np.random.randint(1, 10, 30)</span>
+<span class="c1"># })</span>
+<span class="c1"># spec_viz.plot_alluvial_diagram(alluvial_data, [&#39;Stage1&#39;, &#39;Stage2&#39;], ax=axes[1,1])</span>
+
+<span class="c1"># Sankey diagram (static version)</span>
+<span class="n">flows</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">(</span><span class="s1">&#39;Input&#39;</span><span class="p">,</span> <span class="s1">&#39;Process_A&#39;</span><span class="p">,</span> <span class="mi">40</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Input&#39;</span><span class="p">,</span> <span class="s1">&#39;Process_B&#39;</span><span class="p">,</span> <span class="mi">60</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Process_A&#39;</span><span class="p">,</span> <span class="s1">&#39;Output_1&#39;</span><span class="p">,</span> <span class="mi">30</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Process_A&#39;</span><span class="p">,</span> <span class="s1">&#39;Output_2&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Process_B&#39;</span><span class="p">,</span> <span class="s1">&#39;Output_2&#39;</span><span class="p">,</span> <span class="mi">40</span><span class="p">),</span>
+    <span class="p">(</span><span class="s1">&#39;Process_B&#39;</span><span class="p">,</span> <span class="s1">&#39;Output_3&#39;</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+<span class="p">]</span>
+<span class="n">spec_viz</span><span class="o">.</span><span class="n">plot_sankey_diagram</span><span class="p">(</span><span class="n">flows</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">])</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">tight_layout</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">savefig</span><span class="p">(</span><span class="s2">&quot;specialized_visualizations.png&quot;</span><span class="p">,</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span> <span class="n">bbox_inches</span><span class="o">=</span><span class="s1">&#39;tight&#39;</span><span class="p">)</span>
+
+<span class="c1"># Create separate interactive plots</span>
+<span class="c1"># UpSet plot</span>
+<span class="n">upset_data</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;Set1&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;D&#39;</span><span class="p">},</span>
+    <span class="s1">&#39;Set2&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;B&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="s1">&#39;E&#39;</span><span class="p">,</span> <span class="s1">&#39;F&#39;</span><span class="p">},</span>
+    <span class="s1">&#39;Set3&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;A&#39;</span><span class="p">,</span> <span class="s1">&#39;D&#39;</span><span class="p">,</span> <span class="s1">&#39;E&#39;</span><span class="p">,</span> <span class="s1">&#39;G&#39;</span><span class="p">}</span>
+<span class="p">}</span>
+<span class="n">upset_fig</span> <span class="o">=</span> <span class="n">spec_viz</span><span class="o">.</span><span class="n">plot_upset_plot</span><span class="p">(</span><span class="n">upset_data</span><span class="p">)</span>
+
+<span class="c1"># Interactive Sankey</span>
+<span class="n">interactive_sankey</span> <span class="o">=</span> <span class="n">spec_viz</span><span class="o">.</span><span class="n">plot_sankey_diagram</span><span class="p">(</span><span class="n">flows</span><span class="p">,</span> <span class="n">interactive</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="troubleshooting">
+<h2>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h2>
+<section id="common-issues">
+<h3>Common Issues<a class="headerlink" href="#common-issues" title="Link to this heading"></a></h3>
+<ol class="arabic simple">
+<li><p><strong>Missing Dependencies</strong>: Install optional packages for full functionality</p></li>
+<li><p><strong>Large Data</strong>: Reduce complexity for better performance</p></li>
+<li><p><strong>Color Conflicts</strong>: Use custom color schemes for clarity</p></li>
+<li><p><strong>Layout Issues</strong>: Adjust figure sizes for complex diagrams</p></li>
+</ol>
+</section>
+<section id="data-requirements">
+<h3>Data Requirements<a class="headerlink" href="#data-requirements" title="Link to this heading"></a></h3>
+<ul class="simple">
+<li><p><strong>Venn Diagrams</strong>: Dictionary of set objects (up to 5 sets recommended)</p></li>
+<li><p><strong>Chord Diagrams</strong>: Square relationship matrix</p></li>
+<li><p><strong>Sankey Diagrams</strong>: List of (source, target, value) tuples</p></li>
+<li><p><strong>Alluvial Diagrams</strong>: Pandas DataFrame with stage columns</p></li>
+<li><p><strong>Radar Charts</strong>: DataFrame with variables as rows, observations as columns</p></li>
+</ul>
+</section>
+</section>
+<section id="related-documentation">
+<h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong><a class="reference internal" href="basic.html"><span class="std std-doc">Core Visualization</span></a></strong>: Basic plotting functions</p></li>
+<li><p><strong><a class="reference internal" href="statistical.html"><span class="std std-doc">Statistical Plots</span></a></strong>: Statistical visualizations</p></li>
+<li><p><strong><a class="reference internal" href="networks.html"><span class="std std-doc">Network Visualization</span></a></strong>: Network analysis plots</p></li>
+<li><p><strong><a class="reference internal" href="multidim.html"><span class="std std-doc">Multi-dimensional Plots</span></a></strong>: Complex data visualization</p></li>
+</ul>
+<p>This module provides advanced specialized visualization capabilities for complex bioinformatics data analysis and presentation.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, METAINFORMANT Contributors.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

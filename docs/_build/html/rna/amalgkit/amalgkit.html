@@ -116,20 +116,20 @@
 <section id="architecture">
 <h2>🏗️ Architecture<a class="headerlink" href="#architecture" title="Link to this heading"></a></h2>
 <div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart TD
-    A[NCBI SRA Database] --&gt; B[metadata: Sample Discovery]
-    B --&gt; C[select: Quality Filtering]
-    C --&gt; D[getfastq: Data Extraction]
-    D --&gt; E[quant: Kallisto Quantification]
-    E --&gt; F[merge: Expression Matrices]
-    F --&gt; G[curate: Batch Correction]
-    G --&gt; H[sanity: Quality Assurance]
-    H --&gt; I[PDF Visualizations]
+    AncbiSraDatabase[NCBI SRA Database] --&gt; Bmetadata:SampleDiscovery[metadata: Sample Discovery]
+    B --&gt; Cselect:QualityFiltering[select: Quality Filtering]
+    C --&gt; Dgetfastq:DataExtraction[getfastq: Data Extraction]
+    D --&gt; Equant:KallistoQuantification[quant: Kallisto Quantification]
+    E --&gt; Fmerge:ExpressionMatrices[merge: Expression Matrices]
+    F --&gt; Gcurate:BatchCorrection[curate: Batch Correction]
+    G --&gt; Hsanity:QualityAssurance[sanity: Quality Assurance]
+    H --&gt; IpdfVisualizations[PDF Visualizations]
     
-    J[Progress Monitoring] --&gt; D
-    K[Error Recovery] --&gt; D
-    L[R Environment] --&gt; F
+    JprogressMonitoring[Progress Monitoring] --&gt; D
+    KerrorRecovery[Error Recovery] --&gt; D
+    LrEnvironment[R Environment] --&gt; F
     L --&gt; G
-    M[Reference Genomes] --&gt; E
+    MreferenceGenomes[Reference Genomes] --&gt; E
 </pre></div>
 </div>
 </section>
@@ -828,6 +828,87 @@ uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </sp
 <li><p>Document data sources and processing steps</p></li>
 <li><p>Validate data integrity at each step</p></li>
 </ul>
+</section>
+</section>
+<section id="troubleshooting">
+<h3>Troubleshooting<a class="headerlink" href="#troubleshooting" title="Link to this heading"></a></h3>
+<section id="files-being-re-downloaded-unnecessarily">
+<h4>Files Being Re-downloaded Unnecessarily<a class="headerlink" href="#files-being-re-downloaded-unnecessarily" title="Link to this heading"></a></h4>
+<p><strong>Problem</strong>: The workflow is re-downloading SRA files that already exist locally, wasting bandwidth and time.</p>
+<p><strong>Symptoms</strong>:</p>
+<ul class="simple">
+<li><p>Log messages show “Previously-downloaded sra file was not detected” for files that exist</p></li>
+<li><p>Download progress bars appear for files that should be skipped</p></li>
+<li><p>High bandwidth usage during getfastq step</p></li>
+</ul>
+<p><strong>Solutions</strong>:</p>
+<ol class="arabic">
+<li><p><strong>Check <code class="docutils literal notranslate"><span class="pre">redo</span></code> parameter in configuration</strong>:</p>
+<div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">getfastq</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">redo</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">no</span><span class="w">  </span><span class="c1"># Should be &#39;no&#39; for normal operation</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Verify file detection</strong>:</p>
+<ul class="simple">
+<li><p>Check that SRA files exist in expected location: <code class="docutils literal notranslate"><span class="pre">{out_dir}/getfastq/{SRR_ID}/{SRR_ID}.sra</span></code></p></li>
+<li><p>Ensure files are not corrupted (check file sizes)</p></li>
+<li><p>Verify write permissions on output directory</p></li>
+</ul>
+</li>
+<li><p><strong>Check step summary</strong>:
+After getfastq completes, look for summary log:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Step</span> <span class="n">getfastq</span> <span class="n">summary</span><span class="p">:</span> <span class="n">X</span> <span class="n">file</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="n">skipped</span> <span class="p">(</span><span class="n">already</span> <span class="n">exists</span><span class="p">),</span> <span class="n">Y</span> <span class="n">file</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="n">downloaded</span>
+</pre></div>
+</div>
+<ul class="simple">
+<li><p>If all files show as “downloaded” when they should be skipped, check <code class="docutils literal notranslate"><span class="pre">redo</span></code> setting</p></li>
+<li><p>If some files are skipped correctly, the issue may be with specific files</p></li>
+</ul>
+</li>
+<li><p><strong>Force skip with <code class="docutils literal notranslate"><span class="pre">redo:</span> <span class="pre">no</span></code></strong>:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Edit config to set redo: no</span>
+<span class="c1"># Then re-run getfastq step</span>
+python3<span class="w"> </span>scripts/rna/run_workflow.py<span class="w"> </span>config/amalgkit/your_config.yaml<span class="w"> </span>--steps<span class="w"> </span>getfastq
+</pre></div>
+</div>
+</li>
+<li><p><strong>When to use <code class="docutils literal notranslate"><span class="pre">redo:</span> <span class="pre">yes</span></code></strong>:</p>
+<ul class="simple">
+<li><p>Only use <code class="docutils literal notranslate"><span class="pre">redo:</span> <span class="pre">yes</span></code> if:</p>
+<ul>
+<li><p>Files are corrupted and need re-download</p></li>
+<li><p>You’re testing download functionality</p></li>
+<li><p>You want to refresh data from SRA (rarely needed)</p></li>
+</ul>
+</li>
+<li><p><strong>Warning</strong>: This will re-download ALL files, even if they exist</p></li>
+</ul>
+</li>
+</ol>
+</section>
+<section id="checking-if-files-are-being-skipped">
+<h4>Checking if Files Are Being Skipped<a class="headerlink" href="#checking-if-files-are-being-skipped" title="Link to this heading"></a></h4>
+<p><strong>Method 1: Check step summary log</strong>
+After getfastq completes, the workflow logs a summary:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Step</span> <span class="n">getfastq</span> <span class="n">summary</span><span class="p">:</span> <span class="mi">1</span> <span class="n">file</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="n">skipped</span> <span class="p">(</span><span class="n">already</span> <span class="n">exists</span><span class="p">),</span> <span class="mi">14</span> <span class="n">file</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="n">downloaded</span> <span class="p">(</span><span class="n">total</span><span class="p">:</span> <span class="mi">15</span> <span class="n">samples</span><span class="p">)</span>
+</pre></div>
+</div>
+<p><strong>Method 2: Check amalgkit output</strong>
+Look for these messages in the logs:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Previously-downloaded</span> <span class="pre">sra</span> <span class="pre">file</span> <span class="pre">was</span> <span class="pre">detected&quot;</span></code> = File skipped (good)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Previously-downloaded</span> <span class="pre">sra</span> <span class="pre">file</span> <span class="pre">was</span> <span class="pre">not</span> <span class="pre">detected.</span> <span class="pre">New</span> <span class="pre">sra</span> <span class="pre">file</span> <span class="pre">will</span> <span class="pre">be</span> <span class="pre">downloaded.&quot;</span></code> = File downloaded</p></li>
+</ul>
+<p><strong>Method 3: Check file system</strong></p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># List SRA files that exist</span>
+find<span class="w"> </span>output/amalgkit/your_species/fastq/getfastq<span class="w"> </span>-name<span class="w"> </span><span class="s2">&quot;*.sra&quot;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>wc<span class="w"> </span>-l
+
+<span class="c1"># Compare with metadata sample count</span>
+wc<span class="w"> </span>-l<span class="w"> </span>output/amalgkit/your_species/work/metadata/metadata_selected.tsv
+</pre></div>
+</div>
 </section>
 </section>
 </section>

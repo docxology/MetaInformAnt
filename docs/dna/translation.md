@@ -5,10 +5,10 @@ Classes: `ORF`
 
 ```mermaid
 flowchart TD
-  A[DNA Sequence] --> B[translate_dna] --> C[Protein Sequence]
-  A --> D[find_orfs] --> E[ORF Objects]
-  E --> F[ORF Class]
-  F --> G[start, end, frame, strand, protein]
+  AdnaSequence[DNA Sequence] --> BtranslateDna[translate_dna] --> CproteinSequence[Protein Sequence]
+  A --> DfindOrfs[find_orfs] --> EorfObjects[ORF Objects]
+  E --> ForfClass[ORF Class]
+  F --> Gstart,End,Frame,Strand,Protein[start, end, frame, strand, protein]
 ```
 
 Example

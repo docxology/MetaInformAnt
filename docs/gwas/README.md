@@ -10,32 +10,27 @@ The GWAS module provides a workflow for genome-wide association studies, from va
 
 ```mermaid
 graph TD
-    A[Input Data<br/>VCF + Phenotypes] --> B[Data Acquisition<br/>Download variants<br/>Reference genomes]
-    B --> C[Quality Control<br/>MAF filtering<br/>Missing data<br/>HWE testing]
+    AinputDataVcf+Phenotypes[Input Data_VCF + Phenotypes] --> BdataAcquisitionDownloadVariantsReferenceGenomes[Data Acquisition_Download variants_Reference genomes]
+    B --> CqualityControlMafFilteringMissingDataHweTesting[Quality Control_MAF filtering_Missing data_HWE testing]
 
-    C --> D[Population Structure<br/>PCA analysis<br/>Kinship matrix]
-    D --> E[Association Testing<br/>Linear/Logistic regression<br/>Covariate adjustment]
+    C --> DpopulationStructurePcaAnalysisKinshipMatrix[Population Structure_PCA analysis_Kinship matrix]
+    D --> EassociationTestingLinear/logisticRegressionCovariateAdjustment[Association Testing_Linear/Logistic regression_Covariate adjustment]
 
-    E --> F[Multiple Testing<br/>Bonferroni correction<br/>FDR control<br/>Genomic control]
-    F --> G[Results Visualization<br/>Manhattan plots<br/>Q-Q plots<br/>Regional plots]
+    E --> FmultipleTestingBonferroniCorrectionFdrControlGenomicControl[Multiple Testing_Bonferroni correction_FDR control_Genomic control]
+    F --> GresultsVisualizationManhattanPlotsQ-qPlotsRegionalPlots[Results Visualization_Manhattan plots_Q-Q plots_Regional plots]
 
-    H[Configuration<br/>YAML templates] --> I[Workflow Execution<br/>Parallel processing]
-    I --> J[Results Output<br/>Statistics tables<br/>Visualizations]
+    HconfigurationYamlTemplates[Configuration_YAML templates] --> IworkflowExecutionParallelProcessing[Workflow Execution_Parallel processing]
+    I --> JresultsOutputStatisticsTablesVisualizations[Results Output_Statistics tables_Visualizations]
 
-    K[Variant Calling<br/>bcftools, GATK] -.-> L[Integration<br/>BAM/CRAM input]
+    KvariantCallingBcftools,Gatk[Variant Calling_bcftools, GATK] -.-> LintegrationBam/cramInput[Integration_BAM/CRAM input]
     L --> B
 
-    M[Statistical Models<br/>Linear, Logistic<br/>Mixed models] --> N[Model Selection<br/>Based on trait type]
+    MstatisticalModelsLinear,LogisticMixedModels[Statistical Models_Linear, Logistic_Mixed models] --> NmodelSelectionBasedOnTraitType[Model Selection_Based on trait type]
     N --> E
 
-    O[External Tools] -.-> P[Tool Validation<br/>PATH checking<br/>Version compatibility]
+    OexternalTools[External Tools] -.-> PtoolValidationPathCheckingVersionCompatibility[Tool Validation_PATH checking_Version compatibility]
     P --> I
 
-    classDef input fill:#e8f5e8,stroke:#2e7d32,stroke-width:2px
-    classDef process fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
-    classDef analysis fill:#e3f2fd,stroke:#1565c0,stroke-width:2px
-    classDef output fill:#fce4ec,stroke:#c2185b,stroke-width:2px
-    classDef config fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px
 
     class A,H input
     class B,C,D,E,F,K,L process

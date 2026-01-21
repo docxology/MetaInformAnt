@@ -13,13 +13,13 @@ Technical specification for the CLI menu and navigation system.
 
 ```mermaid
 graph LR
-    A[run_menu.py] --> B(MenuSystem)
+    ArunMenu.py[run_menu.py] --> B(MenuSystem)
     B --> C{Domain Menus}
-    C --> D[DNA Scripts]
-    C --> E[RNA Scripts]
-    C --> F[GWAS Scripts]
-    B --> G[Dependency Checker]
-    G --> H[uv Installer]
+    C --> DdnaScripts[DNA Scripts]
+    C --> ErnaScripts[RNA Scripts]
+    C --> FgwasScripts[GWAS Scripts]
+    B --> GdependencyChecker[Dependency Checker]
+    G --> HuvInstaller[uv Installer]
 ```
 
 ## Key Behaviors

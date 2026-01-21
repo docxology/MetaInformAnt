@@ -8,9 +8,9 @@ Synthetic generators across domains and toy agent-based models.
 
 ```mermaid
 graph TD
-  A[Random DNA] --> B[Mutate]
-  C[NB Params] --> D[Counts Matrix]
-  E[GridWorld] --> F[Agents Step]
+  ArandomDna[Random DNA] --> B[Mutate]
+  CnbParams[NB Params] --> DcountsMatrix[Counts Matrix]
+  E[GridWorld] --> FagentsStep[Agents Step]
 ```
 
 See: [Sequences](./sequences.md), [RNA Counts](./rna_counts.md), [Agents](../../src/metainformant/simulation/README.md#agent-based-models-agentspy).

@@ -8,35 +8,21 @@ High-level wrappers for amalgkit CLI subcommands.
 
 | Function | Module | Description | Documentation |
 |----------|--------|-------------|---------------|
-| `metadata` | `metainformant.rna.amalgkit` | Retrieve RNA-seq metadata from NCBI SRA/ENA | [metadata.md](steps/metadata.md) |
-| `integrate` | `metainformant.rna.amalgkit` | Integrate FASTQ paths into metadata | [integrate.md](steps/integrate.md) |
-| `config` | `metainformant.rna.amalgkit` | Generate configuration files | [config.md](steps/config.md) |
-| `select` | `metainformant.rna.amalgkit` | Filter SRA entries by quality | [select.md](steps/select.md) |
-| `getfastq` | `metainformant.rna.amalgkit` | Download and convert SRA to FASTQ | [getfastq.md](steps/getfastq.md) |
-| `quant` | `metainformant.rna.amalgkit` | Quantify transcript abundances | [quant.md](steps/quant.md) |
-| `merge` | `metainformant.rna.amalgkit` | Merge quantification results | [merge.md](steps/merge.md) |
-| `cstmm` | `metainformant.rna.amalgkit` | Cross-species TMM normalization | [cstmm.md](steps/cstmm.md) |
-| `curate` | `metainformant.rna.amalgkit` | Quality control and batch correction | [curate.md](steps/curate.md) |
-| `csca` | `metainformant.rna.amalgkit` | Cross-species correlation analysis | [csca.md](steps/csca.md) |
-| `sanity` | `metainformant.rna.amalgkit` | Validate workflow outputs | [sanity.md](steps/sanity.md) |
+| `metadata` | `metainformant.rna.amalgkit` | Retrieve RNA-seq metadata from NCBI SRA/ENA | [01_metadata.md](steps/01_metadata.md) |
+| `config` | `metainformant.rna.amalgkit` | Generate configuration files | [02_config.md](steps/02_config.md) |
+| `select` | `metainformant.rna.amalgkit` | Filter SRA entries by quality | [03_select.md](steps/03_select.md) |
+| `getfastq` | `metainformant.rna.amalgkit` | Download and convert SRA to FASTQ | [04_getfastq.md](steps/04_getfastq.md) |
+| `integrate` | `metainformant.rna.amalgkit` | Integrate FASTQ paths into metadata | [05_integrate.md](steps/05_integrate.md) |
+| `quant` | `metainformant.rna.amalgkit` | Quantify transcript abundances | [06_quant.md](steps/06_quant.md) |
+| `merge` | `metainformant.rna.amalgkit` | Merge quantification results | [07_merge.md](steps/07_merge.md) |
+| `cstmm` | `metainformant.rna.amalgkit` | Cross-species TMM normalization | [08_cstmm.md](steps/08_cstmm.md) |
+| `curate` | `metainformant.rna.amalgkit` | Quality control and batch correction | [09_curate.md](steps/09_curate.md) |
+| `csca` | `metainformant.rna.amalgkit` | Cross-species correlation analysis | [10_csca.md](steps/10_csca.md) |
+| `sanity` | `metainformant.rna.amalgkit` | Validate workflow outputs | [11_sanity.md](steps/11_sanity.md) |
 
 ## Step Runner Functions
 
-Low-level step execution with explicit directory control.
-
-| Function | Module | Description | Documentation |
-|----------|--------|-------------|---------------|
-| `run_metadata` | `metainformant.rna.steps.metadata` | Execute metadata step | [metadata.md](steps/metadata.md) |
-| `run_integrate` | `metainformant.rna.steps.integrate` | Execute integrate step | [integrate.md](steps/integrate.md) |
-| `run_config` | `metainformant.rna.steps.config` | Execute config step | [config.md](steps/config.md) |
-| `run_select` | `metainformant.rna.steps.select` | Execute select step | [select.md](steps/select.md) |
-| `run_getfastq` | `metainformant.rna.steps.getfastq` | Execute getfastq step | [getfastq.md](steps/getfastq.md) |
-| `run_quant` | `metainformant.rna.steps.quant` | Execute quant step | [quant.md](steps/quant.md) |
-| `run_merge` | `metainformant.rna.steps.merge` | Execute merge step | [merge.md](steps/merge.md) |
-| `run_cstmm` | `metainformant.rna.steps.cstmm` | Execute cstmm step | [cstmm.md](steps/cstmm.md) |
-| `run_curate` | `metainformant.rna.steps.curate` | Execute curate step | [curate.md](steps/curate.md) |
-| `run_csca` | `metainformant.rna.steps.csca` | Execute csca step | [csca.md](steps/csca.md) |
-| `run_sanity` | `metainformant.rna.steps.sanity` | Execute sanity step | [sanity.md](steps/sanity.md) |
+Amalgkit steps are invoked via CLI wrappers in `metainformant.rna.amalgkit`. Legacy per-step runner modules under `metainformant.rna.steps.*` are not part of the current implementation.
 
 ## Workflow Functions
 

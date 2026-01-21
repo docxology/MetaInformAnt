@@ -146,9 +146,9 @@ OG0000002        567.2           1123.5           498.7            987.3
 
 ```mermaid
 flowchart LR
-    A[merge Species 1] --> B[cstmm]
-    C[merge Species 2] --> B
-    D[merge Species 3] --> B
+    AmergeSpecies1[merge Species 1] --> B[cstmm]
+    CmergeSpecies2[merge Species 2] --> B
+    DmergeSpecies3[merge Species 3] --> B
     B --> E[curate]
 ```
 
@@ -510,9 +510,9 @@ steps:
 
 ## See Also
 
-- **Previous Step**: [`merge.md`](merge.md) - Merging expression matrices per species
-- **Next Step**: [`curate.md`](curate.md) - Quality control on normalized data
-- **Next Step**: [`csca.md`](csca.md) - Cross-species correlation analysis
+- **Previous Step**: [`07_merge.md`](07_merge.md) - Merging expression matrices per species
+- **Next Step**: [`09_curate.md`](09_curate.md) - Quality control on normalized data
+- **Next Step**: [`10_csca.md`](10_csca.md) - Cross-species correlation analysis
 - **Workflow Overview**: [`../amalgkit.md`](../amalgkit.md)
 
 ---

@@ -11,8 +11,6 @@ This guide helps resolve common issues when running METAINFORMANT examples.
 **Solutions**:
 1. **Install METAINFORMANT**:
    ```bash
-   pip install -e .
-   # or with uv
    uv pip install -e .
    ```
 
@@ -142,7 +140,7 @@ which amalgkit  # Should return path
 **Scikit-learn import errors**:
 ```bash
 python -c "import sklearn; print(sklearn.__version__)"
-# Install if missing: pip install scikit-learn
+# Install if missing: uv pip install scikit-learn
 ```
 
 **Model training failures**:
@@ -251,7 +249,7 @@ conda activate metainformant
 
 # Install dependencies
 conda install numpy scipy matplotlib scikit-learn
-pip install -e .
+uv pip install -e .
 ```
 
 ### Docker Issues

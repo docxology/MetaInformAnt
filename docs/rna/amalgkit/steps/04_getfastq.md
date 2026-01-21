@@ -527,7 +527,7 @@ python3 scripts/rna/run_workflow.py config/amalgkit/my_species.yaml --validate -
    ```
 4. Re-run `getfastq` step if needed
 
-For detailed validation troubleshooting, see [Validation Guide](../VALIDATION.md).
+For detailed validation troubleshooting, see [Validation Guide](../../VALIDATION.md).
 
 ## Troubleshooting
 
@@ -997,9 +997,9 @@ steps:
 
 ## See Also
 
-- **Previous Step**: [`select.md`](select.md) - Selecting samples for download
-- **Next Step**: [`integrate.md`](integrate.md) - Integrating FASTQ info into metadata
-- **Next Step**: [`quant.md`](quant.md) - Quantifying gene expression
+- **Previous Step**: [`03_select.md`](03_select.md) - Selecting samples for download
+- **Next Step**: [`05_integrate.md`](05_integrate.md) - Integrating FASTQ info into metadata
+- **Next Step**: [`06_quant.md`](06_quant.md) - Quantifying gene expression
 - **Workflow Overview**: [`../amalgkit.md`](../amalgkit.md)
 - **Testing**: `tests/test_rna_amalgkit_steps.py::test_getfastq_basic_execution`
 

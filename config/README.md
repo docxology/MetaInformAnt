@@ -6,37 +6,34 @@ This directory contains repository-level configuration files used by METAINFORMA
 
 ```mermaid
 graph TD
-    A[Configuration Sources] --> B[YAML Files]
-    B --> C[Environment Variables]
-    C --> D[Command Line Args]
+    AconfigurationSources[Configuration Sources] --> ByamlFiles[YAML Files]
+    B --> CenvironmentVariables[Environment Variables]
+    C --> DcommandLineArgs[Command Line Args]
 
-    D --> E[Config Processing]
+    D --> EconfigProcessing[Config Processing]
     E --> F[Validation]
-    F --> G[Type Coercion]
+    F --> GtypeCoercion[Type Coercion]
 
-    G --> H[Final Configuration]
-    H --> I[Workflow Execution]
+    G --> HfinalConfiguration[Final Configuration]
+    H --> IworkflowExecution[Workflow Execution]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style E fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style I fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Configuration Hierarchy"
-        J[Repository Defaults] -.-> B
-        K[User Overrides] -.-> C
-        L[Runtime Parameters] -.-> D
+        JrepositoryDefaults[Repository Defaults] -.-> B
+        KuserOverrides[User Overrides] -.-> C
+        LruntimeParameters[Runtime Parameters] -.-> D
     end
 
     subgraph "Processing Pipeline"
-        M[Schema Validation] -.-> F
-        N[Parameter Merging] -.-> E
-        O[Type Conversion] -.-> G
+        MschemaValidation[Schema Validation] -.-> F
+        NparameterMerging[Parameter Merging] -.-> E
+        OtypeConversion[Type Conversion] -.-> G
     end
 
     subgraph "Workflow Integration"
-        P[RNA-seq Workflows] -.-> I
-        Q[GWAS Pipelines] -.-> I
-        R[Multi-omic Analysis] -.-> I
+        Prna-seqWorkflows[RNA-seq Workflows] -.-> I
+        QgwasPipelines[GWAS Pipelines] -.-> I
+        Rmulti-omicAnalysis[Multi-omic Analysis] -.-> I
     end
 ```
 
@@ -44,42 +41,39 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Target Organism] --> B[SRA Search]
-    B --> C[RNA-seq Datasets]
+    AtargetOrganism[Target Organism] --> BsraSearch[SRA Search]
+    B --> Crna-seqDatasets[RNA-seq Datasets]
 
-    A --> D[NCBI Assembly DB]
-    D --> E[Genome Assemblies]
+    A --> DncbiAssemblyDb[NCBI Assembly DB]
+    D --> EgenomeAssemblies[Genome Assemblies]
 
-    C --> F[Sample Filtering]
-    F --> G[Quality Assessment]
+    C --> FsampleFiltering[Sample Filtering]
+    F --> GqualityAssessment[Quality Assessment]
 
-    E --> H[Assembly Ranking]
-    H --> I[Best Assembly Selection]
+    E --> HassemblyRanking[Assembly Ranking]
+    H --> IbestAssemblySelection[Best Assembly Selection]
 
-    G --> J[Configuration Generation]
+    G --> JconfigurationGeneration[Configuration Generation]
     I --> J
 
-    J --> K[YAML Configuration]
-    K --> L[Workflow Ready]
+    J --> KyamlConfiguration[YAML Configuration]
+    K --> LworkflowReady[Workflow Ready]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style J fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style L fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Discovery Pipeline"
-        M[Taxonomy ID] -.-> B
-        N[Scientific Name] -.-> B
-        O[Common Name] -.-> B
+        MtaxonomyId[Taxonomy ID] -.-> B
+        NscientificName[Scientific Name] -.-> B
+        OcommonName[Common Name] -.-> B
     end
 
     subgraph "Quality Metrics"
-        P[Sample Count] -.-> G
-        Q[Read Length] -.-> G
-        R[Sequencing Tech] -.-> G
+        PsampleCount[Sample Count] -.-> G
+        QreadLength[Read Length] -.-> G
+        RsequencingTech[Sequencing Tech] -.-> G
     end
 
     subgraph "Assembly Criteria"
-        S[RefSeq Status] -.-> H
+        SrefseqStatus[RefSeq Status] -.-> H
         T[Contiguity] -.-> H
         U[Annotation] -.-> H
         V[Completeness] -.-> H
@@ -90,38 +84,35 @@ graph TD
 
 ```mermaid
 graph TD
-    A[Template YAML] --> B[Parameter Substitution]
-    B --> C[Species-specific Values]
+    AtemplateYaml[Template YAML] --> BparameterSubstitution[Parameter Substitution]
+    B --> Cspecies-specificValues[Species-specific Values]
 
     C --> D[Validation]
-    D --> E[Final Configuration]
+    D --> EfinalConfiguration[Final Configuration]
 
-    E --> F[Workflow Execution]
+    E --> FworkflowExecution[Workflow Execution]
     F --> G[Results]
 
-    style A fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style D fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style G fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 
     subgraph "Template Components"
-        H[Genome References] -.-> A
-        I[Workflow Parameters] -.-> A
-        J[Output Paths] -.-> A
-        K[Resource Settings] -.-> A
+        HgenomeReferences[Genome References] -.-> A
+        IworkflowParameters[Workflow Parameters] -.-> A
+        JoutputPaths[Output Paths] -.-> A
+        KresourceSettings[Resource Settings] -.-> A
     end
 
     subgraph "Substitution Logic"
-        L[Taxonomy IDs] -.-> B
-        M[Assembly Accessions] -.-> B
-        N[FTP URLs] -.-> B
-        O[Species Names] -.-> B
+        LtaxonomyIds[Taxonomy IDs] -.-> B
+        MassemblyAccessions[Assembly Accessions] -.-> B
+        NftpUrls[FTP URLs] -.-> B
+        OspeciesNames[Species Names] -.-> B
     end
 
     subgraph "Validation Checks"
-        P[File Existence] -.-> D
-        Q[Parameter Types] -.-> D
-        R[URL Accessibility] -.-> D
-        S[Reference Integrity] -.-> D
+        PfileExistence[File Existence] -.-> D
+        QparameterTypes[Parameter Types] -.-> D
+        RurlAccessibility[URL Accessibility] -.-> D
+        SreferenceIntegrity[Reference Integrity] -.-> D
     end
 ```
 

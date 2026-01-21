@@ -12,13 +12,13 @@ behavioral phenotype data analysis, including automated curation from web source
 
 ```mermaid
     subgraph "Phenotype Module"
-        AntWiki[antwiki<br/>AntWiki Integration]
-        LifeCourse[life_course<br/>Life Course Analysis]
-        Behavior[behavior<br/>Behavioral Analysis]
-        Chemical[chemical<br/>Chemotypes]
-        Sonic[sonic<br/>Acoustic Signals]
-        Morph[morphological<br/>Morphometrics]
-        Electronic[electronic<br/>Tracking Data]
+        AntWikiantwikiAntwikiIntegration[antwiki_AntWiki Integration]
+        LifeCourselifeCourseLifeCourseAnalysis[life_course_Life Course Analysis]
+        BehaviorbehaviorBehavioralAnalysis[behavior_Behavioral Analysis]
+        ChemicalchemicalChemotypes[chemical_Chemotypes]
+        SonicsonicAcousticSignals[sonic_Acoustic Signals]
+        MorphmorphologicalMorphometrics[morphological_Morphometrics]
+        ElectronicelectronicTrackingData[electronic_Tracking Data]
     end
 ```
 ## Documentation Files

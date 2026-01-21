@@ -206,10 +206,10 @@ Production workflows validated through:
 
 This RNA module integrates with:
 - **[README.md](README.md)**: RNA module overview and quick start
-- **[docs/rna/](../../docs/rna/)**: Comprehensive RNA workflow documentation
-- **[docs/rna/amalgkit/](../../docs/rna/amalgkit/)**: Amalgkit integration guides
-- **[docs/rna/amalgkit/steps/](../../docs/rna/amalgkit/steps/)**: Individual step documentation
-- **[tests/test_rna_*.py](../../tests/)**: RNA module test suite
+- **[docs/rna/](../../../docs/rna/)**: Comprehensive RNA workflow documentation
+- **[docs/rna/amalgkit/](../../../docs/rna/amalgkit/)**: Amalgkit integration guides
+- **[docs/rna/amalgkit/steps/](../../../docs/rna/amalgkit/steps/)**: Individual step documentation
+- **[tests/](../../../tests/)**: Test suite (see `tests/test_rna_*.py`)
 
 ## Module Statistics
 

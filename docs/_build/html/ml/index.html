@@ -65,11 +65,11 @@
 <li class="toctree-l1 current"><a class="current reference internal" href="#">Machine Learning: Biological Data Analysis</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#overview">Overview</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#core-components">Core Components</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#classification"><span class="xref myst">Classification</span></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#regression"><span class="xref myst">Regression</span></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#feature-selection"><span class="xref myst">Feature Selection</span></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#model-validation"><span class="xref myst">Model Validation</span></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#dimensionality-reduction"><span class="xref myst">Dimensionality Reduction</span></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#classification">Classification</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#regression">Regression</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#feature-selection">Feature Selection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#model-validation">Model Validation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#dimensionality-reduction">Dimensionality Reduction</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#architecture">Architecture</a></li>
@@ -152,7 +152,7 @@
 <section id="core-components">
 <h2>Core Components<a class="headerlink" href="#core-components" title="Link to this heading"></a></h2>
 <section id="classification">
-<h3><a class="reference internal" href="#./classification.md"><span class="xref myst">Classification</span></a><a class="headerlink" href="#classification" title="Link to this heading"></a></h3>
+<h3>Classification<a class="headerlink" href="#classification" title="Link to this heading"></a></h3>
 <p>Supervised learning methods for biological prediction tasks:</p>
 <ul class="simple">
 <li><p>Binary and multi-class classification</p></li>
@@ -163,7 +163,7 @@
 </ul>
 </section>
 <section id="regression">
-<h3><a class="reference internal" href="#./regression.md"><span class="xref myst">Regression</span></a><a class="headerlink" href="#regression" title="Link to this heading"></a></h3>
+<h3>Regression<a class="headerlink" href="#regression" title="Link to this heading"></a></h3>
 <p>Continuous trait prediction and modeling:</p>
 <ul class="simple">
 <li><p>Linear and non-linear regression</p></li>
@@ -174,7 +174,7 @@
 </ul>
 </section>
 <section id="feature-selection">
-<h3><a class="reference internal" href="#./features.md"><span class="xref myst">Feature Selection</span></a><a class="headerlink" href="#feature-selection" title="Link to this heading"></a></h3>
+<h3>Feature Selection<a class="headerlink" href="#feature-selection" title="Link to this heading"></a></h3>
 <p>Dimensionality reduction and feature importance analysis:</p>
 <ul class="simple">
 <li><p>Univariate statistical tests</p></li>
@@ -185,7 +185,7 @@
 </ul>
 </section>
 <section id="model-validation">
-<h3><a class="reference internal" href="#./validation.md"><span class="xref myst">Model Validation</span></a><a class="headerlink" href="#model-validation" title="Link to this heading"></a></h3>
+<h3>Model Validation<a class="headerlink" href="#model-validation" title="Link to this heading"></a></h3>
 <p>Comprehensive model assessment and validation:</p>
 <ul class="simple">
 <li><p>Cross-validation strategies</p></li>
@@ -196,7 +196,7 @@
 </ul>
 </section>
 <section id="dimensionality-reduction">
-<h3><a class="reference internal" href="#./dimensionality.md"><span class="xref myst">Dimensionality Reduction</span></a><a class="headerlink" href="#dimensionality-reduction" title="Link to this heading"></a></h3>
+<h3>Dimensionality Reduction<a class="headerlink" href="#dimensionality-reduction" title="Link to this heading"></a></h3>
 <p>Manifold learning and dimensionality reduction:</p>
 <ul class="simple">
 <li><p>Principal Component Analysis (PCA)</p></li>
@@ -210,18 +210,18 @@
 <section id="architecture">
 <h2>Architecture<a class="headerlink" href="#architecture" title="Link to this heading"></a></h2>
 <div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart TD
-    A[Biological Data] --&gt; B[Preprocessing]
-    B --&gt; C[Feature Engineering]
-    C --&gt; D[Model Training]
+    AbiologicalData[Biological Data] --&gt; B[Preprocessing]
+    B --&gt; CfeatureEngineering[Feature Engineering]
+    C --&gt; DmodelTraining[Model Training]
     D --&gt; E[Validation]
     E --&gt; F[Interpretation]
-    F --&gt; G[Biological Insights]
+    F --&gt; GbiologicalInsights[Biological Insights]
 
-    subgraph Methods[ML Methods]
+    subgraph MethodsmlMethods[ML Methods]
         H[Classification]
         I[Regression]
-        J[Feature Selection]
-        K[Dimensionality Reduction]
+        JfeatureSelection[Feature Selection]
+        KdimensionalityReduction[Dimensionality Reduction]
         L[Validation]
     end
 
@@ -529,11 +529,7 @@ uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </sp
 <section id="related-documentation">
 <h2>Related Documentation<a class="headerlink" href="#related-documentation" title="Link to this heading"></a></h2>
 <ul class="simple">
-<li><p><a class="reference internal" href="#./classification.md"><span class="xref myst">Classification Methods</span></a>: Supervised classification algorithms</p></li>
-<li><p><a class="reference internal" href="#./regression.md"><span class="xref myst">Regression Methods</span></a>: Continuous prediction models</p></li>
-<li><p><a class="reference internal" href="#./features.md"><span class="xref myst">Feature Selection</span></a>: Dimensionality reduction and selection</p></li>
-<li><p><a class="reference internal" href="#./validation.md"><span class="xref myst">Model Validation</span></a>: Model assessment and validation</p></li>
-<li><p><a class="reference internal" href="#./dimensionality.md"><span class="xref myst">Dimensionality Reduction</span></a>: Manifold learning methods</p></li>
+<li><p><a class="reference internal" href="README.html"><span class="std std-doc">ML Module Guide</span></a>: Full module documentation and examples</p></li>
 </ul>
 </section>
 </section>

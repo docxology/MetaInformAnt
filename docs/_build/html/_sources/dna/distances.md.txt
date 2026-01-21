@@ -4,10 +4,10 @@ Functions: `p_distance`, `jc69_distance`, `kmer_distance`, `kmer_distance_matrix
 
 ```mermaid
 flowchart LR
-  A[Sequence 1] & B[Sequence 2] --> C[p_distance]
-  A & B --> D[jc69_distance] 
-  A & B --> E[kmer_distance]
-  F[Multiple Sequences] --> G[kmer_distance_matrix]
+  Asequence1[Sequence 1] & Bsequence2[Sequence 2] --> CpDistance[p_distance]
+  A & B --> Djc69Distance[jc69_distance] 
+  A & B --> EkmerDistance[kmer_distance]
+  FmultipleSequences[Multiple Sequences] --> GkmerDistanceMatrix[kmer_distance_matrix]
 ```
 
 Example

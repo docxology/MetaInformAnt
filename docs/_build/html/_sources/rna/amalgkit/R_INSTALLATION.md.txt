@@ -23,6 +23,41 @@ Rscript -e "print('R is working')"
 Rscript -e "capabilities()"
 ```
 
+### Configure R Temp Directory (IMPORTANT)
+
+**Problem**: R package installation may fail with "No space left on device" if `/tmp` (tmpfs) is full.
+
+**Solution**: Configure R to use the repository's `.tmp/R` directory instead of system `/tmp`:
+
+```bash
+# Set environment variables for current session
+export TMPDIR="$(pwd)/.tmp/R"
+export TEMP="$TMPDIR"
+export TMP="$TMPDIR"
+mkdir -p .tmp/R
+
+# Verify configuration
+Rscript -e "cat('TMPDIR:', Sys.getenv('TMPDIR'), '\n')"
+```
+
+**Permanent Configuration**: Create `.Rprofile` in repository root:
+
+```bash
+cat > .Rprofile << 'EOF'
+# Set R temp directory to repository .tmp/R instead of system /tmp
+if (Sys.getenv("TMPDIR") == "") {
+  repo_root <- normalizePath(".")
+  tmp_dir <- file.path(repo_root, ".tmp", "R")
+  dir.create(tmp_dir, recursive = TRUE, showWarnings = FALSE)
+  Sys.setenv(TMPDIR = tmp_dir)
+  Sys.setenv(TEMP = tmp_dir)
+  Sys.setenv(TMP = tmp_dir)
+}
+EOF
+```
+
+**Note**: The `.Rprofile` file is automatically loaded by R when starting in the repository directory.
+
 ## Alternative Installation Methods
 
 ### Using apt-get (with specific version)

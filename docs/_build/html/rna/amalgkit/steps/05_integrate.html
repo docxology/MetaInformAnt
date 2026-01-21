@@ -120,11 +120,12 @@
 <h3>Basic Usage<a class="headerlink" href="#basic-usage" title="Link to this heading"></a></h3>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>amalgkit<span class="w"> </span>integrate<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/work<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--fastq_dir<span class="w"> </span>output/amalgkit/fastq<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--fastq_dir<span class="w"> </span>output/amalgkit/fastq/getfastq<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--metadata<span class="w"> </span>output/amalgkit/work/metadata/metadata.tsv<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--threads<span class="w"> </span><span class="m">6</span>
 </pre></div>
 </div>
+<p><strong>Important</strong>: The <code class="docutils literal notranslate"><span class="pre">fastq_dir</span></code> parameter must point to the <code class="docutils literal notranslate"><span class="pre">getfastq/</span></code> subdirectory created by the <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> step, not just the base fastq directory. If <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> used <code class="docutils literal notranslate"><span class="pre">out_dir:</span> <span class="pre">output/amalgkit/fastq</span></code>, then <code class="docutils literal notranslate"><span class="pre">integrate</span></code> should use <code class="docutils literal notranslate"><span class="pre">fastq_dir:</span> <span class="pre">output/amalgkit/fastq/getfastq</span></code>.</p>
 </section>
 <section id="python-api">
 <h3>Python API<a class="headerlink" href="#python-api" title="Link to this heading"></a></h3>
@@ -144,7 +145,10 @@
 <div class="highlight-yaml notranslate"><div class="highlight"><pre><span></span><span class="nt">steps</span><span class="p">:</span>
 <span class="w">  </span><span class="nt">integrate</span><span class="p">:</span>
 <span class="w">    </span><span class="nt">out_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/amellifera/work</span>
-<span class="w">    </span><span class="nt">fastq_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/amellifera/fastq</span>
+<span class="w">    </span><span class="c1"># CRITICAL: fastq_dir must point to the getfastq subdirectory</span>
+<span class="w">    </span><span class="c1"># If getfastq used out_dir: output/amalgkit/amellifera/fastq,</span>
+<span class="w">    </span><span class="c1"># then fastq_dir should be: output/amalgkit/amellifera/fastq/getfastq</span>
+<span class="w">    </span><span class="nt">fastq_dir</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/amellifera/fastq/getfastq</span>
 <span class="w">    </span><span class="nt">metadata</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">output/amalgkit/amellifera/work/metadata/metadata.tsv</span>
 <span class="w">    </span><span class="nt">threads</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">6</span>
 <span class="w">    </span><span class="nt">accurate_size</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">yes</span>
@@ -166,7 +170,7 @@
 <tbody>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">--fastq_dir</span></code></p></td>
 <td><p>PATH</p></td>
-<td><p><strong>Required</strong>. Directory containing FASTQ files (.fq, .fastq, .fq.gz, .fastq.gz).</p></td>
+<td><p><strong>Required</strong>. Directory containing FASTQ files (.fq, .fastq, .fq.gz, .fastq.gz). <strong>Must point to the <code class="docutils literal notranslate"><span class="pre">getfastq/</span></code> subdirectory</strong> created by the <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> step (e.g., <code class="docutils literal notranslate"><span class="pre">{getfastq_out_dir}/getfastq</span></code>).</p></td>
 </tr>
 </tbody>
 </table>
@@ -221,10 +225,11 @@
 <section id="prerequisites">
 <h3>Prerequisites<a class="headerlink" href="#prerequisites" title="Link to this heading"></a></h3>
 <ul class="simple">
-<li><p><strong>FASTQ Directory</strong>: Directory containing FASTQ files</p></li>
+<li><p><strong>FASTQ Directory</strong>: Directory containing FASTQ files (typically <code class="docutils literal notranslate"><span class="pre">{getfastq_out_dir}/getfastq/</span></code>)</p></li>
 <li><p><strong>Metadata Table</strong>: Existing <code class="docutils literal notranslate"><span class="pre">metadata.tsv</span></code> from <code class="docutils literal notranslate"><span class="pre">amalgkit</span> <span class="pre">metadata</span></code></p></li>
 <li><p><strong>seqkit</strong>: Installed and available on PATH</p></li>
 </ul>
+<p><strong>Path Resolution</strong>: The <code class="docutils literal notranslate"><span class="pre">integrate</span></code> step scans the specified <code class="docutils literal notranslate"><span class="pre">fastq_dir</span></code> for FASTQ files. If <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> created files in <code class="docutils literal notranslate"><span class="pre">{out_dir}/getfastq/{sample_id}/</span></code>, then <code class="docutils literal notranslate"><span class="pre">fastq_dir</span></code> must be set to <code class="docutils literal notranslate"><span class="pre">{out_dir}/getfastq/</span></code>. The workflow automatically adjusts this path if the <code class="docutils literal notranslate"><span class="pre">getfastq</span></code> subdirectory exists, but it’s best to explicitly set it correctly.</p>
 </section>
 <section id="fastq-file-naming">
 <h3>FASTQ File Naming<a class="headerlink" href="#fastq-file-naming" title="Link to this heading"></a></h3>
@@ -273,7 +278,7 @@
 <h3>Position in Pipeline<a class="headerlink" href="#position-in-pipeline" title="Link to this heading"></a></h3>
 <div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>flowchart LR
     A[metadata] --&gt; B[integrate]
-    C[Local FASTQs] --&gt; B
+    ClocalFastqs[Local FASTQs] --&gt; B
     B --&gt; D[quant]
 </pre></div>
 </div>
@@ -303,10 +308,10 @@ amalgkit<span class="w"> </span>getfastq<span class="w"> </span><span class="se"
 <span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/work<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--metadata<span class="w"> </span>output/amalgkit/work/metadata/pivot_qualified.tsv
 
-<span class="c1"># Then integrate them</span>
+<span class="c1"># Then integrate them (note: fastq_dir points to getfastq subdirectory)</span>
 amalgkit<span class="w"> </span>integrate<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/work<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--fastq_dir<span class="w"> </span>output/amalgkit/fastq<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--fastq_dir<span class="w"> </span>output/amalgkit/fastq/getfastq<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--threads<span class="w"> </span><span class="m">8</span>
 </pre></div>
 </div>
@@ -315,9 +320,10 @@ amalgkit<span class="w"> </span>integrate<span class="w"> </span><span class="se
 <h3>2. Use Pre-existing Local Data<a class="headerlink" href="#use-pre-existing-local-data" title="Link to this heading"></a></h3>
 <p>Skip SRA downloads entirely:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># Integrate existing FASTQs from previous project</span>
+<span class="c1"># Note: If FASTQs are from amalgkit getfastq, use the getfastq subdirectory</span>
 amalgkit<span class="w"> </span>integrate<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--out_dir<span class="w"> </span>output/new_analysis/work<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--fastq_dir<span class="w"> </span>/path/to/existing/fastqs<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--fastq_dir<span class="w"> </span>/path/to/existing/fastqs/getfastq<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--metadata<span class="w"> </span>output/new_analysis/work/metadata/metadata.tsv<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--accurate_size<span class="w"> </span>yes
 </pre></div>
@@ -328,7 +334,7 @@ amalgkit<span class="w"> </span>integrate<span class="w"> </span><span class="se
 <p>For quick integration of large .gz files:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>amalgkit<span class="w"> </span>integrate<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/work<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--fastq_dir<span class="w"> </span>output/amalgkit/fastq<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--fastq_dir<span class="w"> </span>output/amalgkit/fastq/getfastq<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--accurate_size<span class="w"> </span>no<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--threads<span class="w"> </span><span class="m">16</span>
 </pre></div>
@@ -492,10 +498,10 @@ head<span class="w"> </span>-1<span class="w"> </span>output/amalgkit/work/metad
 <h2>Real-World Examples<a class="headerlink" href="#real-world-examples" title="Link to this heading"></a></h2>
 <section id="example-1-post-getfastq-integration">
 <h3>Example 1: Post-getfastq Integration<a class="headerlink" href="#example-1-post-getfastq-integration" title="Link to this heading"></a></h3>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># After downloading FASTQs</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="c1"># After downloading FASTQs (note: use getfastq subdirectory)</span>
 amalgkit<span class="w"> </span>integrate<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--out_dir<span class="w"> </span>output/amalgkit/amellifera/work<span class="w"> </span><span class="se">\</span>
-<span class="w">  </span>--fastq_dir<span class="w"> </span>output/amalgkit/amellifera/fastq<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>--fastq_dir<span class="w"> </span>output/amalgkit/amellifera/fastq/getfastq<span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--threads<span class="w"> </span><span class="m">8</span><span class="w"> </span><span class="se">\</span>
 <span class="w">  </span>--accurate_size<span class="w"> </span>yes
 </pre></div>

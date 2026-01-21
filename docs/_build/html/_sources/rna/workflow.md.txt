@@ -9,22 +9,22 @@ The RNA module provides comprehensive workflow orchestration for RNA-seq analysi
 ```mermaid
 flowchart TB
     subgraph "RNA Orchestration"
-        CLI[CLI Interface<br/>metainformant rna] --> Scripts[Script Orchestrators<br/>scripts/rna/run_*.py]
-        Scripts --> Workflow[execute_amalgkit_workflow<br/>rna.workflow]
-        Workflow --> Steps[Step Functions<br/>rna.steps.run_*]
+        CLIcliInterfaceMetainformantRna[CLI Interface_metainformant rna] --> ScriptsscriptOrchestratorsScripts/rna/run*.py[Script Orchestrators_scripts/rna/run_*.py]
+        Scripts --> WorkflowexecuteAmalgkitWorkflowRna.workflow[execute_amalgkit_workflow_rna.workflow]
+        Workflow --> StepsstepFunctionsRna.steps.run*[Step Functions_rna.steps.run_*]
     end
 
     subgraph "Workflow Components"
-        Config[AmalgkitWorkflowConfig<br/>Configuration]
-        Monitoring[Monitoring<br/>rna.monitoring]
-        Genome[Genome Prep<br/>rna.genome_prep]
+        ConfigamalgkitworkflowconfigConfiguration[AmalgkitWorkflowConfig_Configuration]
+        MonitoringmonitoringRna.monitoring[Monitoring_rna.monitoring]
+        GenomegenomePrepRna.genomePrep[Genome Prep_rna.genome_prep]
         Steps
     end
 
     Workflow --> Config
     Workflow --> Monitoring
     Workflow --> Genome
-    Steps --> Amalgkit[Amalgkit CLI<br/>External Tool]
+    Steps --> AmalgkitamalgkitCliExternalTool[Amalgkit CLI_External Tool]
 ```
 
 ## Workflow Types
@@ -310,14 +310,14 @@ protein_results = execute_protein_workflow(protein_config)
 
 ```mermaid
 flowchart LR
-    RNA[RNA Workflow] --> Expr[Expression Matrix<br/>rna/output/quant]
-    Expr --> Prot[Protein Workflow<br/>protein/input/]
-    Expr --> Multi[Multi-Omics<br/>multiomics/input/]
+    RNArnaWorkflow[RNA Workflow] --> ExprexpressionMatrixRna/output/quant[Expression Matrix_rna/output/quant]
+    Expr --> ProtproteinWorkflowProtein/input/[Protein Workflow_protein/input/]
+    Expr --> Multimulti-omicsMultiomics/input/[Multi-Omics_multiomics/input/]
 
-    RNA --> Qual[Quality Control<br/>quality/input/]
+    RNA --> QualqualityControlQuality/input/[Quality Control_quality/input/]
     Qual --> RNA
 
-    RNA --> Viz[Visualization<br/>visualization/input/]
+    RNA --> VizvisualizationVisualization/input/[Visualization_visualization/input/]
 ```
 
 ## Production Deployment
@@ -463,7 +463,7 @@ python3 scripts/rna/setup_genome.py \
 
 - **[RNA Overview](../rna/README.md)** - RNA module overview
 - **[Amalgkit Integration](../rna/amalgkit/)** - Amalgkit-specific documentation
-- **[Configuration](../rna/config.md)** - Configuration management
-- **[Monitoring](../rna/monitoring.md)** - Progress tracking and monitoring
-- **[Orchestration Guide](../../ORCHESTRATION.md)** - Overall orchestration paradigm
-- **[Core Workflow](../../core/workflow.md)** - BaseWorkflowOrchestrator details
+- **[Configuration](CONFIGURATION.md)** - Configuration management
+- **[Monitoring](amalgkit/monitoring.md)** - Progress tracking and monitoring
+- **[Orchestration Guide](../ORCHESTRATION.md)** - Overall orchestration paradigm
+- **[Core Workflow](../core/workflow.md)** - BaseWorkflowOrchestrator details

@@ -65,8 +65,8 @@ The information module integrates with:
 
 ## Related Documentation
 
-- **[Source Module Documentation](../src/metainformant/information/README.md)** - Detailed implementation
-- **[Workflows Documentation](../src/metainformant/information/WORKFLOWS.md)** - Workflow guides
-- **[Examples Documentation](../src/metainformant/information/EXAMPLES.md)** - Usage examples
+- **[Source Module Documentation](../../src/metainformant/information/README.md)** - Detailed implementation
+- **[Workflows Documentation](../../src/metainformant/information/WORKFLOWS.md)** - Workflow guides
+- **[Examples Documentation](../../src/metainformant/information/EXAMPLES.md)** - Usage examples
 
 

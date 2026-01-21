@@ -1,0 +1,20 @@
+{
+  "bytes_downloaded": 11073318,
+  "destination": "output/amalgkit/pbarbatus_all/merged/merge",
+  "errors": [],
+  "eta_seconds": null,
+  "last_update": "2026-01-21T19:40:54Z",
+  "progress": {
+    "current": 0,
+    "percent": 0.0,
+    "total": 1,
+    "type": "file_count"
+  },
+  "progress_percent": 0.0,
+  "speed_mbps": 2.616824364622132,
+  "started_at": "2026-01-21T19:40:50Z",
+  "status": "completed",
+  "step": "amalgkit merge",
+  "total_bytes": null,
+  "url": "['amalgkit', 'merge', '--out_dir', 'output/amalgkit/pbarbatus_all/merged', '--metadata', 'output/amalgkit/pbarbatus_all/work/metadata/metadata_selected.tsv']"
+}
