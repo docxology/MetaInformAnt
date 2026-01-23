@@ -104,4 +104,3 @@ def test_manhattan_plot_genome_with_thresholds(tmp_path: Path) -> None:
 
     assert result["status"] == "success"
     assert output_path.exists()
-

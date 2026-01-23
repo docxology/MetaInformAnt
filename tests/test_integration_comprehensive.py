@@ -27,7 +27,9 @@ except ImportError:
 
 try:
     from metainformant.protein.sequence.sequences import parse_fasta as parse_protein_fasta
-    from metainformant.protein.structure.general.general.general.general.general.general.general.general import compute_rmsd_kabsch
+    from metainformant.protein.structure.general.general.general.general.general.general.general.general import (
+        compute_rmsd_kabsch,
+    )
 
     PROTEIN_AVAILABLE = True
 except ImportError:
@@ -42,7 +44,10 @@ except ImportError:
     NETWORKS_AVAILABLE = False
 
 try:
-    from metainformant.ml.features.features.features.features.features.features.features.features.features import biological_feature_ranking, select_features_univariate
+    from metainformant.ml.features.features.features.features.features.features.features.features.features import (
+        biological_feature_ranking,
+        select_features_univariate,
+    )
 
     ML_AVAILABLE = True
 except ImportError:
@@ -252,7 +257,7 @@ class TestBioinformaticsWorkflow:
         # Canonical correlations are typically in [0, 1] but can be outside due to numerical precision
         # and implementation details. The sqrt of eigenvalues can exceed 1 in some edge cases.
         # Convert numpy array to list to ensure proper evaluation
-        corr_list = correlations.tolist() if hasattr(correlations, 'tolist') else list(correlations)
+        corr_list = correlations.tolist() if hasattr(correlations, "tolist") else list(correlations)
         # Check each correlation individually - allow wider range for numerical issues
         for corr in corr_list:
             assert -0.5 <= corr <= 2.0, f"Correlation {corr} is outside expected range [-0.5, 2.0]"
@@ -476,7 +481,9 @@ class TestModuleInteroperability:
 
         # Should work with ML if available
         if ML_AVAILABLE:
-            from metainformant.ml.features.features.features.features.features.features.features.features.features import select_features_univariate
+            from metainformant.ml.features.features.features.features.features.features.features.features.features import (
+                select_features_univariate,
+            )
 
             y = np.random.randint(0, 2, 20)
             X_selected, indices = select_features_univariate(test_matrix, y, k=10)
@@ -502,6 +509,7 @@ class TestScalabilityAndPerformance:
         """Test network analysis with moderately large networks."""
         # Skip in CI environments where performance may be limited
         import os
+
         if os.environ.get("CI") or os.environ.get("CONTINUOUS_INTEGRATION"):
             pytest.skip("Network scalability test skipped in CI environment")
 

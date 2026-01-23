@@ -80,7 +80,7 @@ def fetch_alphafold_model(uniprot_acc: str, out_dir: Path, *, version: int = 4, 
         response = requests.get(url, timeout=30)
         response.raise_for_status()
 
-        with open(output_path, 'wb') as f:
+        with open(output_path, "wb") as f:
             f.write(response.content)
 
         logger.info(f"Downloaded AlphaFold model to {output_path}")
@@ -109,11 +109,11 @@ def get_alphafold_metadata(uniprot_acc: str) -> Dict[str, Any]:
     # AlphaFold metadata is typically embedded in the structure file
     # This is a placeholder for more complex metadata extraction
     metadata = {
-        'uniprot_accession': uniprot_acc,
-        'source': 'AlphaFold v4',
-        'method': 'Deep learning structure prediction',
-        'confidence_score': None,  # Would need to parse B-factor column
-        'url': build_alphafold_url(uniprot_acc)
+        "uniprot_accession": uniprot_acc,
+        "source": "AlphaFold v4",
+        "method": "Deep learning structure prediction",
+        "confidence_score": None,  # Would need to parse B-factor column
+        "url": build_alphafold_url(uniprot_acc),
     }
 
     return metadata
@@ -137,9 +137,9 @@ def parse_alphafold_confidence(pdb_path: Path) -> List[float]:
     confidence_scores = []
 
     try:
-        with open(pdb_path, 'r') as f:
+        with open(pdb_path, "r") as f:
             for line in f:
-                if line.startswith('ATOM'):
+                if line.startswith("ATOM"):
                     # B-factor column contains confidence score in AlphaFold PDBs
                     b_factor = float(line[60:66].strip())
                     confidence_scores.append(b_factor)
@@ -174,8 +174,9 @@ def find_alphafold_models_by_sequence(sequence: str, identity_threshold: float =
     return []
 
 
-def batch_download_alphafold_models(uniprot_accessions: List[str], out_dir: Path,
-                                   max_workers: int = 4) -> Dict[str, Path]:
+def batch_download_alphafold_models(
+    uniprot_accessions: List[str], out_dir: Path, max_workers: int = 4
+) -> Dict[str, Path]:
     """Download multiple AlphaFold models in parallel.
 
     Args:
@@ -221,21 +222,21 @@ def validate_alphafold_structure(pdb_path: Path) -> Dict[str, Any]:
         >>> # True
     """
     validation = {
-        'is_valid': False,
-        'n_atoms': 0,
-        'n_residues': 0,
-        'has_confidence_scores': False,
-        'avg_confidence': 0.0,
-        'issues': []
+        "is_valid": False,
+        "n_atoms": 0,
+        "n_residues": 0,
+        "has_confidence_scores": False,
+        "avg_confidence": 0.0,
+        "issues": [],
     }
 
     try:
-        with open(pdb_path, 'r') as f:
+        with open(pdb_path, "r") as f:
             atoms = []
             confidence_scores = []
 
             for line in f:
-                if line.startswith('ATOM'):
+                if line.startswith("ATOM"):
                     atoms.append(line)
                     # Extract B-factor (confidence in AlphaFold)
                     try:
@@ -244,28 +245,28 @@ def validate_alphafold_structure(pdb_path: Path) -> Dict[str, Any]:
                     except (ValueError, IndexError):
                         pass
 
-            validation['n_atoms'] = len(atoms)
-            validation['has_confidence_scores'] = len(confidence_scores) > 0
+            validation["n_atoms"] = len(atoms)
+            validation["has_confidence_scores"] = len(confidence_scores) > 0
 
             if confidence_scores:
-                validation['avg_confidence'] = sum(confidence_scores) / len(confidence_scores)
+                validation["avg_confidence"] = sum(confidence_scores) / len(confidence_scores)
 
             # Basic validation
-            if validation['n_atoms'] > 0:
-                validation['is_valid'] = True
+            if validation["n_atoms"] > 0:
+                validation["is_valid"] = True
 
                 # Check for reasonable confidence scores (AlphaFold range: 0-100)
-                if validation['has_confidence_scores']:
-                    if not (0 <= validation['avg_confidence'] <= 100):
-                        validation['issues'].append("Confidence scores outside expected range")
+                if validation["has_confidence_scores"]:
+                    if not (0 <= validation["avg_confidence"] <= 100):
+                        validation["issues"].append("Confidence scores outside expected range")
 
             else:
-                validation['issues'].append("No ATOM records found")
+                validation["issues"].append("No ATOM records found")
 
     except FileNotFoundError:
-        validation['issues'].append("PDB file not found")
+        validation["issues"].append("PDB file not found")
     except Exception as e:
-        validation['issues'].append(f"Error reading PDB file: {e}")
+        validation["issues"].append(f"Error reading PDB file: {e}")
 
     return validation
 
@@ -283,11 +284,11 @@ def get_alphafold_coverage() -> Dict[str, Any]:
     """
     # Placeholder - would query AlphaFold database statistics
     coverage = {
-        'total_structures': 214000000,  # Approximate as of 2024
-        'total_unique_proteins': 1000000,  # Approximate
-        'coverage_percentage': 36.0,  # Percentage of known proteins
-        'last_updated': '2024-01',
-        'source': 'AlphaFold Protein Structure Database v4'
+        "total_structures": 214000000,  # Approximate as of 2024
+        "total_unique_proteins": 1000000,  # Approximate
+        "coverage_percentage": 36.0,  # Percentage of known proteins
+        "last_updated": "2024-01",
+        "source": "AlphaFold Protein Structure Database v4",
     }
 
     return coverage
@@ -331,35 +332,35 @@ def get_alphafold_structure_quality(pdb_path: Path) -> Dict[str, float]:
         >>> # True
     """
     quality = {
-        'plddt_score': 0.0,  # Predicted LDDT score
-        'confidence_distribution': {},
-        'high_confidence_residues': 0,
-        'medium_confidence_residues': 0,
-        'low_confidence_residues': 0
+        "plddt_score": 0.0,  # Predicted LDDT score
+        "confidence_distribution": {},
+        "high_confidence_residues": 0,
+        "medium_confidence_residues": 0,
+        "low_confidence_residues": 0,
     }
 
     confidence_scores = parse_alphafold_confidence(pdb_path)
 
     if confidence_scores:
-        quality['plddt_score'] = sum(confidence_scores) / len(confidence_scores)
+        quality["plddt_score"] = sum(confidence_scores) / len(confidence_scores)
 
         # Categorize confidence
         for score in confidence_scores:
             if score >= 90:
-                quality['high_confidence_residues'] += 1
+                quality["high_confidence_residues"] += 1
             elif score >= 70:
-                quality['medium_confidence_residues'] += 1
+                quality["medium_confidence_residues"] += 1
             else:
-                quality['low_confidence_residues'] += 1
+                quality["low_confidence_residues"] += 1
 
         # Distribution
         bins = [0, 50, 70, 90, 100]
         hist, _ = np.histogram(confidence_scores, bins=bins)
-        quality['confidence_distribution'] = {
-            'very_low': int(hist[0]),      # 0-50
-            'low': int(hist[1]),           # 50-70
-            'medium': int(hist[2]),        # 70-90
-            'high': int(hist[3])           # 90-100
+        quality["confidence_distribution"] = {
+            "very_low": int(hist[0]),  # 0-50
+            "low": int(hist[1]),  # 50-70
+            "medium": int(hist[2]),  # 70-90
+            "high": int(hist[3]),  # 90-100
         }
 
     return quality

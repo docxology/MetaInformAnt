@@ -20,10 +20,18 @@ logger = logging.get_logger(__name__)
 class ChIPPeak:
     """Represents a ChIP-seq peak."""
 
-    def __init__(self, chromosome: str, start: int, end: int,
-                 summit: Optional[int] = None, score: float = 0.0,
-                 strand: str = '.', signal_value: float = 0.0,
-                 p_value: Optional[float] = None, q_value: Optional[float] = None):
+    def __init__(
+        self,
+        chromosome: str,
+        start: int,
+        end: int,
+        summit: Optional[int] = None,
+        score: float = 0.0,
+        strand: str = ".",
+        signal_value: float = 0.0,
+        p_value: Optional[float] = None,
+        q_value: Optional[float] = None,
+    ):
         """Initialize a ChIP-seq peak.
 
         Args:
@@ -70,18 +78,20 @@ class ChIPPeak:
         p_val_str = f"{self.p_value:.2e}" if self.p_value is not None else "."
         q_val_str = f"{self.q_value:.2e}" if self.q_value is not None else "."
 
-        return "\t".join([
-            self.chromosome,
-            str(self.start),
-            str(self.end),
-            f"peak_{self.start}_{self.end}",
-            f"{self.score:.1f}",
-            self.strand,
-            summit_str,
-            f"{self.signal_value:.2f}",
-            p_val_str,
-            q_val_str,
-        ])
+        return "\t".join(
+            [
+                self.chromosome,
+                str(self.start),
+                str(self.end),
+                f"peak_{self.start}_{self.end}",
+                f"{self.score:.1f}",
+                self.strand,
+                summit_str,
+                f"{self.signal_value:.2f}",
+                p_val_str,
+                q_val_str,
+            ]
+        )
 
     def overlaps_with(self, other: ChIPPeak, min_overlap: int = 1) -> bool:
         """Check if this peak overlaps with another peak.
@@ -104,16 +114,16 @@ class ChIPPeak:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary representation."""
         return {
-            'chromosome': self.chromosome,
-            'start': self.start,
-            'end': self.end,
-            'length': self.length,
-            'summit': self.summit,
-            'score': self.score,
-            'strand': self.strand,
-            'signal_value': self.signal_value,
-            'p_value': self.p_value,
-            'q_value': self.q_value,
+            "chromosome": self.chromosome,
+            "start": self.start,
+            "end": self.end,
+            "length": self.length,
+            "summit": self.summit,
+            "score": self.score,
+            "strand": self.strand,
+            "signal_value": self.signal_value,
+            "p_value": self.p_value,
+            "q_value": self.q_value,
         }
 
 
@@ -138,13 +148,13 @@ def load_chip_peaks(path: str | Path, format: str = "narrowpeak") -> List[ChIPPe
     peaks = []
 
     try:
-        with io.open_text_auto(path, 'rt') as f:
+        with io.open_text_auto(path, "rt") as f:
             for line_num, line in enumerate(f, 1):
                 line = line.strip()
-                if not line or line.startswith('#') or line.startswith('track'):
+                if not line or line.startswith("#") or line.startswith("track"):
                     continue
 
-                parts = line.split('\t')
+                parts = line.split("\t")
                 if len(parts) < 6:
                     logger.warning(f"Skipping malformed line {line_num}: insufficient columns")
                     continue
@@ -155,15 +165,15 @@ def load_chip_peaks(path: str | Path, format: str = "narrowpeak") -> List[ChIPPe
                     end = int(parts[2])
                     name = parts[3] if len(parts) > 3 else f"peak_{line_num}"
                     score = float(parts[4]) if len(parts) > 4 else 0.0
-                    strand = parts[5] if len(parts) > 5 else '.'
+                    strand = parts[5] if len(parts) > 5 else "."
 
                     # Parse format-specific fields
                     if format == "narrowpeak" and len(parts) >= 10:
                         # narrowPeak format: chrom, start, end, name, score, strand, signalValue, pValue, qValue, peak
                         signal_value = float(parts[6]) if len(parts) > 6 else 0.0
-                        p_value = float(parts[7]) if len(parts) > 7 and parts[7] != '.' else None
-                        q_value = float(parts[8]) if len(parts) > 8 and parts[8] != '.' else None
-                        peak_offset = int(parts[9]) if len(parts) > 9 and parts[9] != '.' else None
+                        p_value = float(parts[7]) if len(parts) > 7 and parts[7] != "." else None
+                        q_value = float(parts[8]) if len(parts) > 8 and parts[8] != "." else None
+                        peak_offset = int(parts[9]) if len(parts) > 9 and parts[9] != "." else None
 
                         summit = start + peak_offset if peak_offset is not None else None
 
@@ -176,14 +186,14 @@ def load_chip_peaks(path: str | Path, format: str = "narrowpeak") -> List[ChIPPe
                             strand=strand,
                             signal_value=signal_value,
                             p_value=p_value,
-                            q_value=q_value
+                            q_value=q_value,
                         )
 
                     elif format == "broadpeak" and len(parts) >= 9:
                         # broadPeak format: chrom, start, end, name, score, strand, signalValue, pValue, qValue
                         signal_value = float(parts[6]) if len(parts) > 6 else 0.0
-                        p_value = float(parts[7]) if len(parts) > 7 and parts[7] != '.' else None
-                        q_value = float(parts[8]) if len(parts) > 8 and parts[8] != '.' else None
+                        p_value = float(parts[7]) if len(parts) > 7 and parts[7] != "." else None
+                        q_value = float(parts[8]) if len(parts) > 8 and parts[8] != "." else None
 
                         peak = ChIPPeak(
                             chromosome=chromosome,
@@ -193,18 +203,12 @@ def load_chip_peaks(path: str | Path, format: str = "narrowpeak") -> List[ChIPPe
                             strand=strand,
                             signal_value=signal_value,
                             p_value=p_value,
-                            q_value=q_value
+                            q_value=q_value,
                         )
 
                     elif format == "bed":
                         # Basic BED format
-                        peak = ChIPPeak(
-                            chromosome=chromosome,
-                            start=start,
-                            end=end,
-                            score=score,
-                            strand=strand
-                        )
+                        peak = ChIPPeak(chromosome=chromosome, start=start, end=end, score=score, strand=strand)
 
                     else:
                         logger.warning(f"Unsupported format or insufficient columns in line {line_num}")
@@ -236,7 +240,7 @@ def save_chip_peaks(peaks: List[ChIPPeak], path: str | Path, format: str = "narr
 
     logger.info(f"Saving {len(peaks)} ChIP-seq peaks to {path} (format: {format})")
 
-    with open(path, 'w') as f:
+    with open(path, "w") as f:
         # Write header for BED formats
         if format != "bed":
             f.write("# Generated by MetaInformant ChIP-seq analysis\n")
@@ -246,27 +250,31 @@ def save_chip_peaks(peaks: List[ChIPPeak], path: str | Path, format: str = "narr
                 f.write(peak.to_bed_format() + "\n")
             elif format == "broadpeak":
                 # Convert narrowPeak to broadPeak (remove summit column)
-                bed_parts = peak.to_bed_format().split('\t')
+                bed_parts = peak.to_bed_format().split("\t")
                 if len(bed_parts) >= 10:
                     # Remove the last column (peak offset)
-                    broadpeak_line = '\t'.join(bed_parts[:9])
-                    f.write(broadpeak_line + '\n')
+                    broadpeak_line = "\t".join(bed_parts[:9])
+                    f.write(broadpeak_line + "\n")
             elif format == "bed":
                 # Basic BED format
-                f.write('\t'.join([
-                    peak.chromosome,
-                    str(peak.start),
-                    str(peak.end),
-                    f"peak_{peak.start}_{peak.end}",
-                    f"{peak.score:.1f}",
-                    peak.strand
-                ]) + '\n')
+                f.write(
+                    "\t".join(
+                        [
+                            peak.chromosome,
+                            str(peak.start),
+                            str(peak.end),
+                            f"peak_{peak.start}_{peak.end}",
+                            f"{peak.score:.1f}",
+                            peak.strand,
+                        ]
+                    )
+                    + "\n"
+                )
 
     logger.info(f"Saved {len(peaks)} peaks to {path}")
 
 
-def filter_peaks_by_score(peaks: List[ChIPPeak], min_score: float,
-                         max_peaks: Optional[int] = None) -> List[ChIPPeak]:
+def filter_peaks_by_score(peaks: List[ChIPPeak], min_score: float, max_peaks: Optional[int] = None) -> List[ChIPPeak]:
     """Filter peaks by score and optionally limit number of peaks.
 
     Args:
@@ -323,11 +331,13 @@ def calculate_peak_statistics(peaks: List[ChIPPeak]) -> Dict[str, Any]:
     }
 
     if signal_values:
-        stats.update({
-            "mean_signal": statistics.mean(signal_values),
-            "median_signal": statistics.median(signal_values),
-            "signal_std": statistics.stdev(signal_values) if len(signal_values) > 1 else 0,
-        })
+        stats.update(
+            {
+                "mean_signal": statistics.mean(signal_values),
+                "median_signal": statistics.median(signal_values),
+                "signal_std": statistics.stdev(signal_values) if len(signal_values) > 1 else 0,
+            }
+        )
 
     # Peak length distribution
     length_bins = defaultdict(int)
@@ -367,8 +377,9 @@ def calculate_peak_statistics(peaks: List[ChIPPeak]) -> Dict[str, Any]:
     return stats
 
 
-def find_overlapping_peaks(peaks1: List[ChIPPeak], peaks2: List[ChIPPeak],
-                          min_overlap: int = 1) -> List[Tuple[ChIPPeak, ChIPPeak]]:
+def find_overlapping_peaks(
+    peaks1: List[ChIPPeak], peaks2: List[ChIPPeak], min_overlap: int = 1
+) -> List[Tuple[ChIPPeak, ChIPPeak]]:
     """Find overlapping peaks between two peak sets.
 
     Args:
@@ -462,7 +473,7 @@ def merge_overlapping_peaks(peaks: List[ChIPPeak], max_distance: int = 0) -> Lis
                     strand=current_peak.strand,
                     signal_value=max(current_peak.signal_value, peak.signal_value),
                     p_value=min(current_peak.p_value, peak.p_value) if current_peak.p_value and peak.p_value else None,
-                    q_value=min(current_peak.q_value, peak.q_value) if current_peak.q_value and peak.q_value else None
+                    q_value=min(current_peak.q_value, peak.q_value) if current_peak.q_value and peak.q_value else None,
                 )
             else:
                 # No overlap, save current peak and start new one
@@ -477,8 +488,9 @@ def merge_overlapping_peaks(peaks: List[ChIPPeak], max_distance: int = 0) -> Lis
     return merged_peaks
 
 
-def calculate_peak_enrichment(peaks: List[ChIPPeak], genome_size: int,
-                            expected_peaks: Optional[int] = None) -> Dict[str, Any]:
+def calculate_peak_enrichment(
+    peaks: List[ChIPPeak], genome_size: int, expected_peaks: Optional[int] = None
+) -> Dict[str, Any]:
     """Calculate peak enrichment statistics.
 
     Args:
@@ -507,24 +519,30 @@ def calculate_peak_enrichment(peaks: List[ChIPPeak], genome_size: int,
     if expected_peaks:
         observed_peaks = len(peaks)
         enrichment_ratio = observed_peaks / expected_peaks
-        stats.update({
-            "expected_peaks": expected_peaks,
-            "enrichment_ratio": enrichment_ratio,
-            "fold_enrichment": enrichment_ratio,
-        })
+        stats.update(
+            {
+                "expected_peaks": expected_peaks,
+                "enrichment_ratio": enrichment_ratio,
+                "fold_enrichment": enrichment_ratio,
+            }
+        )
 
         # Statistical significance (simplified)
         if expected_peaks > 0:
             # Use Poisson approximation for significance
             import math
-            p_value = 1.0 - math.exp(-expected_peaks) * sum(expected_peaks**k / math.factorial(k) for k in range(observed_peaks))
+
+            p_value = 1.0 - math.exp(-expected_peaks) * sum(
+                expected_peaks**k / math.factorial(k) for k in range(observed_peaks)
+            )
             stats["enrichment_p_value"] = p_value
 
     return stats
 
 
-def find_motifs_in_peaks(peaks: List[ChIPPeak], genome_fasta: str | Path,
-                        motif_patterns: List[str], window_size: int = 200) -> Dict[str, Any]:
+def find_motifs_in_peaks(
+    peaks: List[ChIPPeak], genome_fasta: str | Path, motif_patterns: List[str], window_size: int = 200
+) -> Dict[str, Any]:
     """Find motif occurrences in peak regions.
 
     Args:
@@ -555,11 +573,13 @@ def find_motifs_in_peaks(peaks: List[ChIPPeak], genome_fasta: str | Path,
 
             if found:
                 motif_counts[motif] += 1
-                motif_positions[motif].append({
-                    'chromosome': peak.chromosome,
-                    'position': summit,
-                    'peak_score': peak.score,
-                })
+                motif_positions[motif].append(
+                    {
+                        "chromosome": peak.chromosome,
+                        "position": summit,
+                        "peak_score": peak.score,
+                    }
+                )
 
     results = {
         "total_peaks_analyzed": len(peaks),
@@ -606,12 +626,12 @@ def generate_chip_report(peaks: List[ChIPPeak], output_path: Optional[str | Path
         report_lines.append(f"  Mean Score: {stats.get('mean_score', 0):.1f}")
         report_lines.append(f"  Median Score: {stats.get('median_score', 0):.1f}")
 
-        if 'mean_signal' in stats:
+        if "mean_signal" in stats:
             report_lines.append(f"  Mean Signal: {stats.get('mean_signal', 0):.2f}")
         report_lines.append("")
 
         # Peak length distribution
-        length_dist = stats.get('length_distribution', {})
+        length_dist = stats.get("length_distribution", {})
         if length_dist:
             report_lines.append("Peak Length Distribution:")
             for length_range, count in sorted(length_dist.items()):
@@ -619,7 +639,7 @@ def generate_chip_report(peaks: List[ChIPPeak], output_path: Optional[str | Path
             report_lines.append("")
 
         # Score distribution
-        score_dist = stats.get('score_distribution', {})
+        score_dist = stats.get("score_distribution", {})
         if score_dist:
             report_lines.append("Peak Score Distribution:")
             for score_range, count in sorted(score_dist.items()):
@@ -627,7 +647,7 @@ def generate_chip_report(peaks: List[ChIPPeak], output_path: Optional[str | Path
             report_lines.append("")
 
         # Chromosome distribution (top 10)
-        chr_dist = stats.get('chromosome_distribution', {})
+        chr_dist = stats.get("chromosome_distribution", {})
         if chr_dist:
             report_lines.append("Chromosome Distribution (Top 10):")
             sorted_chrs = sorted(chr_dist.items(), key=lambda x: x[1], reverse=True)[:10]
@@ -639,14 +659,8 @@ def generate_chip_report(peaks: List[ChIPPeak], output_path: Optional[str | Path
 
     if output_path:
         output_path = Path(output_path)
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             f.write(report)
         logger.info(f"ChIP-seq report saved to {output_path}")
 
     return report
-
-
-
-
-
-

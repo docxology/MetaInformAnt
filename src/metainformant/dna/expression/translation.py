@@ -13,22 +13,70 @@ logger = logging.get_logger(__name__)
 
 # Genetic code dictionary (standard code)
 GENETIC_CODE = {
-    'UUU': 'F', 'UUC': 'F', 'UUA': 'L', 'UUG': 'L',
-    'UCU': 'S', 'UCC': 'S', 'UCA': 'S', 'UCG': 'S',
-    'UAU': 'Y', 'UAC': 'Y', 'UAA': '*', 'UAG': '*',
-    'UGU': 'C', 'UGC': 'C', 'UGA': '*', 'UGG': 'W',
-    'CUU': 'L', 'CUC': 'L', 'CUA': 'L', 'CUG': 'L',
-    'CCU': 'P', 'CCC': 'P', 'CCA': 'P', 'CCG': 'P',
-    'CAU': 'H', 'CAC': 'H', 'CAA': 'Q', 'CAG': 'Q',
-    'CGU': 'R', 'CGC': 'R', 'CGA': 'R', 'CGG': 'R',
-    'AUU': 'I', 'AUC': 'I', 'AUA': 'I', 'AUG': 'M',
-    'ACU': 'T', 'ACC': 'T', 'ACA': 'T', 'ACG': 'T',
-    'AAU': 'N', 'AAC': 'N', 'AAA': 'K', 'AAG': 'K',
-    'AGU': 'S', 'AGC': 'S', 'AGA': 'R', 'AGG': 'R',
-    'GUU': 'V', 'GUC': 'V', 'GUA': 'V', 'GUG': 'V',
-    'GCU': 'A', 'GCC': 'A', 'GCA': 'A', 'GCG': 'A',
-    'GAU': 'D', 'GAC': 'D', 'GAA': 'E', 'GAG': 'E',
-    'GGU': 'G', 'GGC': 'G', 'GGA': 'G', 'GGG': 'G',
+    "UUU": "F",
+    "UUC": "F",
+    "UUA": "L",
+    "UUG": "L",
+    "UCU": "S",
+    "UCC": "S",
+    "UCA": "S",
+    "UCG": "S",
+    "UAU": "Y",
+    "UAC": "Y",
+    "UAA": "*",
+    "UAG": "*",
+    "UGU": "C",
+    "UGC": "C",
+    "UGA": "*",
+    "UGG": "W",
+    "CUU": "L",
+    "CUC": "L",
+    "CUA": "L",
+    "CUG": "L",
+    "CCU": "P",
+    "CCC": "P",
+    "CCA": "P",
+    "CCG": "P",
+    "CAU": "H",
+    "CAC": "H",
+    "CAA": "Q",
+    "CAG": "Q",
+    "CGU": "R",
+    "CGC": "R",
+    "CGA": "R",
+    "CGG": "R",
+    "AUU": "I",
+    "AUC": "I",
+    "AUA": "I",
+    "AUG": "M",
+    "ACU": "T",
+    "ACC": "T",
+    "ACA": "T",
+    "ACG": "T",
+    "AAU": "N",
+    "AAC": "N",
+    "AAA": "K",
+    "AAG": "K",
+    "AGU": "S",
+    "AGC": "S",
+    "AGA": "R",
+    "AGG": "R",
+    "GUU": "V",
+    "GUC": "V",
+    "GUA": "V",
+    "GUG": "V",
+    "GCU": "A",
+    "GCC": "A",
+    "GCA": "A",
+    "GCG": "A",
+    "GAU": "D",
+    "GAC": "D",
+    "GAA": "E",
+    "GAG": "E",
+    "GGU": "G",
+    "GGC": "G",
+    "GGA": "G",
+    "GGG": "G",
 }
 
 
@@ -54,7 +102,7 @@ def translate(rna_seq: str, genetic_code: int = 1) -> str:
     rna_upper = rna_seq.upper()
 
     # Validate RNA characters
-    valid_chars = set('AUCGN')
+    valid_chars = set("AUCGN")
     if not all(c in valid_chars for c in rna_upper):
         invalid = set(rna_upper) - valid_chars
         raise ValueError(f"Invalid RNA characters: {invalid}")
@@ -64,11 +112,11 @@ def translate(rna_seq: str, genetic_code: int = 1) -> str:
 
     amino_acids = []
     for i in range(0, len(rna_upper) - 2, 3):
-        codon = rna_upper[i:i + 3]
-        aa = code.get(codon, 'X')  # X for unknown codons
+        codon = rna_upper[i : i + 3]
+        aa = code.get(codon, "X")  # X for unknown codons
         amino_acids.append(aa)
 
-    return ''.join(amino_acids)
+    return "".join(amino_acids)
 
 
 def translate_dna(dna_seq: str, genetic_code: int = 1) -> str:
@@ -106,7 +154,7 @@ def find_orfs(rna_seq: str, min_length: int = 30) -> List[Tuple[int, int, str]]:
 
         # Find start codons
         start_positions = []
-        for match in re.finditer(r'AUG', frame_seq):
+        for match in re.finditer(r"AUG", frame_seq):
             start_positions.append(match.start())
 
         for start_pos in start_positions:
@@ -114,7 +162,7 @@ def find_orfs(rna_seq: str, min_length: int = 30) -> List[Tuple[int, int, str]]:
             orf_seq = frame_seq[start_pos:]
             stop_found = False
 
-            for stop_match in re.finditer(r'(UAA|UAG|UGA)', orf_seq[3:], re.IGNORECASE):
+            for stop_match in re.finditer(r"(UAA|UAG|UGA)", orf_seq[3:], re.IGNORECASE):
                 stop_pos = start_pos + stop_match.start() + 3  # Include stop codon
                 orf_length_aa = (stop_pos - start_pos) // 3
 
@@ -144,7 +192,7 @@ def find_start_codons(rna_seq: str) -> List[int]:
         List of start codon positions
     """
     positions = []
-    for match in re.finditer(r'AUG', rna_seq.upper()):
+    for match in re.finditer(r"AUG", rna_seq.upper()):
         positions.append(match.start())
     return positions
 
@@ -159,7 +207,7 @@ def find_stop_codons(rna_seq: str) -> List[int]:
         List of stop codon positions
     """
     positions = []
-    for match in re.finditer(r'(UAA|UAG|UGA)', rna_seq.upper()):
+    for match in re.finditer(r"(UAA|UAG|UGA)", rna_seq.upper()):
         positions.append(match.start())
     return positions
 
@@ -213,7 +261,7 @@ def calculate_cai(sequence: str, reference_usage: Dict[str, float] = None) -> fl
     # Count codons (simplified - assumes sequence is codons)
     codon_counts = {}
     for i in range(0, len(seq_upper) - 2, 3):
-        codon = seq_upper[i:i + 3]
+        codon = seq_upper[i : i + 3]
         codon_counts[codon] = codon_counts.get(codon, 0) + 1
 
     if not codon_counts:
@@ -269,7 +317,7 @@ def optimize_codons(sequence: str, target_usage: Dict[str, float]) -> str:
     # Optimize sequence codon by codon
     optimized = []
     for i in range(0, len(sequence), 3):
-        codon = sequence[i:i+3].upper()
+        codon = sequence[i : i + 3].upper()
 
         if codon not in genetic_code:
             raise ValueError(f"Invalid codon '{codon}' at position {i}")
@@ -281,7 +329,7 @@ def optimize_codons(sequence: str, target_usage: Dict[str, float]) -> str:
         optimized_codon = preferred_codons[0][0]
         optimized.append(optimized_codon)
 
-    result = ''.join(optimized)
+    result = "".join(optimized)
 
     logger.info(f"Optimized codon usage for {len(sequence)//3} codons")
     return result
@@ -315,28 +363,41 @@ def back_translate(protein_seq: str, codon_usage: Dict[str, float] = None) -> st
     """
     # Simplified back-translation using standard codons
     aa_to_codon = {
-        'A': 'GCU', 'C': 'UGU', 'D': 'GAU', 'E': 'GAA',
-        'F': 'UUU', 'G': 'GGU', 'H': 'CAU', 'I': 'AUU',
-        'K': 'AAA', 'L': 'CUU', 'M': 'AUG', 'N': 'AAU',
-        'P': 'CCU', 'Q': 'CAA', 'R': 'CGU', 'S': 'UCU',
-        'T': 'ACU', 'V': 'GUU', 'W': 'UGG', 'Y': 'UAU',
-        '*': 'UAA'  # Stop codon
+        "A": "GCU",
+        "C": "UGU",
+        "D": "GAU",
+        "E": "GAA",
+        "F": "UUU",
+        "G": "GGU",
+        "H": "CAU",
+        "I": "AUU",
+        "K": "AAA",
+        "L": "CUU",
+        "M": "AUG",
+        "N": "AAU",
+        "P": "CCU",
+        "Q": "CAA",
+        "R": "CGU",
+        "S": "UCU",
+        "T": "ACU",
+        "V": "GUU",
+        "W": "UGG",
+        "Y": "UAU",
+        "*": "UAA",  # Stop codon
     }
 
     dna_codons = []
     for aa in protein_seq.upper():
-        codon = aa_to_codon.get(aa, 'NNN')  # Unknown amino acids
+        codon = aa_to_codon.get(aa, "NNN")  # Unknown amino acids
         dna_codons.append(codon)
 
-    rna_seq = ''.join(dna_codons)
+    rna_seq = "".join(dna_codons)
 
     # Convert RNA back to DNA (U -> T)
-    dna_seq = rna_seq.replace('U', 'T')
+    dna_seq = rna_seq.replace("U", "T")
 
     return dna_seq
 
 
 # Import re at module level for find_orfs function
 import re
-
-

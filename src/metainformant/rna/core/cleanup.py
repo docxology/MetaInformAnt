@@ -65,10 +65,7 @@ def find_partial_downloads(fastq_dir: Path, quant_dir: Path) -> List[Tuple[str, 
     return partial
 
 
-def cleanup_partial_downloads(
-    config_or_path: Union[Path, str],
-    dry_run: bool = False
-) -> Dict[str, Any]:
+def cleanup_partial_downloads(config_or_path: Union[Path, str], dry_run: bool = False) -> Dict[str, Any]:
     """Clean up partially downloaded FASTQ files.
 
     Args:
@@ -88,13 +85,14 @@ def cleanup_partial_downloads(
     if config_path.is_file():
         # Load config to get directories
         from metainformant.rna.engine.workflow import load_workflow_config
+
         config = load_workflow_config(config_path)
         work_dir = config.work_dir
 
         # Get step-specific directories
-        steps = config.extra_config.get('per_step', {})
-        fastq_dir = Path(steps.get('getfastq', {}).get('out_dir', work_dir / "fastq"))
-        quant_dir = Path(steps.get('quant', {}).get('out_dir', work_dir / "quant"))
+        steps = config.extra_config.get("per_step", {})
+        fastq_dir = Path(steps.get("getfastq", {}).get("out_dir", work_dir / "fastq"))
+        quant_dir = Path(steps.get("quant", {}).get("out_dir", work_dir / "quant"))
     else:
         # Treat as work_dir directly
         work_dir = config_path
@@ -149,10 +147,7 @@ def fix_abundance_naming(quant_dir: Path, sample_id: str) -> bool:
         return False
 
 
-def fix_abundance_naming_for_species(
-    config_or_path: Union[Path, str],
-    species: str = None
-) -> Tuple[int, int]:
+def fix_abundance_naming_for_species(config_or_path: Union[Path, str], species: str = None) -> Tuple[int, int]:
     """Fix abundance file naming for all samples in a species workflow.
 
     Args:
@@ -166,10 +161,11 @@ def fix_abundance_naming_for_species(
 
     if config_path.is_file():
         from metainformant.rna.engine.workflow import load_workflow_config
+
         config = load_workflow_config(config_path)
         work_dir = config.work_dir
-        steps = config.extra_config.get('per_step', {})
-        quant_dir = Path(steps.get('quant', {}).get('out_dir', work_dir / "quant"))
+        steps = config.extra_config.get("per_step", {})
+        quant_dir = Path(steps.get("quant", {}).get("out_dir", work_dir / "quant"))
     else:
         quant_dir = config_path / "quant"
 
@@ -249,19 +245,14 @@ def cleanup_workflow_artifacts(work_dir: Path, keep_logs: bool = True) -> Dict[s
     Returns:
         Dictionary with cleanup statistics
     """
-    stats = {
-        'temp_files': 0,
-        'cache_files': 0,
-        'intermediate_files': 0,
-        'log_files': 0
-    }
+    stats = {"temp_files": 0, "cache_files": 0, "intermediate_files": 0, "log_files": 0}
 
     # Clean up temporary files
-    for pattern in ['*.tmp', '*.temp', '*.swp']:
+    for pattern in ["*.tmp", "*.temp", "*.swp"]:
         for temp_file in work_dir.glob(f"**/{pattern}"):
             try:
                 temp_file.unlink()
-                stats['temp_files'] += 1
+                stats["temp_files"] += 1
             except Exception:
                 pass
 
@@ -269,11 +260,11 @@ def cleanup_workflow_artifacts(work_dir: Path, keep_logs: bool = True) -> Dict[s
     cache_dir = work_dir / ".cache"
     if cache_dir.exists():
         for cache_file in cache_dir.glob("*"):
-            if not (keep_logs and cache_file.name.endswith('.log')):
+            if not (keep_logs and cache_file.name.endswith(".log")):
                 try:
                     if cache_file.is_file():
                         cache_file.unlink()
-                        stats['cache_files'] += 1
+                        stats["cache_files"] += 1
                 except Exception:
                     pass
 
@@ -283,7 +274,7 @@ def cleanup_workflow_artifacts(work_dir: Path, keep_logs: bool = True) -> Dict[s
         for f in work_dir.glob(pattern):
             try:
                 f.unlink()
-                stats['intermediate_files'] += 1
+                stats["intermediate_files"] += 1
             except Exception:
                 pass
 
@@ -291,19 +282,10 @@ def cleanup_workflow_artifacts(work_dir: Path, keep_logs: bool = True) -> Dict[s
         for log_file in work_dir.glob("**/*.log"):
             try:
                 log_file.unlink()
-                stats['log_files'] += 1
+                stats["log_files"] += 1
             except Exception:
                 pass
 
     total_cleaned = sum(stats.values())
     logger.info(f"Cleaned up {total_cleaned} workflow artifacts")
     return stats
-
-
-
-
-
-
-
-
-

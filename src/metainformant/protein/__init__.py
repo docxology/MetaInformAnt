@@ -64,30 +64,22 @@ __all__ = [
     "sequence",
     "structure",
     "visualization",
-
     # Core protein analysis
     "sequences",
     "alignment",
     "structure_general",
     "structure_analysis",
     "structure_io",
-
     # Structure prediction and modeling
     "alphafold",
     "contacts",
     "secondary",
-
     # Functional annotation and databases
     "interpro",
     "uniprot",
     "pdb",
-
     # Proteome analysis
     "proteomes",
-
     # Visualization
     "visualization_general",
 ]
-
-
-

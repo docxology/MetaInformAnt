@@ -8,7 +8,7 @@ def test_module_invocation_shows_help():
     # Use the source module directly since package may not be installed
     repo_root = Path(__file__).parent.parent
     module_path = repo_root / "src" / "metainformant" / "__main__.py"
-    
+
     # Run the module directly
     result = subprocess.run(
         [sys.executable, str(module_path)],

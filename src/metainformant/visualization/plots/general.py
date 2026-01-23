@@ -60,6 +60,7 @@ def _import_existing_functions() -> None:
 
     try:
         from .statistical import correlation_heatmap as ch, qq_plot as qqp
+
         _original_correlation_heatmap = ch
         _original_qq_plot = qqp
     except ImportError:
@@ -67,6 +68,7 @@ def _import_existing_functions() -> None:
 
     try:
         from .genomics import volcano_plot as vp, manhattan_plot as mp
+
         _original_volcano_plot = vp
         _original_manhattan_plot = mp
     except ImportError:
@@ -74,6 +76,7 @@ def _import_existing_functions() -> None:
 
     try:
         from .basic import scatter_plot as sp
+
         _original_scatter_plot = sp
     except ImportError:
         pass
@@ -301,9 +304,7 @@ def correlation_heatmap(
     # Pass it explicitly if present
     annot = kwargs.pop("annot", True)
 
-    return _original_correlation_heatmap(
-        data, ax=ax, output_path=output_path, annot=annot, **kwargs
-    )
+    return _original_correlation_heatmap(data, ax=ax, output_path=output_path, annot=annot, **kwargs)
 
 
 def qq_plot(
@@ -341,8 +342,7 @@ def volcano_plot(
         raise ImportError("volcano_plot not available in genomics module")
 
     return _original_volcano_plot(
-        data, log2fc_col=log2fc_col, pval_col=pval_col,
-        ax=ax, output_path=output_path, **kwargs
+        data, log2fc_col=log2fc_col, pval_col=pval_col, ax=ax, output_path=output_path, **kwargs
     )
 
 
@@ -376,8 +376,7 @@ def manhattan_plot(
             chr_col = "CHR"
 
     return _original_manhattan_plot(
-        data, chr_col=chr_col, pos_col=pos_col, pval_col=pval_col,
-        ax=ax, output_path=output_path, **kwargs
+        data, chr_col=chr_col, pos_col=pos_col, pval_col=pval_col, ax=ax, output_path=output_path, **kwargs
     )
 
 

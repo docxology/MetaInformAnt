@@ -17,6 +17,7 @@ from metainformant.visualization.plots.animations import (
 # Check for optional dependencies
 try:
     import networkx as nx
+
     HAS_NETWORKX = True
 except ImportError:
     HAS_NETWORKX = False
@@ -28,7 +29,8 @@ class TestAnimateTimeSeries:
     def test_basic_time_series_animation(self):
         """Test basic time series animation creation."""
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         # Create sample time series data
@@ -37,25 +39,27 @@ class TestAnimateTimeSeries:
         fig, anim = animate_time_series(data)
         assert fig is not None
         assert anim is not None
-        plt.close('all')
+        plt.close("all")
 
     def test_time_series_animation_single_series(self):
         """Test time series animation with single series."""
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
-        data = np.sin(np.linspace(0, 4*np.pi, 30))
+        data = np.sin(np.linspace(0, 4 * np.pi, 30))
 
         fig, anim = animate_time_series(data)
         assert fig is not None
         assert anim is not None
-        plt.close('all')
+        plt.close("all")
 
     def test_time_series_animation_with_output_path(self, tmp_path: Path):
         """Test time series animation with output path."""
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         data = np.random.randn(1, 20)
@@ -65,11 +69,11 @@ class TestAnimateTimeSeries:
         assert fig is not None
         assert anim is not None
         # Note: GIF creation might not work in test environment
-        plt.close('all')
+        plt.close("all")
 
     def test_time_series_animation_no_numpy(self):
         """Test time series animation when numpy is not available."""
-        if hasattr(np, 'array'):  # numpy is available
+        if hasattr(np, "array"):  # numpy is available
             pytest.skip("numpy is available")
 
         data = [[1, 2, 3], [4, 5, 6]]
@@ -84,26 +88,23 @@ class TestAnimateEvolution:
     def test_basic_sequence_evolution_animation(self):
         """Test basic sequence evolution animation creation."""
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         # Create sample sequences showing evolution
-        sequences = [
-            "ATCG",
-            "ATCG",  # No change initially
-            "ATCG",  # Still no change
-            "ATCG"   # Final sequence
-        ]
+        sequences = ["ATCG", "ATCG", "ATCG", "ATCG"]  # No change initially  # Still no change  # Final sequence
 
         fig, anim = animate_evolution(sequences)
         assert fig is not None
         assert anim is not None
-        plt.close('all')
+        plt.close("all")
 
     def test_sequence_evolution_animation_with_mutations(self):
         """Test sequence evolution animation with actual mutations."""
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         sequences = [
@@ -111,13 +112,13 @@ class TestAnimateEvolution:
             "ATCGATCG",  # Generation 1
             "ATCGATCA",  # Generation 2: mutation at position 8
             "ATCGATCA",  # Generation 3: same
-            "ATCGATGA"   # Generation 4: another mutation
+            "ATCGATGA",  # Generation 4: another mutation
         ]
 
         fig, anim = animate_evolution(sequences)
         assert fig is not None
         assert anim is not None
-        plt.close('all')
+        plt.close("all")
 
     def test_sequence_evolution_animation_empty_sequences(self):
         """Test sequence evolution animation with empty sequences."""
@@ -133,7 +134,8 @@ class TestAnimateClustering:
     def test_basic_clustering_animation(self):
         """Test basic clustering animation creation."""
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         # Create sample 2D data points
@@ -141,14 +143,12 @@ class TestAnimateClustering:
         data = np.random.randn(20, 2)
 
         # Create mock cluster assignments over time
-        cluster_labels_over_time = [
-            np.random.randint(0, 3, 20) for _ in range(5)  # 5 time steps
-        ]
+        cluster_labels_over_time = [np.random.randint(0, 3, 20) for _ in range(5)]  # 5 time steps
 
         fig, anim = animate_clustering(data, cluster_labels_over_time)
         assert fig is not None
         assert anim is not None
-        plt.close('all')
+        plt.close("all")
 
     def test_clustering_animation_wrong_dimensions(self):
         """Test clustering animation with wrong data dimensions."""
@@ -176,7 +176,8 @@ class TestAnimateNetwork:
             pytest.skip("NetworkX required for network animations")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         # Create graphs showing network evolution
@@ -188,7 +189,7 @@ class TestAnimateNetwork:
         fig, anim = animate_network(graphs)
         assert fig is not None
         assert anim is not None
-        plt.close('all')
+        plt.close("all")
 
     def test_network_animation_empty_graphs(self):
         """Test network animation with empty graphs list."""
@@ -217,25 +218,27 @@ class TestAnimateTrajectory:
     def test_basic_trajectory_animation(self):
         """Test basic trajectory animation creation."""
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         # Create sample trajectories
         np.random.seed(42)
         trajectories = [
             np.random.randn(20, 2).cumsum(axis=0) * 0.1,  # Random walk trajectory 1
-            np.random.randn(25, 2).cumsum(axis=0) * 0.1   # Random walk trajectory 2
+            np.random.randn(25, 2).cumsum(axis=0) * 0.1,  # Random walk trajectory 2
         ]
 
         fig, anim = animate_trajectory(trajectories)
         assert fig is not None
         assert anim is not None
-        plt.close('all')
+        plt.close("all")
 
     def test_trajectory_animation_single_trajectory(self):
         """Test trajectory animation with single trajectory."""
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         trajectory = np.array([[i, i**2] for i in range(10)], dtype=float)
@@ -243,7 +246,7 @@ class TestAnimateTrajectory:
         fig, anim = animate_trajectory([trajectory])
         assert fig is not None
         assert anim is not None
-        plt.close('all')
+        plt.close("all")
 
     def test_trajectory_animation_wrong_dimensions(self):
         """Test trajectory animation with wrong trajectory dimensions."""
@@ -262,16 +265,10 @@ class TestAnimateTrajectory:
 
     def test_trajectory_animation_no_numpy(self):
         """Test trajectory animation when numpy is not available."""
-        if hasattr(np, 'array'):  # numpy is available
+        if hasattr(np, "array"):  # numpy is available
             pytest.skip("numpy is available")
 
         trajectories = [[[1, 2], [3, 4]], [[5, 6], [7, 8]]]
 
         with pytest.raises(ImportError, match="numpy required"):
             animate_trajectory(trajectories)
-
-
-
-
-
-

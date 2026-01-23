@@ -72,6 +72,7 @@ def load_ontology(path: str | Path, format: str = "obo") -> Ontology:
 
     if format == "obo":
         from .obo import parse_obo
+
         ontology = parse_obo(path)
     elif format == "json":
         ontology = _load_json_format(path)
@@ -112,10 +113,10 @@ def ontology_to_graph(onto: Ontology) -> Any:
     # Add nodes (terms)
     for term_id, term in onto.terms.items():
         node_attrs = {
-            'name': term.name,
-            'namespace': term.namespace,
-            'definition': term.definition,
-            'is_obsolete': term.is_obsolete,
+            "name": term.name,
+            "namespace": term.namespace,
+            "definition": term.definition,
+            "is_obsolete": term.is_obsolete,
         }
         # Filter out None values
         node_attrs = {k: v for k, v in node_attrs.items() if v is not None}
@@ -163,31 +164,24 @@ def graph_to_ontology(graph: Any, metadata: Dict[str, Any] | None = None) -> Ont
     for node_id, node_attrs in graph.nodes(data=True):
         term = Term(
             id=node_id,
-            name=node_attrs.get('name'),
-            definition=node_attrs.get('definition'),
-            namespace=node_attrs.get('namespace'),
-            is_obsolete=node_attrs.get('is_obsolete', False)
+            name=node_attrs.get("name"),
+            definition=node_attrs.get("definition"),
+            namespace=node_attrs.get("namespace"),
+            is_obsolete=node_attrs.get("is_obsolete", False),
         )
         terms[node_id] = term
 
     # Extract relationships from edges
     relationships = []
     for source, target, edge_attrs in graph.edges(data=True):
-        rel_type = edge_attrs.get('relation_type', 'is_a')
-        relationship = Relationship(
-            source=source,
-            target=target,
-            relation_type=rel_type
-        )
+        rel_type = edge_attrs.get("relation_type", "is_a")
+        relationship = Relationship(source=source, target=target, relation_type=rel_type)
         relationships.append(relationship)
 
     # Create ontology
     from .types import create_ontology
-    ontology = create_ontology(
-        terms=terms,
-        relationships=relationships,
-        **(metadata or {})
-    )
+
+    ontology = create_ontology(terms=terms, relationships=relationships, **(metadata or {}))
 
     logger.info(f"Converted graph to ontology with {len(ontology)} terms")
     return ontology
@@ -206,7 +200,7 @@ def _save_obo_format(onto: Ontology, path: Path) -> None:
 
     # Add other metadata
     for key, value in onto.metadata.items():
-        if key not in ['data-version', 'date']:
+        if key not in ["data-version", "date"]:
             lines.append(f"{key}: {value}")
 
     lines.append("")  # Empty line after header
@@ -223,11 +217,11 @@ def _save_obo_format(onto: Ontology, path: Path) -> None:
             lines.append(f"namespace: {term.namespace}")
 
         if term.definition:
-            lines.append(f"def: \"{term.definition}\"")
+            lines.append(f'def: "{term.definition}"')
 
         if term.synonyms:
             for synonym in term.synonyms:
-                lines.append(f"synonym: \"{synonym}\" EXACT []")
+                lines.append(f'synonym: "{synonym}" EXACT []')
 
         if term.xrefs:
             for xref in term.xrefs:
@@ -237,8 +231,8 @@ def _save_obo_format(onto: Ontology, path: Path) -> None:
             lines.append("is_obsolete: true")
 
         # Add relationships from term metadata
-        if 'relationships' in term.metadata:
-            for rel_type, target in term.metadata['relationships']:
+        if "relationships" in term.metadata:
+            for rel_type, target in term.metadata["relationships"]:
                 lines.append(f"{rel_type}: {target}")
 
         lines.append("")  # Empty line after term
@@ -251,35 +245,31 @@ def _save_obo_format(onto: Ontology, path: Path) -> None:
 def _save_json_format(onto: Ontology, path: Path) -> None:
     """Save ontology in JSON format."""
     # Convert ontology to serializable dictionary
-    onto_dict = {
-        'metadata': onto.metadata,
-        'terms': {},
-        'relationships': []
-    }
+    onto_dict = {"metadata": onto.metadata, "terms": {}, "relationships": []}
 
     # Convert terms
     for term_id, term in onto.terms.items():
         term_dict = {
-            'id': term.id,
-            'name': term.name,
-            'definition': term.definition,
-            'namespace': term.namespace,
-            'synonyms': term.synonyms,
-            'xrefs': term.xrefs,
-            'is_obsolete': term.is_obsolete,
-            'metadata': term.metadata
+            "id": term.id,
+            "name": term.name,
+            "definition": term.definition,
+            "namespace": term.namespace,
+            "synonyms": term.synonyms,
+            "xrefs": term.xrefs,
+            "is_obsolete": term.is_obsolete,
+            "metadata": term.metadata,
         }
-        onto_dict['terms'][term_id] = term_dict
+        onto_dict["terms"][term_id] = term_dict
 
     # Convert relationships
     for rel in onto.relationships:
         rel_dict = {
-            'source': rel.source,
-            'target': rel.target,
-            'relation_type': rel.relation_type,
-            'metadata': rel.metadata
+            "source": rel.source,
+            "target": rel.target,
+            "relation_type": rel.relation_type,
+            "metadata": rel.metadata,
         }
-        onto_dict['relationships'].append(rel_dict)
+        onto_dict["relationships"].append(rel_dict)
 
     # Save as JSON
     io.dump_json(onto_dict, path, indent=2)
@@ -291,43 +281,42 @@ def _load_json_format(path: Path) -> Ontology:
     data = io.load_json(path)
 
     # Extract metadata
-    metadata = data.get('metadata', {})
+    metadata = data.get("metadata", {})
 
     # Reconstruct terms
     terms = {}
-    for term_id, term_dict in data.get('terms', {}).items():
+    for term_id, term_dict in data.get("terms", {}).items():
         from .types import create_term
+
         term = create_term(
-            id=term_dict['id'],
-            name=term_dict.get('name'),
-            definition=term_dict.get('definition'),
-            namespace=term_dict.get('namespace'),
-            synonyms=term_dict.get('synonyms', []),
-            xrefs=term_dict.get('xrefs', []),
-            is_obsolete=term_dict.get('is_obsolete', False),
-            **term_dict.get('metadata', {})
+            id=term_dict["id"],
+            name=term_dict.get("name"),
+            definition=term_dict.get("definition"),
+            namespace=term_dict.get("namespace"),
+            synonyms=term_dict.get("synonyms", []),
+            xrefs=term_dict.get("xrefs", []),
+            is_obsolete=term_dict.get("is_obsolete", False),
+            **term_dict.get("metadata", {}),
         )
         terms[term_id] = term
 
     # Reconstruct relationships
     relationships = []
-    for rel_dict in data.get('relationships', []):
+    for rel_dict in data.get("relationships", []):
         from .types import create_relationship
+
         relationship = create_relationship(
-            source=rel_dict['source'],
-            target=rel_dict['target'],
-            relation_type=rel_dict['relation_type'],
-            **rel_dict.get('metadata', {})
+            source=rel_dict["source"],
+            target=rel_dict["target"],
+            relation_type=rel_dict["relation_type"],
+            **rel_dict.get("metadata", {}),
         )
         relationships.append(relationship)
 
     # Create ontology
     from .types import create_ontology
-    ontology = create_ontology(
-        terms=terms,
-        relationships=relationships,
-        **metadata
-    )
+
+    ontology = create_ontology(terms=terms, relationships=relationships, **metadata)
 
     return ontology
 
@@ -343,26 +332,27 @@ def export_ontology_stats(onto: Ontology, path: str | Path) -> None:
         >>> export_ontology_stats(ontology, "output/ontology_stats.json")
     """
     from .query import get_subontology_stats
+
     stats = get_subontology_stats(onto)
 
     # Add additional statistics
-    stats['exported_by'] = 'metainformant'
-    stats['export_timestamp'] = str(Path(path).stat().st_mtime) if path.exists() else None
+    stats["exported_by"] = "metainformant"
+    stats["export_timestamp"] = str(Path(path).stat().st_mtime) if path.exists() else None
 
     # Calculate more detailed stats
     term_name_lengths = [len(term.name) for term in onto.terms.values() if term.name]
     if term_name_lengths:
-        stats['term_name_stats'] = {
-            'mean_length': sum(term_name_lengths) / len(term_name_lengths),
-            'max_length': max(term_name_lengths),
-            'min_length': min(term_name_lengths)
+        stats["term_name_stats"] = {
+            "mean_length": sum(term_name_lengths) / len(term_name_lengths),
+            "max_length": max(term_name_lengths),
+            "min_length": min(term_name_lengths),
         }
 
     # Relationship type distribution
     rel_type_counts = {}
     for rel in onto.relationships:
         rel_type_counts[rel.relation_type] = rel_type_counts.get(rel.relation_type, 0) + 1
-    stats['relationship_type_distribution'] = rel_type_counts
+    stats["relationship_type_distribution"] = rel_type_counts
 
     # Save statistics
     io.dump_json(stats, Path(path), indent=2)
@@ -387,6 +377,7 @@ def merge_ontologies(*ontologies: Ontology, conflict_resolution: str = "first") 
     """
     if not ontologies:
         from .types import create_ontology
+
         return create_ontology()
 
     if conflict_resolution not in ["first", "last", "error"]:
@@ -423,17 +414,8 @@ def merge_ontologies(*ontologies: Ontology, conflict_resolution: str = "first") 
 
     # Create merged ontology
     from .types import create_ontology
-    merged_onto = create_ontology(
-        terms=merged_terms,
-        relationships=merged_relationships,
-        **merged_metadata
-    )
+
+    merged_onto = create_ontology(terms=merged_terms, relationships=merged_relationships, **merged_metadata)
 
     logger.info(f"Merged {len(ontologies)} ontologies into one with {len(merged_onto)} terms")
     return merged_onto
-
-
-
-
-
-

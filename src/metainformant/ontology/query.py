@@ -141,8 +141,7 @@ def descendants(onto: Ontology, term_id: str, relation_type: str = "is_a") -> Se
     return descendants_set
 
 
-def common_ancestors(onto: Ontology, term1: str, term2: str,
-                    relation_type: str = "is_a") -> Set[str]:
+def common_ancestors(onto: Ontology, term1: str, term2: str, relation_type: str = "is_a") -> Set[str]:
     """Find common ancestors of two terms.
 
     Args:
@@ -163,9 +162,9 @@ def common_ancestors(onto: Ontology, term1: str, term2: str,
     return ancestors1.intersection(ancestors2)
 
 
-def most_informative_common_ancestor(onto: Ontology, term1: str, term2: str,
-                                   ic_map: Dict[str, float],
-                                   relation_type: str = "is_a") -> str:
+def most_informative_common_ancestor(
+    onto: Ontology, term1: str, term2: str, ic_map: Dict[str, float], relation_type: str = "is_a"
+) -> str:
     """Find the most informative common ancestor (MICA) of two terms.
 
     Args:
@@ -230,8 +229,9 @@ def path_to_root(onto: Ontology, term_id: str, relation_type: str = "is_a") -> L
         visited.add(current_term)
 
         # Check if current term has parents
-        has_parents = any(rel.target == current_term and rel.relation_type == relation_type
-                         for rel in onto.relationships)
+        has_parents = any(
+            rel.target == current_term and rel.relation_type == relation_type for rel in onto.relationships
+        )
 
         if not has_parents:
             # Found a root
@@ -247,8 +247,7 @@ def path_to_root(onto: Ontology, term_id: str, relation_type: str = "is_a") -> L
     return []  # No path found
 
 
-def shortest_path(onto: Ontology, term1: str, term2: str,
-                 relation_type: str = "is_a") -> List[str]:
+def shortest_path(onto: Ontology, term1: str, term2: str, relation_type: str = "is_a") -> List[str]:
     """Find the shortest path between two terms.
 
     Args:
@@ -298,8 +297,7 @@ def shortest_path(onto: Ontology, term1: str, term2: str,
     return []  # No path found
 
 
-def get_subontology(onto: Ontology, root_terms: Iterable[str],
-                   relation_type: str = "is_a") -> Ontology:
+def get_subontology(onto: Ontology, root_terms: Iterable[str], relation_type: str = "is_a") -> Ontology:
     """Extract a sub-ontology rooted at specified terms.
 
     Args:
@@ -323,16 +321,14 @@ def get_subontology(onto: Ontology, root_terms: Iterable[str],
     # Extract terms and relationships
     sub_terms = {tid: onto.terms[tid] for tid in all_terms if tid in onto.terms}
     sub_relationships = [
-        rel for rel in onto.relationships
+        rel
+        for rel in onto.relationships
         if rel.source in all_terms and rel.target in all_terms and rel.relation_type == relation_type
     ]
 
     from .types import create_ontology
-    sub_onto = create_ontology(
-        terms=sub_terms,
-        relationships=sub_relationships,
-        **onto.metadata
-    )
+
+    sub_onto = create_ontology(terms=sub_terms, relationships=sub_relationships, **onto.metadata)
 
     logger.info(f"Extracted sub-ontology with {len(sub_onto)} terms from {len(onto)} total terms")
     return sub_onto
@@ -568,6 +564,7 @@ def information_content(onto: Ontology, term_id: str, corpus_size: int | None = 
         return 0.0
 
     import math
+
     probability = term_frequency / corpus_size
     ic = -math.log(probability) if probability > 0 else 0.0
 
@@ -619,15 +616,13 @@ def subgraph(onto: Ontology, term_ids: List[str], relation_type: str = "is_a") -
     # Find relationships between selected terms
     selected_relationships = []
     for rel in onto.relationships:
-        if (rel.relation_type == relation_type and
-            rel.source in selected_terms and
-            rel.target in selected_terms):
+        if rel.relation_type == relation_type and rel.source in selected_terms and rel.target in selected_terms:
             selected_relationships.append(rel)
 
     return Ontology(
         terms=selected_terms,
         relationships=selected_relationships,
-        metadata={**onto.metadata, "subgraph_of": onto.metadata.get("id", "unknown")}
+        metadata={**onto.metadata, "subgraph_of": onto.metadata.get("id", "unknown")},
     )
 
 
@@ -659,8 +654,9 @@ def path_to_root(onto: Ontology, term_id: str, relation_type: str = "is_a") -> L
     visited = set()
     while current not in visited:
         visited.add(current)
-        parents = [rel.source for rel in onto.relationships
-                  if rel.target == current and rel.relation_type == relation_type]
+        parents = [
+            rel.source for rel in onto.relationships if rel.target == current and rel.relation_type == relation_type
+        ]
 
         if not parents:
             break  # Reached a root
@@ -786,7 +782,7 @@ def filter_by_namespace(onto: Ontology, namespace: str) -> Ontology:
     return Ontology(
         terms=filtered_terms,
         relationships=filtered_relationships,
-        metadata={**onto.metadata, "filtered_by_namespace": namespace}
+        metadata={**onto.metadata, "filtered_by_namespace": namespace},
     )
 
 

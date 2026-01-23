@@ -18,8 +18,9 @@ from metainformant.core import logging, errors, validation
 logger = logging.get_logger(__name__)
 
 
-def calculate_diversity(species_matrix: List[List[float]] | Dict[str, List[float]],
-                       method: str = "shannon") -> List[float] | Dict[str, List[float]]:
+def calculate_diversity(
+    species_matrix: List[List[float]] | Dict[str, List[float]], method: str = "shannon"
+) -> List[float] | Dict[str, List[float]]:
     """Calculate diversity indices for ecological communities.
 
     Args:
@@ -83,12 +84,12 @@ def calculate_single_diversity(abundances: List[float], method: str) -> float:
 
     elif method == "simpson":
         # Simpson diversity index: 1 - D, where D = Σ(pi^2) is the probability of picking two individuals of the same species
-        simpson_concentration = sum(p ** 2 for p in proportions)
+        simpson_concentration = sum(p**2 for p in proportions)
         return 1.0 - simpson_concentration
 
     elif method == "invsimpson":
         # Inverse Simpson diversity index: 1/D
-        simpson_d = sum(p ** 2 for p in proportions)
+        simpson_d = sum(p**2 for p in proportions)
         return 1.0 / simpson_d if simpson_d > 0 else 0.0
 
     elif method == "richness":
@@ -232,8 +233,7 @@ def species_accumulation_curve(sampling_effort: List[int]) -> List[Tuple[int, fl
     return curve
 
 
-def beta_diversity(community1: List[float], community2: List[float],
-                  method: str = "bray_curtis") -> float:
+def beta_diversity(community1: List[float], community2: List[float], method: str = "bray_curtis") -> float:
     """Calculate beta diversity between two communities.
 
     Beta diversity measures the difference in species composition between communities.
@@ -366,9 +366,7 @@ def species_area_relationship(species_counts: List[int], area_sizes: List[float]
 
     # Linear regression: log(S) = log(c) + z * log(A)
     try:
-        slope, intercept, r_value, p_value, std_err = statistics.linear_regression(
-            log_areas, log_species
-        )
+        slope, intercept, r_value, p_value, std_err = statistics.linear_regression(log_areas, log_species)
 
         # Convert back to power law parameters: S = c * A^z
         c = math.exp(intercept)
@@ -377,7 +375,7 @@ def species_area_relationship(species_counts: List[int], area_sizes: List[float]
         return {
             "c": c,
             "z": z,
-            "r_squared": r_value ** 2,
+            "r_squared": r_value**2,
             "p_value": p_value,
             "intercept": intercept,
             "slope": slope,
@@ -450,8 +448,9 @@ def nestedness_temperature_calculator(presence_absence_matrix: List[List[int]]) 
     return temperature
 
 
-def calculate_biodiversity_indices(community_data: List[List[float]],
-                                 indices: Optional[List[str]] = None) -> Dict[str, List[float]]:
+def calculate_biodiversity_indices(
+    community_data: List[List[float]], indices: Optional[List[str]] = None
+) -> Dict[str, List[float]]:
     """Calculate multiple biodiversity indices for communities.
 
     Args:
@@ -480,8 +479,7 @@ def calculate_biodiversity_indices(community_data: List[List[float]],
     return results
 
 
-def community_similarity_matrix(communities: List[List[float]],
-                              method: str = "bray_curtis") -> List[List[float]]:
+def community_similarity_matrix(communities: List[List[float]], method: str = "bray_curtis") -> List[List[float]]:
     """Calculate pairwise similarity matrix for communities.
 
     Args:
@@ -538,8 +536,7 @@ def alpha_beta_gamma_diversity(communities: List[List[float]]) -> Dict[str, floa
     max_species = max(len(comm) for comm in communities) if communities else 0
 
     for species_idx in range(max_species):
-        total_abundance = sum(comm[species_idx] if species_idx < len(comm) else 0
-                            for comm in communities)
+        total_abundance = sum(comm[species_idx] if species_idx < len(comm) else 0 for comm in communities)
         pooled_abundances.append(total_abundance)
 
     gamma = calculate_single_diversity(pooled_abundances, "shannon")
@@ -554,9 +551,11 @@ def alpha_beta_gamma_diversity(communities: List[List[float]]) -> Dict[str, floa
     }
 
 
-def generate_ecology_report(community_data: List[List[float]],
-                          sample_names: Optional[List[str]] = None,
-                          output_path: Optional[str | Path] = None) -> str:
+def generate_ecology_report(
+    community_data: List[List[float]],
+    sample_names: Optional[List[str]] = None,
+    output_path: Optional[str | Path] = None,
+) -> str:
     """Generate a comprehensive ecology analysis report.
 
     Args:
@@ -609,18 +608,20 @@ def generate_ecology_report(community_data: List[List[float]],
     # Community similarity
     if len(community_data) > 1:
         similarity_matrix = community_similarity_matrix(community_data, "bray_curtis")
-        mean_similarity = statistics.mean([
-            similarity_matrix[i][j]
-            for i in range(len(similarity_matrix))
-            for j in range(i + 1, len(similarity_matrix))
-        ])
+        mean_similarity = statistics.mean(
+            [
+                similarity_matrix[i][j]
+                for i in range(len(similarity_matrix))
+                for j in range(i + 1, len(similarity_matrix))
+            ]
+        )
         report_lines.append(f"Mean Community Similarity (Bray-Curtis): {mean_similarity:.3f}")
 
     report = "\n".join(report_lines)
 
     if output_path:
         output_path = Path(output_path)
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             f.write(report)
         logger.info(f"Ecology report saved to {output_path}")
 
@@ -661,4 +662,3 @@ def simpson_diversity(abundances: List[float]) -> float:
         0.75
     """
     return calculate_single_diversity(abundances, "simpson")
-

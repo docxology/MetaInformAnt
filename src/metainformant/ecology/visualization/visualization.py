@@ -23,6 +23,7 @@ logger = logging.get_logger(__name__)
 
 try:
     import seaborn as sns
+
     HAS_SEABORN = True
 except ImportError:
     HAS_SEABORN = False
@@ -31,6 +32,7 @@ except ImportError:
 try:
     import plotly.graph_objects as go
     import plotly.express as px
+
     HAS_PLOTLY = True
 except ImportError:
     HAS_PLOTLY = False
@@ -45,7 +47,7 @@ def plot_species_abundance_distribution(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 6),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot species abundance distribution (rank-abundance curve).
 
@@ -70,17 +72,17 @@ def plot_species_abundance_distribution(
     ranks = np.arange(1, len(sorted_abundances) + 1)
 
     # Plot rank-abundance curve
-    ax.plot(ranks, sorted_abundances, 'b-o', linewidth=2, markersize=4, alpha=0.8)
+    ax.plot(ranks, sorted_abundances, "b-o", linewidth=2, markersize=4, alpha=0.8)
 
     # Add log scale option
-    if kwargs.get('log_scale', False):
-        ax.set_yscale('log')
-        ax.set_ylabel('Abundance (log scale)')
+    if kwargs.get("log_scale", False):
+        ax.set_yscale("log")
+        ax.set_ylabel("Abundance (log scale)")
     else:
-        ax.set_ylabel('Abundance')
+        ax.set_ylabel("Abundance")
 
-    ax.set_xlabel('Species Rank')
-    ax.set_title('Species Abundance Distribution')
+    ax.set_xlabel("Species Rank")
+    ax.set_title("Species Abundance Distribution")
     ax.grid(True, alpha=0.3)
 
     # Add species labels for top species
@@ -90,13 +92,18 @@ def plot_species_abundance_distribution(
 
         # Label top 5 species
         for i in range(min(5, len(sorted_names))):
-            ax.annotate(sorted_names[i], (i+1, sorted_abundances[i]),
-                       xytext=(5, 5), textcoords='offset points',
-                       fontsize=8, bbox=dict(boxstyle='round,pad=0.3', facecolor='white', alpha=0.8))
+            ax.annotate(
+                sorted_names[i],
+                (i + 1, sorted_abundances[i]),
+                xytext=(5, 5),
+                textcoords="offset points",
+                fontsize=8,
+                bbox=dict(boxstyle="round,pad=0.3", facecolor="white", alpha=0.8),
+            )
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Species abundance distribution saved to {output_path}")
 
     return ax
@@ -108,7 +115,7 @@ def plot_diversity_accumulation_curve(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 6),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot species accumulation curve (rarefaction curve).
 
@@ -128,28 +135,27 @@ def plot_diversity_accumulation_curve(
         fig, ax = plt.subplots(figsize=figsize)
 
     # Extract data
-    sample_sizes = [d.get('sample_size', i+1) for i, d in enumerate(diversity_data)]
-    species_counts = [d.get('species_count', 0) for d in diversity_data]
-    confidence_lower = [d.get('confidence_lower') for d in diversity_data]
-    confidence_upper = [d.get('confidence_upper') for d in diversity_data]
+    sample_sizes = [d.get("sample_size", i + 1) for i, d in enumerate(diversity_data)]
+    species_counts = [d.get("species_count", 0) for d in diversity_data]
+    confidence_lower = [d.get("confidence_lower") for d in diversity_data]
+    confidence_upper = [d.get("confidence_upper") for d in diversity_data]
 
     # Plot accumulation curve
-    ax.plot(sample_sizes, species_counts, 'b-', linewidth=2, label='Observed', alpha=0.8)
+    ax.plot(sample_sizes, species_counts, "b-", linewidth=2, label="Observed", alpha=0.8)
 
     # Add confidence intervals if available
     if confidence_lower[0] is not None and confidence_upper[0] is not None:
-        ax.fill_between(sample_sizes, confidence_lower, confidence_upper,
-                       alpha=0.3, color='blue', label='95% CI')
+        ax.fill_between(sample_sizes, confidence_lower, confidence_upper, alpha=0.3, color="blue", label="95% CI")
 
-    ax.set_xlabel('Number of Samples')
-    ax.set_ylabel('Number of Species')
-    ax.set_title('Species Accumulation Curve')
+    ax.set_xlabel("Number of Samples")
+    ax.set_ylabel("Number of Species")
+    ax.set_title("Species Accumulation Curve")
     ax.legend()
     ax.grid(True, alpha=0.3)
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Diversity accumulation curve saved to {output_path}")
 
     return ax
@@ -163,7 +169,7 @@ def plot_community_composition(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot community composition as stacked bar chart.
 
@@ -193,25 +199,30 @@ def plot_community_composition(
     colors = plt.cm.Set3(np.linspace(0, 1, community_matrix.shape[1]))
 
     for i in range(community_matrix.shape[1]):
-        ax.bar(range(community_matrix.shape[0]), proportions[:, i],
-               bottom=bottom, color=colors[i], alpha=0.8,
-               label=species_names[i] if species_names else f'Species {i+1}')
+        ax.bar(
+            range(community_matrix.shape[0]),
+            proportions[:, i],
+            bottom=bottom,
+            color=colors[i],
+            alpha=0.8,
+            label=species_names[i] if species_names else f"Species {i+1}",
+        )
         bottom += proportions[:, i]
 
-    ax.set_xlabel('Samples')
-    ax.set_ylabel('Relative Abundance')
-    ax.set_title('Community Composition')
+    ax.set_xlabel("Samples")
+    ax.set_ylabel("Relative Abundance")
+    ax.set_title("Community Composition")
 
     if sample_names:
         ax.set_xticks(range(len(sample_names)))
-        ax.set_xticklabels(sample_names, rotation=45, ha='right')
+        ax.set_xticklabels(sample_names, rotation=45, ha="right")
 
-    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
-    ax.grid(True, alpha=0.3, axis='y')
+    ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
+    ax.grid(True, alpha=0.3, axis="y")
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Community composition plot saved to {output_path}")
 
     return ax
@@ -224,7 +235,7 @@ def plot_beta_diversity_ordination(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (8, 6),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot beta diversity ordination (PCoA/NMDS).
 
@@ -254,16 +265,22 @@ def plot_beta_diversity_ordination(
 
         for i, group in enumerate(unique_groups):
             mask = sample_groups == group
-            ax.scatter(ordination_coords[mask, 0], ordination_coords[mask, 1],
-                      c=[colors[i]], label=str(group), alpha=0.7, s=50)
+            ax.scatter(
+                ordination_coords[mask, 0], ordination_coords[mask, 1], c=[colors[i]], label=str(group), alpha=0.7, s=50
+            )
     else:
-        scatter = ax.scatter(ordination_coords[:, 0], ordination_coords[:, 1],
-                           c=range(len(ordination_coords)), cmap='viridis',
-                           alpha=0.7, s=50)
+        scatter = ax.scatter(
+            ordination_coords[:, 0],
+            ordination_coords[:, 1],
+            c=range(len(ordination_coords)),
+            cmap="viridis",
+            alpha=0.7,
+            s=50,
+        )
 
-    ax.set_xlabel('Axis 1')
-    ax.set_ylabel('Axis 2')
-    ax.set_title('Beta Diversity Ordination')
+    ax.set_xlabel("Axis 1")
+    ax.set_ylabel("Axis 2")
+    ax.set_title("Beta Diversity Ordination")
     ax.grid(True, alpha=0.3)
 
     if sample_groups is not None:
@@ -271,11 +288,11 @@ def plot_beta_diversity_ordination(
     else:
         # Add colorbar
         cbar = plt.colorbar(scatter, ax=ax)
-        cbar.set_label('Sample Index')
+        cbar.set_label("Sample Index")
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Beta diversity ordination saved to {output_path}")
 
     return ax
@@ -288,7 +305,7 @@ def plot_diversity_indices_comparison(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 6),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot comparison of diversity indices across samples.
 
@@ -320,24 +337,29 @@ def plot_diversity_indices_comparison(
 
     for i, index_name in enumerate(index_types):
         values = diversity_indices[index_name]
-        ax.bar(x_positions + i * width - width * len(index_types) / 2,
-               values, width=width, color=colors[i], alpha=0.8,
-               label=index_name)
+        ax.bar(
+            x_positions + i * width - width * len(index_types) / 2,
+            values,
+            width=width,
+            color=colors[i],
+            alpha=0.8,
+            label=index_name,
+        )
 
-    ax.set_xlabel('Samples')
-    ax.set_ylabel('Diversity Index Value')
-    ax.set_title('Diversity Indices Comparison')
+    ax.set_xlabel("Samples")
+    ax.set_ylabel("Diversity Index Value")
+    ax.set_title("Diversity Indices Comparison")
 
     if index_names:
         ax.set_xticks(x_positions)
-        ax.set_xticklabels(index_names, rotation=45, ha='right')
+        ax.set_xticklabels(index_names, rotation=45, ha="right")
 
     ax.legend()
-    ax.grid(True, alpha=0.3, axis='y')
+    ax.grid(True, alpha=0.3, axis="y")
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Diversity indices comparison saved to {output_path}")
 
     return ax
@@ -350,7 +372,7 @@ def plot_ecological_network(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 8),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot ecological interaction network.
 
@@ -381,11 +403,11 @@ def plot_ecological_network(
 
     # Add nodes
     for i in range(n_species):
-        node_name = species_names[i] if species_names else f'Species {i+1}'
+        node_name = species_names[i] if species_names else f"Species {i+1}"
         G.add_node(i, name=node_name)
 
     # Add edges for interactions above threshold
-    threshold = kwargs.get('threshold', 0.1)
+    threshold = kwargs.get("threshold", 0.1)
     for i in range(n_species):
         for j in range(n_species):
             if abs(interaction_matrix[i, j]) > threshold and i != j:
@@ -398,23 +420,20 @@ def plot_ecological_network(
     degrees = dict(G.degree())
     node_sizes = [300 + degrees[node] * 50 for node in G.nodes()]
 
-    nx.draw_networkx_nodes(G, pos, node_size=node_sizes,
-                          node_color='lightblue', ax=ax)
-    nx.draw_networkx_edges(G, pos, edge_color='gray', alpha=0.5,
-                          arrows=True, arrowsize=10, ax=ax)
+    nx.draw_networkx_nodes(G, pos, node_size=node_sizes, node_color="lightblue", ax=ax)
+    nx.draw_networkx_edges(G, pos, edge_color="gray", alpha=0.5, arrows=True, arrowsize=10, ax=ax)
 
     # Add labels for important nodes only
     if len(G.nodes()) <= 20:
-        labels = {i: species_names[i] if species_names else f'S{i+1}'
-                 for i in G.nodes()}
+        labels = {i: species_names[i] if species_names else f"S{i+1}" for i in G.nodes()}
         nx.draw_networkx_labels(G, pos, labels, font_size=8, ax=ax)
 
-    ax.set_title('Ecological Interaction Network')
-    ax.axis('off')
+    ax.set_title("Ecological Interaction Network")
+    ax.axis("off")
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Ecological network plot saved to {output_path}")
 
     return ax
@@ -426,7 +445,7 @@ def plot_rank_abundance_curve_comparison(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 6),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Compare rank-abundance curves across different communities.
 
@@ -452,23 +471,22 @@ def plot_rank_abundance_curve_comparison(
         sorted_abundances = np.sort(abundances)[::-1]
         ranks = np.arange(1, len(sorted_abundances) + 1)
 
-        ax.plot(ranks, sorted_abundances, 'o-', color=colors[i],
-               linewidth=2, markersize=3, alpha=0.8, label=name)
+        ax.plot(ranks, sorted_abundances, "o-", color=colors[i], linewidth=2, markersize=3, alpha=0.8, label=name)
 
-    ax.set_xlabel('Species Rank')
-    ax.set_ylabel('Abundance')
-    ax.set_title('Rank-Abundance Curve Comparison')
+    ax.set_xlabel("Species Rank")
+    ax.set_ylabel("Abundance")
+    ax.set_title("Rank-Abundance Curve Comparison")
     ax.legend()
     ax.grid(True, alpha=0.3)
 
     # Set log scale if requested
-    if kwargs.get('log_scale', False):
-        ax.set_yscale('log')
-        ax.set_ylabel('Abundance (log scale)')
+    if kwargs.get("log_scale", False):
+        ax.set_yscale("log")
+        ax.set_ylabel("Abundance (log scale)")
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Rank-abundance comparison saved to {output_path}")
 
     return ax
@@ -480,7 +498,7 @@ def plot_biodiversity_rarefaction(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 6),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot biodiversity rarefaction curves for multiple communities.
 
@@ -502,21 +520,29 @@ def plot_biodiversity_rarefaction(
     colors = plt.cm.Set1(np.linspace(0, 1, len(rarefaction_data)))
 
     for i, (community_name, data) in enumerate(rarefaction_data.items()):
-        sample_sizes = [d.get('sample_size', 0) for d in data]
-        species_counts = [d.get('species_count', 0) for d in data]
+        sample_sizes = [d.get("sample_size", 0) for d in data]
+        species_counts = [d.get("species_count", 0) for d in data]
 
-        ax.plot(sample_sizes, species_counts, 'o-', color=colors[i],
-               linewidth=2, markersize=4, alpha=0.8, label=community_name)
+        ax.plot(
+            sample_sizes,
+            species_counts,
+            "o-",
+            color=colors[i],
+            linewidth=2,
+            markersize=4,
+            alpha=0.8,
+            label=community_name,
+        )
 
-    ax.set_xlabel('Number of Individuals Sampled')
-    ax.set_ylabel('Number of Species')
-    ax.set_title('Biodiversity Rarefaction Curves')
+    ax.set_xlabel("Number of Individuals Sampled")
+    ax.set_ylabel("Number of Species")
+    ax.set_title("Biodiversity Rarefaction Curves")
     ax.legend()
     ax.grid(True, alpha=0.3)
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Biodiversity rarefaction plot saved to {output_path}")
 
     return ax
@@ -529,7 +555,7 @@ def plot_ecological_distance_heatmap(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 8),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot ecological distance/dissimilarity heatmap.
 
@@ -550,33 +576,30 @@ def plot_ecological_distance_heatmap(
         fig, ax = plt.subplots(figsize=figsize)
 
     # Plot heatmap
-    im = ax.imshow(distance_matrix, cmap='YlOrRd', aspect='equal', origin='lower')
+    im = ax.imshow(distance_matrix, cmap="YlOrRd", aspect="equal", origin="lower")
 
-    ax.set_title('Ecological Distance Matrix')
+    ax.set_title("Ecological Distance Matrix")
 
     if sample_names and len(sample_names) <= 20:
         ax.set_xticks(range(len(sample_names)))
         ax.set_yticks(range(len(sample_names)))
-        ax.set_xticklabels(sample_names, rotation=45, ha='right')
+        ax.set_xticklabels(sample_names, rotation=45, ha="right")
         ax.set_yticklabels(sample_names)
 
     # Add colorbar
     cbar = plt.colorbar(im, ax=ax)
-    cbar.set_label('Ecological Distance')
+    cbar.set_label("Ecological Distance")
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Ecological distance heatmap saved to {output_path}")
 
     return ax
 
 
 def create_interactive_ecology_dashboard(
-    ecology_data: Dict[str, Any],
-    *,
-    output_path: str | Path | None = None,
-    **kwargs
+    ecology_data: Dict[str, Any], *, output_path: str | Path | None = None, **kwargs
 ) -> Any:
     """Create an interactive ecology dashboard using Plotly.
 
@@ -597,28 +620,17 @@ def create_interactive_ecology_dashboard(
     fig = go.Figure()
 
     # Add diversity indices subplot
-    if 'diversity_indices' in ecology_data:
-        diversity_data = ecology_data['diversity_indices']
+    if "diversity_indices" in ecology_data:
+        diversity_data = ecology_data["diversity_indices"]
         for i, (index_name, values) in enumerate(diversity_data.items()):
-            fig.add_trace(go.Bar(
-                name=index_name,
-                x=list(range(len(values))),
-                y=values,
-                offsetgroup=i
-            ))
+            fig.add_trace(go.Bar(name=index_name, x=list(range(len(values))), y=values, offsetgroup=i))
 
-    fig.update_layout(
-        title="Interactive Ecology Dashboard",
-        barmode='group',
-        **kwargs
-    )
+    fig.update_layout(title="Interactive Ecology Dashboard", barmode="group", **kwargs)
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        html_path = Path(output_path).with_suffix('.html')
+        html_path = Path(output_path).with_suffix(".html")
         fig.write_html(str(html_path))
         logger.info(f"Interactive ecology dashboard saved to {html_path}")
 
     return fig
-
-

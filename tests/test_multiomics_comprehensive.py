@@ -81,8 +81,12 @@ class TestMultiOmicsData:
 
     def test_subset_features(self):
         """Test subsetting features."""
-        genomics = pd.DataFrame(np.random.randn(5, 10), index=[f"S{i}" for i in range(5)], columns=[f"SNP{i}" for i in range(10)])
-        transcriptomics = pd.DataFrame(np.random.randn(5, 20), index=[f"S{i}" for i in range(5)], columns=[f"GENE{i}" for i in range(20)])
+        genomics = pd.DataFrame(
+            np.random.randn(5, 10), index=[f"S{i}" for i in range(5)], columns=[f"SNP{i}" for i in range(10)]
+        )
+        transcriptomics = pd.DataFrame(
+            np.random.randn(5, 20), index=[f"S{i}" for i in range(5)], columns=[f"GENE{i}" for i in range(20)]
+        )
 
         data = MultiOmicsData(genomics=genomics, transcriptomics=transcriptomics)
 
@@ -94,7 +98,9 @@ class TestMultiOmicsData:
     def test_metadata_integration(self):
         """Test metadata integration."""
         genomics = pd.DataFrame(np.random.randn(5, 10), index=[f"S{i}" for i in range(5)])
-        metadata = pd.DataFrame({"age": [20, 30, 40, 50, 60], "sex": ["M", "F", "M", "F", "M"]}, index=[f"S{i}" for i in range(5)])
+        metadata = pd.DataFrame(
+            {"age": [20, 30, 40, 50, 60], "sex": ["M", "F", "M", "F", "M"]}, index=[f"S{i}" for i in range(5)]
+        )
 
         data = MultiOmicsData(genomics=genomics, metadata=metadata)
 
@@ -163,7 +169,9 @@ class TestJointPCA:
 
         data = MultiOmicsData(genomics=genomics, transcriptomics=transcriptomics)
 
-        embeddings, loadings, variance = joint_pca(data, n_components=3, layer_weights={"genomics": 2.0, "transcriptomics": 1.0})
+        embeddings, loadings, variance = joint_pca(
+            data, n_components=3, layer_weights={"genomics": 2.0, "transcriptomics": 1.0}
+        )
 
         assert embeddings.shape == (5, 3)
         assert len(variance) == 3
@@ -231,7 +239,9 @@ class TestCanonicalCorrelation:
         # Create correlated data
         genomics = pd.DataFrame(np.random.randn(20, 30), index=[f"S{i}" for i in range(20)])
         # Make transcriptomics partially correlated with genomics
-        transcriptomics = pd.DataFrame(genomics.values[:, :20] * 0.7 + np.random.randn(20, 20) * 0.3, index=[f"S{i}" for i in range(20)])
+        transcriptomics = pd.DataFrame(
+            genomics.values[:, :20] * 0.7 + np.random.randn(20, 20) * 0.3, index=[f"S{i}" for i in range(20)]
+        )
 
         data = MultiOmicsData(genomics=genomics, transcriptomics=transcriptomics)
 
@@ -259,7 +269,9 @@ class TestCanonicalCorrelation:
 
         genomics = pd.DataFrame(base_data, index=[f"S{i}" for i in range(15)])
         # Transcriptomics is very similar to genomics
-        transcriptomics = pd.DataFrame(base_data[:, :20] * 0.95 + np.random.randn(15, 20) * 0.05, index=[f"S{i}" for i in range(15)])
+        transcriptomics = pd.DataFrame(
+            base_data[:, :20] * 0.95 + np.random.randn(15, 20) * 0.05, index=[f"S{i}" for i in range(15)]
+        )
 
         data = MultiOmicsData(genomics=genomics, transcriptomics=transcriptomics)
 

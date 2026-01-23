@@ -58,7 +58,7 @@ def test_integration_with_phenotype_module():
         events=[
             Event("diabetes", datetime(2020, 1, 1), "health", {"severity": "moderate"}),
             Event("bachelors", datetime(2010, 6, 1), "education", {"degree": "BS"}),
-        ]
+        ],
     )
 
     phenotypes = extract_phenotypes_from_events(sequence)
@@ -73,7 +73,9 @@ def test_integration_with_visualization_module():
     """Test integration with visualization module."""
     try:
         from metainformant.life_events import learn_event_embeddings, plot_event_embeddings
-        from metainformant.ml.features.features.features.features.features.features.features.features.dimensionality import biological_embedding
+        from metainformant.ml.features.features.features.features.features.features.features.features.dimensionality import (
+            biological_embedding,
+        )
     except ImportError:
         pytest.skip("Visualization integration not available")
 
@@ -97,23 +99,13 @@ def test_integration_with_visualization_module():
 def test_integration_workflow_with_ml(tmp_path):
     """Test complete workflow with ML integration."""
     sequences = [
-        EventSequence(
-            person_id="person_001",
-            events=[Event("degree", datetime(2010, 6, 1), "education")]
-        ),
-        EventSequence(
-            person_id="person_002",
-            events=[Event("diagnosis", datetime(2020, 1, 15), "health")]
-        ),
+        EventSequence(person_id="person_001", events=[Event("degree", datetime(2010, 6, 1), "education")]),
+        EventSequence(person_id="person_002", events=[Event("diagnosis", datetime(2020, 1, 15), "health")]),
     ]
 
     outcomes = np.array([0, 1])
 
-    results = analyze_life_course(
-        sequences,
-        outcomes=outcomes,
-        output_dir=tmp_path / "output"
-    )
+    results = analyze_life_course(sequences, outcomes=outcomes, output_dir=tmp_path / "output")
 
     assert "model_type" in results
     assert "predictions" in results
@@ -148,6 +140,7 @@ def test_integration_embedding_to_classifier():
 
 # End-to-End Integration Tests
 
+
 def test_end_to_end_save_load_predict(tmp_path: Path):
     """Test complete workflow: train -> save -> load -> predict."""
     # Train model
@@ -156,36 +149,33 @@ def test_end_to_end_save_load_predict(tmp_path: Path):
         ["education:degree", "occupation:job_change"],
         ["health:diagnosis", "income:raise"],
     ]
-    
+
     y_train = np.array([0, 1, 0])
-    
+
     predictor = EventSequencePredictor(
-        model_type="embedding",
-        task_type="classification",
-        embedding_dim=50,
-        random_state=42
+        model_type="embedding", task_type="classification", embedding_dim=50, random_state=42
     )
     predictor.fit(train_sequences, y_train)
-    
+
     # Save model
     model_file = tmp_path / "model.json"
     predictor.save_model(model_file)
     assert model_file.exists()
-    
+
     # Load model
     loaded = EventSequencePredictor.load_model(model_file)
     assert loaded.is_fitted
-    
+
     # Predict on new sequences
     test_sequences = [
         ["health:diagnosis", "occupation:job_change"],
         ["education:degree", "income:raise"],
     ]
-    
+
     predictions = loaded.predict(test_sequences)
     assert len(predictions) == len(test_sequences)
     assert all(p in loaded.classes_ for p in predictions)
-    
+
     # Verify predictions match original model
     original_preds = predictor.predict(test_sequences)
     np.testing.assert_array_equal(predictions, original_preds)
@@ -206,39 +196,30 @@ model:
   model_type: embedding
   task_type: classification
   random_state: 42
-""".format(work_dir=str(tmp_path / "work"))
+""".format(
+        work_dir=str(tmp_path / "work")
+    )
     config_file.write_text(config_content)
-    
+
     # Create sequences
     sequences = [
-        EventSequence(
-            person_id="person_001",
-            events=[Event("degree", datetime(2010, 6, 1), "education")]
-        ),
-        EventSequence(
-            person_id="person_002",
-            events=[Event("diagnosis", datetime(2020, 1, 15), "health")]
-        ),
+        EventSequence(person_id="person_001", events=[Event("degree", datetime(2010, 6, 1), "education")]),
+        EventSequence(person_id="person_002", events=[Event("diagnosis", datetime(2020, 1, 15), "health")]),
     ]
-    
+
     outcomes = np.array([0, 1])
-    
+
     # Run workflow with config
-    results = analyze_life_course(
-        sequences,
-        outcomes=outcomes,
-        config_path=config_file,
-        output_dir=tmp_path / "output"
-    )
-    
+    results = analyze_life_course(sequences, outcomes=outcomes, config_path=config_file, output_dir=tmp_path / "output")
+
     assert results["n_sequences"] == 2
     assert "model" in results
     assert results["embedding_dim"] == 50
-    
+
     # Verify model can be loaded
     model_file = Path(results["model"])
     assert model_file.exists()
-    
+
     loaded = EventSequencePredictor.load_model(model_file)
     assert loaded.is_fitted
     assert loaded.model_type == "embedding"
@@ -248,48 +229,36 @@ def test_cli_end_to_end_workflow(tmp_path: Path):
     """Test embed -> predict -> interpret CLI workflow."""
     import subprocess
     import sys
-    
+
     # Check if CLI is available
     try:
         result = subprocess.run(
-            [sys.executable, "-m", "metainformant", "--help"],
-            capture_output=True,
-            text=True,
-            timeout=5
+            [sys.executable, "-m", "metainformant", "--help"], capture_output=True, text=True, timeout=5
         )
         if result.returncode != 0:
             pytest.skip("metainformant CLI not available in test environment")
     except (subprocess.TimeoutExpired, FileNotFoundError):
         pytest.skip("metainformant CLI not available in test environment")
-    
+
     # Create sequences file
     sequences = [
-        EventSequence(
-            person_id="person_001",
-            events=[Event("degree", datetime(2010, 6, 1), "education")]
-        ),
-        EventSequence(
-            person_id="person_002",
-            events=[Event("diagnosis", datetime(2020, 1, 15), "health")]
-        ),
+        EventSequence(person_id="person_001", events=[Event("degree", datetime(2010, 6, 1), "education")]),
+        EventSequence(person_id="person_002", events=[Event("diagnosis", datetime(2020, 1, 15), "health")]),
     ]
-    
+
     sequences_file = tmp_path / "sequences.json"
     sequences_data = [seq.to_dict() for seq in sequences]
     from metainformant.core.io.io import dump_json
+
     dump_json(sequences_data, sequences_file)
-    
+
     # Step 1: Train model using analyze_life_course
     outcomes = np.array([0, 1])
-    results = analyze_life_course(
-        sequences,
-        outcomes=outcomes,
-        output_dir=tmp_path / "train_output"
-    )
-    
+    results = analyze_life_course(sequences, outcomes=outcomes, output_dir=tmp_path / "train_output")
+
     model_file = Path(results["model"])
     assert model_file.exists()
-    
+
     # Step 2: Predict using CLI
     predict_output = tmp_path / "predict_output"
     cmd = [
@@ -302,13 +271,13 @@ def test_cli_end_to_end_workflow(tmp_path: Path):
         f"--model={model_file}",
         f"--output={predict_output}",
     ]
-    
+
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
     assert result.returncode == 0
-    
+
     predictions_file = predict_output / "predictions.json"
     assert predictions_file.exists()
-    
+
     # Step 3: Interpret using CLI
     interpret_output = tmp_path / "interpret_output"
     cmd = [
@@ -321,10 +290,10 @@ def test_cli_end_to_end_workflow(tmp_path: Path):
         f"--sequences={sequences_file}",
         f"--output={interpret_output}",
     ]
-    
+
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
     assert result.returncode == 0
-    
+
     report_file = interpret_output / "interpretation_report.json"
     assert report_file.exists()
 
@@ -336,37 +305,33 @@ def test_model_persistence_across_sessions(tmp_path: Path):
         ["health:diagnosis", "occupation:job_change"],
         ["education:degree", "occupation:job_change"],
     ]
-    
+
     y = np.array([0, 1])
-    
+
     predictor = EventSequencePredictor(
-        model_type="embedding",
-        task_type="classification",
-        embedding_dim=50,
-        random_state=42
+        model_type="embedding", task_type="classification", embedding_dim=50, random_state=42
     )
     predictor.fit(sequences, y)
-    
+
     original_preds = predictor.predict(sequences)
     original_probas = predictor.predict_proba(sequences)
-    
+
     model_file = tmp_path / "persistent_model.json"
     predictor.save_model(model_file)
-    
+
     # Simulate "restart" by creating new predictor instance
     # Load model in new "session"
     loaded = EventSequencePredictor.load_model(model_file)
-    
+
     # Verify it works identically
     loaded_preds = loaded.predict(sequences)
     loaded_probas = loaded.predict_proba(sequences)
-    
+
     np.testing.assert_array_equal(loaded_preds, original_preds)
     np.testing.assert_allclose(loaded_probas, original_probas, rtol=1e-5)
-    
+
     # Verify all attributes are restored
     assert loaded.model_type == predictor.model_type
     assert loaded.task_type == predictor.task_type
     assert loaded.is_fitted == predictor.is_fitted
     assert np.array_equal(loaded.classes_, predictor.classes_)
-

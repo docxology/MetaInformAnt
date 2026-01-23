@@ -67,13 +67,7 @@ association:
 def test_load_gwas_config_json(tmp_path: Path) -> None:
     """Test loading GWAS configuration from JSON."""
     config_file = tmp_path / "test_config.json"
-    config_data = {
-        "work_dir": "output/gwas/test",
-        "threads": 6,
-        "genome": {
-            "accession": "GCF_000001405.40"
-        }
-    }
+    config_data = {"work_dir": "output/gwas/test", "threads": 6, "genome": {"accession": "GCF_000001405.40"}}
     dump_json(config_data, config_file)
 
     config_dict = load_gwas_config(config_file)
@@ -103,4 +97,3 @@ def test_gwas_workflow_config_defaults() -> None:
     assert config.association == {}
     assert config.correction == {}
     assert config.output == {}
-

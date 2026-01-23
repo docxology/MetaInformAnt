@@ -39,7 +39,7 @@ def test_load_workflow_config_and_plan_uses_yaml_values():
         assert (cfg.log_dir is not None) and cfg.log_dir.as_posix().endswith("output/amalgkit/pbarbatus/logs")
         expected_fastq_dir = "output/amalgkit/pbarbatus/fastq"
         expected_merge_out = "output/amalgkit/pbarbatus/merged/merged_abundance.tsv"
-    
+
     assert cfg.threads == expected_threads
 
     steps = plan_workflow(cfg)
@@ -64,7 +64,7 @@ def test_env_overrides_for_config_threads(tmp_path: Path):
     cfg_path = repo_root / "config" / "amalgkit" / "amalgkit_test.yaml"
     if not cfg_path.exists():
         cfg_path = repo_root / "config" / "amalgkit" / "amalgkit_pogonomyrmex_barbatus.yaml"
-    
+
     # Ensure at least one config exists
     assert cfg_path.exists(), f"Config file not found: {cfg_path}"
 

@@ -44,10 +44,10 @@ def read_fasta(path: Union[str, Path]) -> Dict[str, str]:
                 if not line:
                     continue
 
-                if line.startswith('>'):
+                if line.startswith(">"):
                     # Save previous sequence
                     if current_id is not None:
-                        sequences[current_id] = ''.join(current_seq)
+                        sequences[current_id] = "".join(current_seq)
 
                     # Start new sequence
                     current_id = line[1:].split()[0]  # Take first word as ID
@@ -60,7 +60,7 @@ def read_fasta(path: Union[str, Path]) -> Dict[str, str]:
 
         # Save last sequence
         if current_id is not None:
-            sequences[current_id] = ''.join(current_seq)
+            sequences[current_id] = "".join(current_seq)
 
     except Exception as e:
         raise ValueError(f"Error reading FASTA file {path}: {e}")
@@ -83,17 +83,17 @@ def write_fasta(sequences: Dict[str, str], path: Union[str, Path], line_width: i
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    with io.open_text_auto(path, 'w') as f:
+    with io.open_text_auto(path, "w") as f:
         for seq_id, sequence in sequences.items():
             f.write(f">{seq_id}\n")
 
             if line_width > 0:
                 # Wrap sequence lines
                 for i in range(0, len(sequence), line_width):
-                    f.write(sequence[i:i + line_width] + '\n')
+                    f.write(sequence[i : i + line_width] + "\n")
             else:
                 # Single line per sequence
-                f.write(sequence + '\n')
+                f.write(sequence + "\n")
 
     logger.debug(f"Wrote {len(sequences)} sequences to {path}")
 
@@ -118,7 +118,7 @@ def reverse_complement(seq: str) -> str:
         raise ValueError(f"Invalid DNA sequence: {seq}")
 
     # Complement mapping
-    complement = str.maketrans('ATCGatcg', 'TAGCtagc')
+    complement = str.maketrans("ATCGatcg", "TAGCtagc")
 
     # Reverse and complement
     return seq.translate(complement)[::-1]
@@ -143,7 +143,7 @@ def gc_content(seq: str) -> float:
         raise ValueError(f"Invalid DNA sequence: {seq}")
 
     seq = seq.upper()
-    gc_count = seq.count('G') + seq.count('C')
+    gc_count = seq.count("G") + seq.count("C")
     total_count = len(seq)
 
     return gc_count / total_count if total_count > 0 else 0.0
@@ -174,7 +174,7 @@ def validate_dna_sequence(seq: str) -> bool:
         return False
 
     # Allow IUPAC ambiguity codes
-    valid_chars = set('ATCGNUWSMKRYBDHVatcgnuwsmkrybdhv-')
+    valid_chars = set("ATCGNUWSMKRYBDHVatcgnuwsmkrybdhv-")
     return all(c in valid_chars for c in seq)
 
 
@@ -218,7 +218,7 @@ def find_repeats(seq: str, min_length: int = 3) -> Dict[str, List[int]]:
 
     # Find all occurrences of each possible repeat
     for i in range(len(seq_upper) - min_length + 1):
-        repeat_seq = seq_upper[i:i + min_length]
+        repeat_seq = seq_upper[i : i + min_length]
         # Count how many times this repeat appears in the entire sequence
         count = seq_upper.count(repeat_seq)
         if count > 1:  # Only include repeats that appear more than once
@@ -289,11 +289,11 @@ def find_orfs(seq: str, min_length: int = 30) -> List[Tuple[int, int, str]]:
         else:
             # Reverse strand - use reverse complement and adjust frame
             rev_comp = reverse_complement(seq_upper)
-            search_seq = rev_comp[frame - 3:]
+            search_seq = rev_comp[frame - 3 :]
 
         # Find start codons
         start_positions = []
-        for match in re.finditer(r'ATG', search_seq):
+        for match in re.finditer(r"ATG", search_seq):
             start_positions.append(match.start())
 
         for start_pos in start_positions:
@@ -301,7 +301,7 @@ def find_orfs(seq: str, min_length: int = 30) -> List[Tuple[int, int, str]]:
             orf_seq = search_seq[start_pos:]
             stop_found = False
 
-            for stop_match in re.finditer(r'(TAA|TAG|TGA)', orf_seq[3:], re.IGNORECASE):
+            for stop_match in re.finditer(r"(TAA|TAG|TGA)", orf_seq[3:], re.IGNORECASE):
                 stop_pos = start_pos + stop_match.start() + 3  # Include stop codon
                 orf_length_aa = (stop_pos - start_pos) // 3
 
@@ -331,7 +331,7 @@ def find_start_codons(seq: str) -> List[int]:
         List of start positions
     """
     positions = []
-    for match in re.finditer(r'ATG', seq.upper()):
+    for match in re.finditer(r"ATG", seq.upper()):
         positions.append(match.start())
     return positions
 
@@ -346,7 +346,7 @@ def find_stop_codons(seq: str) -> List[int]:
         List of start positions
     """
     positions = []
-    for match in re.finditer(r'(TAA|TAG|TGA)', seq.upper()):
+    for match in re.finditer(r"(TAA|TAG|TGA)", seq.upper()):
         positions.append(match.start())
     return positions
 
@@ -368,7 +368,7 @@ def calculate_sequence_entropy(seq: str, k: int = 1) -> float:
     import math
 
     # Count k-mers
-    kmers = [seq[i:i + k] for i in range(len(seq) - k + 1)]
+    kmers = [seq[i : i + k] for i in range(len(seq) - k + 1)]
     counts = Counter(kmers)
     total = sum(counts.values())
 
@@ -392,24 +392,20 @@ def detect_sequence_bias(seq: str) -> Dict[str, float]:
         Dictionary with composition metrics
     """
     if not seq:
-        return {'gc_content': 0.0, 'at_content': 0.0, 'total_bases': 0}
+        return {"gc_content": 0.0, "at_content": 0.0, "total_bases": 0}
 
     seq_upper = seq.upper()
     length = len(seq_upper)
 
-    g_count = seq_upper.count('G')
-    c_count = seq_upper.count('C')
-    a_count = seq_upper.count('A')
-    t_count = seq_upper.count('T')
+    g_count = seq_upper.count("G")
+    c_count = seq_upper.count("C")
+    a_count = seq_upper.count("A")
+    t_count = seq_upper.count("T")
 
     gc_content = (g_count + c_count) / length if length > 0 else 0.0
     at_content = (a_count + t_count) / length if length > 0 else 0.0
 
-    return {
-        'gc_content': gc_content,
-        'at_content': at_content,
-        'total_bases': length
-    }
+    return {"gc_content": gc_content, "at_content": at_content, "total_bases": length}
 
 
 def calculate_gc_skew(seq: str) -> float:
@@ -427,8 +423,8 @@ def calculate_gc_skew(seq: str) -> float:
         return 0.0
 
     seq_upper = seq.upper()
-    g_count = seq_upper.count('G')
-    c_count = seq_upper.count('C')
+    g_count = seq_upper.count("G")
+    c_count = seq_upper.count("C")
 
     if g_count + c_count == 0:
         return 0.0
@@ -451,8 +447,8 @@ def calculate_at_skew(seq: str) -> float:
         return 0.0
 
     seq_upper = seq.upper()
-    a_count = seq_upper.count('A')
-    t_count = seq_upper.count('T')
+    a_count = seq_upper.count("A")
+    t_count = seq_upper.count("T")
 
     if a_count + t_count == 0:
         return 0.0
@@ -475,7 +471,7 @@ def find_palindromes(seq: str, min_length: int = 4) -> List[Tuple[str, int, int]
 
     for i in range(len(seq_upper) - min_length + 1):
         for j in range(min_length, len(seq_upper) - i + 1):
-            substring = seq_upper[i:i + j]
+            substring = seq_upper[i : i + j]
             if _is_palindromic(substring):
                 palindromes.append((substring, i, i + j - 1))
 
@@ -500,19 +496,19 @@ def calculate_melting_temperature(seq: str, method: str = "wallace") -> float:
 
     if method.lower() == "wallace":
         # Wallace rule: Tm = 4(G+C) + 2(A+T)
-        gc_count = seq.upper().count('G') + seq.upper().count('C')
-        at_count = seq.upper().count('A') + seq.upper().count('T')
+        gc_count = seq.upper().count("G") + seq.upper().count("C")
+        at_count = seq.upper().count("A") + seq.upper().count("T")
         return 4 * gc_count + 2 * at_count
     elif method.lower() == "gc":
         # GC content based: Tm = 64.9 + 41*(G+C-16.4)/N
-        gc_count = seq.upper().count('G') + seq.upper().count('C')
+        gc_count = seq.upper().count("G") + seq.upper().count("C")
         length = len(seq)
         if length == 0:
             return 0.0
         return 64.9 + 41 * (gc_count - 16.4) / length
     elif method.lower() == "enhanced":
         # Enhanced method: Tm = 81.5 + 0.41*(%GC) - 675/N + correction
-        gc_count = seq.upper().count('G') + seq.upper().count('C')
+        gc_count = seq.upper().count("G") + seq.upper().count("C")
         length = len(seq)
         if length == 0:
             return 0.0
@@ -538,7 +534,7 @@ def calculate_codon_usage(seq: str) -> Dict[str, float]:
 
     codons = []
     for i in range(0, len(seq) - 2, 3):
-        codon = seq[i:i + 3].upper()
+        codon = seq[i : i + 3].upper()
         codons.append(codon)
 
     counts = Counter(codons)
@@ -563,9 +559,10 @@ def dna_complementarity_score(seq1: str, seq2: str) -> float:
     """
     if len(seq1) != len(seq2):
         from metainformant.core import errors
+
         raise errors.ValidationError("Sequences must be the same length")
 
-    complement_map = str.maketrans('ATCG', 'TAGC')
+    complement_map = str.maketrans("ATCG", "TAGC")
     seq2_complement = seq2.upper().translate(complement_map)
 
     matches = sum(1 for a, b in zip(seq1.upper(), seq2_complement) if a == b)
@@ -582,21 +579,21 @@ def _iupac_to_regex(pattern: str) -> str:
         Regular expression pattern
     """
     iupac_codes = {
-        'N': '[ATCG]',
-        'U': 'T',  # RNA U becomes T in DNA
-        'W': '[AT]',
-        'S': '[CG]',
-        'M': '[AC]',
-        'K': '[GT]',
-        'R': '[AG]',
-        'Y': '[CT]',
-        'B': '[CGT]',
-        'D': '[AGT]',
-        'H': '[ACT]',
-        'V': '[ACG]',
+        "N": "[ATCG]",
+        "U": "T",  # RNA U becomes T in DNA
+        "W": "[AT]",
+        "S": "[CG]",
+        "M": "[AC]",
+        "K": "[GT]",
+        "R": "[AG]",
+        "Y": "[CT]",
+        "B": "[CGT]",
+        "D": "[AGT]",
+        "H": "[ACT]",
+        "V": "[ACG]",
     }
 
-    regex = ''
+    regex = ""
     for char in pattern:
         regex += iupac_codes.get(char.upper(), char.upper())
 
@@ -612,8 +609,5 @@ def _is_palindromic(seq: str) -> bool:
     Returns:
         True if sequence is palindromic
     """
-    complement = str.maketrans('ATCG', 'TAGC')
+    complement = str.maketrans("ATCG", "TAGC")
     return seq == seq.translate(complement)[::-1]
-
-
-

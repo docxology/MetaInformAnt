@@ -19,17 +19,14 @@ logger = logging.get_logger(__name__)
 # Optional network analysis dependencies
 try:
     import networkx as nx
+
     HAS_NETWORKX = True
 except ImportError:
     HAS_NETWORKX = False
     logger.warning("networkx not available, network information analysis disabled")
 
 
-def network_entropy(
-    graph: Any,
-    attribute: Optional[str] = None,
-    method: str = "shannon"
-) -> float:
+def network_entropy(graph: Any, attribute: Optional[str] = None, method: str = "shannon") -> float:
     """Calculate entropy of a biological network.
 
     Args:
@@ -50,7 +47,7 @@ def network_entropy(
     # Convert to NetworkX graph if needed
     if isinstance(graph, np.ndarray):
         G = nx.from_numpy_array(graph)
-    elif hasattr(graph, 'nodes'):  # NetworkX graph
+    elif hasattr(graph, "nodes"):  # NetworkX graph
         G = graph
     else:
         raise ValueError("Graph must be NetworkX graph or numpy adjacency matrix")
@@ -69,6 +66,7 @@ def _shannon_network_entropy(G: Any, attribute: Optional[str] = None) -> float:
         # Structural entropy based on degree distribution
         degrees = [d for n, d in G.degree()]
         from collections import Counter
+
         degree_counts = Counter(degrees)
 
         # Convert to probabilities
@@ -90,6 +88,7 @@ def _shannon_network_entropy(G: Any, attribute: Optional[str] = None) -> float:
 
         attr_values = list(nx.get_node_attributes(G, attribute).values())
         from collections import Counter
+
         attr_counts = Counter(attr_values)
 
         # Calculate entropy
@@ -105,7 +104,7 @@ def _shannon_network_entropy(G: Any, attribute: Optional[str] = None) -> float:
 def _von_neumann_entropy(G: Any) -> float:
     """Calculate von Neumann graph entropy."""
     # Convert to adjacency matrix
-    if hasattr(G, 'to_numpy_array'):
+    if hasattr(G, "to_numpy_array"):
         A = G.to_numpy_array()
     else:
         A = nx.to_numpy_array(G)
@@ -140,7 +139,7 @@ def information_flow(
     source_nodes: Optional[List[str]] = None,
     target_nodes: Optional[List[str]] = None,
     method: str = "random_walk",
-    steps: int = 100
+    steps: int = 100,
 ) -> Dict[str, Any]:
     """Calculate information flow in a biological network.
 
@@ -163,7 +162,7 @@ def information_flow(
     # Convert to NetworkX graph if needed
     if isinstance(graph, np.ndarray):
         G = nx.from_numpy_array(graph)
-    elif hasattr(graph, 'nodes'):
+    elif hasattr(graph, "nodes"):
         G = graph
     else:
         raise ValueError("Graph must be NetworkX graph or numpy adjacency matrix")
@@ -177,10 +176,7 @@ def information_flow(
 
 
 def _random_walk_information_flow(
-    G: Any,
-    source_nodes: Optional[List[str]] = None,
-    target_nodes: Optional[List[str]] = None,
-    steps: int = 100
+    G: Any, source_nodes: Optional[List[str]] = None, target_nodes: Optional[List[str]] = None, steps: int = 100
 ) -> Dict[str, Any]:
     """Calculate information flow using random walk model."""
     # Create transition matrix
@@ -239,19 +235,16 @@ def _random_walk_information_flow(
                     flow_dict[source][target] = flow_matrix[i, j]
 
     return {
-        'flow_matrix': flow_dict,
-        'method': 'random_walk',
-        'steps': steps,
-        'source_nodes': source_nodes,
-        'target_nodes': target_nodes,
+        "flow_matrix": flow_dict,
+        "method": "random_walk",
+        "steps": steps,
+        "source_nodes": source_nodes,
+        "target_nodes": target_nodes,
     }
 
 
 def _diffusion_information_flow(
-    G: Any,
-    source_nodes: Optional[List[str]] = None,
-    target_nodes: Optional[List[str]] = None,
-    steps: int = 100
+    G: Any, source_nodes: Optional[List[str]] = None, target_nodes: Optional[List[str]] = None, steps: int = 100
 ) -> Dict[str, Any]:
     """Calculate information flow using diffusion model."""
     A = nx.to_numpy_array(G)
@@ -301,24 +294,20 @@ def _diffusion_information_flow(
 
     for i, node in enumerate(node_list):
         flow_results[node] = {
-            'final_signal': float(final_signal[i]),
-            'signal_history': [float(flow_history[t][i]) for t in range(len(flow_history))],
+            "final_signal": float(final_signal[i]),
+            "signal_history": [float(flow_history[t][i]) for t in range(len(flow_history))],
         }
 
     return {
-        'node_flows': flow_results,
-        'method': 'diffusion',
-        'steps': steps,
-        'source_nodes': source_nodes,
-        'diffusion_matrix_shape': L_norm.shape,
+        "node_flows": flow_results,
+        "method": "diffusion",
+        "steps": steps,
+        "source_nodes": source_nodes,
+        "diffusion_matrix_shape": L_norm.shape,
     }
 
 
-def information_community_detection(
-    graph: Any,
-    method: str = "infomap",
-    **kwargs: Any
-) -> Dict[str, Any]:
+def information_community_detection(graph: Any, method: str = "infomap", **kwargs: Any) -> Dict[str, Any]:
     """Detect communities using information-theoretic approaches.
 
     Args:
@@ -337,6 +326,7 @@ def information_community_detection(
 
     try:
         import community as community_louvain
+
         HAS_COMMUNITY = True
     except ImportError:
         HAS_COMMUNITY = False
@@ -358,10 +348,10 @@ def _infomap_community_detection(graph: Any, **kwargs: Any) -> Dict[str, Any]:
     logger.warning("InfoMap implementation requires external library")
 
     return {
-        'method': 'infomap',
-        'status': 'not_implemented',
-        'message': 'InfoMap requires infomap package',
-        'communities': {},
+        "method": "infomap",
+        "status": "not_implemented",
+        "message": "InfoMap requires infomap package",
+        "communities": {},
     }
 
 
@@ -371,10 +361,10 @@ def _map_equation_community_detection(graph: Any, **kwargs: Any) -> Dict[str, An
     logger.warning("Map equation implementation requires external library")
 
     return {
-        'method': 'map_equation',
-        'status': 'not_implemented',
-        'message': 'Map equation requires map equation package',
-        'communities': {},
+        "method": "map_equation",
+        "status": "not_implemented",
+        "message": "Map equation requires map equation package",
+        "communities": {},
     }
 
 
@@ -413,34 +403,30 @@ def _louvain_community_detection(graph: Any, **kwargs: Any) -> Dict[str, Any]:
             max_edges = size * (size - 1) / 2 if not G.is_directed() else size * (size - 1)
 
             community_info[comm_id] = {
-                'size': size,
-                'edges': edges,
-                'density': edges / max_edges if max_edges > 0 else 0,
-                'nodes': nodes,
+                "size": size,
+                "edges": edges,
+                "density": edges / max_edges if max_edges > 0 else 0,
+                "nodes": nodes,
             }
 
         return {
-            'method': 'louvain',
-            'status': 'completed',
-            'modularity': modularity,
-            'n_communities': len(communities),
-            'communities': communities,
-            'community_info': community_info,
+            "method": "louvain",
+            "status": "completed",
+            "modularity": modularity,
+            "n_communities": len(communities),
+            "communities": communities,
+            "community_info": community_info,
         }
 
     except ImportError:
         return {
-            'method': 'louvain',
-            'status': 'failed',
-            'error': 'python-louvain package required',
+            "method": "louvain",
+            "status": "failed",
+            "error": "python-louvain package required",
         }
 
 
-def network_information_centrality(
-    graph: Any,
-    method: str = "entropy",
-    normalized: bool = True
-) -> Dict[str, float]:
+def network_information_centrality(graph: Any, method: str = "entropy", normalized: bool = True) -> Dict[str, float]:
     """Calculate information-theoretic centrality measures for network nodes.
 
     Args:
@@ -459,7 +445,7 @@ def network_information_centrality(
 
     if isinstance(graph, np.ndarray):
         G = nx.from_numpy_array(graph)
-    elif hasattr(graph, 'nodes'):
+    elif hasattr(graph, "nodes"):
         G = graph
     else:
         raise ValueError("Graph must be NetworkX graph or numpy adjacency matrix")
@@ -486,6 +472,7 @@ def _entropy_centrality(G: Any, normalized: bool = True) -> Dict[str, float]:
         # Degree distribution of neighbors
         neighbor_degrees = [G.degree(n) for n in neighbors]
         from collections import Counter
+
         degree_counts = Counter(neighbor_degrees)
 
         # Calculate entropy
@@ -516,11 +503,7 @@ def _information_flow_centrality(G: Any, normalized: bool = True) -> Dict[str, f
     return centrality
 
 
-def network_motif_information(
-    graph: Any,
-    motif_size: int = 3,
-    n_random: int = 100
-) -> Dict[str, Any]:
+def network_motif_information(graph: Any, motif_size: int = 3, n_random: int = 100) -> Dict[str, Any]:
     """Analyze network motifs using information-theoretic measures.
 
     Args:
@@ -547,20 +530,16 @@ def network_motif_information(
     logger.warning("Network motif analysis requires external motif detection libraries")
 
     return {
-        'motif_size': motif_size,
-        'status': 'not_implemented',
-        'message': 'Motif analysis requires specialized libraries (e.g., network-motifs)',
-        'n_random': n_random,
-        'motifs_found': {},
-        'z_scores': {},
+        "motif_size": motif_size,
+        "status": "not_implemented",
+        "message": "Motif analysis requires specialized libraries (e.g., network-motifs)",
+        "n_random": n_random,
+        "motifs_found": {},
+        "z_scores": {},
     }
 
 
-def information_graph_distance(
-    graph1: Any,
-    graph2: Any,
-    method: str = "entropy"
-) -> float:
+def information_graph_distance(graph1: Any, graph2: Any, method: str = "entropy") -> float:
     """Calculate information-theoretic distance between two graphs.
 
     Args:
@@ -600,6 +579,7 @@ def information_graph_distance(
         degrees2 = [d for n, d in G2.degree()]
 
         from collections import Counter
+
         dist1 = Counter(degrees1)
         dist2 = Counter(degrees2)
 
@@ -613,15 +593,10 @@ def information_graph_distance(
 
         # Calculate Jensen-Shannon divergence
         from metainformant.information import syntactic
+
         jsd = syntactic.jensen_shannon_divergence(probs1, probs2)
 
         return jsd
 
     else:
         raise ValueError(f"Unknown distance method: {method}")
-
-
-
-
-
-

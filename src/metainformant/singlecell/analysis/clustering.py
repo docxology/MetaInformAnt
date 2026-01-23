@@ -21,6 +21,7 @@ from metainformant.core import logging, errors, validation
 try:
     from sklearn.cluster import KMeans
     from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
+
     HAS_SKLEARN = True
 except ImportError:
     HAS_SKLEARN = False
@@ -32,6 +33,7 @@ except ImportError:
 # Try to import networkx and community detection libraries
 try:
     import networkx as nx
+
     HAS_NETWORKX = True
 except ImportError:
     nx = None
@@ -39,6 +41,7 @@ except ImportError:
 
 try:
     import igraph as ig
+
     HAS_IGRAPH = True
 except ImportError:
     ig = None
@@ -46,6 +49,7 @@ except ImportError:
 
 try:
     import leidenalg
+
     HAS_LEIDEN = True
 except ImportError:
     leidenalg = None
@@ -53,6 +57,7 @@ except ImportError:
 
 try:
     import community as community_louvain
+
     HAS_LOUVAIN = True
 except ImportError:
     community_louvain = None
@@ -64,9 +69,13 @@ logger = logging.get_logger(__name__)
 from metainformant.singlecell.data.preprocessing import SingleCellData
 
 
-def leiden_clustering(data: SingleCellData, resolution: float = 1.0,
-                     n_neighbors: int = 15, random_state: int | None = None,
-                     use_weights: bool = True) -> SingleCellData:
+def leiden_clustering(
+    data: SingleCellData,
+    resolution: float = 1.0,
+    n_neighbors: int = 15,
+    random_state: int | None = None,
+    use_weights: bool = True,
+) -> SingleCellData:
     """Perform Leiden clustering on single-cell data.
 
     Args:
@@ -94,7 +103,7 @@ def leiden_clustering(data: SingleCellData, resolution: float = 1.0,
     result = data.copy()
 
     # Get expression matrix
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
     # Construct kNN graph
     n_cells = X.shape[0]
@@ -111,7 +120,7 @@ def leiden_clustering(data: SingleCellData, resolution: float = 1.0,
         ig.Graph.from_networkx(G),
         leidenalg.ModularityVertexPartition,
         resolution_parameter=resolution,
-        seed=random_state
+        seed=random_state,
     )
 
     # Get cluster assignments
@@ -119,24 +128,28 @@ def leiden_clustering(data: SingleCellData, resolution: float = 1.0,
 
     # Add to obs
     result.obs = result.obs.copy() if result.obs is not None else pd.DataFrame()
-    result.obs['leiden_cluster'] = clusters
+    result.obs["leiden_cluster"] = clusters
 
     # Store clustering parameters
-    result.uns['leiden_clustering'] = {
-        'resolution': resolution,
-        'n_neighbors': n_neighbors,
-        'random_state': random_state,
-        'n_clusters': len(np.unique(clusters)),
-        'use_weights': use_weights,
+    result.uns["leiden_clustering"] = {
+        "resolution": resolution,
+        "n_neighbors": n_neighbors,
+        "random_state": random_state,
+        "n_clusters": len(np.unique(clusters)),
+        "use_weights": use_weights,
     }
 
     logger.info(f"Leiden clustering completed: found {len(np.unique(clusters))} clusters")
     return result
 
 
-def louvain_clustering(data: SingleCellData, resolution: float = 1.0,
-                      n_neighbors: int = 15, random_state: int | None = None,
-                      use_weights: bool = True) -> SingleCellData:
+def louvain_clustering(
+    data: SingleCellData,
+    resolution: float = 1.0,
+    n_neighbors: int = 15,
+    random_state: int | None = None,
+    use_weights: bool = True,
+) -> SingleCellData:
     """Perform Louvain clustering on single-cell data.
 
     Args:
@@ -164,7 +177,7 @@ def louvain_clustering(data: SingleCellData, resolution: float = 1.0,
     result = data.copy()
 
     # Get expression matrix
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
     # Construct kNN graph
     distances = _compute_pairwise_distances(X)
@@ -179,23 +192,24 @@ def louvain_clustering(data: SingleCellData, resolution: float = 1.0,
 
     # Add to obs
     result.obs = result.obs.copy() if result.obs is not None else pd.DataFrame()
-    result.obs['louvain_cluster'] = clusters
+    result.obs["louvain_cluster"] = clusters
 
     # Store clustering parameters
-    result.uns['louvain_clustering'] = {
-        'resolution': resolution,
-        'n_neighbors': n_neighbors,
-        'random_state': random_state,
-        'n_clusters': len(np.unique(clusters)),
-        'use_weights': use_weights,
+    result.uns["louvain_clustering"] = {
+        "resolution": resolution,
+        "n_neighbors": n_neighbors,
+        "random_state": random_state,
+        "n_clusters": len(np.unique(clusters)),
+        "use_weights": use_weights,
     }
 
     logger.info(f"Louvain clustering completed: found {len(np.unique(clusters))} clusters")
     return result
 
 
-def kmeans_clustering(data: SingleCellData, n_clusters: int = 10,
-                     random_state: int | None = None, n_init: int = 10) -> SingleCellData:
+def kmeans_clustering(
+    data: SingleCellData, n_clusters: int = 10, random_state: int | None = None, n_init: int = 10
+) -> SingleCellData:
     """Perform K-means clustering on single-cell data.
 
     Args:
@@ -213,8 +227,7 @@ def kmeans_clustering(data: SingleCellData, n_clusters: int = 10,
     """
     if not HAS_SKLEARN:
         raise ImportError(
-            "scikit-learn is required for K-means clustering. "
-            "Install with: uv pip install scikit-learn"
+            "scikit-learn is required for K-means clustering. " "Install with: uv pip install scikit-learn"
         )
 
     validation.validate_type(data, SingleCellData, "data")
@@ -226,7 +239,7 @@ def kmeans_clustering(data: SingleCellData, n_clusters: int = 10,
     result = data.copy()
 
     # Get expression matrix
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
     # Perform K-means clustering
     kmeans = KMeans(n_clusters=n_clusters, random_state=random_state, n_init=n_init)
@@ -234,24 +247,25 @@ def kmeans_clustering(data: SingleCellData, n_clusters: int = 10,
 
     # Add to obs
     result.obs = result.obs.copy() if result.obs is not None else pd.DataFrame()
-    result.obs['kmeans_cluster'] = clusters
+    result.obs["kmeans_cluster"] = clusters
 
     # Store clustering parameters and results
-    result.uns['kmeans_clustering'] = {
-        'n_clusters': n_clusters,
-        'random_state': random_state,
-        'n_init': n_init,
-        'inertia': kmeans.inertia_,
-        'n_iter': kmeans.n_iter_,
-        'cluster_centers_shape': kmeans.cluster_centers_.shape,
+    result.uns["kmeans_clustering"] = {
+        "n_clusters": n_clusters,
+        "random_state": random_state,
+        "n_init": n_init,
+        "inertia": kmeans.inertia_,
+        "n_iter": kmeans.n_iter_,
+        "cluster_centers_shape": kmeans.cluster_centers_.shape,
     }
 
     logger.info(f"K-means clustering completed: found {n_clusters} clusters")
     return result
 
 
-def hierarchical_clustering(data: SingleCellData, n_clusters: int = 10,
-                           linkage_method: str = "ward", metric: str = "euclidean") -> SingleCellData:
+def hierarchical_clustering(
+    data: SingleCellData, n_clusters: int = 10, linkage_method: str = "ward", metric: str = "euclidean"
+) -> SingleCellData:
     """Perform hierarchical clustering on single-cell data.
 
     Args:
@@ -280,7 +294,7 @@ def hierarchical_clustering(data: SingleCellData, n_clusters: int = 10,
     result = data.copy()
 
     # Get expression matrix
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
     # For Ward linkage, metric must be euclidean
     if linkage_method == "ward":
@@ -298,10 +312,11 @@ def hierarchical_clustering(data: SingleCellData, n_clusters: int = 10,
         linkage_matrix = linkage(distances, method=linkage_method)
 
         # Cut tree to get clusters for subset
-        subset_clusters = fcluster(linkage_matrix, n_clusters, criterion='maxclust')
+        subset_clusters = fcluster(linkage_matrix, n_clusters, criterion="maxclust")
 
         # Assign clusters back to full dataset using nearest neighbors
         from sklearn.neighbors import NearestNeighbors
+
         nbrs = NearestNeighbors(n_neighbors=1).fit(X_subset)
         distances, indices = nbrs.kneighbors(X)
         clusters = subset_clusters[indices.flatten()]
@@ -310,26 +325,25 @@ def hierarchical_clustering(data: SingleCellData, n_clusters: int = 10,
         # Compute full hierarchical clustering
         distances = pdist(X, metric=metric)
         linkage_matrix = linkage(distances, method=linkage_method)
-        clusters = fcluster(linkage_matrix, n_clusters, criterion='maxclust')
+        clusters = fcluster(linkage_matrix, n_clusters, criterion="maxclust")
 
     # Add to obs
     result.obs = result.obs.copy() if result.obs is not None else pd.DataFrame()
-    result.obs['hierarchical_cluster'] = clusters
+    result.obs["hierarchical_cluster"] = clusters
 
     # Store clustering parameters
-    result.uns['hierarchical_clustering'] = {
-        'n_clusters': n_clusters,
-        'linkage_method': linkage_method,
-        'metric': metric,
-        'linkage_matrix_shape': linkage_matrix.shape if 'linkage_matrix' in locals() else None,
+    result.uns["hierarchical_clustering"] = {
+        "n_clusters": n_clusters,
+        "linkage_method": linkage_method,
+        "metric": metric,
+        "linkage_matrix_shape": linkage_matrix.shape if "linkage_matrix" in locals() else None,
     }
 
     logger.info(f"Hierarchical clustering completed: found {n_clusters} clusters")
     return result
 
 
-def find_marker_genes(data: SingleCellData, groupby: str, method: str = "t-test",
-                     n_genes: int = 100) -> pd.DataFrame:
+def find_marker_genes(data: SingleCellData, groupby: str, method: str = "t-test", n_genes: int = 100) -> pd.DataFrame:
     """Find marker genes for clusters or groups.
 
     Args:
@@ -353,7 +367,7 @@ def find_marker_genes(data: SingleCellData, groupby: str, method: str = "t-test"
     logger.info(f"Finding marker genes using {method} method")
 
     # Get expression matrix
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
     groups = data.obs[groupby].values
     unique_groups = np.unique(groups)
 
@@ -401,9 +415,10 @@ def find_marker_genes(data: SingleCellData, groupby: str, method: str = "t-test"
             elif method == "wilcoxon":
                 # Simplified Wilcoxon rank-sum test
                 from scipy.stats import ranksums
+
                 try:
                     t_stat, p_val = ranksums(expr_in, expr_out)
-                except:
+                except (ValueError, TypeError, RuntimeError):
                     t_stat, p_val = 0, 1.0
 
             else:
@@ -417,26 +432,28 @@ def find_marker_genes(data: SingleCellData, groupby: str, method: str = "t-test"
 
             pct_expressed = np.mean(expr_in > 0) * 100
 
-            marker_results.append({
-                'gene': gene_name,
-                'group': group,
-                'mean_expr': mean_expr,
-                'mean_expr_other': mean_expr_other,
-                'log_fold_change': log_fold_change,
-                'pct_expressed': pct_expressed,
-                'statistic': t_stat,
-                'p_value': p_val,
-                'method': method,
-            })
+            marker_results.append(
+                {
+                    "gene": gene_name,
+                    "group": group,
+                    "mean_expr": mean_expr,
+                    "mean_expr_other": mean_expr_other,
+                    "log_fold_change": log_fold_change,
+                    "pct_expressed": pct_expressed,
+                    "statistic": t_stat,
+                    "p_value": p_val,
+                    "method": method,
+                }
+            )
 
     # Convert to DataFrame and sort
     results_df = pd.DataFrame(marker_results)
-    results_df = results_df.sort_values(['group', 'p_value'])
+    results_df = results_df.sort_values(["group", "p_value"])
 
     # Keep top N genes per group
     top_markers = []
     for group in unique_groups:
-        group_markers = results_df[results_df['group'] == group].head(n_genes)
+        group_markers = results_df[results_df["group"] == group].head(n_genes)
         top_markers.append(group_markers)
 
     final_results = pd.concat(top_markers, ignore_index=True)
@@ -445,8 +462,7 @@ def find_marker_genes(data: SingleCellData, groupby: str, method: str = "t-test"
     return final_results
 
 
-def compute_cluster_composition(data: SingleCellData, groupby: str,
-                               cluster_col: str = "cluster") -> pd.DataFrame:
+def compute_cluster_composition(data: SingleCellData, groupby: str, cluster_col: str = "cluster") -> pd.DataFrame:
     """Compute composition of clusters by categorical variables.
 
     Args:
@@ -491,13 +507,15 @@ def compute_cluster_composition(data: SingleCellData, groupby: str,
             count = cluster_data[category]
             proportion = cluster_props[category]
 
-            composition_stats.append({
-                'cluster': cluster,
-                'category': category,
-                'count': count,
-                'proportion': proportion,
-                'percentage': proportion * 100,
-            })
+            composition_stats.append(
+                {
+                    "cluster": cluster,
+                    "category": category,
+                    "count": count,
+                    "proportion": proportion,
+                    "percentage": proportion * 100,
+                }
+            )
 
     results_df = pd.DataFrame(composition_stats)
 
@@ -505,8 +523,9 @@ def compute_cluster_composition(data: SingleCellData, groupby: str,
     return results_df
 
 
-def compute_cluster_silhouette(data: SingleCellData, cluster_col: str = "cluster",
-                              metric: str = "euclidean", sample_size: int | None = None) -> Dict[str, float]:
+def compute_cluster_silhouette(
+    data: SingleCellData, cluster_col: str = "cluster", metric: str = "euclidean", sample_size: int | None = None
+) -> Dict[str, float]:
     """Compute silhouette scores for cluster evaluation.
 
     Args:
@@ -525,8 +544,7 @@ def compute_cluster_silhouette(data: SingleCellData, cluster_col: str = "cluster
     """
     if not HAS_SKLEARN:
         raise ImportError(
-            "scikit-learn is required for silhouette analysis. "
-            "Install with: uv pip install scikit-learn"
+            "scikit-learn is required for silhouette analysis. " "Install with: uv pip install scikit-learn"
         )
 
     validation.validate_type(data, SingleCellData, "data")
@@ -537,7 +555,7 @@ def compute_cluster_silhouette(data: SingleCellData, cluster_col: str = "cluster
     logger.info("Computing cluster silhouette scores")
 
     # Get data
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
     clusters = data.obs[cluster_col].values
 
     # Sample data if requested (for performance)
@@ -564,18 +582,18 @@ def compute_cluster_silhouette(data: SingleCellData, cluster_col: str = "cluster
             if np.sum(cluster_mask) > 1:  # Need at least 2 samples per cluster
                 cluster_silhouettes = sample_silhouette_values[cluster_mask]
                 per_cluster_scores[int(cluster_id)] = {
-                    'mean': float(np.mean(cluster_silhouettes)),
-                    'std': float(np.std(cluster_silhouettes)),
-                    'min': float(np.min(cluster_silhouettes)),
-                    'max': float(np.max(cluster_silhouettes)),
+                    "mean": float(np.mean(cluster_silhouettes)),
+                    "std": float(np.std(cluster_silhouettes)),
+                    "min": float(np.min(cluster_silhouettes)),
+                    "max": float(np.max(cluster_silhouettes)),
                 }
 
         results = {
-            'overall_silhouette_score': float(silhouette_avg),
-            'n_clusters': n_unique_clusters,
-            'n_samples': X.shape[0],
-            'metric': metric,
-            'per_cluster_scores': per_cluster_scores,
+            "overall_silhouette_score": float(silhouette_avg),
+            "n_clusters": n_unique_clusters,
+            "n_samples": X.shape[0],
+            "metric": metric,
+            "per_cluster_scores": per_cluster_scores,
         }
 
         # Additional cluster quality metrics
@@ -583,8 +601,8 @@ def compute_cluster_silhouette(data: SingleCellData, cluster_col: str = "cluster
             ch_score = calinski_harabasz_score(X, clusters)
             db_score = davies_bouldin_score(X, clusters)
 
-            results['calinski_harabasz_score'] = float(ch_score)
-            results['davies_bouldin_score'] = float(db_score)
+            results["calinski_harabasz_score"] = float(ch_score)
+            results["davies_bouldin_score"] = float(db_score)
 
         except Exception as e:
             logger.debug(f"Could not compute additional cluster metrics: {e}")
@@ -602,7 +620,8 @@ def _compute_pairwise_distances(X: np.ndarray) -> np.ndarray:
     # Use Euclidean distance for simplicity
     # For large datasets, consider using approximate methods
     from scipy.spatial.distance import cdist
-    return cdist(X, X, metric='euclidean')
+
+    return cdist(X, X, metric="euclidean")
 
 
 def _build_knn_adjacency(distances: np.ndarray, n_neighbors: int) -> sparse.csr_matrix:
@@ -614,7 +633,7 @@ def _build_knn_adjacency(distances: np.ndarray, n_neighbors: int) -> sparse.csr_
 
     for i in range(n_cells):
         # Sort distances and get indices of k+1 smallest (including self)
-        neighbor_indices = np.argsort(distances[i])[:n_neighbors + 1]
+        neighbor_indices = np.argsort(distances[i])[: n_neighbors + 1]
 
         # Remove self from neighbors
         neighbor_indices = neighbor_indices[neighbor_indices != i][:n_neighbors]
@@ -640,8 +659,9 @@ def _student_t_cdf(t: float, df: int) -> float:
         return 0.5 * (1 + np.sign(t) * np.sqrt(1 - np.exp(-2 * t**2 / np.pi)))
 
 
-def evaluate_clustering_performance(data: SingleCellData, cluster_col: str = "cluster",
-                                   ground_truth_col: Optional[str] = None) -> Dict[str, Any]:
+def evaluate_clustering_performance(
+    data: SingleCellData, cluster_col: str = "cluster", ground_truth_col: Optional[str] = None
+) -> Dict[str, Any]:
     """Evaluate clustering performance with various metrics.
 
     Args:
@@ -666,19 +686,19 @@ def evaluate_clustering_performance(data: SingleCellData, cluster_col: str = "cl
     n_clusters = len(np.unique(clusters))
 
     results = {
-        'n_clusters': n_clusters,
-        'cluster_sizes': [int(np.sum(clusters == c)) for c in np.unique(clusters)],
+        "n_clusters": n_clusters,
+        "cluster_sizes": [int(np.sum(clusters == c)) for c in np.unique(clusters)],
     }
 
     # Unsupervised metrics
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
     try:
         silhouette = compute_cluster_silhouette(data, cluster_col)
-        results['silhouette_analysis'] = silhouette
+        results["silhouette_analysis"] = silhouette
     except Exception as e:
         logger.debug(f"Silhouette analysis failed: {e}")
-        results['silhouette_error'] = str(e)
+        results["silhouette_error"] = str(e)
 
     # Supervised metrics if ground truth available
     if ground_truth_col and ground_truth_col in data.obs.columns:
@@ -691,20 +711,14 @@ def evaluate_clustering_performance(data: SingleCellData, cluster_col: str = "cl
             nmi = normalized_mutual_info_score(true_labels, clusters)
             homogeneity = homogeneity_score(true_labels, clusters)
 
-            results['supervised_metrics'] = {
-                'adjusted_rand_index': float(ari),
-                'normalized_mutual_info': float(nmi),
-                'homogeneity_score': float(homogeneity),
+            results["supervised_metrics"] = {
+                "adjusted_rand_index": float(ari),
+                "normalized_mutual_info": float(nmi),
+                "homogeneity_score": float(homogeneity),
             }
         except Exception as e:
             logger.debug(f"Supervised metrics failed: {e}")
-            results['supervised_metrics_error'] = str(e)
+            results["supervised_metrics_error"] = str(e)
 
     logger.info("Clustering evaluation completed")
     return results
-
-
-
-
-
-

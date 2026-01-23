@@ -1,4 +1,5 @@
 """Tests for DNA restriction site finding."""
+
 from metainformant.dna import restriction
 
 

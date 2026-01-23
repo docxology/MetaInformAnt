@@ -39,7 +39,9 @@ def price_equation(fitness: List[float], parent: List[float], offspring: List[fl
     cov_fitness_parent = sum((f - fitness_mean) * (p - parent_mean) for f, p in zip(fitness, parent)) / len(fitness)
 
     # Calculate covariance between parent and offspring (transmission component)
-    cov_parent_offspring = sum((p - parent_mean) * (o - offspring_mean) for p, o in zip(parent, offspring)) / len(parent)
+    cov_parent_offspring = sum((p - parent_mean) * (o - offspring_mean) for p, o in zip(parent, offspring)) / len(
+        parent
+    )
 
     # Total change in mean
     total_change = offspring_mean - parent_mean
@@ -285,4 +287,4 @@ def weighted_correlation(x: List[float], y: List[float], weights: List[float]) -
     if weighted_var_x <= 0 or weighted_var_y <= 0:
         return 0.0
 
-    return weighted_cov_xy / (weighted_var_x ** 0.5 * weighted_var_y ** 0.5)
+    return weighted_cov_xy / (weighted_var_x**0.5 * weighted_var_y**0.5)

@@ -14,10 +14,10 @@ from pathlib import Path
 
 def get_logger(name: str) -> logging.Logger:
     """Get or create a logger with default console handler.
-    
+
     Args:
         name: Logger name (typically __name__)
-        
+
     Returns:
         Configured logger with console handler if none exists
     """
@@ -128,7 +128,9 @@ def configure_logging_from_env(default_level: str = "INFO") -> None:
     logging.root.setLevel(level)
 
 
-def log_with_metadata(logger: logging.Logger, message: str, metadata: dict, *, level: str = "INFO", structured: bool = False) -> None:
+def log_with_metadata(
+    logger: logging.Logger, message: str, metadata: dict, *, level: str = "INFO", structured: bool = False
+) -> None:
     """Log message with structured metadata.
 
     Args:

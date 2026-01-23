@@ -27,17 +27,17 @@ from metainformant.rna.amalgkit.amalgkit import (
 
 # Step runners registry for testing
 STEP_RUNNERS = {
-    'metadata': run_metadata,
-    'integrate': run_integrate,
-    'config': run_config,
-    'select': run_select,
-    'getfastq': run_getfastq,
-    'quant': run_quant,
-    'merge': run_merge,
-    'cstmm': run_cstmm,
-    'curate': run_curate,
-    'csca': run_csca,
-    'sanity': run_sanity,
+    "metadata": run_metadata,
+    "integrate": run_integrate,
+    "config": run_config,
+    "select": run_select,
+    "getfastq": run_getfastq,
+    "quant": run_quant,
+    "merge": run_merge,
+    "cstmm": run_cstmm,
+    "curate": run_curate,
+    "csca": run_csca,
+    "sanity": run_sanity,
 }
 
 
@@ -104,7 +104,7 @@ class TestMetadataStep:
         # Accept success (0) or "no data" style outcomes (2).
         # If the network/API is unavailable, metadata may fail; skip in that case.
         if result.returncode not in (0, 2):
-            metadata_file = (tmp_path / "work" / "metadata" / "metadata.tsv")
+            metadata_file = tmp_path / "work" / "metadata" / "metadata.tsv"
             if not metadata_file.exists():
                 pytest.skip("metadata step did not produce metadata.tsv (likely network/API unavailable)")
             assert result.returncode in (0, 2)
@@ -127,7 +127,7 @@ class TestMetadataStep:
             cmd_str = " ".join(result.args) if isinstance(result.args, list) else str(result.args)
             assert "resolve_names" in cmd_str.lower() or result.returncode in (0, 2)
         if result.returncode not in (0, 2):
-            metadata_file = (tmp_path / "work" / "metadata" / "metadata.tsv")
+            metadata_file = tmp_path / "work" / "metadata" / "metadata.tsv"
             if not metadata_file.exists():
                 pytest.skip("metadata step did not produce metadata.tsv (likely network/API unavailable)")
             assert result.returncode in (0, 2)
@@ -258,7 +258,7 @@ class TestGetfastqStep:
     @pytest.mark.slow
     def test_getfastq_basic_execution(self, tmp_path: Path, ensure_amalgkit_available):
         """Test getfastq step can execute with minimal params.
-        
+
         NOTE: This test is marked as slow because getfastq may attempt actual downloads.
         """
         params = {
@@ -268,13 +268,13 @@ class TestGetfastqStep:
         }
         # Use timeout to prevent hanging
         import signal
-        
+
         def timeout_handler(signum, frame):
             raise TimeoutError("getfastq test timed out")
-        
+
         signal.signal(signal.SIGALRM, timeout_handler)
         signal.alarm(30)  # 30 second timeout
-        
+
         try:
             result = run_getfastq(
                 params,
@@ -518,7 +518,6 @@ class TestAmalgkitCoreUtilities:
         assert "--threads" in args
         assert "--required" in args
 
-
     def test_build_cli_args_handles_list_values(self):
         """Test list values produce repeated flags."""
         params = {"species": ["Homo_sapiens", "Mus_musculus"]}
@@ -531,6 +530,7 @@ class TestAmalgkitCoreUtilities:
     def test_build_cli_args_handles_path_values(self):
         """Test Path values are converted to strings."""
         from pathlib import Path
+
         params = {"out_dir": Path("/tmp/test")}
         args = amalgkit.build_cli_args(params)
         assert "/tmp/test" in args
@@ -627,7 +627,6 @@ class TestAmalgkitExports:
     def test_amalgkit_params_type_exists(self):
         """Verify AmalgkitParams type is defined."""
         assert hasattr(amalgkit, "AmalgkitParams")
-
 
 
 class TestDocumentation:

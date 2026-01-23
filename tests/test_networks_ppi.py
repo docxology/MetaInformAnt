@@ -586,7 +586,7 @@ class TestPPIEdgeCases:
     @pytest.mark.slow
     def test_large_ppi_network(self):
         """Test performance with large PPI network.
-        
+
         This test creates a moderately-sized network to verify performance.
         Marked as slow due to computational complexity of network statistics.
         """

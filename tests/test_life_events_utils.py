@@ -24,13 +24,13 @@ def test_load_sequences_from_json_database_format(tmp_path):
                         "event_type": "degree",
                         "timestamp": "2010-06-01T00:00:00",
                         "domain": "education",
-                        "attributes": {}
+                        "attributes": {},
                     }
                 ],
-                "metadata": {}
+                "metadata": {},
             }
         ],
-        "metadata": {}
+        "metadata": {},
     }
 
     json_file = tmp_path / "events.json"
@@ -50,14 +50,9 @@ def test_load_sequences_from_json_list_format(tmp_path):
         {
             "person_id": "person_001",
             "events": [
-                {
-                    "event_type": "degree",
-                    "timestamp": "2010-06-01T00:00:00",
-                    "domain": "education",
-                    "attributes": {}
-                }
+                {"event_type": "degree", "timestamp": "2010-06-01T00:00:00", "domain": "education", "attributes": {}}
             ],
-            "metadata": {}
+            "metadata": {},
         }
     ]
 
@@ -79,10 +74,7 @@ def test_load_sequences_from_json_not_found():
 
 def test_validate_sequence_valid():
     """Test validation of valid sequence."""
-    sequence = EventSequence(
-        person_id="person_001",
-        events=[Event("degree", datetime(2010, 6, 1), "education")]
-    )
+    sequence = EventSequence(person_id="person_001", events=[Event("degree", datetime(2010, 6, 1), "education")])
 
     is_valid, errors = validate_sequence(sequence)
     assert is_valid
@@ -91,10 +83,7 @@ def test_validate_sequence_valid():
 
 def test_validate_sequence_empty_person_id():
     """Test validation of sequence with empty person_id."""
-    sequence = EventSequence(
-        person_id="",
-        events=[Event("degree", datetime(2010, 6, 1), "education")]
-    )
+    sequence = EventSequence(person_id="", events=[Event("degree", datetime(2010, 6, 1), "education")])
 
     is_valid, errors = validate_sequence(sequence)
     assert not is_valid
@@ -120,7 +109,7 @@ def test_convert_sequences_to_tokens():
             events=[
                 Event("degree", datetime(2010, 6, 1), "education"),
                 Event("job_change", datetime(2015, 3, 1), "occupation"),
-            ]
+            ],
         )
     ]
 
@@ -137,12 +126,9 @@ def test_get_event_statistics():
             events=[
                 Event("degree", datetime(2010, 6, 1), "education"),
                 Event("job_change", datetime(2015, 3, 1), "occupation"),
-            ]
+            ],
         ),
-        EventSequence(
-            person_id="person_002",
-            events=[Event("diagnosis", datetime(2020, 1, 15), "health")]
-        ),
+        EventSequence(person_id="person_002", events=[Event("diagnosis", datetime(2020, 1, 15), "health")]),
     ]
 
     stats = get_event_statistics(sequences)
@@ -161,4 +147,3 @@ def test_get_event_statistics_empty():
 
     assert stats["total_sequences"] == 0
     assert stats["total_events"] == 0
-

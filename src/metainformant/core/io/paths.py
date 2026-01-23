@@ -158,11 +158,11 @@ def sanitize_filename(filename: str) -> str:
     import re
 
     # Remove or replace dangerous characters
-    sanitized = re.sub(r'[<>:"/\\|?*]', '_', filename)
+    sanitized = re.sub(r'[<>:"/\\|?*]', "_", filename)
     # Remove control characters
-    sanitized = re.sub(r'[\x00-\x1f\x7f-\x9f]', '', sanitized)
+    sanitized = re.sub(r"[\x00-\x1f\x7f-\x9f]", "", sanitized)
     # Remove leading/trailing dots and spaces
-    sanitized = sanitized.strip(' .')
+    sanitized = sanitized.strip(" .")
 
     # Ensure filename is not empty
     if not sanitized:
@@ -417,7 +417,7 @@ def list_output_structure(repo_root: str | Path) -> dict[str, Any]:
 
 def get_project_root() -> Path:
     """Get the project root directory.
-    
+
     Returns:
         Path to project root (inferred from package location)
     """

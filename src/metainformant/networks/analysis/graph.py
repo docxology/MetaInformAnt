@@ -37,7 +37,7 @@ class BiologicalNetwork:
         else:
             self.graph = nx.Graph(**kwargs)
 
-        self.metadata = kwargs.get('metadata', {})
+        self.metadata = kwargs.get("metadata", {})
 
     def add_node(self, node_id: str, **attributes):
         """Add a node to the network.
@@ -103,20 +103,18 @@ class BiologicalNetwork:
         """Check if a node is in the network."""
         return node_id in self.graph
 
+
 # Optional network analysis dependencies
 try:
     import networkx as nx
+
     HAS_NETWORKX = True
 except ImportError:
     HAS_NETWORKX = False
     logger.warning("networkx not available, network functionality disabled")
 
 
-def create_network(
-    edges: List[Tuple[str, str]],
-    directed: bool = False,
-    **kwargs: Any
-) -> Any:
+def create_network(edges: List[Tuple[str, str]], directed: bool = False, **kwargs: Any) -> Any:
     """Create a network from edge list.
 
     Args:
@@ -140,15 +138,13 @@ def create_network(
 
     G.add_edges_from(edges)
 
-    logger.info(f"Created {'directed' if directed else 'undirected'} network with {len(G.nodes())} nodes and {len(G.edges())} edges")
+    logger.info(
+        f"Created {'directed' if directed else 'undirected'} network with {len(G.nodes())} nodes and {len(G.edges())} edges"
+    )
     return G
 
 
-def load_network(
-    path: Union[str, Path],
-    format: str = "edgelist",
-    **kwargs: Any
-) -> Any:
+def load_network(path: Union[str, Path], format: str = "edgelist", **kwargs: Any) -> Any:
     """Load network from file.
 
     Args:
@@ -178,7 +174,8 @@ def load_network(
         G = nx.read_graphml(path, **kwargs)
     elif format == "json":
         import json
-        with open(path, 'r') as f:
+
+        with open(path, "r") as f:
             data = json.load(f)
 
         # Assume node-link format
@@ -190,12 +187,7 @@ def load_network(
     return G
 
 
-def save_network(
-    graph: Any,
-    path: Union[str, Path],
-    format: str = "edgelist",
-    **kwargs: Any
-) -> None:
+def save_network(graph: Any, path: Union[str, Path], format: str = "edgelist", **kwargs: Any) -> None:
     """Save network to file.
 
     Args:
@@ -224,8 +216,9 @@ def save_network(
         nx.write_graphml(graph, path, **kwargs)
     elif format == "json":
         import json
+
         data = nx.node_link_data(graph, **kwargs)
-        with open(path, 'w') as f:
+        with open(path, "w") as f:
             json.dump(data, f, indent=2)
     else:
         raise ValueError(f"Unsupported format: {format}")
@@ -234,10 +227,7 @@ def save_network(
 
 
 def add_nodes_from_dataframe(
-    graph: Any,
-    df: Any,
-    node_column: str,
-    attribute_columns: Optional[List[str]] = None
+    graph: Any, df: Any, node_column: str, attribute_columns: Optional[List[str]] = None
 ) -> None:
     """Add nodes to graph from DataFrame.
 
@@ -283,7 +273,7 @@ def add_edges_from_dataframe(
     source_column: str,
     target_column: str,
     attribute_columns: Optional[List[str]] = None,
-    directed: bool = False
+    directed: bool = False,
 ) -> None:
     """Add edges to graph from DataFrame.
 
@@ -329,11 +319,7 @@ def add_edges_from_dataframe(
     logger.info(f"Added {len(edges_to_add)} edges from DataFrame")
 
 
-def create_subgraph(
-    graph: Any,
-    nodes: List[str],
-    **kwargs: Any
-) -> Any:
+def create_subgraph(graph: Any, nodes: List[str], **kwargs: Any) -> Any:
     """Create subgraph from node list.
 
     Args:
@@ -379,10 +365,7 @@ def remove_isolated_nodes(graph: Any) -> None:
         logger.info(f"Removed {len(isolated_nodes)} isolated nodes")
 
 
-def add_node_attributes(
-    graph: Any,
-    attributes: Dict[str, Dict[str, Any]]
-) -> None:
+def add_node_attributes(graph: Any, attributes: Dict[str, Dict[str, Any]]) -> None:
     """Add attributes to graph nodes.
 
     Args:
@@ -398,10 +381,7 @@ def add_node_attributes(
     logger.info(f"Added attributes to {len(attributes)} nodes")
 
 
-def add_edge_attributes(
-    graph: Any,
-    attributes: Dict[Tuple[str, str], Dict[str, Any]]
-) -> None:
+def add_edge_attributes(graph: Any, attributes: Dict[Tuple[str, str], Dict[str, Any]]) -> None:
     """Add attributes to graph edges.
 
     Args:
@@ -445,8 +425,8 @@ def get_node_attributes_dataframe(graph: Any) -> Any:
     if not node_attrs:
         return pd.DataFrame()
 
-    df = pd.DataFrame.from_dict(node_attrs, orient='index')
-    df.index.name = 'node'
+    df = pd.DataFrame.from_dict(node_attrs, orient="index")
+    df.index.name = "node"
 
     return df
 
@@ -474,12 +454,12 @@ def get_edge_attributes_dataframe(graph: Any) -> Any:
     # Get all edge attributes
     edge_data = []
     for source, target, attrs in graph.edges(data=True):
-        row = {'source': source, 'target': target}
+        row = {"source": source, "target": target}
         row.update(attrs)
         edge_data.append(row)
 
     if not edge_data:
-        return pd.DataFrame(columns=['source', 'target'])
+        return pd.DataFrame(columns=["source", "target"])
 
     df = pd.DataFrame(edge_data)
     return df
@@ -501,14 +481,11 @@ def convert_to_adjacency_matrix(graph: Any) -> Any:
         raise ImportError("networkx required for matrix conversion")
 
     import numpy as np
+
     return nx.to_numpy_array(graph)
 
 
-def convert_from_adjacency_matrix(
-    matrix: Any,
-    node_labels: Optional[List[str]] = None,
-    directed: bool = False
-) -> Any:
+def convert_from_adjacency_matrix(matrix: Any, node_labels: Optional[List[str]] = None, directed: bool = False) -> Any:
     """Convert adjacency matrix to graph.
 
     Args:
@@ -559,40 +536,40 @@ def get_network_summary(graph: Any) -> Dict[str, Any]:
         raise ImportError("networkx required for network summary")
 
     summary = {
-        'n_nodes': len(graph.nodes()),
-        'n_edges': len(graph.edges()),
-        'directed': graph.is_directed(),
-        'weighted': any('weight' in graph[u][v] for u, v in graph.edges()),
-        'multigraph': graph.is_multigraph(),
+        "n_nodes": len(graph.nodes()),
+        "n_edges": len(graph.edges()),
+        "directed": graph.is_directed(),
+        "weighted": any("weight" in graph[u][v] for u, v in graph.edges()),
+        "multigraph": graph.is_multigraph(),
     }
 
-    if summary['n_nodes'] > 0:
+    if summary["n_nodes"] > 0:
         # Degree statistics
         degrees = [d for n, d in graph.degree()]
-        summary['degree_stats'] = {
-            'mean': float(np.mean(degrees)),
-            'std': float(np.std(degrees)),
-            'min': int(np.min(degrees)),
-            'max': int(np.max(degrees)),
-            'median': int(np.median(degrees)),
+        summary["degree_stats"] = {
+            "mean": float(np.mean(degrees)),
+            "std": float(np.std(degrees)),
+            "min": int(np.min(degrees)),
+            "max": int(np.max(degrees)),
+            "median": int(np.median(degrees)),
         }
 
         # Connected components
         if not graph.is_directed():
             components = list(nx.connected_components(graph))
-            summary['connected_components'] = {
-                'n_components': len(components),
-                'largest_component_size': max(len(c) for c in components) if components else 0,
-                'component_sizes': [len(c) for c in components],
+            summary["connected_components"] = {
+                "n_components": len(components),
+                "largest_component_size": max(len(c) for c in components) if components else 0,
+                "component_sizes": [len(c) for c in components],
             }
 
         # Clustering coefficient (for undirected graphs)
         if not graph.is_directed():
             try:
                 clustering = nx.average_clustering(graph)
-                summary['average_clustering'] = clustering
-            except:
-                summary['average_clustering'] = None
+                summary["average_clustering"] = clustering
+            except (nx.NetworkXError, ZeroDivisionError):
+                summary["average_clustering"] = None
 
     return summary
 
@@ -661,8 +638,9 @@ def validate_network(graph: Any) -> Tuple[bool, List[str]]:
     return is_valid, errors
 
 
-def add_edges_from_interactions(graph: Any, interactions: List[Tuple[str, str, float]],
-                               weight_threshold: float = 0.0) -> None:
+def add_edges_from_interactions(
+    graph: Any, interactions: List[Tuple[str, str, float]], weight_threshold: float = 0.0
+) -> None:
     """Add edges to graph based on interaction data.
 
     Args:
@@ -686,7 +664,7 @@ def add_edges_from_interactions(graph: Any, interactions: List[Tuple[str, str, f
     # Add edges with weights above threshold
     for source, target, weight in interactions:
         if abs(weight) >= weight_threshold:
-            graph.add_edge(source, target, weight=weight, interaction_type='protein_interaction')
+            graph.add_edge(source, target, weight=weight, interaction_type="protein_interaction")
 
     logger.info(f"Added {len(interactions)} interaction edges (threshold={weight_threshold})")
 
@@ -707,6 +685,7 @@ def add_edges_from_correlation(graph: Any, correlation_matrix: Any, threshold: f
 
     try:
         import pandas as pd
+
         is_dataframe = isinstance(correlation_matrix, pd.DataFrame)
 
         if is_dataframe:
@@ -753,49 +732,49 @@ def network_metrics(graph: Any) -> Dict[str, Any]:
         metrics = {}
 
         # Basic properties
-        metrics['num_nodes'] = graph.number_of_nodes()
-        metrics['num_edges'] = graph.number_of_edges()
-        metrics['is_directed'] = graph.is_directed()
-        metrics['is_multigraph'] = graph.is_multigraph()
+        metrics["num_nodes"] = graph.number_of_nodes()
+        metrics["num_edges"] = graph.number_of_edges()
+        metrics["is_directed"] = graph.is_directed()
+        metrics["is_multigraph"] = graph.is_multigraph()
 
-        if metrics['num_nodes'] > 0:
+        if metrics["num_nodes"] > 0:
             # Density
-            max_edges = metrics['num_nodes'] * (metrics['num_nodes'] - 1)
-            if metrics['is_directed']:
+            max_edges = metrics["num_nodes"] * (metrics["num_nodes"] - 1)
+            if metrics["is_directed"]:
                 max_edges *= 2
-            metrics['density'] = metrics['num_edges'] / max_edges if max_edges > 0 else 0
+            metrics["density"] = metrics["num_edges"] / max_edges if max_edges > 0 else 0
 
             # Degree statistics
             degrees = [d for n, d in graph.degree()]
-            metrics['avg_degree'] = sum(degrees) / len(degrees)
-            metrics['max_degree'] = max(degrees)
-            metrics['degree_assortativity'] = nx.degree_assortativity_coefficient(graph)
+            metrics["avg_degree"] = sum(degrees) / len(degrees)
+            metrics["max_degree"] = max(degrees)
+            metrics["degree_assortativity"] = nx.degree_assortativity_coefficient(graph)
 
             # Clustering
-            if not metrics['is_directed']:
-                metrics['avg_clustering'] = nx.average_clustering(graph)
+            if not metrics["is_directed"]:
+                metrics["avg_clustering"] = nx.average_clustering(graph)
                 try:
-                    metrics['transitivity'] = nx.transitivity(graph)
-                except:
-                    metrics['transitivity'] = None
+                    metrics["transitivity"] = nx.transitivity(graph)
+                except (nx.NetworkXError, ZeroDivisionError):
+                    metrics["transitivity"] = None
 
             # Connected components
-            if metrics['is_directed']:
+            if metrics["is_directed"]:
                 components = list(nx.weakly_connected_components(graph))
             else:
                 components = list(nx.connected_components(graph))
 
-            metrics['num_components'] = len(components)
+            metrics["num_components"] = len(components)
             if components:
                 component_sizes = [len(c) for c in components]
-                metrics['largest_component_size'] = max(component_sizes)
-                metrics['avg_component_size'] = sum(component_sizes) / len(component_sizes)
+                metrics["largest_component_size"] = max(component_sizes)
+                metrics["avg_component_size"] = sum(component_sizes) / len(component_sizes)
 
         return metrics
 
     except Exception as e:
         logger.error(f"Failed to calculate network metrics: {e}")
-        return {'error': str(e)}
+        return {"error": str(e)}
 
 
 def subgraph(graph: Any, nodes: List[str]) -> Any:
@@ -846,9 +825,10 @@ def export_network(graph: Any, filepath: str | Path, format: str = "json") -> No
 
     if format.lower() == "json":
         import json
+
         # Convert to node-link format
         data = nx.node_link_data(graph)
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             json.dump(data, f, indent=2)
 
     elif format.lower() == "gml":
@@ -890,7 +870,8 @@ def import_network(filepath: str | Path, format: str = "json") -> BiologicalNetw
 
     if format.lower() == "json":
         import json
-        with open(filepath, 'r') as f:
+
+        with open(filepath, "r") as f:
             data = json.load(f)
         graph = nx.node_link_graph(data)
 
@@ -991,8 +972,9 @@ def extract_subgraph(graph: Any, nodes: List[str]) -> BiologicalNetwork:
     return result
 
 
-def filter_network(graph: Any, min_degree: int = 0, max_degree: int | None = None,
-                  min_weight: float = 0.0) -> BiologicalNetwork:
+def filter_network(
+    graph: Any, min_degree: int = 0, max_degree: int | None = None, min_weight: float = 0.0
+) -> BiologicalNetwork:
     """Filter network based on node/edge properties.
 
     Args:
@@ -1035,7 +1017,7 @@ def filter_network(graph: Any, min_degree: int = 0, max_degree: int | None = Non
     if min_weight > 0:
         edges_to_remove = []
         for u, v, data in filtered_graph.edges(data=True):
-            weight = data.get('weight', 1.0)
+            weight = data.get("weight", 1.0)
             if weight < min_weight:
                 edges_to_remove.append((u, v))
 
@@ -1173,27 +1155,27 @@ def centrality_measures(graph: Any) -> Dict[str, Dict[str, float]]:
 
     try:
         # Degree centrality
-        results['degree'] = dict(nx.degree_centrality(graph))
-    except:
-        results['degree'] = {}
+        results["degree"] = dict(nx.degree_centrality(graph))
+    except (nx.NetworkXError, ZeroDivisionError):
+        results["degree"] = {}
 
     try:
         # Betweenness centrality
-        results['betweenness'] = dict(nx.betweenness_centrality(graph))
-    except:
-        results['betweenness'] = {}
+        results["betweenness"] = dict(nx.betweenness_centrality(graph))
+    except (nx.NetworkXError, ZeroDivisionError):
+        results["betweenness"] = {}
 
     try:
         # Closeness centrality
-        results['closeness'] = dict(nx.closeness_centrality(graph))
-    except:
-        results['closeness'] = {}
+        results["closeness"] = dict(nx.closeness_centrality(graph))
+    except (nx.NetworkXError, ZeroDivisionError):
+        results["closeness"] = {}
 
     try:
         # Eigenvector centrality
-        results['eigenvector'] = dict(nx.eigenvector_centrality(graph, max_iter=100))
-    except:
-        results['eigenvector'] = {}
+        results["eigenvector"] = dict(nx.eigenvector_centrality(graph, max_iter=100))
+    except (nx.NetworkXError, nx.PowerIterationFailedConvergence, ZeroDivisionError):
+        results["eigenvector"] = {}
 
     return results
 
@@ -1232,4 +1214,3 @@ def shortest_paths(graph: Any, source: str | None = None, target: str | None = N
             return dict(nx.shortest_path_length(graph))
     except nx.NetworkXError:
         return {}
-

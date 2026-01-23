@@ -18,6 +18,7 @@ try:
     import psycopg2
     import psycopg2.extras
     import psycopg2.pool
+
     HAS_PSYCOPG2 = True
 except ImportError:
     psycopg2 = None
@@ -73,6 +74,7 @@ class PostgresConnection:
         """
         if not HAS_PSYCOPG2:
             from metainformant.core.utils.optional_deps import warn_optional_dependency
+
             warn_optional_dependency("psycopg2", "PostgreSQL database functionality")
             raise ImportError("psycopg2 required for PostgreSQL functionality")
 
@@ -308,7 +310,7 @@ class PostgresConnection:
 
     def close(self) -> None:
         """Close connection pool."""
-        if hasattr(self, '_pool'):
+        if hasattr(self, "_pool"):
             self._pool.closeall()
             logger.info("Closed PostgreSQL connection pool")
 
@@ -365,17 +367,11 @@ def get_db_client(
     """
     if not HAS_PSYCOPG2:
         from metainformant.core.utils.optional_deps import warn_optional_dependency
+
         warn_optional_dependency("psycopg2", "PostgreSQL database operations")
         raise ImportError("psycopg2 required for database operations")
 
-    return PostgresConnection(
-        host=host,
-        port=port,
-        database=database,
-        user=user,
-        password=password,
-        **kwargs
-    )
+    return PostgresConnection(host=host, port=port, database=database, user=user, password=password, **kwargs)
 
 
 def sanitize_connection_params(params: Dict[str, Any]) -> Dict[str, Any]:
@@ -400,8 +396,15 @@ def sanitize_connection_params(params: Dict[str, Any]) -> Dict[str, Any]:
             clean_value = value.replace("'", "").replace(";", "").replace("--", "")
             # Remove SQL keywords that could be used for injection
             dangerous_patterns = [
-                "DROP", "DELETE", "UPDATE", "INSERT", "ALTER",
-                "CREATE", "TRUNCATE", "EXEC", "EXECUTE"
+                "DROP",
+                "DELETE",
+                "UPDATE",
+                "INSERT",
+                "ALTER",
+                "CREATE",
+                "TRUNCATE",
+                "EXEC",
+                "EXECUTE",
             ]
             for pattern in dangerous_patterns:
                 clean_value = clean_value.replace(pattern, "")
@@ -442,16 +445,8 @@ def get_connection(
     """
     conn = None
     try:
-        conn = PostgresConnection(
-            host=host,
-            port=port,
-            database=database,
-            user=user,
-            password=password,
-            **kwargs
-        )
+        conn = PostgresConnection(host=host, port=port, database=database, user=user, password=password, **kwargs)
         yield conn
     finally:
         if conn:
             conn.close()
-

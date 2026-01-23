@@ -67,7 +67,7 @@ def test_compute_kinship_matrix_vanraden() -> None:
     assert "kinship_matrix" in result
     kinship = np.array(result["kinship_matrix"])
     assert kinship.shape == (3, 3)
-    
+
     # Samples 0 and 1 should have high kinship (they're identical)
     assert kinship[0, 1] > 0.5  # High relatedness
     assert abs(kinship[0, 1] - kinship[1, 0]) < 1e-6  # Symmetric
@@ -135,8 +135,7 @@ chr1	500	rs5	A	T	90	PASS	.	GT	0/0	1/1	0/1	0/0	1/1
 
     assert result["status"] == "success"
     assert "pca" in result or "kinship" in result
-    
+
     # Check output files if generated
     if structure_dir.exists():
         assert (structure_dir / "structure_summary.json").exists()
-

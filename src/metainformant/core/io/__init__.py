@@ -80,7 +80,6 @@ __all__ = [
     "FileNotFoundError",
     "CacheError",
     "DownloadError",
-
     # IO
     "ensure_directory",
     "open_text_auto",
@@ -106,7 +105,6 @@ __all__ = [
     "download_text",
     "download_csv",
     "batch_download",
-
     # Cache
     "JsonCache",
     "CacheEntry",
@@ -114,7 +112,6 @@ __all__ = [
     "cache_json",
     "load_cached_json",
     "clear_cache_dir",
-
     # Disk
     "get_disk_usage",
     "get_free_space",
@@ -130,7 +127,6 @@ __all__ = [
     "get_disk_space_info",
     "detect_drive_size_category",
     "get_recommended_batch_size",
-
     # Paths
     "get_project_root",
     "get_data_dir",

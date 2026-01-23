@@ -15,6 +15,7 @@ logger = logging.get_logger(__name__)
 # Optional dependencies
 try:
     import networkx as nx
+
     HAS_NETWORKX = True
 except ImportError:
     HAS_NETWORKX = False
@@ -22,16 +23,14 @@ except ImportError:
 
 try:
     import numpy as np
+
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
 
 
 def construct_regulatory_network(
-    regulators: List[str],
-    targets: List[str],
-    interactions: List[Tuple[str, str, str]],
-    **kwargs: Any
+    regulators: List[str], targets: List[str], interactions: List[Tuple[str, str, str]], **kwargs: Any
 ) -> Any:
     """Construct a regulatory network from interaction data.
 
@@ -66,11 +65,7 @@ def construct_regulatory_network(
 
 
 def infer_regulatory_network_from_expression(
-    expression_data: Any,
-    regulators: List[str],
-    method: str = "correlation",
-    threshold: float = 0.5,
-    **kwargs: Any
+    expression_data: Any, regulators: List[str], method: str = "correlation", threshold: float = 0.5, **kwargs: Any
 ) -> Any:
     """Infer regulatory network from gene expression data.
 
@@ -125,8 +120,8 @@ def infer_regulatory_network_from_expression(
                 try:
                     corr = reg_expr.corr(target_expr)
                     if abs(corr) >= threshold:
-                        G.add_edge(regulator, target, weight=corr, method='correlation')
-                except:
+                        G.add_edge(regulator, target, weight=corr, method="correlation")
+                except (ValueError, TypeError):
                     continue
 
     elif method == "mutual_info":
@@ -152,13 +147,10 @@ def infer_regulatory_network_from_expression(
                     target_expr = expr_T.iloc[:, target_idx]
 
                     # Calculate mutual information
-                    mi = mutual_info_regression(
-                        reg_expr.values.reshape(-1, 1),
-                        target_expr.values
-                    )[0]
+                    mi = mutual_info_regression(reg_expr.values.reshape(-1, 1), target_expr.values)[0]
 
                     if mi >= threshold:
-                        G.add_edge(regulator, target, weight=mi, method='mutual_info')
+                        G.add_edge(regulator, target, weight=mi, method="mutual_info")
 
         except ImportError:
             raise ImportError("scikit-learn required for mutual information inference")
@@ -179,9 +171,7 @@ def infer_regulatory_network_from_expression(
 
 
 def analyze_regulatory_motifs(
-    regulatory_graph: Any,
-    motif_types: Optional[List[str]] = None,
-    **kwargs: Any
+    regulatory_graph: Any, motif_types: Optional[List[str]] = None, **kwargs: Any
 ) -> Dict[str, Any]:
     """Analyze regulatory motifs in the network.
 
@@ -200,26 +190,26 @@ def analyze_regulatory_motifs(
         raise ImportError("networkx required for motif analysis")
 
     if motif_types is None:
-        motif_types = ['feed_forward', 'feedback', 'cascade']
+        motif_types = ["feed_forward", "feedback", "cascade"]
 
     motifs = {}
 
     # Feed-forward loop analysis
-    if 'feed_forward' in motif_types:
-        motifs['feed_forward_loops'] = _find_feed_forward_loops(regulatory_graph)
+    if "feed_forward" in motif_types:
+        motifs["feed_forward_loops"] = _find_feed_forward_loops(regulatory_graph)
 
     # Feedback loop analysis
-    if 'feedback' in motif_types:
-        motifs['feedback_loops'] = _find_feedback_loops(regulatory_graph)
+    if "feedback" in motif_types:
+        motifs["feedback_loops"] = _find_feedback_loops(regulatory_graph)
 
     # Cascade analysis
-    if 'cascade' in motif_types:
-        motifs['cascades'] = _find_regulatory_cascades(regulatory_graph)
+    if "cascade" in motif_types:
+        motifs["cascades"] = _find_regulatory_cascades(regulatory_graph)
 
     return {
-        'motifs': motifs,
-        'network_size': len(regulatory_graph.nodes()),
-        'motif_types_analyzed': motif_types,
+        "motifs": motifs,
+        "network_size": len(regulatory_graph.nodes()),
+        "motif_types_analyzed": motif_types,
     }
 
 
@@ -233,15 +223,17 @@ def _find_feed_forward_loops(G: Any) -> List[List[str]]:
             for c in G.successors(b):
                 if G.has_edge(a, c):
                     # Check edge types (activation/repression)
-                    ab_type = G[a][b].get('interaction_type', 'activation')
-                    ac_type = G[a][c].get('interaction_type', 'activation')
-                    bc_type = G[b][c].get('interaction_type', 'activation')
+                    ab_type = G[a][b].get("interaction_type", "activation")
+                    ac_type = G[a][c].get("interaction_type", "activation")
+                    bc_type = G[b][c].get("interaction_type", "activation")
 
-                    ffl_motifs.append({
-                        'nodes': [a, b, c],
-                        'edges': [(a, b, ab_type), (a, c, ac_type), (b, c, bc_type)],
-                        'type': 'feed_forward_loop'
-                    })
+                    ffl_motifs.append(
+                        {
+                            "nodes": [a, b, c],
+                            "edges": [(a, b, ab_type), (a, c, ac_type), (b, c, bc_type)],
+                            "type": "feed_forward_loop",
+                        }
+                    )
 
     return ffl_motifs
 
@@ -254,14 +246,12 @@ def _find_feedback_loops(G: Any) -> List[List[str]]:
     for a in G.nodes():
         for b in G.successors(a):
             if G.has_edge(b, a):
-                ab_type = G[a][b].get('interaction_type', 'activation')
-                ba_type = G[b][a].get('interaction_type', 'activation')
+                ab_type = G[a][b].get("interaction_type", "activation")
+                ba_type = G[b][a].get("interaction_type", "activation")
 
-                feedback_motifs.append({
-                    'nodes': [a, b],
-                    'edges': [(a, b, ab_type), (b, a, ba_type)],
-                    'type': 'feedback_loop'
-                })
+                feedback_motifs.append(
+                    {"nodes": [a, b], "edges": [(a, b, ab_type), (b, a, ba_type)], "type": "feedback_loop"}
+                )
 
     return feedback_motifs
 
@@ -280,11 +270,13 @@ def _find_regulatory_cascades(G: Any, max_length: int = 5) -> List[List[str]]:
 
                     for path in paths:
                         if len(path) >= 3:  # At least 3 nodes
-                            cascades.append({
-                                'nodes': path,
-                                'length': len(path) - 1,  # Number of edges
-                                'type': 'regulatory_cascade'
-                            })
+                            cascades.append(
+                                {
+                                    "nodes": path,
+                                    "length": len(path) - 1,  # Number of edges
+                                    "type": "regulatory_cascade",
+                                }
+                            )
 
                 except nx.NetworkXNoPath:
                     continue
@@ -292,11 +284,7 @@ def _find_regulatory_cascades(G: Any, max_length: int = 5) -> List[List[str]]:
     return cascades
 
 
-def calculate_regulatory_influence(
-    regulatory_graph: Any,
-    source_nodes: List[str],
-    **kwargs: Any
-) -> Dict[str, Any]:
+def calculate_regulatory_influence(regulatory_graph: Any, source_nodes: List[str], **kwargs: Any) -> Dict[str, Any]:
     """Calculate regulatory influence propagation in the network.
 
     Args:
@@ -317,7 +305,7 @@ def calculate_regulatory_influence(
     valid_sources = [n for n in source_nodes if n in regulatory_graph.nodes()]
 
     if not valid_sources:
-        return {'error': 'No valid source nodes found'}
+        return {"error": "No valid source nodes found"}
 
     # Calculate influence using shortest paths or random walk
     influence_scores = {}
@@ -344,22 +332,18 @@ def calculate_regulatory_influence(
     # Normalize influence scores
     max_influence = max(influence_scores.values()) if influence_scores else 1.0
     if max_influence > 0:
-        influence_scores = {node: score / max_influence
-                           for node, score in influence_scores.items()}
+        influence_scores = {node: score / max_influence for node, score in influence_scores.items()}
 
     return {
-        'influence_scores': influence_scores,
-        'source_nodes': valid_sources,
-        'total_nodes': len(regulatory_graph.nodes()),
-        'method': 'shortest_path_decay',
+        "influence_scores": influence_scores,
+        "source_nodes": valid_sources,
+        "total_nodes": len(regulatory_graph.nodes()),
+        "method": "shortest_path_decay",
     }
 
 
 def analyze_regulatory_dynamics(
-    regulatory_graph: Any,
-    initial_states: Dict[str, float],
-    time_steps: int = 10,
-    **kwargs: Any
+    regulatory_graph: Any, initial_states: Dict[str, float], time_steps: int = 10, **kwargs: Any
 ) -> Dict[str, Any]:
     """Simulate regulatory network dynamics.
 
@@ -399,42 +383,38 @@ def analyze_regulatory_dynamics(
 
             if regulators:
                 # Simple averaging of regulator states
-                regulator_states = [states[t-1, nodes.index(reg)] for reg in regulators]
+                regulator_states = [states[t - 1, nodes.index(reg)] for reg in regulators]
                 new_state = np.mean(regulator_states)
 
                 # Add some noise and decay
                 noise = np.random.normal(0, 0.1)
                 decay = 0.9
 
-                states[t, i] = decay * new_state + (1 - decay) * states[t-1, i] + noise
+                states[t, i] = decay * new_state + (1 - decay) * states[t - 1, i] + noise
             else:
                 # No regulators, maintain state with decay
-                states[t, i] = 0.9 * states[t-1, i]
+                states[t, i] = 0.9 * states[t - 1, i]
 
     # Convert to dictionary format
     dynamics = {}
     for i, node in enumerate(nodes):
         dynamics[node] = {
-            'initial_state': float(states[0, i]),
-            'final_state': float(states[-1, i]),
-            'trajectory': states[:, i].tolist(),
-            'mean_state': float(np.mean(states[:, i])),
-            'state_variance': float(np.var(states[:, i])),
+            "initial_state": float(states[0, i]),
+            "final_state": float(states[-1, i]),
+            "trajectory": states[:, i].tolist(),
+            "mean_state": float(np.mean(states[:, i])),
+            "state_variance": float(np.var(states[:, i])),
         }
 
     return {
-        'dynamics': dynamics,
-        'time_steps': time_steps,
-        'simulation_method': 'simple_regulatory_model',
-        'parameters': kwargs,
+        "dynamics": dynamics,
+        "time_steps": time_steps,
+        "simulation_method": "simple_regulatory_model",
+        "parameters": kwargs,
     }
 
 
-def identify_regulatory_hubs(
-    regulatory_graph: Any,
-    direction: str = "out",
-    **kwargs: Any
-) -> List[Tuple[str, int]]:
+def identify_regulatory_hubs(regulatory_graph: Any, direction: str = "out", **kwargs: Any) -> List[Tuple[str, int]]:
     """Identify regulatory hubs in the network.
 
     Args:
@@ -464,7 +444,7 @@ def identify_regulatory_hubs(
     sorted_hubs = sorted(degrees.items(), key=lambda x: x[1], reverse=True)
 
     # Return top hubs (e.g., top 10% or absolute threshold)
-    threshold = kwargs.get('threshold', 0.1)  # Top 10%
+    threshold = kwargs.get("threshold", 0.1)  # Top 10%
     if isinstance(threshold, float) and threshold < 1:
         n_hubs = max(1, int(len(sorted_hubs) * threshold))
         return sorted_hubs[:n_hubs]
@@ -474,10 +454,7 @@ def identify_regulatory_hubs(
         return [(node, deg) for node, deg in sorted_hubs if deg >= min_degree]
 
 
-def regulatory_network_stability_analysis(
-    regulatory_graph: Any,
-    **kwargs: Any
-) -> Dict[str, Any]:
+def regulatory_network_stability_analysis(regulatory_graph: Any, **kwargs: Any) -> Dict[str, Any]:
     """Analyze stability properties of regulatory network.
 
     Args:
@@ -494,43 +471,38 @@ def regulatory_network_stability_analysis(
         raise ImportError("networkx required for stability analysis")
 
     analysis = {
-        'structural_stability': {},
-        'dynamical_stability': {},
+        "structural_stability": {},
+        "dynamical_stability": {},
     }
 
     # Structural stability measures
     if nx.is_weakly_connected(regulatory_graph):
-        analysis['structural_stability']['connected'] = True
+        analysis["structural_stability"]["connected"] = True
 
         # Average path length
         try:
             avg_path = nx.average_shortest_path_length(regulatory_graph.to_undirected())
-            analysis['structural_stability']['average_path_length'] = avg_path
-        except:
-            analysis['structural_stability']['average_path_length'] = None
+            analysis["structural_stability"]["average_path_length"] = avg_path
+        except (nx.NetworkXError, ZeroDivisionError):
+            analysis["structural_stability"]["average_path_length"] = None
 
     else:
-        analysis['structural_stability']['connected'] = False
+        analysis["structural_stability"]["connected"] = False
         components = list(nx.weakly_connected_components(regulatory_graph))
-        analysis['structural_stability']['n_components'] = len(components)
+        analysis["structural_stability"]["n_components"] = len(components)
 
     # Feedback loops (indicate potential oscillations)
     feedback_loops = _find_feedback_loops(regulatory_graph)
-    analysis['dynamical_stability']['n_feedback_loops'] = len(feedback_loops)
+    analysis["dynamical_stability"]["n_feedback_loops"] = len(feedback_loops)
 
     # Network motifs that affect stability
     motifs = analyze_regulatory_motifs(regulatory_graph)
-    analysis['dynamical_stability']['motifs'] = motifs
+    analysis["dynamical_stability"]["motifs"] = motifs
 
     return analysis
 
 
-def export_regulatory_network(
-    regulatory_graph: Any,
-    output_file: str,
-    format: str = "sif",
-    **kwargs: Any
-) -> None:
+def export_regulatory_network(regulatory_graph: Any, output_file: str, format: str = "sif", **kwargs: Any) -> None:
     """Export regulatory network in various formats.
 
     Args:
@@ -547,21 +519,23 @@ def export_regulatory_network(
 
     if format == "sif":
         # Simple Interaction Format
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             for u, v, data in regulatory_graph.edges(data=True):
-                interaction_type = data.get('interaction_type', 'regulates')
+                interaction_type = data.get("interaction_type", "regulates")
                 f.write(f"{u}\t{interaction_type}\t{v}\n")
 
     elif format == "dot":
         # GraphViz DOT format
         from networkx.drawing.nx_pydot import write_dot
+
         write_dot(regulatory_graph, output_file)
 
     elif format == "json":
         # Node-link JSON format
         import json
+
         data = nx.node_link_data(regulatory_graph)
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             json.dump(data, f, indent=2)
 
     else:
@@ -594,7 +568,7 @@ class GeneRegulatoryNetwork:
         self.target_tfs = {}  # Map of targets to their regulators
 
     @classmethod
-    def from_tf_target_file(cls, filepath: Union[str, Path], name: str = "") -> 'GeneRegulatoryNetwork':
+    def from_tf_target_file(cls, filepath: Union[str, Path], name: str = "") -> "GeneRegulatoryNetwork":
         """Load regulatory network from TF-target file.
 
         Args:
@@ -609,16 +583,16 @@ class GeneRegulatoryNetwork:
 
         network = cls(name=name or Path(filepath).stem)
 
-        with open(filepath, 'r') as f:
+        with open(filepath, "r") as f:
             for line in f:
-                parts = line.strip().split('\t')
+                parts = line.strip().split("\t")
                 if len(parts) >= 2:
                     tf = parts[0]
                     target = parts[1]
                     confidence = float(parts[2]) if len(parts) > 2 else 1.0
 
                     # Add edge from TF to target
-                    network.graph.add_edge(tf, target, weight=confidence, type='regulates')
+                    network.graph.add_edge(tf, target, weight=confidence, type="regulates")
 
                     # Update mappings
                     if tf not in network.tf_targets:
@@ -629,16 +603,15 @@ class GeneRegulatoryNetwork:
                         network.target_tfs[target] = []
                     network.target_tfs[target].append(tf)
 
-        network.metadata['source_file'] = str(filepath)
-        network.metadata['n_regulations'] = len(network.graph.edges())
-        network.metadata['n_tfs'] = len(network.tf_targets)
-        network.metadata['n_targets'] = len(network.target_tfs)
+        network.metadata["source_file"] = str(filepath)
+        network.metadata["n_regulations"] = len(network.graph.edges())
+        network.metadata["n_tfs"] = len(network.tf_targets)
+        network.metadata["n_targets"] = len(network.target_tfs)
 
         return network
 
     @classmethod
-    def from_interactions(cls, interactions: List[Tuple[str, str, float]],
-                         name: str = "") -> 'GeneRegulatoryNetwork':
+    def from_interactions(cls, interactions: List[Tuple[str, str, float]], name: str = "") -> "GeneRegulatoryNetwork":
         """Create network from list of TF-target interactions.
 
         Args:
@@ -654,7 +627,7 @@ class GeneRegulatoryNetwork:
         network = cls(name=name)
 
         for tf, target, confidence in interactions:
-            network.graph.add_edge(tf, target, weight=confidence, type='regulates')
+            network.graph.add_edge(tf, target, weight=confidence, type="regulates")
 
             # Update mappings
             if tf not in network.tf_targets:
@@ -665,9 +638,9 @@ class GeneRegulatoryNetwork:
                 network.target_tfs[target] = []
             network.target_tfs[target].append(tf)
 
-        network.metadata['n_regulations'] = len(interactions)
-        network.metadata['n_tfs'] = len(network.tf_targets)
-        network.metadata['n_targets'] = len(network.target_tfs)
+        network.metadata["n_regulations"] = len(interactions)
+        network.metadata["n_tfs"] = len(network.tf_targets)
+        network.metadata["n_targets"] = len(network.target_tfs)
 
         return network
 
@@ -744,16 +717,16 @@ class GeneRegulatoryNetwork:
             Dictionary of motif types and their instances
         """
         motifs = {
-            'feed_forward': [],  # TF1 -> TF2 -> Target
-            'auto_regulation': [],  # TF regulates itself
-            'mutual_regulation': [],  # TF1 <-> TF2
-            'cascade': []  # TF1 -> TF2 -> TF3
+            "feed_forward": [],  # TF1 -> TF2 -> Target
+            "auto_regulation": [],  # TF regulates itself
+            "mutual_regulation": [],  # TF1 <-> TF2
+            "cascade": [],  # TF1 -> TF2 -> TF3
         }
 
         # Find auto-regulation
         for tf in self.get_transcription_factors():
             if tf in self.get_tf_targets(tf):
-                motifs['auto_regulation'].append([tf])
+                motifs["auto_regulation"].append([tf])
 
         # Find feed-forward loops
         for tf1 in self.get_transcription_factors():
@@ -761,14 +734,14 @@ class GeneRegulatoryNetwork:
                 if tf2 in self.tf_targets:  # TF2 is also a TF
                     for target in self.get_tf_targets(tf2):
                         if target not in [tf1, tf2]:  # Avoid self-loops
-                            motifs['feed_forward'].append([tf1, tf2, target])
+                            motifs["feed_forward"].append([tf1, tf2, target])
 
         # Find mutual regulation
         for tf1 in self.get_transcription_factors():
             for tf2 in self.get_tf_targets(tf1):
                 if tf2 in self.tf_targets and tf1 in self.get_tf_targets(tf2):
-                    if [tf1, tf2] not in motifs['mutual_regulation']:
-                        motifs['mutual_regulation'].append([tf1, tf2])
+                    if [tf1, tf2] not in motifs["mutual_regulation"]:
+                        motifs["mutual_regulation"].append([tf1, tf2])
 
         return motifs
 
@@ -788,7 +761,9 @@ class GeneRegulatoryNetwork:
             "n_tfs": len(self.tf_targets),
             "n_targets": len(self.target_tfs),
             "density": nx.density(self.graph),
-            "average_degree": sum(dict(self.graph.degree()).values()) / len(self.graph.nodes()) if self.graph.nodes() else 0,
+            "average_degree": (
+                sum(dict(self.graph.degree()).values()) / len(self.graph.nodes()) if self.graph.nodes() else 0
+            ),
             "is_directed": self.graph.is_directed(),
         }
 
@@ -820,7 +795,7 @@ def infer_grn(
     method: str = "correlation",
     threshold: float = 0.5,
     tf_genes: Optional[List[str]] = None,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> GeneRegulatoryNetwork:
     """Infer gene regulatory network from expression data.
 
@@ -839,7 +814,7 @@ def infer_grn(
         raise ImportError("NetworkX required for GRN inference")
 
     # Convert expression data to numpy array if needed
-    if hasattr(expression_data, 'values'):
+    if hasattr(expression_data, "values"):
         expression_matrix = expression_data.values
     else:
         expression_matrix = expression_data
@@ -880,7 +855,7 @@ def infer_grn(
                 correlation = abs(corr_matrix[tf_idx, j])
                 if correlation >= threshold:
                     # Add edge from TF to target
-                    network.graph.add_edge(tf, target, weight=correlation, type='regulates')
+                    network.graph.add_edge(tf, target, weight=correlation, type="regulates")
 
                     # Update mappings
                     if tf not in network.tf_targets:
@@ -911,11 +886,10 @@ def infer_grn(
                 target_expression = expression_matrix[:, j]
 
                 # Calculate mutual information
-                mi = mutual_info_regression(tf_expression.reshape(-1, 1),
-                                          target_expression)[0]
+                mi = mutual_info_regression(tf_expression.reshape(-1, 1), target_expression)[0]
 
                 if mi >= threshold:
-                    network.graph.add_edge(tf, target, weight=mi, type='regulates')
+                    network.graph.add_edge(tf, target, weight=mi, type="regulates")
 
                     # Update mappings
                     if tf not in network.tf_targets:
@@ -930,15 +904,17 @@ def infer_grn(
         raise ValueError(f"Unknown GRN inference method: {method}")
 
     # Set network attributes
-    network.metadata.update({
-        'inference_method': method,
-        'threshold': threshold,
-        'n_samples': n_samples,
-        'n_genes': n_genes,
-        'n_tfs': len(network.tf_targets),
-        'n_targets': len(network.target_tfs),
-        'n_regulations': len(network.graph.edges())
-    })
+    network.metadata.update(
+        {
+            "inference_method": method,
+            "threshold": threshold,
+            "n_samples": n_samples,
+            "n_genes": n_genes,
+            "n_tfs": len(network.tf_targets),
+            "n_targets": len(network.target_tfs),
+            "n_regulations": len(network.graph.edges()),
+        }
+    )
 
     return network
 
@@ -967,33 +943,26 @@ def regulatory_motifs(grn: GeneRegulatoryNetwork) -> List[Dict[str, Any]]:
                     if target not in [tf1, tf2]:  # Avoid self-loops
                         # Check if TF1 regulates TF2 and TF2 regulates target
                         if grn.graph.has_edge(tf1, tf2) and grn.graph.has_edge(tf2, target):
-                            motifs.append({
-                                "motif_type": "feed_forward_loop",
-                                "genes": [tf1, tf2, target],
-                                "confidence": 0.8
-                            })
+                            motifs.append(
+                                {"motif_type": "feed_forward_loop", "genes": [tf1, tf2, target], "confidence": 0.8}
+                            )
 
     # Find auto-regulation (TF regulates itself)
     for tf in grn.get_transcription_factors():
         if grn.graph.has_edge(tf, tf):
-            motifs.append({
-                "motif_type": "auto_regulation",
-                "genes": [tf],
-                "confidence": 1.0
-            })
+            motifs.append({"motif_type": "auto_regulation", "genes": [tf], "confidence": 1.0})
 
     # Find mutual regulation (TF1 <-> TF2)
     for tf1 in grn.get_transcription_factors():
         for tf2 in grn.get_tf_targets(tf1):
             if tf2 in grn.tf_targets and grn.graph.has_edge(tf2, tf1):
-                if [tf1, tf2] not in [[m["genes"][0], m["genes"][1]] for m in motifs if m["motif_type"] == "mutual_regulation"]:
-                    motifs.append({
-                        "motif_type": "mutual_regulation",
-                        "genes": [tf1, tf2],
-                        "confidence": 0.9
-                    })
+                if [tf1, tf2] not in [
+                    [m["genes"][0], m["genes"][1]] for m in motifs if m["motif_type"] == "mutual_regulation"
+                ]:
+                    motifs.append({"motif_type": "mutual_regulation", "genes": [tf1, tf2], "confidence": 0.9})
 
     return motifs
+
 
 def pathway_regulation_analysis(grn: GeneRegulatoryNetwork, pathway_genes: List[str]) -> Dict[str, Any]:
     """Analyze regulation patterns within a pathway.
@@ -1011,7 +980,7 @@ def pathway_regulation_analysis(grn: GeneRegulatoryNetwork, pathway_genes: List[
         "external_regulations": 0,
         "regulation_density": 0.0,
         "hub_tfs": [],
-        "isolated_genes": []
+        "isolated_genes": [],
     }
 
     if not HAS_NETWORKX:

@@ -1,4 +1,5 @@
 """Tests for DNA phylogeny bootstrap support."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -12,7 +13,7 @@ from metainformant.dna import phylogeny, sequences
 def test_bootstrap_support_deterministic_with_seed() -> None:
     """Test bootstrap support calculation."""
     fasta_path = Path(__file__).parent / "data" / "dna" / "toy.fasta"
-    
+
     try:
         seqs = sequences.read_fasta(str(fasta_path))
         # Note: current implementation is simplified and doesn't take random_state

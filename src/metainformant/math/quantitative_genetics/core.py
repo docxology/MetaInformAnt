@@ -88,5 +88,3 @@ def lande_equation_response(selection_gradient: List[float], genetic_variance_co
 
     # Return the magnitude of the response vector
     return float(np.linalg.norm(response_vector))
-
-

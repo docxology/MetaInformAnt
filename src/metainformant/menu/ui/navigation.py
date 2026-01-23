@@ -171,7 +171,3 @@ def get_current_menu(menu_system: MenuSystem) -> Menu:
         Current menu object
     """
     return menu_system.get_current_menu()
-
-
-
-

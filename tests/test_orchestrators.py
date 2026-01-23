@@ -137,10 +137,12 @@ class TestOrchestratorCLIIntegration:
         # Should either succeed or fail gracefully with clear message
         assert result.returncode in (0, 1)  # 0 = success, 1 = expected failure (no input)
         # Accept either output in stdout or stderr indicating the command ran (even with warnings)
-        assert ("ontology" in result.stdout.lower() or
-                "output" in result.stdout.lower() or
-                "starting ontology" in result.stderr.lower() or
-                "no ontology loaded" in result.stderr.lower())
+        assert (
+            "ontology" in result.stdout.lower()
+            or "output" in result.stdout.lower()
+            or "starting ontology" in result.stderr.lower()
+            or "no ontology loaded" in result.stderr.lower()
+        )
 
     def test_phenotype_cli_integration(self, tmp_path: Path):
         """Test phenotype CLI command."""
@@ -231,5 +233,3 @@ class TestOrchestratorCLIIntegration:
             script_path = SCRIPTS_DIR / orchestrator
             assert script_path.exists(), f"Orchestrator script not found: {orchestrator}"
             assert script_path.is_file(), f"Orchestrator is not a file: {orchestrator}"
-
-

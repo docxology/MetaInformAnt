@@ -36,7 +36,7 @@ def calculate_contact_map(coords: np.ndarray, threshold: float = 8.0) -> np.ndar
 
     # Calculate pairwise distances between all atoms
     diff = coords[:, np.newaxis, :] - coords[np.newaxis, :, :]
-    distances = np.sqrt(np.sum(diff ** 2, axis=2))
+    distances = np.sqrt(np.sum(diff**2, axis=2))
 
     # Convert to contact map (1 if within threshold, 0 otherwise)
     contact_map = (distances <= threshold).astype(int)
@@ -65,14 +65,14 @@ def identify_domains(structure: Dict[str, Any]) -> List[Dict[str, Any]]:
     # This is a simplified domain identification
     # Real implementation would use domain databases or clustering
 
-    atoms = structure.get('atoms', [])
+    atoms = structure.get("atoms", [])
     if not atoms:
         return []
 
     # Group atoms by residue
     residues = {}
     for atom in atoms:
-        key = (atom['chain_id'], atom['res_seq'])
+        key = (atom["chain_id"], atom["res_seq"])
         if key not in residues:
             residues[key] = []
         residues[key].append(atom)
@@ -87,13 +87,15 @@ def identify_domains(structure: Dict[str, Any]) -> List[Dict[str, Any]]:
         if prev_chain is not None and (chain_id != prev_chain or res_seq > prev_res_seq + 10):
             # Chain break or large gap - start new domain
             if current_domain:
-                domains.append({
-                    'residues': current_domain,
-                    'chain_id': prev_chain,
-                    'start': min(current_domain),
-                    'end': max(current_domain),
-                    'size': len(current_domain)
-                })
+                domains.append(
+                    {
+                        "residues": current_domain,
+                        "chain_id": prev_chain,
+                        "start": min(current_domain),
+                        "end": max(current_domain),
+                        "size": len(current_domain),
+                    }
+                )
             current_domain = []
 
         current_domain.append(res_seq)
@@ -102,13 +104,15 @@ def identify_domains(structure: Dict[str, Any]) -> List[Dict[str, Any]]:
 
     # Add final domain
     if current_domain:
-        domains.append({
-            'residues': current_domain,
-            'chain_id': prev_chain,
-            'start': min(current_domain),
-            'end': max(current_domain),
-            'size': len(current_domain)
-        })
+        domains.append(
+            {
+                "residues": current_domain,
+                "chain_id": prev_chain,
+                "start": min(current_domain),
+                "end": max(current_domain),
+                "size": len(current_domain),
+            }
+        )
 
     return domains
 
@@ -142,6 +146,7 @@ def calculate_surface_area(coords: np.ndarray, probe_radius: float = 1.4) -> flo
     # Use convex hull as approximation
     try:
         from scipy.spatial import ConvexHull
+
         hull = ConvexHull(coords)
 
         # Approximate surface area (this is rough)
@@ -149,7 +154,7 @@ def calculate_surface_area(coords: np.ndarray, probe_radius: float = 1.4) -> flo
         surface_area = hull.area
 
         # Add probe radius effect (simplified)
-        surface_area *= (1 + probe_radius / 10.0)
+        surface_area *= 1 + probe_radius / 10.0
 
         return surface_area
 
@@ -160,9 +165,9 @@ def calculate_surface_area(coords: np.ndarray, probe_radius: float = 1.4) -> flo
         dimensions = max_coords - min_coords
 
         # Approximate as rectangular box surface area
-        surface_area = 2 * (dimensions[0] * dimensions[1] +
-                           dimensions[1] * dimensions[2] +
-                           dimensions[2] * dimensions[0])
+        surface_area = 2 * (
+            dimensions[0] * dimensions[1] + dimensions[1] * dimensions[2] + dimensions[2] * dimensions[0]
+        )
 
         return surface_area
 
@@ -188,29 +193,23 @@ def analyze_structural_motifs(structure: Dict[str, Any]) -> List[Dict[str, Any]]
     motifs = []
 
     # Example: Simple helix identification
-    atoms = structure.get('atoms', [])
-    coords = structure.get('coordinates')
+    atoms = structure.get("atoms", [])
+    coords = structure.get("coordinates")
 
     if coords is not None and len(coords) > 20:
         # Look for helical patterns in coordinates
         # This is highly simplified
         for i in range(len(coords) - 10):
-            segment = coords[i:i+10]
+            segment = coords[i : i + 10]
             # Check for helical rise and rotation
             # (real implementation would be more sophisticated)
 
-            motifs.append({
-                'type': 'potential_helix',
-                'start_residue': i,
-                'end_residue': i + 9,
-                'confidence': 0.5
-            })
+            motifs.append({"type": "potential_helix", "start_residue": i, "end_residue": i + 9, "confidence": 0.5})
 
     return motifs
 
 
-def calculate_structural_similarity(structure1: Dict[str, Any],
-                                  structure2: Dict[str, Any]) -> Dict[str, float]:
+def calculate_structural_similarity(structure1: Dict[str, Any], structure2: Dict[str, Any]) -> Dict[str, float]:
     """Calculate structural similarity between two proteins.
 
     Args:
@@ -226,14 +225,15 @@ def calculate_structural_similarity(structure1: Dict[str, Any],
         >>> # isinstance(similarity, dict)
         >>> # True
     """
-    coords1 = structure1.get('coordinates')
-    coords2 = structure2.get('coordinates')
+    coords1 = structure1.get("coordinates")
+    coords2 = structure2.get("coordinates")
 
     if coords1 is None or coords2 is None:
-        return {'rmsd': float('inf'), 'similarity': 0.0}
+        return {"rmsd": float("inf"), "similarity": 0.0}
 
     # Use RMSD as similarity measure
     from .structure import compute_rmsd_simple
+
     rmsd = compute_rmsd_simple(coords1, coords2)
 
     # Convert RMSD to similarity score (simplified)
@@ -243,12 +243,7 @@ def calculate_structural_similarity(structure1: Dict[str, Any],
     else:
         similarity = 1.0 / (1.0 + rmsd / 10.0)  # Arbitrary scaling
 
-    return {
-        'rmsd': rmsd,
-        'similarity': similarity,
-        'n_atoms_1': len(coords1),
-        'n_atoms_2': len(coords2)
-    }
+    return {"rmsd": rmsd, "similarity": similarity, "n_atoms_1": len(coords1), "n_atoms_2": len(coords2)}
 
 
 def identify_ligand_binding_sites(structure: Dict[str, Any]) -> List[Dict[str, Any]]:
@@ -269,8 +264,8 @@ def identify_ligand_binding_sites(structure: Dict[str, Any]) -> List[Dict[str, A
     # This would identify cavities, pockets, etc.
     # Simplified placeholder
 
-    atoms = structure.get('atoms', [])
-    coords = structure.get('coordinates')
+    atoms = structure.get("atoms", [])
+    coords = structure.get("coordinates")
 
     if coords is None or len(coords) < 20:
         return []
@@ -290,12 +285,14 @@ def identify_ligand_binding_sites(structure: Dict[str, Any]) -> List[Dict[str, A
     surface_atoms = [i for i, d in enumerate(distances) if d > median_distance]
 
     if surface_atoms:
-        sites.append({
-            'center': center.tolist(),
-            'surface_atoms': surface_atoms,
-            'estimated_volume': len(surface_atoms) * 10.0,  # Rough estimate
-            'confidence': 0.3
-        })
+        sites.append(
+            {
+                "center": center.tolist(),
+                "surface_atoms": surface_atoms,
+                "estimated_volume": len(surface_atoms) * 10.0,  # Rough estimate
+                "confidence": 0.3,
+            }
+        )
 
     return sites
 
@@ -315,20 +312,20 @@ def analyze_protein_flexibility(structure: Dict[str, Any]) -> Dict[str, Any]:
         >>> # isinstance(flexibility, dict)
         >>> # True
     """
-    atoms = structure.get('atoms', [])
-    coords = structure.get('coordinates')
+    atoms = structure.get("atoms", [])
+    coords = structure.get("coordinates")
 
     if coords is None:
-        return {'flexibility_score': 0.0, 'rigid_regions': [], 'flexible_regions': []}
+        return {"flexibility_score": 0.0, "rigid_regions": [], "flexible_regions": []}
 
     # Simple flexibility analysis based on B-factors
     b_factors = []
     for atom in atoms:
-        b_factor = atom.get('temp_factor', 0.0)
+        b_factor = atom.get("temp_factor", 0.0)
         b_factors.append(b_factor)
 
     if not b_factors:
-        return {'flexibility_score': 0.0, 'rigid_regions': [], 'flexible_regions': []}
+        return {"flexibility_score": 0.0, "rigid_regions": [], "flexible_regions": []}
 
     avg_b_factor = np.mean(b_factors)
 
@@ -339,8 +336,8 @@ def analyze_protein_flexibility(structure: Dict[str, Any]) -> Dict[str, Any]:
     # Group by residue
     residue_b_factors = {}
     for atom in atoms:
-        key = (atom['chain_id'], atom['res_seq'])
-        b_factor = atom.get('temp_factor', 0.0)
+        key = (atom["chain_id"], atom["res_seq"])
+        b_factor = atom.get("temp_factor", 0.0)
         if key not in residue_b_factors:
             residue_b_factors[key] = []
         residue_b_factors[key].append(b_factor)
@@ -348,20 +345,19 @@ def analyze_protein_flexibility(structure: Dict[str, Any]) -> Dict[str, Any]:
     for (chain, res), b_vals in residue_b_factors.items():
         avg_res_b = np.mean(b_vals)
         if avg_res_b < avg_b_factor * 0.8:
-            rigid_regions.append({'chain': chain, 'residue': res, 'b_factor': avg_res_b})
+            rigid_regions.append({"chain": chain, "residue": res, "b_factor": avg_res_b})
         elif avg_res_b > avg_b_factor * 1.2:
-            flexible_regions.append({'chain': chain, 'residue': res, 'b_factor': avg_res_b})
+            flexible_regions.append({"chain": chain, "residue": res, "b_factor": avg_res_b})
 
     return {
-        'flexibility_score': np.std(b_factors) / np.mean(b_factors) if np.mean(b_factors) > 0 else 0.0,
-        'average_b_factor': avg_b_factor,
-        'rigid_regions': rigid_regions,
-        'flexible_regions': flexible_regions
+        "flexibility_score": np.std(b_factors) / np.mean(b_factors) if np.mean(b_factors) > 0 else 0.0,
+        "average_b_factor": avg_b_factor,
+        "rigid_regions": rigid_regions,
+        "flexible_regions": flexible_regions,
     }
 
 
-def calculate_structural_alignment_quality(structure1: Dict[str, Any],
-                                         structure2: Dict[str, Any]) -> Dict[str, float]:
+def calculate_structural_alignment_quality(structure1: Dict[str, Any], structure2: Dict[str, Any]) -> Dict[str, float]:
     """Assess quality of structural alignment.
 
     Args:
@@ -377,14 +373,15 @@ def calculate_structural_alignment_quality(structure1: Dict[str, Any],
         >>> # isinstance(quality, dict)
         >>> # True
     """
-    coords1 = structure1.get('coordinates')
-    coords2 = structure2.get('coordinates')
+    coords1 = structure1.get("coordinates")
+    coords2 = structure2.get("coordinates")
 
     if coords1 is None or coords2 is None:
-        return {'quality_score': 0.0, 'aligned_atoms': 0}
+        return {"quality_score": 0.0, "aligned_atoms": 0}
 
     # Calculate RMSD
     from .structure import compute_rmsd_simple
+
     rmsd = compute_rmsd_simple(coords1, coords2)
 
     # Calculate alignment quality (simplified)
@@ -392,9 +389,9 @@ def calculate_structural_alignment_quality(structure1: Dict[str, Any],
     quality_score = max(0.0, 1.0 - rmsd / 20.0)  # Arbitrary scaling
 
     return {
-        'quality_score': quality_score,
-        'rmsd': rmsd,
-        'aligned_atoms': min(len(coords1), len(coords2)),
-        'structure1_atoms': len(coords1),
-        'structure2_atoms': len(coords2)
+        "quality_score": quality_score,
+        "rmsd": rmsd,
+        "aligned_atoms": min(len(coords1), len(coords2)),
+        "structure1_atoms": len(coords1),
+        "structure2_atoms": len(coords2),
     }

@@ -22,7 +22,7 @@ def batch_entropy_analysis(
     k: int = 1,
     output_dir: Optional[Union[str, Path]] = None,
     methods: Optional[List[str]] = None,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Dict[str, Any]:
     """Batch entropy analysis for multiple sequences.
 
@@ -37,79 +37,77 @@ def batch_entropy_analysis(
         Dictionary with batch analysis results
     """
     if methods is None:
-        methods = ['plugin', 'miller_madow']
+        methods = ["plugin", "miller_madow"]
 
     if output_dir:
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
     results = {
-        'batch_info': {
-            'n_sequences': len(sequences),
-            'sequence_lengths': [len(seq) for seq in sequences],
-            'k': k,
-            'methods': methods,
+        "batch_info": {
+            "n_sequences": len(sequences),
+            "sequence_lengths": [len(seq) for seq in sequences],
+            "k": k,
+            "methods": methods,
         },
-        'sequence_results': [],
-        'summary': {},
+        "sequence_results": [],
+        "summary": {},
     }
 
     start_time = time.time()
 
     for i, sequence in enumerate(sequences):
         seq_result = {
-            'sequence_index': i,
-            'sequence_length': len(sequence),
-            'methods': {},
+            "sequence_index": i,
+            "sequence_length": len(sequence),
+            "methods": {},
         }
 
         # Analyze with each method
         for method in methods:
             try:
                 # Calculate entropy for k-mers
-                kmers = [sequence[j:j+k] for j in range(len(sequence) - k + 1)]
+                kmers = [sequence[j : j + k] for j in range(len(sequence) - k + 1)]
                 from collections import Counter
+
                 kmer_counts = Counter(kmers)
 
-                entropy_val = estimation.entropy_estimator(
-                    kmer_counts, method=method, **kwargs
-                )
+                entropy_val = estimation.entropy_estimator(kmer_counts, method=method, **kwargs)
 
-                seq_result['methods'][method] = {
-                    'entropy': entropy_val,
-                    'n_unique_kmers': len(kmer_counts),
-                    'n_total_kmers': len(kmers),
+                seq_result["methods"][method] = {
+                    "entropy": entropy_val,
+                    "n_unique_kmers": len(kmer_counts),
+                    "n_total_kmers": len(kmers),
                 }
 
             except Exception as e:
                 logger.warning(f"Entropy calculation failed for sequence {i}, method {method}: {e}")
-                seq_result['methods'][method] = {'error': str(e)}
+                seq_result["methods"][method] = {"error": str(e)}
 
-        results['sequence_results'].append(seq_result)
+        results["sequence_results"].append(seq_result)
 
     # Calculate summary statistics
     all_entropies = {}
     for method in methods:
         method_entropies = [
-            seq_res['methods'].get(method, {}).get('entropy', None)
-            for seq_res in results['sequence_results']
+            seq_res["methods"].get(method, {}).get("entropy", None) for seq_res in results["sequence_results"]
         ]
         method_entropies = [e for e in method_entropies if e is not None]
 
         if method_entropies:
             all_entropies[method] = {
-                'mean': float(np.mean(method_entropies)),
-                'std': float(np.std(method_entropies)),
-                'min': float(np.min(method_entropies)),
-                'max': float(np.max(method_entropies)),
-                'n_successful': len(method_entropies),
+                "mean": float(np.mean(method_entropies)),
+                "std": float(np.std(method_entropies)),
+                "min": float(np.min(method_entropies)),
+                "max": float(np.max(method_entropies)),
+                "n_successful": len(method_entropies),
             }
 
-    results['summary'] = {
-        'entropy_statistics': all_entropies,
-        'processing_time': time.time() - start_time,
-        'success_rate': len([r for r in results['sequence_results']
-                           if all(m in r['methods'] for m in methods)]) / len(sequences),
+    results["summary"] = {
+        "entropy_statistics": all_entropies,
+        "processing_time": time.time() - start_time,
+        "success_rate": len([r for r in results["sequence_results"] if all(m in r["methods"] for m in methods)])
+        / len(sequences),
     }
 
     # Save results if output directory specified
@@ -132,7 +130,7 @@ def information_workflow(
     output_dir: Optional[Union[str, Path]] = None,
     include_profiles: bool = True,
     include_signatures: bool = False,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Dict[str, Any]:
     """Comprehensive information workflow for sequence analysis.
 
@@ -155,32 +153,28 @@ def information_workflow(
         output_dir.mkdir(parents=True, exist_ok=True)
 
     workflow_results = {
-        'workflow_info': {
-            'n_sequences': len(sequences),
-            'k_values': k_values,
-            'include_profiles': include_profiles,
-            'include_signatures': include_signatures,
+        "workflow_info": {
+            "n_sequences": len(sequences),
+            "k_values": k_values,
+            "include_profiles": include_profiles,
+            "include_signatures": include_signatures,
         },
-        'sequence_analyses': [],
-        'aggregate_results': {},
+        "sequence_analyses": [],
+        "aggregate_results": {},
     }
 
     start_time = time.time()
 
     # Analyze each sequence
     for i, sequence in enumerate(sequences):
-        seq_analysis = analysis.analyze_sequence_information(
-            sequence, k_values=k_values, **kwargs
-        )
-        seq_analysis['sequence_index'] = i
+        seq_analysis = analysis.analyze_sequence_information(sequence, k_values=k_values, **kwargs)
+        seq_analysis["sequence_index"] = i
 
-        workflow_results['sequence_analyses'].append(seq_analysis)
+        workflow_results["sequence_analyses"].append(seq_analysis)
 
     # Aggregate results
     if len(sequences) > 1:
-        workflow_results['aggregate_results'] = _aggregate_sequence_analyses(
-            workflow_results['sequence_analyses']
-        )
+        workflow_results["aggregate_results"] = _aggregate_sequence_analyses(workflow_results["sequence_analyses"])
 
     # Calculate information profiles if requested
     if include_profiles and len(sequences) > 1:
@@ -190,13 +184,13 @@ def information_workflow(
             for k in k_values:
                 if all(len(seq) >= k for seq in sequences):
                     profile = analysis.information_profile(sequences, k=k, **kwargs)
-                    profile_results[f'k{k}'] = profile
+                    profile_results[f"k{k}"] = profile
 
-            workflow_results['information_profiles'] = profile_results
+            workflow_results["information_profiles"] = profile_results
 
         except Exception as e:
             logger.warning(f"Information profile calculation failed: {e}")
-            workflow_results['information_profiles'] = {'error': str(e)}
+            workflow_results["information_profiles"] = {"error": str(e)}
 
     # Calculate information signatures if requested
     if include_signatures:
@@ -209,17 +203,15 @@ def information_workflow(
                 numerical = [char_to_num[char] for char in seq]
                 numerical_sequences.append(numerical)
 
-            signature = analysis.information_signature(
-                np.array(numerical_sequences).T, **kwargs
-            )
-            workflow_results['information_signature'] = signature
+            signature = analysis.information_signature(np.array(numerical_sequences).T, **kwargs)
+            workflow_results["information_signature"] = signature
 
         except Exception as e:
             logger.warning(f"Information signature calculation failed: {e}")
-            workflow_results['information_signature'] = {'error': str(e)}
+            workflow_results["information_signature"] = {"error": str(e)}
 
-    workflow_results['processing_time'] = time.time() - start_time
-    workflow_results['workflow_status'] = 'completed'
+    workflow_results["processing_time"] = time.time() - start_time
+    workflow_results["workflow_status"] = "completed"
 
     # Save results
     if output_dir:
@@ -241,51 +233,52 @@ def _aggregate_sequence_analyses(analyses: List[Dict[str, Any]]) -> Dict[str, An
         return {}
 
     aggregate = {
-        'sequence_types': {},
-        'k_mer_statistics': {},
-        'entropy_statistics': {},
-        'complexity_statistics': {},
+        "sequence_types": {},
+        "k_mer_statistics": {},
+        "entropy_statistics": {},
+        "complexity_statistics": {},
     }
 
     # Aggregate sequence types
-    seq_types = [analysis.get('sequence_type', 'unknown') for analysis in analyses]
+    seq_types = [analysis.get("sequence_type", "unknown") for analysis in analyses]
     from collections import Counter
-    aggregate['sequence_types'] = dict(Counter(seq_types))
+
+    aggregate["sequence_types"] = dict(Counter(seq_types))
 
     # Aggregate k-mer statistics
     all_k_stats = {}
     for analysis in analyses:
-        for k_key, k_stats in analysis.get('k_mer_analysis', {}).items():
+        for k_key, k_stats in analysis.get("k_mer_analysis", {}).items():
             if k_key not in all_k_stats:
                 all_k_stats[k_key] = []
             all_k_stats[k_key].append(k_stats)
 
     for k_key, stats_list in all_k_stats.items():
         if stats_list:
-            entropies = [s.get('entropy', 0) for s in stats_list if s.get('entropy') is not None]
+            entropies = [s.get("entropy", 0) for s in stats_list if s.get("entropy") is not None]
             if entropies:
-                aggregate['k_mer_statistics'][k_key] = {
-                    'mean_entropy': float(np.mean(entropies)),
-                    'std_entropy': float(np.std(entropies)),
-                    'min_entropy': float(np.min(entropies)),
-                    'max_entropy': float(np.max(entropies)),
-                    'n_sequences': len(entropies),
+                aggregate["k_mer_statistics"][k_key] = {
+                    "mean_entropy": float(np.mean(entropies)),
+                    "std_entropy": float(np.std(entropies)),
+                    "min_entropy": float(np.min(entropies)),
+                    "max_entropy": float(np.max(entropies)),
+                    "n_sequences": len(entropies),
                 }
 
     # Aggregate entropy statistics
     entropies = []
     for analysis in analyses:
-        entropy_data = analysis.get('methods', {}).get('entropy', {})
-        if 'shannon_entropy' in entropy_data:
-            entropies.append(entropy_data['shannon_entropy'])
+        entropy_data = analysis.get("methods", {}).get("entropy", {})
+        if "shannon_entropy" in entropy_data:
+            entropies.append(entropy_data["shannon_entropy"])
 
     if entropies:
-        aggregate['entropy_statistics'] = {
-            'mean': float(np.mean(entropies)),
-            'std': float(np.std(entropies)),
-            'min': float(np.min(entropies)),
-            'max': float(np.max(entropies)),
-            'n_sequences': len(entropies),
+        aggregate["entropy_statistics"] = {
+            "mean": float(np.mean(entropies)),
+            "std": float(np.std(entropies)),
+            "min": float(np.min(entropies)),
+            "max": float(np.max(entropies)),
+            "n_sequences": len(entropies),
         }
 
     return aggregate
@@ -297,7 +290,7 @@ def compare_datasets(
     k: int = 1,
     output_dir: Optional[Union[str, Path]] = None,
     comparison_methods: Optional[List[str]] = None,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Dict[str, Any]:
     """Compare information content between two datasets.
 
@@ -313,20 +306,20 @@ def compare_datasets(
         Dictionary with dataset comparison results
     """
     if comparison_methods is None:
-        comparison_methods = ['entropy', 'diversity', 'similarity']
+        comparison_methods = ["entropy", "diversity", "similarity"]
 
     if output_dir:
         output_dir = Path(output_dir)
         output_dir.mkdir(parents=True, exist_ok=True)
 
     comparison_results = {
-        'dataset_info': {
-            'dataset1_size': len(dataset1),
-            'dataset2_size': len(dataset2),
-            'k': k,
-            'comparison_methods': comparison_methods,
+        "dataset_info": {
+            "dataset1_size": len(dataset1),
+            "dataset2_size": len(dataset2),
+            "k": k,
+            "comparison_methods": comparison_methods,
         },
-        'comparisons': {},
+        "comparisons": {},
     }
 
     start_time = time.time()
@@ -335,34 +328,30 @@ def compare_datasets(
     dataset1_analysis = batch_entropy_analysis(dataset1, k=k, **kwargs)
     dataset2_analysis = batch_entropy_analysis(dataset2, k=k, **kwargs)
 
-    comparison_results['dataset1_analysis'] = dataset1_analysis
-    comparison_results['dataset2_analysis'] = dataset2_analysis
+    comparison_results["dataset1_analysis"] = dataset1_analysis
+    comparison_results["dataset2_analysis"] = dataset2_analysis
 
     # Perform comparisons
     for method in comparison_methods:
         try:
-            if method == 'entropy':
-                comparison_results['comparisons']['entropy'] = _compare_entropy_distributions(
+            if method == "entropy":
+                comparison_results["comparisons"]["entropy"] = _compare_entropy_distributions(
                     dataset1_analysis, dataset2_analysis
                 )
 
-            elif method == 'diversity':
-                comparison_results['comparisons']['diversity'] = _compare_sequence_diversity(
-                    dataset1, dataset2, k=k
-                )
+            elif method == "diversity":
+                comparison_results["comparisons"]["diversity"] = _compare_sequence_diversity(dataset1, dataset2, k=k)
 
-            elif method == 'similarity':
-                comparison_results['comparisons']['similarity'] = _compare_sequence_similarity(
-                    dataset1[:min(10, len(dataset1))],  # Sample for efficiency
-                    dataset2[:min(10, len(dataset2))],
-                    k=k
+            elif method == "similarity":
+                comparison_results["comparisons"]["similarity"] = _compare_sequence_similarity(
+                    dataset1[: min(10, len(dataset1))], dataset2[: min(10, len(dataset2))], k=k  # Sample for efficiency
                 )
 
         except Exception as e:
             logger.warning(f"Comparison method {method} failed: {e}")
-            comparison_results['comparisons'][method] = {'error': str(e)}
+            comparison_results["comparisons"][method] = {"error": str(e)}
 
-    comparison_results['processing_time'] = time.time() - start_time
+    comparison_results["processing_time"] = time.time() - start_time
 
     # Save results
     if output_dir:
@@ -384,50 +373,50 @@ def _compare_entropy_distributions(analysis1: Dict, analysis2: Dict) -> Dict[str
     entropies2 = []
 
     # Extract entropy values
-    for seq_result in analysis1.get('sequence_results', []):
-        for method_results in seq_result.get('methods', {}).values():
-            if 'entropy' in method_results:
-                entropies1.append(method_results['entropy'])
+    for seq_result in analysis1.get("sequence_results", []):
+        for method_results in seq_result.get("methods", {}).values():
+            if "entropy" in method_results:
+                entropies1.append(method_results["entropy"])
 
-    for seq_result in analysis2.get('sequence_results', []):
-        for method_results in seq_result.get('methods', {}).values():
-            if 'entropy' in method_results:
-                entropies2.append(method_results['entropy'])
+    for seq_result in analysis2.get("sequence_results", []):
+        for method_results in seq_result.get("methods", {}).values():
+            if "entropy" in method_results:
+                entropies2.append(method_results["entropy"])
 
     if not entropies1 or not entropies2:
-        return {'error': 'No entropy values found'}
+        return {"error": "No entropy values found"}
 
     # Statistical comparison
     from scipy import stats
 
     comparison = {
-        'dataset1': {
-            'n_values': len(entropies1),
-            'mean': float(np.mean(entropies1)),
-            'std': float(np.std(entropies1)),
+        "dataset1": {
+            "n_values": len(entropies1),
+            "mean": float(np.mean(entropies1)),
+            "std": float(np.std(entropies1)),
         },
-        'dataset2': {
-            'n_values': len(entropies2),
-            'mean': float(np.mean(entropies2)),
-            'std': float(np.std(entropies2)),
+        "dataset2": {
+            "n_values": len(entropies2),
+            "mean": float(np.mean(entropies2)),
+            "std": float(np.std(entropies2)),
         },
-        'difference': {
-            'mean_diff': float(np.mean(entropies1) - np.mean(entropies2)),
-            'std_diff': float(np.sqrt(np.var(entropies1)/len(entropies1) + np.var(entropies2)/len(entropies2))),
+        "difference": {
+            "mean_diff": float(np.mean(entropies1) - np.mean(entropies2)),
+            "std_diff": float(np.sqrt(np.var(entropies1) / len(entropies1) + np.var(entropies2) / len(entropies2))),
         },
     }
 
     # Statistical test
     try:
         t_stat, p_value = stats.ttest_ind(entropies1, entropies2)
-        comparison['statistical_test'] = {
-            'test': 't-test',
-            't_statistic': float(t_stat),
-            'p_value': float(p_value),
-            'significant': p_value < 0.05,
+        comparison["statistical_test"] = {
+            "test": "t-test",
+            "t_statistic": float(t_stat),
+            "p_value": float(p_value),
+            "significant": p_value < 0.05,
         }
     except Exception as e:
-        comparison['statistical_test'] = {'error': str(e)}
+        comparison["statistical_test"] = {"error": str(e)}
 
     return comparison
 
@@ -439,11 +428,11 @@ def _compare_sequence_diversity(seqs1: List[str], seqs2: List[str], k: int = 1) 
     # Calculate k-mer diversity for each dataset
     kmers1 = []
     for seq in seqs1:
-        kmers1.extend([seq[i:i+k] for i in range(len(seq) - k + 1)])
+        kmers1.extend([seq[i : i + k] for i in range(len(seq) - k + 1)])
 
     kmers2 = []
     for seq in seqs2:
-        kmers2.extend([seq[i:i+k] for i in range(len(seq) - k + 1)])
+        kmers2.extend([seq[i : i + k] for i in range(len(seq) - k + 1)])
 
     diversity1 = len(set(kmers1)) / len(kmers1) if kmers1 else 0
     diversity2 = len(set(kmers2)) / len(kmers2) if kmers2 else 0
@@ -456,21 +445,17 @@ def _compare_sequence_diversity(seqs1: List[str], seqs2: List[str], k: int = 1) 
     jaccard = intersection / union if union > 0 else 0
 
     return {
-        'diversity1': diversity1,
-        'diversity2': diversity2,
-        'diversity_ratio': diversity1 / diversity2 if diversity2 > 0 else float('inf'),
-        'jaccard_similarity': jaccard,
-        'shared_kmers': intersection,
-        'unique_kmers_1': len(set1 - set2),
-        'unique_kmers_2': len(set2 - set1),
+        "diversity1": diversity1,
+        "diversity2": diversity2,
+        "diversity_ratio": diversity1 / diversity2 if diversity2 > 0 else float("inf"),
+        "jaccard_similarity": jaccard,
+        "shared_kmers": intersection,
+        "unique_kmers_1": len(set1 - set2),
+        "unique_kmers_2": len(set2 - set1),
     }
 
 
-def _compare_sequence_similarity(
-    seqs1: List[str],
-    seqs2: List[str],
-    k: int = 1
-) -> Dict[str, Any]:
+def _compare_sequence_similarity(seqs1: List[str], seqs2: List[str], k: int = 1) -> Dict[str, Any]:
     """Compare sequence similarity between datasets."""
     similarities = []
 
@@ -478,14 +463,14 @@ def _compare_sequence_similarity(
     for seq1 in seqs1[:5]:  # Limit for computational efficiency
         for seq2 in seqs2[:5]:
             if len(seq1) == len(seq2):  # Only compare same-length sequences
-                sim = analysis.compare_sequences_information(seq1, seq2, k=k, method='mutual_info')
-                similarities.append(sim.get('mean_mi', 0))
+                sim = analysis.compare_sequences_information(seq1, seq2, k=k, method="mutual_info")
+                similarities.append(sim.get("mean_mi", 0))
 
     return {
-        'mean_similarity': float(np.mean(similarities)) if similarities else 0,
-        'std_similarity': float(np.std(similarities)) if similarities else 0,
-        'n_comparisons': len(similarities),
-        'similarity_range': [
+        "mean_similarity": float(np.mean(similarities)) if similarities else 0,
+        "std_similarity": float(np.std(similarities)) if similarities else 0,
+        "n_comparisons": len(similarities),
+        "similarity_range": [
             float(np.min(similarities)) if similarities else 0,
             float(np.max(similarities)) if similarities else 0,
         ],
@@ -493,9 +478,7 @@ def _compare_sequence_similarity(
 
 
 def information_report(
-    results: Dict[str, Any],
-    output_path: Optional[Union[str, Path]] = None,
-    format: str = "markdown"
+    results: Dict[str, Any], output_path: Optional[Union[str, Path]] = None, format: str = "markdown"
 ) -> None:
     """Generate a comprehensive report from information analysis results.
 
@@ -520,7 +503,7 @@ def information_report(
         if format == "json":
             io.dump_json(report, output_path)
         else:
-            with open(output_path, 'w') as f:
+            with open(output_path, "w") as f:
                 f.write(report)
 
         logger.info(f"Generated information report: {output_path}")
@@ -538,8 +521,8 @@ def _generate_markdown_report(results: Dict[str, Any]) -> str:
     lines = ["# Information Analysis Report\n"]
 
     # Summary section
-    if 'workflow_info' in results:
-        info = results['workflow_info']
+    if "workflow_info" in results:
+        info = results["workflow_info"]
         lines.append("## Summary\n")
         lines.append(f"- **Sequences analyzed**: {info.get('n_sequences', 'N/A')}")
         lines.append(f"- **K-mer sizes**: {info.get('k_values', 'N/A')}")
@@ -547,34 +530,34 @@ def _generate_markdown_report(results: Dict[str, Any]) -> str:
         lines.append("")
 
     # Results section
-    if 'aggregate_results' in results:
-        agg = results['aggregate_results']
+    if "aggregate_results" in results:
+        agg = results["aggregate_results"]
         lines.append("## Aggregate Results\n")
 
-        if 'entropy_statistics' in agg:
+        if "entropy_statistics" in agg:
             lines.append("### Entropy Statistics\n")
-            for method, stats in agg['entropy_statistics'].items():
+            for method, stats in agg["entropy_statistics"].items():
                 lines.append(f"- **{method}**: {stats['mean']:.3f} ± {stats['std']:.3f}")
             lines.append("")
 
     # Detailed results
-    if 'sequence_analyses' in results and results['sequence_analyses']:
+    if "sequence_analyses" in results and results["sequence_analyses"]:
         lines.append("## Sequence Details\n")
         lines.append("| Sequence | Length | Shannon Entropy | Type |")
         lines.append("|----------|--------|----------------|------|")
 
-        for analysis in results['sequence_analyses'][:10]:  # Limit for readability
-            seq_idx = analysis.get('sequence_index', 'N/A')
-            length = analysis.get('sequence_length', 'N/A')
-            entropy = analysis.get('methods', {}).get('entropy', {}).get('shannon_entropy', 'N/A')
-            seq_type = analysis.get('sequence_type', 'N/A')
+        for analysis in results["sequence_analyses"][:10]:  # Limit for readability
+            seq_idx = analysis.get("sequence_index", "N/A")
+            length = analysis.get("sequence_length", "N/A")
+            entropy = analysis.get("methods", {}).get("entropy", {}).get("shannon_entropy", "N/A")
+            seq_type = analysis.get("sequence_type", "N/A")
 
             if isinstance(entropy, (int, float)):
                 entropy = ".3f"
 
             lines.append(f"| {seq_idx} | {length} | {entropy} | {seq_type} |")
 
-        if len(results['sequence_analyses']) > 10:
+        if len(results["sequence_analyses"]) > 10:
             lines.append(f"\n... and {len(results['sequence_analyses']) - 10} more sequences")
         lines.append("")
 
@@ -587,29 +570,23 @@ def _generate_text_report(results: Dict[str, Any]) -> str:
     lines.append("=" * 50)
 
     # Summary
-    if 'workflow_info' in results:
-        info = results['workflow_info']
+    if "workflow_info" in results:
+        info = results["workflow_info"]
         lines.append(f"Sequences analyzed: {info.get('n_sequences', 'N/A')}")
         lines.append(f"K-mer sizes: {info.get('k_values', 'N/A')}")
         lines.append(f"Processing time: {results.get('processing_time', 'N/A'):.2f}s")
         lines.append("")
 
     # Results summary
-    if 'aggregate_results' in results:
-        agg = results['aggregate_results']
+    if "aggregate_results" in results:
+        agg = results["aggregate_results"]
         lines.append("AGGREGATE RESULTS")
         lines.append("-" * 20)
 
-        if 'entropy_statistics' in agg:
+        if "entropy_statistics" in agg:
             lines.append("Entropy Statistics:")
-            for method, stats in agg['entropy_statistics'].items():
+            for method, stats in agg["entropy_statistics"].items():
                 lines.append(f"  {method}: {stats['mean']:.3f} ± {stats['std']:.3f}")
             lines.append("")
 
     return "\n".join(lines)
-
-
-
-
-
-

@@ -34,12 +34,12 @@ class TestDatabaseUtilities:
             "database": "testdb",
         }
         sanitized = sanitize_connection_params(params)
-        
+
         # SQL injection attempts should be removed
         assert "DROP" not in sanitized["user"]
         assert ";" not in sanitized["user"]
         assert "'" not in sanitized["password"]
-        
+
         # Valid parts should remain
         assert sanitized["host"] == "localhost"
         assert sanitized["database"] == "testdb"
@@ -69,11 +69,11 @@ class TestDatabaseConnection:
 
     @pytest.mark.skipif(
         os.environ.get("TEST_DATABASE_AVAILABLE") != "1",
-        reason="PostgreSQL not available - real implementation requires database connection"
+        reason="PostgreSQL not available - real implementation requires database connection",
     )
     def test_get_db_client_with_config(self):
         """Test database client creation with environment configuration.
-        
+
         Requires:
             - PG_HOST, PG_PORT, PG_DATABASE, PG_USER, PG_PASSWORD environment variables
             - OR: DB_NAME, DB_USER, DB_PASSWORD, PG_HOST environment variables
@@ -82,12 +82,12 @@ class TestDatabaseConnection:
             conn, cur = get_db_client()
             assert conn is not None
             assert cur is not None
-            
+
             # Test basic query
             cur.execute("SELECT 1")
             result = cur.fetchone()
             assert result == (1,)
-            
+
             # Cleanup
             cur.close()
             conn.close()
@@ -100,8 +100,7 @@ class TestDatabaseConnection:
         """Test database client creation fails gracefully without configuration."""
         # Save original environment
         original_env = {}
-        for key in ["PG_HOST", "PG_PORT", "PG_DATABASE", "PG_USER", "PG_PASSWORD",
-                   "DB_NAME", "DB_USER", "DB_PASSWORD"]:
+        for key in ["PG_HOST", "PG_PORT", "PG_DATABASE", "PG_USER", "PG_PASSWORD", "DB_NAME", "DB_USER", "DB_PASSWORD"]:
             original_env[key] = os.environ.get(key)
             if key in os.environ:
                 del os.environ[key]
@@ -115,7 +114,3 @@ class TestDatabaseConnection:
             for key, value in original_env.items():
                 if value is not None:
                     os.environ[key] = value
-
-
-
-

@@ -130,8 +130,7 @@ def test_kinship_heatmap_with_populations(tmp_path: Path) -> None:
     population_labels = ["POP_A"] * 20 + ["POP_B"] * 20
 
     output_path = tmp_path / "kinship_pop.png"
-    result = kinship_heatmap(kinship_matrix, sample_labels, output_path,
-                           population_labels=population_labels)
+    result = kinship_heatmap(kinship_matrix, sample_labels, output_path, population_labels=population_labels)
 
     assert result["status"] == "success"
     assert output_path.exists()

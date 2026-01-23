@@ -18,9 +18,7 @@ logger = logging.get_logger(__name__)
 
 
 def entropy_estimator(
-    counts: Union[Dict[Any, int], List[int]],
-    method: str = "plugin",
-    bias_correction: bool = True
+    counts: Union[Dict[Any, int], List[int]], method: str = "plugin", bias_correction: bool = True
 ) -> float:
     """Estimate Shannon entropy with various methods and bias correction.
 
@@ -62,11 +60,7 @@ def entropy_estimator(
         raise ValueError(f"Unknown entropy estimation method: {method}")
 
 
-def _plugin_entropy_estimator(
-    counts: np.ndarray,
-    total: int,
-    bias_correction: bool
-) -> float:
+def _plugin_entropy_estimator(counts: np.ndarray, total: int, bias_correction: bool) -> float:
     """Plugin (maximum likelihood) entropy estimator."""
     # Convert to probabilities
     probs = counts / total
@@ -178,10 +172,7 @@ def _jackknife_entropy_estimator(counts: np.ndarray, total: int) -> float:
 
 
 def mutual_information_estimator(
-    x: List[Any],
-    y: List[Any],
-    method: str = "plugin",
-    bias_correction: bool = True
+    x: List[Any], y: List[Any], method: str = "plugin", bias_correction: bool = True
 ) -> float:
     """Estimate mutual information I(X;Y) with bias correction.
 
@@ -224,12 +215,7 @@ def mutual_information_estimator(
     return max(0.0, mi)  # Ensure non-negative
 
 
-def kl_divergence_estimator(
-    p: List[Any],
-    q: List[Any],
-    method: str = "plugin",
-    bias_correction: bool = True
-) -> float:
+def kl_divergence_estimator(p: List[Any], q: List[Any], method: str = "plugin", bias_correction: bool = True) -> float:
     """Estimate KL divergence D_KL(P||Q) with bias correction.
 
     Args:
@@ -272,16 +258,12 @@ def kl_divergence_estimator(
             if q_prob > 0:
                 kl_div += p_prob * math.log2(p_prob / q_prob)
             else:
-                return float('inf')  # Infinite divergence
+                return float("inf")  # Infinite divergence
 
     return max(0.0, kl_div)
 
 
-def bias_correction(
-    entropy: float,
-    sample_size: int,
-    alphabet_size: int
-) -> float:
+def bias_correction(entropy: float, sample_size: int, alphabet_size: int) -> float:
     """Apply general bias correction to entropy estimate.
 
     Args:
@@ -312,7 +294,7 @@ def entropy_bootstrap_confidence(
     method: str = "plugin",
     n_bootstraps: int = 1000,
     confidence_level: float = 0.95,
-    random_state: Optional[int] = None
+    random_state: Optional[int] = None,
 ) -> Dict[str, float]:
     """Calculate bootstrap confidence interval for entropy estimate.
 
@@ -345,10 +327,10 @@ def entropy_bootstrap_confidence(
 
     if not items:
         return {
-            'entropy': 0.0,
-            'ci_lower': 0.0,
-            'ci_upper': 0.0,
-            'confidence_level': confidence_level,
+            "entropy": 0.0,
+            "ci_lower": 0.0,
+            "ci_upper": 0.0,
+            "confidence_level": confidence_level,
         }
 
     np.random.seed(random_state)
@@ -370,8 +352,8 @@ def entropy_bootstrap_confidence(
 
     # Calculate confidence interval
     alpha = 1 - confidence_level
-    ci_lower = np.percentile(bootstrap_entropies, alpha/2 * 100)
-    ci_upper = np.percentile(bootstrap_entropies, (1 - alpha/2) * 100)
+    ci_lower = np.percentile(bootstrap_entropies, alpha / 2 * 100)
+    ci_upper = np.percentile(bootstrap_entropies, (1 - alpha / 2) * 100)
 
     # Main estimate (using original data)
     if isinstance(counts, dict):
@@ -382,19 +364,15 @@ def entropy_bootstrap_confidence(
     main_entropy = entropy_estimator(main_counts, method=method, bias_correction=True)
 
     return {
-        'entropy': main_entropy,
-        'ci_lower': ci_lower,
-        'ci_upper': ci_upper,
-        'confidence_level': confidence_level,
-        'n_bootstraps': n_bootstraps,
+        "entropy": main_entropy,
+        "ci_lower": ci_lower,
+        "ci_upper": ci_upper,
+        "confidence_level": confidence_level,
+        "n_bootstraps": n_bootstraps,
     }
 
 
-def effective_sample_size_correction(
-    entropy: float,
-    sample_size: int,
-    alphabet_size: int
-) -> float:
+def effective_sample_size_correction(entropy: float, sample_size: int, alphabet_size: int) -> float:
     """Apply effective sample size correction for entropy estimation.
 
     This correction accounts for the fact that the effective sample size
@@ -421,10 +399,7 @@ def effective_sample_size_correction(
 
 
 def panzeri_treves_bias_correction(
-    entropy: float,
-    sample_size: int,
-    alphabet_size: int,
-    response_frequencies: Optional[np.ndarray] = None
+    entropy: float, sample_size: int, alphabet_size: int, response_frequencies: Optional[np.ndarray] = None
 ) -> float:
     """Apply Panzeri-Treves bias correction for entropy estimation.
 
@@ -470,11 +445,7 @@ def panzeri_treves_bias_correction(
     return max(0.0, corrected_entropy)
 
 
-def entropy_rate_estimator(
-    sequence: List[Any],
-    order: int = 1,
-    method: str = "plugin"
-) -> float:
+def entropy_rate_estimator(sequence: List[Any], order: int = 1, method: str = "plugin") -> float:
     """Estimate entropy rate of a sequence.
 
     The entropy rate is the limit of n-block entropy divided by n as n→∞.
@@ -504,9 +475,9 @@ def entropy_rate_estimator(
     # Using the chain rule: H(X_1^{n+1}) - H(X_1^n)
 
     # Build n+1 blocks
-    blocks_n1 = [tuple(sequence[i:i+order+1]) for i in range(n-order)]
+    blocks_n1 = [tuple(sequence[i : i + order + 1]) for i in range(n - order)]
     # Build n blocks
-    blocks_n = [tuple(sequence[i:i+order]) for i in range(n-order+1)]
+    blocks_n = [tuple(sequence[i : i + order]) for i in range(n - order + 1)]
 
     # Estimate entropies
     h_n1 = entropy_estimator(Counter(blocks_n1), method=method)
@@ -516,9 +487,3 @@ def entropy_rate_estimator(
     entropy_rate = h_n1 - h_n
 
     return max(0.0, entropy_rate)
-
-
-
-
-
-

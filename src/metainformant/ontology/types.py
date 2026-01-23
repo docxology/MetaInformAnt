@@ -20,6 +20,7 @@ class Term:
     An ontology term contains metadata about a biological concept,
     such as a gene, process, or molecular function.
     """
+
     id: str
     name: Optional[str] = None
     definition: Optional[str] = None
@@ -56,6 +57,7 @@ class Relationship:
     Relationships define how terms are connected in an ontology hierarchy,
     such as "is_a", "part_of", or "regulates".
     """
+
     source: str
     target: str
     relation_type: str
@@ -82,6 +84,7 @@ class Ontology:
     An ontology contains terms and their relationships, along with
     metadata about the ontology itself.
     """
+
     terms: Dict[str, Term] = field(default_factory=dict)
     relationships: List[Relationship] = field(default_factory=list)
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -145,15 +148,13 @@ class Ontology:
     def get_roots(self, relation_type: str = "is_a") -> Set[str]:
         """Get all root terms (terms with no parents)."""
         all_terms = set(self.terms.keys())
-        terms_with_parents = {rel.source for rel in self.relationships
-                            if rel.relation_type == relation_type}
+        terms_with_parents = {rel.source for rel in self.relationships if rel.relation_type == relation_type}
         return all_terms - terms_with_parents
 
     def get_leaves(self, relation_type: str = "is_a") -> Set[str]:
         """Get all leaf terms (terms with no children)."""
         all_terms = set(self.terms.keys())
-        terms_with_children = {rel.target for rel in self.relationships
-                             if rel.relation_type == relation_type}
+        terms_with_children = {rel.target for rel in self.relationships if rel.relation_type == relation_type}
         return all_terms - terms_with_children
 
     def __len__(self) -> int:
@@ -173,7 +174,7 @@ def create_term(
     synonyms: Optional[List[str]] = None,
     xrefs: Optional[List[str]] = None,
     is_obsolete: bool = False,
-    **metadata: Any
+    **metadata: Any,
 ) -> Term:
     """Create a new ontology term.
 
@@ -208,16 +209,11 @@ def create_term(
         synonyms=synonyms or [],
         xrefs=xrefs or [],
         is_obsolete=is_obsolete,
-        metadata=metadata
+        metadata=metadata,
     )
 
 
-def create_relationship(
-    source: str,
-    target: str,
-    relation_type: str,
-    **metadata: Any
-) -> Relationship:
+def create_relationship(source: str, target: str, relation_type: str, **metadata: Any) -> Relationship:
     """Create a new relationship between ontology terms.
 
     Args:
@@ -238,18 +234,11 @@ def create_relationship(
         >>> str(rel)
         'GO:0009987 is_a GO:0008150'
     """
-    return Relationship(
-        source=source,
-        target=target,
-        relation_type=relation_type,
-        metadata=metadata
-    )
+    return Relationship(source=source, target=target, relation_type=relation_type, metadata=metadata)
 
 
 def create_ontology(
-    terms: Optional[Dict[str, Term]] = None,
-    relationships: Optional[List[Relationship]] = None,
-    **metadata: Any
+    terms: Optional[Dict[str, Term]] = None, relationships: Optional[List[Relationship]] = None, **metadata: Any
 ) -> Ontology:
     """Create a new ontology.
 
@@ -269,14 +258,4 @@ def create_ontology(
         >>> len(ontology)
         1
     """
-    return Ontology(
-        terms=terms or {},
-        relationships=relationships or [],
-        metadata=metadata
-    )
-
-
-
-
-
-
+    return Ontology(terms=terms or {}, relationships=relationships or [], metadata=metadata)

@@ -78,8 +78,8 @@ def calculate_fst(population1: List[str], population2: List[str]) -> float:
             total_freq[allele] = (count_pop1 + count_pop2) / total_n
 
         # Calculate F_ST contribution for this site
-        ht = 1 - sum(f ** 2 for f in total_freq.values())  # Total heterozygosity
-        hs = (sum(f ** 2 for f in freq_pop1.values()) + sum(f ** 2 for f in freq_pop2.values())) / 2
+        ht = 1 - sum(f**2 for f in total_freq.values())  # Total heterozygosity
+        hs = (sum(f**2 for f in freq_pop1.values()) + sum(f**2 for f in freq_pop2.values())) / 2
         hs = 1 - hs  # Average within-population heterozygosity
 
         if ht > 0:
@@ -113,24 +113,24 @@ def detect_selection(sequences: List[str], method: str = "tajima_d") -> Dict[str
         True
     """
     if not sequences:
-        return {'tajima_d': 0.0, 'p_value': 1.0}
+        return {"tajima_d": 0.0, "p_value": 1.0}
 
     results = {}
 
     if method == "tajima_d":
         tajima_d, p_value = calculate_tajima_d(sequences)
-        results['tajima_d'] = tajima_d
-        results['p_value'] = p_value
+        results["tajima_d"] = tajima_d
+        results["p_value"] = p_value
 
     elif method == "fu_li_d":
         fu_li_d, p_value = calculate_fu_li_d(sequences)
-        results['fu_li_d'] = fu_li_d
-        results['p_value'] = p_value
+        results["fu_li_d"] = fu_li_d
+        results["p_value"] = p_value
 
     elif method == "mk_test":
         alpha, omega = mcdonald_kreitman_test(sequences)
-        results['alpha'] = alpha
-        results['omega'] = omega
+        results["alpha"] = alpha
+        results["omega"] = omega
 
     else:
         raise ValueError(f"Unknown selection detection method: {method}")
@@ -181,16 +181,16 @@ def calculate_tajima_d(sequences: List[str]) -> Tuple[float, float]:
 
     # Variance of D (approximate)
     a1 = sum(1.0 / i for i in range(1, n))
-    a2 = sum(1.0 / (i ** 2) for i in range(1, n))
+    a2 = sum(1.0 / (i**2) for i in range(1, n))
 
     b1 = (n + 1) / (3 * (n - 1))
-    b2 = 2 * (n ** 2 + n + 3) / (9 * n * (n - 1))
+    b2 = 2 * (n**2 + n + 3) / (9 * n * (n - 1))
 
     c1 = b1 - 1 / a1
-    c2 = b2 - (n + 2) / (a1 * n) + a2 / (a1 ** 2)
+    c2 = b2 - (n + 2) / (a1 * n) + a2 / (a1**2)
 
     e1 = c1 / a1
-    e2 = c2 / (a1 ** 2 + a2)
+    e2 = c2 / (a1**2 + a2)
 
     var_d = e1 * segregating_sites + e2 * segregating_sites * (segregating_sites - 1)
 
@@ -202,6 +202,7 @@ def calculate_tajima_d(sequences: List[str]) -> Tuple[float, float]:
 
     # Approximate p-value (two-tailed test)
     from scipy import stats
+
     try:
         p_value = 2 * (1 - stats.norm.cdf(abs(tajima_d)))
     except ImportError:
@@ -249,8 +250,7 @@ def calculate_fu_li_d(sequences: List[str]) -> Tuple[float, float]:
     # D = (singletons - a1 * segregating_sites) / sqrt(var)
 
     # For now, return a basic implementation
-    segregating_sites = sum(1 for pos in range(seq_length)
-                           if len(set(seq[pos] for seq in sequences)) > 1)
+    segregating_sites = sum(1 for pos in range(seq_length) if len(set(seq[pos] for seq in sequences)) > 1)
 
     if segregating_sites == 0:
         return 0.0, 1.0
@@ -269,6 +269,7 @@ def calculate_fu_li_d(sequences: List[str]) -> Tuple[float, float]:
     # Approximate p-value
     try:
         from scipy import stats
+
         p_value = 2 * (1 - stats.norm.cdf(abs(fu_li_d)))
     except ImportError:
         p_value = 0.5  # Conservative estimate
@@ -283,9 +284,11 @@ def calculate_fu_li_variance(n: int, s: int) -> float:
 
     # Simplified variance calculation
     a1 = sum(1.0 / i for i in range(1, n))
-    a2 = sum(1.0 / (i ** 2) for i in range(1, n))
+    a2 = sum(1.0 / (i**2) for i in range(1, n))
 
-    variance = ((n - 2) / (6 * (n - 1))) * s + (18 * n * (n - 1) * a2 - 88 * n * a1 ** 2) / (9 * (n - 1) ** 2) * s * (s - 1)
+    variance = ((n - 2) / (6 * (n - 1))) * s + (18 * n * (n - 1) * a2 - 88 * n * a1**2) / (9 * (n - 1) ** 2) * s * (
+        s - 1
+    )
 
     return max(0, variance)
 
@@ -329,7 +332,7 @@ def estimate_population_size(sequences: List[str], mutation_rate: float = 1e-8) 
         True
     """
     if not sequences:
-        return {'theta_watterson': 0.0, 'theta_pi': 0.0, 'ne_estimate': 0.0}
+        return {"theta_watterson": 0.0, "theta_pi": 0.0, "ne_estimate": 0.0}
 
     # Calculate theta estimates
     theta_w = calculate_wattersons_theta(sequences)
@@ -344,11 +347,11 @@ def estimate_population_size(sequences: List[str], mutation_rate: float = 1e-8) 
         ne_estimate = 0.0
 
     return {
-        'theta_watterson': theta_w,
-        'theta_pi': theta_pi,
-        'ne_estimate': ne_estimate,
-        'sequence_length': seq_length,
-        'sample_size': len(sequences)
+        "theta_watterson": theta_w,
+        "theta_pi": theta_pi,
+        "ne_estimate": ne_estimate,
+        "sequence_length": seq_length,
+        "sample_size": len(sequences),
     }
 
 
@@ -369,7 +372,7 @@ def detect_population_structure(sequences: List[str], k_max: int = 5) -> Dict[st
         True
     """
     if len(sequences) < 4:
-        return {'clusters': [], 'k_optimal': 1}
+        return {"clusters": [], "k_optimal": 1}
 
     # Simple distance-based clustering
     # In practice, would use more sophisticated methods
@@ -381,6 +384,7 @@ def detect_population_structure(sequences: List[str], k_max: int = 5) -> Dict[st
     for i in range(len(sequences)):
         for j in range(i + 1, len(sequences)):
             from ..alignment import distances
+
             dist = distances.p_distance(sequences[i], sequences[j])
             distances.append((i, j, dist))
 
@@ -406,10 +410,10 @@ def detect_population_structure(sequences: List[str], k_max: int = 5) -> Dict[st
             cluster_id += 1
 
     return {
-        'clusters': clusters,
-        'cluster_assignments': cluster_assignments,
-        'k_optimal': len(clusters),
-        'threshold_used': threshold
+        "clusters": clusters,
+        "cluster_assignments": cluster_assignments,
+        "k_optimal": len(clusters),
+        "threshold_used": threshold,
     }
 
 
@@ -445,6 +449,7 @@ def calculate_ld_decay(sequences: List[str]) -> List[Tuple[int, float]]:
 
             # Simple correlation
             from ..alignment import distances
+
             correlation = 0.0  # Would need proper LD calculation
 
             ld_values.append((distance, correlation))
@@ -468,25 +473,28 @@ def calculate_ld_decay(sequences: List[str]) -> List[Tuple[int, float]]:
 def calculate_nucleotide_diversity(sequences: List[str]) -> float:
     """Calculate nucleotide diversity (π)."""
     from . import core as population
+
     return population.nucleotide_diversity(sequences)
 
 
 def calculate_wattersons_theta(sequences: List[str]) -> float:
     """Calculate Watterson's θ."""
     from . import core as population
+
     return population.wattersons_theta(sequences)
 
 
 def calculate_segregating_sites(sequences: List[str]) -> int:
     """Count segregating sites."""
     from . import core as population
+
     return population.segregating_sites(sequences)
 
 
 def calculate_summary_statistics(
     sequences: List[str] | None = None,
     genotype_matrix: List[List[int]] | None = None,
-    populations: List[int] | None = None
+    populations: List[int] | None = None,
 ) -> Dict[str, any]:
     """Calculate comprehensive population genetics summary statistics.
 
@@ -510,30 +518,30 @@ def calculate_summary_statistics(
         logger.info(f"Calculating summary statistics for {len(sequences)} sequences")
 
         # Basic diversity measures
-        results['nucleotide_diversity'] = calculate_nucleotide_diversity(sequences)
-        results['watterson_theta'] = calculate_wattersons_theta(sequences)
-        results['segregating_sites'] = calculate_segregating_sites(sequences)
+        results["nucleotide_diversity"] = calculate_nucleotide_diversity(sequences)
+        results["watterson_theta"] = calculate_wattersons_theta(sequences)
+        results["segregating_sites"] = calculate_segregating_sites(sequences)
 
         # Neutrality tests
         try:
             tajima_d, tajima_p = calculate_tajima_d(sequences)
-            results['tajima_d'] = tajima_d
-            results['tajima_d_p_value'] = tajima_p
+            results["tajima_d"] = tajima_d
+            results["tajima_d_p_value"] = tajima_p
         except Exception:
-            results['tajima_d'] = None
-            results['tajima_d_p_value'] = None
+            results["tajima_d"] = None
+            results["tajima_d_p_value"] = None
 
         try:
             fu_li_d, fu_li_p = calculate_fu_li_d(sequences)
-            results['fu_li_d'] = fu_li_d
-            results['fu_li_d_p_value'] = fu_li_p
+            results["fu_li_d"] = fu_li_d
+            results["fu_li_d_p_value"] = fu_li_p
         except Exception:
-            results['fu_li_d'] = None
-            results['fu_li_d_p_value'] = None
+            results["fu_li_d"] = None
+            results["fu_li_d_p_value"] = None
 
         # Sequence properties
-        results['sequence_length'] = len(sequences[0]) if sequences else 0
-        results['sample_size'] = len(sequences)
+        results["sequence_length"] = len(sequences[0]) if sequences else 0
+        results["sample_size"] = len(sequences)
 
     if genotype_matrix:
         logger.info(f"Calculating summary statistics for genotype matrix with {len(genotype_matrix)} individuals")
@@ -542,21 +550,21 @@ def calculate_summary_statistics(
         genotypes = np.array(genotype_matrix)
 
         # Basic statistics
-        results['num_individuals'] = len(genotypes)
-        results['num_loci'] = genotypes.shape[1] if genotypes.size > 0 else 0
+        results["num_individuals"] = len(genotypes)
+        results["num_loci"] = genotypes.shape[1] if genotypes.size > 0 else 0
 
         # Heterozygosity
         if genotypes.size > 0:
             from . import core as population
+
             het_values = []
             for locus in range(genotypes.shape[1]):
-                locus_genotypes = [(genotypes[i, locus] // 2, genotypes[i, locus] % 2)
-                                 for i in range(len(genotypes))]
+                locus_genotypes = [(genotypes[i, locus] // 2, genotypes[i, locus] % 2) for i in range(len(genotypes))]
                 het = population.observed_heterozygosity(locus_genotypes)
                 het_values.append(het)
 
-            results['mean_heterozygosity'] = np.mean(het_values) if het_values else 0.0
-            results['heterozygosity_variance'] = np.var(het_values) if het_values else 0.0
+            results["mean_heterozygosity"] = np.mean(het_values) if het_values else 0.0
+            results["heterozygosity_variance"] = np.var(het_values) if het_values else 0.0
 
     if populations and sequences:
         # Population differentiation
@@ -571,9 +579,9 @@ def calculate_summary_statistics(
                 pop2_seqs = [sequences[i] for i in pop2_idx]
 
                 try:
-                    results['fst'] = calculate_fst(pop1_seqs, pop2_seqs)
+                    results["fst"] = calculate_fst(pop1_seqs, pop2_seqs)
                 except Exception:
-                    results['fst'] = None
+                    results["fst"] = None
 
     return results
 
@@ -601,7 +609,7 @@ def compare_populations(pop1_data: Dict[str, Any], pop2_data: Dict[str, Any]) ->
     if "nucleotide_diversity" in pop1_data and "nucleotide_diversity" in pop2_data:
         pi1 = pop1_data["nucleotide_diversity"]
         pi2 = pop2_data["nucleotide_diversity"]
-        comparison["nucleotide_diversity_ratio"] = pi2 / pi1 if pi1 > 0 else float('inf')
+        comparison["nucleotide_diversity_ratio"] = pi2 / pi1 if pi1 > 0 else float("inf")
         comparison["nucleotide_diversity_difference"] = pi2 - pi1
 
     # Compare Tajima's D
@@ -630,7 +638,7 @@ def compare_populations(pop1_data: Dict[str, Any], pop2_data: Dict[str, Any]) ->
         fst2 = pop2_data["fst"]
         if fst1 is not None and fst2 is not None:
             comparison["fst_difference"] = fst2 - fst1
-            comparison["fst_ratio"] = fst2 / fst1 if fst1 > 0 else float('inf')
+            comparison["fst_ratio"] = fst2 / fst1 if fst1 > 0 else float("inf")
 
     return comparison
 
@@ -656,51 +664,51 @@ def neutrality_test_suite(sequences: List[str]) -> Dict[str, Any]:
         return results
 
     # Basic statistics
-    results['num_sequences'] = len(sequences)
-    results['sequence_length'] = len(sequences[0]) if sequences else 0
+    results["num_sequences"] = len(sequences)
+    results["sequence_length"] = len(sequences[0]) if sequences else 0
 
     # Tajima's D
     try:
         tajima_d, tajima_p = calculate_tajima_d(sequences)
-        results['tajima_d'] = tajima_d
-        results['tajima_d_p_value'] = tajima_p
+        results["tajima_d"] = tajima_d
+        results["tajima_d_p_value"] = tajima_p
     except Exception as e:
         logger.warning(f"Failed to calculate Tajima's D: {e}")
-        results['tajima_d'] = None
-        results['tajima_d_p_value'] = None
+        results["tajima_d"] = None
+        results["tajima_d_p_value"] = None
 
     # Fu and Li's D*
     try:
         fu_li_d_star, fu_li_d_star_p = calculate_fu_li_d(sequences)
-        results['fu_li_d_star'] = fu_li_d_star
-        results['fu_li_d_star_p_value'] = fu_li_d_star_p
+        results["fu_li_d_star"] = fu_li_d_star
+        results["fu_li_d_star_p_value"] = fu_li_d_star_p
     except Exception as e:
         logger.warning(f"Failed to calculate Fu and Li's D*: {e}")
-        results['fu_li_d_star'] = None
-        results['fu_li_d_star_p_value'] = None
+        results["fu_li_d_star"] = None
+        results["fu_li_d_star_p_value"] = None
 
     # Fu and Li's F*
     try:
         fu_li_f_star, fu_li_f_star_p = calculate_fu_li_f(sequences)
-        results['fu_li_f_star'] = fu_li_f_star
-        results['fu_li_f_star_p_value'] = fu_li_f_star_p
+        results["fu_li_f_star"] = fu_li_f_star
+        results["fu_li_f_star_p_value"] = fu_li_f_star_p
     except Exception as e:
         logger.warning(f"Failed to calculate Fu and Li's F*: {e}")
-        results['fu_li_f_star'] = None
-        results['fu_li_f_star_p_value'] = None
+        results["fu_li_f_star"] = None
+        results["fu_li_f_star_p_value"] = None
 
     # Fay and Wu's H
     try:
         fay_wu_h, fay_wu_h_p = calculate_fay_wu_h(sequences)
-        results['fay_wu_h'] = fay_wu_h
-        results['fay_wu_h_p_value'] = fay_wu_h_p
+        results["fay_wu_h"] = fay_wu_h
+        results["fay_wu_h_p_value"] = fay_wu_h_p
     except Exception as e:
         logger.warning(f"Failed to calculate Fay and Wu's H: {e}")
-        results['fay_wu_h'] = None
-        results['fay_wu_h_p_value'] = None
+        results["fay_wu_h"] = None
+        results["fay_wu_h_p_value"] = None
 
     # Summary interpretation
-    results['neutrality_summary'] = interpret_neutrality_results(results)
+    results["neutrality_summary"] = interpret_neutrality_results(results)
 
     return results
 
@@ -717,30 +725,27 @@ def interpret_neutrality_results(results: Dict[str, Any]) -> Dict[str, str]:
     interpretation = {}
 
     # Tajima's D interpretation
-    tajima_d = results.get('tajima_d')
+    tajima_d = results.get("tajima_d")
     if tajima_d is not None:
         if tajima_d > 0:
-            interpretation['tajima_d'] = 'balancing_selection_or_population_expansion'
+            interpretation["tajima_d"] = "balancing_selection_or_population_expansion"
         elif tajima_d < 0:
-            interpretation['tajima_d'] = 'positive_selection_or_population_bottleneck'
+            interpretation["tajima_d"] = "positive_selection_or_population_bottleneck"
         else:
-            interpretation['tajima_d'] = 'neutral_evolution'
+            interpretation["tajima_d"] = "neutral_evolution"
     else:
-        interpretation['tajima_d'] = 'calculation_failed'
+        interpretation["tajima_d"] = "calculation_failed"
 
     # Fu and Li's tests interpretation
-    fu_li_d_star = results.get('fu_li_d_star')
+    fu_li_d_star = results.get("fu_li_d_star")
     if fu_li_d_star is not None:
         if fu_li_d_star > 0:
-            interpretation['fu_li_d_star'] = 'balancing_selection'
+            interpretation["fu_li_d_star"] = "balancing_selection"
         elif fu_li_d_star < 0:
-            interpretation['fu_li_d_star'] = 'positive_selection_or_population_expansion'
+            interpretation["fu_li_d_star"] = "positive_selection_or_population_expansion"
         else:
-            interpretation['fu_li_d_star'] = 'neutral_evolution'
+            interpretation["fu_li_d_star"] = "neutral_evolution"
     else:
-        interpretation['fu_li_d_star'] = 'calculation_failed'
+        interpretation["fu_li_d_star"] = "calculation_failed"
 
     return interpretation
-
-
-

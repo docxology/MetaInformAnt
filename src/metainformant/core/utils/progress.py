@@ -19,6 +19,7 @@ try:
     _HAS_TQDM = True
 except ImportError:
     _HAS_TQDM = False
+
     # Create a minimal tqdm-like interface
     class tqdm:  # type: ignore
         def __init__(self, iterable=None, total=None, desc=None, **kwargs):
@@ -49,7 +50,9 @@ except ImportError:
             self.desc = desc
 
 
-def progress_bar(iterable: Iterator[Any] | None = None, total: int | None = None, desc: str | None = None, **kwargs: Any) -> tqdm:
+def progress_bar(
+    iterable: Iterator[Any] | None = None, total: int | None = None, desc: str | None = None, **kwargs: Any
+) -> tqdm:
     """Create a progress bar for iterating over items.
 
     Args:
@@ -131,5 +134,3 @@ def log_progress(current: int, total: int | None, message: str = "") -> None:
         logger.info(f"{message}: {current}/{total} ({pct:.1f}%)")
     else:
         logger.info(f"{message}: {current} items")
-
-

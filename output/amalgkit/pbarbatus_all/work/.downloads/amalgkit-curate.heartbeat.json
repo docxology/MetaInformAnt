@@ -3,7 +3,7 @@
   "destination": "output/amalgkit/pbarbatus_all/work/curate",
   "errors": [],
   "eta_seconds": null,
-  "last_update": "2026-01-21T19:41:07Z",
+  "last_update": "2026-01-22T02:13:14Z",
   "progress": {
     "current": 0,
     "percent": 0.0,
@@ -11,8 +11,8 @@
     "type": "file_count"
   },
   "progress_percent": 0.0,
-  "speed_mbps": 11.740111658481236,
-  "started_at": "2026-01-21T19:41:06Z",
+  "speed_mbps": 11.74421893585778,
+  "started_at": "2026-01-22T02:13:13Z",
   "status": "completed",
   "step": "amalgkit curate",
   "total_bytes": null,

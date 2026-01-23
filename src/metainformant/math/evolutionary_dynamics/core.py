@@ -40,9 +40,15 @@ def logistic_map(r: float, x0: float, n_iterations: int) -> List[float]:
     return sequence
 
 
-def lotka_volterra_step(prey: float, predator: float, alpha: float = 1.0,
-                       beta: float = 0.1, gamma: float = 1.5, delta: float = 0.075,
-                       dt: float = 0.01) -> tuple[float, float]:
+def lotka_volterra_step(
+    prey: float,
+    predator: float,
+    alpha: float = 1.0,
+    beta: float = 0.1,
+    gamma: float = 1.5,
+    delta: float = 0.075,
+    dt: float = 0.01,
+) -> tuple[float, float]:
     """Single step of Lotka-Volterra predator-prey model.
 
     Args:
@@ -100,31 +106,29 @@ def replicator_derivative(frequencies: List[float], fitness_matrix: np.ndarray) 
 
     # Replicator equation: dx_i/dt = x_i * (f_i(x) - phi(x))
     derivatives = x * (fitness - avg_fitness)
-    
+
     derivatives = x * (fitness - avg_fitness)
-    
+
     return derivatives.tolist()
 
 
 def replicator_step(frequencies: List[float], fitness_matrix: np.ndarray, dt: float = 0.1) -> List[float]:
     """Perform a single step of replicator dynamics.
-    
+
     Args:
         frequencies: Current strategy frequencies
         fitness_matrix: Payoff matrix
         dt: Time step
-        
+
     Returns:
         New frequencies
     """
     derivs = replicator_derivative(frequencies, fitness_matrix)
     new_freqs = [f + d * dt for f, d in zip(frequencies, derivs)]
-    
+
     # Normalize
     total = sum(new_freqs)
     if total > 0:
         new_freqs = [f / total for f in new_freqs]
-        
+
     return new_freqs
-
-

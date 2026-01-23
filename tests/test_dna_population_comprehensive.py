@@ -235,11 +235,11 @@ class TestIntegration:
         pi = population.nucleotide_diversity(seqs)
         S = population.segregating_sites(seqs)
         theta_w = population.wattersons_theta(seqs)
-        
+
         assert pi >= 0
         assert S >= 0
         assert theta_w >= 0
-        
+
         # If there are segregating sites, diversity should be positive
         if S > 0:
             assert pi > 0
@@ -248,11 +248,11 @@ class TestIntegration:
         """Test that Fst relates to diversity within and between populations."""
         pop1 = ["AAAA", "AAAT"]
         pop2 = ["TTTT", "TTTA"]
-        
+
         fst = population.hudson_fst(pop1, pop2)
         pi1 = population.nucleotide_diversity(pop1)
         pi2 = population.nucleotide_diversity(pop2)
-        
+
         # Fst should be high when populations are very different
         assert 0.0 <= fst <= 1.0
         # Diversity within populations should be non-negative

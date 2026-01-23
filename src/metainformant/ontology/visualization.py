@@ -21,6 +21,7 @@ from metainformant.core import logging, paths, validation
 # Optional scientific dependencies
 try:
     import networkx as nx
+
     HAS_NETWORKX = True
 except ImportError:
     HAS_NETWORKX = False
@@ -30,6 +31,7 @@ logger = logging.get_logger(__name__)
 
 try:
     import seaborn as sns
+
     HAS_SEABORN = True
 except ImportError:
     HAS_SEABORN = False
@@ -38,6 +40,7 @@ except ImportError:
 try:
     import plotly.graph_objects as go
     import plotly.express as px
+
     HAS_PLOTLY = True
 except ImportError:
     HAS_PLOTLY = False
@@ -52,7 +55,7 @@ def plot_go_dag(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot Gene Ontology directed acyclic graph (DAG).
 
@@ -71,10 +74,7 @@ def plot_go_dag(
         ImportError: If networkx not available
     """
     if not HAS_NETWORKX:
-        raise ImportError(
-            "networkx is required for GO DAG plotting. "
-            "Install with: uv pip install networkx"
-        )
+        raise ImportError("networkx is required for GO DAG plotting. " "Install with: uv pip install networkx")
 
     validation.validate_type(go_graph, nx.DiGraph, "go_graph")
 
@@ -84,31 +84,28 @@ def plot_go_dag(
     # Use hierarchical layout
     try:
         pos = nx.spring_layout(go_graph, k=1, iterations=50)
-    except:
+    except (ValueError, nx.NetworkXError):
         pos = nx.random_layout(go_graph)
 
     # Draw nodes
-    node_colors = ['red' if terms and node in terms else 'lightblue'
-                   for node in go_graph.nodes()]
+    node_colors = ["red" if terms and node in terms else "lightblue" for node in go_graph.nodes()]
 
-    nx.draw_networkx_nodes(go_graph, pos, node_color=node_colors,
-                          node_size=300, alpha=0.8, ax=ax)
+    nx.draw_networkx_nodes(go_graph, pos, node_color=node_colors, node_size=300, alpha=0.8, ax=ax)
 
     # Draw edges
-    nx.draw_networkx_edges(go_graph, pos, edge_color='gray',
-                          arrows=True, arrowsize=10, ax=ax)
+    nx.draw_networkx_edges(go_graph, pos, edge_color="gray", arrows=True, arrowsize=10, ax=ax)
 
     # Draw labels (only for highlighted terms or small graphs)
     if terms or len(go_graph) < 20:
         labels = {node: node for node in (terms if terms else go_graph.nodes())}
         nx.draw_networkx_labels(go_graph, pos, labels, font_size=8, ax=ax)
 
-    ax.set_title('Gene Ontology DAG')
-    ax.axis('off')
+    ax.set_title("Gene Ontology DAG")
+    ax.axis("off")
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"GO DAG plot saved to {output_path}")
 
     return ax
@@ -121,7 +118,7 @@ def plot_semantic_similarity_matrix(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 8),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot semantic similarity matrix heatmap.
 
@@ -147,23 +144,32 @@ def plot_semantic_similarity_matrix(
     # Plot heatmap
     if HAS_SEABORN:
         mask = np.triu(np.ones_like(similarity_matrix, dtype=bool))
-        sns.heatmap(similarity_matrix, mask=mask, annot=len(similarity_matrix) <= 10,
-                   fmt='.2f', cmap='YlOrRd', square=True, ax=ax,
-                   xticklabels=term_labels, yticklabels=term_labels, **kwargs)
+        sns.heatmap(
+            similarity_matrix,
+            mask=mask,
+            annot=len(similarity_matrix) <= 10,
+            fmt=".2f",
+            cmap="YlOrRd",
+            square=True,
+            ax=ax,
+            xticklabels=term_labels,
+            yticklabels=term_labels,
+            **kwargs,
+        )
     else:
-        im = ax.imshow(similarity_matrix, cmap='YlOrRd', aspect='equal')
+        im = ax.imshow(similarity_matrix, cmap="YlOrRd", aspect="equal")
         ax.set_xticks(range(len(similarity_matrix)))
         ax.set_yticks(range(len(similarity_matrix)))
         if term_labels:
-            ax.set_xticklabels(term_labels, rotation=45, ha='right')
+            ax.set_xticklabels(term_labels, rotation=45, ha="right")
             ax.set_yticklabels(term_labels)
         plt.colorbar(im, ax=ax)
 
-    ax.set_title('Semantic Similarity Matrix')
+    ax.set_title("Semantic Similarity Matrix")
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Semantic similarity matrix saved to {output_path}")
 
     return ax
@@ -175,7 +181,7 @@ def plot_go_enrichment_barplot(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 6),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot GO enrichment results as a bar plot.
 
@@ -195,9 +201,9 @@ def plot_go_enrichment_barplot(
         fig, ax = plt.subplots(figsize=figsize)
 
     # Extract data
-    terms = [result.get('term', f'Term {i}') for i, result in enumerate(enrichment_results)]
-    pvalues = [-np.log10(result.get('pvalue', 1.0)) for result in enrichment_results]
-    fold_changes = [result.get('fold_change', 1.0) for result in enrichment_results]
+    terms = [result.get("term", f"Term {i}") for i, result in enumerate(enrichment_results)]
+    pvalues = [-np.log10(result.get("pvalue", 1.0)) for result in enrichment_results]
+    fold_changes = [result.get("fold_change", 1.0) for result in enrichment_results]
 
     # Sort by significance
     sorted_idx = np.argsort(pvalues)[::-1]
@@ -205,22 +211,21 @@ def plot_go_enrichment_barplot(
     pvalues = [pvalues[i] for i in sorted_idx]
 
     # Plot horizontal bar chart
-    bars = ax.barh(range(len(terms)), pvalues, color='skyblue', alpha=0.8)
+    bars = ax.barh(range(len(terms)), pvalues, color="skyblue", alpha=0.8)
 
     # Add term labels
     ax.set_yticks(range(len(terms)))
     ax.set_yticklabels(terms)
-    ax.set_xlabel('-log₁₀(p-value)')
-    ax.set_title('GO Enrichment Analysis')
+    ax.set_xlabel("-log₁₀(p-value)")
+    ax.set_title("GO Enrichment Analysis")
 
     # Add value labels on bars
     for i, (bar, pval) in enumerate(zip(bars, pvalues)):
-        ax.text(bar.get_width() + 0.1, bar.get_y() + bar.get_height()/2,
-               '.2f', ha='left', va='center', fontsize=8)
+        ax.text(bar.get_width() + 0.1, bar.get_y() + bar.get_height() / 2, ".2f", ha="left", va="center", fontsize=8)
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"GO enrichment barplot saved to {output_path}")
 
     return ax
@@ -232,7 +237,7 @@ def plot_go_enrichment_dotplot(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 8),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot GO enrichment results as a dot plot (bubble plot).
 
@@ -252,34 +257,37 @@ def plot_go_enrichment_dotplot(
         fig, ax = plt.subplots(figsize=figsize)
 
     # Extract data
-    terms = [result.get('term', f'Term {i}') for i, result in enumerate(enrichment_results)]
-    pvalues = [-np.log10(result.get('pvalue', 1.0)) for result in enrichment_results]
-    gene_counts = [result.get('gene_count', 1) for result in enrichment_results]
+    terms = [result.get("term", f"Term {i}") for i, result in enumerate(enrichment_results)]
+    pvalues = [-np.log10(result.get("pvalue", 1.0)) for result in enrichment_results]
+    gene_counts = [result.get("gene_count", 1) for result in enrichment_results]
 
     # Create scatter plot with bubble sizes
-    scatter = ax.scatter(pvalues, range(len(terms)), s=np.array(gene_counts) * 20,
-                        c=pvalues, cmap='Reds', alpha=0.7, edgecolors='black')
+    scatter = ax.scatter(
+        pvalues, range(len(terms)), s=np.array(gene_counts) * 20, c=pvalues, cmap="Reds", alpha=0.7, edgecolors="black"
+    )
 
     # Add term labels
     ax.set_yticks(range(len(terms)))
     ax.set_yticklabels(terms)
-    ax.set_xlabel('-log₁₀(p-value)')
-    ax.set_title('GO Enrichment Analysis (Dot Plot)')
+    ax.set_xlabel("-log₁₀(p-value)")
+    ax.set_title("GO Enrichment Analysis (Dot Plot)")
 
     # Add colorbar
     cbar = plt.colorbar(scatter, ax=ax)
-    cbar.set_label('-log₁₀(p-value)')
+    cbar.set_label("-log₁₀(p-value)")
 
     # Add legend for bubble sizes
     sizes = [5, 10, 20, 30]
-    labels = [f'{s//20} genes' for s in sizes]
-    legend_elements = [plt.scatter([], [], s=s, c='gray', alpha=0.5, edgecolors='black',
-                                  label=label) for s, label in zip(sizes, labels)]
-    ax.legend(handles=legend_elements, title='Gene Count', bbox_to_anchor=(1.05, 1), loc='upper left')
+    labels = [f"{s//20} genes" for s in sizes]
+    legend_elements = [
+        plt.scatter([], [], s=s, c="gray", alpha=0.5, edgecolors="black", label=label)
+        for s, label in zip(sizes, labels)
+    ]
+    ax.legend(handles=legend_elements, title="Gene Count", bbox_to_anchor=(1.05, 1), loc="upper left")
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"GO enrichment dotplot saved to {output_path}")
 
     return ax
@@ -292,7 +300,7 @@ def plot_ontology_network(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot ontology relationship network.
 
@@ -312,8 +320,7 @@ def plot_ontology_network(
     """
     if not HAS_NETWORKX:
         raise ImportError(
-            "networkx is required for ontology network plotting. "
-            "Install with: uv pip install networkx"
+            "networkx is required for ontology network plotting. " "Install with: uv pip install networkx"
         )
 
     validation.validate_type(ontology_graph, nx.Graph, "ontology_graph")
@@ -326,23 +333,21 @@ def plot_ontology_network(
 
     # Node colors
     if node_colors:
-        colors = [node_colors.get(node, 'lightblue') for node in ontology_graph.nodes()]
+        colors = [node_colors.get(node, "lightblue") for node in ontology_graph.nodes()]
     else:
-        colors = 'lightblue'
+        colors = "lightblue"
 
     # Draw network
-    nx.draw_networkx_nodes(ontology_graph, pos, node_color=colors,
-                          node_size=300, alpha=0.8, ax=ax)
-    nx.draw_networkx_edges(ontology_graph, pos, edge_color='gray',
-                          alpha=0.5, ax=ax)
+    nx.draw_networkx_nodes(ontology_graph, pos, node_color=colors, node_size=300, alpha=0.8, ax=ax)
+    nx.draw_networkx_edges(ontology_graph, pos, edge_color="gray", alpha=0.5, ax=ax)
     nx.draw_networkx_labels(ontology_graph, pos, font_size=8, ax=ax)
 
-    ax.set_title('Ontology Relationship Network')
-    ax.axis('off')
+    ax.set_title("Ontology Relationship Network")
+    ax.axis("off")
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Ontology network plot saved to {output_path}")
 
     return ax
@@ -355,7 +360,7 @@ def plot_information_content_profile(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 6),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot information content profile for ontology terms.
 
@@ -382,25 +387,25 @@ def plot_information_content_profile(
     ic_values = [term_ic[term] for term in sorted_terms]
 
     # Plot
-    ax.plot(range(len(sorted_terms)), ic_values, 'b-', linewidth=2, marker='o', markersize=4)
-    ax.fill_between(range(len(sorted_terms)), ic_values, alpha=0.3, color='blue')
+    ax.plot(range(len(sorted_terms)), ic_values, "b-", linewidth=2, marker="o", markersize=4)
+    ax.fill_between(range(len(sorted_terms)), ic_values, alpha=0.3, color="blue")
 
     # Add term labels for top terms
     n_labels = min(10, len(sorted_terms))
     step = len(sorted_terms) // n_labels
     for i in range(0, len(sorted_terms), step):
-        ax.annotate(sorted_terms[i], (i, ic_values[i]),
-                   xytext=(5, 5), textcoords='offset points',
-                   fontsize=8, rotation=45)
+        ax.annotate(
+            sorted_terms[i], (i, ic_values[i]), xytext=(5, 5), textcoords="offset points", fontsize=8, rotation=45
+        )
 
-    ax.set_xlabel('Terms (sorted by IC)')
-    ax.set_ylabel('Information Content')
-    ax.set_title('Ontology Term Information Content')
+    ax.set_xlabel("Terms (sorted by IC)")
+    ax.set_ylabel("Information Content")
+    ax.set_title("Ontology Term Information Content")
     ax.grid(True, alpha=0.3)
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Information content profile saved to {output_path}")
 
     return ax
@@ -414,7 +419,7 @@ def plot_go_term_hierarchy(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot GO term hierarchy from a root term.
 
@@ -435,8 +440,7 @@ def plot_go_term_hierarchy(
     """
     if not HAS_NETWORKX:
         raise ImportError(
-            "networkx is required for GO term hierarchy plotting. "
-            "Install with: uv pip install networkx"
+            "networkx is required for GO term hierarchy plotting. " "Install with: uv pip install networkx"
         )
 
     validation.validate_type(go_graph, nx.DiGraph, "go_graph")
@@ -458,7 +462,7 @@ def plot_go_term_hierarchy(
     subgraph = go_graph.subgraph(nodes_to_include)
 
     # Hierarchical layout
-    def hierarchy_pos(G, root, width=1., vert_gap=0.2, vert_loc=0, xcenter=0.5):
+    def hierarchy_pos(G, root, width=1.0, vert_gap=0.2, vert_loc=0, xcenter=0.5):
         pos = {root: (xcenter, vert_loc)}
         if len(G) == 1:
             return pos
@@ -466,28 +470,27 @@ def plot_go_term_hierarchy(
         children = list(G.successors(root))
         if len(children) != 0:
             dx = width / len(children)
-            nextx = xcenter - width/2 - dx/2
+            nextx = xcenter - width / 2 - dx / 2
             for child in children:
                 nextx += dx
-                pos.update(hierarchy_pos(G, child, width=dx, vert_gap=vert_gap,
-                                       vert_loc=vert_loc-vert_gap, xcenter=nextx))
+                pos.update(
+                    hierarchy_pos(G, child, width=dx, vert_gap=vert_gap, vert_loc=vert_loc - vert_gap, xcenter=nextx)
+                )
         return pos
 
     pos = hierarchy_pos(subgraph, root_term)
 
     # Draw
-    nx.draw_networkx_nodes(subgraph, pos, node_color='lightblue',
-                          node_size=500, alpha=0.8, ax=ax)
-    nx.draw_networkx_edges(subgraph, pos, edge_color='gray',
-                          arrows=True, arrowsize=15, ax=ax)
+    nx.draw_networkx_nodes(subgraph, pos, node_color="lightblue", node_size=500, alpha=0.8, ax=ax)
+    nx.draw_networkx_edges(subgraph, pos, edge_color="gray", arrows=True, arrowsize=15, ax=ax)
     nx.draw_networkx_labels(subgraph, pos, font_size=8, ax=ax)
 
-    ax.set_title(f'GO Term Hierarchy from {root_term}')
-    ax.axis('off')
+    ax.set_title(f"GO Term Hierarchy from {root_term}")
+    ax.axis("off")
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"GO term hierarchy plot saved to {output_path}")
 
     return ax
@@ -501,7 +504,7 @@ def plot_functional_annotation_heatmap(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot functional annotation matrix as heatmap.
 
@@ -523,32 +526,32 @@ def plot_functional_annotation_heatmap(
         fig, ax = plt.subplots(figsize=figsize)
 
     # Plot binary heatmap
-    im = ax.imshow(annotation_matrix, cmap='Blues', aspect='auto', origin='lower')
+    im = ax.imshow(annotation_matrix, cmap="Blues", aspect="auto", origin="lower")
 
-    ax.set_xlabel('GO Terms')
-    ax.set_ylabel('Genes')
-    ax.set_title('Functional Annotation Matrix')
+    ax.set_xlabel("GO Terms")
+    ax.set_ylabel("Genes")
+    ax.set_title("Functional Annotation Matrix")
 
     # Set tick labels if provided
     if gene_labels and len(gene_labels) <= 50:  # Only show labels for reasonable sizes
         ax.set_yticks(range(len(gene_labels)))
         ax.set_yticklabels(gene_labels)
     else:
-        ax.set_ylabel(f'Genes (n={annotation_matrix.shape[0]})')
+        ax.set_ylabel(f"Genes (n={annotation_matrix.shape[0]})")
 
     if len(term_labels) <= 50:
         ax.set_xticks(range(len(term_labels)))
-        ax.set_xticklabels(term_labels, rotation=45, ha='right')
+        ax.set_xticklabels(term_labels, rotation=45, ha="right")
     else:
-        ax.set_xlabel(f'GO Terms (n={annotation_matrix.shape[1]})')
+        ax.set_xlabel(f"GO Terms (n={annotation_matrix.shape[1]})")
 
     # Add colorbar
     cbar = plt.colorbar(im, ax=ax)
-    cbar.set_label('Annotated (1) / Not Annotated (0)')
+    cbar.set_label("Annotated (1) / Not Annotated (0)")
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Functional annotation heatmap saved to {output_path}")
 
     return ax
@@ -560,7 +563,7 @@ def plot_semantic_similarity_clustermap(
     *,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 8),
-    **kwargs
+    **kwargs,
 ) -> Any:
     """Plot semantic similarity clustermap.
 
@@ -584,18 +587,22 @@ def plot_semantic_similarity_clustermap(
 
     # Create clustermap
     if term_labels:
-        g = sns.clustermap(similarity_matrix, xticklabels=term_labels,
-                          yticklabels=term_labels, cmap='YlOrRd',
-                          figsize=figsize, **kwargs)
+        g = sns.clustermap(
+            similarity_matrix,
+            xticklabels=term_labels,
+            yticklabels=term_labels,
+            cmap="YlOrRd",
+            figsize=figsize,
+            **kwargs,
+        )
     else:
-        g = sns.clustermap(similarity_matrix, cmap='YlOrRd',
-                          figsize=figsize, **kwargs)
+        g = sns.clustermap(similarity_matrix, cmap="YlOrRd", figsize=figsize, **kwargs)
 
-    plt.suptitle('Semantic Similarity Clustermap', y=1.02)
+    plt.suptitle("Semantic Similarity Clustermap", y=1.02)
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Semantic similarity clustermap saved to {output_path}")
 
     return g
@@ -606,7 +613,7 @@ def create_interactive_go_network(
     term_annotations: Dict[str, Any] | None = None,
     *,
     output_path: str | Path | None = None,
-    **kwargs
+    **kwargs,
 ) -> Any:
     """Create an interactive GO network visualization using Plotly.
 
@@ -661,27 +668,31 @@ def create_interactive_go_network(
     fig = go.Figure()
 
     # Add edges
-    fig.add_trace(go.Scatter3d(
-        x=edge_x, y=edge_y, z=edge_z,
-        mode='lines',
-        line=dict(color='gray', width=1),
-        hoverinfo='none',
-        name='Relationships'
-    ))
+    fig.add_trace(
+        go.Scatter3d(
+            x=edge_x,
+            y=edge_y,
+            z=edge_z,
+            mode="lines",
+            line=dict(color="gray", width=1),
+            hoverinfo="none",
+            name="Relationships",
+        )
+    )
 
     # Add nodes
-    fig.add_trace(go.Scatter3d(
-        x=node_x, y=node_y, z=node_z,
-        mode='markers',
-        marker=dict(
-            size=6,
-            color='lightblue',
-            line=dict(width=1, color='black')
-        ),
-        text=node_text,
-        hovertemplate='%{text}<extra></extra>',
-        name='GO Terms'
-    ))
+    fig.add_trace(
+        go.Scatter3d(
+            x=node_x,
+            y=node_y,
+            z=node_z,
+            mode="markers",
+            marker=dict(size=6, color="lightblue", line=dict(width=1, color="black")),
+            text=node_text,
+            hovertemplate="%{text}<extra></extra>",
+            name="GO Terms",
+        )
+    )
 
     # Update layout
     fig.update_layout(
@@ -691,15 +702,13 @@ def create_interactive_go_network(
             yaxis=dict(showticklabels=False),
             zaxis=dict(showticklabels=False),
         ),
-        **kwargs
+        **kwargs,
     )
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        html_path = Path(output_path).with_suffix('.html')
+        html_path = Path(output_path).with_suffix(".html")
         fig.write_html(str(html_path))
         logger.info(f"Interactive GO network saved to {html_path}")
 
     return fig
-
-

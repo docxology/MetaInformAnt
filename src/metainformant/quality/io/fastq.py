@@ -36,9 +36,9 @@ class FastqRecord:
         self.quality = quality
 
         # Validate record structure
-        if not header.startswith('@'):
+        if not header.startswith("@"):
             raise ValueError(f"Invalid FASTQ header: {header}")
-        if not quality_header.startswith('+'):
+        if not quality_header.startswith("+"):
             raise ValueError(f"Invalid FASTQ quality header: {quality_header}")
         if len(sequence) != len(quality):
             raise ValueError(f"Sequence and quality lengths don't match: {len(sequence)} != {len(quality)}")
@@ -46,7 +46,7 @@ class FastqRecord:
     @property
     def name(self) -> str:
         """Get the read name from the header."""
-        return self.header[1:].split()[0] if self.header.startswith('@') else ""
+        return self.header[1:].split()[0] if self.header.startswith("@") else ""
 
     @property
     def length(self) -> int:
@@ -65,7 +65,7 @@ class FastqRecord:
         """Calculate GC content percentage."""
         if not self.sequence:
             return 0.0
-        gc_count = self.sequence.upper().count('G') + self.sequence.upper().count('C')
+        gc_count = self.sequence.upper().count("G") + self.sequence.upper().count("C")
         return (gc_count / len(self.sequence)) * 100.0
 
 
@@ -88,7 +88,7 @@ def read_fastq_records(path: str | Path, max_records: int | None = None) -> Iter
     logger.info(f"Reading FASTQ records from {path}")
 
     try:
-        with io.open_text_auto(path, 'rt') as f:
+        with io.open_text_auto(path, "rt") as f:
             record_count = 0
             while max_records is None or record_count < max_records:
                 # Read 4 lines for each record
@@ -99,7 +99,7 @@ def read_fastq_records(path: str | Path, max_records: int | None = None) -> Iter
                         if lines:  # Incomplete record
                             raise ValueError(f"Incomplete FASTQ record at end of file")
                         break  # End of file
-                    lines.append(line.rstrip('\n\r'))
+                    lines.append(line.rstrip("\n\r"))
 
                 if len(lines) == 0:
                     break  # End of file
@@ -210,16 +210,18 @@ def per_base_quality(records: List[FastqRecord]) -> Dict[str, Any]:
     for pos in range(max_length):
         pos_qualities = [row[pos] for row in quality_matrix if row[pos] is not None]
         if pos_qualities:
-            positions.append({
-                "position": pos + 1,
-                "mean": statistics.mean(pos_qualities),
-                "median": statistics.median(pos_qualities),
-                "lower_quartile": statistics.quantiles(pos_qualities, n=4)[0],
-                "upper_quartile": statistics.quantiles(pos_qualities, n=4)[2],
-                "min": min(pos_qualities),
-                "max": max(pos_qualities),
-                "count": len(pos_qualities),
-            })
+            positions.append(
+                {
+                    "position": pos + 1,
+                    "mean": statistics.mean(pos_qualities),
+                    "median": statistics.median(pos_qualities),
+                    "lower_quartile": statistics.quantiles(pos_qualities, n=4)[0],
+                    "upper_quartile": statistics.quantiles(pos_qualities, n=4)[2],
+                    "min": min(pos_qualities),
+                    "max": max(pos_qualities),
+                    "count": len(pos_qualities),
+                }
+            )
 
     return {"positions": positions}
 
@@ -248,12 +250,14 @@ def per_sequence_quality(records: List[FastqRecord]) -> Dict[str, Any]:
         for bin_start in range(int(min_qual), int(max_qual) + 2):
             count = sum(1 for q in mean_qualities if bin_start <= q < bin_start + bin_width)
             if count > 0:
-                bins.append({
-                    "bin_start": bin_start,
-                    "bin_end": bin_start + bin_width,
-                    "count": count,
-                    "percentage": (count / len(mean_qualities)) * 100,
-                })
+                bins.append(
+                    {
+                        "bin_start": bin_start,
+                        "bin_end": bin_start + bin_width,
+                        "count": count,
+                        "percentage": (count / len(mean_qualities)) * 100,
+                    }
+                )
 
     return {"bins": bins}
 
@@ -275,11 +279,13 @@ def sequence_length_distribution(records: List[FastqRecord]) -> Dict[str, Any]:
 
     distribution = []
     for length, count in sorted(length_counts.items()):
-        distribution.append({
-            "length": length,
-            "count": count,
-            "percentage": (count / len(records)) * 100,
-        })
+        distribution.append(
+            {
+                "length": length,
+                "count": count,
+                "percentage": (count / len(records)) * 100,
+            }
+        )
 
     return {"distribution": distribution}
 
@@ -304,12 +310,14 @@ def gc_content_distribution(records: List[FastqRecord]) -> Dict[str, Any]:
         bin_end = min(bin_start + 5, 100)
         count = sum(1 for gc in gc_contents if bin_start <= gc < bin_end)
         if count > 0:
-            bins.append({
-                "bin_start": bin_start,
-                "bin_end": bin_end,
-                "count": count,
-                "percentage": (count / len(gc_contents)) * 100,
-            })
+            bins.append(
+                {
+                    "bin_start": bin_start,
+                    "bin_end": bin_end,
+                    "count": count,
+                    "percentage": (count / len(gc_contents)) * 100,
+                }
+            )
 
     return {"bins": bins}
 
@@ -331,9 +339,9 @@ def adapter_content(records: List[FastqRecord], adapters: List[str] | None = Non
     if adapters is None:
         adapters = [
             "AGATCGGAAGAG",  # TruSeq Universal Adapter
-            "GATCGGAAGAG",   # TruSeq Adapter, Read 1
+            "GATCGGAAGAG",  # TruSeq Adapter, Read 1
             "AGATCGGAAGAGCGGTTCAGCAGGAATGCCGAG",  # TruSeq Adapter, Read 2
-            "CTGTCTCTTAT",   # Nextera Transposase Sequence
+            "CTGTCTCTTAT",  # Nextera Transposase Sequence
         ]
 
     results = {}
@@ -348,15 +356,17 @@ def adapter_content(records: List[FastqRecord], adapters: List[str] | None = Non
 
             for record in records:
                 if pos_bp + adapter_length <= record.length:
-                    seq_slice = record.sequence[pos_bp:pos_bp + adapter_length]
+                    seq_slice = record.sequence[pos_bp : pos_bp + adapter_length]
                     if adapter in seq_slice:
                         count += 1
 
-            positions.append({
-                "position": pos,
-                "count": count,
-                "percentage": (count / len(records)) * 100 if records else 0,
-            })
+            positions.append(
+                {
+                    "position": pos,
+                    "count": count,
+                    "percentage": (count / len(records)) * 100 if records else 0,
+                }
+            )
 
         results[adapter_name] = {
             "adapter_sequence": adapter,
@@ -397,11 +407,13 @@ def overrepresented_sequences(records: List[FastqRecord], min_length: int = 20) 
     for seq, count in seq_counts.most_common(10):  # Top 10
         percentage = (count / total_sequences) * 100
         if percentage > 1.0:  # More than 1% of reads
-            overrepresented.append({
-                "sequence": seq,
-                "count": count,
-                "percentage": percentage,
-            })
+            overrepresented.append(
+                {
+                    "sequence": seq,
+                    "count": count,
+                    "percentage": percentage,
+                }
+            )
 
     return {"overrepresented": overrepresented}
 
@@ -458,17 +470,19 @@ def n_content_per_position(records: List[FastqRecord]) -> Dict[str, Any]:
 
     for record in records:
         for i, base in enumerate(record.sequence):
-            if base.upper() == 'N':
+            if base.upper() == "N":
                 if i < max_length:
                     n_counts[i] += 1
 
     positions = []
     for pos, count in enumerate(n_counts):
-        positions.append({
-            "position": pos + 1,
-            "n_count": count,
-            "n_percentage": (count / len(records)) * 100,
-        })
+        positions.append(
+            {
+                "position": pos + 1,
+                "n_count": count,
+                "n_percentage": (count / len(records)) * 100,
+            }
+        )
 
     return {"positions": positions}
 
@@ -497,18 +511,24 @@ def quality_score_distribution(records: List[FastqRecord]) -> Dict[str, Any]:
     score_counts = Counter(all_scores)
     distribution = []
     for score in sorted(score_counts.keys()):
-        distribution.append({
-            "quality_score": score,
-            "count": score_counts[score],
-            "percentage": (score_counts[score] / len(all_scores)) * 100,
-        })
+        distribution.append(
+            {
+                "quality_score": score,
+                "count": score_counts[score],
+                "percentage": (score_counts[score] / len(all_scores)) * 100,
+            }
+        )
 
     return {"distribution": distribution}
 
 
-def filter_reads(fastq_path: str | Path, output_path: str | Path,
-                min_quality: float = 20.0, min_length: int | None = None,
-                max_n_bases: int = 0) -> Dict[str, Any]:
+def filter_reads(
+    fastq_path: str | Path,
+    output_path: str | Path,
+    min_quality: float = 20.0,
+    min_length: int | None = None,
+    max_n_bases: int = 0,
+) -> Dict[str, Any]:
     """Filter FASTQ reads based on quality criteria.
 
     Args:
@@ -529,7 +549,7 @@ def filter_reads(fastq_path: str | Path, output_path: str | Path,
     total_reads = 0
     passed_reads = 0
 
-    with io.open_text_auto(output_path, 'w') as out_f:
+    with io.open_text_auto(output_path, "w") as out_f:
         for record in read_fastq_records(fastq_path):
             total_reads += 1
 
@@ -543,7 +563,7 @@ def filter_reads(fastq_path: str | Path, output_path: str | Path,
                 passes = False
 
             if max_n_bases >= 0:
-                n_count = record.sequence.upper().count('N')
+                n_count = record.sequence.upper().count("N")
                 if n_count > max_n_bases:
                     passes = False
 
@@ -569,9 +589,3 @@ def filter_reads(fastq_path: str | Path, output_path: str | Path,
 
     logger.info(f"Filtered {passed_reads}/{total_reads} reads ({stats['pass_rate']:.1f}%)")
     return stats
-
-
-
-
-
-

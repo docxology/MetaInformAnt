@@ -204,9 +204,7 @@ def _select_best_assembly(assemblies: list[Dict[str, Any]]) -> Optional[Dict[str
 
     # Sort by preference and return best
     best = min(assemblies, key=assembly_key)
-    logger.debug(
-        f"Selected assembly: {best.get('assembly', {}).get('assembly_accession', 'unknown')}"
-    )
+    logger.debug(f"Selected assembly: {best.get('assembly', {}).get('assembly_accession', 'unknown')}")
 
     return best
 
@@ -232,10 +230,7 @@ def search_species_with_rnaseq(query: str, max_records: int = 10) -> Dict[str, A
         ...     results = search_species_with_rnaseq("Homo sapiens")
     """
     if not BIOPYTHON_AVAILABLE:
-        raise ImportError(
-            "BioPython required for species search. "
-            "Install with: uv pip install biopython"
-        )
+        raise ImportError("BioPython required for species search. " "Install with: uv pip install biopython")
 
     logger.info(f"Searching for RNA-seq data: {query}")
 
@@ -266,8 +261,7 @@ def get_genome_info(taxonomy_id: str, species_name: str) -> Optional[Dict[str, A
     """
     if not NCBI_DATASETS_AVAILABLE:
         raise ImportError(
-            "ncbi-datasets-pylib required for genome info. "
-            "Install with: uv pip install ncbi-datasets-pylib"
+            "ncbi-datasets-pylib required for genome info. " "Install with: uv pip install ncbi-datasets-pylib"
         )
 
     logger.info(f"Fetching genome info for {species_name} (taxonomy: {taxonomy_id})")

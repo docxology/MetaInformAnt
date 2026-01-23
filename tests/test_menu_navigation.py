@@ -4,7 +4,15 @@ from __future__ import annotations
 
 import pytest
 
-from metainformant.menu.ui.navigation import Menu, MenuHistory, MenuItem, MenuSystem, get_current_menu, go_back, navigate_to_submenu
+from metainformant.menu.ui.navigation import (
+    Menu,
+    MenuHistory,
+    MenuItem,
+    MenuSystem,
+    get_current_menu,
+    go_back,
+    navigate_to_submenu,
+)
 
 
 class TestMenuItem:
@@ -59,7 +67,7 @@ class TestMenuHistory:
         history = MenuHistory()
         history.push("menu1", "Menu 1")
         history.push("menu2", "Menu 2")
-        
+
         result = history.pop()
         assert result == ("menu2", "Menu 2")
         assert len(history.path) == 1
@@ -76,7 +84,7 @@ class TestMenuHistory:
         history = MenuHistory()
         history.push("menu1", "Menu 1")
         history.push("menu2", "Menu 2")
-        
+
         path = history.get_path()
         assert path == ["Menu 1", "Menu 2"]
         # Should be a copy, not reference
@@ -204,7 +212,3 @@ class TestNavigationFunctions:
         system = MenuSystem(menus=menus, current_menu_id="root")
         menu = get_current_menu(system)
         assert menu.id == "root"
-
-
-
-

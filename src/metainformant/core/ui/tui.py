@@ -1,6 +1,6 @@
 """Core Terminal UI components for MetaInformAnt.
 
-This module provides a robust, dependency-free (standard library only) 
+This module provides a robust, dependency-free (standard library only)
 Terminal User Interface for tracking parallel processes.
 It uses ANSI escape codes for "oldschool" elegance.
 """
@@ -32,9 +32,11 @@ SHOW_CURSOR = f"{CSI}?25h"
 CLEAR_LINE = f"{CSI}2K"
 MOVE_UP = f"{CSI}A"
 
+
 @dataclass
 class ProgressState:
     """State of a single progress bar."""
+
     label: str
     current: float
     total: float
@@ -45,9 +47,10 @@ class ProgressState:
     color: str = BLUE
     stage: str = ""  # For multi-stage workflows (e.g., "Download → Quant")
 
+
 class TerminalInterface:
     """Manages terminal output for parallel tasks."""
-    
+
     def __init__(self):
         self._lock = threading.Lock()
         self._bars: Dict[str, ProgressState] = {}
@@ -56,23 +59,26 @@ class TerminalInterface:
         self._last_lines = 0
         self._footer = ""
         self._monitor_thread: Optional[threading.Thread] = None
-        
+
     def add_bar(self, task_id: str, label: str, total: float, unit: str = "B"):
         """Register a new progress bar."""
         with self._lock:
             if task_id not in self._bars:
                 self._order.append(task_id)
             self._bars[task_id] = ProgressState(
-                label=label,
-                current=0,
-                total=total,
-                unit=unit,
-                status="Starting",
-                start_time=time.time()
+                label=label, current=0, total=total, unit=unit, status="Starting", start_time=time.time()
             )
 
-    def update(self, task_id: str, current: float = None, total: float = None, status: str = None, 
-               speed: str = None, color: str = None, stage: str = None):
+    def update(
+        self,
+        task_id: str,
+        current: float = None,
+        total: float = None,
+        status: str = None,
+        speed: str = None,
+        color: str = None,
+        stage: str = None,
+    ):
         """Update a specific bar's state."""
         with self._lock:
             if task_id in self._bars:
@@ -117,49 +123,50 @@ class TerminalInterface:
             # Move cursor up to overwrite previous items
             if self._last_lines > 0:
                 sys.stdout.write(f"{CSI}{self._last_lines}A")
-            
+
             lines = []
             width = shutil.get_terminal_size().columns
-            
+
             # Header
             header = f"{BOLD}{CYAN}MetaInformAnt SRA Downloader {RESET}"
-            lines.append(header.center(width + len(BOLD) + len(CYAN) + len(RESET))) # approximate centering fix
+            lines.append(header.center(width + len(BOLD) + len(CYAN) + len(RESET)))  # approximate centering fix
             lines.append("-" * width)
 
             for task_id in self._order:
                 state = self._bars[task_id]
-                
+
                 # Calculate percentage
                 pct = 0.0
                 if state.total > 0:
                     pct = (state.current / state.total) * 100
-                
+
                 # Determine bar width
                 # Layout: [Label] [Bar] [Pct] [Speed] [Status]
                 # Fixed widths: Label(20), Pct(8), Speed(12), Status(15)
                 # Remainder for bar
-                
+
                 label_w = 20
                 pct_w = 8
                 speed_w = 12
-                status_w = 25 # Increased for TID info
-                padding = 6 # Spaces between columns
-                
+                status_w = 25  # Increased for TID info
+                padding = 6  # Spaces between columns
+
                 remaining_w = width - (label_w + pct_w + speed_w + status_w + padding)
-                if remaining_w < 10: remaining_w = 10
-                
+                if remaining_w < 10:
+                    remaining_w = 10
+
                 # Create Bar
-                eff_pct = min(pct, 100.0) # Cap for visual bar
+                eff_pct = min(pct, 100.0)  # Cap for visual bar
                 filled_len = int(remaining_w * eff_pct / 100)
                 bar_str = "█" * filled_len + "░" * (remaining_w - filled_len)
-                
+
                 # Format strings
                 label_str = state.label[:label_w].ljust(label_w)
                 display_pct = min(pct, 100.0)
                 pct_str = f"{display_pct:6.1f}%"
                 speed_str = state.speed.rjust(speed_w)
                 status_str = state.status[:status_w].ljust(status_w)
-                
+
                 line = (
                     f"{state.color}{label_str}{RESET} "
                     f"{state.color}{bar_str}{RESET} "
@@ -168,17 +175,17 @@ class TerminalInterface:
                     f"{WHITE}{status_str}{RESET}"
                 )
                 lines.append(line)
-            
+
             # Footer
             if self._footer:
-                 lines.append("-" * width)
-                 lines.append(f"{self._footer}".center(width))
+                lines.append("-" * width)
+                lines.append(f"{self._footer}".center(width))
 
             # Output everything at once
             output = "\n".join(lines) + "\n"
             sys.stdout.write(output)
             sys.stdout.flush()
-            
+
             self._last_lines = len(lines)
 
     def set_footer(self, text: str):

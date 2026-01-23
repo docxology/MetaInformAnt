@@ -2,7 +2,9 @@ from __future__ import annotations
 
 
 def test_contact_pairs_threshold():
-    from metainformant.protein.structure.general.general.general.general.general.general.general.contacts import compute_ca_contact_pairs
+    from metainformant.protein.structure.general.general.general.general.general.general.general.contacts import (
+        compute_ca_contact_pairs,
+    )
 
     coords = [
         (0.0, 0.0, 0.0),  # 0

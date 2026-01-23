@@ -20,10 +20,7 @@ class TestExtractGenotypeMatrix:
 
     def test_extract_genotype_matrix_basic(self):
         """Test basic genotype matrix extraction from VCF data."""
-        mock_vcf = {
-            'samples': ['sample1', 'sample2', 'sample3'],
-            'genotypes': [[0, 1, 2], [1, 1, 0], [2, 0, 1]]
-        }
+        mock_vcf = {"samples": ["sample1", "sample2", "sample3"], "genotypes": [[0, 1, 2], [1, 1, 0], [2, 0, 1]]}
 
         result = _extract_genotype_matrix(mock_vcf)
 
@@ -43,20 +40,20 @@ class TestExtractGenotypeMatrix:
         ]
 
         for genotypes, expected in test_cases:
-            mock_vcf = {'samples': ['s1', 's2', 's3'], 'genotypes': genotypes}
+            mock_vcf = {"samples": ["s1", "s2", "s3"], "genotypes": genotypes}
             result = _extract_genotype_matrix(mock_vcf)
             assert result == expected, f"Failed for genotypes {genotypes}"
 
     def test_extract_genotype_matrix_empty_data(self):
         """Test handling of empty genotype data."""
-        mock_vcf = {'samples': [], 'genotypes': []}
+        mock_vcf = {"samples": [], "genotypes": []}
 
         with pytest.raises(ValueError, match="No genotypes found in VCF data"):
             _extract_genotype_matrix(mock_vcf)
 
     def test_extract_genotype_matrix_single_variant(self):
         """Test with single variant - should fail due to genotype count mismatch."""
-        mock_vcf = {'samples': ['sample1', 'sample2'], 'genotypes': [[0, 1]]}  # 1 variant, 2 genotypes
+        mock_vcf = {"samples": ["sample1", "sample2"], "genotypes": [[0, 1]]}  # 1 variant, 2 genotypes
 
         result = _extract_genotype_matrix(mock_vcf)
 
@@ -66,7 +63,7 @@ class TestExtractGenotypeMatrix:
 
     def test_extract_genotype_matrix_single_sample(self):
         """Test with single sample."""
-        mock_vcf = {'samples': ['sample1'], 'genotypes': [[0]]}
+        mock_vcf = {"samples": ["sample1"], "genotypes": [[0]]}
 
         result = _extract_genotype_matrix(mock_vcf)
 
@@ -77,7 +74,7 @@ class TestExtractGenotypeMatrix:
     def test_extract_genotype_matrix_mismatched_lengths(self):
         """Test error handling for mismatched genotype lengths."""
         # This should work as long as the data is consistent
-        mock_vcf = {'samples': ['s1', 's2'], 'genotypes': [[0, 1], [2, 0]]}
+        mock_vcf = {"samples": ["s1", "s2"], "genotypes": [[0, 1], [2, 0]]}
 
         result = _extract_genotype_matrix(mock_vcf)
 
@@ -87,11 +84,11 @@ class TestExtractGenotypeMatrix:
         """Test handling of missing required fields."""
         # Missing samples
         with pytest.raises(ValueError, match="No samples found in VCF data"):
-            _extract_genotype_matrix({'genotypes': [[0, 1, 2]]})
+            _extract_genotype_matrix({"genotypes": [[0, 1, 2]]})
 
         # Missing genotypes
         with pytest.raises(ValueError, match="VCF data missing genotypes field"):
-            _extract_genotype_matrix({'samples': ['s1']})
+            _extract_genotype_matrix({"samples": ["s1"]})
 
     def test_extract_genotype_matrix_large_dataset(self):
         """Test with larger dataset to verify performance."""
@@ -99,10 +96,12 @@ class TestExtractGenotypeMatrix:
         n_variants = 10  # Keep small to avoid mismatch errors
 
         # Create large test data
-        samples = [f'sample_{i}' for i in range(n_samples)]
-        genotypes = [[i % 3 for i in range(n_samples)] for _ in range(n_variants)]  # n_variants rows, each with n_samples values
+        samples = [f"sample_{i}" for i in range(n_samples)]
+        genotypes = [
+            [i % 3 for i in range(n_samples)] for _ in range(n_variants)
+        ]  # n_variants rows, each with n_samples values
 
-        mock_vcf = {'samples': samples, 'genotypes': genotypes}
+        mock_vcf = {"samples": samples, "genotypes": genotypes}
 
         result = _extract_genotype_matrix(mock_vcf)
 

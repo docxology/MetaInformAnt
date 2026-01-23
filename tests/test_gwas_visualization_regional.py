@@ -21,9 +21,7 @@ def test_regional_plot_detailed(tmp_path: Path) -> None:
     ]
 
     output_path = tmp_path / "regional_detailed.png"
-    result = regional_plot_detailed(
-        results, output_path, chrom="chr1", start=500, end=2500
-    )
+    result = regional_plot_detailed(results, output_path, chrom="chr1", start=500, end=2500)
 
     assert result["status"] == "success"
     assert output_path.exists()
@@ -37,9 +35,7 @@ def test_regional_ld_plot(tmp_path: Path) -> None:
     vcf_path.touch()  # Create empty file for testing
 
     output_path = tmp_path / "regional_ld.png"
-    result = regional_ld_plot(
-        vcf_path, output_path, chrom="chr1", start=500, end=2500, lead_snp_pos=1500
-    )
+    result = regional_ld_plot(vcf_path, output_path, chrom="chr1", start=500, end=2500, lead_snp_pos=1500)
 
     # Function returns skipped status as it requires external LD calculation
     assert "status" in result
@@ -54,9 +50,7 @@ def test_gene_annotation_plot(tmp_path: Path) -> None:
     ]
 
     output_path = tmp_path / "gene_annotation.png"
-    result = gene_annotation_plot(
-        results, output_path, chrom="chr1", start=500, end=2500
-    )
+    result = gene_annotation_plot(results, output_path, chrom="chr1", start=500, end=2500)
 
     assert result["status"] == "success"
     assert output_path.exists()
@@ -70,9 +64,7 @@ def test_recombination_rate_plot(tmp_path: Path) -> None:
     ]
 
     output_path = tmp_path / "recombination_rate.png"
-    result = recombination_rate_plot(
-        results, output_path, chrom="chr1", start=500, end=2500
-    )
+    result = recombination_rate_plot(results, output_path, chrom="chr1", start=500, end=2500)
 
     # Function returns skipped status as it requires recombination map data
     assert "status" in result
@@ -86,10 +78,7 @@ def test_regional_plot_detailed_empty_region(tmp_path: Path) -> None:
     ]
 
     output_path = tmp_path / "empty_region.png"
-    result = regional_plot_detailed(
-        results, output_path, chrom="chr1", start=500, end=2500
-    )
+    result = regional_plot_detailed(results, output_path, chrom="chr1", start=500, end=2500)
 
     # Should handle empty region gracefully
     assert "status" in result
-

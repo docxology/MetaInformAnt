@@ -4,7 +4,7 @@ from .models import (
     herd_immunity_threshold,
     sir_step,
     seir_step,
-    sis_step
+    sis_step,
 )
 
 __all__ = [

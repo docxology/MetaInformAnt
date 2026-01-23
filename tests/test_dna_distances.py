@@ -1,4 +1,5 @@
 """Tests for DNA distance calculations."""
+
 from __future__ import annotations
 
 import pytest

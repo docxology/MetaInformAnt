@@ -21,9 +21,13 @@ try:
     from sklearn.svm import SVR
     from sklearn.model_selection import cross_val_score, KFold
     from sklearn.metrics import (
-        mean_squared_error, mean_absolute_error, r2_score,
-        explained_variance_score, median_absolute_error
+        mean_squared_error,
+        mean_absolute_error,
+        r2_score,
+        explained_variance_score,
+        median_absolute_error,
     )
+
     HAS_SKLEARN = True
 except ImportError:
     HAS_SKLEARN = False
@@ -79,12 +83,7 @@ class BiologicalRegressor:
             raise ValueError("Model not trained")
         return self.model.predict(X)
 
-    def evaluate(
-        self,
-        X: np.ndarray,
-        y: np.ndarray,
-        detailed: bool = True
-    ) -> Dict[str, Any]:
+    def evaluate(self, X: np.ndarray, y: np.ndarray, detailed: bool = True) -> Dict[str, Any]:
         """Evaluate regressor performance.
 
         Args:
@@ -101,44 +100,39 @@ class BiologicalRegressor:
         y_pred = self.predict(X)
 
         results = {
-            'r2': r2_score(y, y_pred),
-            'mse': mean_squared_error(y, y_pred),
-            'mae': mean_absolute_error(y, y_pred),
-            'explained_variance': explained_variance_score(y, y_pred),
-            'median_absolute_error': median_absolute_error(y, y_pred),
-            'rmse': np.sqrt(mean_squared_error(y, y_pred)),
+            "r2": r2_score(y, y_pred),
+            "mse": mean_squared_error(y, y_pred),
+            "mae": mean_absolute_error(y, y_pred),
+            "explained_variance": explained_variance_score(y, y_pred),
+            "median_absolute_error": median_absolute_error(y, y_pred),
+            "rmse": np.sqrt(mean_squared_error(y, y_pred)),
         }
 
         # Additional metrics
         if detailed:
             # Residual analysis
             residuals = y - y_pred
-            results['residuals'] = {
-                'mean': float(residuals.mean()),
-                'std': float(residuals.std()),
-                'min': float(residuals.min()),
-                'max': float(residuals.max()),
+            results["residuals"] = {
+                "mean": float(residuals.mean()),
+                "std": float(residuals.std()),
+                "min": float(residuals.min()),
+                "max": float(residuals.max()),
             }
 
             # Prediction intervals (simplified)
             std_residuals = np.std(residuals)
-            results['prediction_std'] = float(std_residuals)
+            results["prediction_std"] = float(std_residuals)
 
             # Feature importance if available
-            if hasattr(self.model, 'feature_importances_'):
-                results['feature_importances'] = self.model.feature_importances_.tolist()
-            elif hasattr(self.model, 'coef_'):
-                results['coefficients'] = self.model.coef_.tolist()
+            if hasattr(self.model, "feature_importances_"):
+                results["feature_importances"] = self.model.feature_importances_.tolist()
+            elif hasattr(self.model, "coef_"):
+                results["coefficients"] = self.model.coef_.tolist()
 
         return results
 
 
-def train_regressor(
-    X: np.ndarray,
-    y: np.ndarray,
-    method: str = "rf",
-    **kwargs: Any
-) -> BiologicalRegressor:
+def train_regressor(X: np.ndarray, y: np.ndarray, method: str = "rf", **kwargs: Any) -> BiologicalRegressor:
     """Train a regression model for biological traits.
 
     Args:
@@ -160,43 +154,27 @@ def train_regressor(
     # Select and configure regressor
     if method == "rf":
         model = RandomForestRegressor(
-            n_estimators=kwargs.get('n_estimators', 100),
-            random_state=kwargs.get('random_state', 42),
-            **kwargs
+            n_estimators=kwargs.get("n_estimators", 100), random_state=kwargs.get("random_state", 42), **kwargs
         )
     elif method == "gb":
         model = GradientBoostingRegressor(
-            n_estimators=kwargs.get('n_estimators', 100),
-            random_state=kwargs.get('random_state', 42),
-            **kwargs
+            n_estimators=kwargs.get("n_estimators", 100), random_state=kwargs.get("random_state", 42), **kwargs
         )
     elif method == "linear":
         model = LinearRegression(**kwargs)
     elif method == "ridge":
-        model = Ridge(
-            alpha=kwargs.get('alpha', 1.0),
-            random_state=kwargs.get('random_state', 42),
-            **kwargs
-        )
+        model = Ridge(alpha=kwargs.get("alpha", 1.0), random_state=kwargs.get("random_state", 42), **kwargs)
     elif method == "lasso":
-        model = Lasso(
-            alpha=kwargs.get('alpha', 1.0),
-            random_state=kwargs.get('random_state', 42),
-            **kwargs
-        )
+        model = Lasso(alpha=kwargs.get("alpha", 1.0), random_state=kwargs.get("random_state", 42), **kwargs)
     elif method == "elasticnet":
         model = ElasticNet(
-            alpha=kwargs.get('alpha', 1.0),
-            l1_ratio=kwargs.get('l1_ratio', 0.5),
-            random_state=kwargs.get('random_state', 42),
-            **kwargs
+            alpha=kwargs.get("alpha", 1.0),
+            l1_ratio=kwargs.get("l1_ratio", 0.5),
+            random_state=kwargs.get("random_state", 42),
+            **kwargs,
         )
     elif method == "svr":
-        model = SVR(
-            kernel=kwargs.get('kernel', 'rbf'),
-            C=kwargs.get('C', 1.0),
-            **kwargs
-        )
+        model = SVR(kernel=kwargs.get("kernel", "rbf"), C=kwargs.get("C", 1.0), **kwargs)
     else:
         raise ValueError(f"Unknown regression method: {method}")
 
@@ -209,11 +187,7 @@ def train_regressor(
 
 
 def evaluate_regressor(
-    regressor: 'BiologicalRegressor',
-    X: np.ndarray,
-    y: np.ndarray,
-    test_size: float = 0.2,
-    random_state: int = 42
+    regressor: "BiologicalRegressor", X: np.ndarray, y: np.ndarray, test_size: float = 0.2, random_state: int = 42
 ) -> Dict[str, Any]:
     """Evaluate a trained regressor on test data.
 
@@ -231,9 +205,7 @@ def evaluate_regressor(
     from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 
     # Split data
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=test_size, random_state=random_state
-    )
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size, random_state=random_state)
 
     # Fit on training data
     regressor.fit(X_train, y_train)
@@ -259,12 +231,7 @@ def evaluate_regressor(
     return results
 
 
-def cross_validate_regressor(
-    model: BaseEstimator,
-    X: np.ndarray,
-    y: np.ndarray,
-    cv: int = 5
-) -> Dict[str, float]:
+def cross_validate_regressor(model: BaseEstimator, X: np.ndarray, y: np.ndarray, cv: int = 5) -> Dict[str, float]:
     """Cross-validate a regression model.
 
     Args:
@@ -284,39 +251,33 @@ def cross_validate_regressor(
 
     # Define scoring metrics
     scoring = {
-        'r2': 'r2',
-        'neg_mean_squared_error': 'neg_mean_squared_error',
-        'neg_mean_absolute_error': 'neg_mean_absolute_error',
+        "r2": "r2",
+        "neg_mean_squared_error": "neg_mean_squared_error",
+        "neg_mean_absolute_error": "neg_mean_absolute_error",
     }
 
     results = {}
 
     for metric_name, scoring_name in scoring.items():
         scores = cross_val_score(
-            model, X, y,
-            cv=KFold(n_splits=cv, shuffle=True, random_state=42),
-            scoring=scoring_name
+            model, X, y, cv=KFold(n_splits=cv, shuffle=True, random_state=42), scoring=scoring_name
         )
 
-        if 'neg_' in metric_name:
+        if "neg_" in metric_name:
             # Convert negative scores to positive
             scores = -scores
-            metric_name = metric_name.replace('neg_', '')
+            metric_name = metric_name.replace("neg_", "")
 
-        results[f'{metric_name}_mean'] = float(scores.mean())
-        results[f'{metric_name}_std'] = float(scores.std())
-        results[f'{metric_name}_scores'] = scores.tolist()
+        results[f"{metric_name}_mean"] = float(scores.mean())
+        results[f"{metric_name}_std"] = float(scores.std())
+        results[f"{metric_name}_scores"] = scores.tolist()
 
     logger.info(f"Cross-validated regressor: R² = {results['r2_mean']:.3f} ± {results['r2_std']:.3f}")
     return results
 
 
 def create_ensemble_regressor(
-    X: np.ndarray,
-    y: np.ndarray,
-    n_estimators: int = 10,
-    random_state: int | None = None,
-    **kwargs: Any
+    X: np.ndarray, y: np.ndarray, n_estimators: int = 10, random_state: int | None = None, **kwargs: Any
 ) -> BiologicalRegressor:
     """Create an ensemble regressor for improved prediction.
 
@@ -338,20 +299,17 @@ def create_ensemble_regressor(
 
     # Create multiple regressors
     estimators = [
-        ('rf', RandomForestRegressor(
-            n_estimators=n_estimators,
-            random_state=random_state,
-            **kwargs.get('rf_params', {})
-        )),
-        ('gb', GradientBoostingRegressor(
-            n_estimators=n_estimators,
-            random_state=random_state,
-            **kwargs.get('gb_params', {})
-        )),
-        ('ridge', Ridge(
-            random_state=random_state,
-            **kwargs.get('ridge_params', {})
-        )),
+        (
+            "rf",
+            RandomForestRegressor(n_estimators=n_estimators, random_state=random_state, **kwargs.get("rf_params", {})),
+        ),
+        (
+            "gb",
+            GradientBoostingRegressor(
+                n_estimators=n_estimators, random_state=random_state, **kwargs.get("gb_params", {})
+            ),
+        ),
+        ("ridge", Ridge(random_state=random_state, **kwargs.get("ridge_params", {}))),
     ]
 
     # Simple averaging ensemble (could be improved with more sophisticated methods)
@@ -400,38 +358,34 @@ def compare_regression_methods(
         Dictionary with comparison results
     """
     if methods is None:
-        methods = ['rf', 'gb', 'ridge', 'lasso']
+        methods = ["rf", "gb", "ridge", "lasso"]
 
     results = {}
 
     for method in methods:
         try:
             # Train model
-            regressor = train_regressor(
-                X, y, method=method, random_state=random_state
-            )
+            regressor = train_regressor(X, y, method=method, random_state=random_state)
 
             # Cross-validate
-            cv_results = cross_validate_regressor(
-                regressor.model, X, y, cv=cv_folds
-            )
+            cv_results = cross_validate_regressor(regressor.model, X, y, cv=cv_folds)
 
             results[method] = {
-                'regressor': regressor,
-                'cv_results': cv_results,
-                'r2_mean': cv_results['r2_mean'],
-                'mse_mean': cv_results['mean_squared_error_mean'],
+                "regressor": regressor,
+                "cv_results": cv_results,
+                "r2_mean": cv_results["r2_mean"],
+                "mse_mean": cv_results["mean_squared_error_mean"],
             }
 
         except Exception as e:
             logger.error(f"Failed to evaluate {method}: {e}")
-            results[method] = {'error': str(e)}
+            results[method] = {"error": str(e)}
 
     # Find best method
     valid_results = [
-        (method, result['r2_mean'])
+        (method, result["r2_mean"])
         for method, result in results.items()
-        if isinstance(result, dict) and 'r2_mean' in result
+        if isinstance(result, dict) and "r2_mean" in result
     ]
 
     if valid_results:
@@ -440,18 +394,14 @@ def compare_regression_methods(
         best_method = None
 
     return {
-        'comparison': results,
-        'best_method': best_method,
-        'methods_tested': methods,
+        "comparison": results,
+        "best_method": best_method,
+        "methods_tested": methods,
     }
 
 
 def predict_phenotypic_traits(
-    X_genetic: np.ndarray,
-    y_phenotype: np.ndarray,
-    X_predict: np.ndarray,
-    method: str = "rf",
-    **kwargs: Any
+    X_genetic: np.ndarray, y_phenotype: np.ndarray, X_predict: np.ndarray, method: str = "rf", **kwargs: Any
 ) -> Dict[str, Any]:
     """Predict phenotypic traits from genetic data.
 
@@ -484,16 +434,16 @@ def predict_phenotypic_traits(
     cv_results = cross_validate_regressor(regressor.model, X_genetic, y_phenotype)
 
     return {
-        'method': method,
-        'regressor': regressor,
-        'training_evaluation': train_eval,
-        'cross_validation': cv_results,
-        'predictions': predictions.tolist(),
-        'prediction_stats': {
-            'mean': float(predictions.mean()),
-            'std': float(predictions.std()),
-            'min': float(predictions.min()),
-            'max': float(predictions.max()),
+        "method": method,
+        "regressor": regressor,
+        "training_evaluation": train_eval,
+        "cross_validation": cv_results,
+        "predictions": predictions.tolist(),
+        "prediction_stats": {
+            "mean": float(predictions.mean()),
+            "std": float(predictions.std()),
+            "min": float(predictions.min()),
+            "max": float(predictions.max()),
         },
     }
 
@@ -554,13 +504,10 @@ def analyze_prediction_uncertainty(
     ci_upper = np.percentile(all_predictions, 97.5, axis=0)
 
     return {
-        'n_bootstraps': n_bootstraps,
-        'mean_predictions': mean_predictions.tolist(),
-        'std_predictions': std_predictions.tolist(),
-        'ci_lower_95': ci_lower.tolist(),
-        'ci_upper_95': ci_upper.tolist(),
-        'prediction_ranges': (ci_upper - ci_lower).tolist(),
+        "n_bootstraps": n_bootstraps,
+        "mean_predictions": mean_predictions.tolist(),
+        "std_predictions": std_predictions.tolist(),
+        "ci_lower_95": ci_lower.tolist(),
+        "ci_upper_95": ci_upper.tolist(),
+        "prediction_ranges": (ci_upper - ci_lower).tolist(),
     }
-
-
-

@@ -148,7 +148,7 @@ chr1	300	rs3	G	A	50	PASS	.	GT	1/1	0/0	0/1	1/1	0/0
     assert result["status"] == "success"
     assert "results" in result
     assert len(result["results"]) > 0
-    
+
     # Check that results table was written
     if results_dir.exists():
         results_file = results_dir / "association_results.tsv"
@@ -159,7 +159,9 @@ chr1	300	rs3	G	A	50	PASS	.	GT	1/1	0/0	0/1	1/1	0/0
 def test_run_gwas_missing_trait(tmp_path: Path) -> None:
     """Test GWAS run with missing trait in phenotype file."""
     vcf_file = tmp_path / "test.vcf"
-    vcf_file.write_text("##fileformat=VCFv4.2\n#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	S1\nchr1	100	rs1	A	G	60	PASS	.	GT	0/1\n")
+    vcf_file.write_text(
+        "##fileformat=VCFv4.2\n#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	S1\nchr1	100	rs1	A	G	60	PASS	.	GT	0/1\n"
+    )
 
     phenotype_file = tmp_path / "phenotypes.tsv"
     phenotype_data = [["sample_id", "weight"], ["S1", "70.0"]]
@@ -170,4 +172,3 @@ def test_run_gwas_missing_trait(tmp_path: Path) -> None:
     result = run_gwas(vcf_file, phenotype_file, config)
     assert result["status"] == "failed"
     assert "error" in result
-

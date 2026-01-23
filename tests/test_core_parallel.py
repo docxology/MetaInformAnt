@@ -1,4 +1,5 @@
 """Comprehensive tests for core.execution.parallel module."""
+
 from __future__ import annotations
 
 import time
@@ -63,17 +64,17 @@ class TestThreadMap:
     def test_thread_map_concurrent_speedup(self) -> None:
         """Test that parallel execution provides speedup."""
         data = list(range(20))
-        
+
         # Sequential timing
         start = time.time()
         _ = core_parallel.thread_map(slow_square, data, max_workers=1)
         seq_time = time.time() - start
-        
+
         # Parallel timing
         start = time.time()
         _ = core_parallel.thread_map(slow_square, data, max_workers=8)
         par_time = time.time() - start
-        
+
         # Parallel should be faster (at least 2x)
         assert par_time < seq_time * 0.75 or seq_time < 0.1  # Skip if too fast
 

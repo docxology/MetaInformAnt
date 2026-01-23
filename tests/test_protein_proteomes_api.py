@@ -125,6 +125,7 @@ class TestGetProteomeMetadata:
         """Test that requests library is available and used."""
         try:
             import requests
+
             assert requests is not None
         except ImportError:
             pytest.skip("requests library not available")
@@ -183,18 +184,18 @@ class TestDownloadProteomeFasta:
 
             # Read and verify FASTA structure
             content = output_file.read_text()
-            lines = content.strip().split('\n')
+            lines = content.strip().split("\n")
 
             # Should start with header
-            assert lines[0].startswith('>')
-            assert 'Homo sapiens' in lines[0]
+            assert lines[0].startswith(">")
+            assert "Homo sapiens" in lines[0]
 
             # Should have sequence data
-            sequence_lines = [line for line in lines[1:] if not line.startswith('>')]
-            sequence = ''.join(sequence_lines)
+            sequence_lines = [line for line in lines[1:] if not line.startswith(">")]
+            sequence = "".join(sequence_lines)
 
             # Verify sequence contains only valid amino acids
-            valid_aa = set('ACDEFGHIKLMNPQRSTVWY')
+            valid_aa = set("ACDEFGHIKLMNPQRSTVWY")
             sequence_aa = set(sequence.upper())
             assert sequence_aa.issubset(valid_aa), f"Invalid amino acids: {sequence_aa - valid_aa}"
 
@@ -280,6 +281,7 @@ class TestDownloadProteomeFasta:
         """Test that requests library is available for downloads."""
         try:
             import requests
+
             assert requests is not None
         except ImportError:
             pytest.skip("requests library not available")
@@ -320,6 +322,7 @@ class TestProteomesNetworkConnectivity:
         try:
             # Use a very short timeout that should cause timeout
             import requests
+
             response = requests.get("https://httpbin.org/delay/10", timeout=0.001)
         except (requests.Timeout, requests.RequestException):
             # This is expected

@@ -22,6 +22,7 @@ logger = logging.get_logger(__name__)
 # Optional imports with graceful fallbacks
 try:
     import networkx as nx
+
     HAS_NETWORKX = True
 except ImportError:
     nx = None
@@ -29,11 +30,7 @@ except ImportError:
 
 
 def plot_entropy_profile(
-    entropy_data: dict[str, List[float]],
-    *,
-    ax: Axes | None = None,
-    output_path: str | Path | None = None,
-    **kwargs
+    entropy_data: dict[str, List[float]], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
 ) -> Axes:
     """Create an entropy profile plot across different scales.
 
@@ -55,7 +52,7 @@ def plot_entropy_profile(
         raise ValueError("Entropy data dictionary cannot be empty")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (10, 6)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 6)))
 
     # Plot entropy profiles for each dataset/sequence
     for label, entropy_values in entropy_data.items():
@@ -63,17 +60,17 @@ def plot_entropy_profile(
             raise ValueError(f"Entropy values for {label} must be a list or array")
 
         k_values = list(range(1, len(entropy_values) + 1))
-        ax.plot(k_values, entropy_values, label=label, marker='o', **kwargs)
+        ax.plot(k_values, entropy_values, label=label, marker="o", **kwargs)
 
-    ax.set_xlabel('k-mer size')
-    ax.set_ylabel('Shannon Entropy (bits)')
-    ax.set_title('Entropy Profile')
+    ax.set_xlabel("k-mer size")
+    ax.set_ylabel("Shannon Entropy (bits)")
+    ax.set_title("Entropy Profile")
     ax.legend()
     ax.grid(True, alpha=0.3)
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Entropy profile plot saved to {output_path}")
 
     return ax
@@ -85,7 +82,7 @@ def plot_mutual_information_matrix(
     *,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Create a mutual information matrix heatmap.
 
@@ -113,25 +110,25 @@ def plot_mutual_information_matrix(
             raise ValueError("Number of labels must match matrix dimensions")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (10, 8)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 8)))
 
     # Create heatmap
-    im = ax.imshow(mi_matrix, cmap=kwargs.get('cmap', 'viridis'), **kwargs)
+    im = ax.imshow(mi_matrix, cmap=kwargs.get("cmap", "viridis"), **kwargs)
     plt.colorbar(im, ax=ax)
 
     # Add labels if provided
     if labels:
         ax.set_xticks(np.arange(len(labels)))
         ax.set_yticks(np.arange(len(labels)))
-        ax.set_xticklabels(labels, rotation=45, ha='right')
+        ax.set_xticklabels(labels, rotation=45, ha="right")
         ax.set_yticklabels(labels)
 
-    ax.set_title('Mutual Information Matrix')
+    ax.set_title("Mutual Information Matrix")
     ax.grid(False)  # Turn off grid for cleaner heatmap
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Mutual information matrix plot saved to {output_path}")
 
     return ax
@@ -143,7 +140,7 @@ def plot_renyi_spectra(
     *,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Create a Rényi entropy spectra plot.
 
@@ -167,30 +164,29 @@ def plot_renyi_spectra(
         raise ValueError("Rényi data dictionary cannot be empty")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (10, 6)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 6)))
 
     # Plot Rényi spectra for each dataset
     for label, renyi_values in renyi_data.items():
         if len(renyi_values) != len(alpha_values):
             raise ValueError(f"Rényi values for {label} must match alpha values length")
 
-        ax.plot(alpha_values, renyi_values, label=label, marker='o', **kwargs)
+        ax.plot(alpha_values, renyi_values, label=label, marker="o", **kwargs)
 
-    ax.set_xlabel('α (Rényi parameter)')
-    ax.set_ylabel('Rényi Entropy')
-    ax.set_title('Rényi Entropy Spectra')
+    ax.set_xlabel("α (Rényi parameter)")
+    ax.set_ylabel("Rényi Entropy")
+    ax.set_title("Rényi Entropy Spectra")
     ax.legend()
     ax.grid(True, alpha=0.3)
 
     # Highlight Shannon entropy (α=1)
     if 1.0 in alpha_values:
-        ax.axvline(x=1.0, color='red', linestyle='--', alpha=0.7,
-                  label='Shannon entropy (α=1)')
+        ax.axvline(x=1.0, color="red", linestyle="--", alpha=0.7, label="Shannon entropy (α=1)")
         ax.legend()
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Rényi spectra plot saved to {output_path}")
 
     return ax
@@ -203,7 +199,7 @@ def plot_information_landscape(
     *,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Create an information landscape plot.
 
@@ -227,7 +223,7 @@ def plot_information_landscape(
         raise ValueError("Information landscape data must be 2D")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (10, 8)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 8)))
 
     # Create coordinate grids if not provided
     if x_coords is None:
@@ -238,17 +234,18 @@ def plot_information_landscape(
     X, Y = np.meshgrid(x_coords, y_coords)
 
     # Create contour plot
-    cs = ax.contourf(X, Y, landscape_data, cmap=kwargs.get('cmap', 'viridis'),
-                    levels=kwargs.get('levels', 20), **kwargs)
+    cs = ax.contourf(
+        X, Y, landscape_data, cmap=kwargs.get("cmap", "viridis"), levels=kwargs.get("levels", 20), **kwargs
+    )
     plt.colorbar(cs, ax=ax)
 
-    ax.set_xlabel('X coordinate')
-    ax.set_ylabel('Y coordinate')
-    ax.set_title('Information Landscape')
+    ax.set_xlabel("X coordinate")
+    ax.set_ylabel("Y coordinate")
+    ax.set_title("Information Landscape")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Information landscape plot saved to {output_path}")
 
     return ax
@@ -260,7 +257,7 @@ def plot_information_network(
     *,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Create an information flow network visualization.
 
@@ -288,7 +285,7 @@ def plot_information_network(
         raise ValueError("Nodes list cannot be empty")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (10, 8)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 8)))
 
     # Create network
     G = nx.DiGraph()
@@ -301,37 +298,31 @@ def plot_information_network(
         G.add_edge(source, target, weight=weight)
 
     # Calculate node positions
-    pos = nx.spring_layout(G, **kwargs.get('layout_kwargs', {}))
+    pos = nx.spring_layout(G, **kwargs.get("layout_kwargs", {}))
 
     # Draw network
     node_sizes = [G.degree(node) * 100 + 300 for node in G.nodes()]  # Size by degree
-    edge_weights = [G[u][v]['weight'] * 2 for u, v in G.edges()]  # Width by weight
+    edge_weights = [G[u][v]["weight"] * 2 for u, v in G.edges()]  # Width by weight
 
     nx.draw(
         G,
         pos=pos,
         ax=ax,
-        with_labels=kwargs.get('with_labels', True),
-        node_color=kwargs.get('node_color', 'lightblue'),
+        with_labels=kwargs.get("with_labels", True),
+        node_color=kwargs.get("node_color", "lightblue"),
         node_size=node_sizes,
-        edge_color=kwargs.get('edge_color', 'gray'),
+        edge_color=kwargs.get("edge_color", "gray"),
         width=edge_weights,
-        alpha=kwargs.get('alpha', 0.8),
-        arrows=kwargs.get('arrows', True),
-        **kwargs
+        alpha=kwargs.get("alpha", 0.8),
+        arrows=kwargs.get("arrows", True),
+        **kwargs,
     )
 
-    ax.set_title('Information Flow Network')
+    ax.set_title("Information Flow Network")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Information network plot saved to {output_path}")
 
     return ax
-
-
-
-
-
-

@@ -148,7 +148,6 @@ __all__ = [
     "popgen",
     "popgen_stats",
     "epimodels",
-    
     # Coalescent
     "expected_time_to_mrca",
     "watterson_theta",
@@ -157,12 +156,10 @@ __all__ = [
     "tajimas_D",
     "tajima_constants",
     "expected_segregating_sites",
-    
     # Core
     "hardy_weinberg_genotype_freqs",
     "fisher_exact_test",
     "correlation",
-    
     # PopGen
     "fixation_probability",
     "expected_r2_from_Ne_c",
@@ -175,7 +172,6 @@ __all__ = [
     "inbreeding_coefficient",
     "fst_from_allele_freqs",
     "fst_from_heterozygosity",
-    
     # QuantGen
     "breeders_equation_response",
     "realized_heritability",
@@ -187,7 +183,6 @@ __all__ = [
     "weighted_correlation",
     "weighted_covariance",
     "weighted_variance",
-
     # Utilities
     "covariance",
     "shannon_entropy",
@@ -201,7 +196,6 @@ __all__ = [
     "selection_gradient",
     "mutation_selection_balance_dominant",
     "mutation_selection_balance_recessive",
-
     # Epidemiology
     "basic_reproduction_number",
     "effective_reproduction_number",
@@ -210,22 +204,18 @@ __all__ = [
     "skewness",
     "standard_deviation",
     "variance",
-    
     # PopGen Extensions
     "effective_size_from_family_size_variance",
     "equilibrium_heterozygosity_infinite_alleles",
     "effective_size_sex_ratio",
-
     # Evolutionary Dynamics
     "logistic_map",
     "lotka_volterra_step",
     "replicator_derivative",
     "replicator_step",
-
     # Decision Theory
     "ddm_analytic_accuracy",
     "ddm_mean_decision_time",
-    
     # LD
     "ld_coefficients",
     "ld_decay_r2",

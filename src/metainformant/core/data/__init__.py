@@ -14,6 +14,7 @@ try:
         sanitize_connection_params,
         get_connection,
     )
+
     _HAS_DB = True
 except ImportError:
     _HAS_DB = False
@@ -45,7 +46,6 @@ __all__ = [
     "get_db_client",
     "sanitize_connection_params",
     "get_connection",
-    
     # Validation
     "validate_type",
     "validate_range",

@@ -1,4 +1,5 @@
 """Tests for DNA multiple sequence alignment."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -11,7 +12,7 @@ from metainformant.dna import msa, sequences
 def test_align_msa_returns_equal_length_alignment() -> None:
     """Test MSA alignment returns equal-length sequences."""
     fasta_path = Path(__file__).parent / "data" / "dna" / "toy.fasta"
-    
+
     try:
         seqs = sequences.read_fasta(str(fasta_path))
         aln = msa.align_msa(seqs, method="auto")
@@ -35,10 +36,10 @@ TTTTTTTTTTTT
 """
     fasta_path = tmp_path / "test.fasta"
     fasta_path.write_text(fasta_content)
-    
+
     seqs = sequences.read_fasta(str(fasta_path))
     assert len(seqs) == 3
-    
+
     try:
         aln = msa.align_msa(seqs)
         assert isinstance(aln, dict)

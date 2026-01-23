@@ -21,6 +21,7 @@ logger = logging.get_logger(__name__)
 # Optional imports with graceful fallbacks
 try:
     import seaborn as sns
+
     HAS_SEABORN = True
 except ImportError:
     sns = None
@@ -28,6 +29,7 @@ except ImportError:
 
 try:
     from sklearn.decomposition import PCA
+
     HAS_SKLEARN = True
 except ImportError:
     PCA = None
@@ -40,7 +42,7 @@ def plot_pca(
     n_components: int = 2,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Create a PCA scatter plot.
 
@@ -80,35 +82,26 @@ def plot_pca(
 
     if n_components == 2:
         if ax is None:
-            fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (8, 6)))
+            fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (8, 6)))
 
-        ax.scatter(
-            pca_result[:, 0],
-            pca_result[:, 1],
-            **kwargs
-        )
-        ax.set_xlabel(f'PC1 ({pca.explained_variance_ratio_[0]:.1%} variance)')
-        ax.set_ylabel(f'PC2 ({pca.explained_variance_ratio_[1]:.1%} variance)')
-        ax.set_title('PCA Plot')
+        ax.scatter(pca_result[:, 0], pca_result[:, 1], **kwargs)
+        ax.set_xlabel(f"PC1 ({pca.explained_variance_ratio_[0]:.1%} variance)")
+        ax.set_ylabel(f"PC2 ({pca.explained_variance_ratio_[1]:.1%} variance)")
+        ax.set_title("PCA Plot")
     else:  # 3D
         if ax is None:
-            fig = plt.figure(figsize=kwargs.pop('figsize', (10, 8)))
-            ax = fig.add_subplot(111, projection='3d')
+            fig = plt.figure(figsize=kwargs.pop("figsize", (10, 8)))
+            ax = fig.add_subplot(111, projection="3d")
 
-        ax.scatter(
-            pca_result[:, 0],
-            pca_result[:, 1],
-            pca_result[:, 2],
-            **kwargs
-        )
-        ax.set_xlabel(f'PC1 ({pca.explained_variance_ratio_[0]:.1%} variance)')
-        ax.set_ylabel(f'PC2 ({pca.explained_variance_ratio_[1]:.1%} variance)')
-        ax.set_zlabel(f'PC3 ({pca.explained_variance_ratio_[2]:.1%} variance)')
-        ax.set_title('3D PCA Plot')
+        ax.scatter(pca_result[:, 0], pca_result[:, 1], pca_result[:, 2], **kwargs)
+        ax.set_xlabel(f"PC1 ({pca.explained_variance_ratio_[0]:.1%} variance)")
+        ax.set_ylabel(f"PC2 ({pca.explained_variance_ratio_[1]:.1%} variance)")
+        ax.set_zlabel(f"PC3 ({pca.explained_variance_ratio_[2]:.1%} variance)")
+        ax.set_title("3D PCA Plot")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"PCA plot saved to {output_path}")
 
     return ax
@@ -120,7 +113,7 @@ def plot_umap(
     n_components: int = 2,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Create a UMAP scatter plot.
 
@@ -162,35 +155,26 @@ def plot_umap(
 
     if n_components == 2:
         if ax is None:
-            fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (8, 6)))
+            fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (8, 6)))
 
-        ax.scatter(
-            umap_result[:, 0],
-            umap_result[:, 1],
-            **kwargs
-        )
-        ax.set_xlabel('UMAP 1')
-        ax.set_ylabel('UMAP 2')
-        ax.set_title('UMAP Plot')
+        ax.scatter(umap_result[:, 0], umap_result[:, 1], **kwargs)
+        ax.set_xlabel("UMAP 1")
+        ax.set_ylabel("UMAP 2")
+        ax.set_title("UMAP Plot")
     else:  # 3D
         if ax is None:
-            fig = plt.figure(figsize=kwargs.pop('figsize', (10, 8)))
-            ax = fig.add_subplot(111, projection='3d')
+            fig = plt.figure(figsize=kwargs.pop("figsize", (10, 8)))
+            ax = fig.add_subplot(111, projection="3d")
 
-        ax.scatter(
-            umap_result[:, 0],
-            umap_result[:, 1],
-            umap_result[:, 2],
-            **kwargs
-        )
-        ax.set_xlabel('UMAP 1')
-        ax.set_ylabel('UMAP 2')
-        ax.set_zlabel('UMAP 3')
-        ax.set_title('3D UMAP Plot')
+        ax.scatter(umap_result[:, 0], umap_result[:, 1], umap_result[:, 2], **kwargs)
+        ax.set_xlabel("UMAP 1")
+        ax.set_ylabel("UMAP 2")
+        ax.set_zlabel("UMAP 3")
+        ax.set_title("3D UMAP Plot")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"UMAP plot saved to {output_path}")
 
     return ax
@@ -202,7 +186,7 @@ def plot_tsne(
     n_components: int = 2,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Create a t-SNE scatter plot.
 
@@ -247,47 +231,33 @@ def plot_tsne(
 
     if n_components == 2:
         if ax is None:
-            fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (8, 6)))
+            fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (8, 6)))
 
-        ax.scatter(
-            tsne_result[:, 0],
-            tsne_result[:, 1],
-            **kwargs
-        )
-        ax.set_xlabel('t-SNE 1')
-        ax.set_ylabel('t-SNE 2')
-        ax.set_title('t-SNE Plot')
+        ax.scatter(tsne_result[:, 0], tsne_result[:, 1], **kwargs)
+        ax.set_xlabel("t-SNE 1")
+        ax.set_ylabel("t-SNE 2")
+        ax.set_title("t-SNE Plot")
     else:  # 3D
         if ax is None:
-            fig = plt.figure(figsize=kwargs.pop('figsize', (10, 8)))
-            ax = fig.add_subplot(111, projection='3d')
+            fig = plt.figure(figsize=kwargs.pop("figsize", (10, 8)))
+            ax = fig.add_subplot(111, projection="3d")
 
-        ax.scatter(
-            tsne_result[:, 0],
-            tsne_result[:, 1],
-            tsne_result[:, 2],
-            **kwargs
-        )
-        ax.set_xlabel('t-SNE 1')
-        ax.set_ylabel('t-SNE 2')
-        ax.set_zlabel('t-SNE 3')
-        ax.set_title('3D t-SNE Plot')
+        ax.scatter(tsne_result[:, 0], tsne_result[:, 1], tsne_result[:, 2], **kwargs)
+        ax.set_xlabel("t-SNE 1")
+        ax.set_ylabel("t-SNE 2")
+        ax.set_zlabel("t-SNE 3")
+        ax.set_title("3D t-SNE Plot")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"t-SNE plot saved to {output_path}")
 
     return ax
 
 
 def plot_pca_loadings(
-    pca_model: Any,
-    *,
-    n_components: int = 2,
-    ax: Axes | None = None,
-    output_path: str | Path | None = None,
-    **kwargs
+    pca_model: Any, *, n_components: int = 2, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
 ) -> Axes:
     """Create a PCA loadings plot.
 
@@ -311,37 +281,33 @@ def plot_pca_loadings(
         raise ValueError("PCA loadings plot only supports 2 components")
 
     # Validate PCA model
-    if not hasattr(pca_model, 'components_'):
+    if not hasattr(pca_model, "components_"):
         raise ValueError("pca_model must be a fitted sklearn PCA model")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (10, 8)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 8)))
 
     loadings = pca_model.components_[:2].T  # Shape: (n_features, 2)
 
-    ax.scatter(
-        loadings[:, 0],
-        loadings[:, 1],
-        **kwargs
-    )
+    ax.scatter(loadings[:, 0], loadings[:, 1], **kwargs)
 
     # Add feature labels if available
-    if hasattr(pca_model, '_feature_names_in'):
+    if hasattr(pca_model, "_feature_names_in"):
         feature_names = pca_model._feature_names_in
         for i, name in enumerate(feature_names):
-            ax.annotate(name, (loadings[i, 0], loadings[i, 1]),
-                       xytext=(5, 5), textcoords='offset points',
-                       fontsize=8, alpha=0.8)
+            ax.annotate(
+                name, (loadings[i, 0], loadings[i, 1]), xytext=(5, 5), textcoords="offset points", fontsize=8, alpha=0.8
+            )
 
-    ax.axhline(y=0, color='k', linestyle='--', alpha=0.5)
-    ax.axvline(x=0, color='k', linestyle='--', alpha=0.5)
-    ax.set_xlabel(f'PC1 Loadings ({pca_model.explained_variance_ratio_[0]:.1%} variance)')
-    ax.set_ylabel(f'PC2 Loadings ({pca_model.explained_variance_ratio_[1]:.1%} variance)')
-    ax.set_title('PCA Loadings Plot')
+    ax.axhline(y=0, color="k", linestyle="--", alpha=0.5)
+    ax.axvline(x=0, color="k", linestyle="--", alpha=0.5)
+    ax.set_xlabel(f"PC1 Loadings ({pca_model.explained_variance_ratio_[0]:.1%} variance)")
+    ax.set_ylabel(f"PC2 Loadings ({pca_model.explained_variance_ratio_[1]:.1%} variance)")
+    ax.set_title("PCA Loadings Plot")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"PCA loadings plot saved to {output_path}")
 
     return ax
@@ -353,7 +319,7 @@ def biplot(
     *,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Create a PCA biplot showing both samples and loadings.
 
@@ -382,56 +348,59 @@ def biplot(
         feature_names = data.columns.tolist()
     else:
         data_array = data
-        sample_names = [f'Sample_{i}' for i in range(data_array.shape[0])]
-        feature_names = [f'Feature_{i}' for i in range(data_array.shape[1])]
+        sample_names = [f"Sample_{i}" for i in range(data_array.shape[0])]
+        feature_names = [f"Feature_{i}" for i in range(data_array.shape[1])]
 
     # Validate PCA model
-    if not hasattr(pca_model, 'components_'):
+    if not hasattr(pca_model, "components_"):
         raise ValueError("pca_model must be a fitted sklearn PCA model")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (10, 8)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 8)))
 
     # Get PCA scores
     scores = pca_model.transform(data_array)
 
     # Plot samples
-    ax.scatter(
-        scores[:, 0],
-        scores[:, 1],
-        alpha=0.7,
-        label='Samples',
-        **kwargs
-    )
+    ax.scatter(scores[:, 0], scores[:, 1], alpha=0.7, label="Samples", **kwargs)
 
     # Plot loadings as arrows
     loadings = pca_model.components_[:2].T
-    scaling_factor = kwargs.get('scaling_factor', scores.std() / loadings.std() * 0.8)
+    scaling_factor = kwargs.get("scaling_factor", scores.std() / loadings.std() * 0.8)
 
     for i, (x, y) in enumerate(loadings):
-        ax.arrow(0, 0, x * scaling_factor, y * scaling_factor,
-                head_width=0.05, head_length=0.05, fc='red', ec='red', alpha=0.7)
+        ax.arrow(
+            0,
+            0,
+            x * scaling_factor,
+            y * scaling_factor,
+            head_width=0.05,
+            head_length=0.05,
+            fc="red",
+            ec="red",
+            alpha=0.7,
+        )
         # Label features
         if len(feature_names) <= 20:  # Only label if not too many
-            ax.text(x * scaling_factor * 1.1, y * scaling_factor * 1.1,
-                   feature_names[i], fontsize=8, ha='center', va='center')
+            ax.text(
+                x * scaling_factor * 1.1,
+                y * scaling_factor * 1.1,
+                feature_names[i],
+                fontsize=8,
+                ha="center",
+                va="center",
+            )
 
-    ax.axhline(y=0, color='k', linestyle='--', alpha=0.3)
-    ax.axvline(x=0, color='k', linestyle='--', alpha=0.3)
-    ax.set_xlabel(f'PC1 ({pca_model.explained_variance_ratio_[0]:.1%} variance)')
-    ax.set_ylabel(f'PC2 ({pca_model.explained_variance_ratio_[1]:.1%} variance)')
-    ax.set_title('PCA Biplot')
+    ax.axhline(y=0, color="k", linestyle="--", alpha=0.3)
+    ax.axvline(x=0, color="k", linestyle="--", alpha=0.3)
+    ax.set_xlabel(f"PC1 ({pca_model.explained_variance_ratio_[0]:.1%} variance)")
+    ax.set_ylabel(f"PC2 ({pca_model.explained_variance_ratio_[1]:.1%} variance)")
+    ax.set_title("PCA Biplot")
     ax.legend()
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"PCA biplot saved to {output_path}")
 
     return ax
-
-
-
-
-
-

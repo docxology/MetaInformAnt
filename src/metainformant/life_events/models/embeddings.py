@@ -17,6 +17,7 @@ logger = logging.get_logger(__name__)
 try:
     from sklearn.decomposition import PCA
     from sklearn.manifold import TSNE
+
     SKLEARN_AVAILABLE = True
 except ImportError:
     SKLEARN_AVAILABLE = False
@@ -30,7 +31,7 @@ def learn_event_embeddings(
     min_count: int = 1,
     sg: int = 1,
     epochs: int = 5,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Dict[str, Any]:
     """Learn vector embeddings for life events using Word2Vec-like approach.
 
@@ -56,8 +57,7 @@ def learn_event_embeddings(
             event_counts[event_type] = event_counts.get(event_type, 0) + 1
 
     # Filter by min_count
-    vocabulary = {event: count for event, count in event_counts.items()
-                 if count >= min_count}
+    vocabulary = {event: count for event, count in event_counts.items() if count >= min_count}
 
     if not vocabulary:
         raise ValueError("No events meet minimum count threshold")
@@ -78,38 +78,29 @@ def learn_event_embeddings(
     # Add some structure based on event types
     for event, idx in event_to_idx.items():
         # Add small bias based on event type
-        if 'education' in event.lower():
+        if "education" in event.lower():
             embeddings[idx, :10] += 0.1
-        elif 'job' in event.lower() or 'career' in event.lower():
+        elif "job" in event.lower() or "career" in event.lower():
             embeddings[idx, 10:20] += 0.1
-        elif 'health' in event.lower() or 'medical' in event.lower():
+        elif "health" in event.lower() or "medical" in event.lower():
             embeddings[idx, 20:30] += 0.1
-        elif 'family' in event.lower() or 'marriage' in event.lower():
+        elif "family" in event.lower() or "marriage" in event.lower():
             embeddings[idx, 30:40] += 0.1
 
     result = {
-        'embeddings': embeddings,
-        'vocabulary': vocabulary,
-        'event_to_idx': event_to_idx,
-        'embedding_dim': embedding_dim,
-        'vocab_size': vocab_size,
-        'training_params': {
-            'window_size': window_size,
-            'min_count': min_count,
-            'sg': sg,
-            'epochs': epochs
-        }
+        "embeddings": embeddings,
+        "vocabulary": vocabulary,
+        "event_to_idx": event_to_idx,
+        "embedding_dim": embedding_dim,
+        "vocab_size": vocab_size,
+        "training_params": {"window_size": window_size, "min_count": min_count, "sg": sg, "epochs": epochs},
     }
 
     logger.info(f"Embeddings learned: {vocab_size} events, {embedding_dim} dimensions")
     return result
 
 
-def biological_embedding(
-    sequences: List[Any],
-    embedding_type: str = "event_type",
-    **kwargs: Any
-) -> Dict[str, Any]:
+def biological_embedding(sequences: List[Any], embedding_type: str = "event_type", **kwargs: Any) -> Dict[str, Any]:
     """Create biologically-informed embeddings for life events.
 
     Args:
@@ -140,7 +131,7 @@ def _create_event_type_embeddings(sequences: List[Any], **kwargs: Any) -> Dict[s
             event_types.add(event.event_type)
 
     event_types = list(event_types)
-    embedding_dim = kwargs.get('embedding_dim', 50)
+    embedding_dim = kwargs.get("embedding_dim", 50)
 
     # Create simple one-hot like embeddings
     embeddings = {}
@@ -153,12 +144,7 @@ def _create_event_type_embeddings(sequences: List[Any], **kwargs: Any) -> Dict[s
             embedding[j] = (hash_val >> j) & 1
         embeddings[event_type] = embedding
 
-    return {
-        'embeddings': embeddings,
-        'event_types': event_types,
-        'embedding_dim': embedding_dim,
-        'type': 'event_type'
-    }
+    return {"embeddings": embeddings, "event_types": event_types, "embedding_dim": embedding_dim, "type": "event_type"}
 
 
 def _create_domain_embeddings(sequences: List[Any], **kwargs: Any) -> Dict[str, Any]:
@@ -166,37 +152,32 @@ def _create_domain_embeddings(sequences: List[Any], **kwargs: Any) -> Dict[str, 
     domains = set()
     for seq in sequences:
         for event in seq.events:
-            if hasattr(event, 'domain'):
+            if hasattr(event, "domain"):
                 domains.add(event.domain)
 
-    domains = list(domains) if domains else ['default']
-    embedding_dim = kwargs.get('embedding_dim', 20)
+    domains = list(domains) if domains else ["default"]
+    embedding_dim = kwargs.get("embedding_dim", 20)
 
     # Create domain-specific embeddings
     embeddings = {}
     domain_centers = {
-        'education': [1, 0, 0],
-        'career': [0, 1, 0],
-        'health': [0, 0, 1],
-        'family': [1, 1, 0],
-        'finance': [0, 1, 1],
-        'default': [0.5, 0.5, 0.5]
+        "education": [1, 0, 0],
+        "career": [0, 1, 0],
+        "health": [0, 0, 1],
+        "family": [1, 1, 0],
+        "finance": [0, 1, 1],
+        "default": [0.5, 0.5, 0.5],
     }
 
     for domain in domains:
-        base = domain_centers.get(domain.lower(), domain_centers['default'])
+        base = domain_centers.get(domain.lower(), domain_centers["default"])
         # Extend to full embedding dimension
         embedding = np.array(base + [0.0] * (embedding_dim - len(base)))
         # Add small random variation
         embedding += np.random.normal(0, 0.1, embedding_dim)
         embeddings[domain] = embedding
 
-    return {
-        'embeddings': embeddings,
-        'domains': domains,
-        'embedding_dim': embedding_dim,
-        'type': 'domain'
-    }
+    return {"embeddings": embeddings, "domains": domains, "embedding_dim": embedding_dim, "type": "domain"}
 
 
 def _create_temporal_embeddings(sequences: List[Any], **kwargs: Any) -> Dict[str, Any]:
@@ -218,20 +199,23 @@ def _create_temporal_embeddings(sequences: List[Any], **kwargs: Any) -> Dict[str
             temporal_patterns[pattern_key].extend(time_diffs)
 
     # Create embeddings based on temporal patterns
-    embedding_dim = kwargs.get('embedding_dim', 30)
+    embedding_dim = kwargs.get("embedding_dim", 30)
     embeddings = {}
 
     for pattern, diffs in temporal_patterns.items():
         if diffs:
             # Use statistical properties of time differences
-            embedding = np.array([
-                np.mean(diffs),      # average time between events
-                np.std(diffs),       # variability
-                np.min(diffs),       # minimum interval
-                np.max(diffs),       # maximum interval
-                len(diffs),          # number of transitions
-                np.median(diffs),    # median interval
-            ] + [0.0] * (embedding_dim - 6))
+            embedding = np.array(
+                [
+                    np.mean(diffs),  # average time between events
+                    np.std(diffs),  # variability
+                    np.min(diffs),  # minimum interval
+                    np.max(diffs),  # maximum interval
+                    len(diffs),  # number of transitions
+                    np.median(diffs),  # median interval
+                ]
+                + [0.0] * (embedding_dim - 6)
+            )
 
             # Normalize
             if np.max(np.abs(embedding)) > 0:
@@ -240,18 +224,15 @@ def _create_temporal_embeddings(sequences: List[Any], **kwargs: Any) -> Dict[str
             embeddings[str(pattern)] = embedding
 
     return {
-        'embeddings': embeddings,
-        'temporal_patterns': temporal_patterns,
-        'embedding_dim': embedding_dim,
-        'type': 'temporal'
+        "embeddings": embeddings,
+        "temporal_patterns": temporal_patterns,
+        "embedding_dim": embedding_dim,
+        "type": "temporal",
     }
 
 
 def domain_specific_embeddings(
-    sequences: List[Any],
-    domains: List[str],
-    embedding_dim: int = 50,
-    **kwargs: Any
+    sequences: List[Any], domains: List[str], embedding_dim: int = 50, **kwargs: Any
 ) -> Dict[str, Any]:
     """Create embeddings specific to different life domains.
 
@@ -272,8 +253,7 @@ def domain_specific_embeddings(
         # Filter sequences to this domain
         domain_sequences = []
         for seq in sequences:
-            domain_events = [event for event in seq.events
-                           if hasattr(event, 'domain') and event.domain == domain]
+            domain_events = [event for event in seq.events if hasattr(event, "domain") and event.domain == domain]
             if domain_events:
                 # Create a sequence with only this domain's events
                 domain_seq = type(seq)(person_id=seq.person_id, events=domain_events)
@@ -281,15 +261,7 @@ def domain_specific_embeddings(
 
         if domain_sequences:
             # Learn embeddings for this domain
-            domain_result = learn_event_embeddings(
-                domain_sequences,
-                embedding_dim=embedding_dim,
-                **kwargs
-            )
+            domain_result = learn_event_embeddings(domain_sequences, embedding_dim=embedding_dim, **kwargs)
             domain_embeddings[domain] = domain_result
 
-    return {
-        'domain_embeddings': domain_embeddings,
-        'domains': domains,
-        'embedding_dim': embedding_dim
-    }
+    return {"domain_embeddings": domain_embeddings, "domains": domains, "embedding_dim": embedding_dim}

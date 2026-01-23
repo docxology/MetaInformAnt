@@ -42,13 +42,10 @@ class TestPlotDiversityComparison:
             "High": 0.05,
             "Low": 0.001,
         }
-        
+
         output_path = tmp_path / "diversity.png"
-        fig = plot_diversity_comparison(
-            diversity,
-            output_path=str(output_path)
-        )
-        
+        fig = plot_diversity_comparison(diversity, output_path=str(output_path))
+
         assert fig is not None
         assert output_path.exists()
         assert len(fig.axes) == 1
@@ -70,13 +67,10 @@ class TestPlotTajimasDComparison:
             "Negative": -1.5,
             "Positive": 1.5,
         }
-        
+
         output_path = tmp_path / "tajimas_d.png"
-        fig = plot_tajimas_d_comparison(
-            tajimas_d,
-            output_path=str(output_path)
-        )
-        
+        fig = plot_tajimas_d_comparison(tajimas_d, output_path=str(output_path))
+
         assert fig is not None
         assert output_path.exists()
 
@@ -91,13 +85,10 @@ class TestPlotFstComparison:
             "Moderate": 0.15,
             "High": 0.3,
         }
-        
+
         output_path = tmp_path / "fst.png"
-        fig = plot_fst_comparison(
-            fst_values,
-            output_path=str(output_path)
-        )
-        
+        fig = plot_fst_comparison(fst_values, output_path=str(output_path))
+
         assert fig is not None
         assert output_path.exists()
 
@@ -113,14 +104,10 @@ class TestPlotPCAResults:
             "explained_variance_ratio": [0.3, 0.2, 0.1, 0.05, 0.03],
             "n_components": 5,
         }
-        
+
         output_path = tmp_path / "pca.png"
-        fig = plot_pca_results(
-            pca_result,
-            output_path=str(output_path),
-            n_components=5
-        )
-        
+        fig = plot_pca_results(pca_result, output_path=str(output_path), n_components=5)
+
         assert fig is not None
         assert output_path.exists()
         assert len(fig.axes) == 3  # Three subplots
@@ -128,8 +115,9 @@ class TestPlotPCAResults:
     def test_pca_plot_failure(self):
         """Test PCA plot with failed status."""
         pca_result = {"status": "failed"}
-        
+
         from metainformant.core.utils.errors import ValidationError
+
         with pytest.raises(ValidationError, match="PCA result status is not 'success'"):
             plot_pca_results(pca_result)
 
@@ -144,22 +132,19 @@ class TestPlotKinshipMatrix:
             "kinship_matrix": [[1.0 if i == j else 0.1 for j in range(20)] for i in range(20)],
             "method": "vanraden",
         }
-        
+
         output_path = tmp_path / "kinship.png"
-        fig = plot_kinship_matrix(
-            kinship_result,
-            output_path=str(output_path),
-            max_samples=20
-        )
-        
+        fig = plot_kinship_matrix(kinship_result, output_path=str(output_path), max_samples=20)
+
         assert fig is not None
         assert output_path.exists()
 
     def test_kinship_plot_failure(self):
         """Test kinship plot with failed status."""
         kinship_result = {"status": "failed"}
-        
+
         from metainformant.core.utils.errors import ValidationError
+
         with pytest.raises(ValidationError, match="Kinship result status is not 'success'"):
             plot_kinship_matrix(kinship_result)
 
@@ -170,13 +155,10 @@ class TestPlotSiteFrequencySpectrum:
     def test_sfs_plot(self, tmp_path: Path):
         """Test SFS plotting."""
         sfs = [50, 30, 20, 10, 5]  # Counts per frequency bin
-        
+
         output_path = tmp_path / "sfs.png"
-        fig = plot_site_frequency_spectrum(
-            sfs,
-            output_path=str(output_path)
-        )
-        
+        fig = plot_site_frequency_spectrum(sfs, output_path=str(output_path))
+
         assert fig is not None
         assert output_path.exists()
 
@@ -200,13 +182,10 @@ class TestPlotNeutralityTestSummary:
                 "segregating_sites": 50,
             },
         }
-        
+
         output_path = tmp_path / "neutrality_summary.png"
-        fig = plot_neutrality_test_summary(
-            neutrality_data,
-            output_path=str(output_path)
-        )
-        
+        fig = plot_neutrality_test_summary(neutrality_data, output_path=str(output_path))
+
         assert fig is not None
         assert output_path.exists()
         assert len(fig.axes) == 4  # Four subplots
@@ -227,13 +206,10 @@ class TestPlotDemographicComparison:
                 "observed_diversity": 0.005,
             },
         }
-        
+
         output_path = tmp_path / "demographic.png"
-        fig = plot_demographic_comparison(
-            demographic_results,
-            output_path=str(output_path)
-        )
-        
+        fig = plot_demographic_comparison(demographic_results, output_path=str(output_path))
+
         assert fig is not None
         assert output_path.exists()
         assert len(fig.axes) == 2  # Two subplots
@@ -262,13 +238,10 @@ class TestPlotSummaryStatisticsGrid:
                 "sequence_length": 1000,
             },
         }
-        
+
         output_path = tmp_path / "summary_grid.png"
-        fig = plot_summary_statistics_grid(
-            summary_stats,
-            output_path=str(output_path)
-        )
-        
+        fig = plot_summary_statistics_grid(summary_stats, output_path=str(output_path))
+
         assert fig is not None
         assert output_path.exists()
         assert len(fig.axes) == 6  # Six subplots
@@ -281,25 +254,18 @@ class TestPlotLinkageDisequilibriumDecay:
         """Test LD decay plotting."""
         ld_values = [0.5, 0.4, 0.3, 0.2, 0.1, 0.05]
         distances = [0, 1, 2, 3, 4, 5]
-        
+
         output_path = tmp_path / "ld_decay.png"
-        fig = plot_linkage_disequilibrium_decay(
-            ld_values,
-            distances=distances,
-            output_path=str(output_path)
-        )
-        
+        fig = plot_linkage_disequilibrium_decay(ld_values, distances=distances, output_path=str(output_path))
+
         assert fig is not None
         assert output_path.exists()
 
     def test_ld_decay_plot_no_distances(self, tmp_path: Path):
         """Test LD decay plot without distances."""
         ld_values = [0.5, 0.4, 0.3, 0.2]
-        
-        fig = plot_linkage_disequilibrium_decay(
-            ld_values,
-            output_path=str(tmp_path / "ld_decay2.png")
-        )
+
+        fig = plot_linkage_disequilibrium_decay(ld_values, output_path=str(tmp_path / "ld_decay2.png"))
 
         assert fig is not None
 
@@ -374,13 +340,15 @@ def test_plot_neutrality_test_suite():
 
 def test_plot_hardy_weinberg_test():
     """Test Hardy-Weinberg test plot."""
-    hwe_results = [{
-        "locus": "Test_Locus",
-        "chi_square": 2.5,
-        "p_value": 0.1,
-        "degrees_of_freedom": 1,
-        "hwe_deviated": False,
-    }]
+    hwe_results = [
+        {
+            "locus": "Test_Locus",
+            "chi_square": 2.5,
+            "p_value": 0.1,
+            "degrees_of_freedom": 1,
+            "hwe_deviated": False,
+        }
+    ]
     fig = plot_hardy_weinberg_test(hwe_results)
 
     assert fig is not None
@@ -410,4 +378,3 @@ def test_plot_outlier_detection():
     fig = plot_outlier_detection(statistic_values, outlier_indices)
 
     assert fig is not None
-

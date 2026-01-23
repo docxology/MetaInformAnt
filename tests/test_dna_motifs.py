@@ -1,4 +1,5 @@
 """Tests for DNA motif finding functions."""
+
 from __future__ import annotations
 
 from metainformant.dna import motifs

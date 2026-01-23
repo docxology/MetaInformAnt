@@ -61,7 +61,7 @@ class TestBottleneckEffectiveSize:
         """Test bottleneck with recovery period."""
         ne_no_recovery = bottleneck_effective_size(10000, 100, 5)
         ne_with_recovery = bottleneck_effective_size(10000, 100, 5, recovery_generations=10)
-        
+
         # With recovery, effective size should be larger
         assert ne_with_recovery > ne_no_recovery
 
@@ -92,7 +92,7 @@ class TestTwoEpochEffectiveSize:
         """Test that expansion and contraction give same harmonic mean."""
         ne_expand = two_epoch_effective_size(1000, 10000, 50)
         ne_contract = two_epoch_effective_size(10000, 1000, 50)
-        
+
         # Harmonic mean should be symmetric
         assert math.isclose(ne_expand, ne_contract, rel_tol=0.01)
 
@@ -100,4 +100,3 @@ class TestTwoEpochEffectiveSize:
         """Test with zero time since change."""
         ne = two_epoch_effective_size(1000, 10000, 0)
         assert ne == 10000.0
-

@@ -359,7 +359,9 @@ def download_with_progress(
                     last_update=_utc_iso(),
                     bytes_downloaded=dest.stat().st_size if dest.exists() else 0,
                     total_bytes=total_for_bar,
-                    progress_percent=_compute_progress_percent(dest.stat().st_size if dest.exists() else 0, total_for_bar),
+                    progress_percent=_compute_progress_percent(
+                        dest.stat().st_size if dest.exists() else 0, total_for_bar
+                    ),
                     speed_mbps=None,
                     eta_seconds=None,
                     status="starting",
@@ -413,7 +415,9 @@ def download_with_progress(
                     last_update=_utc_iso(),
                     bytes_downloaded=dest.stat().st_size if dest.exists() else 0,
                     total_bytes=total_for_bar,
-                    progress_percent=_compute_progress_percent(dest.stat().st_size if dest.exists() else 0, total_for_bar),
+                    progress_percent=_compute_progress_percent(
+                        dest.stat().st_size if dest.exists() else 0, total_for_bar
+                    ),
                     speed_mbps=None,
                     eta_seconds=None,
                     status="failed",
@@ -488,7 +492,9 @@ def monitor_subprocess_directory_growth(
 
     bar = None
     if show_progress:
-        bar = progress.progress_bar(total=total_bytes, desc=desc or f"Running process in {watch.name}", unit="B", unit_scale=True)
+        bar = progress.progress_bar(
+            total=total_bytes, desc=desc or f"Running process in {watch.name}", unit="B", unit_scale=True
+        )
 
     last = 0.0
     last_bytes = 0
@@ -781,5 +787,3 @@ def get_download_handler(url: str) -> DownloadHandler:
     if scheme == "file":
         return FileDownloadHandler()
     raise ValueError(f"No handler for scheme: {scheme}")
-
-

@@ -29,7 +29,7 @@ class TestCountQuantifiedSamples:
             },
         }
         dump_json(config_data, config_file)
-        
+
         quantified, total = monitoring.count_quantified_samples(config_file)
         assert isinstance(quantified, int)
         assert isinstance(total, int)
@@ -48,7 +48,7 @@ class TestCountQuantifiedSamples:
             "species_list": ["Test_species"],
         }
         dump_json(config_data, config_file)
-        
+
         # Create metadata
         metadata_dir = work_dir_abs / "metadata"
         metadata_dir.mkdir(parents=True)
@@ -66,7 +66,7 @@ class TestCountQuantifiedSamples:
         (quant_dir / "SRR123" / "abundance.tsv").write_text("test")
         (quant_dir / "SRR456").mkdir()
         (quant_dir / "SRR456" / "abundance.tsv").write_text("test")
-        
+
         quantified, total = monitoring.count_quantified_samples(config_file)
         assert quantified == 2
         assert total == 2
@@ -82,7 +82,7 @@ class TestCountQuantifiedSamples:
             "species_list": ["Test_species"],
         }
         dump_json(config_data, config_file)
-        
+
         # Create metadata with 3 samples
         metadata_dir = work_dir_abs / "metadata"
         metadata_dir.mkdir(parents=True)
@@ -100,7 +100,7 @@ class TestCountQuantifiedSamples:
         (quant_dir / "SRR123" / "abundance.tsv").write_text("test")
         (quant_dir / "SRR456").mkdir()
         (quant_dir / "SRR456" / "abundance.tsv").write_text("test")
-        
+
         quantified, total = monitoring.count_quantified_samples(config_file)
         assert quantified == 2
         assert total == 3
@@ -122,7 +122,7 @@ class TestGetSampleStatus:
             },
         }
         dump_json(config_data, config_file)
-        
+
         status = monitoring.get_sample_status(config_file, "SRR123")
         assert isinstance(status, dict)
         assert status["quantified"] is False
@@ -147,7 +147,7 @@ class TestGetSampleStatus:
         fastq_sample_dir = fastq_dir / "getfastq" / "SRR123"
         fastq_sample_dir.mkdir(parents=True)
         (fastq_sample_dir / "SRR123_1.fastq.gz").write_text("test")
-        
+
         status = monitoring.get_sample_status(config_file, "SRR123")
         assert status["has_fastq"] is True
         assert status["status"] == "has_fastq"
@@ -168,7 +168,7 @@ class TestGetSampleStatus:
         quant_sample_dir = (work_dir_abs / "quant") / "SRR123"
         quant_sample_dir.mkdir(parents=True)
         (quant_sample_dir / "abundance.tsv").write_text("test")
-        
+
         status = monitoring.get_sample_status(config_file, "SRR123")
         assert status["quantified"] is True
         assert status["status"] == "quantified"
@@ -190,7 +190,7 @@ class TestAnalyzeSpeciesStatus:
             },
         }
         dump_json(config_data, config_file)
-        
+
         status = monitoring.analyze_species_status(config_file)
         assert isinstance(status, dict)
         assert status["total_in_metadata"] == 0
@@ -208,7 +208,7 @@ class TestAnalyzeSpeciesStatus:
             "species_list": ["Test_species"],
         }
         dump_json(config_data, config_file)
-        
+
         # Create metadata
         metadata_dir = work_dir_abs / "metadata"
         metadata_dir.mkdir(parents=True)
@@ -223,7 +223,7 @@ class TestAnalyzeSpeciesStatus:
         quant_sample_dir = (work_dir_abs / "quant") / "SRR123"
         quant_sample_dir.mkdir(parents=True)
         (quant_sample_dir / "abundance.tsv").write_text("test")
-        
+
         status = monitoring.analyze_species_status(config_file)
         assert status["total_in_metadata"] == 2
         assert status["quantified"] == 1
@@ -247,7 +247,7 @@ class TestFindUnquantifiedSamples:
             },
         }
         dump_json(config_data, config_file)
-        
+
         unquantified = monitoring.find_unquantified_samples(config_file)
         assert isinstance(unquantified, list)
         assert len(unquantified) == 0
@@ -263,7 +263,7 @@ class TestFindUnquantifiedSamples:
             "species_list": ["Test_species"],
         }
         dump_json(config_data, config_file)
-        
+
         # Create metadata
         metadata_dir = work_dir_abs / "metadata"
         metadata_dir.mkdir(parents=True)
@@ -278,7 +278,7 @@ class TestFindUnquantifiedSamples:
         quant_sample_dir = (work_dir_abs / "quant") / "SRR123"
         quant_sample_dir.mkdir(parents=True)
         (quant_sample_dir / "abundance.tsv").write_text("test")
-        
+
         unquantified = monitoring.find_unquantified_samples(config_file)
         assert len(unquantified) == 1
         assert "SRR456" in unquantified
@@ -290,18 +290,18 @@ class TestCheckActiveDownloads:
     @pytest.mark.slow
     def test_check_active_downloads_returns_set(self):
         """Test that check_active_downloads returns a set.
-        
+
         NOTE: This test is marked as slow because it runs `ps aux` which can be slow.
         """
         import signal
-        
+
         def timeout_handler(signum, frame):
             raise TimeoutError("check_active_downloads timed out")
-        
+
         # Set timeout for this test (5 seconds)
         signal.signal(signal.SIGALRM, timeout_handler)
         signal.alarm(5)
-        
+
         try:
             active = monitoring.check_active_downloads()
             assert isinstance(active, set)
@@ -329,7 +329,7 @@ class TestCheckWorkflowProgress:
             },
         }
         dump_json(config_data, config_file)
-        
+
         progress = monitoring.check_workflow_progress(config_file)
         assert isinstance(progress, dict)
         assert "quantified" in progress
@@ -353,7 +353,7 @@ class TestCheckWorkflowProgress:
             "species_list": ["Test_species"],
         }
         dump_json(config_data, config_file)
-        
+
         # Create metadata
         metadata_dir = work_dir_abs / "metadata"
         metadata_dir.mkdir(parents=True)
@@ -368,7 +368,7 @@ class TestCheckWorkflowProgress:
         quant_sample_dir = (work_dir_abs / "quant") / "SRR123"
         quant_sample_dir.mkdir(parents=True)
         (quant_sample_dir / "abundance.tsv").write_text("test")
-        
+
         progress = monitoring.check_workflow_progress(config_file)
         assert progress["quantified"] == 1
         assert progress["total"] == 2
@@ -383,7 +383,7 @@ class TestAssessAllSpeciesProgress:
         """Test assess_all_species_progress with empty config directory."""
         config_dir = tmp_path / "configs"
         config_dir.mkdir(parents=True)
-        
+
         results = monitoring.assess_all_species_progress(config_dir)
         assert isinstance(results, dict)
         assert len(results) == 0
@@ -392,7 +392,7 @@ class TestAssessAllSpeciesProgress:
         """Test assess_all_species_progress with config files."""
         config_dir = tmp_path / "configs"
         config_dir.mkdir(parents=True)
-        
+
         # Create config with absolute work_dir; filename must not contain 'test' to be included
         config_file = config_dir / "amalgkit_example_species.yaml"
         work_dir_abs = (tmp_path / "work").resolve()
@@ -402,7 +402,7 @@ class TestAssessAllSpeciesProgress:
             "species_list": ["Test_species"],
         }
         dump_json(config_data, config_file)
-        
+
         results = monitoring.assess_all_species_progress(config_dir)
         assert isinstance(results, dict)
         assert "example_species" in results
@@ -420,7 +420,7 @@ class TestInitializeProgressTracking:
             "species_list": ["Test_species"],
         }
         dump_json(config_data, config_file)
-        
+
         result = monitoring.initialize_progress_tracking(config_file)
         assert isinstance(result, dict)
         assert result["success"] is False
@@ -437,7 +437,7 @@ class TestInitializeProgressTracking:
             "species_list": ["Test_species"],
         }
         dump_json(config_data, config_file)
-        
+
         # Create metadata
         metadata_dir = work_dir_abs / "metadata"
         metadata_dir.mkdir(parents=True)
@@ -447,7 +447,7 @@ class TestInitializeProgressTracking:
             metadata_file,
             delimiter="\t",
         )
-        
+
         result = monitoring.initialize_progress_tracking(config_file)
         assert isinstance(result, dict)
         assert result["success"] is True
@@ -471,8 +471,7 @@ class TestMonitoringDocumentation:
             monitoring.assess_all_species_progress,
             monitoring.initialize_progress_tracking,
         ]
-        
+
         for func in functions:
             assert func.__doc__ is not None, f"{func.__name__} missing docstring"
             assert len(func.__doc__.strip()) > 0
-

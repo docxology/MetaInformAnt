@@ -93,14 +93,12 @@ __all__ = [
     "integration",
     "metrics",
     "workflow",
-
     # Metrics
     "analysis",
     "continuous",
     "estimation",
     "semantic",
     "syntactic",
-
     # Integration
     "integration_module",
     "networks",
@@ -119,42 +117,33 @@ __all__ = [
     "tsallis_entropy",
     "normalized_mutual_information",
     "information_coefficient",
-
     # Semantic information functions
     "information_content",
     "information_content_from_annotations",
     "semantic_entropy",
     "semantic_similarity",
     "semantic_similarity_matrix",
-
     # Analysis functions
     "information_profile",
     "information_signature",
     "analyze_sequence_information",
     "compare_sequences_information",
-
     # Continuous information functions
     "differential_entropy",
     "mutual_information_continuous",
     "kl_divergence_continuous",
     "entropy_estimation",
-
     # Estimation functions
     "entropy_estimator",
     "mutual_information_estimator",
     "kl_divergence_estimator",
     "bias_correction",
-
     # Workflow functions
     "batch_entropy_analysis",
     "information_workflow",
     "compare_datasets",
     "information_report",
-
     # Network functions
     "network_entropy",
     "information_flow",
 ]
-
-
-

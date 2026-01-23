@@ -16,34 +16,33 @@ logger = logging.get_logger(__name__)
 # Common restriction enzymes and their recognition sites
 RESTRICTION_ENZYMES = {
     # Type II restriction enzymes
-    'EcoRI': 'GAATTC',
-    'BamHI': 'GGATCC',
-    'HindIII': 'AAGCTT',
-    'PstI': 'CTGCAG',
-    'SalI': 'GTCGAC',
-    'XbaI': 'TCTAGA',
-    'SacI': 'GAGCTC',
-    'KpnI': 'GGTACC',
-    'SmaI': 'CCCGGG',
-    'XhoI': 'CTCGAG',
-    'NotI': 'GCGGCCGC',
-    'EcoRV': 'GATATC',
-    'PvuII': 'CAGCTG',
-    'NdeI': 'CATATG',
-    'NcoI': 'CCATGG',
-    'BglII': 'AGATCT',
-    'ClaI': 'ATCGAT',
-    'SpeI': 'ACTAGT',
-    'ApaI': 'GGGCCC',
-    'Blunt_example': 'CCCGGG',  # SmaI produces blunt ends
-
+    "EcoRI": "GAATTC",
+    "BamHI": "GGATCC",
+    "HindIII": "AAGCTT",
+    "PstI": "CTGCAG",
+    "SalI": "GTCGAC",
+    "XbaI": "TCTAGA",
+    "SacI": "GAGCTC",
+    "KpnI": "GGTACC",
+    "SmaI": "CCCGGG",
+    "XhoI": "CTCGAG",
+    "NotI": "GCGGCCGC",
+    "EcoRV": "GATATC",
+    "PvuII": "CAGCTG",
+    "NdeI": "CATATG",
+    "NcoI": "CCATGG",
+    "BglII": "AGATCT",
+    "ClaI": "ATCGAT",
+    "SpeI": "ACTAGT",
+    "ApaI": "GGGCCC",
+    "Blunt_example": "CCCGGG",  # SmaI produces blunt ends
     # Additional enzymes
-    'AluI': 'AGCT',
-    'HaeIII': 'GGCC',
-    'RsaI': 'GTAC',
-    'TaqI': 'TCGA',
-    'MspI': 'CCGG',
-    'HpaII': 'CCGG',
+    "AluI": "AGCT",
+    "HaeIII": "GGCC",
+    "RsaI": "GTAC",
+    "TaqI": "TCGA",
+    "MspI": "CCGG",
+    "HpaII": "CCGG",
 }
 
 
@@ -253,20 +252,14 @@ def analyze_restriction_map(seq: str, enzymes: List[str]) -> Dict[str, any]:
     """
     sites = find_restriction_sites(seq, enzymes)
 
-    analysis = {
-        'sequence_length': len(seq),
-        'sites': sites,
-        'fragments': {},
-        'total_cuts': {},
-        'fragment_sizes': {}
-    }
+    analysis = {"sequence_length": len(seq), "sites": sites, "fragments": {}, "total_cuts": {}, "fragment_sizes": {}}
 
     for enzyme in enzymes:
         if enzyme in sites:
             fragments = virtual_digest(seq, enzyme)
-            analysis['fragments'][enzyme] = fragments
-            analysis['total_cuts'][enzyme] = len(sites[enzyme])
-            analysis['fragment_sizes'][enzyme] = [len(f) for f in fragments]
+            analysis["fragments"][enzyme] = fragments
+            analysis["total_cuts"][enzyme] = len(sites[enzyme])
+            analysis["fragment_sizes"][enzyme] = [len(f) for f in fragments]
 
     return analysis
 
@@ -332,8 +325,8 @@ def is_palindromic_site(recognition_site: str) -> bool:
         return True
 
     # Check if sequence equals its reverse complement
-    complement = {'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C'}
-    reverse_complement = ''.join(complement.get(c, c) for c in reversed(recognition_site.upper()))
+    complement = {"A": "T", "T": "A", "C": "G", "G": "C"}
+    reverse_complement = "".join(complement.get(c, c) for c in reversed(recognition_site.upper()))
 
     return recognition_site.upper() == reverse_complement
 
@@ -348,11 +341,11 @@ def get_enzyme_properties() -> Dict[str, Dict[str, any]]:
 
     for enzyme, site in RESTRICTION_ENZYMES.items():
         properties[enzyme] = {
-            'recognition_site': site,
-            'site_length': len(site),
-            'is_palindromic': is_palindromic_site(site),
-            'cuts_blunt': site == site[::-1],  # Simple check for blunt ends
-            'cut_position': len(site) // 2  # Approximate cut position
+            "recognition_site": site,
+            "site_length": len(site),
+            "is_palindromic": is_palindromic_site(site),
+            "cuts_blunt": site == site[::-1],  # Simple check for blunt ends
+            "cut_position": len(site) // 2,  # Approximate cut position
         }
 
     return properties
@@ -385,8 +378,9 @@ def find_compatible_enzymes(seq: str, min_sites: int = 1, max_sites: int = 5) ->
     return compatible
 
 
-def simulate_cloning(seq: str, insert_enzyme1: str, insert_enzyme2: str,
-                    vector_enzyme1: str, vector_enzyme2: str) -> Dict[str, any]:
+def simulate_cloning(
+    seq: str, insert_enzyme1: str, insert_enzyme2: str, vector_enzyme1: str, vector_enzyme2: str
+) -> Dict[str, any]:
     """Simulate molecular cloning with restriction enzymes.
 
     Args:
@@ -413,16 +407,8 @@ def simulate_cloning(seq: str, insert_enzyme1: str, insert_enzyme2: str,
     vector_fragments = ["VECTOR_BACKBONE"]  # Placeholder
 
     return {
-        'insert_fragments': insert_fragments,
-        'vector_fragments': vector_fragments,
-        'compatible_enzymes': [insert_enzyme1, insert_enzyme2],
-        'ligation_possible': len(insert_fragments) > 0
+        "insert_fragments": insert_fragments,
+        "vector_fragments": vector_fragments,
+        "compatible_enzymes": [insert_enzyme1, insert_enzyme2],
+        "ligation_possible": len(insert_fragments) > 0,
     }
-
-
-
-
-
-
-
-

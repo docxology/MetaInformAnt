@@ -33,8 +33,7 @@ class GenomicTrack:
         self.data: Dict[str, List[Dict[str, Any]]] = defaultdict(list)
         self.metadata: Dict[str, Any] = {}
 
-    def add_feature(self, chromosome: str, start: int, end: int,
-                   value: float = 0.0, **kwargs) -> None:
+    def add_feature(self, chromosome: str, start: int, end: int, value: float = 0.0, **kwargs) -> None:
         """Add a feature to the track.
 
         Args:
@@ -44,16 +43,12 @@ class GenomicTrack:
             value: Feature value
             **kwargs: Additional feature attributes
         """
-        feature = {
-            'start': start,
-            'end': end,
-            'value': value,
-            **kwargs
-        }
+        feature = {"start": start, "end": end, "value": value, **kwargs}
         self.data[chromosome].append(feature)
 
-    def get_features(self, chromosome: str, start: Optional[int] = None,
-                    end: Optional[int] = None) -> List[Dict[str, Any]]:
+    def get_features(
+        self, chromosome: str, start: Optional[int] = None, end: Optional[int] = None
+    ) -> List[Dict[str, Any]]:
         """Get features from a genomic region.
 
         Args:
@@ -75,9 +70,9 @@ class GenomicTrack:
         # Filter by region
         filtered = []
         for feature in features:
-            if start is not None and feature['end'] <= start:
+            if start is not None and feature["end"] <= start:
                 continue
-            if end is not None and feature['start'] >= end:
+            if end is not None and feature["start"] >= end:
                 continue
             filtered.append(feature)
 
@@ -101,7 +96,7 @@ class GenomicTrack:
         if chromosome not in self.data:
             return
 
-        features = sorted(self.data[chromosome], key=lambda x: x['start'])
+        features = sorted(self.data[chromosome], key=lambda x: x["start"])
 
         if not features:
             return
@@ -112,13 +107,13 @@ class GenomicTrack:
             last = merged[-1]
 
             # Check if features overlap or are within max_distance
-            if feature['start'] <= last['end'] + max_distance:
+            if feature["start"] <= last["end"] + max_distance:
                 # Merge features
-                last['end'] = max(last['end'], feature['end'])
-                last['value'] = max(last['value'], feature['value'])  # Use max value
+                last["end"] = max(last["end"], feature["end"])
+                last["value"] = max(last["value"], feature["value"])  # Use max value
                 # Merge other attributes if they exist
                 for key, value in feature.items():
-                    if key not in ['start', 'end', 'value'] and key not in last:
+                    if key not in ["start", "end", "value"] and key not in last:
                         last[key] = value
             else:
                 merged.append(feature)
@@ -133,7 +128,7 @@ class GenomicTrack:
         """
         all_values = []
         for features in self.data.values():
-            all_values.extend(f['value'] for f in features)
+            all_values.extend(f["value"] for f in features)
 
         if not all_values:
             return
@@ -143,7 +138,7 @@ class GenomicTrack:
             if max_val > min_val:
                 for features in self.data.values():
                     for feature in features:
-                        feature['value'] = (feature['value'] - min_val) / (max_val - min_val)
+                        feature["value"] = (feature["value"] - min_val) / (max_val - min_val)
 
         elif method == "zscore":
             mean_val = statistics.mean(all_values)
@@ -151,7 +146,7 @@ class GenomicTrack:
             if std_val > 0:
                 for features in self.data.values():
                     for feature in features:
-                        feature['value'] = (feature['value'] - mean_val) / std_val
+                        feature["value"] = (feature["value"] - mean_val) / std_val
 
         elif method == "robust":
             # Use median and MAD (median absolute deviation)
@@ -160,7 +155,7 @@ class GenomicTrack:
             if mad > 0:
                 for features in self.data.values():
                     for feature in features:
-                        feature['value'] = (feature['value'] - median_val) / mad
+                        feature["value"] = (feature["value"] - median_val) / mad
 
         logger.info(f"Normalized track values using {method} method")
 
@@ -183,13 +178,13 @@ def load_bed_track(path: str | Path, name: str = "", description: str = "") -> G
     track = GenomicTrack(name=name, description=description)
 
     try:
-        with io.open_text_auto(path, 'rt') as f:
+        with io.open_text_auto(path, "rt") as f:
             for line_num, line in enumerate(f, 1):
                 line = line.strip()
-                if not line or line.startswith('#') or line.startswith('track') or line.startswith('browser'):
+                if not line or line.startswith("#") or line.startswith("track") or line.startswith("browser"):
                     continue
 
-                parts = line.split('\t')
+                parts = line.split("\t")
                 if len(parts) < 3:
                     logger.warning(f"Skipping malformed BED line {line_num}: insufficient columns")
                     continue
@@ -199,16 +194,11 @@ def load_bed_track(path: str | Path, name: str = "", description: str = "") -> G
                     start = int(parts[1])
                     end = int(parts[2])
                     name_field = parts[3] if len(parts) > 3 else ""
-                    score = float(parts[4]) if len(parts) > 4 and parts[4] != '.' else 0.0
-                    strand = parts[5] if len(parts) > 5 else '.'
+                    score = float(parts[4]) if len(parts) > 4 and parts[4] != "." else 0.0
+                    strand = parts[5] if len(parts) > 5 else "."
 
                     track.add_feature(
-                        chromosome=chromosome,
-                        start=start,
-                        end=end,
-                        value=score,
-                        name=name_field,
-                        strand=strand
+                        chromosome=chromosome, start=start, end=end, value=score, name=name_field, strand=strand
                     )
 
                 except (ValueError, IndexError) as e:
@@ -241,13 +231,13 @@ def load_bedgraph_track(path: str | Path, name: str = "", description: str = "")
     track = GenomicTrack(name=name, description=description)
 
     try:
-        with io.open_text_auto(path, 'rt') as f:
+        with io.open_text_auto(path, "rt") as f:
             for line_num, line in enumerate(f, 1):
                 line = line.strip()
-                if not line or line.startswith('#') or line.startswith('track') or line.startswith('browser'):
+                if not line or line.startswith("#") or line.startswith("track") or line.startswith("browser"):
                     continue
 
-                parts = line.split('\t')
+                parts = line.split("\t")
                 if len(parts) < 4:
                     logger.warning(f"Skipping malformed BEDgraph line {line_num}: insufficient columns")
                     continue
@@ -258,12 +248,7 @@ def load_bedgraph_track(path: str | Path, name: str = "", description: str = "")
                     end = int(parts[2])
                     value = float(parts[3])
 
-                    track.add_feature(
-                        chromosome=chromosome,
-                        start=start,
-                        end=end,
-                        value=value
-                    )
+                    track.add_feature(chromosome=chromosome, start=start, end=end, value=value)
 
                 except (ValueError, IndexError) as e:
                     logger.warning(f"Error parsing BEDgraph line {line_num}: {e}")
@@ -302,8 +287,8 @@ def load_bigwig_track(path: str | Path, name: str = "", description: str = "") -
 
     # This is a placeholder - real implementation would use pyBigWig or similar
     track = GenomicTrack(name=name, description=description)
-    track.metadata['format'] = 'bigwig'
-    track.metadata['note'] = 'Simplified loading - full bigWig support requires pyBigWig library'
+    track.metadata["format"] = "bigwig"
+    track.metadata["note"] = "Simplified loading - full bigWig support requires pyBigWig library"
 
     logger.warning("bigWig loading is simplified - consider using pyBigWig for full functionality")
     return track
@@ -320,28 +305,21 @@ def save_bed_track(track: GenomicTrack, path: str | Path) -> None:
 
     logger.info(f"Saving track to BED format: {path}")
 
-    with open(path, 'w') as f:
+    with open(path, "w") as f:
         # Write track header
         if track.name:
             f.write(f'track name="{track.name}" description="{track.description}"\n')
 
         for chromosome in sorted(track.data.keys()):
-            features = sorted(track.data[chromosome], key=lambda x: x['start'])
+            features = sorted(track.data[chromosome], key=lambda x: x["start"])
 
             for feature in features:
-                name = feature.get('name', f'feature_{feature["start"]}_{feature["end"]}')
-                score = feature.get('value', 0)
-                strand = feature.get('strand', '.')
+                name = feature.get("name", f'feature_{feature["start"]}_{feature["end"]}')
+                score = feature.get("value", 0)
+                strand = feature.get("strand", ".")
 
-                bed_line = '\t'.join([
-                    chromosome,
-                    str(feature['start']),
-                    str(feature['end']),
-                    name,
-                    str(score),
-                    strand
-                ])
-                f.write(bed_line + '\n')
+                bed_line = "\t".join([chromosome, str(feature["start"]), str(feature["end"]), name, str(score), strand])
+                f.write(bed_line + "\n")
 
     logger.info(f"Saved {track.get_total_features()} features to {path}")
 
@@ -357,22 +335,19 @@ def save_bedgraph_track(track: GenomicTrack, path: str | Path) -> None:
 
     logger.info(f"Saving track to BEDgraph format: {path}")
 
-    with open(path, 'w') as f:
+    with open(path, "w") as f:
         # Write track header
         if track.name:
             f.write(f'track type=bedGraph name="{track.name}" description="{track.description}"\n')
 
         for chromosome in sorted(track.data.keys()):
-            features = sorted(track.data[chromosome], key=lambda x: x['start'])
+            features = sorted(track.data[chromosome], key=lambda x: x["start"])
 
             for feature in features:
-                bedgraph_line = '\t'.join([
-                    chromosome,
-                    str(feature['start']),
-                    str(feature['end']),
-                    str(feature['value'])
-                ])
-                f.write(bedgraph_line + '\n')
+                bedgraph_line = "\t".join(
+                    [chromosome, str(feature["start"]), str(feature["end"]), str(feature["value"])]
+                )
+                f.write(bedgraph_line + "\n")
 
     logger.info(f"Saved {track.get_total_features()} features to {path}")
 
@@ -392,10 +367,7 @@ def merge_tracks(tracks: List[GenomicTrack], operation: str = "union") -> Genomi
 
     logger.info(f"Merging {len(tracks)} tracks using {operation} operation")
 
-    merged_track = GenomicTrack(
-        name=f"Merged_{operation}",
-        description=f"Merged track using {operation} operation"
-    )
+    merged_track = GenomicTrack(name=f"Merged_{operation}", description=f"Merged track using {operation} operation")
 
     # Get all chromosomes
     all_chromosomes = set()
@@ -412,7 +384,7 @@ def merge_tracks(tracks: List[GenomicTrack], operation: str = "union") -> Genomi
             continue
 
         # Sort features by position
-        all_features.sort(key=lambda x: x['start'])
+        all_features.sort(key=lambda x: x["start"])
 
         if operation == "union":
             # Merge overlapping features
@@ -426,7 +398,7 @@ def merge_tracks(tracks: List[GenomicTrack], operation: str = "union") -> Genomi
                 merged_features = []
 
                 for feature in all_features[1:]:
-                    if feature['start'] <= current_group[-1]['end']:
+                    if feature["start"] <= current_group[-1]["end"]:
                         current_group.append(feature)
                     else:
                         # Process current group
@@ -460,20 +432,20 @@ def merge_feature_group(features: List[Dict[str, Any]], operation: str) -> Dict[
     Returns:
         Merged feature dictionary
     """
-    start = min(f['start'] for f in features)
-    end = max(f['end'] for f in features)
+    start = min(f["start"] for f in features)
+    end = max(f["end"] for f in features)
 
     if operation == "mean":
-        value = statistics.mean(f['value'] for f in features)
+        value = statistics.mean(f["value"] for f in features)
     elif operation == "max":
-        value = max(f['value'] for f in features)
+        value = max(f["value"] for f in features)
     else:
-        value = features[0]['value']
+        value = features[0]["value"]
 
     return {
-        'start': start,
-        'end': end,
-        'value': value,
+        "start": start,
+        "end": end,
+        "value": value,
     }
 
 
@@ -497,8 +469,8 @@ def calculate_track_statistics(track: GenomicTrack) -> Dict[str, Any]:
         chromosome_counts[chromosome] = len(features)
 
         for feature in features:
-            all_values.append(feature['value'])
-            all_lengths.append(feature['end'] - feature['start'])
+            all_values.append(feature["value"])
+            all_lengths.append(feature["end"] - feature["start"])
 
     stats = {
         "total_features": len(all_values),
@@ -532,8 +504,7 @@ def calculate_track_statistics(track: GenomicTrack) -> Dict[str, Any]:
     return stats
 
 
-def extract_track_region(track: GenomicTrack, chromosome: str,
-                        start: int, end: int) -> GenomicTrack:
+def extract_track_region(track: GenomicTrack, chromosome: str, start: int, end: int) -> GenomicTrack:
     """Extract a specific genomic region from a track.
 
     Args:
@@ -548,24 +519,23 @@ def extract_track_region(track: GenomicTrack, chromosome: str,
     logger.info(f"Extracting region {chromosome}:{start}-{end} from track")
 
     region_track = GenomicTrack(
-        name=f"{track.name}_region",
-        description=f"Region {chromosome}:{start}-{end} from {track.name}"
+        name=f"{track.name}_region", description=f"Region {chromosome}:{start}-{end} from {track.name}"
     )
 
     features = track.get_features(chromosome, start, end)
 
     for feature in features:
         # Clip feature to region boundaries
-        feature_start = max(feature['start'], start)
-        feature_end = min(feature['end'], end)
+        feature_start = max(feature["start"], start)
+        feature_end = min(feature["end"], end)
 
         if feature_start < feature_end:
             region_track.add_feature(
                 chromosome=chromosome,
                 start=feature_start,
                 end=feature_end,
-                value=feature['value'],
-                **{k: v for k, v in feature.items() if k not in ['start', 'end', 'value']}
+                value=feature["value"],
+                **{k: v for k, v in feature.items() if k not in ["start", "end", "value"]},
             )
 
     logger.info(f"Extracted {region_track.get_total_features()} features from region")
@@ -607,8 +577,8 @@ def compare_tracks(track1: GenomicTrack, track2: GenomicTrack) -> Dict[str, Any]
         features2 = track2.get_features(chromosome)
 
         # Simple value comparison (this could be more sophisticated)
-        vals1 = [f['value'] for f in features1]
-        vals2 = [f['value'] for f in features2]
+        vals1 = [f["value"] for f in features1]
+        vals2 = [f["value"] for f in features2]
 
         if vals1 and vals2:
             # Take minimum length for comparison
@@ -621,7 +591,7 @@ def compare_tracks(track1: GenomicTrack, track2: GenomicTrack) -> Dict[str, Any]
         try:
             correlation = statistics.correlation(shared_values1, shared_values2)
             comparison["correlation_coefficient"] = correlation
-        except:
+        except (ValueError, statistics.StatisticsError):
             comparison["correlation_coefficient"] = None
 
     return comparison
@@ -662,7 +632,7 @@ def generate_track_report(track: GenomicTrack, output_path: Optional[str | Path]
         report_lines.append("")
 
         # Chromosome distribution (top 10)
-        chr_dist = stats.get('chromosome_distribution', {})
+        chr_dist = stats.get("chromosome_distribution", {})
         if chr_dist:
             report_lines.append("Chromosome Distribution (Top 10):")
             sorted_chrs = sorted(chr_dist.items(), key=lambda x: x[1], reverse=True)[:10]
@@ -674,14 +644,8 @@ def generate_track_report(track: GenomicTrack, output_path: Optional[str | Path]
 
     if output_path:
         output_path = Path(output_path)
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             f.write(report)
         logger.info(f"Track report saved to {output_path}")
 
     return report
-
-
-
-
-
-

@@ -20,19 +20,14 @@ logger = logging.get_logger(__name__)
 # Optional imports with graceful fallbacks
 try:
     import networkx as nx
+
     HAS_NETWORKX = True
 except ImportError:
     nx = None
     HAS_NETWORKX = False
 
 
-def plot_network_basic(
-    G: Any,
-    *,
-    ax: Axes | None = None,
-    output_path: str | Path | None = None,
-    **kwargs
-) -> Axes:
+def plot_network_basic(G: Any, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs) -> Axes:
     """Create a basic network visualization using spring layout.
 
     Args:
@@ -51,41 +46,35 @@ def plot_network_basic(
         raise ImportError("NetworkX required for network plotting")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (10, 8)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 8)))
 
     # Use spring layout for basic network visualization
-    pos = nx.spring_layout(G, **kwargs.get('layout_kwargs', {}))
+    pos = nx.spring_layout(G, **kwargs.get("layout_kwargs", {}))
 
     nx.draw(
         G,
         pos=pos,
         ax=ax,
-        with_labels=kwargs.get('with_labels', True),
-        node_color=kwargs.get('node_color', 'lightblue'),
-        node_size=kwargs.get('node_size', 300),
-        edge_color=kwargs.get('edge_color', 'gray'),
-        width=kwargs.get('width', 1),
-        alpha=kwargs.get('alpha', 0.8),
-        **kwargs
+        with_labels=kwargs.get("with_labels", True),
+        node_color=kwargs.get("node_color", "lightblue"),
+        node_size=kwargs.get("node_size", 300),
+        edge_color=kwargs.get("edge_color", "gray"),
+        width=kwargs.get("width", 1),
+        alpha=kwargs.get("alpha", 0.8),
+        **kwargs,
     )
 
-    ax.set_title('Network Visualization (Spring Layout)')
+    ax.set_title("Network Visualization (Spring Layout)")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Basic network plot saved to {output_path}")
 
     return ax
 
 
-def plot_network_circular(
-    G: Any,
-    *,
-    ax: Axes | None = None,
-    output_path: str | Path | None = None,
-    **kwargs
-) -> Axes:
+def plot_network_circular(G: Any, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs) -> Axes:
     """Create a circular network visualization.
 
     Args:
@@ -104,7 +93,7 @@ def plot_network_circular(
         raise ImportError("NetworkX required for network plotting")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (10, 10)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 10)))
 
     # Use circular layout
     pos = nx.circular_layout(G)
@@ -113,31 +102,27 @@ def plot_network_circular(
         G,
         pos=pos,
         ax=ax,
-        with_labels=kwargs.get('with_labels', True),
-        node_color=kwargs.get('node_color', 'lightgreen'),
-        node_size=kwargs.get('node_size', 400),
-        edge_color=kwargs.get('edge_color', 'gray'),
-        width=kwargs.get('width', 1.5),
-        alpha=kwargs.get('alpha', 0.8),
-        **kwargs
+        with_labels=kwargs.get("with_labels", True),
+        node_color=kwargs.get("node_color", "lightgreen"),
+        node_size=kwargs.get("node_size", 400),
+        edge_color=kwargs.get("edge_color", "gray"),
+        width=kwargs.get("width", 1.5),
+        alpha=kwargs.get("alpha", 0.8),
+        **kwargs,
     )
 
-    ax.set_title('Network Visualization (Circular Layout)')
+    ax.set_title("Network Visualization (Circular Layout)")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Circular network plot saved to {output_path}")
 
     return ax
 
 
 def plot_network_hierarchical(
-    G: Any,
-    *,
-    ax: Axes | None = None,
-    output_path: str | Path | None = None,
-    **kwargs
+    G: Any, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
 ) -> Axes:
     """Create a hierarchical network visualization.
 
@@ -157,7 +142,7 @@ def plot_network_hierarchical(
         raise ImportError("NetworkX required for network plotting")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (12, 8)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (12, 8)))
 
     # Try to use hierarchical layout if available, otherwise use shell layout
     try:
@@ -191,32 +176,28 @@ def plot_network_hierarchical(
         G,
         pos=pos,
         ax=ax,
-        with_labels=kwargs.get('with_labels', True),
-        node_color=kwargs.get('node_color', 'lightcoral'),
-        node_size=kwargs.get('node_size', 350),
-        edge_color=kwargs.get('edge_color', 'darkgray'),
-        width=kwargs.get('width', 1.2),
-        alpha=kwargs.get('alpha', 0.8),
-        arrows=kwargs.get('arrows', True) if nx.is_directed(G) else False,
-        **kwargs
+        with_labels=kwargs.get("with_labels", True),
+        node_color=kwargs.get("node_color", "lightcoral"),
+        node_size=kwargs.get("node_size", 350),
+        edge_color=kwargs.get("edge_color", "darkgray"),
+        width=kwargs.get("width", 1.2),
+        alpha=kwargs.get("alpha", 0.8),
+        arrows=kwargs.get("arrows", True) if nx.is_directed(G) else False,
+        **kwargs,
     )
 
-    ax.set_title('Network Visualization (Hierarchical Layout)')
+    ax.set_title("Network Visualization (Hierarchical Layout)")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Hierarchical network plot saved to {output_path}")
 
     return ax
 
 
 def plot_network_force_directed(
-    G: Any,
-    *,
-    ax: Axes | None = None,
-    output_path: str | Path | None = None,
-    **kwargs
+    G: Any, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
 ) -> Axes:
     """Create a force-directed network visualization.
 
@@ -236,41 +217,36 @@ def plot_network_force_directed(
         raise ImportError("NetworkX required for network plotting")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (10, 8)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 8)))
 
     # Use Fruchterman-Reingold force-directed algorithm
-    pos = nx.fruchterman_reingold_layout(G, **kwargs.get('layout_kwargs', {}))
+    pos = nx.fruchterman_reingold_layout(G, **kwargs.get("layout_kwargs", {}))
 
     nx.draw(
         G,
         pos=pos,
         ax=ax,
-        with_labels=kwargs.get('with_labels', False),  # Often too cluttered for force-directed
-        node_color=kwargs.get('node_color', 'lightskyblue'),
-        node_size=kwargs.get('node_size', 250),
-        edge_color=kwargs.get('edge_color', 'gray'),
-        width=kwargs.get('width', 0.8),
-        alpha=kwargs.get('alpha', 0.8),
-        **kwargs
+        with_labels=kwargs.get("with_labels", False),  # Often too cluttered for force-directed
+        node_color=kwargs.get("node_color", "lightskyblue"),
+        node_size=kwargs.get("node_size", 250),
+        edge_color=kwargs.get("edge_color", "gray"),
+        width=kwargs.get("width", 0.8),
+        alpha=kwargs.get("alpha", 0.8),
+        **kwargs,
     )
 
-    ax.set_title('Network Visualization (Force-Directed Layout)')
+    ax.set_title("Network Visualization (Force-Directed Layout)")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Force-directed network plot saved to {output_path}")
 
     return ax
 
 
 def plot_community_network(
-    G: Any,
-    communities: Dict[str, int],
-    *,
-    ax: Axes | None = None,
-    output_path: str | Path | None = None,
-    **kwargs
+    G: Any, communities: Dict[str, int], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
 ) -> Axes:
     """Create a community-colored network visualization.
 
@@ -297,7 +273,7 @@ def plot_community_network(
         raise ValueError("Communities dictionary cannot be empty")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (10, 8)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 8)))
 
     # Create color map for communities
     unique_communities = set(communities.values())
@@ -309,53 +285,43 @@ def plot_community_network(
     for node in G.nodes():
         community_id = communities.get(node, -1)
         if community_id == -1:
-            node_colors.append('gray')  # Unassigned nodes
+            node_colors.append("gray")  # Unassigned nodes
         else:
             node_colors.append(community_colors[community_id])
 
     # Use spring layout for community visualization
-    pos = nx.spring_layout(G, **kwargs.get('layout_kwargs', {}))
+    pos = nx.spring_layout(G, **kwargs.get("layout_kwargs", {}))
 
     nx.draw(
         G,
         pos=pos,
         ax=ax,
-        with_labels=kwargs.get('with_labels', False),
+        with_labels=kwargs.get("with_labels", False),
         node_color=node_colors,
-        node_size=kwargs.get('node_size', 300),
-        edge_color=kwargs.get('edge_color', 'lightgray'),
-        width=kwargs.get('width', 1),
-        alpha=kwargs.get('alpha', 0.8),
-        **kwargs
+        node_size=kwargs.get("node_size", 300),
+        edge_color=kwargs.get("edge_color", "lightgray"),
+        width=kwargs.get("width", 1),
+        alpha=kwargs.get("alpha", 0.8),
+        **kwargs,
     )
 
     # Add legend
     legend_elements = [
-        plt.Line2D([0], [0], marker='o', color='w',
-                  markerfacecolor=color, markersize=10,
-                  label=f'Community {comm_id}')
+        plt.Line2D([0], [0], marker="o", color="w", markerfacecolor=color, markersize=10, label=f"Community {comm_id}")
         for comm_id, color in community_colors.items()
     ]
-    if 'gray' in node_colors:
+    if "gray" in node_colors:
         legend_elements.append(
-            plt.Line2D([0], [0], marker='o', color='w',
-                      markerfacecolor='gray', markersize=10,
-                      label='Unassigned')
+            plt.Line2D([0], [0], marker="o", color="w", markerfacecolor="gray", markersize=10, label="Unassigned")
         )
 
-    ax.legend(handles=legend_elements, loc='best', fontsize=8)
+    ax.legend(handles=legend_elements, loc="best", fontsize=8)
 
-    ax.set_title('Network Visualization (Community Colored)')
+    ax.set_title("Network Visualization (Community Colored)")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Community network plot saved to {output_path}")
 
     return ax
-
-
-
-
-
-

@@ -40,6 +40,7 @@ def check_network_connectivity(url: str = "https://httpbin.org/status/200", time
     """Check if network connectivity is available."""
     try:
         import requests
+
         response = requests.get(url, timeout=timeout)
         return response.status_code == 200
     except Exception:
@@ -58,14 +59,14 @@ def generate_sample_dna_sequence(length: int = 100, gc_content: float = 0.5) -> 
     """Generate a sample DNA sequence with specified GC content."""
     import random
 
-    bases = ['A', 'T', 'G', 'C']
+    bases = ["A", "T", "G", "C"]
     # Adjust base probabilities to achieve target GC content
     gc_prob = gc_content
     at_prob = (1 - gc_content) / 2
 
     weights = [at_prob, at_prob, gc_prob / 2, gc_prob / 2]  # A, T, G, C
 
-    sequence = ''.join(random.choices(bases, weights=weights, k=length))
+    sequence = "".join(random.choices(bases, weights=weights, k=length))
     return sequence
 
 
@@ -74,10 +75,10 @@ def generate_sample_protein_sequence(length: int = 50) -> str:
     import random
 
     # Common amino acids with realistic frequencies
-    amino_acids = 'ARNDCQEGHILKMFPSTWYV'
+    amino_acids = "ARNDCQEGHILKMFPSTWYV"
     weights = [1] * len(amino_acids)  # Equal weights for simplicity
 
-    sequence = ''.join(random.choices(list(amino_acids), weights=weights, k=length))
+    sequence = "".join(random.choices(list(amino_acids), weights=weights, k=length))
     return sequence
 
 
@@ -85,7 +86,7 @@ def create_sample_fasta_file(output_path: Path, sequences: Dict[str, str]) -> Pa
     """Create a sample FASTA file with the given sequences."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         for seq_id, sequence in sequences.items():
             f.write(f">{seq_id}\n{sequence}\n")
 
@@ -96,7 +97,7 @@ def create_sample_fastq_file(output_path: Path, reads: Dict[str, str], quality: 
     """Create a sample FASTQ file with the given reads."""
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         for read_id, sequence in reads.items():
             f.write(f"@{read_id}\n{sequence}\n+\n{quality[:len(sequence)]}\n")
 
@@ -136,11 +137,14 @@ class EnvironmentVarManager:
 
 def with_env_vars(**env_vars):
     """Decorator to run a test function with specific environment variables."""
+
     def decorator(func):
         def wrapper(*args, **kwargs):
             with EnvironmentVarManager(**env_vars):
                 return func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
@@ -191,7 +195,7 @@ def create_temporary_file(content: str = "", suffix: str = ".txt") -> Path:
     fd, path = tempfile.mkstemp(suffix=suffix)
     try:
         if content:
-            with os.fdopen(fd, 'w') as f:
+            with os.fdopen(fd, "w") as f:
                 f.write(content)
         else:
             os.close(fd)
@@ -222,17 +226,17 @@ def measure_execution_time(func, *args, **kwargs) -> tuple[Any, float]:
 def validate_fasta_file(file_path: Path) -> bool:
     """Validate that a file is properly formatted FASTA."""
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path, "r") as f:
             lines = f.readlines()
 
-        if not lines or not lines[0].startswith('>'):
+        if not lines or not lines[0].startswith(">"):
             return False
 
         # Check that sequence lines contain valid nucleotides
-        valid_bases = set('ATCGNUatcgnu-')
+        valid_bases = set("ATCGNUatcgnu-")
         for line in lines[1:]:
             line = line.strip()
-            if line.startswith('>'):
+            if line.startswith(">"):
                 continue
             if not all(c in valid_bases for c in line):
                 return False
@@ -245,7 +249,7 @@ def validate_fasta_file(file_path: Path) -> bool:
 def validate_fastq_file(file_path: Path) -> bool:
     """Validate that a file is properly formatted FASTQ."""
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path, "r") as f:
             lines = f.readlines()
 
         if len(lines) % 4 != 0:
@@ -253,12 +257,12 @@ def validate_fastq_file(file_path: Path) -> bool:
 
         for i in range(0, len(lines), 4):
             # Check FASTQ format: @seq, sequence, +, quality
-            if not lines[i].startswith('@'):
+            if not lines[i].startswith("@"):
                 return False
-            if not lines[i+2].startswith('+'):
+            if not lines[i + 2].startswith("+"):
                 return False
             # Quality string should be same length as sequence
-            if len(lines[i+1].strip()) != len(lines[i+3].strip()):
+            if len(lines[i + 1].strip()) != len(lines[i + 3].strip()):
                 return False
 
         return True
@@ -270,12 +274,13 @@ def validate_fastq_file(file_path: Path) -> bool:
 def count_test_functions_in_file(file_path: Path) -> int:
     """Count the number of test functions in a Python file."""
     try:
-        with open(file_path, 'r') as f:
+        with open(file_path, "r") as f:
             content = f.read()
 
         # Simple regex-based counting (could be improved)
         import re
-        test_functions = re.findall(r'def test_\w+', content)
+
+        test_functions = re.findall(r"def test_\w+", content)
         return len(test_functions)
     except Exception:
         return 0
@@ -310,11 +315,14 @@ def get_platform_info() -> Dict[str, str]:
 def is_ci_environment() -> bool:
     """Check if running in a CI environment."""
     ci_indicators = [
-        "CI", "CONTINUOUS_INTEGRATION", "TRAVIS", "APPVEYOR",
-        "CIRCLECI", "GITHUB_ACTIONS", "GITLAB_CI", "JENKINS"
+        "CI",
+        "CONTINUOUS_INTEGRATION",
+        "TRAVIS",
+        "APPVEYOR",
+        "CIRCLECI",
+        "GITHUB_ACTIONS",
+        "GITLAB_CI",
+        "JENKINS",
     ]
 
     return any(os.environ.get(indicator) for indicator in ci_indicators)
-
-
-

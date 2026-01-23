@@ -216,7 +216,7 @@ class TestShannonEntropy:
         """Test that function normalizes unnormalized inputs."""
         values = [2, 2, 2]  # Sums to 6, should be normalized to [1/3, 1/3, 1/3]
         entropy = shannon_entropy(values)
-        expected = -3 * (1/3) * math.log2(1/3)  # Should be log2(3)
+        expected = -3 * (1 / 3) * math.log2(1 / 3)  # Should be log2(3)
         assert abs(entropy - math.log2(3)) < 1e-10
 
     def test_empty_list(self):
@@ -237,7 +237,7 @@ class TestShannonEntropy:
     def test_large_distribution(self):
         """Test with larger distribution."""
         n = 100
-        values = [1/n] * n  # Uniform over n possibilities
+        values = [1 / n] * n  # Uniform over n possibilities
         entropy = shannon_entropy(values)
         expected = math.log2(n)
         assert abs(entropy - expected) < 1e-10

@@ -29,6 +29,7 @@ class AlignmentResult:
         traceback_matrix: Traceback matrix for path reconstruction
         start_positions: Tuple of (seq1_start, seq2_start) for local alignments
     """
+
     seq1_aligned: str
     seq2_aligned: str
     score: float
@@ -73,21 +74,21 @@ def global_align(seq1: str, seq2: str, match: int = 1, mismatch: int = -1, gap: 
 
     # Initialize first row and column with gap penalties
     for i in range(1, m + 1):
-        score_matrix[i, 0] = score_matrix[i-1, 0] + gap
+        score_matrix[i, 0] = score_matrix[i - 1, 0] + gap
         traceback_matrix[i, 0] = UP
 
     for j in range(1, n + 1):
-        score_matrix[0, j] = score_matrix[0, j-1] + gap
+        score_matrix[0, j] = score_matrix[0, j - 1] + gap
         traceback_matrix[0, j] = LEFT
 
     # Fill the matrix
     for i in range(1, m + 1):
         for j in range(1, n + 1):
             # Calculate scores for each direction
-            match_score = match if seq1[i-1] == seq2[j-1] else mismatch
-            diagonal_score = score_matrix[i-1, j-1] + match_score
-            up_score = score_matrix[i-1, j] + gap
-            left_score = score_matrix[i, j-1] + gap
+            match_score = match if seq1[i - 1] == seq2[j - 1] else mismatch
+            diagonal_score = score_matrix[i - 1, j - 1] + match_score
+            up_score = score_matrix[i - 1, j] + gap
+            left_score = score_matrix[i, j - 1] + gap
 
             # Choose the maximum score
             max_score = max(diagonal_score, up_score, left_score)
@@ -109,7 +110,7 @@ def global_align(seq1: str, seq2: str, match: int = 1, mismatch: int = -1, gap: 
         seq2_aligned=aligned_seq2,
         score=score_matrix[m, n],
         score_matrix=score_matrix,
-        traceback_matrix=traceback_matrix
+        traceback_matrix=traceback_matrix,
     )
 
 
@@ -150,10 +151,10 @@ def local_align(seq1: str, seq2: str, match: int = 1, mismatch: int = -1, gap: i
     for i in range(1, m + 1):
         for j in range(1, n + 1):
             # Calculate scores for each direction
-            match_score = match if seq1[i-1] == seq2[j-1] else mismatch
-            diagonal_score = score_matrix[i-1, j-1] + match_score
-            up_score = score_matrix[i-1, j] + gap
-            left_score = score_matrix[i, j-1] + gap
+            match_score = match if seq1[i - 1] == seq2[j - 1] else mismatch
+            diagonal_score = score_matrix[i - 1, j - 1] + match_score
+            up_score = score_matrix[i - 1, j] + gap
+            left_score = score_matrix[i, j - 1] + gap
 
             # Choose the maximum score (including 0 for local alignment)
             max_score_cell = max(diagonal_score, up_score, left_score, 0.0)
@@ -182,7 +183,7 @@ def local_align(seq1: str, seq2: str, match: int = 1, mismatch: int = -1, gap: i
             score=0.0,
             score_matrix=score_matrix,
             traceback_matrix=traceback_matrix,
-            start_positions=(0, 0)
+            start_positions=(0, 0),
         )
 
     # Traceback from maximum score position
@@ -194,7 +195,7 @@ def local_align(seq1: str, seq2: str, match: int = 1, mismatch: int = -1, gap: i
         score=max_score,
         score_matrix=score_matrix,
         traceback_matrix=traceback_matrix,
-        start_positions=start_pos
+        start_positions=start_pos,
     )
 
 
@@ -222,7 +223,7 @@ def calculate_alignment_identity(alignment: AlignmentResult) -> float:
     total_positions = 0
 
     for a, b in zip(alignment.seq1_aligned, alignment.seq2_aligned):
-        if a != '-' and b != '-':  # Only count non-gap positions
+        if a != "-" and b != "-":  # Only count non-gap positions
             total_positions += 1
             if a == b:
                 matches += 1
@@ -257,7 +258,7 @@ def find_conserved_regions(alignment: AlignmentResult, min_length: int = 5) -> L
     current_region_seq = []
 
     for i, (a, b) in enumerate(zip(alignment.seq1_aligned, alignment.seq2_aligned)):
-        if a == b and a != '-' and b != '-':
+        if a == b and a != "-" and b != "-":
             # Matching position
             if current_region_start is None:
                 current_region_start = i
@@ -265,21 +266,13 @@ def find_conserved_regions(alignment: AlignmentResult, min_length: int = 5) -> L
         else:
             # End of conserved region
             if current_region_start is not None and len(current_region_seq) >= min_length:
-                conserved_regions.append((
-                    ''.join(current_region_seq),
-                    current_region_start,
-                    i - 1
-                ))
+                conserved_regions.append(("".join(current_region_seq), current_region_start, i - 1))
             current_region_start = None
             current_region_seq = []
 
     # Handle region that extends to end
     if current_region_start is not None and len(current_region_seq) >= min_length:
-        conserved_regions.append((
-            ''.join(current_region_seq),
-            current_region_start,
-            len(alignment.seq1_aligned) - 1
-        ))
+        conserved_regions.append(("".join(current_region_seq), current_region_start, len(alignment.seq1_aligned) - 1))
 
     return conserved_regions
 
@@ -301,13 +294,13 @@ def alignment_statistics(alignment: AlignmentResult) -> Dict[str, float]:
     """
     if not alignment.seq1_aligned or not alignment.seq2_aligned:
         return {
-            'identity': 0.0,
-            'similarity': 0.0,
-            'gaps': 0,
-            'gap_percentage': 0.0,
-            'alignment_length': 0,
-            'matches': 0,
-            'mismatches': 0
+            "identity": 0.0,
+            "similarity": 0.0,
+            "gaps": 0,
+            "gap_percentage": 0.0,
+            "alignment_length": 0,
+            "matches": 0,
+            "mismatches": 0,
         }
 
     if len(alignment.seq1_aligned) != len(alignment.seq2_aligned):
@@ -320,7 +313,7 @@ def alignment_statistics(alignment: AlignmentResult) -> Dict[str, float]:
 
     # Count matches, mismatches, and gaps
     for a, b in zip(alignment.seq1_aligned, alignment.seq2_aligned):
-        if a == '-' or b == '-':
+        if a == "-" or b == "-":
             gaps += 1
         elif a == b:
             matches += 1
@@ -332,13 +325,13 @@ def alignment_statistics(alignment: AlignmentResult) -> Dict[str, float]:
     gap_percentage = (gaps / alignment_length * 100) if alignment_length > 0 else 0.0
 
     return {
-        'identity': identity,
-        'similarity': identity,  # For DNA, identity equals similarity
-        'gaps': gaps,
-        'gap_percentage': gap_percentage,
-        'alignment_length': alignment_length,
-        'matches': matches,
-        'mismatches': mismatches
+        "identity": identity,
+        "similarity": identity,  # For DNA, identity equals similarity
+        "gaps": gaps,
+        "gap_percentage": gap_percentage,
+        "alignment_length": alignment_length,
+        "matches": matches,
+        "mismatches": mismatches,
     }
 
 
@@ -353,27 +346,29 @@ def _traceback_global(seq1: str, seq2: str, traceback_matrix: np.ndarray) -> Tup
 
     while i > 0 or j > 0:
         if i > 0 and j > 0 and traceback_matrix[i, j] == DIAGONAL:
-            aligned_seq1.append(seq1[i-1])
-            aligned_seq2.append(seq2[j-1])
+            aligned_seq1.append(seq1[i - 1])
+            aligned_seq2.append(seq2[j - 1])
             i -= 1
             j -= 1
         elif i > 0 and traceback_matrix[i, j] == UP:
-            aligned_seq1.append(seq1[i-1])
-            aligned_seq2.append('-')
+            aligned_seq1.append(seq1[i - 1])
+            aligned_seq2.append("-")
             i -= 1
         elif j > 0 and traceback_matrix[i, j] == LEFT:
-            aligned_seq1.append('-')
-            aligned_seq2.append(seq2[j-1])
+            aligned_seq1.append("-")
+            aligned_seq2.append(seq2[j - 1])
             j -= 1
         else:
             # Should not reach here in global alignment
             break
 
     # Reverse the sequences since we built them backwards
-    return ''.join(reversed(aligned_seq1)), ''.join(reversed(aligned_seq2))
+    return "".join(reversed(aligned_seq1)), "".join(reversed(aligned_seq2))
 
 
-def _traceback_local(seq1: str, seq2: str, traceback_matrix: np.ndarray, start_i: int, start_j: int) -> Tuple[str, str, Tuple[int, int]]:
+def _traceback_local(
+    seq1: str, seq2: str, traceback_matrix: np.ndarray, start_i: int, start_j: int
+) -> Tuple[str, str, Tuple[int, int]]:
     """Perform traceback for local alignment."""
     aligned_seq1 = []
     aligned_seq2 = []
@@ -383,17 +378,17 @@ def _traceback_local(seq1: str, seq2: str, traceback_matrix: np.ndarray, start_i
 
     while traceback_matrix[i, j] != STOP:
         if traceback_matrix[i, j] == DIAGONAL:
-            aligned_seq1.append(seq1[i-1])
-            aligned_seq2.append(seq2[j-1])
+            aligned_seq1.append(seq1[i - 1])
+            aligned_seq2.append(seq2[j - 1])
             i -= 1
             j -= 1
         elif traceback_matrix[i, j] == UP:
-            aligned_seq1.append(seq1[i-1])
-            aligned_seq2.append('-')
+            aligned_seq1.append(seq1[i - 1])
+            aligned_seq2.append("-")
             i -= 1
         elif traceback_matrix[i, j] == LEFT:
-            aligned_seq1.append('-')
-            aligned_seq2.append(seq2[j-1])
+            aligned_seq1.append("-")
+            aligned_seq2.append(seq2[j - 1])
             j -= 1
         else:
             break
@@ -409,12 +404,4 @@ def _traceback_local(seq1: str, seq2: str, traceback_matrix: np.ndarray, start_i
     start_pos_seq1 = i if i >= 0 else 0
     start_pos_seq2 = j if j >= 0 else 0
 
-    return ''.join(aligned_seq1), ''.join(aligned_seq2), (start_pos_seq1, start_pos_seq2)
-
-
-
-
-
-
-
-
+    return "".join(aligned_seq1), "".join(aligned_seq2), (start_pos_seq1, start_pos_seq2)

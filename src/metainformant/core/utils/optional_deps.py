@@ -70,7 +70,4 @@ def reset_warning_state() -> None:
 
 def get_warning_state() -> dict[str, bool | Set[str]]:
     """Get current warning state (useful for debugging)."""
-    return {
-        "suppress_warnings": _suppress_warnings,
-        "warnings_issued": _optional_warnings_issued.copy()
-    }
+    return {"suppress_warnings": _suppress_warnings, "warnings_issued": _optional_warnings_issued.copy()}

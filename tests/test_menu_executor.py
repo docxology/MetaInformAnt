@@ -162,4 +162,3 @@ class TestPromptForArgs:
         """Test prompting for both required and optional arguments."""
         # This test would require mocking builtin input
         pass
-

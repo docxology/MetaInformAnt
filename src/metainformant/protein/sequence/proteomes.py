@@ -37,9 +37,9 @@ def read_taxon_ids(file_path: Union[str, Path]) -> List[str]:
         with io.open_text_auto(file_path) as f:
             for line in f:
                 line = line.strip()
-                if line and not line.startswith('#'):
+                if line and not line.startswith("#"):
                     # Extract taxonomy ID (could be just numbers or with prefixes)
-                    match = re.search(r'\b(\d+)\b', line)
+                    match = re.search(r"\b(\d+)\b", line)
                     if match:
                         taxon_ids.append(match.group(1))
 
@@ -91,10 +91,7 @@ def get_proteome_metadata(taxon_id: str) -> Dict[str, Any]:
     base_url = "https://www.ebi.ac.uk/proteins/api/proteomes"
 
     # Search for proteome by taxonomy ID
-    params = {
-        'taxid': taxon_id,
-        'size': 1  # Get first result only
-    }
+    params = {"taxid": taxon_id, "size": 1}  # Get first result only
 
     try:
         response = requests.get(base_url, params=params, timeout=30)
@@ -110,24 +107,32 @@ def get_proteome_metadata(taxon_id: str) -> Dict[str, Any]:
 
         # Extract protein count from scores if available
         protein_count = 0
-        scores = proteome.get('scores', {})
+        scores = proteome.get("scores", {})
         if isinstance(scores, dict):
-            protein_count = scores.get('proteinCount', 0)
+            protein_count = scores.get("proteinCount", 0)
 
         metadata = {
-            'taxon_id': taxon_id,
-            'scientific_name': proteome.get('name', 'Unknown'),
-            'proteome_id': proteome.get('upid'),
-            'protein_count': protein_count,
-            'busco_complete': proteome.get('scores', {}).get('buscoComplete', 0.0) if isinstance(proteome.get('scores'), dict) else 0.0,
-            'annotation_level': proteome.get('annotationScore', {}).get('category') if isinstance(proteome.get('annotationScore'), dict) else 'unknown',
-            'is_reference': proteome.get('isReferenceProteome', False),
-            'genome_assembly': proteome.get('genomeAssembly', {}),
-            'genome_annotation': proteome.get('genomeAnnotation', {}),
-            'strain': proteome.get('strain'),
-            'description': proteome.get('description'),
-            'superregnum': proteome.get('superregnum'),
-            'source': proteome.get('source')
+            "taxon_id": taxon_id,
+            "scientific_name": proteome.get("name", "Unknown"),
+            "proteome_id": proteome.get("upid"),
+            "protein_count": protein_count,
+            "busco_complete": (
+                proteome.get("scores", {}).get("buscoComplete", 0.0)
+                if isinstance(proteome.get("scores"), dict)
+                else 0.0
+            ),
+            "annotation_level": (
+                proteome.get("annotationScore", {}).get("category")
+                if isinstance(proteome.get("annotationScore"), dict)
+                else "unknown"
+            ),
+            "is_reference": proteome.get("isReferenceProteome", False),
+            "genome_assembly": proteome.get("genomeAssembly", {}),
+            "genome_annotation": proteome.get("genomeAnnotation", {}),
+            "strain": proteome.get("strain"),
+            "description": proteome.get("description"),
+            "superregnum": proteome.get("superregnum"),
+            "source": proteome.get("source"),
         }
 
         logger.info(f"Retrieved proteome metadata for taxon {taxon_id}: {metadata['proteome_id']}")
@@ -141,8 +146,7 @@ def get_proteome_metadata(taxon_id: str) -> Dict[str, Any]:
         raise ValueError(f"Invalid API response for taxonomy ID {taxon_id}")
 
 
-def download_proteome_fasta(taxon_id: str, output_path: Union[str, Path],
-                          include_isoforms: bool = False) -> bool:
+def download_proteome_fasta(taxon_id: str, output_path: Union[str, Path], include_isoforms: bool = False) -> bool:
     """Download proteome FASTA file for a taxonomy ID using UniProt API.
 
     Args:
@@ -166,7 +170,7 @@ def download_proteome_fasta(taxon_id: str, output_path: Union[str, Path],
     try:
         # First get proteome metadata to find the proteome ID
         metadata = get_proteome_metadata(taxon_id)
-        proteome_id = metadata.get('proteome_id')
+        proteome_id = metadata.get("proteome_id")
 
         if not proteome_id:
             logger.error(f"No proteome ID found for taxon {taxon_id}")
@@ -174,10 +178,7 @@ def download_proteome_fasta(taxon_id: str, output_path: Union[str, Path],
 
         # UniProt proteome download URL
         base_url = "https://rest.uniprot.org/uniprotkb/stream"
-        params = {
-            'query': f'proteome:{proteome_id}',
-            'format': 'fasta'
-        }
+        params = {"query": f"proteome:{proteome_id}", "format": "fasta"}
 
         # Note: includeIsoform parameter doesn't seem to be supported in this endpoint
         # All canonical sequences are returned
@@ -186,7 +187,7 @@ def download_proteome_fasta(taxon_id: str, output_path: Union[str, Path],
         response.raise_for_status()
 
         # Write FASTA content to file
-        with io.open_text_auto(output_path, 'w') as f:
+        with io.open_text_auto(output_path, "w") as f:
             f.write(response.text)
 
         logger.info(f"Downloaded proteome FASTA for taxon {taxon_id} ({len(response.text)} characters)")
@@ -215,20 +216,20 @@ def proteome_statistics(fasta_path: Union[str, Path]) -> Dict[str, Any]:
         sequences = read_fasta(fasta_path)
 
         stats = {
-            'protein_count': len(sequences),
-            'total_residues': 0,
-            'average_length': 0.0,
-            'molecular_weights': [],
+            "protein_count": len(sequences),
+            "total_residues": 0,
+            "average_length": 0.0,
+            "molecular_weights": [],
         }
 
         for seq in sequences.values():
             length = len(seq)
-            stats['total_residues'] += length
-            stats['molecular_weights'].append(molecular_weight(seq))
+            stats["total_residues"] += length
+            stats["molecular_weights"].append(molecular_weight(seq))
 
         if sequences:
-            stats['average_length'] = stats['total_residues'] / len(sequences)
-            stats['average_molecular_weight'] = sum(stats['molecular_weights']) / len(stats['molecular_weights'])
+            stats["average_length"] = stats["total_residues"] / len(sequences)
+            stats["average_molecular_weight"] = sum(stats["molecular_weights"]) / len(stats["molecular_weights"])
 
         logger.info(f"Calculated statistics for proteome with {stats['protein_count']} proteins")
 
@@ -239,8 +240,7 @@ def proteome_statistics(fasta_path: Union[str, Path]) -> Dict[str, Any]:
         return {}
 
 
-def compare_proteomes(proteome1_path: Union[str, Path],
-                     proteome2_path: Union[str, Path]) -> Dict[str, Any]:
+def compare_proteomes(proteome1_path: Union[str, Path], proteome2_path: Union[str, Path]) -> Dict[str, Any]:
     """Compare two proteomes.
 
     Args:
@@ -254,10 +254,10 @@ def compare_proteomes(proteome1_path: Union[str, Path],
     stats2 = proteome_statistics(proteome2_path)
 
     comparison = {
-        'proteome1': stats1,
-        'proteome2': stats2,
-        'protein_count_ratio': stats2.get('protein_count', 0) / max(stats1.get('protein_count', 1), 1),
-        'size_difference': stats2.get('total_residues', 0) - stats1.get('total_residues', 0),
+        "proteome1": stats1,
+        "proteome2": stats2,
+        "protein_count_ratio": stats2.get("protein_count", 0) / max(stats1.get("protein_count", 1), 1),
+        "size_difference": stats2.get("total_residues", 0) - stats1.get("total_residues", 0),
     }
 
     return comparison

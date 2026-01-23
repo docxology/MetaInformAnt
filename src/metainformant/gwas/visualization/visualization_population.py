@@ -15,8 +15,13 @@ from metainformant.core import logging
 logger = logging.get_logger(__name__)
 
 
-def pca_plot(pca_data: Dict[str, Any], output_file: Optional[str | Path] = None,
-             title: str = "PCA Plot", pc1: int = 0, pc2: int = 1) -> Optional[Any]:
+def pca_plot(
+    pca_data: Dict[str, Any],
+    output_file: Optional[str | Path] = None,
+    title: str = "PCA Plot",
+    pc1: int = 0,
+    pc2: int = 1,
+) -> Optional[Any]:
     """Create a PCA plot for population structure visualization.
 
     Args:
@@ -45,14 +50,14 @@ def pca_plot(pca_data: Dict[str, Any], output_file: Optional[str | Path] = None,
         return None
 
     # Validate input data
-    required_keys = ['pcs', 'explained_variance']
+    required_keys = ["pcs", "explained_variance"]
     missing_keys = [key for key in required_keys if key not in pca_data]
     if missing_keys:
         logger.error(f"Missing required keys in pca_data: {missing_keys}")
         return None
 
-    pcs = pca_data['pcs']
-    explained_var = pca_data['explained_variance']
+    pcs = pca_data["pcs"]
+    explained_var = pca_data["explained_variance"]
 
     if len(pcs.shape) != 2:
         logger.error("PCA data 'pcs' must be a 2D array")
@@ -69,8 +74,8 @@ def pca_plot(pca_data: Dict[str, Any], output_file: Optional[str | Path] = None,
     y_data = pcs[:, pc2]
 
     # Check for population labels
-    populations = pca_data.get('populations')
-    sample_names = pca_data.get('sample_names')
+    populations = pca_data.get("populations")
+    sample_names = pca_data.get("sample_names")
 
     if populations is not None and len(populations) == len(x_data):
         # Color by population
@@ -79,44 +84,42 @@ def pca_plot(pca_data: Dict[str, Any], output_file: Optional[str | Path] = None,
 
         for i, pop in enumerate(unique_pops):
             mask = [p == pop for p in populations]
-            ax.scatter(x_data[mask], y_data[mask],
-                      c=[colors[i]], label=pop, alpha=0.7, s=50)
-        ax.legend(title='Population', bbox_to_anchor=(1.05, 1), loc='upper left')
+            ax.scatter(x_data[mask], y_data[mask], c=[colors[i]], label=pop, alpha=0.7, s=50)
+        ax.legend(title="Population", bbox_to_anchor=(1.05, 1), loc="upper left")
     else:
         # Simple scatter plot
-        ax.scatter(x_data, y_data, alpha=0.7, s=50, c='blue')
+        ax.scatter(x_data, y_data, alpha=0.7, s=50, c="blue")
 
     # Add sample labels if provided and not too many samples
     if sample_names is not None and len(sample_names) <= 50:
         for i, name in enumerate(sample_names):
-            ax.annotate(name, (x_data[i], y_data[i]),
-                       xytext=(5, 5), textcoords='offset points',
-                       fontsize=8, alpha=0.8)
+            ax.annotate(name, (x_data[i], y_data[i]), xytext=(5, 5), textcoords="offset points", fontsize=8, alpha=0.8)
 
     # Labels and title
     var1 = explained_var[pc1] * 100
     var2 = explained_var[pc2] * 100
 
-    ax.set_xlabel(f'PC{pc1+1} ({var1:.1f}% variance)', fontsize=12)
-    ax.set_ylabel(f'PC{pc2+1} ({var2:.1f}% variance)', fontsize=12)
+    ax.set_xlabel(f"PC{pc1+1} ({var1:.1f}% variance)", fontsize=12)
+    ax.set_ylabel(f"PC{pc2+1} ({var2:.1f}% variance)", fontsize=12)
     ax.set_title(title, fontsize=14, pad=20)
     ax.grid(True, alpha=0.3)
 
     # Add center lines
-    ax.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
-    ax.axvline(x=0, color='gray', linestyle='--', alpha=0.5)
+    ax.axhline(y=0, color="gray", linestyle="--", alpha=0.5)
+    ax.axvline(x=0, color="gray", linestyle="--", alpha=0.5)
 
     plt.tight_layout()
 
     if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved PCA plot to {output_file}")
 
     return plt.gcf()
 
 
-def pca_scree_plot(explained_variance: List[float], output_file: Optional[str | Path] = None,
-                  title: str = "PCA Scree Plot") -> Optional[Any]:
+def pca_scree_plot(
+    explained_variance: List[float], output_file: Optional[str | Path] = None, title: str = "PCA Scree Plot"
+) -> Optional[Any]:
     """Create a scree plot showing explained variance by principal component.
 
     Args:
@@ -148,43 +151,41 @@ def pca_scree_plot(explained_variance: List[float], output_file: Optional[str | 
 
     # Create scree plot
     components = list(range(1, len(explained_variance) + 1))
-    bars = ax.bar(components, explained_variance_pct, color='skyblue', edgecolor='navy', alpha=0.7)
+    bars = ax.bar(components, explained_variance_pct, color="skyblue", edgecolor="navy", alpha=0.7)
 
     # Add cumulative variance line
     cumulative = np.cumsum(explained_variance_pct)
-    ax.plot(components, cumulative, 'r-o', linewidth=2, markersize=4, label='Cumulative')
+    ax.plot(components, cumulative, "r-o", linewidth=2, markersize=4, label="Cumulative")
 
     # Add value labels on bars
     for bar, pct in zip(bars, explained_variance_pct):
         height = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width()/2., height + 0.5,
-               f'{pct:.1f}%', ha='center', va='bottom', fontsize=8)
+        ax.text(bar.get_x() + bar.get_width() / 2.0, height + 0.5, f"{pct:.1f}%", ha="center", va="bottom", fontsize=8)
 
-    ax.set_xlabel('Principal Component', fontsize=12)
-    ax.set_ylabel('Explained Variance (%)', fontsize=12)
+    ax.set_xlabel("Principal Component", fontsize=12)
+    ax.set_ylabel("Explained Variance (%)", fontsize=12)
     ax.set_title(title, fontsize=14, pad=20)
     ax.set_xticks(components)
-    ax.grid(True, alpha=0.3, axis='y')
+    ax.grid(True, alpha=0.3, axis="y")
     ax.legend()
 
     # Add elbow detection heuristic (find where additional variance drops below 5%)
     if len(explained_variance_pct) > 1:
         for i in range(1, len(explained_variance_pct)):
             if explained_variance_pct[i] < 5.0:
-                ax.axvline(x=i + 0.5, color='red', linestyle='--', alpha=0.7,
-                          label=f'Elbow at PC{i+1}')
+                ax.axvline(x=i + 0.5, color="red", linestyle="--", alpha=0.7, label=f"Elbow at PC{i+1}")
                 break
 
     plt.tight_layout()
 
     if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved PCA scree plot to {output_file}")
 
     return fig
 
-def kinship_heatmap(kinship_matrix: np.ndarray | List[List[float]],
-                   output_path: Optional[str | Path] = None) -> Any:
+
+def kinship_heatmap(kinship_matrix: np.ndarray | List[List[float]], output_path: Optional[str | Path] = None) -> Any:
     """Create kinship matrix heatmap.
 
     Args:
@@ -196,6 +197,7 @@ def kinship_heatmap(kinship_matrix: np.ndarray | List[List[float]],
     """
     try:
         import matplotlib.pyplot as plt
+
         HAS_MATPLOTLIB = True
     except ImportError:
         HAS_MATPLOTLIB = False
@@ -215,23 +217,23 @@ def kinship_heatmap(kinship_matrix: np.ndarray | List[List[float]],
         fig, ax = plt.subplots(figsize=(10, 8))
 
         # Plot heatmap
-        im = ax.imshow(kinship_matrix, cmap='viridis', aspect='equal')
+        im = ax.imshow(kinship_matrix, cmap="viridis", aspect="equal")
 
         # Add colorbar
         cbar = plt.colorbar(im, ax=ax)
-        cbar.set_label('Kinship coefficient')
+        cbar.set_label("Kinship coefficient")
 
         # Labels and title
-        ax.set_title('Kinship Matrix Heatmap')
-        ax.set_xlabel('Sample')
-        ax.set_ylabel('Sample')
+        ax.set_title("Kinship Matrix Heatmap")
+        ax.set_xlabel("Sample")
+        ax.set_ylabel("Sample")
 
         plt.tight_layout()
 
         # Save if output path provided
         if output_path:
             output_path = Path(output_path)
-            fig.savefig(output_path, dpi=300, bbox_inches='tight')
+            fig.savefig(output_path, dpi=300, bbox_inches="tight")
             logger.info(f"Saved kinship heatmap to {output_path}")
 
         return fig
@@ -240,8 +242,10 @@ def kinship_heatmap(kinship_matrix: np.ndarray | List[List[float]],
         logger.error(f"Error creating kinship heatmap: {e}")
         return None
 
-def admixture_plot(admixture_data: Dict[str, Any], output_path: Optional[str | Path] = None,
-                  figsize: tuple[int, int] = (12, 6)) -> dict[str, Any]:
+
+def admixture_plot(
+    admixture_data: Dict[str, Any], output_path: Optional[str | Path] = None, figsize: tuple[int, int] = (12, 6)
+) -> dict[str, Any]:
     """Create an admixture plot showing population ancestry proportions.
 
     Args:
@@ -255,6 +259,7 @@ def admixture_plot(admixture_data: Dict[str, Any], output_path: Optional[str | P
     try:
         import matplotlib.pyplot as plt
         import numpy as np
+
         HAS_MATPLOTLIB = True
     except ImportError:
         HAS_MATPLOTLIB = False
@@ -264,10 +269,10 @@ def admixture_plot(admixture_data: Dict[str, Any], output_path: Optional[str | P
 
     try:
         # Extract data from admixture_data
-        admixture_proportions = admixture_data.get('admixture_proportions', [])
-        sample_names = admixture_data.get('sample_names', [])
-        population_labels = admixture_data.get('population_labels', [])
-        ancestry_names = admixture_data.get('ancestry_names', [])
+        admixture_proportions = admixture_data.get("admixture_proportions", [])
+        sample_names = admixture_data.get("sample_names", [])
+        population_labels = admixture_data.get("population_labels", [])
+        ancestry_names = admixture_data.get("ancestry_names", [])
 
         if not admixture_proportions:
             return {"status": "error", "message": "No admixture proportions provided"}
@@ -312,20 +317,27 @@ def admixture_plot(admixture_data: Dict[str, Any], output_path: Optional[str | P
         # Use a color map for ancestries
         colors = plt.cm.tab10(np.linspace(0, 1, n_ancestries))
 
-        ancestry_labels = ancestry_names if ancestry_names else [f'Ancestry {i+1}' for i in range(n_ancestries)]
+        ancestry_labels = ancestry_names if ancestry_names else [f"Ancestry {i+1}" for i in range(n_ancestries)]
 
         for i in range(n_ancestries):
-            ax.bar(range(n_samples), sorted_proportions[:, i], bottom=bottom,
-                  color=colors[i], width=1.0, edgecolor='none', alpha=0.8)
+            ax.bar(
+                range(n_samples),
+                sorted_proportions[:, i],
+                bottom=bottom,
+                color=colors[i],
+                width=1.0,
+                edgecolor="none",
+                alpha=0.8,
+            )
             bottom += sorted_proportions[:, i]
 
         # Add population separators if population labels exist
         if population_labels and len(population_labels) == n_samples:
             sorted_pops = [population_labels[i] for i in sorted_indices]
-            pop_changes = [i for i in range(1, len(sorted_pops)) if sorted_pops[i] != sorted_pops[i-1]]
+            pop_changes = [i for i in range(1, len(sorted_pops)) if sorted_pops[i] != sorted_pops[i - 1]]
 
             for change_point in pop_changes:
-                ax.axvline(x=change_point - 0.5, color='black', linewidth=1, alpha=0.7)
+                ax.axvline(x=change_point - 0.5, color="black", linewidth=1, alpha=0.7)
 
             # Add population labels
             unique_pops = sorted(set(population_labels))
@@ -336,31 +348,38 @@ def admixture_plot(admixture_data: Dict[str, Any], output_path: Optional[str | P
                     pop_positions.append((pop, sum(indices) / len(indices)))
 
             for pop, pos in pop_positions:
-                ax.text(pos, -0.05, pop, ha='center', va='top',
-                       transform=ax.get_xaxis_transform(), fontsize=10, fontweight='bold')
+                ax.text(
+                    pos,
+                    -0.05,
+                    pop,
+                    ha="center",
+                    va="top",
+                    transform=ax.get_xaxis_transform(),
+                    fontsize=10,
+                    fontweight="bold",
+                )
 
-        ax.set_xlabel('Samples')
-        ax.set_ylabel('Ancestry Proportion')
-        ax.set_title('Population Admixture Proportions')
+        ax.set_xlabel("Samples")
+        ax.set_ylabel("Ancestry Proportion")
+        ax.set_title("Population Admixture Proportions")
         ax.set_xlim(-0.5, n_samples - 0.5)
         ax.set_ylim(0, 1)
 
         # Create legend
-        legend_elements = [plt.Rectangle((0,0),1,1, facecolor=colors[i], alpha=0.8)
-                          for i in range(n_ancestries)]
-        ax.legend(legend_elements, ancestry_labels, loc='center left', bbox_to_anchor=(1.02, 0.5))
+        legend_elements = [plt.Rectangle((0, 0), 1, 1, facecolor=colors[i], alpha=0.8) for i in range(n_ancestries)]
+        ax.legend(legend_elements, ancestry_labels, loc="center left", bbox_to_anchor=(1.02, 0.5))
 
         plt.tight_layout()
 
         if output_path:
-            plt.savefig(output_path, dpi=300, bbox_inches='tight')
+            plt.savefig(output_path, dpi=300, bbox_inches="tight")
 
         return {
             "status": "success",
             "n_samples": n_samples,
             "n_ancestries": n_ancestries,
             "populations": list(set(population_labels)) if population_labels else None,
-            "output_path": str(output_path) if output_path else None
+            "output_path": str(output_path) if output_path else None,
         }
 
     except Exception as e:

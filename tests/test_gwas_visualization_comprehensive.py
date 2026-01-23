@@ -125,7 +125,9 @@ class TestRegionalVisualization:
         ]
         output_path = tmp_path / "regional.png"
         if hasattr(visualization_regional, "regional_association_plot"):
-            result = visualization_regional.regional_association_plot(results, output_path, chrom="1", start=900, end=1200)
+            result = visualization_regional.regional_association_plot(
+                results, output_path, chrom="1", start=900, end=1200
+            )
             assert isinstance(result, dict)
 
 
@@ -247,4 +249,3 @@ class TestVisualizationEdgeCases:
         output_path = tmp_path / "invalid.png"
         result = visualization.manhattan_plot(results, output_path)
         assert isinstance(result, dict)
-

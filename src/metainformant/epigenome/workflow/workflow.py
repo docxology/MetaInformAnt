@@ -97,8 +97,9 @@ def load_epigenome_config(config_path: str | Path | None = None) -> EpigenomeCon
     return EpigenomeConfig()
 
 
-def run_methylation_workflow(input_dir: str | Path, output_dir: str | Path,
-                           config: Optional[EpigenomeConfig] = None) -> Dict[str, Any]:
+def run_methylation_workflow(
+    input_dir: str | Path, output_dir: str | Path, config: Optional[EpigenomeConfig] = None
+) -> Dict[str, Any]:
     """Run DNA methylation analysis workflow.
 
     Args:
@@ -150,9 +151,9 @@ def run_methylation_workflow(input_dir: str | Path, output_dir: str | Path,
                 from .methylation import load_methylation_bedgraph, load_methylation_cov
 
                 file_ext = file_path.suffix.lower()
-                if file_ext == '.bedgraph' or file_ext == '.bg':
+                if file_ext == ".bedgraph" or file_ext == ".bg":
                     sites = load_methylation_bedgraph(file_path, min_coverage=config.min_methylation_coverage)
-                elif file_ext == '.cov':
+                elif file_ext == ".cov":
                     sites = load_methylation_cov(file_path, min_coverage=config.min_methylation_coverage)
                 else:
                     logger.warning(f"Unsupported file format: {file_path}")
@@ -160,25 +161,31 @@ def run_methylation_workflow(input_dir: str | Path, output_dir: str | Path,
 
                 # Calculate statistics
                 from .methylation import calculate_methylation_statistics
+
                 stats = calculate_methylation_statistics(sites)
 
                 # Store results
                 sample_name = file_path.stem
                 all_sites[sample_name] = sites
-                all_stats.append({
-                    "sample": sample_name,
-                    "file": str(file_path),
-                    "statistics": stats,
-                })
+                all_stats.append(
+                    {
+                        "sample": sample_name,
+                        "file": str(file_path),
+                        "statistics": stats,
+                    }
+                )
 
                 # Save individual sample results
                 sample_output = output_dir / f"{sample_name}_methylation.json"
-                io.dump_json({
-                    "sample": sample_name,
-                    "statistics": stats,
-                    "sites_count": sum(len(sites_list) for sites_list in sites.values()),
-                    "chromosomes": list(sites.keys()),
-                }, sample_output)
+                io.dump_json(
+                    {
+                        "sample": sample_name,
+                        "statistics": stats,
+                        "sites_count": sum(len(sites_list) for sites_list in sites.values()),
+                        "chromosomes": list(sites.keys()),
+                    },
+                    sample_output,
+                )
 
                 results["processed_files"].append(str(file_path))
 
@@ -191,8 +198,7 @@ def run_methylation_workflow(input_dir: str | Path, output_dir: str | Path,
         results["statistics"] = {
             "total_samples": len(all_sites),
             "total_sites": sum(
-                sum(len(sites_list) for sites_list in sample_sites.values())
-                for sample_sites in all_sites.values()
+                sum(len(sites_list) for sites_list in sample_sites.values()) for sample_sites in all_sites.values()
             ),
             "sample_statistics": all_stats,
         }
@@ -204,6 +210,7 @@ def run_methylation_workflow(input_dir: str | Path, output_dir: str | Path,
         # Generate report
         if config.generate_reports:
             from .methylation import generate_methylation_report
+
             report_path = output_dir / "methylation_report.txt"
             report = generate_methylation_report(all_sites, output_path=report_path)
             results["report_path"] = str(report_path)
@@ -219,8 +226,9 @@ def run_methylation_workflow(input_dir: str | Path, output_dir: str | Path,
     return results
 
 
-def run_chipseq_workflow(input_dir: str | Path, output_dir: str | Path,
-                        config: Optional[EpigenomeConfig] = None) -> Dict[str, Any]:
+def run_chipseq_workflow(
+    input_dir: str | Path, output_dir: str | Path, config: Optional[EpigenomeConfig] = None
+) -> Dict[str, Any]:
     """Run ChIP-seq analysis workflow.
 
     Args:
@@ -279,35 +287,41 @@ def run_chipseq_workflow(input_dir: str | Path, output_dir: str | Path,
 
                 # Filter by length
                 filtered_peaks = [
-                    p for p in filtered_peaks
-                    if config.min_peak_length <= p.length <= config.max_peak_length
+                    p for p in filtered_peaks if config.min_peak_length <= p.length <= config.max_peak_length
                 ]
 
                 # Calculate statistics
                 from .chipseq import calculate_peak_statistics
+
                 stats = calculate_peak_statistics(filtered_peaks)
 
                 # Store results
                 sample_name = file_path.stem
                 all_peaks.extend(filtered_peaks)
-                all_stats.append({
-                    "sample": sample_name,
-                    "file": str(file_path),
-                    "statistics": stats,
-                    "peaks_count": len(filtered_peaks),
-                })
+                all_stats.append(
+                    {
+                        "sample": sample_name,
+                        "file": str(file_path),
+                        "statistics": stats,
+                        "peaks_count": len(filtered_peaks),
+                    }
+                )
 
                 # Save individual sample results
                 sample_output = output_dir / f"{sample_name}_chipseq.json"
-                io.dump_json({
-                    "sample": sample_name,
-                    "statistics": stats,
-                    "peaks_count": len(filtered_peaks),
-                }, sample_output)
+                io.dump_json(
+                    {
+                        "sample": sample_name,
+                        "statistics": stats,
+                        "peaks_count": len(filtered_peaks),
+                    },
+                    sample_output,
+                )
 
                 # Save filtered peaks
                 peak_output = output_dir / f"{sample_name}_peaks.narrowPeak"
                 from .chipseq import save_chip_peaks
+
                 save_chip_peaks(filtered_peaks, peak_output)
 
                 results["processed_files"].append(str(file_path))
@@ -331,6 +345,7 @@ def run_chipseq_workflow(input_dir: str | Path, output_dir: str | Path,
         # Generate report
         if config.generate_reports:
             from .chipseq import generate_chip_report
+
             report_path = output_dir / "chipseq_report.txt"
             report = generate_chip_report(all_peaks, output_path=report_path)
             results["report_path"] = str(report_path)
@@ -346,8 +361,9 @@ def run_chipseq_workflow(input_dir: str | Path, output_dir: str | Path,
     return results
 
 
-def run_atacseq_workflow(input_dir: str | Path, output_dir: str | Path,
-                        config: Optional[EpigenomeConfig] = None) -> Dict[str, Any]:
+def run_atacseq_workflow(
+    input_dir: str | Path, output_dir: str | Path, config: Optional[EpigenomeConfig] = None
+) -> Dict[str, Any]:
     """Run ATAC-seq analysis workflow.
 
     Args:
@@ -402,42 +418,45 @@ def run_atacseq_workflow(input_dir: str | Path, output_dir: str | Path,
                 peaks = load_atac_peaks(file_path, format=format_type)
 
                 # Filter peaks (using accessibility score as threshold)
-                filtered_peaks = [
-                    p for p in peaks
-                    if p.accessibility_score >= config.atacseq_qvalue_threshold
-                ]
+                filtered_peaks = [p for p in peaks if p.accessibility_score >= config.atacseq_qvalue_threshold]
 
                 # Filter by length
                 filtered_peaks = [
-                    p for p in filtered_peaks
-                    if config.min_peak_length <= p.length <= config.max_peak_length
+                    p for p in filtered_peaks if config.min_peak_length <= p.length <= config.max_peak_length
                 ]
 
                 # Calculate statistics
                 from .atacseq import calculate_atac_statistics
+
                 stats = calculate_atac_statistics(filtered_peaks)
 
                 # Store results
                 sample_name = file_path.stem
                 all_peaks.extend(filtered_peaks)
-                all_stats.append({
-                    "sample": sample_name,
-                    "file": str(file_path),
-                    "statistics": stats,
-                    "peaks_count": len(filtered_peaks),
-                })
+                all_stats.append(
+                    {
+                        "sample": sample_name,
+                        "file": str(file_path),
+                        "statistics": stats,
+                        "peaks_count": len(filtered_peaks),
+                    }
+                )
 
                 # Save individual sample results
                 sample_output = output_dir / f"{sample_name}_atacseq.json"
-                io.dump_json({
-                    "sample": sample_name,
-                    "statistics": stats,
-                    "peaks_count": len(filtered_peaks),
-                }, sample_output)
+                io.dump_json(
+                    {
+                        "sample": sample_name,
+                        "statistics": stats,
+                        "peaks_count": len(filtered_peaks),
+                    },
+                    sample_output,
+                )
 
                 # Save filtered peaks
                 peak_output = output_dir / f"{sample_name}_peaks.narrowPeak"
                 from .atacseq import save_atac_peaks
+
                 save_atac_peaks(filtered_peaks, peak_output)
 
                 results["processed_files"].append(str(file_path))
@@ -461,6 +480,7 @@ def run_atacseq_workflow(input_dir: str | Path, output_dir: str | Path,
         # Generate report
         if config.generate_reports:
             from .atacseq import generate_atac_report
+
             report_path = output_dir / "atacseq_report.txt"
             report = generate_atac_report(all_peaks, output_path=report_path)
             results["report_path"] = str(report_path)
@@ -476,11 +496,13 @@ def run_atacseq_workflow(input_dir: str | Path, output_dir: str | Path,
     return results
 
 
-def integrate_epigenome_results(methylation_results: Dict[str, Any],
-                               chipseq_results: Dict[str, Any],
-                               atacseq_results: Dict[str, Any],
-                               output_dir: str | Path,
-                               config: Optional[EpigenomeConfig] = None) -> Dict[str, Any]:
+def integrate_epigenome_results(
+    methylation_results: Dict[str, Any],
+    chipseq_results: Dict[str, Any],
+    atacseq_results: Dict[str, Any],
+    output_dir: str | Path,
+    config: Optional[EpigenomeConfig] = None,
+) -> Dict[str, Any]:
     """Integrate results from multiple epigenomic assays.
 
     Args:
@@ -517,8 +539,10 @@ def integrate_epigenome_results(methylation_results: Dict[str, Any],
         analyses = {}
 
         # 1. Methylation-ChIP-seq associations
-        if (methylation_results.get("statistics", {}).get("total_samples", 0) > 0 and
-            chipseq_results.get("statistics", {}).get("total_samples", 0) > 0):
+        if (
+            methylation_results.get("statistics", {}).get("total_samples", 0) > 0
+            and chipseq_results.get("statistics", {}).get("total_samples", 0) > 0
+        ):
             try:
                 methylation_chip_associations = _analyze_methylation_chip_associations(
                     methylation_results, chipseq_results, config
@@ -529,8 +553,10 @@ def integrate_epigenome_results(methylation_results: Dict[str, Any],
                 integrated_results["errors"].append(f"methylation_chipseq: {e}")
 
         # 2. Methylation-ATAC-seq associations
-        if (methylation_results.get("statistics", {}).get("total_samples", 0) > 0 and
-            atacseq_results.get("statistics", {}).get("total_samples", 0) > 0):
+        if (
+            methylation_results.get("statistics", {}).get("total_samples", 0) > 0
+            and atacseq_results.get("statistics", {}).get("total_samples", 0) > 0
+        ):
             try:
                 methylation_atac_associations = _analyze_methylation_atac_associations(
                     methylation_results, atacseq_results, config
@@ -541,12 +567,12 @@ def integrate_epigenome_results(methylation_results: Dict[str, Any],
                 integrated_results["errors"].append(f"methylation_atacseq: {e}")
 
         # 3. ChIP-seq-ATAC-seq associations
-        if (chipseq_results.get("statistics", {}).get("total_samples", 0) > 0 and
-            atacseq_results.get("statistics", {}).get("total_samples", 0) > 0):
+        if (
+            chipseq_results.get("statistics", {}).get("total_samples", 0) > 0
+            and atacseq_results.get("statistics", {}).get("total_samples", 0) > 0
+        ):
             try:
-                chip_atac_associations = _analyze_chip_atac_associations(
-                    chipseq_results, atacseq_results, config
-                )
+                chip_atac_associations = _analyze_chip_atac_associations(chipseq_results, atacseq_results, config)
                 analyses["chipseq_atacseq"] = chip_atac_associations
             except Exception as e:
                 logger.warning(f"ChIP-seq-ATAC-seq association analysis failed: {e}")
@@ -577,7 +603,7 @@ def integrate_epigenome_results(methylation_results: Dict[str, Any],
 
 def _find_methylation_files(input_dir: Path) -> List[Path]:
     """Find methylation data files in input directory."""
-    extensions = ['*.bedgraph', '*.bg', '*.cov', '*.bedGraph', '*.BEDGRAPH']
+    extensions = ["*.bedgraph", "*.bg", "*.cov", "*.bedGraph", "*.BEDGRAPH"]
     files = []
     for ext in extensions:
         files.extend(input_dir.glob(f"**/{ext}"))
@@ -586,7 +612,7 @@ def _find_methylation_files(input_dir: Path) -> List[Path]:
 
 def _find_chipseq_files(input_dir: Path) -> List[Path]:
     """Find ChIP-seq peak files in input directory."""
-    extensions = ['*.narrowPeak', '*.broadPeak', '*.bed', '*.narrowpeak', '*.broadpeak']
+    extensions = ["*.narrowPeak", "*.broadPeak", "*.bed", "*.narrowpeak", "*.broadpeak"]
     files = []
     for ext in extensions:
         files.extend(input_dir.glob(f"**/{ext}"))
@@ -603,18 +629,18 @@ def _detect_peak_format(file_path: Path) -> str:
     """Detect peak file format from filename or content."""
     filename = file_path.name.lower()
 
-    if 'narrow' in filename:
-        return 'narrowpeak'
-    elif 'broad' in filename:
-        return 'broadpeak'
+    if "narrow" in filename:
+        return "narrowpeak"
+    elif "broad" in filename:
+        return "broadpeak"
     else:
         # Default to narrowPeak format
-        return 'narrowpeak'
+        return "narrowpeak"
 
 
-def _analyze_methylation_chip_associations(methylation_results: Dict[str, Any],
-                                          chipseq_results: Dict[str, Any],
-                                          config: EpigenomeConfig) -> Dict[str, Any]:
+def _analyze_methylation_chip_associations(
+    methylation_results: Dict[str, Any], chipseq_results: Dict[str, Any], config: EpigenomeConfig
+) -> Dict[str, Any]:
     """Analyze associations between methylation and ChIP-seq data."""
     # This is a simplified analysis - in practice would do statistical testing
     associations = {
@@ -625,18 +651,20 @@ def _analyze_methylation_chip_associations(methylation_results: Dict[str, Any],
     }
 
     # Placeholder for actual association analysis
-    associations["findings"].append({
-        "type": "placeholder",
-        "description": "Methylation-ChIP-seq association analysis framework ready",
-        "note": "Actual implementation would require coordinate-based statistical testing"
-    })
+    associations["findings"].append(
+        {
+            "type": "placeholder",
+            "description": "Methylation-ChIP-seq association analysis framework ready",
+            "note": "Actual implementation would require coordinate-based statistical testing",
+        }
+    )
 
     return associations
 
 
-def _analyze_methylation_atac_associations(methylation_results: Dict[str, Any],
-                                          atacseq_results: Dict[str, Any],
-                                          config: EpigenomeConfig) -> Dict[str, Any]:
+def _analyze_methylation_atac_associations(
+    methylation_results: Dict[str, Any], atacseq_results: Dict[str, Any], config: EpigenomeConfig
+) -> Dict[str, Any]:
     """Analyze associations between methylation and ATAC-seq data."""
     associations = {
         "analysis_type": "methylation_atacseq_association",
@@ -646,18 +674,20 @@ def _analyze_methylation_atac_associations(methylation_results: Dict[str, Any],
     }
 
     # Placeholder for actual association analysis
-    associations["findings"].append({
-        "type": "placeholder",
-        "description": "Methylation-ATAC-seq association analysis framework ready",
-        "note": "Actual implementation would analyze chromatin accessibility around methylated sites"
-    })
+    associations["findings"].append(
+        {
+            "type": "placeholder",
+            "description": "Methylation-ATAC-seq association analysis framework ready",
+            "note": "Actual implementation would analyze chromatin accessibility around methylated sites",
+        }
+    )
 
     return associations
 
 
-def _analyze_chip_atac_associations(chipseq_results: Dict[str, Any],
-                                   atacseq_results: Dict[str, Any],
-                                   config: EpigenomeConfig) -> Dict[str, Any]:
+def _analyze_chip_atac_associations(
+    chipseq_results: Dict[str, Any], atacseq_results: Dict[str, Any], config: EpigenomeConfig
+) -> Dict[str, Any]:
     """Analyze associations between ChIP-seq and ATAC-seq data."""
     associations = {
         "analysis_type": "chipseq_atacseq_association",
@@ -667,11 +697,13 @@ def _analyze_chip_atac_associations(chipseq_results: Dict[str, Any],
     }
 
     # Placeholder for actual association analysis
-    associations["findings"].append({
-        "type": "placeholder",
-        "description": "ChIP-seq-ATAC-seq association analysis framework ready",
-        "note": "Actual implementation would analyze TF binding sites in open chromatin regions"
-    })
+    associations["findings"].append(
+        {
+            "type": "placeholder",
+            "description": "ChIP-seq-ATAC-seq association analysis framework ready",
+            "note": "Actual implementation would analyze TF binding sites in open chromatin regions",
+        }
+    )
 
     return associations
 
@@ -700,7 +732,9 @@ def _generate_integration_report(results: Dict[str, Any], output_path: Path) -> 
     if analyses:
         report_lines.append("Integrated Analyses:")
         for analysis_name, analysis_data in analyses.items():
-            report_lines.append(f"  {analysis_name.replace('_', ' ').title()}: {len(analysis_data.get('findings', []))} findings")
+            report_lines.append(
+                f"  {analysis_name.replace('_', ' ').title()}: {len(analysis_data.get('findings', []))} findings"
+            )
         report_lines.append("")
 
     # Errors
@@ -713,14 +747,8 @@ def _generate_integration_report(results: Dict[str, Any], output_path: Path) -> 
 
     report = "\n".join(report_lines)
 
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         f.write(report)
 
     logger.info(f"Integration report saved to {output_path}")
     return report
-
-
-
-
-
-

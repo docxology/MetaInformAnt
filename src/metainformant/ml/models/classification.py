@@ -21,9 +21,15 @@ try:
     from sklearn.linear_model import LogisticRegression
     from sklearn.model_selection import cross_val_score, StratifiedKFold
     from sklearn.metrics import (
-        accuracy_score, precision_score, recall_score, f1_score,
-        roc_auc_score, confusion_matrix, classification_report
+        accuracy_score,
+        precision_score,
+        recall_score,
+        f1_score,
+        roc_auc_score,
+        confusion_matrix,
+        classification_report,
     )
+
     HAS_SKLEARN = True
 except ImportError:
     HAS_SKLEARN = False
@@ -90,17 +96,12 @@ class BiologicalClassifier:
         """
         if not self.is_trained:
             raise ValueError("Model not trained")
-        if hasattr(self.model, 'predict_proba'):
+        if hasattr(self.model, "predict_proba"):
             return self.model.predict_proba(X)
         else:
             raise AttributeError(f"Model {self.model_type} does not support probability prediction")
 
-    def evaluate(
-        self,
-        X: np.ndarray,
-        y: np.ndarray,
-        detailed: bool = True
-    ) -> Dict[str, Any]:
+    def evaluate(self, X: np.ndarray, y: np.ndarray, detailed: bool = True) -> Dict[str, Any]:
         """Evaluate classifier performance.
 
         Args:
@@ -117,36 +118,32 @@ class BiologicalClassifier:
         y_pred = self.predict(X)
 
         results = {
-            'accuracy': accuracy_score(y, y_pred),
-            'precision': precision_score(y, y_pred, average='weighted', zero_division=0),
-            'recall': recall_score(y, y_pred, average='weighted', zero_division=0),
-            'f1': f1_score(y, y_pred, average='weighted', zero_division=0),
+            "accuracy": accuracy_score(y, y_pred),
+            "precision": precision_score(y, y_pred, average="weighted", zero_division=0),
+            "recall": recall_score(y, y_pred, average="weighted", zero_division=0),
+            "f1": f1_score(y, y_pred, average="weighted", zero_division=0),
         }
 
         # Add probability-based metrics if available
-        if hasattr(self.model, 'predict_proba'):
+        if hasattr(self.model, "predict_proba"):
             try:
                 y_proba = self.predict_proba(X)
                 if len(np.unique(y)) == 2:  # Binary classification
-                    results['roc_auc'] = roc_auc_score(y, y_proba[:, 1])
+                    results["roc_auc"] = roc_auc_score(y, y_proba[:, 1])
                 else:  # Multi-class
-                    results['roc_auc'] = roc_auc_score(y, y_proba, multi_class='ovr', average='weighted')
+                    results["roc_auc"] = roc_auc_score(y, y_proba, multi_class="ovr", average="weighted")
             except Exception as e:
                 logger.warning(f"Could not compute ROC-AUC: {e}")
 
         if detailed:
-            results['confusion_matrix'] = confusion_matrix(y, y_pred).tolist()
-            results['classification_report'] = classification_report(y, y_pred, output_dict=True, zero_division=0)
+            results["confusion_matrix"] = confusion_matrix(y, y_pred).tolist()
+            results["classification_report"] = classification_report(y, y_pred, output_dict=True, zero_division=0)
 
         return results
 
 
 def train_ensemble_classifier(
-    X_train: np.ndarray,
-    y_train: np.ndarray,
-    n_estimators: int = 10,
-    random_state: int | None = None,
-    **kwargs: Any
+    X_train: np.ndarray, y_train: np.ndarray, n_estimators: int = 10, random_state: int | None = None, **kwargs: Any
 ) -> BiologicalClassifier:
     """Train an ensemble classifier for biological data.
 
@@ -168,27 +165,23 @@ def train_ensemble_classifier(
 
     # Create ensemble with multiple algorithms
     estimators = [
-        ('rf', RandomForestClassifier(
-            n_estimators=n_estimators,
-            random_state=random_state,
-            **kwargs.get('rf_params', {})
-        )),
-        ('gb', GradientBoostingClassifier(
-            n_estimators=n_estimators,
-            random_state=random_state,
-            **kwargs.get('gb_params', {})
-        )),
-        ('lr', LogisticRegression(
-            random_state=random_state,
-            max_iter=1000,
-            **kwargs.get('lr_params', {})
-        )),
+        (
+            "rf",
+            RandomForestClassifier(n_estimators=n_estimators, random_state=random_state, **kwargs.get("rf_params", {})),
+        ),
+        (
+            "gb",
+            GradientBoostingClassifier(
+                n_estimators=n_estimators, random_state=random_state, **kwargs.get("gb_params", {})
+            ),
+        ),
+        ("lr", LogisticRegression(random_state=random_state, max_iter=1000, **kwargs.get("lr_params", {}))),
     ]
 
     # Voting classifier
     ensemble = VotingClassifier(
         estimators=estimators,
-        voting='soft',  # Use probability voting
+        voting="soft",  # Use probability voting
         n_jobs=-1,  # Use all available cores
     )
 
@@ -234,12 +227,7 @@ def evaluate_classifier(
 
 
 def cross_validate_biological(
-    X: np.ndarray,
-    y: np.ndarray,
-    method: str = "rf",
-    cv_folds: int = 5,
-    random_state: int | None = None,
-    **kwargs: Any
+    X: np.ndarray, y: np.ndarray, method: str = "rf", cv_folds: int = 5, random_state: int | None = None, **kwargs: Any
 ) -> Dict[str, Any]:
     """Perform cross-validation for biological data classification.
 
@@ -268,27 +256,17 @@ def cross_validate_biological(
     # Select classifier
     if method == "rf":
         classifier = RandomForestClassifier(
-            random_state=random_state,
-            n_estimators=kwargs.get('n_estimators', 100),
-            **kwargs
+            random_state=random_state, n_estimators=kwargs.get("n_estimators", 100), **kwargs
         )
     elif method == "gb":
         classifier = GradientBoostingClassifier(
-            random_state=random_state,
-            n_estimators=kwargs.get('n_estimators', 100),
-            **kwargs
+            random_state=random_state, n_estimators=kwargs.get("n_estimators", 100), **kwargs
         )
     elif method == "lr":
-        classifier = LogisticRegression(
-            random_state=random_state,
-            max_iter=1000,
-            **kwargs
-        )
+        classifier = LogisticRegression(random_state=random_state, max_iter=1000, **kwargs)
     elif method == "ensemble":
         # Use ensemble classifier
-        ensemble_classifier = train_ensemble_classifier(
-            X, y, random_state=random_state, **kwargs
-        )
+        ensemble_classifier = train_ensemble_classifier(X, y, random_state=random_state, **kwargs)
         classifier = ensemble_classifier.model
     else:
         raise ValueError(f"Unknown classification method: {method}")
@@ -297,21 +275,16 @@ def cross_validate_biological(
     cv = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=random_state)
 
     # Evaluate multiple metrics
-    scoring = ['accuracy', 'precision_weighted', 'recall_weighted', 'f1_weighted']
+    scoring = ["accuracy", "precision_weighted", "recall_weighted", "f1_weighted"]
 
     cv_results = {}
     for metric in scoring:
         try:
-            scores = cross_val_score(
-                classifier, X, y,
-                cv=cv,
-                scoring=metric,
-                n_jobs=-1
-            )
+            scores = cross_val_score(classifier, X, y, cv=cv, scoring=metric, n_jobs=-1)
             cv_results[metric] = {
-                'mean': float(scores.mean()),
-                'std': float(scores.std()),
-                'scores': scores.tolist(),
+                "mean": float(scores.mean()),
+                "std": float(scores.std()),
+                "scores": scores.tolist(),
             }
         except Exception as e:
             logger.warning(f"Could not compute {metric}: {e}")
@@ -320,28 +293,23 @@ def cross_validate_biological(
     # Try ROC-AUC if binary classification
     if len(np.unique(y)) == 2:
         try:
-            auc_scores = cross_val_score(
-                classifier, X, y,
-                cv=cv,
-                scoring='roc_auc',
-                n_jobs=-1
-            )
-            cv_results['roc_auc'] = {
-                'mean': float(auc_scores.mean()),
-                'std': float(auc_scores.std()),
-                'scores': auc_scores.tolist(),
+            auc_scores = cross_val_score(classifier, X, y, cv=cv, scoring="roc_auc", n_jobs=-1)
+            cv_results["roc_auc"] = {
+                "mean": float(auc_scores.mean()),
+                "std": float(auc_scores.std()),
+                "scores": auc_scores.tolist(),
             }
         except Exception as e:
             logger.warning(f"Could not compute ROC-AUC: {e}")
 
     results = {
-        'method': method,
-        'cv_folds': cv_folds,
-        'n_samples': len(X),
-        'n_features': X.shape[1],
-        'n_classes': len(np.unique(y)),
-        'class_distribution': np.bincount(y).tolist(),
-        'cross_validation': cv_results,
+        "method": method,
+        "cv_folds": cv_folds,
+        "n_samples": len(X),
+        "n_features": X.shape[1],
+        "n_classes": len(np.unique(y)),
+        "class_distribution": np.bincount(y).tolist(),
+        "cross_validation": cv_results,
     }
 
     logger.info(
@@ -352,10 +320,7 @@ def cross_validate_biological(
     return results
 
 
-def create_biological_classifier(
-    method: str = "rf",
-    **kwargs: Any
-) -> BiologicalClassifier:
+def create_biological_classifier(method: str = "rf", **kwargs: Any) -> BiologicalClassifier:
     """Create a biological classifier with specified method.
 
     Args:
@@ -404,34 +369,27 @@ def compare_classifiers(
         Dictionary with comparison results
     """
     if methods is None:
-        methods = ['rf', 'gb', 'lr']
+        methods = ["rf", "gb", "lr"]
 
     results = {}
 
     for method in methods:
         try:
-            cv_result = cross_validate_biological(
-                X, y, method=method,
-                cv_folds=cv_folds,
-                random_state=random_state
-            )
+            cv_result = cross_validate_biological(X, y, method=method, cv_folds=cv_folds, random_state=random_state)
             results[method] = cv_result
         except Exception as e:
             logger.error(f"Failed to evaluate {method}: {e}")
-            results[method] = {'error': str(e)}
+            results[method] = {"error": str(e)}
 
     return {
-        'comparison': results,
-        'best_method': max(
-            [(m, r.get('cross_validation', {}).get('accuracy', {}).get('mean', 0))
-             for m, r in results.items() if isinstance(r, dict)],
+        "comparison": results,
+        "best_method": max(
+            [
+                (m, r.get("cross_validation", {}).get("accuracy", {}).get("mean", 0))
+                for m, r in results.items()
+                if isinstance(r, dict)
+            ],
             key=lambda x: x[1],
-            default=(None, 0)
+            default=(None, 0),
         )[0],
     }
-
-
-
-
-
-

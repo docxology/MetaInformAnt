@@ -234,9 +234,3 @@ class TestEdgeCases:
 
         with pytest.raises(ValueError, match="not found in ontology"):
             ancestors(onto, "GO:0008150")
-
-
-
-
-
-

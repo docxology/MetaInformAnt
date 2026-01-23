@@ -8,7 +8,7 @@ All workflows support reproducible results and comprehensive output tracking.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Callable
+from typing import Any, Callable, Dict, List, Optional, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime
 import json
@@ -62,8 +62,14 @@ class SimulationConfig:
 
     def __post_init__(self):
         """Validate configuration after initialization."""
-        valid_types = ["sequence_evolution", "population_genetics", "rna_expression",
-                      "agent_ecosystem", "predator_prey", "competition"]
+        valid_types = [
+            "sequence_evolution",
+            "population_genetics",
+            "rna_expression",
+            "agent_ecosystem",
+            "predator_prey",
+            "competition",
+        ]
         if self.simulation_type not in valid_types:
             raise errors.ValidationError(f"Invalid simulation_type: {self.simulation_type}")
 
@@ -97,10 +103,7 @@ def create_simulation_config(simulation_type: str, parameters: Dict[str, Any]) -
     validation.validate_type(parameters, dict, "parameters")
 
     # Start with defaults for the simulation type
-    config_dict = {
-        "simulation_type": simulation_type,
-        **parameters
-    }
+    config_dict = {"simulation_type": simulation_type, **parameters}
 
     try:
         config = SimulationConfig(**config_dict)
@@ -111,8 +114,9 @@ def create_simulation_config(simulation_type: str, parameters: Dict[str, Any]) -
         raise errors.ConfigurationError(f"Invalid simulation configuration: {e}") from e
 
 
-def run_benchmark_simulation(config: SimulationConfig, n_replicates: int = 10, *,
-                           output_dir: str | Path | None = None) -> Dict[str, Any]:
+def run_benchmark_simulation(
+    config: SimulationConfig, n_replicates: int = 10, *, output_dir: str | Path | None = None
+) -> Dict[str, Any]:
     """Run multiple replicates of a simulation for benchmarking.
 
     Args:
@@ -179,11 +183,13 @@ def run_benchmark_simulation(config: SimulationConfig, n_replicates: int = 10, *
         except Exception as e:
             error_msg = f"Replicate {rep} failed: {e}"
             logger.error(error_msg)
-            results["replicates"].append({
-                "replicate_id": rep,
-                "error": error_msg,
-                "execution_time": None,
-            })
+            results["replicates"].append(
+                {
+                    "replicate_id": rep,
+                    "error": error_msg,
+                    "execution_time": None,
+                }
+            )
 
     # Calculate summary statistics
     successful_runs = [r for r in results["replicates"] if "error" not in r]
@@ -251,7 +257,9 @@ def validate_simulation_output(simulation_data: Any, validation_criteria: Dict[s
             if field in simulation_data:
                 actual_value = simulation_data[field]
                 if not isinstance(actual_value, expected_type):
-                    issues.append(f"Field {field} has wrong type: expected {expected_type.__name__}, got {type(actual_value).__name__}")
+                    issues.append(
+                        f"Field {field} has wrong type: expected {expected_type.__name__}, got {type(actual_value).__name__}"
+                    )
                     is_valid = False
 
         # Range validation
@@ -301,8 +309,13 @@ def validate_simulation_output(simulation_data: Any, validation_criteria: Dict[s
     return is_valid, issues
 
 
-def calibrate_simulation_parameters(target_data: Any, parameter_ranges: Dict[str, Tuple[float, float]], *,
-                                  n_iterations: int = 100, fitness_function: Optional[Callable] = None) -> Dict[str, float]:
+def calibrate_simulation_parameters(
+    target_data: Any,
+    parameter_ranges: Dict[str, Tuple[float, float]],
+    *,
+    n_iterations: int = 100,
+    fitness_function: Optional[Callable] = None,
+) -> Dict[str, float]:
     """Calibrate simulation parameters to match target data.
 
     Args:
@@ -331,9 +344,10 @@ def calibrate_simulation_parameters(target_data: Any, parameter_ranges: Dict[str
     logger.info(f"Starting parameter calibration with {n_iterations} iterations")
 
     best_params = {}
-    best_fitness = float('-inf')
+    best_fitness = float("-inf")
 
     import random
+
     rng = random.Random()
 
     for iteration in range(n_iterations):
@@ -378,9 +392,11 @@ def run_simulation_workflow(config: SimulationConfig) -> Dict[str, Any]:
 
     # Set up random seed for reproducibility
     import random
+
     if config.random_seed is not None:
         random.seed(config.random_seed)
         import numpy as np
+
         np.random.seed(config.random_seed)
 
     rng = random.Random(config.random_seed)
@@ -408,12 +424,14 @@ def run_simulation_workflow(config: SimulationConfig) -> Dict[str, Any]:
         raise errors.ConfigurationError(f"Unsupported simulation type: {config.simulation_type}")
 
     # Add metadata
-    result.update({
-        "simulation_type": config.simulation_type,
-        "config": config.__dict__,
-        "random_seed": config.random_seed,
-        "timestamp": datetime.now().isoformat(),
-    })
+    result.update(
+        {
+            "simulation_type": config.simulation_type,
+            "config": config.__dict__,
+            "random_seed": config.random_seed,
+            "timestamp": datetime.now().isoformat(),
+        }
+    )
 
     # Validate output if requested
     if config.validate_output:
@@ -427,7 +445,7 @@ def run_simulation_workflow(config: SimulationConfig) -> Dict[str, Any]:
             logger.warning(f"Simulation output validation failed: {issues}")
 
     # Save results if output directory specified
-    if hasattr(config, 'output_dir') and config.output_dir:
+    if hasattr(config, "output_dir") and config.output_dir:
         output_dir = Path(config.output_dir)
         paths.ensure_directory(output_dir)
 
@@ -474,17 +492,13 @@ def _run_population_genetics_simulation(config: SimulationConfig, rng: random.Ra
     from .popgen import generate_genotype_matrix, simulate_selection
 
     # Generate initial genotypes
-    genotypes = generate_genotype_matrix(
-        config.population_size, config.n_snps,
-        maf_min=0.05, maf_max=0.5, rng=rng
-    )
+    genotypes = generate_genotype_matrix(config.population_size, config.n_snps, maf_min=0.05, maf_max=0.5, rng=rng)
 
     # Apply selection if specified
     if config.selection_coefficient > 0:
         fitness_effects = np.random.normal(1.0, config.selection_coefficient, (config.n_snps, 3))
         selection_result = simulate_selection(
-            genotypes, fitness_effects, config.n_steps,
-            selection_strength=config.selection_coefficient, rng=rng
+            genotypes, fitness_effects, config.n_steps, selection_strength=config.selection_coefficient, rng=rng
         )
 
         return {
@@ -510,9 +524,7 @@ def _run_rna_simulation(config: SimulationConfig, rng: random.Random) -> Dict[st
     from .rna import simulate_bulk_rnaseq
 
     # Simulate expression data
-    expression_matrix = simulate_bulk_rnaseq(
-        config.n_samples, config.n_genes, rng=rng
-    )
+    expression_matrix = simulate_bulk_rnaseq(config.n_samples, config.n_genes, rng=rng)
 
     return {
         "n_samples": config.n_samples,
@@ -529,16 +541,10 @@ def _run_agent_simulation(config: SimulationConfig, rng: random.Random) -> Dict[
     from .agents import create_ecosystem, run_simulation, get_population_dynamics, calculate_biodiversity_metrics
 
     # Create ecosystem
-    ecosystem = create_ecosystem(
-        config.n_agents, config.agent_types,
-        config.environment_size, rng=rng
-    )
+    ecosystem = create_ecosystem(config.n_agents, config.agent_types, config.environment_size, rng=rng)
 
     # Run simulation
-    snapshots = run_simulation(
-        ecosystem, config.n_steps,
-        record_interval=config.snapshot_interval, rng=rng
-    )
+    snapshots = run_simulation(ecosystem, config.n_steps, record_interval=config.snapshot_interval, rng=rng)
 
     # Analyze results
     population_dynamics = get_population_dynamics(snapshots)
@@ -562,14 +568,12 @@ def _run_predator_prey_simulation(config: SimulationConfig, rng: random.Random) 
 
     # Create ecosystem with predator-prey setup
     ecosystem = create_ecosystem(
-        config.n_agents, ["producer", "consumer"],  # Prey and predators
-        config.environment_size, rng=rng
+        config.n_agents, ["producer", "consumer"], config.environment_size, rng=rng  # Prey and predators
     )
 
     # Run predator-prey simulation
     snapshots = simulate_predator_prey(
-        ecosystem, config.n_steps,
-        predator_efficiency=0.7, prey_reproduction=0.15, rng=rng
+        ecosystem, config.n_steps, predator_efficiency=0.7, prey_reproduction=0.15, rng=rng
     )
 
     return {
@@ -590,16 +594,10 @@ def _run_competition_simulation(config: SimulationConfig, rng: random.Random) ->
     from .agents import create_ecosystem, simulate_competition
 
     # Create ecosystem
-    ecosystem = create_ecosystem(
-        config.n_agents, config.agent_types,
-        config.environment_size, rng=rng
-    )
+    ecosystem = create_ecosystem(config.n_agents, config.agent_types, config.environment_size, rng=rng)
 
     # Run competition simulation
-    snapshots = simulate_competition(
-        ecosystem, config.n_steps,
-        competition_strength=0.6, rng=rng
-    )
+    snapshots = simulate_competition(ecosystem, config.n_steps, competition_strength=0.6, rng=rng)
 
     return {
         "simulation_type": "competition",
@@ -612,9 +610,3 @@ def _run_competition_simulation(config: SimulationConfig, rng: random.Random) ->
         "competition_events_trajectory": [s["competition_events"] for s in snapshots],
         "final_agent_counts": snapshots[-1]["agent_counts"] if snapshots else {},
     }
-
-
-
-
-
-

@@ -38,7 +38,7 @@ class TestGeneratePopulationSequences:
             nucleotide_diversity=0.01,
         )
         assert len(seqs) == 10
-        
+
         # Check that sequences are not all identical
         unique_seqs = len(set(seqs))
         assert unique_seqs > 1
@@ -68,7 +68,7 @@ class TestGeneratePopulationSequences:
         """Test that results are reproducible with seed."""
         rng1 = random.Random(42)
         rng2 = random.Random(42)
-        
+
         seqs1 = generate_population_sequences(
             n_sequences=5,
             sequence_length=100,
@@ -81,7 +81,7 @@ class TestGeneratePopulationSequences:
             mutation_rate=0.01,
             rng=rng2,
         )
-        
+
         assert seqs1 == seqs2
 
 
@@ -108,12 +108,12 @@ class TestGenerateTwoPopulations:
             sequence_length=1000,
             fst=0.5,  # High differentiation
         )
-        
+
         # Check that populations are different
         # (not all sequences identical between populations)
         pop1_consensus = set(pop1)
         pop2_consensus = set(pop2)
-        
+
         # Should have some differences
         assert len(pop1_consensus) > 1 or len(pop2_consensus) > 1
 
@@ -151,7 +151,7 @@ class TestGenerateGenotypeMatrix:
             allele_frequencies=freqs,
         )
         assert len(genotypes) == 100
-        
+
         # Check that frequencies are approximately correct
         for site_idx in range(5):
             site_genotypes = [row[site_idx] for row in genotypes]
@@ -174,12 +174,12 @@ class TestGenerateGenotypeMatrix:
             allele_frequencies=[0.5],
             hwe=False,
         )
-        
+
         # Both should have similar allele frequencies
         # But HWE should have more heterozygotes (2pq = 0.5 for p=0.5)
         hwe_het = sum(1 for row in genotypes_hwe if row[0] == 1)
         non_hwe_het = sum(1 for row in genotypes_non_hwe if row[0] == 1)
-        
+
         # HWE should have ~50% heterozygotes for p=0.5
         assert hwe_het > 30  # Should be around 50
 
@@ -304,4 +304,3 @@ class TestGenerateLinkageDisequilibriumData:
             allele_frequencies=freqs,
         )
         assert len(genotypes) == 100
-

@@ -13,8 +13,7 @@ from metainformant.core import logging
 logger = logging.get_logger(__name__)
 
 
-def global_align(seq1: str, seq2: str, match: int = 1, mismatch: int = -1,
-                gap: int = -2) -> Dict[str, Any]:
+def global_align(seq1: str, seq2: str, match: int = 1, mismatch: int = -1, gap: int = -2) -> Dict[str, Any]:
     """Perform global alignment of two protein sequences using Needleman-Wunsch algorithm.
 
     Args:
@@ -42,37 +41,35 @@ def global_align(seq1: str, seq2: str, match: int = 1, mismatch: int = -1,
     # Fill scoring matrix
     for i in range(1, m + 1):
         for j in range(1, n + 1):
-            match_score = match if seq1[i-1] == seq2[j-1] else mismatch
-            diagonal = score_matrix[i-1][j-1] + match_score
-            up = score_matrix[i-1][j] + gap
-            left = score_matrix[i][j-1] + gap
+            match_score = match if seq1[i - 1] == seq2[j - 1] else mismatch
+            diagonal = score_matrix[i - 1][j - 1] + match_score
+            up = score_matrix[i - 1][j] + gap
+            left = score_matrix[i][j - 1] + gap
             score_matrix[i][j] = max(diagonal, up, left)
 
     # Traceback to get aligned sequences
     aligned_seq1, aligned_seq2 = _traceback_global(seq1, seq2, score_matrix, match, mismatch, gap)
 
     # Calculate identity
-    identity = calculate_alignment_identity({
-        'aligned_seq1': aligned_seq1,
-        'aligned_seq2': aligned_seq2
-    })
+    identity = calculate_alignment_identity({"aligned_seq1": aligned_seq1, "aligned_seq2": aligned_seq2})
 
     result = {
-        'aligned_seq1': aligned_seq1,
-        'aligned_seq2': aligned_seq2,
-        'score': score_matrix[m][n],
-        'identity': identity,
-        'method': 'global',
-        'match_score': match,
-        'mismatch_penalty': mismatch,
-        'gap_penalty': gap
+        "aligned_seq1": aligned_seq1,
+        "aligned_seq2": aligned_seq2,
+        "score": score_matrix[m][n],
+        "identity": identity,
+        "method": "global",
+        "match_score": match,
+        "mismatch_penalty": mismatch,
+        "gap_penalty": gap,
     }
 
     return result
 
 
-def _traceback_global(seq1: str, seq2: str, score_matrix: List[List[int]],
-                     match: int, mismatch: int, gap: int) -> Tuple[str, str]:
+def _traceback_global(
+    seq1: str, seq2: str, score_matrix: List[List[int]], match: int, mismatch: int, gap: int
+) -> Tuple[str, str]:
     """Traceback through scoring matrix for global alignment."""
     aligned_seq1 = []
     aligned_seq2 = []
@@ -81,32 +78,31 @@ def _traceback_global(seq1: str, seq2: str, score_matrix: List[List[int]],
 
     while i > 0 or j > 0:
         if i > 0 and j > 0:
-            match_score = match if seq1[i-1] == seq2[j-1] else mismatch
-            if score_matrix[i][j] == score_matrix[i-1][j-1] + match_score:
-                aligned_seq1.append(seq1[i-1])
-                aligned_seq2.append(seq2[j-1])
+            match_score = match if seq1[i - 1] == seq2[j - 1] else mismatch
+            if score_matrix[i][j] == score_matrix[i - 1][j - 1] + match_score:
+                aligned_seq1.append(seq1[i - 1])
+                aligned_seq2.append(seq2[j - 1])
                 i -= 1
                 j -= 1
                 continue
 
-        if i > 0 and score_matrix[i][j] == score_matrix[i-1][j] + gap:
-            aligned_seq1.append(seq1[i-1])
-            aligned_seq2.append('-')
+        if i > 0 and score_matrix[i][j] == score_matrix[i - 1][j] + gap:
+            aligned_seq1.append(seq1[i - 1])
+            aligned_seq2.append("-")
             i -= 1
-        elif j > 0 and score_matrix[i][j] == score_matrix[i][j-1] + gap:
-            aligned_seq1.append('-')
-            aligned_seq2.append(seq2[j-1])
+        elif j > 0 and score_matrix[i][j] == score_matrix[i][j - 1] + gap:
+            aligned_seq1.append("-")
+            aligned_seq2.append(seq2[j - 1])
             j -= 1
 
     # Reverse the alignments
     aligned_seq1.reverse()
     aligned_seq2.reverse()
 
-    return ''.join(aligned_seq1), ''.join(aligned_seq2)
+    return "".join(aligned_seq1), "".join(aligned_seq2)
 
 
-def local_align(seq1: str, seq2: str, match: int = 1, mismatch: int = -1,
-               gap: int = -2) -> Dict[str, Any]:
+def local_align(seq1: str, seq2: str, match: int = 1, mismatch: int = -1, gap: int = -2) -> Dict[str, Any]:
     """Perform local alignment of two protein sequences using Smith-Waterman algorithm.
 
     Args:
@@ -131,10 +127,10 @@ def local_align(seq1: str, seq2: str, match: int = 1, mismatch: int = -1,
     # Fill scoring matrix
     for i in range(1, m + 1):
         for j in range(1, n + 1):
-            match_score = match if seq1[i-1] == seq2[j-1] else mismatch
-            diagonal = score_matrix[i-1][j-1] + match_score
-            up = score_matrix[i-1][j] + gap
-            left = score_matrix[i][j-1] + gap
+            match_score = match if seq1[i - 1] == seq2[j - 1] else mismatch
+            diagonal = score_matrix[i - 1][j - 1] + match_score
+            up = score_matrix[i - 1][j] + gap
+            left = score_matrix[i][j - 1] + gap
             score_matrix[i][j] = max(0, diagonal, up, left)  # Local alignment allows 0
 
             # Track maximum score position
@@ -146,27 +142,25 @@ def local_align(seq1: str, seq2: str, match: int = 1, mismatch: int = -1,
     aligned_seq1, aligned_seq2 = _traceback_local(seq1, seq2, score_matrix, max_i, max_j, match, mismatch, gap)
 
     # Calculate identity
-    identity = calculate_alignment_identity({
-        'aligned_seq1': aligned_seq1,
-        'aligned_seq2': aligned_seq2
-    })
+    identity = calculate_alignment_identity({"aligned_seq1": aligned_seq1, "aligned_seq2": aligned_seq2})
 
     result = {
-        'aligned_seq1': aligned_seq1,
-        'aligned_seq2': aligned_seq2,
-        'score': max_score,
-        'identity': identity,
-        'method': 'local',
-        'match_score': match,
-        'mismatch_penalty': mismatch,
-        'gap_penalty': gap
+        "aligned_seq1": aligned_seq1,
+        "aligned_seq2": aligned_seq2,
+        "score": max_score,
+        "identity": identity,
+        "method": "local",
+        "match_score": match,
+        "mismatch_penalty": mismatch,
+        "gap_penalty": gap,
     }
 
     return result
 
 
-def _traceback_local(seq1: str, seq2: str, score_matrix: List[List[int]],
-                    start_i: int, start_j: int, match: int, mismatch: int, gap: int) -> Tuple[str, str]:
+def _traceback_local(
+    seq1: str, seq2: str, score_matrix: List[List[int]], start_i: int, start_j: int, match: int, mismatch: int, gap: int
+) -> Tuple[str, str]:
     """Traceback through scoring matrix for local alignment."""
     aligned_seq1 = []
     aligned_seq2 = []
@@ -175,21 +169,21 @@ def _traceback_local(seq1: str, seq2: str, score_matrix: List[List[int]],
 
     while score_matrix[i][j] > 0:
         if i > 0 and j > 0:
-            match_score = match if seq1[i-1] == seq2[j-1] else mismatch
-            if score_matrix[i][j] == score_matrix[i-1][j-1] + match_score:
-                aligned_seq1.append(seq1[i-1])
-                aligned_seq2.append(seq2[j-1])
+            match_score = match if seq1[i - 1] == seq2[j - 1] else mismatch
+            if score_matrix[i][j] == score_matrix[i - 1][j - 1] + match_score:
+                aligned_seq1.append(seq1[i - 1])
+                aligned_seq2.append(seq2[j - 1])
                 i -= 1
                 j -= 1
                 continue
 
-        if i > 0 and score_matrix[i][j] == score_matrix[i-1][j] + gap:
-            aligned_seq1.append(seq1[i-1])
-            aligned_seq2.append('-')
+        if i > 0 and score_matrix[i][j] == score_matrix[i - 1][j] + gap:
+            aligned_seq1.append(seq1[i - 1])
+            aligned_seq2.append("-")
             i -= 1
-        elif j > 0 and score_matrix[i][j] == score_matrix[i][j-1] + gap:
-            aligned_seq1.append('-')
-            aligned_seq2.append(seq2[j-1])
+        elif j > 0 and score_matrix[i][j] == score_matrix[i][j - 1] + gap:
+            aligned_seq1.append("-")
+            aligned_seq2.append(seq2[j - 1])
             j -= 1
         else:
             break  # Should not happen in local alignment
@@ -198,7 +192,7 @@ def _traceback_local(seq1: str, seq2: str, score_matrix: List[List[int]],
     aligned_seq1.reverse()
     aligned_seq2.reverse()
 
-    return ''.join(aligned_seq1), ''.join(aligned_seq2)
+    return "".join(aligned_seq1), "".join(aligned_seq2)
 
 
 def calculate_alignment_identity(alignment: Dict[str, Any]) -> float:
@@ -210,8 +204,8 @@ def calculate_alignment_identity(alignment: Dict[str, Any]) -> float:
     Returns:
         Identity percentage (0.0 to 1.0)
     """
-    aligned1 = alignment.get('aligned_seq1', '')
-    aligned2 = alignment.get('aligned_seq2', '')
+    aligned1 = alignment.get("aligned_seq1", "")
+    aligned2 = alignment.get("aligned_seq2", "")
 
     if not aligned1 or not aligned2 or len(aligned1) != len(aligned2):
         return 0.0
@@ -220,7 +214,7 @@ def calculate_alignment_identity(alignment: Dict[str, Any]) -> float:
     total = 0
 
     for a, b in zip(aligned1, aligned2):
-        if a != '-' and b != '-':
+        if a != "-" and b != "-":
             total += 1
             if a == b:
                 matches += 1
@@ -237,8 +231,8 @@ def alignment_statistics(alignment: Dict[str, Any]) -> Dict[str, float]:
     Returns:
         Dictionary with alignment statistics
     """
-    aligned1 = alignment.get('aligned_seq1', '')
-    aligned2 = alignment.get('aligned_seq2', '')
+    aligned1 = alignment.get("aligned_seq1", "")
+    aligned2 = alignment.get("aligned_seq2", "")
 
     if not aligned1 or not aligned2:
         return {}
@@ -246,15 +240,15 @@ def alignment_statistics(alignment: Dict[str, Any]) -> Dict[str, float]:
     identity = calculate_alignment_identity(alignment)
 
     # Count gaps
-    gaps1 = aligned1.count('-')
-    gaps2 = aligned2.count('-')
+    gaps1 = aligned1.count("-")
+    gaps2 = aligned2.count("-")
 
     # Calculate similarity (considering conservative substitutions)
     similar = 0
     total_positions = 0
 
     for a, b in zip(aligned1, aligned2):
-        if a != '-' and b != '-':
+        if a != "-" and b != "-":
             total_positions += 1
             if a == b:
                 similar += 1
@@ -263,11 +257,11 @@ def alignment_statistics(alignment: Dict[str, Any]) -> Dict[str, float]:
     similarity = similar / total_positions if total_positions > 0 else 0.0
 
     return {
-        'identity': identity,
-        'similarity': similarity,
-        'gaps_seq1': gaps1,
-        'gaps_seq2': gaps2,
-        'aligned_length': len(aligned1),
-        'raw_length_seq1': len(alignment.get('seq1', '')),
-        'raw_length_seq2': len(alignment.get('seq2', ''))
+        "identity": identity,
+        "similarity": similarity,
+        "gaps_seq1": gaps1,
+        "gaps_seq2": gaps2,
+        "aligned_length": len(aligned1),
+        "raw_length_seq1": len(alignment.get("seq1", "")),
+        "raw_length_seq2": len(alignment.get("seq2", "")),
     }

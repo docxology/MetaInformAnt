@@ -139,4 +139,3 @@ class TestRecommendedTempDir:
         output_dir.mkdir()
         temp_dir = disk.get_recommended_temp_dir(tmp_path)
         assert isinstance(temp_dir, Path)
-

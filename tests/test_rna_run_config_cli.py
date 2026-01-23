@@ -16,22 +16,18 @@ import pytest
 def test_cli_run_config_smoke_real_amalgkit(tmp_path: Path):
     """Test real CLI execution with actual amalgkit external tool."""
     import os
+
     # Add src to PYTHONPATH for module import
     env = os.environ.copy()
     env["PYTHONPATH"] = str(Path(__file__).parent.parent / "src")
-    
+
     # Create minimal but valid config file
     work_dir = tmp_path / "work"
     work_dir.mkdir(parents=True, exist_ok=True)
-    cfg_text = (
-        f"work_dir: {work_dir}\n"
-        f"threads: 1\n"
-        f"species_list: []\n"
-        f"steps: {{}}\n"
-    )
+    cfg_text = f"work_dir: {work_dir}\n" f"threads: 1\n" f"species_list: []\n" f"steps: {{}}\n"
     cfg_file = tmp_path / "cfg.yaml"
     cfg_file.write_text(cfg_text, encoding="utf-8")
-    
+
     # Validate config file exists and is readable
     assert cfg_file.exists(), f"Config file not created: {cfg_file}"
     assert cfg_file.stat().st_size > 0, f"Config file is empty: {cfg_file}"
@@ -72,10 +68,11 @@ def test_cli_run_config_smoke_real_amalgkit(tmp_path: Path):
 def test_cli_run_config_offline_behavior(tmp_path: Path):
     """Test CLI behavior when amalgkit is not available (documents real failure modes)."""
     import os
+
     # Add src to PYTHONPATH for module import
     env = os.environ.copy()
     env["PYTHONPATH"] = str(Path(__file__).parent.parent / "src")
-    
+
     if shutil.which("amalgkit"):
         # Amalgkit is available (ensured by fixture) - test real behavior
         pass
@@ -83,15 +80,10 @@ def test_cli_run_config_offline_behavior(tmp_path: Path):
     # Create minimal but valid config file
     work_dir = tmp_path / "work"
     work_dir.mkdir(parents=True, exist_ok=True)
-    cfg_text = (
-        f"work_dir: {work_dir}\n"
-        f"threads: 1\n"
-        f"species_list: []\n"
-        f"steps: {{}}\n"
-    )
+    cfg_text = f"work_dir: {work_dir}\n" f"threads: 1\n" f"species_list: []\n" f"steps: {{}}\n"
     cfg_file = tmp_path / "cfg.yaml"
     cfg_file.write_text(cfg_text, encoding="utf-8")
-    
+
     # Validate config file exists and is readable
     assert cfg_file.exists(), f"Config file not created: {cfg_file}"
     assert cfg_file.stat().st_size > 0, f"Config file is empty: {cfg_file}"

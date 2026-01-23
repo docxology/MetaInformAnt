@@ -119,7 +119,6 @@ __all__ = [
     "Event",
     "EventSequence",
     "EventDatabase",
-
     # Modeling and analysis
     "embeddings",
     "models",
@@ -129,12 +128,10 @@ __all__ = [
     "GRUSequenceModel",
     "LSTMSequenceModel",
     "MultiTaskPredictor",
-
     # Workflow Functions
     "analyze_life_course",
     "compare_populations",
     "intervention_analysis",
-
     # Configuration and visualization
     "config",
     "visualization",
@@ -156,7 +153,6 @@ __all__ = [
     "plot_temporal_density",
     "plot_temporal_patterns",
     "plot_transition_network",
-
     # Utilities
     "temporal_patterns",
     "utils",

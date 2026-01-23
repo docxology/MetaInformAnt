@@ -50,17 +50,13 @@ __all__ = [
     # Sequence and molecular simulations
     "sequences",
     "rna",
-
     # Population and evolutionary simulations
     "popgen",
     "agents",
-
     # Workflow and testing
     "workflow",
-
     # Visualization
     "visualization",
-
     # Direct exports
     "Agent",
     "GridWorld",
@@ -69,6 +65,3 @@ __all__ = [
     "mutate_sequence",
     "simulate_counts_negative_binomial",
 ]
-
-
-

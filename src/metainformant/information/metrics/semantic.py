@@ -16,11 +16,7 @@ from metainformant.core import logging, validation
 logger = logging.get_logger(__name__)
 
 
-def information_content(
-    term_frequencies: Dict[str, int],
-    term: str,
-    total_terms: Optional[int] = None
-) -> float:
+def information_content(term_frequencies: Dict[str, int], term: str, total_terms: Optional[int] = None) -> float:
     """Calculate information content for a term based on frequency.
 
     Information content measures how specific or informative a term is.
@@ -56,10 +52,7 @@ def information_content(
     return -math.log2(probability)
 
 
-def information_content_from_annotations(
-    annotations: Dict[str, Set[str]],
-    term: str
-) -> float:
+def information_content_from_annotations(annotations: Dict[str, Set[str]], term: str) -> float:
     """Calculate information content from gene-term annotation data.
 
     Args:
@@ -90,10 +83,7 @@ def information_content_from_annotations(
     return -math.log2(probability)
 
 
-def semantic_entropy(
-    term_annotations: Dict[str, Set[str]],
-    base: float = 2.0
-) -> float:
+def semantic_entropy(term_annotations: Dict[str, Set[str]], base: float = 2.0) -> float:
     """Calculate semantic entropy of a set of term annotations.
 
     This measures the uncertainty or diversity in the semantic content
@@ -142,11 +132,7 @@ def semantic_entropy(
 
 
 def semantic_similarity(
-    term1: str,
-    term2: str,
-    term_ic: Dict[str, float],
-    hierarchy: Dict[str, Set[str]],
-    method: str = "resnik"
+    term1: str, term2: str, term_ic: Dict[str, float], hierarchy: Dict[str, Set[str]], method: str = "resnik"
 ) -> float:
     """Calculate semantic similarity between two terms.
 
@@ -217,10 +203,7 @@ def semantic_similarity(
 
 
 def semantic_similarity_matrix(
-    terms: List[str],
-    term_ic: Dict[str, float],
-    hierarchy: Dict[str, Set[str]],
-    method: str = "resnik"
+    terms: List[str], term_ic: Dict[str, float], hierarchy: Dict[str, Set[str]], method: str = "resnik"
 ) -> List[List[float]]:
     """Calculate pairwise semantic similarity matrix for a set of terms.
 
@@ -250,9 +233,7 @@ def semantic_similarity_matrix(
                 similarity_matrix[i][j] = 1.0  # Self-similarity
             else:
                 try:
-                    sim = semantic_similarity(
-                        terms[i], terms[j], term_ic, hierarchy, method
-                    )
+                    sim = semantic_similarity(terms[i], terms[j], term_ic, hierarchy, method)
                     similarity_matrix[i][j] = sim
                     similarity_matrix[j][i] = sim  # Symmetric
                 except ValueError:
@@ -289,11 +270,7 @@ def _get_ancestors(term: str, hierarchy: Dict[str, Set[str]]) -> Set[str]:
 
 
 def semantic_distance(
-    term1: str,
-    term2: str,
-    term_ic: Dict[str, float],
-    hierarchy: Dict[str, Set[str]],
-    method: str = "jiang_conrath"
+    term1: str, term2: str, term_ic: Dict[str, float], hierarchy: Dict[str, Set[str]], method: str = "jiang_conrath"
 ) -> float:
     """Calculate semantic distance between two terms.
 
@@ -317,7 +294,7 @@ def semantic_distance(
         common_ancestors = ancestors1.intersection(ancestors2)
 
         if not common_ancestors:
-            return float('inf')
+            return float("inf")
 
         lcs_ic = max(term_ic.get(ca, 0.0) for ca in common_ancestors)
         ic1 = term_ic[term1]
@@ -334,11 +311,7 @@ def semantic_distance(
         raise ValueError(f"Unknown distance method: {method}")
 
 
-def term_specificity(
-    term: str,
-    term_ic: Dict[str, float],
-    hierarchy: Dict[str, Set[str]]
-) -> float:
+def term_specificity(term: str, term_ic: Dict[str, float], hierarchy: Dict[str, Set[str]]) -> float:
     """Calculate term specificity based on information content and hierarchy.
 
     Args:
@@ -372,10 +345,7 @@ def term_specificity(
     return term_ic_val / denominator
 
 
-def ontology_complexity(
-    hierarchy: Dict[str, Set[str]],
-    term_ic: Optional[Dict[str, float]] = None
-) -> Dict[str, float]:
+def ontology_complexity(hierarchy: Dict[str, Set[str]], term_ic: Optional[Dict[str, float]] = None) -> Dict[str, float]:
     """Calculate complexity metrics for an ontology.
 
     Args:
@@ -405,19 +375,19 @@ def ontology_complexity(
         ic_values = list(term_ic.values())
         if ic_values:
             ic_stats = {
-                'ic_mean': sum(ic_values) / len(ic_values),
-                'ic_std': math.sqrt(sum((x - ic_stats.get('ic_mean', 0))**2 for x in ic_values) / len(ic_values)),
-                'ic_min': min(ic_values),
-                'ic_max': max(ic_values),
-                'ic_range': max(ic_values) - min(ic_values),
+                "ic_mean": sum(ic_values) / len(ic_values),
+                "ic_std": math.sqrt(sum((x - ic_stats.get("ic_mean", 0)) ** 2 for x in ic_values) / len(ic_values)),
+                "ic_min": min(ic_values),
+                "ic_max": max(ic_values),
+                "ic_range": max(ic_values) - min(ic_values),
             }
 
     return {
-        'n_terms': n_terms,
-        'n_relationships': n_relationships,
-        'avg_depth': avg_depth,
-        'max_depth': max_depth,
-        'depths': depths,
+        "n_terms": n_terms,
+        "n_relationships": n_relationships,
+        "avg_depth": avg_depth,
+        "max_depth": max_depth,
+        "depths": depths,
         **ic_stats,
     }
 
@@ -444,10 +414,7 @@ def _calculate_term_depth(term: str, hierarchy: Dict[str, Set[str]]) -> int:
     return 1 + max(parent_depths) if parent_depths else 1
 
 
-def term_redundancy(
-    annotations: Dict[str, Set[str]],
-    term: str
-) -> float:
+def term_redundancy(annotations: Dict[str, Set[str]], term: str) -> float:
     """Calculate term redundancy in annotations.
 
     This measures how redundant a term is - i.e., how often it's
@@ -482,10 +449,7 @@ def term_redundancy(
     return 1.0 - (term_alone_occurrences / term_occurrences)
 
 
-def annotation_specificity(
-    annotations: Dict[str, Set[str]],
-    term_ic: Dict[str, float]
-) -> Dict[str, float]:
+def annotation_specificity(annotations: Dict[str, Set[str]], term_ic: Dict[str, float]) -> Dict[str, float]:
     """Calculate specificity scores for all annotations.
 
     Args:
@@ -512,9 +476,3 @@ def annotation_specificity(
         specificity_scores[item] = avg_ic
 
     return specificity_scores
-
-
-
-
-
-

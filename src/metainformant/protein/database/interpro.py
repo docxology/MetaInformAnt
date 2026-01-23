@@ -40,18 +40,18 @@ def fetch_interpro_domains(uniprot_id: str) -> List[Dict[str, Any]]:
         data = response.json()
 
         domains = []
-        for result in data.get('results', []):
-            for entry in result.get('entries', []):
-                for location in entry.get('entry_protein_locations', []):
-                    for fragment in location.get('fragments', []):
+        for result in data.get("results", []):
+            for entry in result.get("entries", []):
+                for location in entry.get("entry_protein_locations", []):
+                    for fragment in location.get("fragments", []):
                         domain = {
-                            'interpro_id': entry.get('accession'),
-                            'name': entry.get('name'),
-                            'type': entry.get('type'),
-                            'start': fragment.get('start'),
-                            'end': fragment.get('end'),
-                            'score': fragment.get('score'),
-                            'database': entry.get('source_database')
+                            "interpro_id": entry.get("accession"),
+                            "name": entry.get("name"),
+                            "type": entry.get("type"),
+                            "start": fragment.get("start"),
+                            "end": fragment.get("end"),
+                            "score": fragment.get("score"),
+                            "database": entry.get("source_database"),
                         }
                         domains.append(domain)
 
@@ -86,18 +86,18 @@ def fetch_interpro_by_accession(interpro_id: str) -> Optional[Dict[str, Any]]:
 
         data = response.json()
 
-        if 'metadata' in data:
-            metadata = data['metadata']
+        if "metadata" in data:
+            metadata = data["metadata"]
             entry = {
-                'accession': metadata.get('accession'),
-                'name': metadata.get('name'),
-                'type': metadata.get('type'),
-                'short_name': metadata.get('short_name'),
-                'description': metadata.get('description'),
-                'source_database': metadata.get('source_database'),
-                'member_databases': metadata.get('member_databases', []),
-                'go_terms': metadata.get('go_terms', []),
-                'literature': metadata.get('literature', [])
+                "accession": metadata.get("accession"),
+                "name": metadata.get("name"),
+                "type": metadata.get("type"),
+                "short_name": metadata.get("short_name"),
+                "description": metadata.get("description"),
+                "source_database": metadata.get("source_database"),
+                "member_databases": metadata.get("member_databases", []),
+                "go_terms": metadata.get("go_terms", []),
+                "literature": metadata.get("literature", []),
             }
 
             return entry
@@ -125,10 +125,7 @@ def search_interpro_entries(query: str, max_results: int = 100) -> List[Dict[str
         >>> # True
     """
     url = "https://www.ebi.ac.uk/interpro/api/entry/InterPro"
-    params = {
-        'search': query,
-        'page_size': min(max_results, 200)  # API limit
-    }
+    params = {"search": query, "page_size": min(max_results, 200)}  # API limit
 
     try:
         response = requests.get(url, params=params, timeout=30)
@@ -137,13 +134,13 @@ def search_interpro_entries(query: str, max_results: int = 100) -> List[Dict[str
         data = response.json()
 
         results = []
-        for result in data.get('results', [])[:max_results]:
+        for result in data.get("results", [])[:max_results]:
             entry = {
-                'accession': result.get('metadata', {}).get('accession'),
-                'name': result.get('metadata', {}).get('name'),
-                'type': result.get('metadata', {}).get('type'),
-                'short_name': result.get('metadata', {}).get('short_name'),
-                'description': result.get('metadata', {}).get('description')
+                "accession": result.get("metadata", {}).get("accession"),
+                "name": result.get("metadata", {}).get("name"),
+                "type": result.get("metadata", {}).get("type"),
+                "short_name": result.get("metadata", {}).get("short_name"),
+                "description": result.get("metadata", {}).get("description"),
             }
             results.append(entry)
 
@@ -173,12 +170,7 @@ def get_interpro_hierarchy(interpro_id: str) -> Dict[str, Any]:
     # This would typically require multiple API calls to get hierarchy
     # Placeholder implementation
     logger.info("InterPro hierarchy retrieval not fully implemented")
-    return {
-        'entry': interpro_id,
-        'parents': [],
-        'children': [],
-        'siblings': []
-    }
+    return {"entry": interpro_id, "parents": [], "children": [], "siblings": []}
 
 
 def batch_fetch_interpro_domains(uniprot_ids: List[str]) -> Dict[str, List[Dict[str, Any]]]:
@@ -243,11 +235,11 @@ def get_interpro_statistics() -> Dict[str, Any]:
     """
     # Placeholder - would query InterPro API for statistics
     stats = {
-        'total_entries': 39000,  # Approximate as of 2024
-        'total_proteins': 2000000,  # Approximate
-        'member_databases': 14,
-        'last_updated': '2024-01',
-        'source': 'InterPro database'
+        "total_entries": 39000,  # Approximate as of 2024
+        "total_proteins": 2000000,  # Approximate
+        "member_databases": 14,
+        "last_updated": "2024-01",
+        "source": "InterPro database",
     }
 
     return stats
@@ -293,7 +285,7 @@ def validate_interpro_accession(interpro_id: str) -> bool:
     import re
 
     # InterPro accession pattern: IPR followed by 6 digits
-    pattern = r'^IPR\d{6}$'
+    pattern = r"^IPR\d{6}$"
 
     return bool(re.match(pattern, interpro_id))
 
@@ -315,8 +307,8 @@ def get_interpro_go_annotations(interpro_id: str) -> List[Dict[str, Any]]:
     """
     entry = fetch_interpro_by_accession(interpro_id)
 
-    if entry and 'go_terms' in entry:
-        return entry['go_terms']
+    if entry and "go_terms" in entry:
+        return entry["go_terms"]
 
     return []
 
@@ -341,12 +333,12 @@ def cross_reference_interpro_uniprot(uniprot_id: str) -> List[Dict[str, Any]]:
     xrefs = []
     for domain in domains:
         xref = {
-            'uniprot_id': uniprot_id,
-            'interpro_id': domain.get('interpro_id'),
-            'domain_name': domain.get('name'),
-            'start': domain.get('start'),
-            'end': domain.get('end'),
-            'evidence': domain.get('database')
+            "uniprot_id": uniprot_id,
+            "interpro_id": domain.get("interpro_id"),
+            "domain_name": domain.get("name"),
+            "start": domain.get("start"),
+            "end": domain.get("end"),
+            "evidence": domain.get("database"),
         }
         xrefs.append(xref)
 

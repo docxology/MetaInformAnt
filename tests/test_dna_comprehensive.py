@@ -86,7 +86,7 @@ class TestDNAComposition:
         assert len(cum_skew) == 4
         assert cum_skew[0] == 1.0
         assert cum_skew[1] == 0.0
-        assert abs(cum_skew[2] - 1.0/3.0) < 0.0001
+        assert abs(cum_skew[2] - 1.0 / 3.0) < 0.0001
         assert cum_skew[3] == 0.0
 
         # Test empty sequence

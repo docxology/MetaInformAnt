@@ -30,6 +30,7 @@ def find_open_reading_frames(dna_sequence: str) -> List[Tuple[int, int, str]]:
         True
     """
     from ..sequence.core import find_orfs
+
     return find_orfs(dna_sequence)
 
 
@@ -57,7 +58,7 @@ def predict_transcription_start_sites(dna_sequence: str, window_size: int = 50) 
 
     # Scan for TATA box
     for i in range(len(dna_sequence) - len(tata_box) + 1):
-        window = dna_sequence[i:i + window_size].upper()
+        window = dna_sequence[i : i + window_size].upper()
 
         # Check for TATA box approximately 25-35bp upstream of TSS
         tata_pos = window.find(tata_box)
@@ -87,6 +88,7 @@ def find_transcription_factor_binding_sites(dna_sequence: str, tf_motifs: Dict[s
         True
     """
     from ..sequence.motifs import find_motifs
+
     return find_motifs(dna_sequence, list(tf_motifs.values()))
 
 
@@ -118,10 +120,10 @@ def calculate_codon_usage_bias(dna_sequence: str) -> Dict[str, float]:
     protein = translate_dna(dna_sequence)
 
     return {
-        'codon_usage': usage,
-        'cai': cai_value,
-        'protein_length': len(protein) if protein else 0,
-        'coding_sequence_length': len(dna_sequence)
+        "codon_usage": usage,
+        "cai": cai_value,
+        "protein_length": len(protein) if protein else 0,
+        "coding_sequence_length": len(dna_sequence),
     }
 
 
@@ -148,20 +150,21 @@ def analyze_gene_structure(dna_sequence: str) -> Dict[str, any]:
 
     # Basic promoter analysis
     promoter_region = dna_sequence[:100] if len(dna_sequence) > 100 else dna_sequence
-    gc_content_promoter = promoter_region.count('G') + promoter_region.count('C')
+    gc_content_promoter = promoter_region.count("G") + promoter_region.count("C")
     gc_content_promoter = gc_content_promoter / len(promoter_region) if promoter_region else 0
 
     return {
-        'orfs': orfs,
-        'transcription_start_sites': tss_sites,
-        'promoter_gc_content': gc_content_promoter,
-        'sequence_length': len(dna_sequence),
-        'potential_coding_regions': len(orfs)
+        "orfs": orfs,
+        "transcription_start_sites": tss_sites,
+        "promoter_gc_content": gc_content_promoter,
+        "sequence_length": len(dna_sequence),
+        "potential_coding_regions": len(orfs),
     }
 
 
-def correlate_dna_with_rna_expression(dna_features: Dict[str, any],
-                                    rna_expression: Dict[str, float]) -> Dict[str, float]:
+def correlate_dna_with_rna_expression(
+    dna_features: Dict[str, any], rna_expression: Dict[str, float]
+) -> Dict[str, float]:
     """Correlate DNA sequence features with RNA expression levels.
 
     Args:
@@ -181,14 +184,14 @@ def correlate_dna_with_rna_expression(dna_features: Dict[str, any],
     correlations = {}
 
     # Simple correlation analysis
-    if 'gc_content' in dna_features and rna_expression:
+    if "gc_content" in dna_features and rna_expression:
         # GC content vs expression correlation
-        gc_values = [dna_features['gc_content']] * len(rna_expression)
+        gc_values = [dna_features["gc_content"]] * len(rna_expression)
         expr_values = list(rna_expression.values())
 
         if len(gc_values) == len(expr_values) and len(gc_values) > 1:
             correlation = calculate_correlation(gc_values, expr_values)
-            correlations['gc_expression'] = correlation
+            correlations["gc_expression"] = correlation
 
     return correlations
 
@@ -202,11 +205,11 @@ def calculate_correlation(x: List[float], y: List[float]) -> float:
     sum_x = sum(x)
     sum_y = sum(y)
     sum_xy = sum(xi * yi for xi, yi in zip(x, y))
-    sum_x2 = sum(xi ** 2 for xi in x)
-    sum_y2 = sum(yi ** 2 for yi in y)
+    sum_x2 = sum(xi**2 for xi in x)
+    sum_y2 = sum(yi**2 for yi in y)
 
     numerator = n * sum_xy - sum_x * sum_y
-    denominator = ((n * sum_x2 - sum_x ** 2) * (n * sum_y2 - sum_y ** 2)) ** 0.5
+    denominator = ((n * sum_x2 - sum_x**2) * (n * sum_y2 - sum_y**2)) ** 0.5
 
     return numerator / denominator if denominator != 0 else 0.0
 
@@ -235,18 +238,18 @@ def predict_splice_sites(dna_sequence: str) -> Dict[str, List[int]]:
 
     # Find donor sites (GT dinucleotides)
     for i in range(len(dna_sequence) - 1):
-        if dna_sequence[i:i+2].upper() == donor_motif:
+        if dna_sequence[i : i + 2].upper() == donor_motif:
             donor_sites.append(i)
 
     # Find acceptor sites (AG dinucleotides)
     for i in range(len(dna_sequence) - 1):
-        if dna_sequence[i:i+2].upper() == acceptor_motif:
+        if dna_sequence[i : i + 2].upper() == acceptor_motif:
             acceptor_sites.append(i)
 
     return {
-        'donor': donor_sites,
-        'acceptor': acceptor_sites,
-        'potential_introns': min(len(donor_sites), len(acceptor_sites))
+        "donor": donor_sites,
+        "acceptor": acceptor_sites,
+        "potential_introns": min(len(donor_sites), len(acceptor_sites)),
     }
 
 
@@ -265,30 +268,25 @@ def analyze_regulatory_elements(dna_sequence: str) -> Dict[str, List[Tuple[int, 
         >>> isinstance(elements, dict)
         True
     """
-    elements = {
-        'tata_box': [],
-        'caat_box': [],
-        'gc_box': [],
-        'enhancer_motifs': []
-    }
+    elements = {"tata_box": [], "caat_box": [], "gc_box": [], "enhancer_motifs": []}
 
     # TATA box
     tata_positions = []
     for match in find_motif_positions(dna_sequence, "TATA"):
-        tata_positions.append((match, dna_sequence[match:match+4]))
-    elements['tata_box'] = tata_positions
+        tata_positions.append((match, dna_sequence[match : match + 4]))
+    elements["tata_box"] = tata_positions
 
     # CAAT box
     caat_positions = []
     for match in find_motif_positions(dna_sequence, "CAAT"):
-        caat_positions.append((match, dna_sequence[match:match+4]))
-    elements['caat_box'] = caat_positions
+        caat_positions.append((match, dna_sequence[match : match + 4]))
+    elements["caat_box"] = caat_positions
 
     # GC box (SP1 binding site)
     gc_positions = []
     for match in find_motif_positions(dna_sequence, "GGGCGG"):
-        gc_positions.append((match, dna_sequence[match:match+6]))
-    elements['gc_box'] = gc_positions
+        gc_positions.append((match, dna_sequence[match : match + 6]))
+    elements["gc_box"] = gc_positions
 
     return elements
 
@@ -298,7 +296,7 @@ def find_motif_positions(sequence: str, motif: str) -> List[int]:
     positions = []
     motif_len = len(motif)
     for i in range(len(sequence) - motif_len + 1):
-        if sequence[i:i + motif_len].upper() == motif.upper():
+        if sequence[i : i + motif_len].upper() == motif.upper():
             positions.append(i)
     return positions
 
@@ -320,21 +318,19 @@ def integrate_dna_rna_data(dna_data: Dict[str, any], rna_data: Dict[str, any]) -
         >>> isinstance(integrated, dict)
         True
     """
-    integrated = {
-        'dna_features': dna_data,
-        'rna_features': rna_data,
-        'integration_metrics': {}
-    }
+    integrated = {"dna_features": dna_data, "rna_features": rna_data, "integration_metrics": {}}
 
     # Calculate integration metrics
-    if 'gc_content' in dna_data and 'expression_level' in rna_data:
+    if "gc_content" in dna_data and "expression_level" in rna_data:
         # GC content vs expression correlation
-        integrated['integration_metrics']['gc_expression_correlation'] = 0.0  # Would need more data
+        integrated["integration_metrics"]["gc_expression_correlation"] = 0.0  # Would need more data
 
-    if 'orf_count' in dna_data and 'transcript_length' in rna_data:
+    if "orf_count" in dna_data and "transcript_length" in rna_data:
         # Coding density
-        coding_density = dna_data['orf_count'] / rna_data['transcript_length'] if rna_data['transcript_length'] > 0 else 0
-        integrated['integration_metrics']['coding_density'] = coding_density
+        coding_density = (
+            dna_data["orf_count"] / rna_data["transcript_length"] if rna_data["transcript_length"] > 0 else 0
+        )
+        integrated["integration_metrics"]["coding_density"] = coding_density
 
     return integrated
 
@@ -355,7 +351,7 @@ def predict_gene_function_from_sequence(dna_sequence: str) -> Dict[str, any]:
         True
     """
     # Analyze sequence features
-    gc_content = (dna_sequence.count('G') + dna_sequence.count('C')) / len(dna_sequence)
+    gc_content = (dna_sequence.count("G") + dna_sequence.count("C")) / len(dna_sequence)
 
     # Find ORFs
     orfs = find_open_reading_frames(dna_sequence)
@@ -367,17 +363,9 @@ def predict_gene_function_from_sequence(dna_sequence: str) -> Dict[str, any]:
     regulatory = analyze_regulatory_elements(dna_sequence)
 
     return {
-        'gc_content': gc_content,
-        'orf_count': len(orfs),
-        'protein_features': codon_analysis,
-        'regulatory_elements': regulatory,
-        'predicted_function': 'unknown'  # Would need ML model for real prediction
+        "gc_content": gc_content,
+        "orf_count": len(orfs),
+        "protein_features": codon_analysis,
+        "regulatory_elements": regulatory,
+        "predicted_function": "unknown",  # Would need ML model for real prediction
     }
-
-
-
-
-
-
-
-

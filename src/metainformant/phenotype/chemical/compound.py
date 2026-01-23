@@ -1,16 +1,18 @@
 from dataclasses import dataclass, field
 from typing import Dict, Optional
 
+
 @dataclass(frozen=True)
 class Compound:
     """
     Represents a single chemical compound.
     """
+
     name: str
     formula: Optional[str] = None
     retention_time: Optional[float] = None
     identifiers: Dict[str, str] = field(default_factory=dict)
-    
+
     def __eq__(self, other):
         if not isinstance(other, Compound):
             return False

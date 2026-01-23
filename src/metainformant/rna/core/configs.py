@@ -58,17 +58,17 @@ def validate_config(config: Dict[str, Any]) -> None:
     Raises:
         ValueError: If configuration is invalid
     """
-    required_fields = ['species_list', 'work_dir']
+    required_fields = ["species_list", "work_dir"]
 
     for field in required_fields:
         if field not in config:
             raise ValueError(f"Missing required configuration field: {field}")
 
-    if not config['species_list']:
+    if not config["species_list"]:
         raise ValueError("Species list cannot be empty")
 
     # Validate species list
-    if not isinstance(config['species_list'], list):
+    if not isinstance(config["species_list"], list):
         raise ValueError("Species list must be a list")
 
     logger.info("Configuration validation passed")
@@ -85,44 +85,40 @@ def create_default_config(species_list: list[str], work_dir: str | Path) -> Dict
         Default configuration dictionary
     """
     config = {
-        'species_list': species_list,
-        'work_dir': str(work_dir),
-        'threads': 4,
-        'memory_gb': 16,
-        'quantification_method': 'kallisto',
-        'normalization_method': 'cstmm',
-        'reference_genome_dir': str(Path(work_dir) / 'reference_genomes'),
-        'output_dirs': {
-            'metadata': 'metadata/',
-            'config': 'config/',
-            'selection': 'selection/',
-            'fastq': 'fastq/',
-            'quant': 'quant/',
-            'merged': 'merged/',
-            'cstmm': 'cstmm/',
-            'curated': 'curated/',
-            'csca': 'csca/',
-            'logs': 'logs/',
-            'reports': 'reports/'
+        "species_list": species_list,
+        "work_dir": str(work_dir),
+        "threads": 4,
+        "memory_gb": 16,
+        "quantification_method": "kallisto",
+        "normalization_method": "cstmm",
+        "reference_genome_dir": str(Path(work_dir) / "reference_genomes"),
+        "output_dirs": {
+            "metadata": "metadata/",
+            "config": "config/",
+            "selection": "selection/",
+            "fastq": "fastq/",
+            "quant": "quant/",
+            "merged": "merged/",
+            "cstmm": "cstmm/",
+            "curated": "curated/",
+            "csca": "csca/",
+            "logs": "logs/",
+            "reports": "reports/",
         },
-        'quality_thresholds': {
-            'min_reads': 1000000,
-            'min_mapping_rate': 0.8,
-            'max_duplicates': 0.5
+        "quality_thresholds": {"min_reads": 1000000, "min_mapping_rate": 0.8, "max_duplicates": 0.5},
+        "amalgkit_params": {
+            "metadata": {},
+            "integrate": {},
+            "config": {},
+            "select": {},
+            "getfastq": {"ENA": True},
+            "quant": {"kallisto": True},
+            "merge": {},
+            "cstmm": {},
+            "curate": {},
+            "csca": {},
+            "sanity": {},
         },
-        'amalgkit_params': {
-            'metadata': {},
-            'integrate': {},
-            'config': {},
-            'select': {},
-            'getfastq': {'ENA': True},
-            'quant': {'kallisto': True},
-            'merge': {},
-            'cstmm': {},
-            'curate': {},
-            'csca': {},
-            'sanity': {}
-        }
     }
 
     return config
@@ -153,15 +149,15 @@ def update_config_from_env(config: Dict[str, Any]) -> Dict[str, Any]:
     import os
 
     # Update threads from environment
-    if 'AK_THREADS' in os.environ:
+    if "AK_THREADS" in os.environ:
         try:
-            config['threads'] = int(os.environ['AK_THREADS'])
+            config["threads"] = int(os.environ["AK_THREADS"])
         except ValueError:
             logger.warning("Invalid AK_THREADS value, using default")
 
     # Update work directory from environment
-    if 'AK_WORK_DIR' in os.environ:
-        config['work_dir'] = os.environ['AK_WORK_DIR']
+    if "AK_WORK_DIR" in os.environ:
+        config["work_dir"] = os.environ["AK_WORK_DIR"]
 
     return config
 
@@ -173,18 +169,18 @@ def get_config_template() -> Dict[str, Any]:
         Configuration template with comments
     """
     template = {
-        '_comment': 'RNA-seq workflow configuration template',
-        'species_list': ['species1', 'species2'],  # List of species to analyze
-        'work_dir': '/path/to/work/directory',     # Working directory
-        'threads': 8,                             # Number of threads to use
-        'quantification_method': 'kallisto',       # Quantification method
-        'normalization_method': 'cstmm',          # Normalization method
-        'reference_genome_dir': '/path/to/genomes', # Reference genome directory
-        'quality_thresholds': {
-            'min_reads': 1000000,     # Minimum reads per sample
-            'min_mapping_rate': 0.8,  # Minimum mapping rate
-            'max_duplicates': 0.5     # Maximum duplicate rate
-        }
+        "_comment": "RNA-seq workflow configuration template",
+        "species_list": ["species1", "species2"],  # List of species to analyze
+        "work_dir": "/path/to/work/directory",  # Working directory
+        "threads": 8,  # Number of threads to use
+        "quantification_method": "kallisto",  # Quantification method
+        "normalization_method": "cstmm",  # Normalization method
+        "reference_genome_dir": "/path/to/genomes",  # Reference genome directory
+        "quality_thresholds": {
+            "min_reads": 1000000,  # Minimum reads per sample
+            "min_mapping_rate": 0.8,  # Minimum mapping rate
+            "max_duplicates": 0.5,  # Maximum duplicate rate
+        },
     }
 
     return template
@@ -196,11 +192,15 @@ class RNAPipelineConfig:
     Provides a structured configuration object for RNA-seq analysis workflows.
     """
 
-    def __init__(self, work_dir: str | Path, threads: int = 8,
-                 species_list: Optional[list[str]] = None,
-                 quantification_method: str = "kallisto",
-                 normalization_method: str = "cstmm",
-                 reference_genome_dir: Optional[str | Path] = None):
+    def __init__(
+        self,
+        work_dir: str | Path,
+        threads: int = 8,
+        species_list: Optional[list[str]] = None,
+        quantification_method: str = "kallisto",
+        normalization_method: str = "cstmm",
+        reference_genome_dir: Optional[str | Path] = None,
+    ):
         """Initialize RNA pipeline configuration.
 
         Args:
@@ -224,12 +224,12 @@ class RNAPipelineConfig:
     def to_dict(self) -> Dict[str, Any]:
         """Convert configuration to dictionary."""
         return {
-            'work_dir': str(self.work_dir),
-            'threads': self.threads,
-            'species_list': self.species_list,
-            'quantification_method': self.quantification_method,
-            'normalization_method': self.normalization_method,
-            'reference_genome_dir': str(self.reference_genome_dir) if self.reference_genome_dir else None,
+            "work_dir": str(self.work_dir),
+            "threads": self.threads,
+            "species_list": self.species_list,
+            "quantification_method": self.quantification_method,
+            "normalization_method": self.normalization_method,
+            "reference_genome_dir": str(self.reference_genome_dir) if self.reference_genome_dir else None,
         }
 
     @classmethod
@@ -241,8 +241,6 @@ class RNAPipelineConfig:
         return f"RNAPipelineConfig(work_dir={self.work_dir}, threads={self.threads}, species={len(self.species_list)})"
 
 
-
-
 @dataclass
 class AmalgkitRunLayout:
     """Layout configuration for amalgkit workflow runs.
@@ -250,6 +248,7 @@ class AmalgkitRunLayout:
     This class defines the directory structure and file organization
     for amalgkit workflow executions.
     """
+
     work_dir: Optional[Path] = None
     metadata_dir: Optional[Path] = None
     fastq_dir: Optional[Path] = None
@@ -264,16 +263,26 @@ class AmalgkitRunLayout:
 
     def __post_init__(self):
         if self.base_dir:
-            if not self.work_dir: self.work_dir = self.base_dir / "work"
-            if not self.metadata_dir: self.metadata_dir = self.base_dir / "metadata"
-            if not self.fastq_dir: self.fastq_dir = self.base_dir / "fastq"
-            if not self.quant_dir: self.quant_dir = self.base_dir / "quant"
-            if not self.merge_dir: self.merge_dir = self.base_dir / "merge"
-            if not self.cstmm_dir: self.cstmm_dir = self.base_dir / "cstmm"
-            if not self.curate_dir: self.curate_dir = self.base_dir / "curate"
-            if not self.csca_dir: self.csca_dir = self.base_dir / "csca"
-            if not self.sanity_dir: self.sanity_dir = self.base_dir / "sanity"
-            if not self.log_dir: self.log_dir = self.base_dir / "logs"
+            if not self.work_dir:
+                self.work_dir = self.base_dir / "work"
+            if not self.metadata_dir:
+                self.metadata_dir = self.base_dir / "metadata"
+            if not self.fastq_dir:
+                self.fastq_dir = self.base_dir / "fastq"
+            if not self.quant_dir:
+                self.quant_dir = self.base_dir / "quant"
+            if not self.merge_dir:
+                self.merge_dir = self.base_dir / "merge"
+            if not self.cstmm_dir:
+                self.cstmm_dir = self.base_dir / "cstmm"
+            if not self.curate_dir:
+                self.curate_dir = self.base_dir / "curate"
+            if not self.csca_dir:
+                self.csca_dir = self.base_dir / "csca"
+            if not self.sanity_dir:
+                self.sanity_dir = self.base_dir / "sanity"
+            if not self.log_dir:
+                self.log_dir = self.base_dir / "logs"
 
     @property
     def merge_table(self) -> Path:
@@ -281,7 +290,7 @@ class AmalgkitRunLayout:
         return self.merge_dir / "expression_matrix.tsv"
 
     @classmethod
-    def from_work_dir(cls, work_dir: str | Path) -> 'AmalgkitRunLayout':
+    def from_work_dir(cls, work_dir: str | Path) -> "AmalgkitRunLayout":
         """Create layout from work directory.
 
         Args:
@@ -295,9 +304,17 @@ class AmalgkitRunLayout:
 
     def create_directories(self) -> None:
         """Create all directories in the layout."""
-        for dir_path in [self.metadata_dir, self.fastq_dir, self.quant_dir,
-                        self.merge_dir, self.cstmm_dir, self.curate_dir,
-                        self.csca_dir, self.sanity_dir, self.log_dir]:
+        for dir_path in [
+            self.metadata_dir,
+            self.fastq_dir,
+            self.quant_dir,
+            self.merge_dir,
+            self.cstmm_dir,
+            self.curate_dir,
+            self.csca_dir,
+            self.sanity_dir,
+            self.log_dir,
+        ]:
             dir_path.mkdir(parents=True, exist_ok=True)
 
     def get_step_output_dir(self, step: str) -> Path:
@@ -310,14 +327,14 @@ class AmalgkitRunLayout:
             Path to step output directory
         """
         step_dirs = {
-            'metadata': self.metadata_dir,
-            'fastq': self.fastq_dir,
-            'quant': self.quant_dir,
-            'merge': self.merge_dir,
-            'cstmm': self.cstmm_dir,
-            'curate': self.curate_dir,
-            'csca': self.csca_dir,
-            'sanity': self.sanity_dir
+            "metadata": self.metadata_dir,
+            "fastq": self.fastq_dir,
+            "quant": self.quant_dir,
+            "merge": self.merge_dir,
+            "cstmm": self.cstmm_dir,
+            "curate": self.curate_dir,
+            "csca": self.csca_dir,
+            "sanity": self.sanity_dir,
         }
 
         if step not in step_dirs:
@@ -332,6 +349,7 @@ class SpeciesProfile:
 
     Contains taxonomic and tissue information for a species.
     """
+
     name: str
     taxon_id: int
     tissues: list[str]
@@ -349,53 +367,53 @@ def build_step_params(species: SpeciesProfile, layout: AmalgkitRunLayout) -> Dic
     """
     # Base parameters for all steps
     base_params = {
-        'work_dir': str(layout.work_dir),
-        'log_dir': str(layout.log_dir),
+        "work_dir": str(layout.work_dir),
+        "log_dir": str(layout.log_dir),
     }
 
     # Step-specific parameters
     step_params = {
-        'metadata': {
+        "metadata": {
             **base_params,
-            'taxon-id': species.taxon_id,
-            'species': species.name,
-            'tissue': species.tissues,
+            "taxon-id": species.taxon_id,
+            "species": species.name,
+            "tissue": species.tissues,
         },
-        'integrate': base_params,
-        'config': base_params,
-        'select': {
+        "integrate": base_params,
+        "config": base_params,
+        "select": {
             **base_params,
-            'taxon-id': species.taxon_id,
-            'species': species.name,
-            'tissue': species.tissues,
+            "taxon-id": species.taxon_id,
+            "species": species.name,
+            "tissue": species.tissues,
         },
-        'getfastq': {
+        "getfastq": {
             **base_params,
-            'out-dir': layout.fastq_dir,
-            'ENA': True,
+            "out-dir": layout.fastq_dir,
+            "ENA": True,
         },
-        'quant': {
+        "quant": {
             **base_params,
-            'out-dir': layout.quant_dir,
-            'kallisto': True,
+            "out-dir": layout.quant_dir,
+            "kallisto": True,
         },
-        'merge': {
+        "merge": {
             **base_params,
-            'out': layout.merge_table,
+            "out": layout.merge_table,
         },
-        'cstmm': {
+        "cstmm": {
             **base_params,
-            'out-dir': layout.cstmm_dir,
+            "out-dir": layout.cstmm_dir,
         },
-        'curate': {
+        "curate": {
             **base_params,
-            'out-dir': layout.curate_dir,
+            "out-dir": layout.curate_dir,
         },
-        'csca': {
+        "csca": {
             **base_params,
-            'out-dir': layout.csca_dir,
+            "out-dir": layout.csca_dir,
         },
-        'sanity': base_params,
+        "sanity": base_params,
     }
 
     return step_params

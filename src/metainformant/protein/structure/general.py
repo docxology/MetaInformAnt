@@ -69,7 +69,7 @@ def compute_rmsd_kabsch(coords_ref: np.ndarray, coords_mobile: np.ndarray) -> fl
 
     # Calculate RMSD
     diff = ref_centered - aligned_mobile
-    rmsd = np.sqrt(np.sum(diff ** 2) / len(diff))
+    rmsd = np.sqrt(np.sum(diff**2) / len(diff))
 
     return rmsd
 
@@ -95,7 +95,7 @@ def compute_rmsd_simple(coords_ref: np.ndarray, coords_mobile: np.ndarray) -> fl
         raise ValueError("Coordinate arrays must have the same shape")
 
     diff = coords_ref - coords_mobile
-    rmsd = np.sqrt(np.sum(diff ** 2) / len(diff))
+    rmsd = np.sqrt(np.sum(diff**2) / len(diff))
 
     return rmsd
 
@@ -148,7 +148,7 @@ def align_structures_kabsch(coords_ref: np.ndarray, coords_mobile: np.ndarray) -
 
     # Calculate RMSD
     diff = ref_centered - (aligned_mobile - ref_centroid)
-    rmsd = np.sqrt(np.sum(diff ** 2) / len(diff))
+    rmsd = np.sqrt(np.sum(diff**2) / len(diff))
 
     return aligned_mobile, rotation, rmsd
 
@@ -172,7 +172,7 @@ def calculate_radius_of_gyration(coords: np.ndarray) -> float:
     """
     centroid = np.mean(coords, axis=0)
     distances = np.linalg.norm(coords - centroid, axis=1)
-    rg = np.sqrt(np.mean(distances ** 2))
+    rg = np.sqrt(np.mean(distances**2))
 
     return rg
 
@@ -242,9 +242,9 @@ def calculate_inertia_tensor(coords: np.ndarray, masses: Optional[np.ndarray] = 
         r = coords_centered[i]
         m = masses[i]
 
-        I[0, 0] += m * (r[1]**2 + r[2]**2)
-        I[1, 1] += m * (r[0]**2 + r[2]**2)
-        I[2, 2] += m * (r[0]**2 + r[1]**2)
+        I[0, 0] += m * (r[1] ** 2 + r[2] ** 2)
+        I[1, 1] += m * (r[0] ** 2 + r[2] ** 2)
+        I[2, 2] += m * (r[0] ** 2 + r[1] ** 2)
 
         I[0, 1] -= m * r[0] * r[1]
         I[0, 2] -= m * r[0] * r[2]
@@ -305,27 +305,24 @@ def calculate_structural_statistics(coords: np.ndarray) -> Dict[str, float]:
     stats = {}
 
     # Basic properties
-    stats['n_atoms'] = len(coords)
-    stats['center_of_mass'] = calculate_center_of_mass(coords).tolist()
+    stats["n_atoms"] = len(coords)
+    stats["center_of_mass"] = calculate_center_of_mass(coords).tolist()
 
     # Size measures
-    stats['radius_of_gyration'] = calculate_radius_of_gyration(coords)
+    stats["radius_of_gyration"] = calculate_radius_of_gyration(coords)
 
     # Bounding box
     min_coords = np.min(coords, axis=0)
     max_coords = np.max(coords, axis=0)
-    stats['bounding_box'] = {
-        'min': min_coords.tolist(),
-        'max': max_coords.tolist(),
-        'dimensions': (max_coords - min_coords).tolist()
+    stats["bounding_box"] = {
+        "min": min_coords.tolist(),
+        "max": max_coords.tolist(),
+        "dimensions": (max_coords - min_coords).tolist(),
     }
 
     # Principal axes
     eigenvals, eigenvecs = find_principal_axes(coords)
-    stats['principal_axes'] = {
-        'eigenvalues': eigenvals.tolist(),
-        'eigenvectors': eigenvecs.tolist()
-    }
+    stats["principal_axes"] = {"eigenvalues": eigenvals.tolist(), "eigenvectors": eigenvecs.tolist()}
 
     return stats
 
@@ -357,7 +354,7 @@ def identify_secondary_structure_elements(coords: np.ndarray, backbone_atoms: Li
     # Simple helix detection based on distance patterns
     for i in range(len(backbone_coords) - 4):
         # Check for alpha helix pattern (3.8 Å rise, 100° rotation)
-        segment = backbone_coords[i:i+5]
+        segment = backbone_coords[i : i + 5]
 
         if len(segment) >= 4:
             # Calculate distances between every 4th residue
@@ -365,12 +362,7 @@ def identify_secondary_structure_elements(coords: np.ndarray, backbone_atoms: Li
             dist2 = np.linalg.norm(segment[1] - segment[4]) if len(segment) > 4 else 0
 
             if 5.0 < dist1 < 7.0:  # Approximate helix distance
-                elements.append({
-                    'type': 'helix',
-                    'start_residue': i,
-                    'end_residue': i + 4,
-                    'confidence': 0.8
-                })
+                elements.append({"type": "helix", "start_residue": i, "end_residue": i + 4, "confidence": 0.8})
 
     return elements
 
@@ -397,6 +389,7 @@ def calculate_solvent_accessible_surface_area(coords: np.ndarray, probe_radius: 
     # Simple approximation using convex hull
     try:
         from scipy.spatial import ConvexHull
+
         hull = ConvexHull(coords)
         # Approximate surface area from convex hull
         surface_area = hull.area

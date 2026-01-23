@@ -31,23 +31,23 @@ def open_text_auto(path: str | Path, mode: str = "rt", encoding: str = "utf-8") 
 # JSON utilities
 def load_json(path: str | Path) -> Any:
     """Load JSON data from a file.
-    
+
     Args:
         path: Path to JSON file (supports gzip compression automatically)
-        
+
     Returns:
         Parsed JSON data (dict, list, or primitive types)
-    
+
     Raises:
         IOError: If file read fails or JSON parsing fails
         FileNotFoundError: If file does not exist
     """
     from .errors import IOError as CoreIOError
-    
+
     p = Path(path)
     if not p.exists():
         raise FileNotFoundError(f"JSON file not found: {path}")
-    
+
     try:
         with open_text_auto(p, mode="rt") as fh:
             return json.load(fh)
@@ -59,24 +59,24 @@ def load_json(path: str | Path) -> Any:
 
 def dump_json(obj: Any, path: str | Path, *, indent: int | None = None, atomic: bool = True) -> None:
     """Write object to JSON file with optional atomic write.
-    
+
     Args:
         obj: Object to serialize (must be JSON-serializable)
         path: Output file path (supports .gz extension for gzip compression)
         indent: Number of spaces for indentation (None for compact)
         atomic: If True, write to temp file then rename (prevents corruption)
-    
+
     Raises:
         IOError: If file write fails
     """
     from .errors import IOError as CoreIOError
-    
+
     p = Path(path)
     ensure_directory(p.parent)
-    
+
     # Check if path ends with .gz to determine compression
     is_gzipped = p.suffix == ".gz"
-    
+
     try:
         if atomic:
             # Atomic write: write to temp file, then rename
@@ -86,7 +86,7 @@ def dump_json(obj: Any, path: str | Path, *, indent: int | None = None, atomic: 
                 temp_path = p.with_suffix(p.suffix + ".tmp")
             else:
                 temp_path = p.with_suffix(p.suffix + ".tmp")
-            
+
             if is_gzipped:
                 with gzip.open(temp_path, "wt", encoding="utf-8") as fh:
                     json.dump(obj, fh, indent=indent, sort_keys=True)
@@ -134,13 +134,14 @@ def dump_yaml(obj: Any, path: str | Path) -> None:
 
     try:
         import yaml
-        with open(path, 'w', encoding='utf-8') as fh:
+
+        with open(path, "w", encoding="utf-8") as fh:
             yaml.dump(obj, fh, default_flow_style=False, sort_keys=False)
     except ImportError:
         # Fallback to JSON with .yaml extension
-        with open(path, 'w', encoding='utf-8') as fh:
+        with open(path, "w", encoding="utf-8") as fh:
             json.dump(obj, fh, indent=2, sort_keys=True)
-            fh.write('\n')
+            fh.write("\n")
 
 
 def load_yaml(path: str | Path) -> Any:
@@ -157,9 +158,10 @@ def load_yaml(path: str | Path) -> Any:
         IOError: If file read fails
     """
     from .errors import IOError as CoreIOError
-    
+
     try:
         import yaml
+
         with open_text_auto(path, mode="rt") as fh:
             return yaml.safe_load(fh)
     except ImportError as e:
@@ -181,9 +183,10 @@ def load_toml(path: str | Path) -> Any:
         IOError: If file read fails
     """
     from .errors import IOError as CoreIOError
-    
+
     try:
         import tomllib
+
         with open(path, "rb") as fh:
             return tomllib.load(fh)
     except ImportError as e:
@@ -192,12 +195,11 @@ def load_toml(path: str | Path) -> Any:
         raise CoreIOError(f"Failed to read TOML file {path}: {e}") from e
 
 
-
-
 def read_parquet(path: str | Path, **kwargs) -> Any:
     """Read Parquet file with pandas."""
     try:
         import pandas as pd
+
         return pd.read_parquet(path, **kwargs)
     except ImportError as e:
         # Preserve original error message if it mentions pyarrow/fastparquet
@@ -211,6 +213,7 @@ def write_parquet(df: Any, path: str | Path, **kwargs) -> None:
     """Write DataFrame to Parquet file."""
     try:
         import pandas as pd
+
         ensure_directory(Path(path).parent)
         df.to_parquet(path, **kwargs)
     except ImportError as e:
@@ -224,10 +227,10 @@ def write_parquet(df: Any, path: str | Path, **kwargs) -> None:
 # JSON Lines utilities
 def read_jsonl(path: str | Path) -> Iterator[dict[str, Any]]:
     """Read JSON Lines format (one JSON object per line).
-    
+
     Args:
         path: Path to JSONL file (supports gzip compression automatically)
-        
+
     Yields:
         Dictionary for each line in the file
     """
@@ -241,20 +244,20 @@ def read_jsonl(path: str | Path) -> Iterator[dict[str, Any]]:
 
 def write_jsonl(rows: Iterable[Mapping[str, Any]], path: str | Path, *, atomic: bool = True) -> None:
     """Write rows as JSON Lines format (one JSON object per line).
-    
+
     Args:
         rows: Iterable of dictionaries to write
         path: Output file path
         atomic: If True, write to temp file then rename (prevents corruption)
-    
+
     Raises:
         IOError: If file write fails
     """
     from .errors import IOError as CoreIOError
-    
+
     p = Path(path)
     ensure_directory(p.parent)
-    
+
     try:
         if atomic:
             temp_path = p.with_suffix(p.suffix + ".tmp")
@@ -275,24 +278,24 @@ def write_jsonl(rows: Iterable[Mapping[str, Any]], path: str | Path, *, atomic: 
 # Delimited text utilities (CSV/TSV)
 def read_delimited(path: str | Path, *, delimiter: str = ",") -> Iterator[dict[str, str]]:
     """Read delimited text file (CSV/TSV) as dictionaries.
-    
+
     Args:
         path: Path to delimited file (supports gzip compression automatically)
         delimiter: Field delimiter (default: comma for CSV, use "\\t" for TSV)
-        
+
     Yields:
         Dictionary for each row with column names as keys
-    
+
     Raises:
         FileNotFoundError: If file does not exist
         IOError: If file read fails
     """
     from .errors import IOError as CoreIOError
-    
+
     p = Path(path)
     if not p.exists():
         raise FileNotFoundError(f"File not found: {path}")
-    
+
     try:
         with open_text_auto(p, mode="rt") as fh:
             reader = csv.DictReader(fh, delimiter=delimiter)
@@ -302,23 +305,25 @@ def read_delimited(path: str | Path, *, delimiter: str = ",") -> Iterator[dict[s
         raise CoreIOError(f"Failed to read delimited file {path}: {e}") from e
 
 
-def write_delimited(rows: Iterable[Mapping[str, Any]], path: str | Path, *, delimiter: str = ",", atomic: bool = True) -> None:
+def write_delimited(
+    rows: Iterable[Mapping[str, Any]], path: str | Path, *, delimiter: str = ",", atomic: bool = True
+) -> None:
     """Write rows to delimited text file (CSV/TSV).
-    
+
     Args:
         rows: Iterable of dictionaries to write
         path: Output file path
         delimiter: Field delimiter (default: comma for CSV, use "\\t" for TSV)
         atomic: If True, write to temp file then rename (prevents corruption)
-    
+
     Raises:
         IOError: If file write fails
     """
     from .errors import IOError as CoreIOError
-    
+
     p = Path(path)
     ensure_directory(p.parent)
-    
+
     try:
         rows_iter = iter(rows)
         try:
@@ -332,9 +337,9 @@ def write_delimited(rows: Iterable[Mapping[str, Any]], path: str | Path, *, deli
             else:
                 p.write_text("")
             return
-        
+
         fieldnames = list(first.keys())
-        
+
         if atomic:
             temp_path = p.with_suffix(p.suffix + ".tmp")
             with open_text_auto(temp_path, mode="wt") as fh:
@@ -358,16 +363,17 @@ def write_delimited(rows: Iterable[Mapping[str, Any]], path: str | Path, *, deli
 # Pandas-compatible CSV/TSV utilities
 def read_csv(path: str | Path, **kwargs) -> Any:
     """Read CSV file using pandas if available, fallback to native implementation.
-    
+
     Args:
         path: Path to CSV file (supports gzip compression automatically)
         **kwargs: Additional arguments passed to pandas.read_csv if pandas available
-        
+
     Returns:
         pandas DataFrame if pandas available, otherwise dict of lists
     """
     try:
         import pandas as pd
+
         return pd.read_csv(path, **kwargs)
     except ImportError:
         # Fallback to native implementation
@@ -387,7 +393,7 @@ def read_csv(path: str | Path, **kwargs) -> Any:
 
 def write_csv(data: Any, path: str | Path, **kwargs) -> None:
     """Write CSV file using pandas if available, fallback to native implementation.
-    
+
     Args:
         data: pandas DataFrame or dict-like data to write
         path: Output file path
@@ -395,6 +401,7 @@ def write_csv(data: Any, path: str | Path, **kwargs) -> None:
     """
     try:
         import pandas as pd
+
         ensure_directory(Path(path).parent)
         # Default to not writing index unless explicitly requested
         if "index" not in kwargs:
@@ -420,11 +427,11 @@ def write_csv(data: Any, path: str | Path, **kwargs) -> None:
         else:
             # Try to convert to list of dicts
             rows = []
-            if hasattr(data, '__iter__'):
+            if hasattr(data, "__iter__"):
                 for row in data:
                     if isinstance(row, dict):
                         rows.append(row)
-                    elif hasattr(row, '_asdict'):  # namedtuple
+                    elif hasattr(row, "_asdict"):  # namedtuple
                         rows.append(row._asdict())
             if rows:
                 write_delimited(rows, path, delimiter=",")
@@ -448,13 +455,13 @@ def write_tsv(data, path: str | Path) -> None:
 
 def download_file(url: str, dest_path: str | Path, *, chunk_size: int = 8192, timeout: int = 30) -> bool:
     """Download a file from a URL to a local path.
-    
+
     Args:
         url: URL to download from
         dest_path: Local path to save the file
         chunk_size: Size of download chunks
         timeout: Request timeout in seconds
-        
+
     Returns:
         True if download successful, False otherwise
     """
@@ -480,16 +487,16 @@ def download_file(url: str, dest_path: str | Path, *, chunk_size: int = 8192, ti
 
 def download_json(url: str, *, timeout: int = 30) -> Any:
     """Download and parse JSON from a URL.
-    
+
     Args:
         url: URL to download JSON from
         timeout: Request timeout in seconds
-        
+
     Returns:
         Parsed JSON data or None if failed
     """
     import requests
-    
+
     try:
         response = requests.get(url, timeout=timeout)
         response.raise_for_status()
@@ -500,16 +507,16 @@ def download_json(url: str, *, timeout: int = 30) -> Any:
 
 def download_text(url: str, *, timeout: int = 30) -> str | None:
     """Download text content from a URL.
-    
+
     Args:
         url: URL to download text from
         timeout: Request timeout in seconds
-        
+
     Returns:
         Text content or None if failed
     """
     import requests
-    
+
     try:
         response = requests.get(url, timeout=timeout)
         response.raise_for_status()
@@ -520,56 +527,57 @@ def download_text(url: str, *, timeout: int = 30) -> str | None:
 
 def download_csv(url: str, *, timeout: int = 30, **kwargs) -> Any:
     """Download and parse CSV from a URL.
-    
+
     Args:
         url: URL to download CSV from
         timeout: Request timeout in seconds
         **kwargs: Additional arguments for pandas.read_csv
-        
+
     Returns:
         DataFrame or None if failed
     """
     try:
         import pandas as pd
         import io
-        
+
         text_content = download_text(url, timeout=timeout)
         if text_content:
             return pd.read_csv(io.StringIO(text_content), **kwargs)
     except Exception:
         pass
-    
+
     return None
 
 
 def batch_download(urls: list[str], dest_dir: str | Path, *, timeout: int = 30) -> dict[str, bool]:
     """Download multiple files in batch.
-    
+
     Args:
         urls: List of URLs to download
         dest_dir: Directory to save files to
         timeout: Request timeout in seconds
-        
+
     Returns:
         Dictionary mapping URLs to success status
     """
     dest_dir = Path(dest_dir)
     ensure_directory(dest_dir)
-    
+
     results = {}
     for i, url in enumerate(urls):
         try:
             from urllib.parse import urlparse
+
             parsed_url = urlparse(url)
             filename = Path(parsed_url.path).name
             if not filename:
                 filename = f"download_{i}.txt"
-            
+
             dest_path = dest_dir / filename
             success = download_file(url, dest_path, timeout=timeout)
             results[url] = success
-            
+
         except Exception:
             results[url] = False
-            
+
     return results

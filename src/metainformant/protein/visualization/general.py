@@ -22,6 +22,7 @@ logger = logging.get_logger(__name__)
 
 try:
     import seaborn as sns
+
     HAS_SEABORN = True
 except ImportError:
     HAS_SEABORN = False
@@ -30,6 +31,7 @@ except ImportError:
 try:
     import plotly.graph_objects as go
     import plotly.express as px
+
     HAS_PLOTLY = True
 except ImportError:
     HAS_PLOTLY = False
@@ -43,7 +45,7 @@ def plot_sequence_logo(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 4),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Create a sequence logo from aligned protein sequences.
 
@@ -65,7 +67,7 @@ def plot_sequence_logo(
 
     # Calculate position-specific amino acid frequencies
     seq_length = len(sequences[0])
-    amino_acids = 'ACDEFGHIKLMNPQRSTVWY'
+    amino_acids = "ACDEFGHIKLMNPQRSTVWY"
     frequencies = np.zeros((seq_length, len(amino_acids)))
 
     for seq in sequences:
@@ -93,19 +95,18 @@ def plot_sequence_logo(
 
     for i, aa in enumerate(amino_acids):
         heights = frequencies[:, i] * info_content
-        ax.bar(range(seq_length), heights, bottom=bottom, color=colors[i],
-               label=aa, alpha=0.8)
+        ax.bar(range(seq_length), heights, bottom=bottom, color=colors[i], label=aa, alpha=0.8)
         bottom += heights
 
     ax.set_xlim(-0.5, seq_length - 0.5)
-    ax.set_xlabel('Position')
-    ax.set_ylabel('Bits')
-    ax.set_title('Sequence Logo')
-    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    ax.set_xlabel("Position")
+    ax.set_ylabel("Bits")
+    ax.set_title("Sequence Logo")
+    ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Sequence logo saved to {output_path}")
 
     return ax
@@ -118,7 +119,7 @@ def plot_domain_architecture(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 3),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot protein domain architecture.
 
@@ -140,7 +141,7 @@ def plot_domain_architecture(
         fig, ax = plt.subplots(figsize=figsize)
 
     # Plot protein backbone
-    ax.plot([0, protein_length], [0, 0], 'k-', linewidth=2, alpha=0.7)
+    ax.plot([0, protein_length], [0, 0], "k-", linewidth=2, alpha=0.7)
 
     # Color palette for different domain types
     colors = plt.cm.Set3(np.linspace(0, 1, 12))
@@ -151,10 +152,10 @@ def plot_domain_architecture(
     type_counter = 0
 
     for domain in domains:
-        start = domain['start']
-        end = domain['end']
-        name = domain.get('name', 'Unknown')
-        domain_type = domain.get('type', 'domain')
+        start = domain["start"]
+        end = domain["end"]
+        name = domain.get("name", "Unknown")
+        domain_type = domain.get("type", "domain")
 
         if domain_type not in domain_types:
             domain_types[domain_type] = colors[type_counter % len(colors)]
@@ -164,29 +165,28 @@ def plot_domain_architecture(
 
         # Draw domain rectangle
         width = end - start
-        rect = Rectangle((start, -0.3), width, 0.6,
-                        facecolor=color, edgecolor='black', alpha=0.8)
+        rect = Rectangle((start, -0.3), width, 0.6, facecolor=color, edgecolor="black", alpha=0.8)
         ax.add_patch(rect)
 
         # Add domain label
         if width > 50:  # Only label if domain is wide enough
-            ax.text(start + width/2, y_offset, name,
-                   ha='center', va='bottom', fontsize=8, rotation=45)
+            ax.text(start + width / 2, y_offset, name, ha="center", va="bottom", fontsize=8, rotation=45)
 
     ax.set_xlim(0, protein_length)
     ax.set_ylim(-0.5, 0.5)
-    ax.set_xlabel('Amino Acid Position')
-    ax.set_title('Protein Domain Architecture')
+    ax.set_xlabel("Amino Acid Position")
+    ax.set_title("Protein Domain Architecture")
     ax.set_yticks([])
 
     # Add legend
-    legend_elements = [plt.Rectangle((0,0),1,1, facecolor=color, label=domain_type)
-                      for domain_type, color in domain_types.items()]
-    ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc='upper left')
+    legend_elements = [
+        plt.Rectangle((0, 0), 1, 1, facecolor=color, label=domain_type) for domain_type, color in domain_types.items()
+    ]
+    ax.legend(handles=legend_elements, bbox_to_anchor=(1.05, 1), loc="upper left")
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Domain architecture plot saved to {output_path}")
 
     return ax
@@ -199,7 +199,7 @@ def plot_secondary_structure(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 4),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot protein secondary structure along sequence.
 
@@ -226,26 +226,25 @@ def plot_secondary_structure(
     positions = np.arange(len(sequence))
 
     # Map secondary structure to colors and labels
-    color_map = {'H': 'red', 'E': 'blue', 'C': 'green', '-': 'gray'}
-    label_map = {'H': 'Helix', 'E': 'Sheet', 'C': 'Coil', '-': 'Unknown'}
+    color_map = {"H": "red", "E": "blue", "C": "green", "-": "gray"}
+    label_map = {"H": "Helix", "E": "Sheet", "C": "Coil", "-": "Unknown"}
 
     # Plot each secondary structure type
     for ss_type, color in color_map.items():
         mask = np.array([c == ss_type for c in secondary_structure])
         if np.any(mask):
-            ax.scatter(positions[mask], np.ones(np.sum(mask)),
-                      c=color, label=label_map[ss_type], alpha=0.7, s=20)
+            ax.scatter(positions[mask], np.ones(np.sum(mask)), c=color, label=label_map[ss_type], alpha=0.7, s=20)
 
     ax.set_xlim(-1, len(sequence))
     ax.set_ylim(0.5, 1.5)
-    ax.set_xlabel('Position')
-    ax.set_title('Secondary Structure')
+    ax.set_xlabel("Position")
+    ax.set_title("Secondary Structure")
     ax.set_yticks([])
-    ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+    ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Secondary structure plot saved to {output_path}")
 
     return ax
@@ -257,7 +256,7 @@ def plot_contact_map(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (8, 8),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot protein contact map.
 
@@ -280,19 +279,18 @@ def plot_contact_map(
         fig, ax = plt.subplots(figsize=figsize)
 
     # Plot contact map
-    im = ax.imshow(contacts, cmap='Blues', aspect='equal',
-                   origin='lower', interpolation='nearest')
+    im = ax.imshow(contacts, cmap="Blues", aspect="equal", origin="lower", interpolation="nearest")
 
-    ax.set_xlabel('Residue i')
-    ax.set_ylabel('Residue j')
-    ax.set_title('Protein Contact Map')
+    ax.set_xlabel("Residue i")
+    ax.set_ylabel("Residue j")
+    ax.set_title("Protein Contact Map")
 
     # Add colorbar
-    plt.colorbar(im, ax=ax, label='Contact Probability')
+    plt.colorbar(im, ax=ax, label="Contact Probability")
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Contact map saved to {output_path}")
 
     return ax
@@ -305,7 +303,7 @@ def plot_ramachandran_plot(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (8, 8),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Create a Ramachandran plot.
 
@@ -331,32 +329,31 @@ def plot_ramachandran_plot(
 
     # Create density plot
     if HAS_SEABORN:
-        sns.kdeplot(x=phi_angles, y=psi_angles, ax=ax,
-                   fill=True, cmap='Blues', alpha=0.7)
+        sns.kdeplot(x=phi_angles, y=psi_angles, ax=ax, fill=True, cmap="Blues", alpha=0.7)
     else:
-        ax.scatter(phi_angles, psi_angles, alpha=0.6, s=1, c='blue')
+        ax.scatter(phi_angles, psi_angles, alpha=0.6, s=1, c="blue")
 
     # Add allowed regions (simplified)
     # Alpha helix region
-    alpha_patch = Circle((-60, -45), 20, facecolor='red', alpha=0.2)
+    alpha_patch = Circle((-60, -45), 20, facecolor="red", alpha=0.2)
     ax.add_patch(alpha_patch)
-    ax.text(-60, -45, 'α-helix', ha='center', va='center', fontsize=10)
+    ax.text(-60, -45, "α-helix", ha="center", va="center", fontsize=10)
 
     # Beta sheet region
-    beta_patch = Rectangle((-120, 120), 60, 60, facecolor='green', alpha=0.2)
+    beta_patch = Rectangle((-120, 120), 60, 60, facecolor="green", alpha=0.2)
     ax.add_patch(beta_patch)
-    ax.text(-90, 150, 'β-sheet', ha='center', va='center', fontsize=10)
+    ax.text(-90, 150, "β-sheet", ha="center", va="center", fontsize=10)
 
     ax.set_xlim(-180, 180)
     ax.set_ylim(-180, 180)
-    ax.set_xlabel('φ (phi)')
-    ax.set_ylabel('ψ (psi)')
-    ax.set_title('Ramachandran Plot')
+    ax.set_xlabel("φ (phi)")
+    ax.set_ylabel("ψ (psi)")
+    ax.set_title("Ramachandran Plot")
     ax.grid(True, alpha=0.3)
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Ramachandran plot saved to {output_path}")
 
     return ax
@@ -369,7 +366,7 @@ def plot_alignment_quality(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 4),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot alignment quality scores along sequence positions.
 
@@ -391,17 +388,17 @@ def plot_alignment_quality(
 
     x_data = positions if positions is not None else np.arange(len(alignment_scores))
 
-    ax.plot(x_data, alignment_scores, 'b-', linewidth=1, alpha=0.8)
-    ax.fill_between(x_data, alignment_scores, alpha=0.3, color='blue')
+    ax.plot(x_data, alignment_scores, "b-", linewidth=1, alpha=0.8)
+    ax.fill_between(x_data, alignment_scores, alpha=0.3, color="blue")
 
-    ax.set_xlabel('Position')
-    ax.set_ylabel('Alignment Quality Score')
-    ax.set_title('Sequence Alignment Quality')
+    ax.set_xlabel("Position")
+    ax.set_ylabel("Alignment Quality Score")
+    ax.set_title("Sequence Alignment Quality")
     ax.grid(True, alpha=0.3)
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Alignment quality plot saved to {output_path}")
 
     return ax
@@ -414,7 +411,7 @@ def plot_conservation_scores(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 4),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot sequence conservation scores.
 
@@ -436,17 +433,17 @@ def plot_conservation_scores(
 
     x_data = positions if positions is not None else np.arange(len(conservation_scores))
 
-    ax.plot(x_data, conservation_scores, 'r-', linewidth=2, alpha=0.8)
-    ax.fill_between(x_data, conservation_scores, alpha=0.3, color='red')
+    ax.plot(x_data, conservation_scores, "r-", linewidth=2, alpha=0.8)
+    ax.fill_between(x_data, conservation_scores, alpha=0.3, color="red")
 
-    ax.set_xlabel('Position')
-    ax.set_ylabel('Conservation Score')
-    ax.set_title('Sequence Conservation')
+    ax.set_xlabel("Position")
+    ax.set_ylabel("Conservation Score")
+    ax.set_title("Sequence Conservation")
     ax.grid(True, alpha=0.3)
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Conservation plot saved to {output_path}")
 
     return ax
@@ -459,7 +456,7 @@ def plot_structure_superposition(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (8, 8),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot superposition of protein structures.
 
@@ -477,7 +474,7 @@ def plot_structure_superposition(
     validation.validate_type(structures, list, "structures")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=figsize, projection='3d')
+        fig, ax = plt.subplots(figsize=figsize, projection="3d")
 
     colors = plt.cm.tab10(np.linspace(0, 1, len(structures)))
 
@@ -486,18 +483,17 @@ def plot_structure_superposition(
             raise ValueError("Coordinates must be n_atoms x 3")
 
         label = labels[i] if labels else f"Structure {i+1}"
-        ax.scatter(coords[:, 0], coords[:, 1], coords[:, 2],
-                  c=[colors[i]], label=label, alpha=0.6, s=1)
+        ax.scatter(coords[:, 0], coords[:, 1], coords[:, 2], c=[colors[i]], label=label, alpha=0.6, s=1)
 
-    ax.set_xlabel('X')
-    ax.set_ylabel('Y')
-    ax.set_zlabel('Z')
-    ax.set_title('Protein Structure Superposition')
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
+    ax.set_zlabel("Z")
+    ax.set_title("Protein Structure Superposition")
     ax.legend()
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Structure superposition plot saved to {output_path}")
 
     return ax
@@ -510,7 +506,7 @@ def plot_protein_properties(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 6),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot various protein physicochemical properties along sequence.
 
@@ -528,7 +524,7 @@ def plot_protein_properties(
     validation.validate_type(sequence, str, "sequence")
 
     if properties is None:
-        properties = ['hydrophobicity', 'charge']
+        properties = ["hydrophobicity", "charge"]
 
     if ax is None:
         fig, ax = plt.subplots(figsize=figsize)
@@ -537,37 +533,69 @@ def plot_protein_properties(
 
     # Amino acid property scales
     hydrophobicity = {
-        'A': 1.8, 'C': 2.5, 'D': -3.5, 'E': -3.5, 'F': 2.8,
-        'G': -0.4, 'H': -3.2, 'I': 4.5, 'K': -3.9, 'L': 3.8,
-        'M': 1.9, 'N': -3.5, 'P': -1.6, 'Q': -3.5, 'R': -4.5,
-        'S': -0.8, 'T': -0.7, 'V': 4.2, 'W': -0.9, 'Y': -1.3
+        "A": 1.8,
+        "C": 2.5,
+        "D": -3.5,
+        "E": -3.5,
+        "F": 2.8,
+        "G": -0.4,
+        "H": -3.2,
+        "I": 4.5,
+        "K": -3.9,
+        "L": 3.8,
+        "M": 1.9,
+        "N": -3.5,
+        "P": -1.6,
+        "Q": -3.5,
+        "R": -4.5,
+        "S": -0.8,
+        "T": -0.7,
+        "V": 4.2,
+        "W": -0.9,
+        "Y": -1.3,
     }
 
     charge = {
-        'A': 0, 'C': 0, 'D': -1, 'E': -1, 'F': 0,
-        'G': 0, 'H': 1, 'I': 0, 'K': 1, 'L': 0,
-        'M': 0, 'N': 0, 'P': 0, 'Q': 0, 'R': 1,
-        'S': 0, 'T': 0, 'V': 0, 'W': 0, 'Y': 0
+        "A": 0,
+        "C": 0,
+        "D": -1,
+        "E": -1,
+        "F": 0,
+        "G": 0,
+        "H": 1,
+        "I": 0,
+        "K": 1,
+        "L": 0,
+        "M": 0,
+        "N": 0,
+        "P": 0,
+        "Q": 0,
+        "R": 1,
+        "S": 0,
+        "T": 0,
+        "V": 0,
+        "W": 0,
+        "Y": 0,
     }
 
     # Calculate properties
-    if 'hydrophobicity' in properties:
+    if "hydrophobicity" in properties:
         hydro_scores = [hydrophobicity.get(aa.upper(), 0) for aa in sequence]
-        ax.plot(positions, hydro_scores, 'b-', label='Hydrophobicity', linewidth=2)
+        ax.plot(positions, hydro_scores, "b-", label="Hydrophobicity", linewidth=2)
 
-    if 'charge' in properties:
+    if "charge" in properties:
         charge_scores = [charge.get(aa.upper(), 0) for aa in sequence]
-        ax.plot(positions, charge_scores, 'r-', label='Charge', linewidth=2)
+        ax.plot(positions, charge_scores, "r-", label="Charge", linewidth=2)
 
-    ax.set_xlabel('Position')
-    ax.set_ylabel('Property Value')
-    ax.set_title('Protein Properties')
+    ax.set_xlabel("Position")
+    ax.set_ylabel("Property Value")
+    ax.set_title("Protein Properties")
     ax.legend()
     ax.grid(True, alpha=0.3)
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Protein properties plot saved to {output_path}")
 
     return ax
@@ -580,7 +608,7 @@ def plot_pdb_structure_quality(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 4),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot PDB structure quality metrics (B-factors).
 
@@ -602,27 +630,24 @@ def plot_pdb_structure_quality(
 
     x_data = positions if positions is not None else np.arange(len(b_factors))
 
-    ax.plot(x_data, b_factors, 'purple', linewidth=1, alpha=0.8)
-    ax.fill_between(x_data, b_factors, alpha=0.3, color='purple')
+    ax.plot(x_data, b_factors, "purple", linewidth=1, alpha=0.8)
+    ax.fill_between(x_data, b_factors, alpha=0.3, color="purple")
 
-    ax.set_xlabel('Residue Position')
-    ax.set_ylabel('B-factor')
-    ax.set_title('PDB Structure Quality (B-factors)')
+    ax.set_xlabel("Residue Position")
+    ax.set_ylabel("B-factor")
+    ax.set_title("PDB Structure Quality (B-factors)")
     ax.grid(True, alpha=0.3)
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"PDB quality plot saved to {output_path}")
 
     return ax
 
 
 def create_interactive_structure_viewer(
-    pdb_data: Dict[str, Any],
-    *,
-    output_path: str | Path | None = None,
-    **kwargs
+    pdb_data: Dict[str, Any], *, output_path: str | Path | None = None, **kwargs
 ) -> Any:
     """Create an interactive 3D structure viewer using Plotly.
 
@@ -640,43 +665,39 @@ def create_interactive_structure_viewer(
     validation.validate_type(pdb_data, dict, "pdb_data")
 
     # Extract coordinates
-    atoms = pdb_data.get('atoms', [])
+    atoms = pdb_data.get("atoms", [])
     if not atoms:
         raise ValueError("No atom data found in PDB data")
 
     # Create 3D scatter plot
-    fig = go.Figure(data=[go.Scatter3d(
-        x=[atom['x'] for atom in atoms],
-        y=[atom['y'] for atom in atoms],
-        z=[atom['z'] for atom in atoms],
-        mode='markers',
-        marker=dict(
-            size=4,
-            color=[atom.get('b_factor', 0) for atom in atoms],
-            colorscale='Viridis',
-            showscale=True,
-            colorbar=dict(title="B-factor")
-        ),
-        text=[f"Residue {atom.get('residue_id', '?')}" for atom in atoms],
-        hovertemplate="Atom: %{text}<br>X: %{x}<br>Y: %{y}<br>Z: %{z}<extra></extra>"
-    )])
+    fig = go.Figure(
+        data=[
+            go.Scatter3d(
+                x=[atom["x"] for atom in atoms],
+                y=[atom["y"] for atom in atoms],
+                z=[atom["z"] for atom in atoms],
+                mode="markers",
+                marker=dict(
+                    size=4,
+                    color=[atom.get("b_factor", 0) for atom in atoms],
+                    colorscale="Viridis",
+                    showscale=True,
+                    colorbar=dict(title="B-factor"),
+                ),
+                text=[f"Residue {atom.get('residue_id', '?')}" for atom in atoms],
+                hovertemplate="Atom: %{text}<br>X: %{x}<br>Y: %{y}<br>Z: %{z}<extra></extra>",
+            )
+        ]
+    )
 
     fig.update_layout(
-        title="Interactive Protein Structure",
-        scene=dict(
-            xaxis_title='X',
-            yaxis_title='Y',
-            zaxis_title='Z'
-        ),
-        **kwargs
+        title="Interactive Protein Structure", scene=dict(xaxis_title="X", yaxis_title="Y", zaxis_title="Z"), **kwargs
     )
 
     if output_path:
         output_path = paths.ensure_directory(Path(output_path).parent)
-        html_path = Path(output_path).with_suffix('.html')
+        html_path = Path(output_path).with_suffix(".html")
         fig.write_html(str(html_path))
         logger.info(f"Interactive structure viewer saved to {html_path}")
 
     return fig
-
-

@@ -51,7 +51,7 @@ def fdr_correction(p_values: List[float], alpha: float = 0.05, method: str = "bh
     if not p_values:
         return [], []
 
-    if method.lower() not in ['bh', 'by']:
+    if method.lower() not in ["bh", "by"]:
         raise ValueError("Method must be 'bh' (Benjamini-Hochberg) or 'by' (Benjamini-Yekutieli)")
 
     # Sort p-values and keep track of original indices
@@ -65,13 +65,11 @@ def fdr_correction(p_values: List[float], alpha: float = 0.05, method: str = "bh
     for i in range(n - 1, -1, -1):
         rank = i + 1
 
-        if method.lower() == 'bh':
-            adjusted_value = min(adjusted_p[i + 1] if i + 1 < n else 1.0,
-                               sorted_p[i] * n / rank)
+        if method.lower() == "bh":
+            adjusted_value = min(adjusted_p[i + 1] if i + 1 < n else 1.0, sorted_p[i] * n / rank)
         else:  # 'by' - Benjamini-Yekutieli
             c_n = sum(1.0 / (k + 1) for k in range(n))
-            adjusted_value = min(adjusted_p[i + 1] if i + 1 < n else 1.0,
-                               sorted_p[i] * c_n * n / rank)
+            adjusted_value = min(adjusted_p[i + 1] if i + 1 < n else 1.0, sorted_p[i] * c_n * n / rank)
 
         adjusted_p[i] = adjusted_value
 
@@ -168,8 +166,7 @@ def qvalue_estimation(p_values: List[float], pi0: Optional[float] = None) -> Tup
 
     for i in range(n - 1, -1, -1):
         rank = i + 1
-        q_value = min(q_values[i + 1] if i + 1 < n else 1.0,
-                     sorted_p[i] * pi0 * n / rank)
+        q_value = min(q_values[i + 1] if i + 1 < n else 1.0, sorted_p[i] * pi0 * n / rank)
         q_values[i] = q_value
 
     # Ensure monotonicity
@@ -181,7 +178,9 @@ def qvalue_estimation(p_values: List[float], pi0: Optional[float] = None) -> Tup
     for i, (original_idx, _) in enumerate(indexed_p):
         original_q[original_idx] = q_values[i]
 
-    logger.info(f"Q-value estimation: π₀={pi0:.3f}, estimated {sum(1 for q in original_q if q <= 0.05)} significant tests")
+    logger.info(
+        f"Q-value estimation: π₀={pi0:.3f}, estimated {sum(1 for q in original_q if q <= 0.05)} significant tests"
+    )
 
     return original_q, pi0
 
@@ -212,12 +211,12 @@ def adjust_p_values(p_values: List[float], method: str = "bonferroni", **kwargs)
         List of adjusted p-values or significance indicators
     """
     if method.lower() == "bonferroni":
-        _, corrected_alpha = bonferroni_correction(p_values, kwargs.get('alpha', 0.05))
+        _, corrected_alpha = bonferroni_correction(p_values, kwargs.get("alpha", 0.05))
         # Convert to adjusted p-values (approximation)
         return [min(p * len(p_values), 1.0) for p in p_values]
 
     elif method.lower() == "fdr":
-        _, adjusted_p = fdr_correction(p_values, kwargs.get('alpha', 0.05), kwargs.get('fdr_method', 'bh'))
+        _, adjusted_p = fdr_correction(p_values, kwargs.get("alpha", 0.05), kwargs.get("fdr_method", "bh"))
         return adjusted_p
 
     elif method.lower() == "genomic_control":
@@ -225,16 +224,8 @@ def adjust_p_values(p_values: List[float], method: str = "bonferroni", **kwargs)
         return adjusted_p
 
     elif method.lower() == "qvalue":
-        q_vals, _ = qvalue_estimation(p_values, kwargs.get('pi0'))
+        q_vals, _ = qvalue_estimation(p_values, kwargs.get("pi0"))
         return q_vals
 
     else:
         raise ValueError(f"Unknown adjustment method: {method}")
-
-
-
-
-
-
-
-

@@ -45,18 +45,23 @@ def fetch_uniprot_record(uniprot_id: str) -> Dict[str, Any]:
 
         # Extract relevant information
         record = {
-            'accession': data.get('primaryAccession'),
-            'entry_name': data.get('uniProtkbId'),
-            'protein_name': data.get('proteinDescription', {}).get('recommendedName', {}).get('fullName', {}).get('value'),
-            'organism': data.get('organism', {}).get('scientificName'),
-            'taxon_id': data.get('organism', {}).get('taxonId'),
-            'sequence': data.get('sequence', {}).get('value'),
-            'length': data.get('sequence', {}).get('length'),
-            'gene_name': data.get('genes', [{}])[0].get('geneName', {}).get('value') if data.get('genes') else None,
-            'function': data.get('comments', [{}])[0].get('texts', [{}])[0].get('value') if data.get('comments') else None,
-            'subcellular_location': _extract_subcellular_location(data),
-            'domains': _extract_domains(data),
-            'ptms': _extract_ptms(data)
+            "accession": data.get("primaryAccession"),
+            "entry_name": data.get("uniProtkbId"),
+            "protein_name": data.get("proteinDescription", {})
+            .get("recommendedName", {})
+            .get("fullName", {})
+            .get("value"),
+            "organism": data.get("organism", {}).get("scientificName"),
+            "taxon_id": data.get("organism", {}).get("taxonId"),
+            "sequence": data.get("sequence", {}).get("value"),
+            "length": data.get("sequence", {}).get("length"),
+            "gene_name": data.get("genes", [{}])[0].get("geneName", {}).get("value") if data.get("genes") else None,
+            "function": (
+                data.get("comments", [{}])[0].get("texts", [{}])[0].get("value") if data.get("comments") else None
+            ),
+            "subcellular_location": _extract_subcellular_location(data),
+            "domains": _extract_domains(data),
+            "ptms": _extract_ptms(data),
         }
 
         logger.info(f"Fetched UniProt record for {uniprot_id}")
@@ -71,11 +76,11 @@ def _extract_subcellular_location(data: Dict[str, Any]) -> List[str]:
     """Extract subcellular location information."""
     locations = []
 
-    comments = data.get('comments', [])
+    comments = data.get("comments", [])
     for comment in comments:
-        if comment.get('commentType') == 'SUBCELLULAR LOCATION':
-            for location in comment.get('subcellularLocations', []):
-                location_name = location.get('location', {}).get('value')
+        if comment.get("commentType") == "SUBCELLULAR LOCATION":
+            for location in comment.get("subcellularLocations", []):
+                location_name = location.get("location", {}).get("value")
                 if location_name:
                     locations.append(location_name)
 
@@ -86,13 +91,13 @@ def _extract_domains(data: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Extract domain information."""
     domains = []
 
-    features = data.get('features', [])
+    features = data.get("features", [])
     for feature in features:
-        if feature.get('type') == 'Domain':
+        if feature.get("type") == "Domain":
             domain = {
-                'name': feature.get('description'),
-                'start': feature.get('location', {}).get('start', {}).get('value'),
-                'end': feature.get('location', {}).get('end', {}).get('value')
+                "name": feature.get("description"),
+                "start": feature.get("location", {}).get("start", {}).get("value"),
+                "end": feature.get("location", {}).get("end", {}).get("value"),
             }
             domains.append(domain)
 
@@ -103,14 +108,14 @@ def _extract_ptms(data: Dict[str, Any]) -> List[Dict[str, Any]]:
     """Extract post-translational modification information."""
     ptms = []
 
-    features = data.get('features', [])
+    features = data.get("features", [])
     for feature in features:
-        if feature.get('type') in ['Modified residue', 'Glycosylation', 'Disulfide bond']:
+        if feature.get("type") in ["Modified residue", "Glycosylation", "Disulfide bond"]:
             ptm = {
-                'type': feature.get('type'),
-                'description': feature.get('description'),
-                'position': feature.get('location', {}).get('position', {}).get('value') or
-                           feature.get('location', {}).get('start', {}).get('value')
+                "type": feature.get("type"),
+                "description": feature.get("description"),
+                "position": feature.get("location", {}).get("position", {}).get("value")
+                or feature.get("location", {}).get("start", {}).get("value"),
             }
             ptms.append(ptm)
 
@@ -161,14 +166,7 @@ def parse_uniprot_fasta_header(header: str) -> Dict[str, str]:
         True
     """
     # UniProt FASTA header format: db|accession|entry_name description OS=organism
-    parsed = {
-        'database': '',
-        'accession': '',
-        'entry_name': '',
-        'description': '',
-        'organism': '',
-        'gene_name': ''
-    }
+    parsed = {"database": "", "accession": "", "entry_name": "", "description": "", "organism": "", "gene_name": ""}
 
     if not header:
         return parsed
@@ -179,33 +177,33 @@ def parse_uniprot_fasta_header(header: str) -> Dict[str, str]:
     if len(parts) >= 1:
         # First part: db|accession|entry_name
         id_part = parts[0]
-        id_components = id_part.split('|')
+        id_components = id_part.split("|")
         if len(id_components) >= 3:
-            parsed['database'] = id_components[0]
-            parsed['accession'] = id_components[1]
-            parsed['entry_name'] = id_components[2]
+            parsed["database"] = id_components[0]
+            parsed["accession"] = id_components[1]
+            parsed["entry_name"] = id_components[2]
 
     # Extract description and organism
     description_parts = []
     i = 1
     while i < len(parts):
         part = parts[i]
-        if part.startswith('OS='):
+        if part.startswith("OS="):
             # Organism
             organism_parts = []
-            while i < len(parts) and not parts[i].startswith('GN=') and not parts[i].startswith('PE='):
+            while i < len(parts) and not parts[i].startswith("GN=") and not parts[i].startswith("PE="):
                 organism_parts.append(parts[i])
                 i += 1
-            parsed['organism'] = ' '.join(organism_parts).replace('OS=', '')
-        elif part.startswith('GN='):
+            parsed["organism"] = " ".join(organism_parts).replace("OS=", "")
+        elif part.startswith("GN="):
             # Gene name
-            parsed['gene_name'] = part.replace('GN=', '')
+            parsed["gene_name"] = part.replace("GN=", "")
             i += 1
         else:
             description_parts.append(part)
             i += 1
 
-    parsed['description'] = ' '.join(description_parts)
+    parsed["description"] = " ".join(description_parts)
 
     return parsed
 
@@ -230,22 +228,21 @@ def get_uniprot_annotations(uniprot_id: str) -> List[Dict[str, Any]]:
         annotations = []
 
         # Extract GO terms
-        if 'go_terms' in record:  # Would need to parse from API response
-            for go_term in record.get('go_terms', []):
-                annotations.append({
-                    'type': 'GO',
-                    'id': go_term.get('id'),
-                    'name': go_term.get('name'),
-                    'aspect': go_term.get('aspect')
-                })
+        if "go_terms" in record:  # Would need to parse from API response
+            for go_term in record.get("go_terms", []):
+                annotations.append(
+                    {
+                        "type": "GO",
+                        "id": go_term.get("id"),
+                        "name": go_term.get("name"),
+                        "aspect": go_term.get("aspect"),
+                    }
+                )
 
         # Extract keywords
-        if 'keywords' in record:  # Would need to parse from API response
-            for keyword in record.get('keywords', []):
-                annotations.append({
-                    'type': 'Keyword',
-                    'name': keyword
-                })
+        if "keywords" in record:  # Would need to parse from API response
+            for keyword in record.get("keywords", []):
+                annotations.append({"type": "Keyword", "name": keyword})
 
         return annotations
 
@@ -271,11 +268,7 @@ def search_uniprot_proteins(query: str, max_results: int = 100) -> List[Dict[str
         >>> # True
     """
     base_url = "https://rest.uniprot.org/uniprotkb/search"
-    params = {
-        'query': query,
-        'format': 'json',
-        'size': min(max_results, 500)  # API limit
-    }
+    params = {"query": query, "format": "json", "size": min(max_results, 500)}  # API limit
 
     try:
         response = requests.get(base_url, params=params, timeout=30)
@@ -284,14 +277,19 @@ def search_uniprot_proteins(query: str, max_results: int = 100) -> List[Dict[str
         data = response.json()
 
         results = []
-        for result in data.get('results', [])[:max_results]:
+        for result in data.get("results", [])[:max_results]:
             protein = {
-                'accession': result.get('primaryAccession'),
-                'entry_name': result.get('uniProtkbId'),
-                'protein_name': result.get('proteinDescription', {}).get('recommendedName', {}).get('fullName', {}).get('value'),
-                'organism': result.get('organism', {}).get('scientificName'),
-                'sequence_length': result.get('sequence', {}).get('length'),
-                'gene_name': result.get('genes', [{}])[0].get('geneName', {}).get('value') if result.get('genes') else None
+                "accession": result.get("primaryAccession"),
+                "entry_name": result.get("uniProtkbId"),
+                "protein_name": result.get("proteinDescription", {})
+                .get("recommendedName", {})
+                .get("fullName", {})
+                .get("value"),
+                "organism": result.get("organism", {}).get("scientificName"),
+                "sequence_length": result.get("sequence", {}).get("length"),
+                "gene_name": (
+                    result.get("genes", [{}])[0].get("geneName", {}).get("value") if result.get("genes") else None
+                ),
             }
             results.append(protein)
 
@@ -327,12 +325,12 @@ def get_uniprot_taxonomy_info(taxon_id: int) -> Optional[Dict[str, Any]]:
         data = response.json()
 
         taxonomy = {
-            'taxon_id': data.get('taxonId'),
-            'scientific_name': data.get('scientificName'),
-            'common_name': data.get('commonName'),
-            'rank': data.get('rank'),
-            'lineage': data.get('lineage', []),
-            'parent_id': data.get('parent', {}).get('taxonId')
+            "taxon_id": data.get("taxonId"),
+            "scientific_name": data.get("scientificName"),
+            "common_name": data.get("commonName"),
+            "rank": data.get("rank"),
+            "lineage": data.get("lineage", []),
+            "parent_id": data.get("parent", {}).get("taxonId"),
         }
 
         return taxonomy
@@ -389,16 +387,17 @@ def validate_uniprot_accession(accession: str) -> bool:
 
     # UniProt accession patterns
     patterns = [
-        r'^[A-Z]\d{5}$',      # P12345
-        r'^[A-Z]\d{9}$',      # A0A1234567
-        r'^[A-Z]\d{3}[A-Z]\d{2}$',  # P123A45 (rare)
+        r"^[A-Z]\d{5}$",  # P12345
+        r"^[A-Z]\d{9}$",  # A0A1234567
+        r"^[A-Z]\d{3}[A-Z]\d{2}$",  # P123A45 (rare)
     ]
 
     return any(re.match(pattern, accession) for pattern in patterns)
 
 
-def map_ids_uniprot(protein_ids: List[str], source_db: str = "auto",
-                   target_format: str = "accession") -> Dict[str, str]:
+def map_ids_uniprot(
+    protein_ids: List[str], source_db: str = "auto", target_format: str = "accession"
+) -> Dict[str, str]:
     """Map protein identifiers to UniProt identifiers.
 
     Args:
@@ -420,62 +419,51 @@ def map_ids_uniprot(protein_ids: List[str], source_db: str = "auto",
     if not protein_ids:
         return {}
 
-    if target_format not in ['accession', 'entry_name', 'id']:
+    if target_format not in ["accession", "entry_name", "id"]:
         raise ValueError(f"Invalid target format: {target_format}")
 
     # UniProt ID mapping API endpoint
     base_url = "https://www.uniprot.org/uploadlists/"
 
     # Prepare the request data
-    ids_string = ' '.join(protein_ids)
+    ids_string = " ".join(protein_ids)
 
     # Determine source database
     if source_db == "auto":
         # Try to auto-detect based on ID patterns
-        if protein_ids and protein_ids[0].startswith('ENSP'):
-            from_db = 'ENSEMBL_PRO_ID'
-        elif protein_ids and protein_ids[0].startswith('NP_'):
-            from_db = 'RefSeq_Protein'
-        elif protein_ids and protein_ids[0].startswith('P'):
-            from_db = 'UniProtKB_AC-ID'
+        if protein_ids and protein_ids[0].startswith("ENSP"):
+            from_db = "ENSEMBL_PRO_ID"
+        elif protein_ids and protein_ids[0].startswith("NP_"):
+            from_db = "RefSeq_Protein"
+        elif protein_ids and protein_ids[0].startswith("P"):
+            from_db = "UniProtKB_AC-ID"
         else:
-            from_db = 'UniProtKB_AC-ID'  # Default fallback
+            from_db = "UniProtKB_AC-ID"  # Default fallback
     else:
         # Map database names to UniProt API codes
         db_mapping = {
-            'ensembl': 'ENSEMBL_PRO_ID',
-            'refseq': 'RefSeq_Protein',
-            'pdb': 'PDB',
-            'geneid': 'GeneID',
-            'uniprot': 'UniProtKB_AC-ID',
+            "ensembl": "ENSEMBL_PRO_ID",
+            "refseq": "RefSeq_Protein",
+            "pdb": "PDB",
+            "geneid": "GeneID",
+            "uniprot": "UniProtKB_AC-ID",
         }
         from_db = db_mapping.get(source_db.lower())
         if from_db is None:
             raise ValueError(f"Unsupported source database: {source_db}")
 
     # Map target format to UniProt API codes
-    to_db = {
-        'accession': 'UniProtKB',
-        'entry_name': 'UniProtKB',
-        'id': 'UniProtKB'
-    }[target_format]
+    to_db = {"accession": "UniProtKB", "entry_name": "UniProtKB", "id": "UniProtKB"}[target_format]
 
     try:
         # Make the API request
         response = requests.post(
-            base_url,
-            data={
-                'from': from_db,
-                'to': to_db,
-                'format': 'tab',
-                'query': ids_string
-            },
-            timeout=60
+            base_url, data={"from": from_db, "to": to_db, "format": "tab", "query": ids_string}, timeout=60
         )
         response.raise_for_status()
 
         # Parse the tab-separated response
-        lines = response.text.strip().split('\n')
+        lines = response.text.strip().split("\n")
         if len(lines) < 2:  # No mappings found
             logger.warning(f"No mappings found for {len(protein_ids)} IDs")
             return {}
@@ -483,14 +471,14 @@ def map_ids_uniprot(protein_ids: List[str], source_db: str = "auto",
         # Skip header line and parse mappings
         mapping = {}
         for line in lines[1:]:
-            if '\t' in line:
-                parts = line.split('\t')
+            if "\t" in line:
+                parts = line.split("\t")
                 if len(parts) >= 2:
                     input_id, uniprot_id = parts[0], parts[1]
 
-                    if target_format == 'accession':
+                    if target_format == "accession":
                         # Extract just the accession part
-                        uniprot_id = uniprot_id.split('_')[0] if '_' in uniprot_id else uniprot_id
+                        uniprot_id = uniprot_id.split("_")[0] if "_" in uniprot_id else uniprot_id
 
                     mapping[input_id] = uniprot_id
 

@@ -14,10 +14,9 @@ from metainformant.core import logging
 logger = logging.get_logger(__name__)
 
 
-def run_workflow_for_species(config_path: str | Path,
-                           species: Optional[str] = None,
-                           steps: Optional[List[str]] = None,
-                           **kwargs: Any) -> Dict[str, Any]:
+def run_workflow_for_species(
+    config_path: str | Path, species: Optional[str] = None, steps: Optional[List[str]] = None, **kwargs: Any
+) -> Dict[str, Any]:
     """Run RNA-seq workflow for a specific species.
 
     Args:
@@ -44,18 +43,18 @@ def run_workflow_for_species(config_path: str | Path,
     workflow_result = execute_workflow(config, steps=steps, **kwargs)
 
     results = {
-        'species': species or config.species_list[0],
-        'config_path': str(config_path),
-        'workflow_result': workflow_result,
-        'return_codes': workflow_result.return_codes,  # Backward compatibility
-        'success': workflow_result.success,
-        'steps_executed': workflow_result.total_steps,
-        'successful_steps': workflow_result.successful_steps,
-        'failed_steps': workflow_result.failed_steps,
-        'step_details': [step.__dict__ for step in workflow_result.steps_executed],
+        "species": species or config.species_list[0],
+        "config_path": str(config_path),
+        "workflow_result": workflow_result,
+        "return_codes": workflow_result.return_codes,  # Backward compatibility
+        "success": workflow_result.success,
+        "steps_executed": workflow_result.total_steps,
+        "successful_steps": workflow_result.successful_steps,
+        "failed_steps": workflow_result.failed_steps,
+        "step_details": [step.__dict__ for step in workflow_result.steps_executed],
         # Backward compatibility for existing scripts
-        'completed': [step.step_name for step in workflow_result.steps_executed if step.success],
-        'failed': [step.step_name for step in workflow_result.steps_executed if not step.success]
+        "completed": [step.step_name for step in workflow_result.steps_executed if step.success],
+        "failed": [step.step_name for step in workflow_result.steps_executed if not step.success],
     }
 
     logger.info(f"Workflow completed for {results['species']}: {'SUCCESS' if results['success'] else 'FAILED'}")
@@ -90,7 +89,6 @@ def cleanup_unquantified_samples(config_path: str | Path) -> tuple[int, int]:
     return (quantified, failed)
 
 
-
 def monitor_workflows(work_dir: Path) -> Dict[str, Any]:
     """Monitor the status of all workflows in a directory.
 
@@ -107,9 +105,9 @@ def monitor_workflows(work_dir: Path) -> Dict[str, Any]:
     assessment = assess_all_species_progress(work_dir)
 
     # Add summary logging
-    overall = assessment.get('overall_status', 'unknown')
-    total = assessment.get('species_summary', {}).get('overall', {}).get('total_species', 0)
-    completed = assessment.get('species_summary', {}).get('overall', {}).get('completed_species', 0)
+    overall = assessment.get("overall_status", "unknown")
+    total = assessment.get("species_summary", {}).get("overall", {}).get("total_species", 0)
+    completed = assessment.get("species_summary", {}).get("overall", {}).get("completed_species", 0)
 
     logger.info(f"Workflow status: {overall} ({completed}/{total} species completed)")
 
@@ -139,11 +137,7 @@ def discover_species_configs(config_dir: Path) -> List[Dict[str, Any]]:
             if "template" in species_name.lower() or "test" in species_name.lower():
                 continue
 
-            config_info = {
-                'species': species_name,
-                'config_file': str(config_file),
-                'path': config_file
-            }
+            config_info = {"species": species_name, "config_file": str(config_file), "path": config_file}
 
             configs.append(config_info)
 
@@ -153,10 +147,3 @@ def discover_species_configs(config_dir: Path) -> List[Dict[str, Any]]:
     logger.info(f"Discovered {len(configs)} species configuration files")
 
     return configs
-
-
-
-
-
-
-

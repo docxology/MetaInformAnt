@@ -16,6 +16,7 @@ logger = logging.get_logger(__name__)
 # Optional dependencies
 try:
     import networkx as nx
+
     HAS_NETWORKX = True
 except ImportError:
     HAS_NETWORKX = False
@@ -23,6 +24,7 @@ except ImportError:
 
 try:
     import scipy.stats as stats
+
     HAS_SCIPY = True
 except ImportError:
     HAS_SCIPY = False
@@ -35,7 +37,7 @@ def pathway_enrichment_analysis(
     pathways: Dict[str, List[str]],
     method: str = "fisher",
     correction: str = "bonferroni",
-    **kwargs: Any
+    **kwargs: Any,
 ) -> List[Dict[str, Any]]:
     """Perform pathway enrichment analysis.
 
@@ -82,10 +84,9 @@ def pathway_enrichment_analysis(
 
         # Fisher's exact test or hypergeometric test
         if method == "fisher":
-            odds_ratio, p_value = stats.fisher_exact([
-                [genes_in_pathway, genes_not_in_pathway],
-                [background_in_pathway, background_not_in_pathway]
-            ])
+            odds_ratio, p_value = stats.fisher_exact(
+                [[genes_in_pathway, genes_not_in_pathway], [background_in_pathway, background_not_in_pathway]]
+            )
         elif method == "hypergeometric":
             # Hypergeometric test
             M = len(background_set & pathway_set)  # White balls in urn
@@ -93,8 +94,9 @@ def pathway_enrichment_analysis(
             k = genes_in_pathway  # White balls drawn
 
             p_value = stats.hypergeom.sf(k - 1, M, n, len(pathway_set))
-            odds_ratio = (genes_in_pathway / max(genes_not_in_pathway, 1)) / \
-                        (background_in_pathway / max(background_not_in_pathway, 1))
+            odds_ratio = (genes_in_pathway / max(genes_not_in_pathway, 1)) / (
+                background_in_pathway / max(background_not_in_pathway, 1)
+            )
         else:
             raise ValueError(f"Unknown method: {method}")
 
@@ -103,21 +105,21 @@ def pathway_enrichment_analysis(
         enrichment_ratio = genes_in_pathway / expected if expected > 0 else 1.0
 
         result = {
-            'pathway': pathway_name,
-            'p_value': p_value,
-            'odds_ratio': odds_ratio,
-            'enrichment_ratio': enrichment_ratio,
-            'genes_in_pathway': genes_in_pathway,
-            'pathway_size': len(pathway_set),
-            'genes_tested': len(genes),
-            'background_size': len(background_set),
-            'method': method,
+            "pathway": pathway_name,
+            "p_value": p_value,
+            "odds_ratio": odds_ratio,
+            "enrichment_ratio": enrichment_ratio,
+            "genes_in_pathway": genes_in_pathway,
+            "pathway_size": len(pathway_set),
+            "genes_tested": len(genes),
+            "background_size": len(background_set),
+            "method": method,
         }
 
         results.append(result)
 
     # Apply multiple testing correction
-    p_values = [r['p_value'] for r in results]
+    p_values = [r["p_value"] for r in results]
 
     if correction == "bonferroni":
         corrected_p_values = [min(p * len(results), 1.0) for p in p_values]
@@ -133,27 +135,23 @@ def pathway_enrichment_analysis(
 
             # Ensure monotonicity
             if i > 0:
-                corrected_p_values[idx] = min(corrected_p_values[idx],
-                                            corrected_p_values[sorted_indices[i-1]])
+                corrected_p_values[idx] = min(corrected_p_values[idx], corrected_p_values[sorted_indices[i - 1]])
     else:
         corrected_p_values = p_values
 
     # Add corrected p-values
     for result, corrected_p in zip(results, corrected_p_values):
-        result['p_value_corrected'] = corrected_p
-        result['significant'] = corrected_p < 0.05
+        result["p_value_corrected"] = corrected_p
+        result["significant"] = corrected_p < 0.05
 
     # Sort by corrected p-value
-    results.sort(key=lambda x: x['p_value_corrected'])
+    results.sort(key=lambda x: x["p_value_corrected"])
 
     logger.info(f"Pathway enrichment analysis completed: {len(results)} pathways tested")
     return results
 
 
-def pathway_topology_analysis(
-    pathway_graph: Any,
-    **kwargs: Any
-) -> Dict[str, Any]:
+def pathway_topology_analysis(pathway_graph: Any, **kwargs: Any) -> Dict[str, Any]:
     """Analyze topological properties of pathway graphs.
 
     Args:
@@ -170,59 +168,55 @@ def pathway_topology_analysis(
         raise ImportError("networkx required for topology analysis")
 
     analysis = {
-        'n_nodes': len(pathway_graph.nodes()),
-        'n_edges': len(pathway_graph.edges()),
-        'directed': pathway_graph.is_directed(),
+        "n_nodes": len(pathway_graph.nodes()),
+        "n_edges": len(pathway_graph.edges()),
+        "directed": pathway_graph.is_directed(),
     }
 
-    if analysis['n_nodes'] == 0:
+    if analysis["n_nodes"] == 0:
         return analysis
 
     # Degree analysis
     degrees = [d for n, d in pathway_graph.degree()]
-    analysis['degree_stats'] = {
-        'mean': float(sum(degrees) / len(degrees)),
-        'max': max(degrees),
-        'min': min(degrees),
+    analysis["degree_stats"] = {
+        "mean": float(sum(degrees) / len(degrees)),
+        "max": max(degrees),
+        "min": min(degrees),
     }
 
     # Clustering coefficient
     if not pathway_graph.is_directed():
         try:
             clustering = nx.average_clustering(pathway_graph)
-            analysis['average_clustering'] = clustering
-        except:
-            analysis['average_clustering'] = None
+            analysis["average_clustering"] = clustering
+        except (nx.NetworkXError, ZeroDivisionError):
+            analysis["average_clustering"] = None
 
     # Centrality measures
     try:
         betweenness = nx.betweenness_centrality(pathway_graph)
-        analysis['betweenness_centrality'] = dict(betweenness)
-    except:
-        analysis['betweenness_centrality'] = {}
+        analysis["betweenness_centrality"] = dict(betweenness)
+    except (nx.NetworkXError, ZeroDivisionError):
+        analysis["betweenness_centrality"] = {}
 
     # Connected components
     if not pathway_graph.is_directed():
         components = list(nx.connected_components(pathway_graph))
-        analysis['connected_components'] = {
-            'n_components': len(components),
-            'sizes': [len(c) for c in components],
+        analysis["connected_components"] = {
+            "n_components": len(components),
+            "sizes": [len(c) for c in components],
         }
 
     # Graph density
-    max_edges = analysis['n_nodes'] * (analysis['n_nodes'] - 1)
+    max_edges = analysis["n_nodes"] * (analysis["n_nodes"] - 1)
     if pathway_graph.is_directed():
         max_edges *= 2
-    analysis['density'] = analysis['n_edges'] / max_edges if max_edges > 0 else 0
+    analysis["density"] = analysis["n_edges"] / max_edges if max_edges > 0 else 0
 
     return analysis
 
 
-def find_pathway_modules(
-    pathway_graph: Any,
-    method: str = "louvain",
-    **kwargs: Any
-) -> List[List[str]]:
+def find_pathway_modules(pathway_graph: Any, method: str = "louvain", **kwargs: Any) -> List[List[str]]:
     """Identify functional modules within pathways.
 
     Args:
@@ -245,11 +239,7 @@ def find_pathway_modules(
     return detect_communities(pathway_graph, method=method, **kwargs)
 
 
-def pathway_similarity_analysis(
-    pathways: Dict[str, Any],
-    method: str = "jaccard",
-    **kwargs: Any
-) -> Dict[str, Any]:
+def pathway_similarity_analysis(pathways: Dict[str, Any], method: str = "jaccard", **kwargs: Any) -> Dict[str, Any]:
     """Analyze similarities between pathways.
 
     Args:
@@ -263,7 +253,7 @@ def pathway_similarity_analysis(
     Raises:
         ValueError: If invalid method
     """
-    if method not in ['jaccard', 'overlap', 'cosine']:
+    if method not in ["jaccard", "overlap", "cosine"]:
         raise ValueError(f"Unknown similarity method: {method}")
 
     pathway_names = list(pathways.keys())
@@ -276,15 +266,15 @@ def pathway_similarity_analysis(
             name1, name2 = pathway_names[i], pathway_names[j]
 
             # Get gene sets for each pathway
-            if isinstance(pathways[name1], dict) and 'genes' in pathways[name1]:
-                genes1 = set(pathways[name1]['genes'])
+            if isinstance(pathways[name1], dict) and "genes" in pathways[name1]:
+                genes1 = set(pathways[name1]["genes"])
             elif isinstance(pathways[name1], list):
                 genes1 = set(pathways[name1])
             else:
                 genes1 = set()
 
-            if isinstance(pathways[name2], dict) and 'genes' in pathways[name2]:
-                genes2 = set(pathways[name2]['genes'])
+            if isinstance(pathways[name2], dict) and "genes" in pathways[name2]:
+                genes2 = set(pathways[name2]["genes"])
             elif isinstance(pathways[name2], list):
                 genes2 = set(pathways[name2])
             else:
@@ -308,17 +298,15 @@ def pathway_similarity_analysis(
             similarity_matrix[f"{name1}_{name2}"] = similarity
 
     return {
-        'similarities': similarity_matrix,
-        'method': method,
-        'n_pathways': n_pathways,
-        'pathway_names': pathway_names,
+        "similarities": similarity_matrix,
+        "method": method,
+        "n_pathways": n_pathways,
+        "pathway_names": pathway_names,
     }
 
 
 def pathway_hierarchy_analysis(
-    pathways: Dict[str, Any],
-    hierarchy_data: Optional[Dict[str, List[str]]] = None,
-    **kwargs: Any
+    pathways: Dict[str, Any], hierarchy_data: Optional[Dict[str, List[str]]] = None, **kwargs: Any
 ) -> Dict[str, Any]:
     """Analyze pathway hierarchies and relationships.
 
@@ -331,8 +319,8 @@ def pathway_hierarchy_analysis(
         Dictionary with hierarchy analysis
     """
     analysis = {
-        'n_pathways': len(pathways),
-        'hierarchy_levels': {},
+        "n_pathways": len(pathways),
+        "hierarchy_levels": {},
     }
 
     if hierarchy_data:
@@ -355,9 +343,9 @@ def pathway_hierarchy_analysis(
                         level = max(levels.get(pred, 0) for pred in predecessors) + 1
                     levels[node] = level
 
-                analysis['hierarchy_levels'] = levels
-                analysis['max_depth'] = max(levels.values()) if levels else 0
-                analysis['n_roots'] = sum(1 for level in levels.values() if level == 0)
+                analysis["hierarchy_levels"] = levels
+                analysis["max_depth"] = max(levels.values()) if levels else 0
+                analysis["n_roots"] = sum(1 for level in levels.values() if level == 0)
 
             except nx.NetworkXError:
                 logger.warning("Could not perform topological sort on hierarchy")
@@ -365,11 +353,7 @@ def pathway_hierarchy_analysis(
     return analysis
 
 
-def create_pathway_network(
-    pathways: Dict[str, Any],
-    similarity_threshold: float = 0.1,
-    **kwargs: Any
-) -> Any:
+def create_pathway_network(pathways: Dict[str, Any], similarity_threshold: float = 0.1, **kwargs: Any) -> Any:
     """Create a network of pathway relationships.
 
     Args:
@@ -397,19 +381,19 @@ def create_pathway_network(
         pathway_network.add_node(pathway_name, **pathway_data)
 
     # Add similarity edges
-    for key, similarity in similarities['similarities'].items():
+    for key, similarity in similarities["similarities"].items():
         if similarity >= similarity_threshold:
-            pathway1, pathway2 = key.split('_', 1)
+            pathway1, pathway2 = key.split("_", 1)
             pathway_network.add_edge(pathway1, pathway2, similarity=similarity)
 
-    logger.info(f"Created pathway network with {len(pathway_network.nodes())} nodes and {len(pathway_network.edges())} edges")
+    logger.info(
+        f"Created pathway network with {len(pathway_network.nodes())} nodes and {len(pathway_network.edges())} edges"
+    )
     return pathway_network
 
 
 def pathway_disease_association(
-    pathway_results: List[Dict[str, Any]],
-    disease_genes: Dict[str, List[str]],
-    **kwargs: Any
+    pathway_results: List[Dict[str, Any]], disease_genes: Dict[str, List[str]], **kwargs: Any
 ) -> Dict[str, Any]:
     """Associate pathways with diseases based on enrichment results.
 
@@ -427,7 +411,7 @@ def pathway_disease_association(
         disease_associations = []
 
         for pathway_result in pathway_results:
-            pathway_name = pathway_result['pathway']
+            pathway_name = pathway_result["pathway"]
             enriched_genes = []  # Would need pathway gene lists
 
             # Calculate overlap
@@ -436,25 +420,23 @@ def pathway_disease_association(
             overlap = len(pathway_gene_set & disease_gene_set)
 
             if overlap > 0:
-                disease_associations.append({
-                    'pathway': pathway_name,
-                    'overlap': overlap,
-                    'p_value': pathway_result.get('p_value_corrected', 1.0),
-                })
+                disease_associations.append(
+                    {
+                        "pathway": pathway_name,
+                        "overlap": overlap,
+                        "p_value": pathway_result.get("p_value_corrected", 1.0),
+                    }
+                )
 
         if disease_associations:
             # Sort by significance
-            disease_associations.sort(key=lambda x: x['p_value'])
+            disease_associations.sort(key=lambda x: x["p_value"])
             associations[disease] = disease_associations
 
     return associations
 
 
-def pathway_visualization_data(
-    pathway_graph: Any,
-    layout_method: str = "spring",
-    **kwargs: Any
-) -> Dict[str, Any]:
+def pathway_visualization_data(pathway_graph: Any, layout_method: str = "spring", **kwargs: Any) -> Dict[str, Any]:
     """Prepare pathway data for visualization.
 
     Args:
@@ -485,9 +467,9 @@ def pathway_visualization_data(
     nodes = []
     for node, attrs in pathway_graph.nodes(data=True):
         node_data = {
-            'id': node,
-            'x': pos[node][0],
-            'y': pos[node][1],
+            "id": node,
+            "x": pos[node][0],
+            "y": pos[node][1],
         }
         node_data.update(attrs)
         nodes.append(node_data)
@@ -495,18 +477,18 @@ def pathway_visualization_data(
     edges = []
     for source, target, attrs in pathway_graph.edges(data=True):
         edge_data = {
-            'source': source,
-            'target': target,
+            "source": source,
+            "target": target,
         }
         edge_data.update(attrs)
         edges.append(edge_data)
 
     return {
-        'nodes': nodes,
-        'edges': edges,
-        'layout_method': layout_method,
-        'n_nodes': len(nodes),
-        'n_edges': len(edges),
+        "nodes": nodes,
+        "edges": edges,
+        "layout_method": layout_method,
+        "n_nodes": len(nodes),
+        "n_edges": len(edges),
     }
 
 
@@ -529,7 +511,7 @@ class PathwayNetwork:
         self.metadata = {}
 
     @classmethod
-    def load_from_database(cls, filepath: str | Path, format: str = "json") -> 'PathwayNetwork':
+    def load_from_database(cls, filepath: str | Path, format: str = "json") -> "PathwayNetwork":
         """Load pathway network from a database file.
 
         Args:
@@ -547,16 +529,16 @@ class PathwayNetwork:
             raise FileNotFoundError(f"Pathway database file not found: {filepath}")
 
         if format.lower() == "json":
-            with open(filepath, 'r') as f:
+            with open(filepath, "r") as f:
                 data = json.load(f)
-            pathways = data.get('pathways', {})
-            name = data.get('name', filepath.stem)
+            pathways = data.get("pathways", {})
+            name = data.get("name", filepath.stem)
         elif format.lower() == "gmt":
             # GMT format: pathway_name<TAB>description<TAB>gene1<TAB>gene2...
             pathways = {}
-            with open(filepath, 'r') as f:
+            with open(filepath, "r") as f:
                 for line in f:
-                    parts = line.strip().split('\t')
+                    parts = line.strip().split("\t")
                     if len(parts) >= 3:
                         pathway_name = parts[0]
                         pathways[pathway_name] = parts[2:]  # Skip description
@@ -565,8 +547,8 @@ class PathwayNetwork:
             raise ValueError(f"Unsupported format: {format}")
 
         network = cls(name=name, pathways=pathways)
-        network.metadata['source_file'] = str(filepath)
-        network.metadata['format'] = format
+        network.metadata["source_file"] = str(filepath)
+        network.metadata["format"] = format
         return network
 
     def get_pathway(self, pathway_name: str) -> List[str]:
@@ -599,7 +581,7 @@ class PathwayNetwork:
         """
         return {name: len(genes) for name, genes in self.pathways.items()}
 
-    def filter_pathways_by_size(self, min_size: int = 5, max_size: int | None = None) -> 'PathwayNetwork':
+    def filter_pathways_by_size(self, min_size: int = 5, max_size: int | None = None) -> "PathwayNetwork":
         """Filter pathways by size.
 
         Args:
@@ -666,7 +648,7 @@ def pathway_enrichment(
     background_genes: Optional[List[str]] = None,
     method: str = "fisher",
     correction: str = "bonferroni",
-    min_overlap: int = 1
+    min_overlap: int = 1,
 ) -> Dict[str, Dict[str, Any]]:
     """Perform pathway enrichment analysis for a gene list against a pathway network.
 
@@ -734,13 +716,14 @@ def pathway_enrichment(
                 #  [not_in_query_and_pathway, not_in_query_not_pathway]]
                 contingency_table = [
                     [overlap_size, query_size - overlap_size],
-                    [pathway_size - overlap_size, background_size - pathway_size - (query_size - overlap_size)]
+                    [pathway_size - overlap_size, background_size - pathway_size - (query_size - overlap_size)],
                 ]
 
-                odds_ratio, p_value = fisher_exact(contingency_table, alternative='greater')
+                odds_ratio, p_value = fisher_exact(contingency_table, alternative="greater")
             else:
                 # Hypergeometric test
                 from scipy.stats import hypergeom
+
                 p_value = hypergeom.sf(overlap_size - 1, background_size, pathway_size, query_size)
         else:
             # Simple approximation when scipy not available
@@ -753,7 +736,7 @@ def pathway_enrichment(
 
         # Calculate enrichment ratio
         expected_overlap = (query_size * pathway_size) / background_size
-        enrichment_ratio = overlap_size / expected_overlap if expected_overlap > 0 else float('inf')
+        enrichment_ratio = overlap_size / expected_overlap if expected_overlap > 0 else float("inf")
 
         results[pathway_id] = {
             "overlap_size": overlap_size,
@@ -763,7 +746,7 @@ def pathway_enrichment(
             "p_value": p_value,
             "enrichment_ratio": enrichment_ratio,
             "overlap_genes": list(overlap),
-            "expected_overlap": expected_overlap
+            "expected_overlap": expected_overlap,
         }
 
     # Apply multiple testing correction
@@ -775,6 +758,7 @@ def pathway_enrichment(
         elif correction == "fdr" and HAS_SCIPY:
             # Benjamini-Hochberg FDR correction
             from scipy.stats import rankdata
+
             sorted_indices = sorted(range(len(p_values)), key=lambda i: p_values[i])
             corrected_p_values = [1.0] * len(p_values)
 
@@ -783,7 +767,7 @@ def pathway_enrichment(
                 corrected_p = min(p_values[idx] * len(p_values) / rank, 1.0)
                 # Ensure monotonicity
                 if i > 0:
-                    corrected_p = min(corrected_p, corrected_p_values[sorted_indices[i-1]])
+                    corrected_p = min(corrected_p, corrected_p_values[sorted_indices[i - 1]])
                 corrected_p_values[idx] = corrected_p
         else:
             corrected_p_values = p_values
@@ -855,7 +839,7 @@ def network_enrichment_analysis(
     background_genes: Optional[List[str]] = None,
     method: str = "fisher",
     correction: str = "bonferroni",
-    min_overlap: int = 1
+    min_overlap: int = 1,
 ) -> Dict[str, Dict[str, Any]]:
     """Perform network-based enrichment analysis.
 
@@ -878,5 +862,5 @@ def network_enrichment_analysis(
         background_genes=background_genes,
         method=method,
         correction=correction,
-        min_overlap=min_overlap
+        min_overlap=min_overlap,
     )

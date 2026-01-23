@@ -29,7 +29,7 @@ class TestFindRnaFastaInGenomeDir:
         api_dir.mkdir(parents=True)
         rna_file = api_dir / "rna.fna"
         rna_file.write_text(">test\nATCG")
-        
+
         result = genome_prep.find_rna_fasta_in_genome_dir(tmp_path, accession)
         assert result == rna_file
 
@@ -40,7 +40,7 @@ class TestFindRnaFastaInGenomeDir:
         cli_dir.mkdir(parents=True)
         rna_file = cli_dir / "rna.fna"
         rna_file.write_text(">test\nATCG")
-        
+
         result = genome_prep.find_rna_fasta_in_genome_dir(tmp_path, accession)
         assert result == rna_file
 
@@ -49,7 +49,7 @@ class TestFindRnaFastaInGenomeDir:
         accession = "GCF_123456789"
         rna_file = tmp_path / "rna.fna"
         rna_file.write_text(">test\nATCG")
-        
+
         result = genome_prep.find_rna_fasta_in_genome_dir(tmp_path, accession)
         assert result == rna_file
 
@@ -58,15 +58,15 @@ class TestFindRnaFastaInGenomeDir:
         accession = "GCF_123456789"
         api_dir = tmp_path / "ncbi_dataset_api_extracted" / "ncbi_dataset" / "data" / accession
         api_dir.mkdir(parents=True)
-        
+
         # Create both zipped and unzipped
         rna_gz = api_dir / "rna.fna.gz"
         rna_unzipped = api_dir / "rna.fna"
         rna_unzipped.write_text(">test\nATCG")
-        
+
         with gzip.open(rna_gz, "wt") as f:
             f.write(">test\nATCG")
-        
+
         result = genome_prep.find_rna_fasta_in_genome_dir(tmp_path, accession)
         assert result == rna_unzipped
 
@@ -78,7 +78,7 @@ class TestGetExpectedIndexPath:
         """Test get_expected_index_path returns correct path."""
         work_dir = tmp_path / "work"
         species_name = "Test_species"
-        
+
         expected = genome_prep.get_expected_index_path(work_dir, species_name)
         assert isinstance(expected, Path)
         assert expected.name.endswith(".idx")
@@ -102,7 +102,7 @@ class TestGenomePrepDocumentation:
             genome_prep.verify_genome_status,
             genome_prep.orchestrate_genome_setup,
         ]
-        
+
         for func in functions:
             assert func.__doc__ is not None, f"{func.__name__} missing docstring"
             assert len(func.__doc__.strip()) > 0
@@ -121,9 +121,8 @@ class TestGenomePrepErrorHandling:
         """Test get_expected_index_path creates path structure."""
         work_dir = tmp_path / "work"
         species_name = "Test_species"
-        
+
         expected = genome_prep.get_expected_index_path(work_dir, species_name)
         # Path should be valid even if directory doesn't exist
         assert isinstance(expected, Path)
         assert expected.parent.name == "index" or "index" in str(expected)
-

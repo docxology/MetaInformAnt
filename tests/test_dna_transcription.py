@@ -1,4 +1,5 @@
 """Tests for DNA transcription functions."""
+
 from metainformant.dna.expression import transcription
 
 
@@ -34,7 +35,7 @@ def test_calculate_transcription_efficiency() -> None:
     """Test transcription efficiency calculation."""
     # Short sequence should have low efficiency
     assert transcription.calculate_transcription_efficiency("ATG") == 0.0
-    
+
     # Sequence with TATA box should have higher efficiency
     seq_with_tata = "TATA" + "A" * 200
     efficiency = transcription.calculate_transcription_efficiency(seq_with_tata)

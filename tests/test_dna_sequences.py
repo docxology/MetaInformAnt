@@ -52,6 +52,7 @@ class TestDNASequences:
 
         # Different lengths (should raise error)
         from metainformant.core.utils.errors import ValidationError
+
         with pytest.raises(ValidationError):
             sequences.dna_complementarity_score("ATCG", "ATC")
 
@@ -60,7 +61,7 @@ class TestDNASequences:
         # Sequence with repeats
         seq = "ATCGATCGATCG"
         repeats = sequences.find_repeats(seq, min_length=3)
-        
+
         # Should find repeating patterns
         assert "ATC" in repeats
         assert "TCG" in repeats
@@ -77,15 +78,15 @@ class TestDNASequences:
     def test_motif_finding(self):
         """Test multiple motif finding."""
         seq = "ATCGATCGATCG"
-        
+
         # Find multiple motifs
         motifs = ["ATC", "TCG", "GAT"]
         results = sequences.find_motifs(seq, motifs)
-        
+
         assert "ATC" in results
         assert "TCG" in results
         assert "GAT" in results
-        
+
         # Check positions
         assert 0 in results["ATC"]  # First ATC at position 0
         assert 4 in results["ATC"]  # Second ATC at position 4
@@ -112,7 +113,7 @@ class TestDNASequences:
         # Sequence with ORFs - need RNA sequence for find_orfs
         # DNA: ATGAAATTTAAATAG contains start (ATG) and stop (TAA, TAG)
         seq = "ATGAAATTTAAATAG"
-        
+
         # find_orfs works on RNA and requires min_length (default 30)
         # Use a smaller min_length for testing
         orfs = sequences.find_orfs(seq, min_length=2)
@@ -144,7 +145,7 @@ class TestDNASequences:
         # GC-rich sequence
         gc_rich = "GCGCGCGCGCGC"
         bias = sequences.detect_sequence_bias(gc_rich)
-        
+
         assert bias["gc_content"] > 0.8
         assert bias["at_content"] < 0.2
         assert bias["total_bases"] == len(gc_rich)
@@ -152,14 +153,14 @@ class TestDNASequences:
         # AT-rich sequence
         at_rich = "ATATATATATAT"
         bias = sequences.detect_sequence_bias(at_rich)
-        
+
         assert bias["at_content"] > 0.8
         assert bias["gc_content"] < 0.2
 
         # Balanced sequence
         balanced = "ATCGATCGATCG"
         bias = sequences.detect_sequence_bias(balanced)
-        
+
         assert abs(bias["gc_content"] - 0.5) < 0.1
         assert abs(bias["at_content"] - 0.5) < 0.1
 
@@ -219,7 +220,7 @@ class TestDNASequences:
         # Short sequence
         short_seq = "ATCGATCG"
         tm = sequences.calculate_melting_temperature(short_seq)
-        
+
         # Should return a float
         assert isinstance(tm, (int, float))
         assert tm > 0  # Temperature should be positive
@@ -274,4 +275,3 @@ class TestDNASequences:
         diverse = "ATCG"
         entropy = sequences.calculate_sequence_entropy(diverse, k=1)
         assert entropy > 0
-

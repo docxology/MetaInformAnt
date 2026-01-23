@@ -3,7 +3,13 @@
 from __future__ import annotations
 
 import pytest
-from metainformant.math import fixation_probability, hardy_weinberg_genotype_freqs, mutation_update, popgen, selection_update
+from metainformant.math import (
+    fixation_probability,
+    hardy_weinberg_genotype_freqs,
+    mutation_update,
+    popgen,
+    selection_update,
+)
 
 
 class TestMathPopgen:
@@ -13,7 +19,7 @@ class TestMathPopgen:
         """Test effective population size estimation from heterozygosity."""
         # Test with reasonable heterozygosity values and mutation rate
         mu = 1e-8  # Typical mutation rate
-        
+
         ne_50 = popgen.effective_population_size_from_heterozygosity(0.5, mutation_rate=mu)
         assert ne_50 > 0
 
@@ -26,10 +32,10 @@ class TestMathPopgen:
         # Test edge cases - should raise ValueError
         with pytest.raises(ValueError):
             popgen.effective_population_size_from_heterozygosity(0.0, mutation_rate=mu)
-        
+
         with pytest.raises(ValueError):
             popgen.effective_population_size_from_heterozygosity(1.0, mutation_rate=mu)
-        
+
         # Test with invalid mutation rate
         with pytest.raises(ValueError):
             popgen.effective_population_size_from_heterozygosity(0.5, mutation_rate=0.0)
@@ -46,7 +52,7 @@ class TestMathPopgen:
         assert f_0 == 0.0
 
         f_1 = popgen.inbreeding_coefficient_from_fst(1.0)
-        assert f_1 == float('inf')
+        assert f_1 == float("inf")
 
     def test_linkage_disequilibrium_decay(self):
         """Test linkage disequilibrium decay distance calculation."""
@@ -68,11 +74,11 @@ class TestMathPopgen:
         assert distance_0 == 0.0
 
         distance_100 = popgen.linkage_disequilibrium_decay_distance(1.0, recomb_rate)
-        assert distance_100 == float('inf')
+        assert distance_100 == float("inf")
 
         # Test with zero recombination rate
         distance_inf = popgen.linkage_disequilibrium_decay_distance(0.5, 0.0)
-        assert distance_inf == float('inf')
+        assert distance_inf == float("inf")
 
     def test_coalescent_time_calculation(self):
         """Test coalescent time to most recent common ancestor."""
@@ -109,7 +115,7 @@ class TestMathPopgen:
         # Test invalid r² values
         assert popgen.linkage_disequilibrium_decay_distance(-0.1, 1e-8) == 0.0  # r² <= 0 returns 0.0
 
-        assert popgen.linkage_disequilibrium_decay_distance(1.1, 1e-8) == float('inf')  # r² >= 1 returns inf
+        assert popgen.linkage_disequilibrium_decay_distance(1.1, 1e-8) == float("inf")  # r² >= 1 returns inf
 
     def test_mathematical_consistency(self):
         """Test mathematical consistency of calculations."""

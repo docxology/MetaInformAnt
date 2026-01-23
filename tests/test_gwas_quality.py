@@ -75,7 +75,7 @@ chr1	400	rs4	C	T	30	PASS	.	GT	./.	./.	./.	./.	./.
     assert result["status"] == "success"
     assert result["num_variants_before"] == 4
     assert result["num_variants_after"] <= 4
-    
+
     # rs2 should be filtered (all hom ref = MAF = 0)
     # rs3 should be filtered (all hom alt = MAF = 0)
     # rs4 should be filtered (all missing)
@@ -95,7 +95,7 @@ chr1	200	rs2	T	C	80	PASS	.	GT	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0	0/0	1/1
 
     # rs1: 5 het + 1 hom alt = 6 alt alleles out of 20 = MAF = 0.3
     # rs2: 1 hom alt = 2 alt alleles out of 20 = MAF = 0.1
-    
+
     qc_config = {"min_maf": 0.15, "max_missing": 1.0, "min_qual": 0.0}
     result = apply_qc_filters(vcf_file, qc_config)
 
@@ -138,4 +138,3 @@ chr1	100	rs1	A	G	60	PASS	.	GT	0/0	0/0	0/0	0/0	0/0	1/1	1/1	1/1	1/1	1/1
 
     assert result["status"] == "success"
     # Variant with extreme HWE violation might be filtered
-

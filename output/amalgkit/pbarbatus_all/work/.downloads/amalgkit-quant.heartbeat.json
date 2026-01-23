@@ -3,7 +3,7 @@
   "destination": "output/amalgkit/pbarbatus_all/work/quant",
   "errors": [],
   "eta_seconds": null,
-  "last_update": "2026-01-21T19:40:49Z",
+  "last_update": "2026-01-22T02:12:58Z",
   "progress": {
     "current": 0,
     "percent": 0.0,
@@ -11,8 +11,8 @@
     "type": "sample_count"
   },
   "progress_percent": 0.0,
-  "speed_mbps": 34.60325103884855,
-  "started_at": "2026-01-21T19:40:48Z",
+  "speed_mbps": 34.53097390850223,
+  "started_at": "2026-01-22T02:12:57Z",
   "status": "failed",
   "step": "amalgkit quant",
   "total_bytes": null,

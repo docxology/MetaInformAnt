@@ -24,6 +24,7 @@ logger = logging.get_logger(__name__)
 
 try:
     import seaborn as sns
+
     HAS_SEABORN = True
 except ImportError:
     HAS_SEABORN = False
@@ -32,6 +33,7 @@ except ImportError:
 try:
     import plotly.graph_objects as go
     import plotly.express as px
+
     HAS_PLOTLY = True
 except ImportError:
     HAS_PLOTLY = False
@@ -45,7 +47,7 @@ def plot_venn_diagram(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (8, 8),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Create a Venn diagram from set data.
 
@@ -86,11 +88,11 @@ def plot_venn_diagram(
         else:
             venn.venn4(set_data, set_labels=set_names, ax=ax, **kwargs)
 
-    ax.set_title('Venn Diagram')
+    ax.set_title("Venn Diagram")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Venn diagram saved to {output_path}")
 
     return ax
@@ -107,20 +109,20 @@ def _plot_venn2(ax: Axes, sets: Dict[str, set], **kwargs) -> None:
     both = len(set1 & set2)
 
     # Draw circles
-    circle1 = Circle((-1, 0), 1.5, facecolor='red', alpha=0.5)
-    circle2 = Circle((1, 0), 1.5, facecolor='blue', alpha=0.5)
+    circle1 = Circle((-1, 0), 1.5, facecolor="red", alpha=0.5)
+    circle2 = Circle((1, 0), 1.5, facecolor="blue", alpha=0.5)
 
     ax.add_patch(circle1)
     ax.add_patch(circle2)
 
     # Add labels
-    ax.text(-1, 0, f'{both}\n({set_names[0]}∩{set_names[1]})', ha='center', va='center')
-    ax.text(-2, 0, f'{only1}\n({set_names[0]} only)', ha='center', va='center')
-    ax.text(2, 0, f'{only2}\n({set_names[1]} only)', ha='center', va='center')
+    ax.text(-1, 0, f"{both}\n({set_names[0]}∩{set_names[1]})", ha="center", va="center")
+    ax.text(-2, 0, f"{only1}\n({set_names[0]} only)", ha="center", va="center")
+    ax.text(2, 0, f"{only2}\n({set_names[1]} only)", ha="center", va="center")
 
     ax.set_xlim(-3, 3)
     ax.set_ylim(-2, 2)
-    ax.axis('off')
+    ax.axis("off")
 
 
 def _plot_venn3(ax: Axes, sets: Dict[str, set], **kwargs) -> None:
@@ -138,26 +140,26 @@ def _plot_venn3(ax: Axes, sets: Dict[str, set], **kwargs) -> None:
     all3 = len(set1 & set2 & set3)
 
     # Draw circles
-    circle1 = Circle((-1, 1), 1.2, facecolor='red', alpha=0.5)
-    circle2 = Circle((1, 1), 1.2, facecolor='blue', alpha=0.5)
-    circle3 = Circle((0, -0.8), 1.2, facecolor='green', alpha=0.5)
+    circle1 = Circle((-1, 1), 1.2, facecolor="red", alpha=0.5)
+    circle2 = Circle((1, 1), 1.2, facecolor="blue", alpha=0.5)
+    circle3 = Circle((0, -0.8), 1.2, facecolor="green", alpha=0.5)
 
     ax.add_patch(circle1)
     ax.add_patch(circle2)
     ax.add_patch(circle3)
 
     # Add labels (simplified)
-    ax.text(-1, 1, f'{only1 + only12 + only13 + all3}', ha='center', va='center')
-    ax.text(1, 1, f'{only2 + only12 + only23 + all3}', ha='center', va='center')
-    ax.text(0, -0.8, f'{only3 + only13 + only23 + all3}', ha='center', va='center')
-    ax.text(0, 0.3, f'{only12 + all3}', ha='center', va='center')
-    ax.text(-0.5, -0.3, f'{only13 + all3}', ha='center', va='center')
-    ax.text(0.5, -0.3, f'{only23 + all3}', ha='center', va='center')
-    ax.text(0, 0, f'{all3}', ha='center', va='center')
+    ax.text(-1, 1, f"{only1 + only12 + only13 + all3}", ha="center", va="center")
+    ax.text(1, 1, f"{only2 + only12 + only23 + all3}", ha="center", va="center")
+    ax.text(0, -0.8, f"{only3 + only13 + only23 + all3}", ha="center", va="center")
+    ax.text(0, 0.3, f"{only12 + all3}", ha="center", va="center")
+    ax.text(-0.5, -0.3, f"{only13 + all3}", ha="center", va="center")
+    ax.text(0.5, -0.3, f"{only23 + all3}", ha="center", va="center")
+    ax.text(0, 0, f"{all3}", ha="center", va="center")
 
     ax.set_xlim(-2.5, 2.5)
     ax.set_ylim(-2.5, 2.5)
-    ax.axis('off')
+    ax.axis("off")
 
 
 def plot_sankey_diagram(
@@ -165,7 +167,7 @@ def plot_sankey_diagram(
     *,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 8),
-    **kwargs
+    **kwargs,
 ) -> Any:
     """Create a Sankey diagram for flow visualization.
 
@@ -196,25 +198,20 @@ def plot_sankey_diagram(
 
         label_list = list(labels)
 
-        fig = go.Figure(data=[go.Sankey(
-            node=dict(
-                pad=15,
-                thickness=20,
-                line=dict(color="black", width=0.5),
-                label=label_list
-            ),
-            link=dict(
-                source=sources,
-                target=targets,
-                value=values
-            )
-        )])
+        fig = go.Figure(
+            data=[
+                go.Sankey(
+                    node=dict(pad=15, thickness=20, line=dict(color="black", width=0.5), label=label_list),
+                    link=dict(source=sources, target=targets, value=values),
+                )
+            ]
+        )
 
         fig.update_layout(title_text="Sankey Diagram", **kwargs)
 
         if output_path:
             paths.ensure_directory(Path(output_path).parent)
-            html_path = Path(output_path).with_suffix('.html')
+            html_path = Path(output_path).with_suffix(".html")
             fig.write_html(str(html_path))
             logger.info(f"Sankey diagram saved to {html_path}")
 
@@ -235,19 +232,19 @@ def plot_sankey_diagram(
             tgt_pos = target_positions[target]
 
             # Draw flow line
-            ax.plot([0, 1], [src_pos, tgt_pos], 'b-', linewidth=value/10, alpha=0.7)
-            ax.scatter([0], [src_pos], s=value, c='red', alpha=0.7)
-            ax.scatter([1], [tgt_pos], s=value, c='blue', alpha=0.7)
+            ax.plot([0, 1], [src_pos, tgt_pos], "b-", linewidth=value / 10, alpha=0.7)
+            ax.scatter([0], [src_pos], s=value, c="red", alpha=0.7)
+            ax.scatter([1], [tgt_pos], s=value, c="blue", alpha=0.7)
 
         ax.set_xticks([0, 1])
-        ax.set_xticklabels(['Sources', 'Targets'])
+        ax.set_xticklabels(["Sources", "Targets"])
         ax.set_yticks(list(source_positions.values()))
         ax.set_yticklabels(list(source_positions.keys()))
-        ax.set_title('Flow Diagram')
+        ax.set_title("Flow Diagram")
 
         if output_path:
             paths.ensure_directory(Path(output_path).parent)
-            plt.savefig(output_path, dpi=300, bbox_inches='tight')
+            plt.savefig(output_path, dpi=300, bbox_inches="tight")
             logger.info(f"Flow diagram saved to {output_path}")
 
         return fig
@@ -260,7 +257,7 @@ def plot_chord_diagram(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (8, 8),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Create a chord diagram for showing relationships between categories.
 
@@ -281,7 +278,7 @@ def plot_chord_diagram(
         raise ValueError("Chord diagram matrix must be square")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=figsize, subplot_kw={'projection': 'polar'})
+        fig, ax = plt.subplots(figsize=figsize, subplot_kw={"projection": "polar"})
 
     n = matrix.shape[0]
     angles = np.linspace(0, 2 * np.pi, n, endpoint=False)
@@ -295,7 +292,7 @@ def plot_chord_diagram(
 
     # Draw chords
     for i in range(n):
-        for j in range(i+1, n):
+        for j in range(i + 1, n):
             if matrix_norm[i, j] > 0:
                 # Draw chord between i and j
                 theta1 = angles[i]
@@ -313,22 +310,21 @@ def plot_chord_diagram(
 
                 codes = [Path.MOVETO, Path.CURVE4, Path.CURVE4, Path.CURVE4, Path.CURVE4]
                 path = Path(verts, codes)
-                patch = PathPatch(path, facecolor='blue', alpha=0.3, edgecolor='blue')
+                patch = PathPatch(path, facecolor="blue", alpha=0.3, edgecolor="blue")
                 ax.add_patch(patch)
 
     # Draw node labels
     for i, angle in enumerate(angles):
-        label = labels[i] if labels else f'Node {i+1}'
-        ax.text(angle, 0.8, label, ha='center', va='center', fontsize=10,
-               rotation=np.degrees(angle) - 90)
+        label = labels[i] if labels else f"Node {i+1}"
+        ax.text(angle, 0.8, label, ha="center", va="center", fontsize=10, rotation=np.degrees(angle) - 90)
 
     ax.set_rlim(0, 1)
-    ax.set_title('Chord Diagram')
-    ax.axis('off')
+    ax.set_title("Chord Diagram")
+    ax.axis("off")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Chord diagram saved to {output_path}")
 
     return ax
@@ -341,7 +337,7 @@ def plot_alluvial_diagram(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (12, 8),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Create an alluvial diagram (flow diagram) for showing transitions.
 
@@ -370,11 +366,11 @@ def plot_alluvial_diagram(
         # Use alluvial package
         alluvial.plot(data, stages, ax=ax, **kwargs)
 
-    ax.set_title('Alluvial Diagram')
+    ax.set_title("Alluvial Diagram")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Alluvial diagram saved to {output_path}")
 
     return ax
@@ -390,13 +386,12 @@ def _plot_simple_alluvial(ax: Axes, data: pd.DataFrame, stages: List[str], **kwa
         y_positions = [row[stage] for stage in stages]
 
         # Draw flow lines
-        ax.plot(x_positions, y_positions, 'o-', color=colors[i],
-               linewidth=2, alpha=0.7, markersize=6)
+        ax.plot(x_positions, y_positions, "o-", color=colors[i], linewidth=2, alpha=0.7, markersize=6)
 
     ax.set_xticks(range(n_stages))
     ax.set_xticklabels(stages)
-    ax.set_xlabel('Stages')
-    ax.set_ylabel('Values')
+    ax.set_xlabel("Stages")
+    ax.set_ylabel("Values")
 
 
 def plot_circular_barplot(
@@ -406,7 +401,7 @@ def plot_circular_barplot(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (8, 8),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Create a circular bar plot.
 
@@ -424,7 +419,7 @@ def plot_circular_barplot(
     validation.validate_type(values, np.ndarray, "values")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=figsize, subplot_kw={'projection': 'polar'})
+        fig, ax = plt.subplots(figsize=figsize, subplot_kw={"projection": "polar"})
 
     n_bars = len(values)
     angles = np.linspace(0, 2 * np.pi, n_bars, endpoint=False)
@@ -435,16 +430,17 @@ def plot_circular_barplot(
     # Add labels
     if labels:
         for angle, label in zip(angles, labels):
-            ax.text(angle, max(values) * 1.1, label, ha='center', va='center',
-                   rotation=np.degrees(angle) - 90, fontsize=8)
+            ax.text(
+                angle, max(values) * 1.1, label, ha="center", va="center", rotation=np.degrees(angle) - 90, fontsize=8
+            )
 
     ax.set_rlabel_position(0)
-    ax.set_title('Circular Bar Plot')
+    ax.set_title("Circular Bar Plot")
     ax.grid(True, alpha=0.3)
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Circular bar plot saved to {output_path}")
 
     return ax
@@ -456,7 +452,7 @@ def plot_network_circular_layout(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (10, 10),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Plot a network in circular layout.
 
@@ -476,7 +472,7 @@ def plot_network_circular_layout(
         raise ImportError("networkx required for network visualization")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=figsize, subplot_kw={'projection': 'polar'})
+        fig, ax = plt.subplots(figsize=figsize, subplot_kw={"projection": "polar"})
 
     # Create circular layout
     n_nodes = len(graph.nodes())
@@ -489,16 +485,15 @@ def plot_network_circular_layout(
 
     # Add labels
     for node, (angle, r) in pos.items():
-        ax.text(angle, r + 0.1, str(node), ha='center', va='center',
-               fontsize=8, rotation=np.degrees(angle) - 90)
+        ax.text(angle, r + 0.1, str(node), ha="center", va="center", fontsize=8, rotation=np.degrees(angle) - 90)
 
-    ax.set_title('Circular Network Layout')
+    ax.set_title("Circular Network Layout")
     ax.grid(False)
     ax.set_rlabel_position(0)
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Circular network plot saved to {output_path}")
 
     return ax
@@ -510,7 +505,7 @@ def plot_radar_chart(
     ax: Axes | None = None,
     output_path: str | Path | None = None,
     figsize: Tuple[float, float] = (8, 8),
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Create a radar (spider) chart.
 
@@ -527,7 +522,7 @@ def plot_radar_chart(
     validation.validate_type(data, pd.DataFrame, "data")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=figsize, subplot_kw={'projection': 'polar'})
+        fig, ax = plt.subplots(figsize=figsize, subplot_kw={"projection": "polar"})
 
     # Get categories and values
     categories = list(data.columns)
@@ -544,33 +539,36 @@ def plot_radar_chart(
         values = list(row)
         values += values[:1]  # Close the plot
 
-        ax.plot(angles, values, 'o-', linewidth=2, label=row.name if hasattr(row, 'name') else f'Series {i+1}',
-               color=colors[i], alpha=0.8)
+        ax.plot(
+            angles,
+            values,
+            "o-",
+            linewidth=2,
+            label=row.name if hasattr(row, "name") else f"Series {i+1}",
+            color=colors[i],
+            alpha=0.8,
+        )
         ax.fill(angles, values, alpha=0.25, color=colors[i])
 
     # Add labels
     ax.set_xticks(angles[:-1])
     ax.set_xticklabels(categories)
-    ax.set_title('Radar Chart')
+    ax.set_title("Radar Chart")
     ax.grid(True, alpha=0.3)
 
     if len(data) > 1:
-        ax.legend(bbox_to_anchor=(1.05, 1), loc='upper left')
+        ax.legend(bbox_to_anchor=(1.05, 1), loc="upper left")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Radar chart saved to {output_path}")
 
     return ax
 
 
 def plot_upset_plot(
-    data: Dict[str, set],
-    *,
-    output_path: str | Path | None = None,
-    figsize: Tuple[float, float] = (10, 6),
-    **kwargs
+    data: Dict[str, set], *, output_path: str | Path | None = None, figsize: Tuple[float, float] = (10, 6), **kwargs
 ) -> Any:
     """Create an UpSet plot for set intersections.
 
@@ -590,6 +588,7 @@ def plot_upset_plot(
 
     # Create UpSet data
     from upsetplot import from_contents
+
     upset_data = from_contents(data)
 
     # Create plot
@@ -598,9 +597,7 @@ def plot_upset_plot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"UpSet plot saved to {output_path}")
 
     return fig
-
-

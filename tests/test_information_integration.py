@@ -104,9 +104,7 @@ class TestSingleCellIntegration:
         count_matrix = np.random.randint(0, 100, (100, 50))  # 100 cells, 50 genes
         cell_types = ["TypeA"] * 50 + ["TypeB"] * 50
 
-        results = singlecell_integration(
-            count_matrix, cell_types=cell_types, method="cell_type_entropy"
-        )
+        results = singlecell_integration(count_matrix, cell_types=cell_types, method="cell_type_entropy")
         assert "cell_type_entropy" in results
         assert results["num_cell_types"] == 2
 
@@ -235,9 +233,7 @@ class TestVisualizationIntegration:
             from metainformant.information.visualization import plot_entropy_distribution
 
             entropies = [2.5, 3.1, 2.8, 3.0, 2.9]
-            result = plot_entropy_distribution(
-                entropies, output_path="output/information/test_entropy.png"
-            )
+            result = plot_entropy_distribution(entropies, output_path="output/information/test_entropy.png")
             assert "output_path" in result
             assert result["num_values"] == 5
         except ImportError:
@@ -249,9 +245,7 @@ class TestVisualizationIntegration:
             from metainformant.information.visualization import plot_mutual_information_matrix
 
             mi_matrix = np.random.rand(10, 10)
-            result = plot_mutual_information_matrix(
-                mi_matrix, output_path="output/information/test_mi.png"
-            )
+            result = plot_mutual_information_matrix(mi_matrix, output_path="output/information/test_mi.png")
             assert "output_path" in result
         except ImportError:
             pytest.skip("Visualization module not available")
@@ -326,10 +320,7 @@ class TestCrossModuleIntegration:
             sequences = ["ATCGATCG", "AAAA"]
             profile = information_profile(sequences, k=1)
 
-            plot_result = plot_information_profile(
-                profile, output_path="output/information/test_pipeline.png"
-            )
+            plot_result = plot_information_profile(profile, output_path="output/information/test_pipeline.png")
             assert "output_path" in plot_result
         except ImportError:
             pytest.skip("Visualization module not available")
-

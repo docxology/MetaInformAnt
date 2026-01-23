@@ -88,39 +88,33 @@ class TestAntWikiLoading:
         assert "traits" in loaded[0]
         assert len(loaded[0]["traits"]) == 3
         assert loaded[0]["measurements"]["worker_length_mm"] == [6.0, 13.0]
-        
+
     def test_validation_errors(self, tmp_path: Path):
         """Test validation errors for invalid data structures."""
         # Test invalid top-level structure
         json_file = tmp_path / "invalid.json"
         json_file.write_text(json.dumps("not a list or dict"))
-        
+
         with pytest.raises(ValidationError):
             load_antwiki_json(json_file)
-            
+
         # Test missing species field
         invalid_data = [{"measurements": {"length": 10.0}}]
         json_file.write_text(json.dumps(invalid_data))
-        
+
         with pytest.raises(ValidationError):
             load_antwiki_json(json_file)
-            
+
         # Test invalid measurements type
         invalid_data2 = [{"species": "Test", "measurements": "not a dict"}]
         json_file.write_text(json.dumps(invalid_data2))
-        
+
         with pytest.raises(ValidationError):
             load_antwiki_json(json_file)
-            
+
         # Test invalid traits type
         invalid_data3 = [{"species": "Test", "traits": "not a list"}]
         json_file.write_text(json.dumps(invalid_data3))
-        
+
         with pytest.raises(ValidationError):
             load_antwiki_json(json_file)
-
-
-
-
-
-

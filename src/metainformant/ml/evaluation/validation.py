@@ -17,15 +17,18 @@ logger = get_logger(__name__)
 # Optional imports for ML functionality
 try:
     from sklearn.base import BaseEstimator
-    from sklearn.model_selection import (
-        train_test_split, StratifiedKFold, KFold,
-        cross_val_score, cross_validate
-    )
+    from sklearn.model_selection import train_test_split, StratifiedKFold, KFold, cross_val_score, cross_validate
     from sklearn.metrics import (
-        accuracy_score, precision_score, recall_score, f1_score,
-        roc_auc_score, mean_squared_error, r2_score
+        accuracy_score,
+        precision_score,
+        recall_score,
+        f1_score,
+        roc_auc_score,
+        mean_squared_error,
+        r2_score,
     )
     from sklearn.utils import resample
+
     HAS_SKLEARN = True
 except ImportError:
     HAS_SKLEARN = False
@@ -38,7 +41,7 @@ def train_test_split_biological(
     test_size: float = 0.2,
     stratify: np.ndarray | None = None,
     random_state: int | None = None,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Split biological data into train/test sets with stratification.
 
@@ -68,11 +71,7 @@ def train_test_split_biological(
         stratify = y
 
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y,
-        test_size=test_size,
-        stratify=stratify,
-        random_state=random_state,
-        **kwargs
+        X, y, test_size=test_size, stratify=stratify, random_state=random_state, **kwargs
     )
 
     logger.info(
@@ -126,17 +125,10 @@ def cross_validation_scores(
 
     for metric in scoring:
         try:
-            scores = cross_val_score(
-                model, X, y,
-                cv=cv_strategy,
-                scoring=metric
-            )
+            scores = cross_val_score(model, X, y, cv=cv_strategy, scoring=metric)
             results[metric] = scores
 
-            logger.debug(
-                f"{metric}: {scores.mean():.3f} ± {scores.std():.3f} "
-                f"({cv}-fold CV)"
-            )
+            logger.debug(f"{metric}: {scores.mean():.3f} ± {scores.std():.3f} " f"({cv}-fold CV)")
 
         except Exception as e:
             logger.warning(f"Could not compute {metric}: {e}")
@@ -179,14 +171,12 @@ def permutation_importance_biological(
 
     # Get baseline score
     baseline_score = cross_val_score(
-        model, X, y,
-        cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state),
-        scoring=scoring
+        model, X, y, cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state), scoring=scoring
     ).mean()
 
     n_features = X.shape[1]
     importance_scores = np.zeros((n_features, n_repeats))
-    feature_names = getattr(X, 'columns', None)
+    feature_names = getattr(X, "columns", None)
 
     if feature_names is None:
         feature_names = [f"feature_{i}" for i in range(n_features)]
@@ -201,9 +191,11 @@ def permutation_importance_biological(
 
             # Calculate score with permuted feature
             permuted_score = cross_val_score(
-                model, X_permuted, y,
+                model,
+                X_permuted,
+                y,
                 cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state),
-                scoring=scoring
+                scoring=scoring,
             ).mean()
 
             # Importance is baseline - permuted score
@@ -217,24 +209,23 @@ def permutation_importance_biological(
     sorted_indices = np.argsort(mean_importances)[::-1]
 
     results = {
-        'baseline_score': float(baseline_score),
-        'scoring_metric': scoring,
-        'n_repeats': n_repeats,
-        'feature_importances': [
+        "baseline_score": float(baseline_score),
+        "scoring_metric": scoring,
+        "n_repeats": n_repeats,
+        "feature_importances": [
             {
-                'feature': feature_names[idx],
-                'importance_mean': float(mean_importances[idx]),
-                'importance_std': float(std_importances[idx]),
-                'rank': rank + 1,
+                "feature": feature_names[idx],
+                "importance_mean": float(mean_importances[idx]),
+                "importance_std": float(std_importances[idx]),
+                "rank": rank + 1,
             }
             for rank, idx in enumerate(sorted_indices)
         ],
-        'raw_scores': importance_scores.tolist(),
+        "raw_scores": importance_scores.tolist(),
     }
 
     logger.info(
-        f"Calculated permutation importance for {n_features} features "
-        f"({n_repeats} repeats, {scoring} scoring)"
+        f"Calculated permutation importance for {n_features} features " f"({n_repeats} repeats, {scoring} scoring)"
     )
 
     return results
@@ -247,7 +238,7 @@ def validate_model_stability(
     n_bootstraps: int = 50,
     test_size: float = 0.2,
     random_state: int | None = None,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Dict[str, Any]:
     """Validate model stability using bootstrapping.
 
@@ -304,36 +295,36 @@ def validate_model_stability(
         scores.append(score)
 
         # Collect feature importances if available
-        if hasattr(model, 'feature_importances_'):
+        if hasattr(model, "feature_importances_"):
             feature_importances.append(model.feature_importances_)
-        elif hasattr(model, 'coef_'):
+        elif hasattr(model, "coef_"):
             feature_importances.append(np.abs(model.coef_))
 
     # Calculate stability metrics
     scores_array = np.array(scores)
 
     results = {
-        'n_bootstraps': n_bootstraps,
-        'scores': {
-            'mean': float(scores_array.mean()),
-            'std': float(scores_array.std()),
-            'min': float(scores_array.min()),
-            'max': float(scores_array.max()),
-            'values': scores_array.tolist(),
+        "n_bootstraps": n_bootstraps,
+        "scores": {
+            "mean": float(scores_array.mean()),
+            "std": float(scores_array.std()),
+            "min": float(scores_array.min()),
+            "max": float(scores_array.max()),
+            "values": scores_array.tolist(),
         },
-        'stability_metrics': {
-            'coefficient_of_variation': float(scores_array.std() / scores_array.mean()),
-            'stability_score': 1.0 - float(scores_array.std() / scores_array.mean()),
+        "stability_metrics": {
+            "coefficient_of_variation": float(scores_array.std() / scores_array.mean()),
+            "stability_score": 1.0 - float(scores_array.std() / scores_array.mean()),
         },
     }
 
     # Feature importance stability if available
     if feature_importances:
         importance_array = np.array(feature_importances)
-        results['feature_importance_stability'] = {
-            'mean_importances': importance_array.mean(axis=0).tolist(),
-            'std_importances': importance_array.std(axis=0).tolist(),
-            'cv_importances': (importance_array.std(axis=0) / importance_array.mean(axis=0)).tolist(),
+        results["feature_importance_stability"] = {
+            "mean_importances": importance_array.mean(axis=0).tolist(),
+            "std_importances": importance_array.std(axis=0).tolist(),
+            "cv_importances": (importance_array.std(axis=0) / importance_array.mean(axis=0)).tolist(),
         }
 
     logger.info(
@@ -364,13 +355,13 @@ def compare_validation_strategies(
         Dictionary with comparison results
     """
     if strategies is None:
-        strategies = ['holdout', '5fold_cv', '10fold_cv', 'stratified_5fold']
+        strategies = ["holdout", "5fold_cv", "10fold_cv", "stratified_5fold"]
 
     results = {}
 
     for strategy in strategies:
         try:
-            if strategy == 'holdout':
+            if strategy == "holdout":
                 X_train, X_test, y_train, y_test = train_test_split_biological(
                     X, y, test_size=0.2, random_state=random_state
                 )
@@ -383,38 +374,38 @@ def compare_validation_strategies(
                 else:  # Regression
                     score = r2_score(y_test, y_pred)
 
-            elif strategy.endswith('fold_cv'):
-                cv_folds = int(strategy.split('_')[0])
-                scores = cross_validation_scores(
-                    model_factory(), X, y, cv=cv_folds, random_state=random_state
-                )
-                score = scores.get('accuracy', scores.get('r2', np.array([0]))).mean()
+            elif strategy.endswith("fold_cv"):
+                cv_folds = int(strategy.split("_")[0])
+                scores = cross_validation_scores(model_factory(), X, y, cv=cv_folds, random_state=random_state)
+                score = scores.get("accuracy", scores.get("r2", np.array([0]))).mean()
 
-            elif strategy == 'stratified_5fold':
+            elif strategy == "stratified_5fold":
                 scores = cross_validation_scores(
-                    model_factory(), X, y,
+                    model_factory(),
+                    X,
+                    y,
                     cv=StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state),
-                    random_state=random_state
+                    random_state=random_state,
                 )
-                score = scores.get('accuracy', np.array([0])).mean()
+                score = scores.get("accuracy", np.array([0])).mean()
 
             else:
                 raise ValueError(f"Unknown strategy: {strategy}")
 
             results[strategy] = {
-                'score': float(score),
-                'strategy': strategy,
+                "score": float(score),
+                "strategy": strategy,
             }
 
         except Exception as e:
             logger.error(f"Validation strategy {strategy} failed: {e}")
-            results[strategy] = {'error': str(e)}
+            results[strategy] = {"error": str(e)}
 
     # Find best strategy
     valid_results = [
-        (strategy, result.get('score', 0))
+        (strategy, result.get("score", 0))
         for strategy, result in results.items()
-        if isinstance(result, dict) and 'score' in result
+        if isinstance(result, dict) and "score" in result
     ]
 
     if valid_results:
@@ -423,9 +414,9 @@ def compare_validation_strategies(
         best_strategy = None
 
     return {
-        'comparison': results,
-        'best_strategy': best_strategy,
-        'strategies_tested': strategies,
+        "comparison": results,
+        "best_strategy": best_strategy,
+        "strategies_tested": strategies,
     }
 
 
@@ -445,83 +436,88 @@ def biological_data_validator(
         Dictionary with validation results
     """
     if checks is None:
-        checks = ['missing_values', 'infinite_values', 'constant_features', 'class_balance']
+        checks = ["missing_values", "infinite_values", "constant_features", "class_balance"]
 
     results = {
-        'n_samples': len(X),
-        'n_features': X.shape[1],
-        'checks': {},
-        'passed': True,
+        "n_samples": len(X),
+        "n_features": X.shape[1],
+        "checks": {},
+        "passed": True,
     }
 
     # Check for missing values
-    if 'missing_values' in checks:
+    if "missing_values" in checks:
         x_missing = np.isnan(X).sum()
         y_missing = np.isnan(y).sum() if np.issubdtype(y.dtype, np.floating) else 0
 
-        results['checks']['missing_values'] = {
-            'X_missing': int(x_missing),
-            'y_missing': int(y_missing),
-            'total_missing': int(x_missing + y_missing),
-            'passed': x_missing == 0 and y_missing == 0,
+        results["checks"]["missing_values"] = {
+            "X_missing": int(x_missing),
+            "y_missing": int(y_missing),
+            "total_missing": int(x_missing + y_missing),
+            "passed": x_missing == 0 and y_missing == 0,
         }
 
-        if not results['checks']['missing_values']['passed']:
-            results['passed'] = False
+        if not results["checks"]["missing_values"]["passed"]:
+            results["passed"] = False
 
     # Check for infinite values
-    if 'infinite_values' in checks:
+    if "infinite_values" in checks:
         x_inf = np.isinf(X).sum()
         y_inf = np.isinf(y).sum() if np.issubdtype(y.dtype, np.floating) else 0
 
-        results['checks']['infinite_values'] = {
-            'X_infinite': int(x_inf),
-            'y_infinite': int(y_inf),
-            'total_infinite': int(x_inf + y_inf),
-            'passed': x_inf == 0 and y_inf == 0,
+        results["checks"]["infinite_values"] = {
+            "X_infinite": int(x_inf),
+            "y_infinite": int(y_inf),
+            "total_infinite": int(x_inf + y_inf),
+            "passed": x_inf == 0 and y_inf == 0,
         }
 
-        if not results['checks']['infinite_values']['passed']:
-            results['passed'] = False
+        if not results["checks"]["infinite_values"]["passed"]:
+            results["passed"] = False
 
     # Check for constant features
-    if 'constant_features' in checks:
+    if "constant_features" in checks:
         constant_features = []
         for i in range(X.shape[1]):
             if np.unique(X[:, i]).size == 1:
                 constant_features.append(i)
 
-        results['checks']['constant_features'] = {
-            'constant_feature_indices': constant_features,
-            'n_constant_features': len(constant_features),
-            'passed': len(constant_features) == 0,
+        results["checks"]["constant_features"] = {
+            "constant_feature_indices": constant_features,
+            "n_constant_features": len(constant_features),
+            "passed": len(constant_features) == 0,
         }
 
-        if not results['checks']['constant_features']['passed']:
-            results['passed'] = False
+        if not results["checks"]["constant_features"]["passed"]:
+            results["passed"] = False
 
     # Check class balance for classification
-    if 'class_balance' in checks and len(np.unique(y)) < 20:
+    if "class_balance" in checks and len(np.unique(y)) < 20:
         unique, counts = np.unique(y, return_counts=True)
         balance_ratio = counts.min() / counts.max()
 
-        results['checks']['class_balance'] = {
-            'class_counts': counts.tolist(),
-            'class_labels': unique.tolist(),
-            'balance_ratio': float(balance_ratio),
-            'passed': balance_ratio > 0.1,  # At least 10% of majority class
+        results["checks"]["class_balance"] = {
+            "class_counts": counts.tolist(),
+            "class_labels": unique.tolist(),
+            "balance_ratio": float(balance_ratio),
+            "passed": balance_ratio > 0.1,  # At least 10% of majority class
         }
 
-        if not results['checks']['class_balance']['passed']:
-            results['passed'] = False
+        if not results["checks"]["class_balance"]["passed"]:
+            results["passed"] = False
 
     logger.info(f"Biological data validation: {'PASSED' if results['passed'] else 'FAILED'}")
     return results
 
 
-def bootstrap_validate(X: np.ndarray, y: np.ndarray, model_func: callable,
-                      n_bootstrap: int = 100, test_size: float = 0.2,
-                      random_state: int = 42) -> Dict[str, Any]:
+def bootstrap_validate(
+    X: np.ndarray,
+    y: np.ndarray,
+    model_func: callable,
+    n_bootstrap: int = 100,
+    test_size: float = 0.2,
+    random_state: int = 42,
+) -> Dict[str, Any]:
     """Perform bootstrap validation of a model.
 
     Args:
@@ -582,8 +578,7 @@ def bootstrap_validate(X: np.ndarray, y: np.ndarray, model_func: callable,
     return results
 
 
-def cross_validate(model: Any, X: np.ndarray, y: np.ndarray, cv: int = 5,
-                  scoring: str = "accuracy") -> Dict[str, Any]:
+def cross_validate(model: Any, X: np.ndarray, y: np.ndarray, cv: int = 5, scoring: str = "accuracy") -> Dict[str, Any]:
     """Perform cross-validation with specified scoring metric.
 
     Args:
@@ -619,8 +614,9 @@ def cross_validate(model: Any, X: np.ndarray, y: np.ndarray, cv: int = 5,
     return results
 
 
-def k_fold_split(X: np.ndarray, y: np.ndarray, k: int = 5,
-                stratify: bool = True, random_state: int = 42) -> List[Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
+def k_fold_split(
+    X: np.ndarray, y: np.ndarray, k: int = 5, stratify: bool = True, random_state: int = 42
+) -> List[Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
     """Split data into k folds for cross-validation.
 
     Args:
@@ -651,9 +647,14 @@ def k_fold_split(X: np.ndarray, y: np.ndarray, k: int = 5,
     return folds
 
 
-def learning_curve(X: np.ndarray, y: np.ndarray, model_factory: callable,
-                  train_sizes: np.ndarray = None, cv: int = 5,
-                  random_state: int = 42) -> Dict[str, Any]:
+def learning_curve(
+    X: np.ndarray,
+    y: np.ndarray,
+    model_factory: callable,
+    train_sizes: np.ndarray = None,
+    cv: int = 5,
+    random_state: int = 42,
+) -> Dict[str, Any]:
     """Generate learning curves for model evaluation.
 
     Args:
@@ -723,6 +724,3 @@ def learning_curve(X: np.ndarray, y: np.ndarray, model_factory: callable,
 
     logger.info(f"Generated learning curve with {len(train_sizes)} training sizes")
     return results
-
-
-

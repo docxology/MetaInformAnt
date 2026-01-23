@@ -1,4 +1,5 @@
 """Comprehensive tests for core.utils.hash module."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -30,11 +31,11 @@ class TestSha256Functions:
         """Test sha256_file returns same hash as sha256_bytes for same content."""
         content = b"hello world\n"
         h_bytes = core_hash.sha256_bytes(content)
-        
+
         path = tmp_path / "file.txt"
         path.write_bytes(content)
         h_file = core_hash.sha256_file(path)
-        
+
         assert h_bytes == h_file
 
     def test_sha256_file_large_file(self, tmp_path: Path) -> None:
@@ -43,7 +44,7 @@ class TestSha256Functions:
         content = b"x" * (2 * 1024 * 1024)  # 2MB
         path = tmp_path / "large.bin"
         path.write_bytes(content)
-        
+
         h = core_hash.sha256_file(path, chunk_size=512 * 1024)
         assert len(h) == 64
 
@@ -92,7 +93,7 @@ class TestFileHashComparison:
         file2 = tmp_path / "file2.txt"
         file1.write_bytes(content)
         file2.write_bytes(content)
-        
+
         assert core_hash.file_hash_comparison(file1, file2) is True
 
     def test_file_hash_comparison_different(self, tmp_path: Path) -> None:
@@ -101,7 +102,7 @@ class TestFileHashComparison:
         file2 = tmp_path / "file2.txt"
         file1.write_bytes(b"content a")
         file2.write_bytes(b"content b")
-        
+
         assert core_hash.file_hash_comparison(file1, file2) is False
 
 
@@ -115,9 +116,9 @@ class TestHashDirectory:
         subdir = tmp_path / "subdir"
         subdir.mkdir()
         (subdir / "file3.txt").write_text("content3")
-        
+
         hashes = core_hash.hash_directory(tmp_path)
-        
+
         assert "file1.txt" in hashes
         assert "file2.txt" in hashes
         assert "subdir/file3.txt" in hashes
@@ -127,9 +128,9 @@ class TestHashDirectory:
         """Test hashing with glob pattern."""
         (tmp_path / "file1.txt").write_text("content1")
         (tmp_path / "file2.py").write_text("content2")
-        
+
         hashes = core_hash.hash_directory(tmp_path, pattern="*.txt")
-        
+
         assert "file1.txt" in hashes
         assert "file2.py" not in hashes
 
@@ -148,7 +149,7 @@ class TestVerifyFileIntegrity:
         path = tmp_path / "file.txt"
         path.write_bytes(content)
         expected_hash = core_hash.sha256_bytes(content)
-        
+
         assert core_hash.verify_file_integrity(path, expected_hash) is True
 
     def test_verify_file_integrity_invalid(self, tmp_path: Path) -> None:
@@ -156,11 +157,11 @@ class TestVerifyFileIntegrity:
         path = tmp_path / "file.txt"
         path.write_bytes(b"actual content")
         wrong_hash = "a" * 64
-        
+
         assert core_hash.verify_file_integrity(path, wrong_hash) is False
 
     def test_verify_file_integrity_missing_file(self, tmp_path: Path) -> None:
         """Test verification of non-existent file."""
         path = tmp_path / "nonexistent.txt"
-        
+
         assert core_hash.verify_file_integrity(path, "a" * 64) is False

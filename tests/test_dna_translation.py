@@ -1,4 +1,5 @@
 """Tests for DNA translation functions."""
+
 from __future__ import annotations
 
 from metainformant.dna.expression import translation

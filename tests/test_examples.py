@@ -24,6 +24,7 @@ class TestExamples:
     @pytest.fixture(scope="class")
     def example_test_runner(self):
         """Provide access to the example test runner."""
+
         # Return a helper function that uses subprocess instead of direct import
         def run_test_examples(**kwargs):
             """Run test_examples.py script with given arguments."""
@@ -51,10 +52,14 @@ class TestExamples:
         """Get all example files."""
         return list(examples_dir.rglob("example_*.py"))
 
-    @pytest.mark.parametrize("example_path", [
-        pytest.param(path, id=str(path.relative_to(Path("examples"))))
-        for path in Path("examples").rglob("example_*.py")
-    ], indirect=False)
+    @pytest.mark.parametrize(
+        "example_path",
+        [
+            pytest.param(path, id=str(path.relative_to(Path("examples"))))
+            for path in Path("examples").rglob("example_*.py")
+        ],
+        indirect=False,
+    )
     def test_example_execution(self, example_path: Path):
         """Test individual example execution."""
         # Run the example directly
@@ -64,11 +69,13 @@ class TestExamples:
             capture_output=True,
             text=True,
             timeout=120,  # 2 minute timeout per example
-            env={**dict(os.environ), "MPLBACKEND": "Agg"}
+            env={**dict(os.environ), "MPLBACKEND": "Agg"},
         )
 
         # Check that it ran successfully
-        assert result.returncode == 0, f"Example {example_path} failed with exit code {result.returncode}\nSTDOUT: {result.stdout}\nSTDERR: {result.stderr}"
+        assert (
+            result.returncode == 0
+        ), f"Example {example_path} failed with exit code {result.returncode}\nSTDOUT: {result.stdout}\nSTDERR: {result.stderr}"
 
         # Check for expected output files
         output_dir = Path("output/examples") / example_path.parent.name
@@ -78,7 +85,7 @@ class TestExamples:
 
             # Validate JSON files
             for json_file in json_files:
-                with open(json_file, 'r') as f:
+                with open(json_file, "r") as f:
                     data = json.load(f)
 
                 # Basic structure validation
@@ -94,25 +101,25 @@ class TestExamples:
             assert example_file.is_file(), f"{example_file} is not a file"
 
             # Check basic Python syntax
-            with open(example_file, 'r', encoding='utf-8') as f:
+            with open(example_file, "r", encoding="utf-8") as f:
                 content = f.read()
 
             # Must be valid Python
-            compile(content, str(example_file), 'exec')
+            compile(content, str(example_file), "exec")
 
             # Check for required elements
             assert 'if __name__ == "__main__":' in content, f"Missing main guard in {example_file}"
-            assert 'def main():' in content, f"Missing main function in {example_file}"
+            assert "def main():" in content, f"Missing main function in {example_file}"
 
             # Check for output directory usage
-            assert 'output/examples/' in content, f"No output directory usage in {example_file}"
+            assert "output/examples/" in content, f"No output directory usage in {example_file}"
 
     def test_example_dependencies(self, examples_dir: Path):
         """Test that examples have proper dependency declarations."""
         # Load dependencies manifest
         deps_file = examples_dir / "dependencies.json"
         if deps_file.exists():
-            with open(deps_file, 'r') as f:
+            with open(deps_file, "r") as f:
                 deps_data = json.load(f)
 
             example_deps = deps_data.get("example_dependencies", {})
@@ -125,10 +132,10 @@ class TestExamples:
     def test_example_documentation(self, examples_dir: Path):
         """Test that examples have proper documentation."""
         for example_file in examples_dir.rglob("example_*.py"):
-            with open(example_file, 'r', encoding='utf-8') as f:
+            with open(example_file, "r", encoding="utf-8") as f:
                 content = f.read()
 
-            lines = content.split('\n')
+            lines = content.split("\n")
 
             # Check for module docstring
             assert lines[0].startswith('"""'), f"Missing module docstring in {example_file}"
@@ -143,7 +150,7 @@ class TestExamples:
             assert docstring_end > 0, f"Malformed docstring in {example_file}"
 
             # Check docstring content
-            docstring = '\n'.join(lines[1:docstring_end])
+            docstring = "\n".join(lines[1:docstring_end])
             assert "Usage:" in docstring, f"Missing Usage section in docstring for {example_file}"
             assert "Expected output:" in docstring, f"Missing Expected output section in docstring for {example_file}"
 
@@ -164,7 +171,7 @@ class TestExamples:
         assert results_file.exists(), "Test results JSON not created"
 
         # Validate results structure
-        with open(results_file, 'r') as f:
+        with open(results_file, "r") as f:
             test_results = json.load(f)
 
         assert "summary" in test_results, "Missing summary in test results"
@@ -181,6 +188,7 @@ class TestExamples:
         # For now, just ensure examples complete within reasonable time
 
         import time
+
         start_time = time.time()
 
         result = subprocess.run(
@@ -188,7 +196,7 @@ class TestExamples:
             cwd=Path.cwd(),
             capture_output=True,
             text=True,
-            timeout=300  # 5 minute timeout for parallel execution
+            timeout=300,  # 5 minute timeout for parallel execution
         )
 
         end_time = time.time()
@@ -200,7 +208,7 @@ class TestExamples:
     def test_example_domain_coverage(self, examples_dir: Path):
         """Test that examples provide good domain coverage."""
         # Get all domain directories
-        domains = [d.name for d in examples_dir.iterdir() if d.is_dir() and not d.name.startswith('.')]
+        domains = [d.name for d in examples_dir.iterdir() if d.is_dir() and not d.name.startswith(".")]
 
         # Each domain should have at least one example
         for domain in domains:
@@ -212,12 +220,29 @@ class TestExamples:
             readme = domain_dir / "README.md"
             assert readme.exists(), f"Domain {domain} missing README.md"
 
-    @pytest.mark.parametrize("domain", [
-        "core", "dna", "rna", "gwas", "protein", "ml", "networks",
-        "ontology", "phenotype", "ecology", "math", "information",
-        "life_events", "multiomics", "singlecell", "quality",
-        "simulation", "visualization"
-    ])
+    @pytest.mark.parametrize(
+        "domain",
+        [
+            "core",
+            "dna",
+            "rna",
+            "gwas",
+            "protein",
+            "ml",
+            "networks",
+            "ontology",
+            "phenotype",
+            "ecology",
+            "math",
+            "information",
+            "life_events",
+            "multiomics",
+            "singlecell",
+            "quality",
+            "simulation",
+            "visualization",
+        ],
+    )
     def test_domain_examples_exist(self, domain: str, examples_dir: Path):
         """Test that each domain has examples."""
         domain_dir = examples_dir / domain
@@ -231,13 +256,13 @@ class TestExamples:
         if integration_dir.exists():
             for example_file in integration_dir.glob("example_*.py"):
                 # Integration examples should be more complex
-                with open(example_file, 'r', encoding='utf-8') as f:
+                with open(example_file, "r", encoding="utf-8") as f:
                     content = f.read()
 
                 # Should import from multiple domains
-                import_lines = [line for line in content.split('\n') if line.startswith('from metainformant.')]
+                import_lines = [line for line in content.split("\n") if line.startswith("from metainformant.")]
                 # Allow some flexibility - integration examples might use different patterns
-                assert len(content.split('\n')) > 50, f"Integration example {example_file} seems too simple"
+                assert len(content.split("\n")) > 50, f"Integration example {example_file} seems too simple"
 
     def test_example_error_handling(self):
         """Test that examples handle errors gracefully."""
@@ -248,7 +273,7 @@ class TestExamples:
             [sys.executable, "scripts/test_examples.py", "--continue-on-error"],
             cwd=Path.cwd(),
             capture_output=True,
-            text=True
+            text=True,
         )
 
         # Even if examples fail, the test runner should handle it gracefully
@@ -259,8 +284,9 @@ class TestExamples:
         """Test examples that may require network access."""
         # Skip if no network available
         import urllib.request
+
         try:
-            urllib.request.urlopen('http://httpbin.org/get', timeout=5)
+            urllib.request.urlopen("http://httpbin.org/get", timeout=5)
         except:
             pytest.skip("Network not available")
 
@@ -271,7 +297,7 @@ class TestExamples:
             cwd=Path.cwd(),
             capture_output=True,
             text=True,
-            timeout=60
+            timeout=60,
         )
 
         assert result.returncode == 0, f"Network-dependent test failed: {result.stderr}"
@@ -294,6 +320,7 @@ def setup_example_testing():
 
     # Set headless matplotlib backend
     import os
+
     os.environ["MPLBACKEND"] = "Agg"
 
     yield
@@ -311,6 +338,7 @@ def example_output_dir():
 
     # Cleanup
     import shutil
+
     if output_dir.exists():
         shutil.rmtree(output_dir)
 
@@ -323,12 +351,7 @@ def run_example_isolated(example_path: Path, timeout: int = 60) -> subprocess.Co
     env["PYTHONPATH"] = str(Path.cwd())
 
     return subprocess.run(
-        [sys.executable, str(example_path)],
-        cwd=Path.cwd(),
-        capture_output=True,
-        text=True,
-        timeout=timeout,
-        env=env
+        [sys.executable, str(example_path)], cwd=Path.cwd(), capture_output=True, text=True, timeout=timeout, env=env
     )
 
 
@@ -348,7 +371,7 @@ def validate_example_output(example_path: Path) -> Dict[str, Any]:
 
     for json_file in json_files:
         try:
-            with open(json_file, 'r') as f:
+            with open(json_file, "r") as f:
                 data = json.load(f)
 
             # Basic validation

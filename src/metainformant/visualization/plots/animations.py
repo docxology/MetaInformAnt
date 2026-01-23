@@ -19,6 +19,7 @@ logger = logging.get_logger(__name__)
 # Optional imports with graceful fallbacks
 try:
     import numpy as np
+
     HAS_NUMPY = True
 except ImportError:
     np = None
@@ -26,6 +27,7 @@ except ImportError:
 
 try:
     import networkx as nx
+
     HAS_NETWORKX = True
 except ImportError:
     nx = None
@@ -33,11 +35,7 @@ except ImportError:
 
 
 def animate_time_series(
-    data: Any,
-    *,
-    interval: int = 200,
-    output_path: str | Path | None = None,
-    **kwargs
+    data: Any, *, interval: int = 200, output_path: str | Path | None = None, **kwargs
 ) -> Tuple[plt.Figure, FuncAnimation]:
     """Create an animated time series plot.
 
@@ -58,7 +56,7 @@ def animate_time_series(
 
     validation.validate_type(data, (np.ndarray, list), "data")
 
-    fig, ax = plt.subplots(figsize=kwargs.get('figsize', (10, 6)))
+    fig, ax = plt.subplots(figsize=kwargs.get("figsize", (10, 6)))
 
     if isinstance(data, list):
         data = np.array(data)
@@ -69,14 +67,14 @@ def animate_time_series(
     # Setup the plot
     lines = []
     for i in range(data.shape[0]):
-        line, = ax.plot([], [], label=f'Series {i+1}', **kwargs)
+        (line,) = ax.plot([], [], label=f"Series {i+1}", **kwargs)
         lines.append(line)
 
     ax.set_xlim(0, data.shape[1])
     ax.set_ylim(data.min() * 1.1, data.max() * 1.1)
-    ax.set_xlabel('Time')
-    ax.set_ylabel('Value')
-    ax.set_title('Time Series Animation')
+    ax.set_xlabel("Time")
+    ax.set_ylabel("Value")
+    ax.set_title("Time Series Animation")
     if len(lines) > 1:
         ax.legend()
 
@@ -84,22 +82,17 @@ def animate_time_series(
     def animate(frame):
         for i, line in enumerate(lines):
             x_data = np.arange(frame + 1)
-            y_data = data[i, :frame + 1]
+            y_data = data[i, : frame + 1]
             line.set_data(x_data, y_data)
         return lines
 
     anim = FuncAnimation(
-        fig,
-        animate,
-        frames=data.shape[1],
-        interval=interval,
-        blit=True,
-        **kwargs.get('anim_kwargs', {})
+        fig, animate, frames=data.shape[1], interval=interval, blit=True, **kwargs.get("anim_kwargs", {})
     )
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        writer = PillowWriter(fps=1000/interval)
+        writer = PillowWriter(fps=1000 / interval)
         anim.save(output_path, writer=writer)
         logger.info(f"Time series animation saved to {output_path}")
 
@@ -107,11 +100,7 @@ def animate_time_series(
 
 
 def animate_evolution(
-    sequences: List[str],
-    *,
-    interval: int = 500,
-    output_path: str | Path | None = None,
-    **kwargs
+    sequences: List[str], *, interval: int = 500, output_path: str | Path | None = None, **kwargs
 ) -> Tuple[plt.Figure, FuncAnimation]:
     """Create an animated sequence evolution visualization.
 
@@ -132,19 +121,18 @@ def animate_evolution(
     if not sequences:
         raise ValueError("Sequences list cannot be empty")
 
-    fig, ax = plt.subplots(figsize=kwargs.get('figsize', (12, 8)))
+    fig, ax = plt.subplots(figsize=kwargs.get("figsize", (12, 8)))
 
     # Setup the plot
     text_objects = []
     for i, seq in enumerate(sequences):
-        text = ax.text(0.1, 0.9 - i * 0.1, '', fontsize=12,
-                      transform=ax.transAxes, family='monospace')
+        text = ax.text(0.1, 0.9 - i * 0.1, "", fontsize=12, transform=ax.transAxes, family="monospace")
         text_objects.append(text)
 
     ax.set_xlim(0, 1)
     ax.set_ylim(0, 1)
-    ax.axis('off')
-    ax.set_title('Sequence Evolution Animation')
+    ax.axis("off")
+    ax.set_title("Sequence Evolution Animation")
 
     # Animation function
     def animate(frame):
@@ -153,9 +141,9 @@ def animate_evolution(
 
         # Display sequence with gradual revelation
         display_length = min(len(seq), frame - current_seq_idx * len(seq) + 1)
-        displayed_seq = seq[:display_length] if display_length > 0 else ''
+        displayed_seq = seq[:display_length] if display_length > 0 else ""
 
-        text_objects[0].set_text(f'Generation {current_seq_idx + 1}: {displayed_seq}')
+        text_objects[0].set_text(f"Generation {current_seq_idx + 1}: {displayed_seq}")
 
         # Show mutations (simplified - highlight differences from first sequence)
         if current_seq_idx > 0 and displayed_seq:
@@ -163,7 +151,7 @@ def animate_evolution(
             mutations = []
             for i, (orig, curr) in enumerate(zip(original, displayed_seq)):
                 if orig != curr:
-                    mutations.append(f'{i+1}:{orig}->{curr}')
+                    mutations.append(f"{i+1}:{orig}->{curr}")
 
             if mutations:
                 mutation_text = f'Mutations: {", ".join(mutations[:5])}'  # Show first 5
@@ -179,12 +167,12 @@ def animate_evolution(
         frames=total_frames,
         interval=interval,
         blit=False,  # Text animation doesn't work well with blit
-        **kwargs.get('anim_kwargs', {})
+        **kwargs.get("anim_kwargs", {}),
     )
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        writer = PillowWriter(fps=1000/interval)
+        writer = PillowWriter(fps=1000 / interval)
         anim.save(output_path, writer=writer)
         logger.info(f"Sequence evolution animation saved to {output_path}")
 
@@ -197,7 +185,7 @@ def animate_clustering(
     *,
     interval: int = 300,
     output_path: str | Path | None = None,
-    **kwargs
+    **kwargs,
 ) -> Tuple[plt.Figure, FuncAnimation]:
     """Create an animated clustering process visualization.
 
@@ -229,21 +217,20 @@ def animate_clustering(
     if not cluster_labels_over_time:
         raise ValueError("Cluster labels over time cannot be empty")
 
-    fig, ax = plt.subplots(figsize=kwargs.get('figsize', (10, 8)))
+    fig, ax = plt.subplots(figsize=kwargs.get("figsize", (10, 8)))
 
     # Setup the plot
-    scatter = ax.scatter(data[:, 0], data[:, 1], c=cluster_labels_over_time[0],
-                        cmap='tab10', alpha=0.7, **kwargs)
+    scatter = ax.scatter(data[:, 0], data[:, 1], c=cluster_labels_over_time[0], cmap="tab10", alpha=0.7, **kwargs)
 
-    ax.set_xlabel('Feature 1')
-    ax.set_ylabel('Feature 2')
-    ax.set_title('Clustering Animation - Iteration 0')
+    ax.set_xlabel("Feature 1")
+    ax.set_ylabel("Feature 2")
+    ax.set_title("Clustering Animation - Iteration 0")
 
     # Animation function
     def animate(frame):
         labels = cluster_labels_over_time[min(frame, len(cluster_labels_over_time) - 1)]
         scatter.set_color(plt.cm.tab10(labels / max(labels) if max(labels) > 0 else 1))
-        ax.set_title(f'Clustering Animation - Iteration {frame + 1}')
+        ax.set_title(f"Clustering Animation - Iteration {frame + 1}")
         return [scatter]
 
     anim = FuncAnimation(
@@ -252,12 +239,12 @@ def animate_clustering(
         frames=len(cluster_labels_over_time),
         interval=interval,
         blit=True,
-        **kwargs.get('anim_kwargs', {})
+        **kwargs.get("anim_kwargs", {}),
     )
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        writer = PillowWriter(fps=1000/interval)
+        writer = PillowWriter(fps=1000 / interval)
         anim.save(output_path, writer=writer)
         logger.info(f"Clustering animation saved to {output_path}")
 
@@ -265,11 +252,7 @@ def animate_clustering(
 
 
 def animate_network(
-    graphs_over_time: List[Any],
-    *,
-    interval: int = 500,
-    output_path: str | Path | None = None,
-    **kwargs
+    graphs_over_time: List[Any], *, interval: int = 500, output_path: str | Path | None = None, **kwargs
 ) -> Tuple[plt.Figure, FuncAnimation]:
     """Create an animated network evolution visualization.
 
@@ -293,7 +276,7 @@ def animate_network(
     if not graphs_over_time:
         raise ValueError("Graphs over time cannot be empty")
 
-    fig, ax = plt.subplots(figsize=kwargs.get('figsize', (10, 8)))
+    fig, ax = plt.subplots(figsize=kwargs.get("figsize", (10, 8)))
 
     # Get all possible nodes across all time points
     all_nodes = set()
@@ -306,14 +289,12 @@ def animate_network(
 
     # Setup initial plot
     G_initial = graphs_over_time[0]
-    nodes = nx.draw_networkx_nodes(G_initial, pos, ax=ax, node_color='lightblue',
-                                  node_size=300, alpha=0.8)
-    edges = nx.draw_networkx_edges(G_initial, pos, ax=ax, edge_color='gray',
-                                  width=1, alpha=0.6)
+    nodes = nx.draw_networkx_nodes(G_initial, pos, ax=ax, node_color="lightblue", node_size=300, alpha=0.8)
+    edges = nx.draw_networkx_edges(G_initial, pos, ax=ax, edge_color="gray", width=1, alpha=0.6)
     labels = nx.draw_networkx_labels(G_initial, pos, ax=ax, font_size=8)
 
-    ax.set_title('Network Evolution - Time 0')
-    ax.axis('off')
+    ax.set_title("Network Evolution - Time 0")
+    ax.axis("off")
 
     # Animation function
     def animate(frame):
@@ -321,15 +302,23 @@ def animate_network(
 
         # Clear previous elements
         ax.clear()
-        ax.axis('off')
+        ax.axis("off")
 
         # Draw current network
-        nx.draw(G, pos, ax=ax, with_labels=True,
-               node_color='lightblue', node_size=300,
-               edge_color='gray', width=1, alpha=0.8,
-               font_size=8)
+        nx.draw(
+            G,
+            pos,
+            ax=ax,
+            with_labels=True,
+            node_color="lightblue",
+            node_size=300,
+            edge_color="gray",
+            width=1,
+            alpha=0.8,
+            font_size=8,
+        )
 
-        ax.set_title(f'Network Evolution - Time {frame + 1}')
+        ax.set_title(f"Network Evolution - Time {frame + 1}")
 
         return []
 
@@ -339,12 +328,12 @@ def animate_network(
         frames=len(graphs_over_time),
         interval=interval,
         blit=False,  # Network drawing doesn't work well with blit
-        **kwargs.get('anim_kwargs', {})
+        **kwargs.get("anim_kwargs", {}),
     )
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        writer = PillowWriter(fps=1000/interval)
+        writer = PillowWriter(fps=1000 / interval)
         anim.save(output_path, writer=writer)
         logger.info(f"Network animation saved to {output_path}")
 
@@ -352,11 +341,7 @@ def animate_network(
 
 
 def animate_trajectory(
-    trajectories: List[Any],
-    *,
-    interval: int = 200,
-    output_path: str | Path | None = None,
-    **kwargs
+    trajectories: List[Any], *, interval: int = 200, output_path: str | Path | None = None, **kwargs
 ) -> Tuple[plt.Figure, FuncAnimation]:
     """Create an animated trajectory visualization.
 
@@ -389,7 +374,7 @@ def animate_trajectory(
             raise ValueError("Each trajectory must be a 2D array with shape (n_points, 2)")
         traj_arrays.append(traj)
 
-    fig, ax = plt.subplots(figsize=kwargs.get('figsize', (10, 8)))
+    fig, ax = plt.subplots(figsize=kwargs.get("figsize", (10, 8)))
 
     # Setup the plot
     colors = plt.cm.tab10(np.linspace(0, 1, len(traj_arrays)))
@@ -402,8 +387,8 @@ def animate_trajectory(
     points = []
     trails = []
     for i, color in enumerate(colors):
-        point, = ax.plot([], [], 'o', color=color, markersize=8, alpha=0.9)
-        trail, = ax.plot([], [], '-', color=color, alpha=0.6, linewidth=2)
+        (point,) = ax.plot([], [], "o", color=color, markersize=8, alpha=0.9)
+        (trail,) = ax.plot([], [], "-", color=color, alpha=0.6, linewidth=2)
         points.append(point)
         trails.append(trail)
 
@@ -413,9 +398,9 @@ def animate_trajectory(
     ax.set_xlim(all_x.min() * 1.1, all_x.max() * 1.1)
     ax.set_ylim(all_y.min() * 1.1, all_y.max() * 1.1)
 
-    ax.set_xlabel('X Position')
-    ax.set_ylabel('Y Position')
-    ax.set_title('Trajectory Animation')
+    ax.set_xlabel("X Position")
+    ax.set_ylabel("Y Position")
+    ax.set_title("Trajectory Animation")
     ax.grid(True, alpha=0.3)
 
     # Animation function
@@ -428,30 +413,17 @@ def animate_trajectory(
             point.set_data([traj[frame_idx, 0]], [traj[frame_idx, 1]])
 
             # Show trail up to current frame
-            trail_data = traj[:frame_idx + 1]
+            trail_data = traj[: frame_idx + 1]
             trail.set_data(trail_data[:, 0], trail_data[:, 1])
 
         return points + trails
 
-    anim = FuncAnimation(
-        fig,
-        animate,
-        frames=max_frames,
-        interval=interval,
-        blit=True,
-        **kwargs.get('anim_kwargs', {})
-    )
+    anim = FuncAnimation(fig, animate, frames=max_frames, interval=interval, blit=True, **kwargs.get("anim_kwargs", {}))
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        writer = PillowWriter(fps=1000/interval)
+        writer = PillowWriter(fps=1000 / interval)
         anim.save(output_path, writer=writer)
         logger.info(f"Trajectory animation saved to {output_path}")
 
     return fig, anim
-
-
-
-
-
-

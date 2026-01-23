@@ -47,9 +47,9 @@ def validate_config_file(
         # Check for required sections (either 'steps' OR 'downloads'/'processing')
         has_steps = "steps" in raw_config
         has_download_process = "downloads" in raw_config or "processing" in raw_config
-        
+
         if not (has_steps or has_download_process):
-             errors.append("Configuration must contain 'steps' OR 'downloads'/'processing' sections")
+            errors.append("Configuration must contain 'steps' OR 'downloads'/'processing' sections")
 
         # Validate 'steps' workflow if present
         if has_steps:
@@ -65,13 +65,13 @@ def validate_config_file(
 
         # Validate 'downloads'/'processing' workflow if present
         if "downloads" in raw_config:
-             if not isinstance(raw_config["downloads"], dict):
+            if not isinstance(raw_config["downloads"], dict):
                 errors.append("'downloads' must be a dictionary")
-             else:
-                 for name, dl_config in raw_config["downloads"].items():
-                     if not isinstance(dl_config, dict) or "url" not in dl_config:
-                         errors.append(f"Download '{name}' missing 'url'")
-        
+            else:
+                for name, dl_config in raw_config["downloads"].items():
+                    if not isinstance(dl_config, dict) or "url" not in dl_config:
+                        errors.append(f"Download '{name}' missing 'url'")
+
         if "processing" in raw_config:
             if not isinstance(raw_config["processing"], dict):
                 errors.append("'processing' must be a dictionary")
@@ -80,6 +80,7 @@ def validate_config_file(
         if schema_path:
             try:
                 from metainformant.core.utils.errors import validate_json_schema
+
                 validate_json_schema(raw_config, schema_path)
             except Exception as e:
                 errors.append(f"Schema validation failed: {e}")
@@ -105,45 +106,22 @@ def create_sample_config(
         sample_config = {
             "name": "Sample Bioinformatics Workflow",
             "description": "Basic workflow template",
-            "downloads": {
-                "sample_data": {
-                    "url": "https://example.com/data.json",
-                    "filename": "data.json"
-                }
-            },
-            "processing": {
-                "analysis": {
-                    "type": "basic_analysis",
-                    "parameters": {"param1": "value1"}
-                }
-            }
+            "downloads": {"sample_data": {"url": "https://example.com/data.json", "filename": "data.json"}},
+            "processing": {"analysis": {"type": "basic_analysis", "parameters": {"param1": "value1"}}},
         }
     elif sample_type == "scientific":
-         sample_config = {
+        sample_config = {
             "name": "Scientific Workflow",
             "description": "Scientific data processing",
-            "downloads": {
-                "gene_expression": {
-                    "url": "https://example.com/genes.csv",
-                    "filename": "genes.csv"
-                }
-            },
-            "processing": {
-                "normalization": {
-                    "type": "normalize",
-                    "method": "log2"
-                }
-            }
+            "downloads": {"gene_expression": {"url": "https://example.com/genes.csv", "filename": "genes.csv"}},
+            "processing": {"normalization": {"type": "normalize", "method": "log2"}},
         }
     elif sample_type == "advanced":
         sample_config = {
             "name": "Advanced Workflow",
             "description": "advanced processing",
             "downloads": {},
-            "processing": {
-                 "step1": {"type": "complex", "param": 1},
-                 "step2": {"type": "complex", "param": 2}
-            }
+            "processing": {"step1": {"type": "complex", "param": 1}, "step2": {"type": "complex", "param": 2}},
         }
     else:
         sample_config = {"description": "Generic config", "downloads": {}, "processing": {}}
@@ -177,15 +155,9 @@ def download_and_process_data(
 
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     start_time = time.time()
-    results = {
-        "config": config_data,
-        "downloads": {},
-        "processing": {},
-        "errors": [],
-        "start_time": start_time
-    }
+    results = {"config": config_data, "downloads": {}, "processing": {}, "errors": [], "start_time": start_time}
 
     # 1. Downloads
     downloads = config_data.get("downloads", {})
@@ -193,14 +165,14 @@ def download_and_process_data(
         try:
             url = dl_config.get("url")
             filename = dl_config.get("filename", f"{name}.dat")
-            
+
             if not url:
                 raise ValueError(f"Download '{name}' missing URL")
-                
+
             dest_path = output_dir / filename
             if verbose:
                 logger.info(f"Downloading {name} from {url} to {dest_path}")
-            
+
             # Simple simulation for tests if no internet or httpbin
             # In real usage, calling io.download_file
             try:
@@ -211,7 +183,7 @@ def download_and_process_data(
                 # For the test 'test_download_and_process_data', it expects to handle failure gracefully or pass on HTTP error
                 # The test expects keys in results even on failure
                 results["downloads"][name] = {"status": "failed", "error": str(e)}
-                
+
         except Exception as e:
             results["errors"].append(f"Download {name} error: {e}")
 
@@ -219,16 +191,16 @@ def download_and_process_data(
     processing = config_data.get("processing", {})
     for name, proc_config in processing.items():
         try:
-             # Placeholder processing logic
-             results["processing"][name] = {"status": "completed", "config": proc_config}
+            # Placeholder processing logic
+            results["processing"][name] = {"status": "completed", "config": proc_config}
         except Exception as e:
-             results["errors"].append(f"Processing {name} error: {e}")
+            results["errors"].append(f"Processing {name} error: {e}")
 
     results["end_time"] = time.time()
-    
+
     # Save results to file
     io.dump_json(results, output_dir / "processing_results.json")
-    
+
     return results
 
 
@@ -249,26 +221,26 @@ def run_config_based_workflow(
         # Load and validate config
         is_valid, errors = validate_config_file(config_path)
         if not is_valid:
-             return {"success": False, "error": f"Invalid config: {errors}", "config_path": str(config_path)}
+            return {"success": False, "error": f"Invalid config: {errors}", "config_path": str(config_path)}
 
         config_data = config.load_mapping_from_file(config_path)
-        
+
         # Check type of workflow
         if "steps" in config_data:
             # Use Orchestrator for 'steps' based workflow
             # (We keep the Orchestrator class if needed, or simple implementation here if tests don't strictly require it for this function)
             # The test_core_processing.py seems to test the download/process style specifically
-            # But let's support both if possible. 
+            # But let's support both if possible.
             # For now, simplistic implementation to pass tests.
             orchestrator = BaseWorkflowOrchestrator(config_data)
             return orchestrator.run_workflow()
         else:
-             # Assume download/process style
-             output_dir = Path("output") / Path(config_path).stem
-             results = download_and_process_data(config_data, output_dir, verbose)
-             results["success"] = len(results.get("errors", [])) == 0
-             results["config_path"] = str(config_path)
-             return results
+            # Assume download/process style
+            output_dir = Path("output") / Path(config_path).stem
+            results = download_and_process_data(config_data, output_dir, verbose)
+            results["success"] = len(results.get("errors", [])) == 0
+            results["config_path"] = str(config_path)
+            return results
 
     except Exception as e:
         return {"success": False, "error": str(e), "config_path": str(config_path)}
@@ -276,6 +248,7 @@ def run_config_based_workflow(
 
 class WorkflowStep:
     """Represents a single step in a workflow."""
+
     def __init__(self, name: str, function: Callable, config: Dict[str, Any], depends_on: Optional[List[str]] = None):
         self.name = name
         self.function = function
@@ -302,18 +275,12 @@ class WorkflowStep:
 
 class BaseWorkflowOrchestrator:
     """Base class for workflow orchestration."""
+
     def __init__(self, config: Dict[str, Any], working_dir: Path = None):
         self.config = config
         self.steps = {}
         # Minimal implementation for compatibility if needed
         pass
-    
+
     def run_workflow(self) -> Dict[str, Any]:
         return {"success": True, "results": {}}
-
-
-
-
-
-
-

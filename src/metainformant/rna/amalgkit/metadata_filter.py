@@ -21,7 +21,7 @@ def filter_selected_metadata(
     require_sampled: bool = True,
     require_qualified: bool = True,
     exclude_excluded: bool = True,
-    exclude_lite_files: bool = True
+    exclude_lite_files: bool = True,
 ) -> Path:
     """Filter metadata to only selected samples.
 
@@ -55,7 +55,7 @@ def filter_selected_metadata(
 
     # Read metadata
     try:
-        df = pd.read_csv(metadata_path, sep='\t', low_memory=False)
+        df = pd.read_csv(metadata_path, sep="\t", low_memory=False)
         logger.debug(f"Loaded {len(df)} samples from metadata")
     except Exception as e:
         raise ValueError(f"Failed to read metadata file: {e}")
@@ -63,11 +63,11 @@ def filter_selected_metadata(
     # Check required columns exist
     required_cols = []
     if require_sampled:
-        required_cols.append('is_sampled')
+        required_cols.append("is_sampled")
     if require_qualified:
-        required_cols.append('is_qualified')
+        required_cols.append("is_qualified")
     if exclude_excluded:
-        required_cols.append('exclusion')
+        required_cols.append("exclusion")
 
     missing_cols = [col for col in required_cols if col not in df.columns]
     if missing_cols:
@@ -77,58 +77,62 @@ def filter_selected_metadata(
     original_count = len(df)
 
     if require_sampled:
-        df = df[df['is_sampled'] == 'yes']
+        df = df[df["is_sampled"] == "yes"]
         logger.debug(f"After is_sampled=yes filter: {len(df)} samples")
 
     if require_qualified:
-        df = df[df['is_qualified'] == 'yes']
+        df = df[df["is_qualified"] == "yes"]
         logger.debug(f"After is_qualified=yes filter: {len(df)} samples")
 
     # Explicitly filter for RNA-Seq/TRANSCRIPTOMIC if it's an RNA workflow
-    if 'lib_strategy' in df.columns:
+    if "lib_strategy" in df.columns:
         initial_count = len(df)
-        df = df[df['lib_strategy'].str.contains('RNA-Seq|cDNA', case=False, na=False)]
+        df = df[df["lib_strategy"].str.contains("RNA-Seq|cDNA", case=False, na=False)]
         filtered_count = initial_count - len(df)
         if filtered_count > 0:
             logger.info(f"Filtered out {filtered_count} non-RNA-Seq samples based on lib_strategy")
-            
-    if 'lib_source' in df.columns:
+
+    if "lib_source" in df.columns:
         initial_count = len(df)
-        df = df[df['lib_source'].str.contains('TRANSCRIPTOMIC', case=False, na=False)]
+        df = df[df["lib_source"].str.contains("TRANSCRIPTOMIC", case=False, na=False)]
         filtered_count = initial_count - len(df)
         if filtered_count > 0:
             logger.info(f"Filtered out {filtered_count} non-TRANSCRIPTOMIC samples based on lib_source")
 
     if exclude_excluded:
         # Exclude rows where exclusion column has values (not empty/NaN and not "no")
-        df = df[df['exclusion'].isna() | (df['exclusion'] == '') | (df['exclusion'] == 'no')]
+        df = df[df["exclusion"].isna() | (df["exclusion"] == "") | (df["exclusion"] == "no")]
         logger.debug(f"After exclusion filter: {len(df)} samples")
 
     if exclude_lite_files:
         # Only exclude if ALL available links contain 'lite'
         # If any link is NOT lite (e.g. AWS has full data but NCBI is lite), we should keep it
-        link_cols = [col for col in ['AWS_Link', 'NCBI_Link', 'GCP_Link'] if col in df.columns]
+        link_cols = [col for col in ["AWS_Link", "NCBI_Link", "GCP_Link"] if col in df.columns]
         if link_cols:
             # A row is 'all_lite' if every link it has contains 'lite'
             # We initialize all_lite_mask as True for all rows
             all_lite_mask = pd.Series([True] * len(df), index=df.index)
-            
+
             for link_col in link_cols:
                 # A row is NOT all_lite if this link is NOT lite (and not empty)
-                is_link_lite = df[link_col].astype(str).str.contains('lite', case=False, na=False)
-                is_link_empty = df[link_col].isna() | (df[link_col].astype(str) == 'nan') | (df[link_col].astype(str) == '')
-                
+                is_link_lite = df[link_col].astype(str).str.contains("lite", case=False, na=False)
+                is_link_empty = (
+                    df[link_col].isna() | (df[link_col].astype(str) == "nan") | (df[link_col].astype(str) == "")
+                )
+
                 # We can't say it's lite if the link is empty; empty link means we can't use it.
                 # If a link is not empty AND not lite, then the whole row is NOT all_lite.
-                all_lite_mask &= (is_link_lite | is_link_empty)
-            
+                all_lite_mask &= is_link_lite | is_link_empty
+
             # Additional check: if it's all empty, that's also effectively "lite" (no data)
             all_empty = pd.Series([True] * len(df), index=df.index)
             for link_col in link_cols:
-                all_empty &= (df[link_col].isna() | (df[link_col].astype(str) == 'nan') | (df[link_col].astype(str) == ''))
-            
+                all_empty &= (
+                    df[link_col].isna() | (df[link_col].astype(str) == "nan") | (df[link_col].astype(str) == "")
+                )
+
             exclude_mask = all_lite_mask | all_empty
-            
+
             if exclude_mask.any():
                 lite_count = exclude_mask.sum()
                 logger.warning(f"Excluding {lite_count} samples with only LITE or missing cloud sequence data")
@@ -146,7 +150,7 @@ def filter_selected_metadata(
     # Write filtered metadata
     try:
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        df.to_csv(output_path, sep='\t', index=False)
+        df.to_csv(output_path, sep="\t", index=False)
         logger.info(f"Created filtered metadata with {filtered_count} samples: {output_path}")
     except Exception as e:
         raise ValueError(f"Failed to write filtered metadata: {e}")
@@ -172,16 +176,14 @@ def get_sample_count(metadata_path: str | Path) -> int:
         raise FileNotFoundError(f"Metadata file not found: {metadata_path}")
 
     try:
-        df = pd.read_csv(metadata_path, sep='\t', low_memory=False)
+        df = pd.read_csv(metadata_path, sep="\t", low_memory=False)
         return len(df)
     except Exception as e:
         raise ValueError(f"Failed to read metadata file: {e}")
 
 
 def validate_filtered_metadata(
-    original_path: str | Path,
-    filtered_path: str | Path,
-    expected_count: Optional[int] = None
+    original_path: str | Path, filtered_path: str | Path, expected_count: Optional[int] = None
 ) -> bool:
     """Validate that filtered metadata looks correct.
 
@@ -212,8 +214,8 @@ def validate_filtered_metadata(
             logger.warning(f"Filtered count ({filtered_count}) differs from expected ({expected_count})")
 
         # Check that filtered metadata has required columns
-        df = pd.read_csv(filtered_path, sep='\t', nrows=1)
-        required_cols = ['run', 'experiment', 'scientific_name']
+        df = pd.read_csv(filtered_path, sep="\t", nrows=1)
+        required_cols = ["run", "experiment", "scientific_name"]
         missing_cols = [col for col in required_cols if col not in df.columns]
         if missing_cols:
             raise ValueError(f"Filtered metadata missing required columns: {missing_cols}")

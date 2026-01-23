@@ -55,20 +55,20 @@ def parse_obo(path: str | Path) -> Ontology:
     while i < len(lines):
         line = lines[i].strip()
 
-        if line.startswith('[') and line.endswith(']'):
+        if line.startswith("[") and line.endswith("]"):
             # Process previous stanza if exists
             if stanza_lines:
                 stanza_type = _get_stanza_type(stanza_lines)
-                if stanza_type == 'Term':
+                if stanza_type == "Term":
                     term = _parse_term_stanza(stanza_lines)
                     if term:
                         terms[term.id] = term
-                elif stanza_type == 'Typedef':
+                elif stanza_type == "Typedef":
                     # Handle typedefs (relationship types)
                     typedef_info = _parse_typedef_stanza(stanza_lines)
                     if typedef_info:
                         header_metadata[f"typedef:{typedef_info['id']}"] = typedef_info
-                elif stanza_type == 'Instance':
+                elif stanza_type == "Instance":
                     # Handle instances if present
                     instance_info = _parse_instance_stanza(stanza_lines)
                     if instance_info:
@@ -76,7 +76,7 @@ def parse_obo(path: str | Path) -> Ontology:
 
             # Start new stanza
             stanza_lines = [line]
-        elif line and not line.startswith('!'):
+        elif line and not line.startswith("!"):
             # Add non-comment lines to current stanza
             stanza_lines.append(line)
 
@@ -85,7 +85,7 @@ def parse_obo(path: str | Path) -> Ontology:
     # Process final stanza
     if stanza_lines:
         stanza_type = _get_stanza_type(stanza_lines)
-        if stanza_type == 'Term':
+        if stanza_type == "Term":
             term = _parse_term_stanza(stanza_lines)
             if term:
                 terms[term.id] = term
@@ -103,11 +103,11 @@ def _parse_header(lines: List[str]) -> Dict[str, Any]:
     header = {}
     i = 0
 
-    while i < len(lines) and not lines[i].startswith('['):
+    while i < len(lines) and not lines[i].startswith("["):
         line = lines[i].strip()
-        if line and not line.startswith('!'):
-            if ':' in line:
-                key, value = line.split(':', 1)
+        if line and not line.startswith("!"):
+            if ":" in line:
+                key, value = line.split(":", 1)
                 key = key.strip()
                 value = value.strip()
                 header[key] = value
@@ -118,7 +118,7 @@ def _parse_header(lines: List[str]) -> Dict[str, Any]:
 
 def _get_stanza_type(stanza_lines: List[str]) -> Optional[str]:
     """Extract stanza type from stanza lines."""
-    if stanza_lines and stanza_lines[0].startswith('[') and stanza_lines[0].endswith(']'):
+    if stanza_lines and stanza_lines[0].startswith("[") and stanza_lines[0].endswith("]"):
         return stanza_lines[0][1:-1]
     return None
 
@@ -129,58 +129,67 @@ def _parse_term_stanza(stanza_lines: List[str]) -> Optional[Term]:
 
     for line in stanza_lines[1:]:  # Skip [Term] line
         line = line.strip()
-        if not line or line.startswith('!'):
+        if not line or line.startswith("!"):
             continue
 
-        if ':' not in line:
+        if ":" not in line:
             continue
 
-        key, value = line.split(':', 1)
+        key, value = line.split(":", 1)
         key = key.strip()
         value = value.strip()
 
         # Handle multi-line values and qualifiers
-        if key in ['name', 'namespace', 'def', 'comment']:
+        if key in ["name", "namespace", "def", "comment"]:
             # Remove quotes if present
             value = value.strip('"')
             term_data[key] = value
-        elif key == 'id':
-            term_data['id'] = value
-        elif key == 'is_obsolete':
-            term_data['is_obsolete'] = value.lower() == 'true'
-        elif key.startswith('synonym'):
-            if 'synonyms' not in term_data:
-                term_data['synonyms'] = []
+        elif key == "id":
+            term_data["id"] = value
+        elif key == "is_obsolete":
+            term_data["is_obsolete"] = value.lower() == "true"
+        elif key.startswith("synonym"):
+            if "synonyms" not in term_data:
+                term_data["synonyms"] = []
             # Extract synonym text from quotes
             synonym_match = re.search(r'"([^"]*)"', value)
             if synonym_match:
-                term_data['synonyms'].append(synonym_match.group(1))
-        elif key.startswith('xref'):
-            if 'xrefs' not in term_data:
-                term_data['xrefs'] = []
-            term_data['xrefs'].append(value)
-        elif key in ['is_a', 'part_of', 'regulates', 'negatively_regulates', 'positively_regulates',
-                     'has_part', 'occurs_in', 'happens_during', 'ends_during']:
-            if 'relationships' not in term_data:
-                term_data['relationships'] = []
-            term_data['relationships'].append((key, value))
+                term_data["synonyms"].append(synonym_match.group(1))
+        elif key.startswith("xref"):
+            if "xrefs" not in term_data:
+                term_data["xrefs"] = []
+            term_data["xrefs"].append(value)
+        elif key in [
+            "is_a",
+            "part_of",
+            "regulates",
+            "negatively_regulates",
+            "positively_regulates",
+            "has_part",
+            "occurs_in",
+            "happens_during",
+            "ends_during",
+        ]:
+            if "relationships" not in term_data:
+                term_data["relationships"] = []
+            term_data["relationships"].append((key, value))
 
-    if 'id' not in term_data:
+    if "id" not in term_data:
         return None
 
     # Create term
     term = create_term(
-        id=term_data['id'],
-        name=term_data.get('name'),
-        definition=term_data.get('def'),
-        namespace=term_data.get('namespace'),
-        synonyms=term_data.get('synonyms', []),
-        xrefs=term_data.get('xrefs', []),
-        is_obsolete=term_data.get('is_obsolete', False)
+        id=term_data["id"],
+        name=term_data.get("name"),
+        definition=term_data.get("def"),
+        namespace=term_data.get("namespace"),
+        synonyms=term_data.get("synonyms", []),
+        xrefs=term_data.get("xrefs", []),
+        is_obsolete=term_data.get("is_obsolete", False),
     )
 
     # Store relationships for later processing
-    term.metadata['relationships'] = term_data.get('relationships', [])
+    term.metadata["relationships"] = term_data.get("relationships", [])
 
     return term
 
@@ -191,24 +200,24 @@ def _parse_typedef_stanza(stanza_lines: List[str]) -> Optional[Dict[str, Any]]:
 
     for line in stanza_lines[1:]:
         line = line.strip()
-        if not line or line.startswith('!'):
+        if not line or line.startswith("!"):
             continue
 
-        if ':' not in line:
+        if ":" not in line:
             continue
 
-        key, value = line.split(':', 1)
+        key, value = line.split(":", 1)
         key = key.strip()
         value = value.strip()
 
-        if key == 'id':
-            typedef_data['id'] = value
-        elif key == 'name':
-            typedef_data['name'] = value
-        elif key == 'def':
-            typedef_data['definition'] = value.strip('"')
+        if key == "id":
+            typedef_data["id"] = value
+        elif key == "name":
+            typedef_data["name"] = value
+        elif key == "def":
+            typedef_data["definition"] = value.strip('"')
 
-    return typedef_data if 'id' in typedef_data else None
+    return typedef_data if "id" in typedef_data else None
 
 
 def _parse_instance_stanza(stanza_lines: List[str]) -> Optional[Dict[str, Any]]:
@@ -217,22 +226,22 @@ def _parse_instance_stanza(stanza_lines: List[str]) -> Optional[Dict[str, Any]]:
 
     for line in stanza_lines[1:]:
         line = line.strip()
-        if not line or line.startswith('!'):
+        if not line or line.startswith("!"):
             continue
 
-        if ':' not in line:
+        if ":" not in line:
             continue
 
-        key, value = line.split(':', 1)
+        key, value = line.split(":", 1)
         key = key.strip()
         value = value.strip()
 
-        if key == 'id':
-            instance_data['id'] = value
-        elif key == 'name':
-            instance_data['name'] = value
+        if key == "id":
+            instance_data["id"] = value
+        elif key == "name":
+            instance_data["name"] = value
 
-    return instance_data if 'id' in instance_data else None
+    return instance_data if "id" in instance_data else None
 
 
 def _extract_relationships_from_terms(terms: Dict[str, Term]) -> List[Relationship]:
@@ -240,13 +249,9 @@ def _extract_relationships_from_terms(terms: Dict[str, Term]) -> List[Relationsh
     relationships = []
 
     for term in terms.terms.values():
-        if 'relationships' in term.metadata:
-            for rel_type, target_id in term.metadata['relationships']:
-                relationship = create_relationship(
-                    source=term.id,
-                    target=target_id,
-                    relation_type=rel_type
-                )
+        if "relationships" in term.metadata:
+            for rel_type, target_id in term.metadata["relationships"]:
+                relationship = create_relationship(source=term.id, target=target_id, relation_type=rel_type)
                 relationships.append(relationship)
 
     return relationships
@@ -272,7 +277,7 @@ def validate_obo_format(path: str | Path) -> tuple[bool, List[str]]:
         # Check for header
         has_header = False
         for line in lines[:10]:  # Check first 10 lines for format-version
-            if line.startswith('format-version:'):
+            if line.startswith("format-version:"):
                 has_header = True
                 break
 
@@ -282,7 +287,7 @@ def validate_obo_format(path: str | Path) -> tuple[bool, List[str]]:
         # Check for at least one [Term] stanza
         has_term = False
         for line in lines:
-            if line.strip() == '[Term]':
+            if line.strip() == "[Term]":
                 has_term = True
                 break
 
@@ -316,12 +321,12 @@ def get_obo_statistics(path: str | Path) -> Dict[str, Any]:
     lines = content.splitlines()
 
     stats = {
-        'total_lines': len(lines),
-        'term_count': 0,
-        'typedef_count': 0,
-        'instance_count': 0,
-        'relationship_count': 0,
-        'obsolete_count': 0
+        "total_lines": len(lines),
+        "term_count": 0,
+        "typedef_count": 0,
+        "instance_count": 0,
+        "relationship_count": 0,
+        "obsolete_count": 0,
     }
 
     current_stanza = None
@@ -329,25 +334,19 @@ def get_obo_statistics(path: str | Path) -> Dict[str, Any]:
     for line in lines:
         line = line.strip()
 
-        if line.startswith('[') and line.endswith(']'):
+        if line.startswith("[") and line.endswith("]"):
             current_stanza = line[1:-1]
-            if current_stanza == 'Term':
-                stats['term_count'] += 1
-            elif current_stanza == 'Typedef':
-                stats['typedef_count'] += 1
-            elif current_stanza == 'Instance':
-                stats['instance_count'] += 1
-        elif current_stanza == 'Term' and line.startswith('is_obsolete: true'):
-            stats['obsolete_count'] += 1
-        elif current_stanza == 'Term' and ':' in line:
-            key = line.split(':', 1)[0].strip()
-            if key in ['is_a', 'part_of', 'regulates', 'has_part', 'occurs_in']:
-                stats['relationship_count'] += 1
+            if current_stanza == "Term":
+                stats["term_count"] += 1
+            elif current_stanza == "Typedef":
+                stats["typedef_count"] += 1
+            elif current_stanza == "Instance":
+                stats["instance_count"] += 1
+        elif current_stanza == "Term" and line.startswith("is_obsolete: true"):
+            stats["obsolete_count"] += 1
+        elif current_stanza == "Term" and ":" in line:
+            key = line.split(":", 1)[0].strip()
+            if key in ["is_a", "part_of", "regulates", "has_part", "occurs_in"]:
+                stats["relationship_count"] += 1
 
     return stats
-
-
-
-
-
-

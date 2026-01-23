@@ -66,12 +66,12 @@ class ContaminationDetector:
             k = 20  # k-mer size
             contaminant_kmers = set()
             for i in range(len(contaminant_seq) - k + 1):
-                contaminant_kmers.add(contaminant_seq[i:i+k])
+                contaminant_kmers.add(contaminant_seq[i : i + k])
 
             for seq in sequences:
                 seq_kmers = set()
                 for i in range(len(seq) - k + 1):
-                    seq_kmers.add(seq[i:i+k])
+                    seq_kmers.add(seq[i : i + k])
 
                 # Calculate Jaccard similarity
                 intersection = len(contaminant_kmers.intersection(seq_kmers))
@@ -86,12 +86,14 @@ class ContaminationDetector:
             contamination_rate = matches / total_sequences
 
             if contamination_rate >= threshold:
-                results.append({
-                    "contaminant": contaminant_name,
-                    "contamination_rate": contamination_rate,
-                    "matches": matches,
-                    "average_similarity": np.mean(match_positions) if match_positions else 0,
-                })
+                results.append(
+                    {
+                        "contaminant": contaminant_name,
+                        "contamination_rate": contamination_rate,
+                        "matches": matches,
+                        "average_similarity": np.mean(match_positions) if match_positions else 0,
+                    }
+                )
 
         detected = len(results) > 0
 
@@ -102,9 +104,9 @@ class ContaminationDetector:
             "threshold": threshold,
         }
 
-    def detect_cross_species_contamination(self, sequences: List[str],
-                                        target_species: str,
-                                        other_species: List[str]) -> Dict[str, Any]:
+    def detect_cross_species_contamination(
+        self, sequences: List[str], target_species: str, other_species: List[str]
+    ) -> Dict[str, Any]:
         """Detect cross-species contamination.
 
         Args:
@@ -136,15 +138,15 @@ class ContaminationDetector:
             contaminant_kmers = set()
 
             for i in range(len(target_genome) - k + 1):
-                target_kmers.add(target_genome[i:i+k])
+                target_kmers.add(target_genome[i : i + k])
 
             for i in range(len(contaminant_genome) - k + 1):
-                contaminant_kmers.add(contaminant_genome[i:i+k])
+                contaminant_kmers.add(contaminant_genome[i : i + k])
 
             for seq in sequences:
                 seq_kmers = set()
                 for i in range(len(seq) - k + 1):
-                    seq_kmers.add(seq[i:i+k])
+                    seq_kmers.add(seq[i : i + k])
 
                 # Check similarity to contaminant vs target
                 contaminant_sim = len(seq_kmers.intersection(contaminant_kmers)) / len(seq_kmers) if seq_kmers else 0
@@ -156,11 +158,13 @@ class ContaminationDetector:
             contamination_rate = matches / len(sequences) if sequences else 0
 
             if contamination_rate > 0.05:  # 5% threshold
-                results.append({
-                    "species": species,
-                    "contamination_rate": contamination_rate,
-                    "matches": matches,
-                })
+                results.append(
+                    {
+                        "species": species,
+                        "contamination_rate": contamination_rate,
+                        "matches": matches,
+                    }
+                )
 
         detected = len(results) > 0
 
@@ -171,8 +175,9 @@ class ContaminationDetector:
             "total_sequences_analyzed": len(sequences),
         }
 
-    def detect_adapter_contamination(self, sequences: List[str],
-                                   adapters: Optional[List[str]] = None) -> Dict[str, Any]:
+    def detect_adapter_contamination(
+        self, sequences: List[str], adapters: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
         """Detect adapter sequence contamination.
 
         Args:
@@ -189,9 +194,9 @@ class ContaminationDetector:
         if adapters is None:
             adapters = [
                 "AGATCGGAAGAG",  # TruSeq Universal Adapter
-                "GATCGGAAGAG",   # TruSeq Adapter, Read 1
+                "GATCGGAAGAG",  # TruSeq Adapter, Read 1
                 "AGATCGGAAGAGCGGTTCAGCAGGAATGCCGAG",  # TruSeq Adapter, Read 2
-                "CTGTCTCTTAT",   # Nextera Transposase Sequence
+                "CTGTCTCTTAT",  # Nextera Transposase Sequence
             ]
 
         logger.info(f"Detecting adapter contamination in {len(sequences)} sequences")
@@ -212,8 +217,8 @@ class ContaminationDetector:
                     match_positions.append(pos)
 
                 # Also check for partial matches at sequence ends
-                seq_start = seq[:len(adapter)]
-                seq_end = seq[-len(adapter):]
+                seq_start = seq[: len(adapter)]
+                seq_end = seq[-len(adapter) :]
 
                 if adapter.startswith(seq_start[:10]) or adapter.endswith(seq_end[-10:]):
                     adapter_matches += 1
@@ -222,12 +227,14 @@ class ContaminationDetector:
             contamination_rate = adapter_matches / total_sequences
 
             if contamination_rate > 0.01:  # 1% threshold
-                results.append({
-                    "adapter_sequence": adapter,
-                    "contamination_rate": contamination_rate,
-                    "matches": adapter_matches,
-                    "positions": match_positions[:10],  # First 10 positions
-                })
+                results.append(
+                    {
+                        "adapter_sequence": adapter,
+                        "contamination_rate": contamination_rate,
+                        "matches": adapter_matches,
+                        "positions": match_positions[:10],  # First 10 positions
+                    }
+                )
 
         detected = len(results) > 0
 
@@ -237,8 +244,7 @@ class ContaminationDetector:
             "total_sequences_analyzed": total_sequences,
         }
 
-    def detect_duplication_contamination(self, sequences: List[str],
-                                       max_duplicates: int = 10) -> Dict[str, Any]:
+    def detect_duplication_contamination(self, sequences: List[str], max_duplicates: int = 10) -> Dict[str, Any]:
         """Detect excessive sequence duplication that may indicate contamination.
 
         Args:
@@ -258,11 +264,13 @@ class ContaminationDetector:
 
         for seq, count in seq_counts.most_common():
             if count > max_duplicates:
-                duplicated_sequences.append({
-                    "sequence": seq[:50] + "..." if len(seq) > 50 else seq,
-                    "count": count,
-                    "percentage": (count / len(sequences)) * 100,
-                })
+                duplicated_sequences.append(
+                    {
+                        "sequence": seq[:50] + "..." if len(seq) > 50 else seq,
+                        "count": count,
+                        "percentage": (count / len(sequences)) * 100,
+                    }
+                )
 
         # Calculate duplication metrics
         unique_sequences = len(seq_counts)
@@ -280,8 +288,9 @@ class ContaminationDetector:
             "max_duplicates_threshold": max_duplicates,
         }
 
-    def comprehensive_contamination_analysis(self, sequences: List[str],
-                                          target_species: Optional[str] = None) -> Dict[str, Any]:
+    def comprehensive_contamination_analysis(
+        self, sequences: List[str], target_species: Optional[str] = None
+    ) -> Dict[str, Any]:
         """Perform comprehensive contamination analysis.
 
         Args:
@@ -351,7 +360,7 @@ def detect_rna_contamination(dna_sequences: List[str]) -> Dict[str, Any]:
     Returns:
         Dictionary with RNA contamination detection results
     """
-    rna_bases = ['U', 'u']
+    rna_bases = ["U", "u"]
     total_sequences = len(dna_sequences)
     contaminated_sequences = 0
 
@@ -369,8 +378,7 @@ def detect_rna_contamination(dna_sequences: List[str]) -> Dict[str, Any]:
     }
 
 
-def detect_vector_contamination(sequences: List[str],
-                              vector_sequences: Optional[List[str]] = None) -> Dict[str, Any]:
+def detect_vector_contamination(sequences: List[str], vector_sequences: Optional[List[str]] = None) -> Dict[str, Any]:
     """Detect vector/plasmid contamination.
 
     Args:
@@ -412,8 +420,7 @@ def detect_vector_contamination(sequences: List[str],
     }
 
 
-def detect_adapter_contamination(sequences: List[str],
-                               adapters: Optional[List[str]] = None) -> Dict[str, Any]:
+def detect_adapter_contamination(sequences: List[str], adapters: Optional[List[str]] = None) -> Dict[str, Any]:
     """Detect adapter sequence contamination (standalone function).
 
     Args:
@@ -427,10 +434,12 @@ def detect_adapter_contamination(sequences: List[str],
     return detector.detect_adapter_contamination(sequences, adapters)
 
 
-def detect_cross_species_contamination(sequences: List[str],
-                                     target_species: str,
-                                     other_species: List[str],
-                                     reference_genomes: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+def detect_cross_species_contamination(
+    sequences: List[str],
+    target_species: str,
+    other_species: List[str],
+    reference_genomes: Optional[Dict[str, str]] = None,
+) -> Dict[str, Any]:
     """Detect cross-species contamination (standalone function).
 
     Args:
@@ -458,7 +467,7 @@ def detect_mycoplasma_contamination(sequences: List[str]) -> Dict[str, Any]:
     # Mycoplasma is a common laboratory contaminant
     mycoplasma_sequences = [
         "TTAACCTTAACTTACTTAACTT",  # Mycoplasma-specific sequence
-        "GAAAGAAAGAAAGAAAGAAA",   # Mycoplasma 16S rRNA
+        "GAAAGAAAGAAAGAAAGAAA",  # Mycoplasma 16S rRNA
     ]
 
     detector = ContaminationDetector({"mycoplasma": mycoplasma_sequences[0]})
@@ -477,16 +486,17 @@ def detect_rrna_contamination(sequences: List[str]) -> Dict[str, Any]:
     # Common rRNA sequences (highly conserved)
     rrna_sequences = [
         "GTGCCAGCAGCCGCGGTAA",  # Bacterial 16S rRNA
-        "GACGGGCGGTGTGTRCAA",   # Archaeal 16S rRNA
-        "CCTACGGGAGGCAGCAG",    # Eukaryotic 18S rRNA
+        "GACGGGCGGTGTGTRCAA",  # Archaeal 16S rRNA
+        "CCTACGGGAGGCAGCAG",  # Eukaryotic 18S rRNA
     ]
 
     detector = ContaminationDetector({"rrna": rrna_sequences[0]})
     return detector.detect_microbial_contamination(sequences)
 
 
-def generate_contamination_report(contamination_results: Dict[str, Any],
-                                output_path: Optional[str | Path] = None) -> str:
+def generate_contamination_report(
+    contamination_results: Dict[str, Any], output_path: Optional[str | Path] = None
+) -> str:
     """Generate a contamination analysis report.
 
     Args:
@@ -563,11 +573,8 @@ def generate_contamination_report(contamination_results: Dict[str, Any],
 
     if output_path:
         output_path = Path(output_path)
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             f.write(report)
         logger.info(f"Contamination report saved to {output_path}")
 
     return report
-
-
-

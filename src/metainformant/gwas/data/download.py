@@ -70,24 +70,23 @@ def _download_from_ncbi_datasets(accession: str, output_dir: Path) -> Path:
     """Download genome using NCBI Datasets API."""
     api_url = f"https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/{accession}/download"
 
-    params = {
-        'include': 'genome,annotation,gff3,protein,cds,seq-report'
-    }
+    params = {"include": "genome,annotation,gff3,protein,cds,seq-report"}
 
     response = requests.get(api_url, params=params, timeout=60)
     response.raise_for_status()
 
     # Save as zip file
     zip_path = output_dir / f"{accession}.zip"
-    with open(zip_path, 'wb') as f:
+    with open(zip_path, "wb") as f:
         f.write(response.content)
 
     # Extract zip
     import zipfile
+
     extract_dir = output_dir / accession
     extract_dir.mkdir(exist_ok=True)
 
-    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+    with zipfile.ZipFile(zip_path, "r") as zip_ref:
         zip_ref.extractall(extract_dir)
 
     # Clean up zip
@@ -99,11 +98,15 @@ def _download_from_ncbi_datasets(accession: str, output_dir: Path) -> Path:
 def _download_from_ftp(accession: str, output_dir: Path) -> Path:
     """Download genome from NCBI FTP."""
     # Construct FTP URL
-    if accession.startswith('GCF_'):
-        ftp_url = f"ftp://ftp.ncbi.nlm.nih.gov/genomes/all/{accession[4:7]}/{accession[7:10]}/{accession[10:13]}/{accession}"
+    if accession.startswith("GCF_"):
+        ftp_url = (
+            f"ftp://ftp.ncbi.nlm.nih.gov/genomes/all/{accession[4:7]}/{accession[7:10]}/{accession[10:13]}/{accession}"
+        )
     else:
         # GenBank accession
-        ftp_url = f"ftp://ftp.ncbi.nlm.nih.gov/genomes/all/{accession[4:7]}/{accession[7:10]}/{accession[10:13]}/{accession}"
+        ftp_url = (
+            f"ftp://ftp.ncbi.nlm.nih.gov/genomes/all/{accession[4:7]}/{accession[7:10]}/{accession[10:13]}/{accession}"
+        )
 
     # For now, simulate download (real implementation would use ftplib or wget)
     genome_dir = output_dir / accession
@@ -122,8 +125,8 @@ def _validate_genome_accession(accession: str) -> bool:
 
     # NCBI RefSeq or GenBank patterns
     patterns = [
-        r'^GC[FA]_\d{9}\.\d+$',  # GCF_000001405.39
-        r'^GCA_\d{9}\.\d+$',     # GCA_000001405.39
+        r"^GC[FA]_\d{9}\.\d+$",  # GCF_000001405.39
+        r"^GCA_\d{9}\.\d+$",  # GCA_000001405.39
     ]
 
     return any(re.match(pattern, accession) for pattern in patterns)
@@ -154,30 +157,141 @@ def download_variant_database(db_name: str, output_dir: str | Path) -> Path:
         raise ValueError(f"Unknown database: {db_name}")
 
 
-def _download_dbsnp(output_dir: Path) -> Path:
-    """Download dbSNP database."""
-    # dbSNP FTP URL for latest version
-    ftp_url = "ftp://ftp.ncbi.nih.gov/snp/latest_release/VCF"
+def _download_dbsnp(output_dir: Path, chromosome: str | None = None) -> Path:
+    """Download dbSNP VCF files from NCBI FTP.
 
-    # For now, create placeholder
+    Args:
+        output_dir: Output directory
+        chromosome: Specific chromosome to download (e.g., '1', '22', 'X'), or None for all
+
+    Returns:
+        Path to downloaded dbSNP directory
+
+    Note:
+        Downloads from NCBI FTP. Full database is very large (~40GB compressed).
+        Consider downloading specific chromosomes instead.
+    """
+    import ftplib
+
+    ftp_host = "ftp.ncbi.nih.gov"
+    ftp_path = "/snp/latest_release/VCF"
+
     db_dir = output_dir / "dbsnp"
     db_dir.mkdir(exist_ok=True)
 
-    logger.info("dbSNP download not fully implemented - placeholder created")
-    return db_dir
+    logger.info(f"Connecting to {ftp_host} for dbSNP download...")
+
+    try:
+        ftp = ftplib.FTP(ftp_host)
+        ftp.login()
+        ftp.cwd(ftp_path)
+
+        # List available files
+        files = ftp.nlst()
+
+        # Filter to VCF files
+        vcf_files = [f for f in files if f.endswith(".vcf.gz")]
+
+        if chromosome:
+            # Download specific chromosome
+            chrom_pattern = f"GCF_000001405.40_chr{chromosome}.vcf.gz"
+            vcf_files = [f for f in vcf_files if chromosome in f]
+
+        if not vcf_files:
+            logger.warning(f"No dbSNP VCF files found matching criteria")
+            ftp.quit()
+            return db_dir
+
+        # Download first matching file (or provide info about available files)
+        for vcf_file in vcf_files[:1]:  # Limit to first file for safety
+            local_path = db_dir / vcf_file
+            if local_path.exists():
+                logger.info(f"File already exists: {local_path}")
+                continue
+
+            logger.info(f"Downloading {vcf_file}...")
+            with open(local_path, "wb") as f:
+                ftp.retrbinary(f"RETR {vcf_file}", f.write)
+            logger.info(f"Downloaded: {local_path}")
+
+        ftp.quit()
+        return db_dir
+
+    except ftplib.all_errors as e:
+        logger.error(f"FTP download failed: {e}")
+        raise RuntimeError(f"dbSNP download failed: {e}")
 
 
-def _download_1000genomes(output_dir: Path) -> Path:
-    """Download 1000 Genomes data."""
-    # 1000 Genomes FTP URL
-    ftp_url = "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502"
+def _download_1000genomes(output_dir: Path, chromosome: str | None = None, population: str | None = None) -> Path:
+    """Download 1000 Genomes Project VCF data.
 
-    # Create placeholder
+    Args:
+        output_dir: Output directory
+        chromosome: Specific chromosome to download (e.g., '1', '22'), or None for index
+        population: Population code filter (e.g., 'EUR', 'AFR'), or None for all
+
+    Returns:
+        Path to downloaded 1000 Genomes directory
+
+    Note:
+        Data from Phase 3 release (2013). For newer data, consider gnomAD.
+    """
+    import ftplib
+
+    ftp_host = "ftp.1000genomes.ebi.ac.uk"
+    ftp_path = "/vol1/ftp/release/20130502"
+
     db_dir = output_dir / "1000genomes"
     db_dir.mkdir(exist_ok=True)
 
-    logger.info("1000 Genomes download not fully implemented - placeholder created")
-    return db_dir
+    logger.info(f"Connecting to {ftp_host} for 1000 Genomes download...")
+
+    try:
+        ftp = ftplib.FTP(ftp_host)
+        ftp.login()
+        ftp.cwd(ftp_path)
+
+        # List available files
+        files = ftp.nlst()
+
+        # Filter to VCF files
+        vcf_files = [f for f in files if f.endswith(".vcf.gz")]
+
+        if chromosome:
+            # Download specific chromosome
+            vcf_files = [f for f in vcf_files if f"chr{chromosome}." in f or f".{chromosome}." in f]
+
+        if not vcf_files:
+            logger.warning(f"No 1000 Genomes VCF files found matching criteria")
+            # Download the panel file instead for population info
+            panel_file = "integrated_call_samples_v3.20130502.ALL.panel"
+            if panel_file in files:
+                local_path = db_dir / panel_file
+                if not local_path.exists():
+                    logger.info(f"Downloading sample panel: {panel_file}")
+                    with open(local_path, "wb") as f:
+                        ftp.retrbinary(f"RETR {panel_file}", f.write)
+            ftp.quit()
+            return db_dir
+
+        # Download first matching file (or provide info)
+        for vcf_file in vcf_files[:1]:  # Limit for safety
+            local_path = db_dir / vcf_file
+            if local_path.exists():
+                logger.info(f"File already exists: {local_path}")
+                continue
+
+            logger.info(f"Downloading {vcf_file} (this may take a while)...")
+            with open(local_path, "wb") as f:
+                ftp.retrbinary(f"RETR {vcf_file}", f.write)
+            logger.info(f"Downloaded: {local_path}")
+
+        ftp.quit()
+        return db_dir
+
+    except ftplib.all_errors as e:
+        logger.error(f"FTP download failed: {e}")
+        raise RuntimeError(f"1000 Genomes download failed: {e}")
 
 
 def download_sra_run(sra_accession: str, output_dir: str | Path, threads: int = 1) -> Path:
@@ -267,16 +381,17 @@ def _download_sra_with_toolkit(accession: str, output_dir: Path, threads: int) -
 
     # Check if fastq-dump is available
     try:
-        subprocess.run(['fastq-dump', '--version'], capture_output=True, check=True)
+        subprocess.run(["fastq-dump", "--version"], capture_output=True, check=True)
     except (subprocess.CalledProcessError, FileNotFoundError):
         raise RuntimeError("SRA toolkit (fastq-dump) not found")
 
     cmd = [
-        'fastq-dump',
-        '--split-files',  # Split paired-end reads
-        '--gzip',         # Compress output
-        '--outdir', str(output_dir),
-        accession
+        "fastq-dump",
+        "--split-files",  # Split paired-end reads
+        "--gzip",  # Compress output
+        "--outdir",
+        str(output_dir),
+        accession,
     ]
 
     logger.info(f"Running fastq-dump for {accession}")
@@ -335,12 +450,7 @@ def _get_project_runs(project_id: str) -> List[str]:
     base_url = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 
     # Search for runs in this project
-    search_params = {
-        'db': 'sra',
-        'term': f'{project_id}[BioProject]',
-        'retmax': 1000,
-        'retmode': 'json'
-    }
+    search_params = {"db": "sra", "term": f"{project_id}[BioProject]", "retmax": 1000, "retmode": "json"}
 
     try:
         response = requests.get(f"{base_url}/esearch.fcgi", params=search_params, timeout=30)
@@ -348,18 +458,14 @@ def _get_project_runs(project_id: str) -> List[str]:
 
         data = response.json()
 
-        if 'esearchresult' not in data:
+        if "esearchresult" not in data:
             return []
 
-        id_list = data['esearchresult'].get('idlist', [])
+        id_list = data["esearchresult"].get("idlist", [])
 
         # Get run accessions from summaries
         if id_list:
-            summary_params = {
-                'db': 'sra',
-                'id': ','.join(id_list[:100]),  # Limit for performance
-                'retmode': 'json'
-            }
+            summary_params = {"db": "sra", "id": ",".join(id_list[:100]), "retmode": "json"}  # Limit for performance
 
             summary_response = requests.get(f"{base_url}/esummary.fcgi", params=summary_params, timeout=30)
             summary_response.raise_for_status()
@@ -367,18 +473,18 @@ def _get_project_runs(project_id: str) -> List[str]:
             summary_data = summary_response.json()
 
             run_accessions = []
-            if 'result' in summary_data:
+            if "result" in summary_data:
                 for uid in id_list[:100]:
-                    if uid in summary_data['result']:
-                        record = summary_data['result'][uid]
-                        runs = record.get('runs', {}).get('run', [])
+                    if uid in summary_data["result"]:
+                        record = summary_data["result"][uid]
+                        runs = record.get("runs", {}).get("run", [])
                         if isinstance(runs, list):
                             for run in runs:
-                                run_acc = run.get('@acc')
+                                run_acc = run.get("@acc")
                                 if run_acc:
                                     run_accessions.append(run_acc)
                         elif isinstance(runs, dict):
-                            run_acc = runs.get('@acc')
+                            run_acc = runs.get("@acc")
                             if run_acc:
                                 run_accessions.append(run_acc)
 
@@ -410,12 +516,7 @@ def search_sra_for_organism(organism: str, max_results: int = 100) -> List[Dict[
 
     query = f'"{organism}"[Organism] AND "RNA-seq"[Strategy]'
 
-    search_params = {
-        'db': 'sra',
-        'term': query,
-        'retmax': min(max_results, 1000),
-        'retmode': 'json'
-    }
+    search_params = {"db": "sra", "term": query, "retmax": min(max_results, 1000), "retmode": "json"}
 
     try:
         response = requests.get(f"{base_url}/esearch.fcgi", params=search_params, timeout=30)
@@ -423,20 +524,16 @@ def search_sra_for_organism(organism: str, max_results: int = 100) -> List[Dict[
 
         search_data = response.json()
 
-        if 'esearchresult' not in search_data:
+        if "esearchresult" not in search_data:
             return []
 
-        id_list = search_data['esearchresult'].get('idlist', [])
+        id_list = search_data["esearchresult"].get("idlist", [])
 
         if not id_list:
             return []
 
         # Get summaries
-        summary_params = {
-            'db': 'sra',
-            'id': ','.join(id_list[:max_results]),
-            'retmode': 'json'
-        }
+        summary_params = {"db": "sra", "id": ",".join(id_list[:max_results]), "retmode": "json"}
 
         summary_response = requests.get(f"{base_url}/esummary.fcgi", params=summary_params, timeout=30)
         summary_response.raise_for_status()
@@ -444,21 +541,21 @@ def search_sra_for_organism(organism: str, max_results: int = 100) -> List[Dict[
         summary_data = summary_response.json()
 
         results = []
-        if 'result' in summary_data:
+        if "result" in summary_data:
             for uid in id_list[:max_results]:
-                if uid in summary_data['result']:
-                    record = summary_data['result'][uid]
+                if uid in summary_data["result"]:
+                    record = summary_data["result"][uid]
                     result = {
-                        'id': uid,
-                        'accession': record.get('runs', {}).get('run', {}).get('@acc'),
-                        'experiment': record.get('expxml', {}).get('summary'),
-                        'platform': record.get('expxml', {}).get('platform'),
-                        'library_strategy': record.get('expxml', {}).get('library_strategy'),
-                        'spots': record.get('runs', {}).get('run', {}).get('@spots'),
-                        'bases': record.get('runs', {}).get('run', {}).get('@bases'),
-                        'size_mb': record.get('runs', {}).get('run', {}).get('@size_MB'),
-                        'taxon_id': record.get('taxon', {}).get('@taxid'),
-                        'organism': record.get('taxon', {}).get('@scientificname')
+                        "id": uid,
+                        "accession": record.get("runs", {}).get("run", {}).get("@acc"),
+                        "experiment": record.get("expxml", {}).get("summary"),
+                        "platform": record.get("expxml", {}).get("platform"),
+                        "library_strategy": record.get("expxml", {}).get("library_strategy"),
+                        "spots": record.get("runs", {}).get("run", {}).get("@spots"),
+                        "bases": record.get("runs", {}).get("run", {}).get("@bases"),
+                        "size_mb": record.get("runs", {}).get("run", {}).get("@size_MB"),
+                        "taxon_id": record.get("taxon", {}).get("@taxid"),
+                        "organism": record.get("taxon", {}).get("@scientificname"),
                     }
                     results.append(result)
 
@@ -485,22 +582,23 @@ def download_annotation(accession: str, output_dir: str | Path) -> Path:
     # Try NCBI Datasets API for annotation
     try:
         api_url = f"https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/{accession}/download"
-        params = {'include': 'gff3'}
+        params = {"include": "gff3"}
 
         response = requests.get(api_url, params=params, timeout=60)
         response.raise_for_status()
 
         # Save annotation
         zip_path = output_dir / f"{accession}_annotation.zip"
-        with open(zip_path, 'wb') as f:
+        with open(zip_path, "wb") as f:
             f.write(response.content)
 
         # Extract
         import zipfile
+
         extract_dir = output_dir / f"{accession}_annotation"
         extract_dir.mkdir(exist_ok=True)
 
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
             zip_ref.extractall(extract_dir)
 
         zip_path.unlink()
@@ -516,8 +614,7 @@ def download_annotation(accession: str, output_dir: str | Path) -> Path:
         return annotation_dir
 
 
-def download_variant_data(study_accession: str, output_dir: str | Path,
-                         data_type: str = "vcf") -> Path:
+def download_variant_data(study_accession: str, output_dir: str | Path, data_type: str = "vcf") -> Path:
     """Download variant data for a GWAS study.
 
     Args:
@@ -550,31 +647,31 @@ def download_variant_data(study_accession: str, output_dir: str | Path,
         study_data = response.json()
 
         # Extract relevant information
-        pubmed_id = study_data.get('publicationInfo', {}).get('pubmedId')
-        trait = study_data.get('diseaseTrait', {}).get('traitName')
+        pubmed_id = study_data.get("publicationInfo", {}).get("pubmedId")
+        trait = study_data.get("diseaseTrait", {}).get("traitName")
 
         logger.info(f"Study {study_accession}: {trait} (PMID: {pubmed_id})")
 
         downloaded_files = []
 
         # Download summary statistics if requested
-        if data_type in ['summary_stats', 'both']:
+        if data_type in ["summary_stats", "both"]:
             # Try to get summary statistics URL
             associations_url = f"{gwas_api_url}/associations"
             assoc_response = requests.get(associations_url, timeout=30)
 
             if assoc_response.status_code == 200:
-                associations = assoc_response.json().get('_embedded', {}).get('associations', [])
+                associations = assoc_response.json().get("_embedded", {}).get("associations", [])
 
                 # Save summary statistics
                 stats_file = study_dir / f"{study_accession}_summary_stats.tsv"
-                with open(stats_file, 'w') as f:
+                with open(stats_file, "w") as f:
                     f.write("variant\trisk_allele\tp_value\todds_ratio\tbeta\n")
                     for assoc in associations[:1000]:  # Limit to avoid huge files
-                        variant = assoc.get('loci', [{}])[0].get('strongestRiskAlleles', [{}])[0]
-                        p_value = assoc.get('pvalueMantissa', '') + 'e' + str(assoc.get('pvalueExponent', ''))
-                        odds_ratio = assoc.get('orPerCopyNum', '')
-                        beta = assoc.get('betaNum', '')
+                        variant = assoc.get("loci", [{}])[0].get("strongestRiskAlleles", [{}])[0]
+                        p_value = assoc.get("pvalueMantissa", "") + "e" + str(assoc.get("pvalueExponent", ""))
+                        odds_ratio = assoc.get("orPerCopyNum", "")
+                        beta = assoc.get("betaNum", "")
 
                         f.write(f"{variant}\t\t{p_value}\t{odds_ratio}\t{beta}\n")
 
@@ -582,7 +679,7 @@ def download_variant_data(study_accession: str, output_dir: str | Path,
                 logger.info(f"Downloaded summary statistics to {stats_file}")
 
         # For VCF files, try dbSNP or other sources
-        if data_type in ['vcf', 'both']:
+        if data_type in ["vcf", "both"]:
             # This would typically involve downloading from dbSNP or study-specific repositories
             # For now, create a placeholder structure
             vcf_dir = study_dir / "vcf"
@@ -590,8 +687,9 @@ def download_variant_data(study_accession: str, output_dir: str | Path,
 
             # Create a README explaining how to obtain VCF files
             readme_file = vcf_dir / "README.md"
-            with open(readme_file, 'w') as f:
-                f.write(f"""# VCF Data for {study_accession}
+            with open(readme_file, "w") as f:
+                f.write(
+                    f"""# VCF Data for {study_accession}
 
 This study contains GWAS variants that may be available in dbSNP or other repositories.
 
@@ -605,22 +703,28 @@ Study information:
 - Accession: {study_accession}
 - Trait: {trait}
 - Publication: https://pubmed.ncbi.nlm.nih.gov/{pubmed_id}/
-""")
+"""
+                )
 
             downloaded_files.append(vcf_dir)
             logger.info(f"Created VCF directory structure at {vcf_dir}")
 
         # Save study metadata
         metadata_file = study_dir / f"{study_accession}_metadata.json"
-        with open(metadata_file, 'w') as f:
+        with open(metadata_file, "w") as f:
             import json
-            json.dump({
-                'accession': study_accession,
-                'trait': trait,
-                'pubmed_id': pubmed_id,
-                'downloaded_files': [str(f) for f in downloaded_files],
-                'download_date': str(pd.Timestamp.now())
-            }, f, indent=2)
+
+            json.dump(
+                {
+                    "accession": study_accession,
+                    "trait": trait,
+                    "pubmed_id": pubmed_id,
+                    "downloaded_files": [str(f) for f in downloaded_files],
+                    "download_date": str(pd.Timestamp.now()),
+                },
+                f,
+                indent=2,
+            )
 
         logger.info(f"Downloaded variant data to {study_dir}")
         return study_dir
@@ -631,6 +735,3 @@ Study information:
     except Exception as e:
         logger.error(f"Unexpected error downloading variant data: {e}")
         raise
-
-
-

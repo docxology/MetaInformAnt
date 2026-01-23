@@ -66,14 +66,14 @@ def test_fdr_correction_properties() -> None:
 
     assert result["status"] == "success"
     corrected = np.array(result["corrected_pvalues"])
-    
+
     # FDR-corrected p-values should be >= original p-values
     assert all(corrected[i] >= pvalues[i] for i in range(len(pvalues)))
-    
+
     # FDR-corrected p-values should be monotonic (non-decreasing after sorting)
     sorted_indices = np.argsort(pvalues)
     sorted_corrected = corrected[sorted_indices]
-    assert all(sorted_corrected[i] <= sorted_corrected[i+1] for i in range(len(sorted_corrected)-1))
+    assert all(sorted_corrected[i] <= sorted_corrected[i + 1] for i in range(len(sorted_corrected) - 1))
 
 
 def test_genomic_control_from_pvalues() -> None:
@@ -120,4 +120,3 @@ def test_genomic_control_inflation() -> None:
     assert result["status"] == "success"
     # Lambda_GC might be > 1 if there's real signal or inflation
     assert result["lambda_gc"] > 0
-

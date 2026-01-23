@@ -30,13 +30,13 @@ def transcribe(dna_seq: str) -> str:
     dna_upper = dna_seq.upper()
 
     # Validate DNA characters
-    valid_chars = set('ATCGN')
+    valid_chars = set("ATCGN")
     if not all(c in valid_chars for c in dna_upper):
         invalid = set(dna_upper) - valid_chars
         raise ValueError(f"Invalid DNA characters: {invalid}")
 
     # Transcribe T -> U
-    rna_seq = dna_upper.replace('T', 'U')
+    rna_seq = dna_upper.replace("T", "U")
 
     return rna_seq
 
@@ -82,7 +82,7 @@ def transcribe_with_introns(dna_seq: str, introns: list[tuple[int, int]]) -> str
     if prev_end < len(dna_seq):
         exons.append(dna_seq[prev_end:])
 
-    exon_sequence = ''.join(exons)
+    exon_sequence = "".join(exons)
     return transcribe(exon_sequence)
 
 
@@ -141,7 +141,7 @@ def calculate_transcription_efficiency(dna_seq: str) -> float:
 
     # Check for GC content in promoter region
     promoter = seq_upper[:100]
-    gc_count = promoter.count('G') + promoter.count('C')
+    gc_count = promoter.count("G") + promoter.count("C")
     gc_content = gc_count / len(promoter) if promoter else 0
 
     if 0.4 <= gc_content <= 0.6:
@@ -152,11 +152,3 @@ def calculate_transcription_efficiency(dna_seq: str) -> float:
         score += 0.3
 
     return min(score, 1.0)  # Cap at 1.0
-
-
-
-
-
-
-
-

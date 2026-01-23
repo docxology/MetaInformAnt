@@ -48,20 +48,20 @@ class CacheEntry:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
-            'value': self.value,
-            'created_at': self.created_at,
-            'ttl_seconds': self.ttl_seconds,
-            'expires_at': self.expires_at,
+            "value": self.value,
+            "created_at": self.created_at,
+            "ttl_seconds": self.ttl_seconds,
+            "expires_at": self.expires_at,
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> CacheEntry:
         """Create from dictionary."""
         entry = cls.__new__(cls)
-        entry.value = data['value']
-        entry.created_at = data['created_at']
-        entry.ttl_seconds = data['ttl_seconds']
-        entry.expires_at = data['expires_at']
+        entry.value = data["value"]
+        entry.created_at = data["created_at"]
+        entry.ttl_seconds = data["ttl_seconds"]
+        entry.expires_at = data["expires_at"]
         return entry
 
 
@@ -257,12 +257,12 @@ class JsonCache:
                     corrupted_files += 1
 
             return {
-                'total_files': total_files,
-                'valid_entries': valid_entries,
-                'expired_entries': expired_entries,
-                'corrupted_files': corrupted_files,
-                'cache_dir': str(self.cache_dir),
-                'default_ttl': self.default_ttl,
+                "total_files": total_files,
+                "valid_entries": valid_entries,
+                "expired_entries": expired_entries,
+                "corrupted_files": corrupted_files,
+                "cache_dir": str(self.cache_dir),
+                "default_ttl": self.default_ttl,
             }
 
 
@@ -295,12 +295,7 @@ def get_cache_info(cache_dir: Union[str, Path]) -> Dict[str, Any]:
     return stats
 
 
-def cache_json(
-    cache_dir: Union[str, Path],
-    key: str,
-    data: Any,
-    ttl_seconds: int = 3600
-) -> None:
+def cache_json(cache_dir: Union[str, Path], key: str, data: Any, ttl_seconds: int = 3600) -> None:
     """Cache data as JSON.
 
     Args:
@@ -331,10 +326,7 @@ def clear_cache_dir(cache_dir: Union[str, Path]) -> int:
 
 
 def load_cached_json(
-    cache_dir: Union[str, Path],
-    key: str,
-    default: Any = None,
-    ttl_seconds: Optional[int] = None
+    cache_dir: Union[str, Path], key: str, default: Any = None, ttl_seconds: Optional[int] = None
 ) -> Any:
     """Load data from JSON cache if valid.
 
@@ -352,35 +344,35 @@ def load_cached_json(
     # The test expects load_cached_json(..., ttl_seconds=0) to return None (expired).
     # This implies that the 'ttl_seconds' arg here acts as an override or a check.
     # If ttl_seconds is provided, we should probably check if age > ttl_seconds.
-    
+
     cache = JsonCache(cache_dir)
-    
+
     # To support overriding TTL logic, we might need to access the entry directly
     # JsonCache.get doesn't support TTL override.
     # Let's manually check if needed.
-    
+
     with cache._lock:
         cache_path = cache._get_cache_path(key)
         if not cache_path.exists():
             return default
-            
+
         try:
             data = io.load_json(cache_path)
             entry = CacheEntry.from_dict(data)
-            
+
             # If ttl_seconds is passed, use it to check expiry relative to creation time
             if ttl_seconds is not None:
                 age = time.time() - entry.created_at
                 if age > ttl_seconds:
                     return default
-            
-            # Also check stored expiry if no override provided? 
+
+            # Also check stored expiry if no override provided?
             # Or always check stored expiry?
             # Standard behavior: stored TTL rules.
             # But the test passes ttl_seconds=0 to force expiry.
             # So if ttl_seconds is NOT None, we use IT as the limit.
             # If it IS None, we use stored.
-            
+
             if ttl_seconds is not None:
                 # Override check
                 pass
@@ -393,9 +385,3 @@ def load_cached_json(
 
         except (json.JSONDecodeError, KeyError, ValueError, OSError):
             return default
-
-
-
-
-
-

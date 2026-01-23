@@ -19,6 +19,7 @@ try:
     from sklearn.decomposition import PCA
     from sklearn.preprocessing import StandardScaler
     from sklearn.manifold import TSNE
+
     HAS_SKLEARN = True
     HAS_TSNE = True
 except ImportError:
@@ -30,6 +31,7 @@ except ImportError:
 
 try:
     import umap
+
     HAS_UMAP = True
 except ImportError:
     HAS_UMAP = False
@@ -40,8 +42,9 @@ logger = logging.get_logger(__name__)
 from metainformant.singlecell.data.preprocessing import SingleCellData
 
 
-def pca_reduction(data: SingleCellData, n_components: int = 50,
-                 random_state: int | None = None, scale_data: bool = True) -> SingleCellData:
+def pca_reduction(
+    data: SingleCellData, n_components: int = 50, random_state: int | None = None, scale_data: bool = True
+) -> SingleCellData:
     """Perform PCA dimensionality reduction on single-cell data.
 
     Args:
@@ -59,10 +62,7 @@ def pca_reduction(data: SingleCellData, n_components: int = 50,
         ImportError: If scikit-learn not available
     """
     if not HAS_SKLEARN:
-        raise ImportError(
-            "scikit-learn is required for PCA. "
-            "Install with: uv pip install scikit-learn"
-        )
+        raise ImportError("scikit-learn is required for PCA. " "Install with: uv pip install scikit-learn")
 
     validation.validate_type(data, SingleCellData, "data")
     validation.validate_range(n_components, min_val=2, max_val=min(data.n_obs, data.n_vars), name="n_components")
@@ -73,7 +73,7 @@ def pca_reduction(data: SingleCellData, n_components: int = 50,
     result = data.copy()
 
     # Get expression matrix
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
     # Scale data if requested
     if scale_data:
@@ -90,7 +90,7 @@ def pca_reduction(data: SingleCellData, n_components: int = 50,
     pca_coords = pd.DataFrame(
         X_pca,
         index=result.obs.index if result.obs is not None else None,
-        columns=[f'PC{i+1}' for i in range(n_components)]
+        columns=[f"PC{i+1}" for i in range(n_components)],
     )
 
     # Add to obs or create new structure
@@ -104,27 +104,32 @@ def pca_reduction(data: SingleCellData, n_components: int = 50,
     explained_variance = pca.explained_variance_ratio_
     cumulative_variance = np.cumsum(explained_variance)
 
-    result.uns['pca'] = {
-        'n_components': n_components,
-        'explained_variance_ratio': explained_variance.tolist(),
-        'cumulative_explained_variance': cumulative_variance.tolist(),
-        'singular_values': pca.singular_values_.tolist(),
-        'components_shape': pca.components_.shape,
-        'random_state': random_state,
-        'scaled': scale_data,
+    result.uns["pca"] = {
+        "n_components": n_components,
+        "explained_variance_ratio": explained_variance.tolist(),
+        "cumulative_explained_variance": cumulative_variance.tolist(),
+        "singular_values": pca.singular_values_.tolist(),
+        "components_shape": pca.components_.shape,
+        "random_state": random_state,
+        "scaled": scale_data,
     }
 
     # Store components for gene loadings
-    result.varm = result.varm if hasattr(result, 'varm') and result.varm is not None else {}
-    result.varm['PCs'] = pca.components_.T
+    result.varm = result.varm if hasattr(result, "varm") and result.varm is not None else {}
+    result.varm["PCs"] = pca.components_.T
 
     logger.info(f"PCA completed: {n_components} components explain {cumulative_variance[-1]:.1%} of variance")
     return result
 
 
-def tsne_reduction(data: SingleCellData, n_components: int = 2,
-                  perplexity: float = 30.0, random_state: int | None = None,
-                  learning_rate: float = 200.0, max_iter: int = 1000) -> SingleCellData:
+def tsne_reduction(
+    data: SingleCellData,
+    n_components: int = 2,
+    perplexity: float = 30.0,
+    random_state: int | None = None,
+    learning_rate: float = 200.0,
+    max_iter: int = 1000,
+) -> SingleCellData:
     """Perform t-SNE dimensionality reduction on single-cell data.
 
     Args:
@@ -156,7 +161,7 @@ def tsne_reduction(data: SingleCellData, n_components: int = 2,
     result = data.copy()
 
     # Get expression matrix
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
     # For large datasets, use PCA initialization
     if X.shape[0] > 5000:
@@ -174,7 +179,7 @@ def tsne_reduction(data: SingleCellData, n_components: int = 2,
         random_state=random_state,
         learning_rate=learning_rate,
         max_iter=max_iter,
-        init='pca' if X.shape[0] <= 5000 else 'random'
+        init="pca" if X.shape[0] <= 5000 else "random",
     )
 
     X_tsne = tsne.fit_transform(X_input)
@@ -183,7 +188,7 @@ def tsne_reduction(data: SingleCellData, n_components: int = 2,
     tsne_coords = pd.DataFrame(
         X_tsne,
         index=result.obs.index if result.obs is not None else None,
-        columns=[f'tSNE{i+1}' for i in range(n_components)]
+        columns=[f"tSNE{i+1}" for i in range(n_components)],
     )
 
     # Add to obs
@@ -194,23 +199,28 @@ def tsne_reduction(data: SingleCellData, n_components: int = 2,
             result.obs[col] = tsne_coords[col]
 
     # Store t-SNE metadata
-    result.uns['tsne'] = {
-        'n_components': n_components,
-        'perplexity': perplexity,
-        'learning_rate': learning_rate,
-        'max_iter': max_iter,
-        'random_state': random_state,
-        'kl_divergence': float(tsne.kl_divergence_) if hasattr(tsne, 'kl_divergence_') else None,
-        'n_iter': tsne.n_iter_ if hasattr(tsne, 'n_iter_') else None,
+    result.uns["tsne"] = {
+        "n_components": n_components,
+        "perplexity": perplexity,
+        "learning_rate": learning_rate,
+        "max_iter": max_iter,
+        "random_state": random_state,
+        "kl_divergence": float(tsne.kl_divergence_) if hasattr(tsne, "kl_divergence_") else None,
+        "n_iter": tsne.n_iter_ if hasattr(tsne, "n_iter_") else None,
     }
 
     logger.info(f"t-SNE completed: KL divergence = {result.uns['tsne'].get('kl_divergence', 'N/A')}")
     return result
 
 
-def umap_reduction(data: SingleCellData, n_components: int = 2,
-                  n_neighbors: int = 15, min_dist: float = 0.1,
-                  random_state: int | None = None, metric: str = "euclidean") -> SingleCellData:
+def umap_reduction(
+    data: SingleCellData,
+    n_components: int = 2,
+    n_neighbors: int = 15,
+    min_dist: float = 0.1,
+    random_state: int | None = None,
+    metric: str = "euclidean",
+) -> SingleCellData:
     """Perform UMAP dimensionality reduction on single-cell data.
 
     Args:
@@ -243,15 +253,11 @@ def umap_reduction(data: SingleCellData, n_components: int = 2,
     result = data.copy()
 
     # Get expression matrix
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
     # Perform UMAP
     reducer = umap.UMAP(
-        n_components=n_components,
-        n_neighbors=n_neighbors,
-        min_dist=min_dist,
-        random_state=random_state,
-        metric=metric
+        n_components=n_components, n_neighbors=n_neighbors, min_dist=min_dist, random_state=random_state, metric=metric
     )
 
     X_umap = reducer.fit_transform(X)
@@ -260,7 +266,7 @@ def umap_reduction(data: SingleCellData, n_components: int = 2,
     umap_coords = pd.DataFrame(
         X_umap,
         index=result.obs.index if result.obs is not None else None,
-        columns=[f'UMAP{i+1}' for i in range(n_components)]
+        columns=[f"UMAP{i+1}" for i in range(n_components)],
     )
 
     # Add to obs
@@ -271,20 +277,21 @@ def umap_reduction(data: SingleCellData, n_components: int = 2,
             result.obs[col] = umap_coords[col]
 
     # Store UMAP metadata
-    result.uns['umap'] = {
-        'n_components': n_components,
-        'n_neighbors': n_neighbors,
-        'min_dist': min_dist,
-        'random_state': random_state,
-        'metric': metric,
+    result.uns["umap"] = {
+        "n_components": n_components,
+        "n_neighbors": n_neighbors,
+        "min_dist": min_dist,
+        "random_state": random_state,
+        "metric": metric,
     }
 
     logger.info("UMAP completed")
     return result
 
 
-def diffusion_map_reduction(data: SingleCellData, n_components: int = 10,
-                           n_neighbors: int = 15, alpha: float = 1.0) -> SingleCellData:
+def diffusion_map_reduction(
+    data: SingleCellData, n_components: int = 10, n_neighbors: int = 15, alpha: float = 1.0
+) -> SingleCellData:
     """Perform diffusion map dimensionality reduction.
 
     Args:
@@ -311,18 +318,19 @@ def diffusion_map_reduction(data: SingleCellData, n_components: int = 10,
     result = data.copy()
 
     # Get expression matrix
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
     # Construct kNN graph and compute diffusion maps
     # Simplified implementation of diffusion maps
 
     # 1. Compute pairwise distances
     from scipy.spatial.distance import pdist, squareform
-    distances = squareform(pdist(X, metric='euclidean'))
+
+    distances = squareform(pdist(X, metric="euclidean"))
 
     # 2. Construct kernel matrix (Gaussian kernel)
     sigma = np.median(distances)  # Adaptive kernel width
-    kernel = np.exp(-distances**2 / (2 * sigma**2))
+    kernel = np.exp(-(distances**2) / (2 * sigma**2))
 
     # 3. Normalize kernel (row normalization for random walk)
     row_sums = kernel.sum(axis=1)
@@ -347,13 +355,13 @@ def diffusion_map_reduction(data: SingleCellData, n_components: int = 10,
     eigenvecs = eigenvecs[:, idx]
 
     # Take top components (skip first trivial eigenvector)
-    diffusion_coords = eigenvecs[:, 1:n_components+1] / eigenvals[1:n_components+1]
+    diffusion_coords = eigenvecs[:, 1 : n_components + 1] / eigenvals[1 : n_components + 1]
 
     # Store diffusion map results
     dm_coords = pd.DataFrame(
         diffusion_coords,
         index=result.obs.index if result.obs is not None else None,
-        columns=[f'DC{i+1}' for i in range(n_components)]
+        columns=[f"DC{i+1}" for i in range(n_components)],
     )
 
     # Add to obs
@@ -364,20 +372,21 @@ def diffusion_map_reduction(data: SingleCellData, n_components: int = 10,
             result.obs[col] = dm_coords[col]
 
     # Store diffusion map metadata
-    result.uns['diffusion_map'] = {
-        'n_components': n_components,
-        'n_neighbors': n_neighbors,
-        'alpha': alpha,
-        'sigma': sigma,
-        'eigenvalues': eigenvals[1:n_components+1].tolist(),
+    result.uns["diffusion_map"] = {
+        "n_components": n_components,
+        "n_neighbors": n_neighbors,
+        "alpha": alpha,
+        "sigma": sigma,
+        "eigenvalues": eigenvals[1 : n_components + 1].tolist(),
     }
 
     logger.info(f"Diffusion map completed: {n_components} components computed")
     return result
 
 
-def mds_reduction(data: SingleCellData, n_components: int = 2,
-                 metric: bool = True, random_state: int | None = None) -> SingleCellData:
+def mds_reduction(
+    data: SingleCellData, n_components: int = 2, metric: bool = True, random_state: int | None = None
+) -> SingleCellData:
     """Perform Multidimensional Scaling (MDS) on single-cell data.
 
     Args:
@@ -401,21 +410,17 @@ def mds_reduction(data: SingleCellData, n_components: int = 2,
     result = data.copy()
 
     # Get expression matrix
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
     # Compute pairwise distances
     from sklearn.metrics.pairwise import euclidean_distances
+
     distances = euclidean_distances(X)
 
     # Perform MDS
     from sklearn.manifold import MDS
-    mds = MDS(
-        n_components=n_components,
-        metric=metric,
-        random_state=random_state,
-        max_iter=300,
-        eps=1e-6
-    )
+
+    mds = MDS(n_components=n_components, metric=metric, random_state=random_state, max_iter=300, eps=1e-6)
 
     X_mds = mds.fit_transform(distances)
 
@@ -423,7 +428,7 @@ def mds_reduction(data: SingleCellData, n_components: int = 2,
     mds_coords = pd.DataFrame(
         X_mds,
         index=result.obs.index if result.obs is not None else None,
-        columns=[f'MDS{i+1}' for i in range(n_components)]
+        columns=[f"MDS{i+1}" for i in range(n_components)],
     )
 
     # Add to obs
@@ -434,20 +439,21 @@ def mds_reduction(data: SingleCellData, n_components: int = 2,
             result.obs[col] = mds_coords[col]
 
     # Store MDS metadata
-    result.uns['mds'] = {
-        'n_components': n_components,
-        'metric': metric,
-        'random_state': random_state,
-        'stress': float(mds.stress_) if hasattr(mds, 'stress_') else None,
-        'n_iter': mds.n_iter_,
+    result.uns["mds"] = {
+        "n_components": n_components,
+        "metric": metric,
+        "random_state": random_state,
+        "stress": float(mds.stress_) if hasattr(mds, "stress_") else None,
+        "n_iter": mds.n_iter_,
     }
 
     logger.info(f"MDS completed: stress = {result.uns['mds'].get('stress', 'N/A')}")
     return result
 
 
-def ica_reduction(data: SingleCellData, n_components: int = 10,
-                 random_state: int | None = None, max_iter: int = 1000) -> SingleCellData:
+def ica_reduction(
+    data: SingleCellData, n_components: int = 10, random_state: int | None = None, max_iter: int = 1000
+) -> SingleCellData:
     """Perform Independent Component Analysis (ICA) on single-cell data.
 
     Args:
@@ -471,7 +477,7 @@ def ica_reduction(data: SingleCellData, n_components: int = 10,
     result = data.copy()
 
     # Get expression matrix
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
     # Scale data
     scaler = StandardScaler()
@@ -479,12 +485,8 @@ def ica_reduction(data: SingleCellData, n_components: int = 10,
 
     # Perform ICA
     from sklearn.decomposition import FastICA
-    ica = FastICA(
-        n_components=n_components,
-        random_state=random_state,
-        max_iter=max_iter,
-        tol=1e-4
-    )
+
+    ica = FastICA(n_components=n_components, random_state=random_state, max_iter=max_iter, tol=1e-4)
 
     X_ica = ica.fit_transform(X_scaled)
 
@@ -492,7 +494,7 @@ def ica_reduction(data: SingleCellData, n_components: int = 10,
     ica_coords = pd.DataFrame(
         X_ica,
         index=result.obs.index if result.obs is not None else None,
-        columns=[f'IC{i+1}' for i in range(n_components)]
+        columns=[f"IC{i+1}" for i in range(n_components)],
     )
 
     # Add to obs
@@ -503,23 +505,24 @@ def ica_reduction(data: SingleCellData, n_components: int = 10,
             result.obs[col] = ica_coords[col]
 
     # Store ICA metadata and components
-    result.uns['ica'] = {
-        'n_components': n_components,
-        'random_state': random_state,
-        'max_iter': max_iter,
-        'n_iter': ica.n_iter_,
+    result.uns["ica"] = {
+        "n_components": n_components,
+        "random_state": random_state,
+        "max_iter": max_iter,
+        "n_iter": ica.n_iter_,
     }
 
     # Store mixing matrix for gene loadings
-    result.varm = result.varm if hasattr(result, 'varm') and result.varm is not None else {}
-    result.varm['ICs'] = ica.mixing_.T
+    result.varm = result.varm if hasattr(result, "varm") and result.varm is not None else {}
+    result.varm["ICs"] = ica.mixing_.T
 
     logger.info(f"ICA completed: {n_components} components extracted")
     return result
 
 
-def factor_analysis_reduction(data: SingleCellData, n_components: int = 10,
-                             random_state: int | None = None) -> SingleCellData:
+def factor_analysis_reduction(
+    data: SingleCellData, n_components: int = 10, random_state: int | None = None
+) -> SingleCellData:
     """Perform Factor Analysis on single-cell data.
 
     Args:
@@ -542,7 +545,7 @@ def factor_analysis_reduction(data: SingleCellData, n_components: int = 10,
     result = data.copy()
 
     # Get expression matrix
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
     # Scale data
     scaler = StandardScaler()
@@ -550,11 +553,8 @@ def factor_analysis_reduction(data: SingleCellData, n_components: int = 10,
 
     # Perform Factor Analysis
     from sklearn.decomposition import FactorAnalysis
-    fa = FactorAnalysis(
-        n_components=n_components,
-        random_state=random_state,
-        max_iter=1000
-    )
+
+    fa = FactorAnalysis(n_components=n_components, random_state=random_state, max_iter=1000)
 
     X_fa = fa.fit_transform(X_scaled)
 
@@ -562,7 +562,7 @@ def factor_analysis_reduction(data: SingleCellData, n_components: int = 10,
     fa_coords = pd.DataFrame(
         X_fa,
         index=result.obs.index if result.obs is not None else None,
-        columns=[f'FA{i+1}' for i in range(n_components)]
+        columns=[f"FA{i+1}" for i in range(n_components)],
     )
 
     # Add to obs
@@ -573,23 +573,22 @@ def factor_analysis_reduction(data: SingleCellData, n_components: int = 10,
             result.obs[col] = fa_coords[col]
 
     # Store FA metadata and components
-    result.uns['factor_analysis'] = {
-        'n_components': n_components,
-        'random_state': random_state,
-        'log_likelihood': float(fa.loglike_[-1]) if hasattr(fa, 'loglike_') else None,
-        'noise_variance': fa.noise_variance_.tolist(),
+    result.uns["factor_analysis"] = {
+        "n_components": n_components,
+        "random_state": random_state,
+        "log_likelihood": float(fa.loglike_[-1]) if hasattr(fa, "loglike_") else None,
+        "noise_variance": fa.noise_variance_.tolist(),
     }
 
     # Store factor loadings
-    result.varm = result.varm if hasattr(result, 'varm') and result.varm is not None else {}
-    result.varm['FA_loadings'] = fa.components_.T
+    result.varm = result.varm if hasattr(result, "varm") and result.varm is not None else {}
+    result.varm["FA_loadings"] = fa.components_.T
 
     logger.info(f"Factor Analysis completed: {n_components} factors extracted")
     return result
 
 
-def compute_dimensionality_metrics(data: SingleCellData,
-                                  embedding_cols: List[str]) -> Dict[str, Any]:
+def compute_dimensionality_metrics(data: SingleCellData, embedding_cols: List[str]) -> Dict[str, Any]:
     """Compute quality metrics for dimensionality reduction embeddings.
 
     Args:
@@ -618,8 +617,9 @@ def compute_dimensionality_metrics(data: SingleCellData,
     embedding = data.obs[embedding_cols].values
 
     # Compute pairwise distances in original space
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
     from sklearn.metrics.pairwise import euclidean_distances
+
     original_distances = euclidean_distances(X)
 
     # Compute pairwise distances in embedding space
@@ -641,10 +641,10 @@ def compute_dimensionality_metrics(data: SingleCellData,
 
     # Compute embedding quality metrics
     metrics = {
-        'distance_correlation': float(distance_correlation),
-        'embedding_dimensions': len(embedding_cols),
-        'n_samples': X.shape[0],
-        'n_features': X.shape[1],
+        "distance_correlation": float(distance_correlation),
+        "embedding_dimensions": len(embedding_cols),
+        "n_samples": X.shape[0],
+        "n_features": X.shape[1],
     }
 
     # Trustworthiness and continuity (simplified)
@@ -656,9 +656,9 @@ def compute_dimensionality_metrics(data: SingleCellData,
     return metrics
 
 
-def _compute_trustworthiness_continuity(original_distances: np.ndarray,
-                                       embedding_distances: np.ndarray,
-                                       k: int = 12) -> Dict[str, float]:
+def _compute_trustworthiness_continuity(
+    original_distances: np.ndarray, embedding_distances: np.ndarray, k: int = 12
+) -> Dict[str, float]:
     """Compute trustworthiness and continuity metrics (simplified version)."""
     n_samples = original_distances.shape[0]
 
@@ -668,10 +668,10 @@ def _compute_trustworthiness_continuity(original_distances: np.ndarray,
 
     for i in range(n_samples):
         # Original space neighbors
-        orig_neighbors = np.argsort(original_distances[i, :])[1:k+1]  # Exclude self
+        orig_neighbors = np.argsort(original_distances[i, :])[1 : k + 1]  # Exclude self
 
         # Embedding space neighbors
-        embed_neighbors = np.argsort(embedding_distances[i, :])[1:k+1]
+        embed_neighbors = np.argsort(embedding_distances[i, :])[1 : k + 1]
 
         # Trustworthiness: fraction of embedding neighbors that are original neighbors
         trust_set = set(orig_neighbors)
@@ -685,22 +685,24 @@ def _compute_trustworthiness_continuity(original_distances: np.ndarray,
     continuity /= n_samples
 
     return {
-        'trustworthiness': float(trustworthiness),
-        'continuity': float(continuity),
-        'neighborhood_size': k,
+        "trustworthiness": float(trustworthiness),
+        "continuity": float(continuity),
+        "neighborhood_size": k,
     }
 
 
 # Check for sklearn availability
 try:
     import sklearn
+
     SKLEARN_AVAILABLE = True
 except ImportError:
     SKLEARN_AVAILABLE = False
 
 
-def run_pca(data: SingleCellData, n_components: int = 50,
-           random_state: int | None = None, scale_data: bool = True) -> SingleCellData:
+def run_pca(
+    data: SingleCellData, n_components: int = 50, random_state: int | None = None, scale_data: bool = True
+) -> SingleCellData:
     """Alias for pca_reduction - run PCA dimensionality reduction.
 
     Args:
@@ -715,9 +717,14 @@ def run_pca(data: SingleCellData, n_components: int = 50,
     return pca_reduction(data, n_components, random_state, scale_data)
 
 
-def run_tsne(data: SingleCellData, n_components: int = 2, perplexity: float = 30.0,
-            random_state: int | None = None, learning_rate: float = 200.0,
-            max_iter: int = 1000) -> SingleCellData:
+def run_tsne(
+    data: SingleCellData,
+    n_components: int = 2,
+    perplexity: float = 30.0,
+    random_state: int | None = None,
+    learning_rate: float = 200.0,
+    max_iter: int = 1000,
+) -> SingleCellData:
     """Alias for tsne_reduction - run t-SNE dimensionality reduction.
 
     Args:
@@ -731,13 +738,17 @@ def run_tsne(data: SingleCellData, n_components: int = 2, perplexity: float = 30
     Returns:
         SingleCellData with t-SNE results
     """
-    return tsne_reduction(data, n_components, perplexity, random_state,
-                         learning_rate, max_iter)
+    return tsne_reduction(data, n_components, perplexity, random_state, learning_rate, max_iter)
 
 
-def run_umap(data: SingleCellData, n_components: int = 2, n_neighbors: int = 15,
-            min_dist: float = 0.1, random_state: int | None = None,
-            metric: str = "euclidean") -> SingleCellData:
+def run_umap(
+    data: SingleCellData,
+    n_components: int = 2,
+    n_neighbors: int = 15,
+    min_dist: float = 0.1,
+    random_state: int | None = None,
+    metric: str = "euclidean",
+) -> SingleCellData:
     """Alias for umap_reduction - run UMAP dimensionality reduction.
 
     Args:
@@ -751,12 +762,12 @@ def run_umap(data: SingleCellData, n_components: int = 2, n_neighbors: int = 15,
     Returns:
         SingleCellData with UMAP results
     """
-    return umap_reduction(data, n_components, n_neighbors, min_dist,
-                         random_state, metric)
+    return umap_reduction(data, n_components, n_neighbors, min_dist, random_state, metric)
 
 
-def compute_pca(data: SingleCellData, n_components: int = 50,
-               random_state: int | None = None, scale_data: bool = True) -> SingleCellData:
+def compute_pca(
+    data: SingleCellData, n_components: int = 50, random_state: int | None = None, scale_data: bool = True
+) -> SingleCellData:
     """Compute PCA dimensionality reduction (alias for pca_reduction).
 
     Args:
@@ -771,9 +782,14 @@ def compute_pca(data: SingleCellData, n_components: int = 50,
     return pca_reduction(data, n_components, random_state, scale_data)
 
 
-def compute_tsne(data: SingleCellData, n_components: int = 2, perplexity: float = 30.0,
-                random_state: int | None = None, learning_rate: float = 200.0,
-                max_iter: int = 1000) -> SingleCellData:
+def compute_tsne(
+    data: SingleCellData,
+    n_components: int = 2,
+    perplexity: float = 30.0,
+    random_state: int | None = None,
+    learning_rate: float = 200.0,
+    max_iter: int = 1000,
+) -> SingleCellData:
     """Compute t-SNE dimensionality reduction (alias for tsne_reduction).
 
     Args:
@@ -787,13 +803,17 @@ def compute_tsne(data: SingleCellData, n_components: int = 2, perplexity: float 
     Returns:
         SingleCellData with t-SNE results
     """
-    return tsne_reduction(data, n_components, perplexity, random_state,
-                         learning_rate, max_iter)
+    return tsne_reduction(data, n_components, perplexity, random_state, learning_rate, max_iter)
 
 
-def compute_umap(data: SingleCellData, n_components: int = 2, n_neighbors: int = 15,
-                min_dist: float = 0.1, random_state: int | None = None,
-                metric: str = "euclidean") -> SingleCellData:
+def compute_umap(
+    data: SingleCellData,
+    n_components: int = 2,
+    n_neighbors: int = 15,
+    min_dist: float = 0.1,
+    random_state: int | None = None,
+    metric: str = "euclidean",
+) -> SingleCellData:
     """Compute UMAP dimensionality reduction (alias for umap_reduction).
 
     Args:
@@ -807,12 +827,12 @@ def compute_umap(data: SingleCellData, n_components: int = 2, n_neighbors: int =
     Returns:
         SingleCellData with UMAP results
     """
-    return umap_reduction(data, n_components, n_neighbors, min_dist,
-                         random_state, metric)
+    return umap_reduction(data, n_components, n_neighbors, min_dist, random_state, metric)
 
 
-def compute_neighbors(data: SingleCellData, n_neighbors: int = 15,
-                     metric: str = "euclidean", use_rep: str = "X_pca") -> SingleCellData:
+def compute_neighbors(
+    data: SingleCellData, n_neighbors: int = 15, metric: str = "euclidean", use_rep: str = "X_pca"
+) -> SingleCellData:
     """Compute neighbor graph for single-cell data.
 
     Args:
@@ -830,9 +850,9 @@ def compute_neighbors(data: SingleCellData, n_neighbors: int = 15,
     from sklearn.neighbors import NearestNeighbors
 
     # Get the representation to use
-    if use_rep == "X_pca" and hasattr(data, 'obsm') and 'X_pca' in data.obsm:
-        X = data.obsm['X_pca']
-    elif hasattr(data, 'X'):
+    if use_rep == "X_pca" and hasattr(data, "obsm") and "X_pca" in data.obsm:
+        X = data.obsm["X_pca"]
+    elif hasattr(data, "X"):
         X = data.X
     else:
         raise ValueError(f"Representation {use_rep} not found in data")
@@ -844,22 +864,19 @@ def compute_neighbors(data: SingleCellData, n_neighbors: int = 15,
     distances, indices = nbrs.kneighbors(X)
 
     # Store results
-    data.uns['neighbors'] = {
-        'indices': indices,
-        'distances': distances,
-        'params': {
-            'n_neighbors': n_neighbors,
-            'metric': metric,
-            'use_rep': use_rep
-        }
+    data.uns["neighbors"] = {
+        "indices": indices,
+        "distances": distances,
+        "params": {"n_neighbors": n_neighbors, "metric": metric, "use_rep": use_rep},
     }
 
     logger.info(f"Computed neighbor graph with {n_neighbors} neighbors for {len(X)} cells")
     return data
 
 
-def compute_diffusion_map(data: SingleCellData, n_components: int = 10,
-                         n_neighbors: int = 15, alpha: float = 1.0) -> SingleCellData:
+def compute_diffusion_map(
+    data: SingleCellData, n_components: int = 10, n_neighbors: int = 15, alpha: float = 1.0
+) -> SingleCellData:
     """Compute diffusion map for single-cell data.
 
     Args:
@@ -875,12 +892,12 @@ def compute_diffusion_map(data: SingleCellData, n_components: int = 10,
         raise ImportError("scikit-learn required for diffusion maps")
 
     # First compute neighbors if not already done
-    if 'neighbors' not in data.uns:
+    if "neighbors" not in data.uns:
         data = compute_neighbors(data, n_neighbors)
 
     # Get neighbor information
-    indices = data.uns['neighbors']['indices']
-    distances = data.uns['neighbors']['distances']
+    indices = data.uns["neighbors"]["indices"]
+    distances = data.uns["neighbors"]["distances"]
 
     n_cells = len(data)
     # Create adjacency matrix from neighbors
@@ -899,9 +916,7 @@ def compute_diffusion_map(data: SingleCellData, n_components: int = 10,
                 data_weights.append(weight)
 
     # Create symmetric adjacency matrix
-    adjacency = sparse.csr_matrix((data_weights + data_weights,
-                                  (rows + cols, cols + rows)),
-                                 shape=(n_cells, n_cells))
+    adjacency = sparse.csr_matrix((data_weights + data_weights, (rows + cols, cols + rows)), shape=(n_cells, n_cells))
 
     # Normalize adjacency matrix (create diffusion operator)
     degrees = np.array(adjacency.sum(axis=1)).flatten()
@@ -921,8 +936,8 @@ def compute_diffusion_map(data: SingleCellData, n_components: int = 10,
 
     # Compute eigenvectors (diffusion components)
     from scipy.sparse.linalg import eigsh
-    eigenvalues, eigenvectors = eigsh(diffusion_operator, k=n_components + 1,
-                                     which='LM', sigma=1.0)
+
+    eigenvalues, eigenvectors = eigsh(diffusion_operator, k=n_components + 1, which="LM", sigma=1.0)
 
     # Sort by eigenvalue magnitude (largest first)
     idx = np.argsort(np.abs(eigenvalues))[::-1]
@@ -930,22 +945,17 @@ def compute_diffusion_map(data: SingleCellData, n_components: int = 10,
     eigenvectors = eigenvectors[:, idx]
 
     # Store results (skip first eigenvector which is constant)
-    data.obsm['X_diffmap'] = eigenvectors[:, 1:n_components + 1]
-    data.uns['diffmap'] = {
-        'eigenvalues': eigenvalues[1:n_components + 1],
-        'params': {
-            'n_components': n_components,
-            'n_neighbors': n_neighbors,
-            'alpha': alpha
-        }
+    data.obsm["X_diffmap"] = eigenvectors[:, 1 : n_components + 1]
+    data.uns["diffmap"] = {
+        "eigenvalues": eigenvalues[1 : n_components + 1],
+        "params": {"n_components": n_components, "n_neighbors": n_neighbors, "alpha": alpha},
     }
 
     logger.info(f"Computed diffusion map with {n_components} components")
     return data
 
 
-def select_hvgs(data: SingleCellData, n_top_genes: int = 2000,
-               flavor: str = "seurat") -> SingleCellData:
+def select_hvgs(data: SingleCellData, n_top_genes: int = 2000, flavor: str = "seurat") -> SingleCellData:
     """Select highly variable genes from single-cell data.
 
     Args:
@@ -956,11 +966,11 @@ def select_hvgs(data: SingleCellData, n_top_genes: int = 2000,
     Returns:
         SingleCellData with highly variable genes marked
     """
-    if not hasattr(data, 'X') or data.X is None:
+    if not hasattr(data, "X") or data.X is None:
         raise ValueError("Data must contain expression matrix X")
 
     X = data.X
-    if hasattr(X, 'toarray'):  # sparse matrix
+    if hasattr(X, "toarray"):  # sparse matrix
         X = X.toarray()
 
     n_cells, n_genes = X.shape
@@ -1006,7 +1016,7 @@ def select_hvgs(data: SingleCellData, n_top_genes: int = 2000,
         # Avoid division by zero
         gene_means = np.maximum(gene_means, 1e-10)
 
-        cv_squared = gene_vars / (gene_means ** 2)
+        cv_squared = gene_vars / (gene_means**2)
 
         # Select top genes by CV²
         top_indices = np.argsort(cv_squared)[::-1][:n_top_genes]
@@ -1018,21 +1028,17 @@ def select_hvgs(data: SingleCellData, n_top_genes: int = 2000,
     highly_variable = np.zeros(n_genes, dtype=bool)
     highly_variable[top_indices] = True
 
-    if hasattr(data, 'var') and data.var is not None:
-        data.var['highly_variable'] = highly_variable
+    if hasattr(data, "var") and data.var is not None:
+        data.var["highly_variable"] = highly_variable
     else:
         # Create var dataframe if it doesn't exist
         import pandas as pd
+
         var_df = pd.DataFrame(index=range(n_genes))
-        var_df['highly_variable'] = highly_variable
+        var_df["highly_variable"] = highly_variable
         data.var = var_df
 
-    data.uns['hvg'] = {
-        'flavor': flavor,
-        'n_top_genes': n_top_genes,
-        'n_selected': len(top_indices)
-    }
+    data.uns["hvg"] = {"flavor": flavor, "n_top_genes": n_top_genes, "n_selected": len(top_indices)}
 
     logger.info(f"Selected {len(top_indices)} highly variable genes using {flavor} method")
     return data
-

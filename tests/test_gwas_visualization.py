@@ -19,6 +19,7 @@ from metainformant.gwas.visualization.general import manhattan_plot, qq_plot, pc
 try:
     import matplotlib
     import matplotlib.pyplot as plt
+
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
@@ -26,6 +27,7 @@ except ImportError:
 # Test numpy dependency
 try:
     import numpy as np
+
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
@@ -46,8 +48,8 @@ class TestManhattanPlot:
         fig = manhattan_plot(results)
 
         # Should return a matplotlib Figure object
-        assert hasattr(fig, 'savefig'), "Should return matplotlib Figure"
-        assert hasattr(fig, 'axes'), "Figure should have axes"
+        assert hasattr(fig, "savefig"), "Should return matplotlib Figure"
+        assert hasattr(fig, "axes"), "Figure should have axes"
         assert len(fig.axes) > 0, "Figure should have at least one axis"
 
     @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
@@ -63,8 +65,7 @@ class TestManhattanPlot:
 
         # Check that we have the right number of data points
         ax = fig.axes[0]
-        scatter_plots = [child for child in ax.get_children()
-                        if hasattr(child, 'get_offsets')]
+        scatter_plots = [child for child in ax.get_children() if hasattr(child, "get_offsets")]
         assert len(scatter_plots) > 0, "Should have scatter plot data"
 
     @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
@@ -80,12 +81,11 @@ class TestManhattanPlot:
 
         ax = fig.axes[0]
         # Should have horizontal line at significance threshold
-        hlines = [child for child in ax.get_children()
-                 if hasattr(child, 'get_xydata')]
+        hlines = [child for child in ax.get_children() if hasattr(child, "get_xydata")]
         # Check for horizontal significance line
         found_significance_line = False
         for hline in hlines:
-            if hasattr(hline, 'get_ydata'):
+            if hasattr(hline, "get_ydata"):
                 y_data = hline.get_ydata()
                 if len(y_data) > 0 and y_data[0] == -np.log10(5e-8):
                     found_significance_line = True
@@ -118,8 +118,8 @@ class TestQQPlot:
 
         fig = qq_plot(p_values)
 
-        assert hasattr(fig, 'savefig'), "Should return matplotlib Figure"
-        assert hasattr(fig, 'axes'), "Figure should have axes"
+        assert hasattr(fig, "savefig"), "Should return matplotlib Figure"
+        assert hasattr(fig, "axes"), "Figure should have axes"
 
     @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
     def test_qq_plot_expected_vs_observed(self):
@@ -135,8 +135,7 @@ class TestQQPlot:
         ax = fig.axes[0]
 
         # Check that we have data points
-        scatter_plots = [child for child in ax.get_children()
-                        if hasattr(child, 'get_offsets')]
+        scatter_plots = [child for child in ax.get_children() if hasattr(child, "get_offsets")]
         assert len(scatter_plots) > 0, "Should have Q-Q plot data"
 
     @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
@@ -149,11 +148,10 @@ class TestQQPlot:
         ax = fig.axes[0]
 
         # Should have diagonal line (y=x)
-        lines = [child for child in ax.get_children()
-                if hasattr(child, 'get_xydata')]
+        lines = [child for child in ax.get_children() if hasattr(child, "get_xydata")]
         found_diagonal = False
         for line in lines:
-            if hasattr(line, 'get_xdata') and hasattr(line, 'get_ydata'):
+            if hasattr(line, "get_xdata") and hasattr(line, "get_ydata"):
                 x_data = line.get_xdata()
                 y_data = line.get_ydata()
                 if len(x_data) > 1 and len(y_data) > 1:
@@ -190,8 +188,8 @@ class TestPCAPlot:
 
         fig = pca_plot((components, variance, loadings), explained_var=variance.tolist())
 
-        assert hasattr(fig, 'savefig'), "Should return matplotlib Figure"
-        assert hasattr(fig, 'axes'), "Figure should have axes"
+        assert hasattr(fig, "savefig"), "Should return matplotlib Figure"
+        assert hasattr(fig, "axes"), "Figure should have axes"
 
     @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
     @pytest.mark.skipif(not HAS_NUMPY, reason="numpy not available")
@@ -225,23 +223,20 @@ class TestKinshipHeatmap:
 
         fig = kinship_heatmap(kinship)
 
-        assert hasattr(fig, 'savefig'), "Should return matplotlib Figure"
-        assert hasattr(fig, 'axes'), "Figure should have axes"
+        assert hasattr(fig, "savefig"), "Should return matplotlib Figure"
+        assert hasattr(fig, "axes"), "Figure should have axes"
 
     @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
     @pytest.mark.skipif(not HAS_NUMPY, reason="numpy not available")
     def test_kinship_heatmap_matrix_visualization(self):
         """Test that kinship matrix is properly visualized."""
-        kinship = np.array([[1.0, 0.5, 0.2],
-                           [0.5, 1.0, 0.3],
-                           [0.2, 0.3, 1.0]])
+        kinship = np.array([[1.0, 0.5, 0.2], [0.5, 1.0, 0.3], [0.2, 0.3, 1.0]])
 
         fig = kinship_heatmap(kinship)
 
         ax = fig.axes[0]
         # Should have image data (heatmap)
-        images = [child for child in ax.get_children()
-                 if hasattr(child, 'get_array')]
+        images = [child for child in ax.get_children() if hasattr(child, "get_array")]
         assert len(images) > 0, "Should have heatmap image"
 
 
@@ -294,7 +289,7 @@ class TestVisualizationEdgeCases:
     def test_manhattan_plot_empty_results(self):
         """Test Manhattan plot with empty results."""
         fig = manhattan_plot([])
-        assert hasattr(fig, 'savefig'), "Should still return Figure for empty data"
+        assert hasattr(fig, "savefig"), "Should still return Figure for empty data"
 
     @pytest.mark.skipif(not HAS_MATPLOTLIB, reason="matplotlib not available")
     def test_qq_plot_empty_pvalues(self):
@@ -311,7 +306,7 @@ class TestVisualizationEdgeCases:
         # Should handle gracefully or raise appropriate error
         try:
             fig = manhattan_plot(invalid_results)
-            assert hasattr(fig, 'savefig')
+            assert hasattr(fig, "savefig")
         except (KeyError, ValueError):
             # This is acceptable - function should validate input
             pass
@@ -323,10 +318,7 @@ class TestVisualizationEdgeCases:
 
         try:
             fig = qq_plot(invalid_pvalues)
-            assert hasattr(fig, 'savefig')
+            assert hasattr(fig, "savefig")
         except (ValueError, TypeError):
             # This is acceptable - function should validate input
             pass
-
-
-

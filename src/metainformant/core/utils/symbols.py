@@ -57,7 +57,7 @@ def _parse_function_signature(node: ast.FunctionDef) -> str:
     """Parse function signature from AST node."""
     args = []
     defaults_start = len(node.args.args) - len(node.args.defaults)
-    
+
     for i, arg in enumerate(node.args.args):
         arg_str = arg.arg
         if arg.annotation:
@@ -305,7 +305,9 @@ def index_classes(repo_root: str | Path, use_cache: bool = True) -> dict[str, li
     return index
 
 
-def find_symbol(symbol_name: str, symbol_type: str = "function", repo_root: str | Path | None = None) -> list[SymbolDefinition]:
+def find_symbol(
+    symbol_name: str, symbol_type: str = "function", repo_root: str | Path | None = None
+) -> list[SymbolDefinition]:
     """Find symbol definition(s) by name.
 
     Args:
@@ -480,7 +482,9 @@ def get_symbol_metadata(symbol_path: str | Path, symbol_name: str) -> dict[str, 
     return {}
 
 
-def fuzzy_find_symbol(symbol_name: str, symbol_type: str = "function", repo_root: str | Path | None = None, threshold: float = 0.6) -> list[tuple[str, float]]:
+def fuzzy_find_symbol(
+    symbol_name: str, symbol_type: str = "function", repo_root: str | Path | None = None, threshold: float = 0.6
+) -> list[tuple[str, float]]:
     """Find symbols with fuzzy matching.
 
     Args:
@@ -520,4 +524,3 @@ def fuzzy_find_symbol(symbol_name: str, symbol_type: str = "function", repo_root
     results.sort(key=lambda x: x[1], reverse=True)
 
     return results
-

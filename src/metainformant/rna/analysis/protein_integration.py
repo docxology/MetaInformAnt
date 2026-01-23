@@ -119,9 +119,7 @@ def calculate_translation_efficiency(
 
             if valid_mask.sum() > 1:
                 # Calculate Pearson correlation
-                correlation = float(
-                    rna_vals[valid_mask].corr(prot_vals[valid_mask])
-                )
+                correlation = float(rna_vals[valid_mask].corr(prot_vals[valid_mask]))
 
                 if not np.isnan(correlation):
                     results.append(

@@ -12,7 +12,7 @@ from metainformant.rna.engine.workflow import AmalgkitWorkflowConfig, plan_workf
 
 def test_manifest_written_and_logs_directory(tmp_path: Path):
     """Test that workflow planning creates correct default paths for logs and manifest.
-    
+
     Note: This test only checks planning and default paths, not actual execution.
     """
     cfg = AmalgkitWorkflowConfig(work_dir=tmp_path)

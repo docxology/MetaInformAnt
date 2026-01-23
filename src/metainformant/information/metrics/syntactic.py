@@ -51,9 +51,7 @@ def shannon_entropy(probs: Sequence[float], base: float = 2.0) -> float:
     return float(entropy)
 
 
-def shannon_entropy_from_counts(
-    counts: Union[Sequence[int], Dict[Any, int]]
-) -> float:
+def shannon_entropy_from_counts(counts: Union[Sequence[int], Dict[Any, int]]) -> float:
     """Calculate Shannon entropy from frequency counts.
 
     Args:
@@ -120,11 +118,7 @@ def joint_entropy(x: Sequence[Any], y: Sequence[Any], base: float = 2.0) -> floa
     return shannon_entropy(joint_probs, base=base)
 
 
-def conditional_entropy(
-    x: Sequence[Any],
-    y: Sequence[Any],
-    base: float = 2.0
-) -> float:
+def conditional_entropy(x: Sequence[Any], y: Sequence[Any], base: float = 2.0) -> float:
     """Calculate conditional entropy H(X|Y).
 
     Args:
@@ -154,11 +148,7 @@ def conditional_entropy(
     return h_xy - h_y
 
 
-def mutual_information(
-    x: Sequence[Any],
-    y: Sequence[Any],
-    base: float = 2.0
-) -> float:
+def mutual_information(x: Sequence[Any], y: Sequence[Any], base: float = 2.0) -> float:
     """Calculate mutual information I(X;Y).
 
     Args:
@@ -186,12 +176,7 @@ def mutual_information(
     return h_x + h_y - h_xy
 
 
-def conditional_mutual_information(
-    x: Sequence[Any],
-    y: Sequence[Any],
-    z: Sequence[Any],
-    base: float = 2.0
-) -> float:
+def conditional_mutual_information(x: Sequence[Any], y: Sequence[Any], z: Sequence[Any], base: float = 2.0) -> float:
     """Calculate conditional mutual information I(X;Y|Z).
 
     Args:
@@ -227,11 +212,7 @@ def conditional_mutual_information(
     return h_xz + h_yz - h_z - h_xyz
 
 
-def kl_divergence(
-    p: Sequence[float],
-    q: Sequence[float],
-    base: float = 2.0
-) -> float:
+def kl_divergence(p: Sequence[float], q: Sequence[float], base: float = 2.0) -> float:
     """Calculate Kullback-Leibler divergence D_KL(p||q).
 
     Args:
@@ -267,16 +248,12 @@ def kl_divergence(
             if qi > 0:
                 kl_sum += pi * (math.log(pi / qi) / math.log(base))
             else:
-                return float('inf')  # Infinite divergence if q has zero where p doesn't
+                return float("inf")  # Infinite divergence if q has zero where p doesn't
 
     return kl_sum
 
 
-def cross_entropy(
-    p: Sequence[float],
-    q: Sequence[float],
-    base: float = 2.0
-) -> float:
+def cross_entropy(p: Sequence[float], q: Sequence[float], base: float = 2.0) -> float:
     """Calculate cross-entropy H(p, q).
 
     Args:
@@ -309,16 +286,12 @@ def cross_entropy(
             if qi > 0:
                 ce_sum -= pi * (math.log(qi) / math.log(base))
             else:
-                return float('inf')  # Infinite if q has zero probability
+                return float("inf")  # Infinite if q has zero probability
 
     return ce_sum
 
 
-def jensen_shannon_divergence(
-    p: Sequence[float],
-    q: Sequence[float],
-    base: float = 2.0
-) -> float:
+def jensen_shannon_divergence(p: Sequence[float], q: Sequence[float], base: float = 2.0) -> float:
     """Calculate Jensen-Shannon divergence JSD(p||q).
 
     Args:
@@ -342,10 +315,7 @@ def jensen_shannon_divergence(
     return 0.5 * (kl_pm + kl_qm)
 
 
-def total_correlation(
-    variables: List[Sequence[Any]],
-    base: float = 2.0
-) -> float:
+def total_correlation(variables: List[Sequence[Any]], base: float = 2.0) -> float:
     """Calculate total correlation (multi-information) for multiple variables.
 
     Args:
@@ -374,10 +344,7 @@ def total_correlation(
         return 0.0
 
     # Total correlation: sum(H(X_i)) - H(X_1, X_2, ..., X_n)
-    individual_entropies = sum(
-        shannon_entropy_from_counts(Counter(var))
-        for var in variables
-    )
+    individual_entropies = sum(shannon_entropy_from_counts(Counter(var)) for var in variables)
 
     # Joint entropy of all variables
     joint_counts = Counter(zip(*variables))
@@ -386,12 +353,7 @@ def total_correlation(
     return individual_entropies - joint_entropy_val
 
 
-def transfer_entropy(
-    x: Sequence[Any],
-    y: Sequence[Any],
-    lag: int = 1,
-    base: float = 2.0
-) -> float:
+def transfer_entropy(x: Sequence[Any], y: Sequence[Any], lag: int = 1, base: float = 2.0) -> float:
     """Calculate transfer entropy from X to Y.
 
     Transfer entropy measures the amount of information that X provides
@@ -426,9 +388,9 @@ def transfer_entropy(
     # This is equivalent to: I(Y_{t+1}; X_t | Y_t)
 
     # Build sequences for conditional mutual information
-    y_future = y[lag:]      # Y_{t+1}
-    y_past = y[:-lag]       # Y_t
-    x_past = x[:-lag]       # X_t
+    y_future = y[lag:]  # Y_{t+1}
+    y_past = y[:-lag]  # Y_t
+    x_past = x[:-lag]  # X_t
 
     # Ensure all sequences have same length
     min_len = min(len(y_future), len(y_past), len(x_past))
@@ -440,11 +402,7 @@ def transfer_entropy(
     return conditional_mutual_information(y_future, x_past, y_past, base=base)
 
 
-def renyi_entropy(
-    probs: Sequence[float],
-    alpha: float = 2.0,
-    base: float = 2.0
-) -> float:
+def renyi_entropy(probs: Sequence[float], alpha: float = 2.0, base: float = 2.0) -> float:
     """Calculate Rényi entropy of order alpha.
 
     Args:
@@ -476,23 +434,19 @@ def renyi_entropy(
     if alpha == 0:
         # Hartley entropy (log of support size)
         return math.log(len(probs_array), base)
-    elif alpha == float('inf'):
+    elif alpha == float("inf"):
         # Min entropy
         return -math.log(np.max(probs_array), base)
     else:
         # General Rényi entropy: (1/(1-alpha)) * log(sum(p^alpha))
-        sum_p_alpha = np.sum(probs_array ** alpha)
+        sum_p_alpha = np.sum(probs_array**alpha)
         if sum_p_alpha > 0:
             return (1.0 / (1.0 - alpha)) * math.log(sum_p_alpha, base)
         else:
             return 0.0
 
 
-def tsallis_entropy(
-    probs: Sequence[float],
-    q: float = 2.0,
-    base: float = 2.0
-) -> float:
+def tsallis_entropy(probs: Sequence[float], q: float = 2.0, base: float = 2.0) -> float:
     """Calculate Tsallis entropy of order q.
 
     Args:
@@ -526,15 +480,12 @@ def tsallis_entropy(
         return math.log(len(probs_array), base)
     else:
         # Tsallis entropy: (1/(q-1)) * (sum(p^q) - 1)
-        sum_p_q = np.sum(probs_array ** q)
+        sum_p_q = np.sum(probs_array**q)
         return (1.0 / (q - 1.0)) * (sum_p_q - 1.0)
 
 
 def normalized_mutual_information(
-    x: Sequence[Any],
-    y: Sequence[Any],
-    method: str = "arithmetic",
-    base: float = 2.0
+    x: Sequence[Any], y: Sequence[Any], method: str = "arithmetic", base: float = 2.0
 ) -> float:
     """Calculate normalized mutual information.
 
@@ -586,11 +537,7 @@ def normalized_mutual_information(
     return 2.0 * mi / denominator if method in ["arithmetic", "geometric"] else mi / denominator
 
 
-def information_coefficient(
-    x: Sequence[Any],
-    y: Sequence[Any],
-    base: float = 2.0
-) -> float:
+def information_coefficient(x: Sequence[Any], y: Sequence[Any], base: float = 2.0) -> float:
     """Calculate information coefficient (IC).
 
     This is a measure of the total information shared between two variables,
@@ -625,9 +572,3 @@ def information_coefficient(
         return 0.0
 
     return mi / denominator
-
-
-
-
-
-

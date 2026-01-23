@@ -22,22 +22,70 @@ AMINO_ACIDS = "ACDEFGHIKLMNPQRSTVWY"  # Standard 20 amino acids
 
 # Genetic code mapping (simplified)
 GENETIC_CODE: Dict[str, str] = {
-    'TTT': 'F', 'TTC': 'F', 'TTA': 'L', 'TTG': 'L',
-    'TCT': 'S', 'TCC': 'S', 'TCA': 'S', 'TCG': 'S',
-    'TAT': 'Y', 'TAC': 'Y', 'TAA': '*', 'TAG': '*',
-    'TGT': 'C', 'TGC': 'C', 'TGA': '*', 'TGG': 'W',
-    'CTT': 'L', 'CTC': 'L', 'CTA': 'L', 'CTG': 'L',
-    'CCT': 'P', 'CCC': 'P', 'CCA': 'P', 'CCG': 'P',
-    'CAT': 'H', 'CAC': 'H', 'CAA': 'Q', 'CAG': 'Q',
-    'CGT': 'R', 'CGC': 'R', 'CGA': 'R', 'CGG': 'R',
-    'ATT': 'I', 'ATC': 'I', 'ATA': 'I', 'ATG': 'M',
-    'ACT': 'T', 'ACC': 'T', 'ACA': 'T', 'ACG': 'T',
-    'AAT': 'N', 'AAC': 'N', 'AAA': 'K', 'AAG': 'K',
-    'AGT': 'S', 'AGC': 'S', 'AGA': 'R', 'AGG': 'R',
-    'GTT': 'V', 'GTC': 'V', 'GTA': 'V', 'GTG': 'V',
-    'GCT': 'A', 'GCC': 'A', 'GCA': 'A', 'GCG': 'A',
-    'GAT': 'D', 'GAC': 'D', 'GAA': 'E', 'GAG': 'E',
-    'GGT': 'G', 'GGC': 'G', 'GGA': 'G', 'GGG': 'G'
+    "TTT": "F",
+    "TTC": "F",
+    "TTA": "L",
+    "TTG": "L",
+    "TCT": "S",
+    "TCC": "S",
+    "TCA": "S",
+    "TCG": "S",
+    "TAT": "Y",
+    "TAC": "Y",
+    "TAA": "*",
+    "TAG": "*",
+    "TGT": "C",
+    "TGC": "C",
+    "TGA": "*",
+    "TGG": "W",
+    "CTT": "L",
+    "CTC": "L",
+    "CTA": "L",
+    "CTG": "L",
+    "CCT": "P",
+    "CCC": "P",
+    "CCA": "P",
+    "CCG": "P",
+    "CAT": "H",
+    "CAC": "H",
+    "CAA": "Q",
+    "CAG": "Q",
+    "CGT": "R",
+    "CGC": "R",
+    "CGA": "R",
+    "CGG": "R",
+    "ATT": "I",
+    "ATC": "I",
+    "ATA": "I",
+    "ATG": "M",
+    "ACT": "T",
+    "ACC": "T",
+    "ACA": "T",
+    "ACG": "T",
+    "AAT": "N",
+    "AAC": "N",
+    "AAA": "K",
+    "AAG": "K",
+    "AGT": "S",
+    "AGC": "S",
+    "AGA": "R",
+    "AGG": "R",
+    "GTT": "V",
+    "GTC": "V",
+    "GTA": "V",
+    "GTG": "V",
+    "GCT": "A",
+    "GCC": "A",
+    "GCA": "A",
+    "GCG": "A",
+    "GAT": "D",
+    "GAC": "D",
+    "GAA": "E",
+    "GAG": "E",
+    "GGT": "G",
+    "GGC": "G",
+    "GGA": "G",
+    "GGG": "G",
 }
 
 
@@ -69,11 +117,11 @@ def generate_random_dna(length: int, *, gc_content: float = 0.5, rng: random.Ran
     g_freq = c_freq = gc_freq / 2
     a_freq = t_freq = at_freq / 2
 
-    bases = ['A', 'T', 'G', 'C']
+    bases = ["A", "T", "G", "C"]
     weights = [a_freq, t_freq, g_freq, c_freq]
 
     sequence = rng.choices(bases, weights=weights, k=length)
-    return ''.join(sequence)
+    return "".join(sequence)
 
 
 def mutate_sequence(seq: str, n_mut: int, *, rng: random.Random | None = None) -> str:
@@ -119,7 +167,7 @@ def mutate_sequence(seq: str, n_mut: int, *, rng: random.Random | None = None) -
 
         sequence[pos] = rng.choice(possible_mutations)
 
-    return ''.join(sequence)
+    return "".join(sequence)
 
 
 def generate_random_protein(length: int, *, rng: random.Random | None = None) -> str:
@@ -141,11 +189,12 @@ def generate_random_protein(length: int, *, rng: random.Random | None = None) ->
         rng = random.Random()
 
     sequence = rng.choices(list(AMINO_ACIDS), k=length)
-    return ''.join(sequence)
+    return "".join(sequence)
 
 
-def evolve_sequence(sequence: str, generations: int, *,
-                   mutation_rate: float = 0.001, rng: random.Random | None = None) -> str:
+def evolve_sequence(
+    sequence: str, generations: int, *, mutation_rate: float = 0.001, rng: random.Random | None = None
+) -> str:
     """Evolve a sequence over multiple generations with mutations.
 
     Args:
@@ -207,18 +256,17 @@ def translate_dna_to_protein(dna_sequence: str, *, frame: int = 0) -> str:
     protein = []
 
     for i in range(0, len(sequence) - len(sequence) % 3, 3):
-        codon = sequence[i:i+3]
+        codon = sequence[i : i + 3]
         if len(codon) == 3:
-            amino_acid = GENETIC_CODE.get(codon, 'X')  # X for unknown codons
+            amino_acid = GENETIC_CODE.get(codon, "X")  # X for unknown codons
             protein.append(amino_acid)
-            if amino_acid == '*':  # Stop codon
+            if amino_acid == "*":  # Stop codon
                 break
 
-    return ''.join(protein)
+    return "".join(protein)
 
 
-def reverse_transcribe_protein_to_dna(protein_sequence: str, *,
-                                    rng: random.Random | None = None) -> str:
+def reverse_transcribe_protein_to_dna(protein_sequence: str, *, rng: random.Random | None = None) -> str:
     """Reverse translate a protein sequence to DNA (one possible codon usage).
 
     Args:
@@ -239,25 +287,26 @@ def reverse_transcribe_protein_to_dna(protein_sequence: str, *,
     dna_sequence = []
 
     for aa in protein_sequence.upper():
-        if aa == '*':
+        if aa == "*":
             # Stop codon - choose randomly
-            stop_codons = ['TAA', 'TAG', 'TGA']
+            stop_codons = ["TAA", "TAG", "TGA"]
             codon = rng.choice(stop_codons)
         elif aa in AMINO_ACIDS:
             # Find all codons for this amino acid
             possible_codons = [codon for codon, amino in GENETIC_CODE.items() if amino == aa]
-            codon = rng.choice(possible_codons) if possible_codons else 'NNN'
+            codon = rng.choice(possible_codons) if possible_codons else "NNN"
         else:
             # Unknown amino acid
-            codon = 'NNN'
+            codon = "NNN"
 
         dna_sequence.append(codon)
 
-    return ''.join(dna_sequence)
+    return "".join(dna_sequence)
 
 
-def generate_coding_sequence(length: int, *, gc_content: float = 0.5,
-                           rng: random.Random | None = None) -> Tuple[str, str]:
+def generate_coding_sequence(
+    length: int, *, gc_content: float = 0.5, rng: random.Random | None = None
+) -> Tuple[str, str]:
     """Generate a random coding DNA sequence and its protein translation.
 
     Args:
@@ -307,8 +356,14 @@ def calculate_sequence_similarity(seq1: str, seq2: str) -> float:
     return matches / len(seq1)
 
 
-def generate_sequence_family(ancestor: str, n_descendants: int, generations: int, *,
-                           mutation_rate: float = 0.001, rng: random.Random | None = None) -> List[str]:
+def generate_sequence_family(
+    ancestor: str,
+    n_descendants: int,
+    generations: int,
+    *,
+    mutation_rate: float = 0.001,
+    rng: random.Random | None = None,
+) -> List[str]:
     """Generate a family of related sequences from a common ancestor.
 
     Args:
@@ -334,8 +389,7 @@ def generate_sequence_family(ancestor: str, n_descendants: int, generations: int
     descendants = [ancestor]  # Include ancestor
 
     for _ in range(n_descendants):
-        descendant = evolve_sequence(ancestor, generations,
-                                   mutation_rate=mutation_rate, rng=rng)
+        descendant = evolve_sequence(ancestor, generations, mutation_rate=mutation_rate, rng=rng)
         descendants.append(descendant)
 
     return descendants
@@ -397,9 +451,14 @@ def analyze_sequence_divergence(sequences: List[str]) -> Dict[str, Any]:
     }
 
 
-def simulate_gene_duplication(original_gene: str, n_copies: int, *,
-                            divergence_time: int = 1000, mutation_rate: float = 1e-8,
-                            rng: random.Random | None = None) -> List[str]:
+def simulate_gene_duplication(
+    original_gene: str,
+    n_copies: int,
+    *,
+    divergence_time: int = 1000,
+    mutation_rate: float = 1e-8,
+    rng: random.Random | None = None,
+) -> List[str]:
     """Simulate gene duplication and subsequent divergence.
 
     Args:
@@ -425,14 +484,7 @@ def simulate_gene_duplication(original_gene: str, n_copies: int, *,
     copies = []
     for _ in range(n_copies):
         # Each copy evolves independently from the original
-        copy = evolve_sequence(original_gene, divergence_time,
-                             mutation_rate=mutation_rate, rng=rng)
+        copy = evolve_sequence(original_gene, divergence_time, mutation_rate=mutation_rate, rng=rng)
         copies.append(copy)
 
     return copies
-
-
-
-
-
-

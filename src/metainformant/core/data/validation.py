@@ -256,10 +256,9 @@ def validator(func: Callable[[Any], bool]) -> Callable[[Any], None]:
         is_positive(5)  # OK
         is_positive(-1)  # Raises ValidationError
     """
+
     def wrapper(value: Any, name: str = "value") -> None:
         if not func(value):
             raise ValidationError(f"{name} failed validation: {value}")
 
     return wrapper
-
-

@@ -298,7 +298,7 @@ class TestErrorHandling:
     def test_invalid_input_handling(self):
         """Test handling of invalid inputs."""
         from metainformant.core.utils.errors import ValidationError
-        
+
         # Invalid GC content
         with pytest.raises(ValidationError):
             generate_random_dna(length=100, gc_content=1.5)  # > 1.0

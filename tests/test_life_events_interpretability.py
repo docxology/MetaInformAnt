@@ -156,4 +156,3 @@ def test_feature_attribution_empty_sequences():
 
     with pytest.raises(ValueError, match="cannot be empty"):
         feature_attribution(predictor, [], embeddings)
-

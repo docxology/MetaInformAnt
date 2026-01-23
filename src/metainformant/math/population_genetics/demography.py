@@ -15,8 +15,7 @@ from metainformant.core import logging
 logger = logging.get_logger(__name__)
 
 
-def exponential_growth_model(initial_size: float, growth_rate: float,
-                           generations: int) -> List[float]:
+def exponential_growth_model(initial_size: float, growth_rate: float, generations: int) -> List[float]:
     """Simulate exponential population growth.
 
     Args:
@@ -45,8 +44,9 @@ def exponential_growth_model(initial_size: float, growth_rate: float,
     return population_sizes
 
 
-def logistic_growth_model(initial_size: float, carrying_capacity: float,
-                        growth_rate: float, generations: int) -> List[float]:
+def logistic_growth_model(
+    initial_size: float, carrying_capacity: float, growth_rate: float, generations: int
+) -> List[float]:
     """Simulate logistic population growth.
 
     Args:
@@ -82,10 +82,12 @@ def logistic_growth_model(initial_size: float, carrying_capacity: float,
     return population_sizes
 
 
-def age_structure_model(fertility_rates: Sequence[float],
-                       survival_rates: Sequence[float],
-                       initial_age_structure: Sequence[float],
-                       generations: int) -> Dict[str, Any]:
+def age_structure_model(
+    fertility_rates: Sequence[float],
+    survival_rates: Sequence[float],
+    initial_age_structure: Sequence[float],
+    generations: int,
+) -> Dict[str, Any]:
     """Simulate age-structured population dynamics.
 
     Args:
@@ -133,20 +135,24 @@ def age_structure_model(fertility_rates: Sequence[float],
     age_distributions = population_history
 
     results = {
-        'population_history': population_history,
-        'total_populations': total_populations,
-        'age_distributions': age_distributions,
-        'final_population': total_populations[-1] if total_populations else 0,
-        'growth_rate': (total_populations[-1] / total_populations[0]) ** (1/generations) - 1
-                         if generations > 0 and total_populations[0] > 0 else 0,
-        'stable_age_distribution': age_distributions[-1] if age_distributions else []
+        "population_history": population_history,
+        "total_populations": total_populations,
+        "age_distributions": age_distributions,
+        "final_population": total_populations[-1] if total_populations else 0,
+        "growth_rate": (
+            (total_populations[-1] / total_populations[0]) ** (1 / generations) - 1
+            if generations > 0 and total_populations[0] > 0
+            else 0
+        ),
+        "stable_age_distribution": age_distributions[-1] if age_distributions else [],
     }
 
     return results
 
 
-def bottleneck_effective_size(pre_bottleneck_size: float, bottleneck_size: float,
-                            post_bottleneck_size: float, recovery_generations: int = 0) -> float:
+def bottleneck_effective_size(
+    pre_bottleneck_size: float, bottleneck_size: float, post_bottleneck_size: float, recovery_generations: int = 0
+) -> float:
     """Calculate effective population size after a bottleneck.
 
     Args:
@@ -172,13 +178,12 @@ def bottleneck_effective_size(pre_bottleneck_size: float, bottleneck_size: float
     # If recovery generations specified, increase effective size
     if recovery_generations > 0:
         recovery_factor = min(recovery_generations / 10.0, 1.0)  # Cap at 10 generations
-        base_ne *= (1 + recovery_factor * 0.5)  # Increase by up to 50%
+        base_ne *= 1 + recovery_factor * 0.5  # Increase by up to 50%
 
     return base_ne
 
 
-def exponential_growth_effective_size(initial_size: float, growth_rate: float,
-                                    generations: int) -> float:
+def exponential_growth_effective_size(initial_size: float, growth_rate: float, generations: int) -> float:
     """Calculate effective population size during exponential growth.
 
     Args:
@@ -207,8 +212,7 @@ def exponential_growth_effective_size(initial_size: float, growth_rate: float,
         return initial_size
 
 
-def two_epoch_effective_size(ancient_size: float, recent_size: float,
-                           split_time: int) -> float:
+def two_epoch_effective_size(ancient_size: float, recent_size: float, split_time: int) -> float:
     """Calculate effective population size for a two-epoch model.
 
     Args:
@@ -233,8 +237,7 @@ def two_epoch_effective_size(ancient_size: float, recent_size: float,
     return len(sizes) / sum(1.0 / size for size in sizes)
 
 
-def island_model_update(allele_frequency: float, migration_rate: float,
-                       migrant_allele_frequency: float) -> float:
+def island_model_update(allele_frequency: float, migration_rate: float, migrant_allele_frequency: float) -> float:
     """Update allele frequency under the island model of migration.
 
     Args:
@@ -255,4 +258,3 @@ def island_model_update(allele_frequency: float, migration_rate: float,
     # p' = (1-m)p + m*pm = p - mp + m*pm = p + m(pm - p)
     delta_p = migration_rate * (migrant_allele_frequency - allele_frequency)
     return allele_frequency + delta_p
-

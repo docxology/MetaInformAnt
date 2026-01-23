@@ -150,5 +150,3 @@ class TestCleanupUnquantifiedSamples:
         assert "S2" in cleaned
         assert not (fastq_dir / "S2_1.fastq").exists()
         assert (fastq_dir / "S1_1.fastq").exists()
-
-

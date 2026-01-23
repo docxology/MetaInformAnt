@@ -50,8 +50,7 @@ def replicator_derivative(fitnesses: List[float], frequencies: List[float]) -> L
     return derivatives
 
 
-def replicator_step(fitnesses: List[float], frequencies: List[float],
-                   time_step: float = 0.01) -> List[float]:
+def replicator_step(fitnesses: List[float], frequencies: List[float], time_step: float = 0.01) -> List[float]:
     """Perform one step of replicator dynamics.
 
     Args:
@@ -87,6 +86,3 @@ def replicator_step(fitnesses: List[float], frequencies: List[float],
         new_frequencies = [1.0 / n] * n
 
     return new_frequencies
-
-
-

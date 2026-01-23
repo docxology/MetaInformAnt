@@ -19,12 +19,14 @@ from metainformant.visualization.analysis.dimred import (
 # Check for optional dependencies
 try:
     from sklearn.decomposition import PCA
+
     HAS_SKLEARN = True
 except ImportError:
     HAS_SKLEARN = False
 
 try:
     import umap
+
     HAS_UMAP = True
 except ImportError:
     HAS_UMAP = False
@@ -39,7 +41,8 @@ class TestPlotPCA:
             pytest.skip("scikit-learn required for PCA plotting")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         np.random.seed(42)
@@ -48,7 +51,7 @@ class TestPlotPCA:
         ax = plot_pca(data)
         assert ax is not None
         assert len(ax.collections) > 0  # scatter creates collections
-        plt.close('all')
+        plt.close("all")
 
     def test_pca_plot_with_dataframe(self):
         """Test PCA plot with pandas DataFrame."""
@@ -56,18 +59,16 @@ class TestPlotPCA:
             pytest.skip("scikit-learn required for PCA plotting")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         np.random.seed(42)
-        data = pd.DataFrame(
-            np.random.randn(30, 5),
-            columns=['feat1', 'feat2', 'feat3', 'feat4', 'feat5']
-        )
+        data = pd.DataFrame(np.random.randn(30, 5), columns=["feat1", "feat2", "feat3", "feat4", "feat5"])
 
         ax = plot_pca(data)
         assert ax is not None
-        plt.close('all')
+        plt.close("all")
 
     def test_pca_plot_3d(self):
         """Test 3D PCA plot."""
@@ -75,7 +76,8 @@ class TestPlotPCA:
             pytest.skip("scikit-learn required for PCA plotting")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         np.random.seed(42)
@@ -83,7 +85,7 @@ class TestPlotPCA:
 
         ax = plot_pca(data, n_components=3)
         assert ax is not None
-        plt.close('all')
+        plt.close("all")
 
     def test_pca_plot_with_output_path(self, tmp_path: Path):
         """Test PCA plot with output path."""
@@ -91,7 +93,8 @@ class TestPlotPCA:
             pytest.skip("scikit-learn required for PCA plotting")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         np.random.seed(42)
@@ -101,7 +104,7 @@ class TestPlotPCA:
         ax = plot_pca(data, output_path=output_path)
         assert ax is not None
         assert output_path.exists()
-        plt.close('all')
+        plt.close("all")
 
     def test_pca_plot_invalid_n_components(self):
         """Test PCA plot with invalid n_components."""
@@ -133,7 +136,8 @@ class TestPlotUMAP:
             pytest.skip("umap-learn required for UMAP plotting")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         np.random.seed(42)
@@ -142,7 +146,7 @@ class TestPlotUMAP:
         ax = plot_umap(data)
         assert ax is not None
         assert len(ax.collections) > 0  # scatter creates collections
-        plt.close('all')
+        plt.close("all")
 
     def test_umap_plot_3d(self):
         """Test 3D UMAP plot."""
@@ -150,7 +154,8 @@ class TestPlotUMAP:
             pytest.skip("umap-learn required for UMAP plotting")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         np.random.seed(42)
@@ -158,7 +163,7 @@ class TestPlotUMAP:
 
         ax = plot_umap(data, n_components=3)
         assert ax is not None
-        plt.close('all')
+        plt.close("all")
 
     def test_umap_plot_no_umap(self):
         """Test UMAP plot when umap-learn is not available."""
@@ -180,7 +185,8 @@ class TestPlotTSNE:
             pytest.skip("scikit-learn required for t-SNE plotting")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         np.random.seed(42)
@@ -189,7 +195,7 @@ class TestPlotTSNE:
         ax = plot_tsne(data)
         assert ax is not None
         assert len(ax.collections) > 0  # scatter creates collections
-        plt.close('all')
+        plt.close("all")
 
     def test_tsne_plot_3d(self):
         """Test 3D t-SNE plot."""
@@ -197,7 +203,8 @@ class TestPlotTSNE:
             pytest.skip("scikit-learn required for t-SNE plotting")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         np.random.seed(42)
@@ -205,7 +212,7 @@ class TestPlotTSNE:
 
         ax = plot_tsne(data, n_components=3)
         assert ax is not None
-        plt.close('all')
+        plt.close("all")
 
     def test_tsne_plot_no_sklearn(self):
         """Test t-SNE plot when scikit-learn is not available."""
@@ -227,7 +234,8 @@ class TestPlotPCALoadings:
             pytest.skip("scikit-learn required for PCA loadings plotting")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         # Create and fit PCA model
@@ -239,7 +247,7 @@ class TestPlotPCALoadings:
         ax = plot_pca_loadings(pca)
         assert ax is not None
         assert len(ax.collections) > 0  # scatter creates collections
-        plt.close('all')
+        plt.close("all")
 
     def test_pca_loadings_plot_with_output_path(self, tmp_path: Path):
         """Test PCA loadings plot with output path."""
@@ -247,7 +255,8 @@ class TestPlotPCALoadings:
             pytest.skip("scikit-learn required for PCA loadings plotting")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         np.random.seed(42)
@@ -259,7 +268,7 @@ class TestPlotPCALoadings:
         ax = plot_pca_loadings(pca, output_path=output_path)
         assert ax is not None
         assert output_path.exists()
-        plt.close('all')
+        plt.close("all")
 
     def test_pca_loadings_plot_invalid_n_components(self):
         """Test PCA loadings plot with invalid n_components."""
@@ -295,7 +304,8 @@ class TestBiplot:
             pytest.skip("scikit-learn required for biplot")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         np.random.seed(42)
@@ -306,7 +316,7 @@ class TestBiplot:
         ax = biplot(data, pca)
         assert ax is not None
         # Biplot should have both scatter points and arrows
-        plt.close('all')
+        plt.close("all")
 
     def test_biplot_with_dataframe(self):
         """Test biplot with pandas DataFrame."""
@@ -314,20 +324,18 @@ class TestBiplot:
             pytest.skip("scikit-learn required for biplot")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         np.random.seed(42)
-        data = pd.DataFrame(
-            np.random.randn(30, 4),
-            columns=['gene1', 'gene2', 'gene3', 'gene4']
-        )
+        data = pd.DataFrame(np.random.randn(30, 4), columns=["gene1", "gene2", "gene3", "gene4"])
         pca = PCA(n_components=2)
         pca.fit(data.values)
 
         ax = biplot(data, pca)
         assert ax is not None
-        plt.close('all')
+        plt.close("all")
 
     def test_biplot_with_output_path(self, tmp_path: Path):
         """Test biplot with output path."""
@@ -335,7 +343,8 @@ class TestBiplot:
             pytest.skip("scikit-learn required for biplot")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         np.random.seed(42)
@@ -347,7 +356,7 @@ class TestBiplot:
         ax = biplot(data, pca, output_path=output_path)
         assert ax is not None
         assert output_path.exists()
-        plt.close('all')
+        plt.close("all")
 
     def test_biplot_invalid_model(self):
         """Test biplot with invalid PCA model."""
@@ -366,13 +375,7 @@ class TestBiplot:
             pytest.skip("scikit-learn is available")
 
         data = np.random.randn(20, 3)
-        fake_model = type('MockPCA', (), {'components_': np.random.randn(3, 2)})()
+        fake_model = type("MockPCA", (), {"components_": np.random.randn(3, 2)})()
 
         with pytest.raises(ImportError, match="scikit-learn required"):
             biplot(data, fake_model)
-
-
-
-
-
-

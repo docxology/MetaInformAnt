@@ -12,6 +12,6 @@ from metainformant.core.engine.workflow_manager import (
 
 __all__ = [
     "WorkflowManager",
-    "SampleStage", 
+    "SampleStage",
     "SampleState",
 ]

@@ -101,4 +101,3 @@ def test_qq_plot_statistical_empty(tmp_path: Path) -> None:
 
     assert result["status"] == "failed"
     assert "error" in result
-

@@ -1,4 +1,5 @@
 """Tests for DNA phylogeny functions."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -15,18 +16,18 @@ def test_neighbor_joining_tree_from_sequences() -> None:
     # Create sample sequences directly (self-contained test)
     seqs = {
         "seq1": "ATCGATCGATCGATCG",
-        "seq2": "ATCGATCGATCGATCG", 
+        "seq2": "ATCGATCGATCGATCG",
         "seq3": "ATCGATCGATCGATCG",
         "seq4": "TTTTTTTTTTTTTTTT",
     }
-    
+
     try:
         tree = phylogeny.neighbor_joining_tree(seqs)
         assert tree is not None
         # number of terminals should equal number of input sequences
         stats = phylogeny.basic_tree_stats(tree)
-        assert stats['leaves'] == len(seqs)
-        
+        assert stats["leaves"] == len(seqs)
+
         newick = phylogeny.to_newick(tree)
         assert isinstance(newick, str) and ";" in newick
     except (ImportError, AttributeError, KeyError) as e:
@@ -46,10 +47,10 @@ TTTTTTTTTTTTTTTT
 """
     fasta_path = tmp_path / "test.fasta"
     fasta_path.write_text(fasta_content)
-    
+
     seqs = sequences.read_fasta(str(fasta_path))
     assert len(seqs) == 3
-    
+
     try:
         tree = phylogeny.neighbor_joining_tree(seqs)
         assert tree is not None

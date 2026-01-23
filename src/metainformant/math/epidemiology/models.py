@@ -12,8 +12,7 @@ from metainformant.core import logging
 logger = logging.get_logger(__name__)
 
 
-def basic_reproduction_number(transmission_rate: float, recovery_rate: float,
-                             contact_rate: float = 0.0) -> float:
+def basic_reproduction_number(transmission_rate: float, recovery_rate: float, contact_rate: float = 0.0) -> float:
     """Calculate basic reproduction number (R₀) for SIR model.
 
     Args:
@@ -49,11 +48,17 @@ def herd_immunity_threshold(R0: float) -> float:
     Returns:
         Herd immunity threshold (1 - 1/R₀)
     """
-    return 1 - 1/R0
+    return 1 - 1 / R0
 
 
-def sir_step(susceptible: float, infected: float, recovered: float,
-            transmission_rate: float, recovery_rate: float, dt: float = 1.0) -> tuple[float, float, float]:
+def sir_step(
+    susceptible: float,
+    infected: float,
+    recovered: float,
+    transmission_rate: float,
+    recovery_rate: float,
+    dt: float = 1.0,
+) -> tuple[float, float, float]:
     """Single time step of SIR model.
 
     Args:
@@ -92,9 +97,16 @@ def sir_step(susceptible: float, infected: float, recovered: float,
     return new_susceptible, new_infected, new_recovered
 
 
-def seir_step(susceptible: float, exposed: float, infected: float, recovered: float,
-             transmission_rate: float, incubation_rate: float, recovery_rate: float,
-             dt: float = 1.0) -> tuple[float, float, float, float]:
+def seir_step(
+    susceptible: float,
+    exposed: float,
+    infected: float,
+    recovered: float,
+    transmission_rate: float,
+    incubation_rate: float,
+    recovery_rate: float,
+    dt: float = 1.0,
+) -> tuple[float, float, float, float]:
     """Single time step of SEIR model.
 
     Args:
@@ -139,8 +151,9 @@ def seir_step(susceptible: float, exposed: float, infected: float, recovered: fl
     return new_susceptible, new_exposed, new_infected, new_recovered
 
 
-def sis_step(susceptible: float, infected: float, transmission_rate: float,
-            recovery_rate: float, dt: float = 1.0) -> tuple[float, float]:
+def sis_step(
+    susceptible: float, infected: float, transmission_rate: float, recovery_rate: float, dt: float = 1.0
+) -> tuple[float, float]:
     """Single time step of SIS model.
 
     Args:

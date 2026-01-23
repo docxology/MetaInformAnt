@@ -17,6 +17,7 @@ from metainformant.core import logging, errors, validation
 # Optional scientific dependencies
 try:
     from sklearn.neighbors import NearestNeighbors
+
     HAS_SKLEARN = True
 except ImportError:
     HAS_SKLEARN = False
@@ -28,9 +29,9 @@ logger = logging.get_logger(__name__)
 from metainformant.singlecell.data.preprocessing import SingleCellData
 
 
-def compute_diffusion_pseudotime(data: SingleCellData,
-                                root_cell: int | None = None,
-                                n_components: int = 10) -> SingleCellData:
+def compute_diffusion_pseudotime(
+    data: SingleCellData, root_cell: int | None = None, n_components: int = 10
+) -> SingleCellData:
     """Compute diffusion pseudotime for trajectory inference.
 
     Args:
@@ -56,22 +57,22 @@ def compute_diffusion_pseudotime(data: SingleCellData,
     result = data.copy()
 
     # Get expression matrix
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
     # Compute diffusion map (simplified version)
     pseudotime = _compute_simple_diffusion_pseudotime(X, root_cell, n_components)
 
     # Add to obs
     result.obs = result.obs.copy() if result.obs is not None else pd.DataFrame()
-    result.obs['dpt_pseudotime'] = pseudotime
+    result.obs["dpt_pseudotime"] = pseudotime
 
     # Store metadata
-    result.uns['dpt'] = {
-        'method': 'diffusion_pseudotime',
-        'root_cell': root_cell,
-        'n_components': n_components,
-        'min_pseudotime': float(np.min(pseudotime)),
-        'max_pseudotime': float(np.max(pseudotime)),
+    result.uns["dpt"] = {
+        "method": "diffusion_pseudotime",
+        "root_cell": root_cell,
+        "n_components": n_components,
+        "min_pseudotime": float(np.min(pseudotime)),
+        "max_pseudotime": float(np.max(pseudotime)),
     }
 
     logger.info(f"Diffusion pseudotime computed: range [{np.min(pseudotime):.3f}, {np.max(pseudotime):.3f}]")
@@ -125,7 +126,7 @@ def paga_trajectory(data: SingleCellData, groups: str) -> SingleCellData:
     unique_clusters = np.unique(cluster_labels)
 
     # Compute cluster centroids
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
     cluster_centroids = {}
 
     for cluster in unique_clusters:
@@ -137,11 +138,11 @@ def paga_trajectory(data: SingleCellData, groups: str) -> SingleCellData:
     connectivity_matrix = _compute_cluster_connectivity(cluster_labels, unique_clusters)
 
     # Store PAGA results
-    result.uns['paga'] = {
-        'groups': groups,
-        'unique_groups': unique_clusters.tolist(),
-        'connectivity_matrix': connectivity_matrix.tolist(),
-        'n_groups': len(unique_clusters),
+    result.uns["paga"] = {
+        "groups": groups,
+        "unique_groups": unique_clusters.tolist(),
+        "connectivity_matrix": connectivity_matrix.tolist(),
+        "n_groups": len(unique_clusters),
     }
 
     # Add cluster-level pseudotime (simplified)
@@ -152,14 +153,13 @@ def paga_trajectory(data: SingleCellData, groups: str) -> SingleCellData:
     cell_pseudotime = np.array([cluster_pseudotime[cluster] for cluster in cluster_labels])
 
     result.obs = result.obs.copy() if result.obs is not None else pd.DataFrame()
-    result.obs['paga_pseudotime'] = cell_pseudotime
+    result.obs["paga_pseudotime"] = cell_pseudotime
 
     logger.info(f"PAGA trajectory computed for {len(unique_clusters)} groups")
     return result
 
 
-def slingshot_trajectory(data: SingleCellData, start_cluster: str,
-                        end_clusters: List[str]) -> SingleCellData:
+def slingshot_trajectory(data: SingleCellData, start_cluster: str, end_clusters: List[str]) -> SingleCellData:
     """Compute Slingshot-like trajectory inference.
 
     Args:
@@ -181,7 +181,7 @@ def slingshot_trajectory(data: SingleCellData, start_cluster: str,
     if data.obs is not None:
         # Find a column that looks like cluster assignments
         for col in data.obs.columns:
-            if 'cluster' in col.lower() or 'leiden' in col.lower() or 'louvain' in col.lower():
+            if "cluster" in col.lower() or "leiden" in col.lower() or "louvain" in col.lower():
                 cluster_col = col
                 break
 
@@ -196,7 +196,7 @@ def slingshot_trajectory(data: SingleCellData, start_cluster: str,
     cluster_labels = data.obs[cluster_col].values
 
     # Compute cluster centroids and distances
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
     unique_clusters = np.unique(cluster_labels)
 
     # Check if start and end clusters exist
@@ -208,33 +208,31 @@ def slingshot_trajectory(data: SingleCellData, start_cluster: str,
             raise errors.ValidationError(f"End cluster '{end_cluster}' not found in data")
 
     # Compute simplified trajectory
-    trajectory_info = _compute_slingshot_trajectory(
-        X, cluster_labels, start_cluster, end_clusters
-    )
+    trajectory_info = _compute_slingshot_trajectory(X, cluster_labels, start_cluster, end_clusters)
 
     # Assign pseudotime to cells
     cell_pseudotime = np.zeros(data.n_obs)
     for i, cluster in enumerate(cluster_labels):
-        if cluster in trajectory_info['cluster_pseudotime']:
-            cell_pseudotime[i] = trajectory_info['cluster_pseudotime'][cluster]
+        if cluster in trajectory_info["cluster_pseudotime"]:
+            cell_pseudotime[i] = trajectory_info["cluster_pseudotime"][cluster]
 
     result.obs = result.obs.copy() if result.obs is not None else pd.DataFrame()
-    result.obs['slingshot_pseudotime'] = cell_pseudotime
+    result.obs["slingshot_pseudotime"] = cell_pseudotime
 
     # Store trajectory information
-    result.uns['slingshot'] = {
-        'start_cluster': start_cluster,
-        'end_clusters': end_clusters,
-        'trajectory_info': trajectory_info,
+    result.uns["slingshot"] = {
+        "start_cluster": start_cluster,
+        "end_clusters": end_clusters,
+        "trajectory_info": trajectory_info,
     }
 
     logger.info(f"Slingshot trajectory computed with {len(trajectory_info['branches'])} branches")
     return result
 
 
-def compute_pseudotime_from_dimensionality_reduction(data: SingleCellData,
-                                                   dim_red_cols: List[str],
-                                                   root_cell: int | None = None) -> SingleCellData:
+def compute_pseudotime_from_dimensionality_reduction(
+    data: SingleCellData, dim_red_cols: List[str], root_cell: int | None = None
+) -> SingleCellData:
     """Compute pseudotime from dimensionality reduction coordinates.
 
     Args:
@@ -269,12 +267,13 @@ def compute_pseudotime_from_dimensionality_reduction(data: SingleCellData,
     # Compute pseudotime as geodesic distance from root
     if root_cell is None:
         # Choose cell with minimum norm as root
-        norms = np.sum(embedding ** 2, axis=1)
+        norms = np.sum(embedding**2, axis=1)
         root_cell = np.argmin(norms)
 
     # Compute pairwise distances in embedding space
     from scipy.spatial.distance import pdist, squareform
-    distances = squareform(pdist(embedding, metric='euclidean'))
+
+    distances = squareform(pdist(embedding, metric="euclidean"))
 
     # Compute shortest path distances from root (simplified Dijkstra)
     pseudotime = _compute_shortest_path_distances(distances, root_cell)
@@ -282,23 +281,22 @@ def compute_pseudotime_from_dimensionality_reduction(data: SingleCellData,
     # Normalize pseudotime to [0, 1]
     pseudotime = (pseudotime - np.min(pseudotime)) / (np.max(pseudotime) - np.min(pseudotime))
 
-    result.obs['embedding_pseudotime'] = pseudotime
+    result.obs["embedding_pseudotime"] = pseudotime
 
     # Store metadata
-    result.uns['embedding_pseudotime'] = {
-        'dim_red_cols': dim_red_cols,
-        'root_cell': root_cell,
-        'method': 'shortest_path',
-        'min_pseudotime': float(np.min(pseudotime)),
-        'max_pseudotime': float(np.max(pseudotime)),
+    result.uns["embedding_pseudotime"] = {
+        "dim_red_cols": dim_red_cols,
+        "root_cell": root_cell,
+        "method": "shortest_path",
+        "min_pseudotime": float(np.min(pseudotime)),
+        "max_pseudotime": float(np.max(pseudotime)),
     }
 
     logger.info(f"Embedding-based pseudotime computed: root cell = {root_cell}")
     return result
 
 
-def find_trajectory_branches(data: SingleCellData, pseudotime_col: str,
-                           min_branch_size: int = 10) -> Dict[str, Any]:
+def find_trajectory_branches(data: SingleCellData, pseudotime_col: str, min_branch_size: int = 10) -> Dict[str, Any]:
     """Identify branches in a computed trajectory.
 
     Args:
@@ -336,18 +334,17 @@ def find_trajectory_branches(data: SingleCellData, pseudotime_col: str,
         branch_labels[cell_indices] = branch_id
 
     result = {
-        'n_branches': len(branches),
-        'branch_sizes': [len(indices) for indices in branches.values()],
-        'branch_labels': branch_labels,
-        'branches': branches,
+        "n_branches": len(branches),
+        "branch_sizes": [len(indices) for indices in branches.values()],
+        "branch_labels": branch_labels,
+        "branches": branches,
     }
 
     logger.info(f"Found {len(branches)} trajectory branches")
     return result
 
 
-def compute_trajectory_entropy(data: SingleCellData, pseudotime_col: str,
-                              window_size: int = 100) -> Dict[str, Any]:
+def compute_trajectory_entropy(data: SingleCellData, pseudotime_col: str, window_size: int = 100) -> Dict[str, Any]:
     """Compute entropy along a trajectory to identify differentiation points.
 
     Args:
@@ -370,7 +367,7 @@ def compute_trajectory_entropy(data: SingleCellData, pseudotime_col: str,
     logger.info(f"Computing trajectory entropy with window size {window_size}")
 
     # Get data
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
     pseudotime = data.obs[pseudotime_col].values
 
     # Sort by pseudotime
@@ -383,7 +380,7 @@ def compute_trajectory_entropy(data: SingleCellData, pseudotime_col: str,
     entropy_profile = np.zeros(n_windows)
 
     for i in range(n_windows):
-        window_data = X_sorted[i:i + window_size]
+        window_data = X_sorted[i : i + window_size]
 
         # Compute gene expression entropy in this window
         gene_entropies = []
@@ -404,19 +401,18 @@ def compute_trajectory_entropy(data: SingleCellData, pseudotime_col: str,
     differentiation_points = _find_local_maxima(entropy_profile)
 
     result = {
-        'entropy_profile': entropy_profile,
-        'pseudotime_windows': pseudotime_sorted[window_size//2 : window_size//2 + n_windows],
-        'differentiation_points': differentiation_points,
-        'window_size': window_size,
-        'n_windows': n_windows,
+        "entropy_profile": entropy_profile,
+        "pseudotime_windows": pseudotime_sorted[window_size // 2 : window_size // 2 + n_windows],
+        "differentiation_points": differentiation_points,
+        "window_size": window_size,
+        "n_windows": n_windows,
     }
 
     logger.info(f"Trajectory entropy computed: {len(differentiation_points)} differentiation points found")
     return result
 
 
-def _compute_simple_diffusion_pseudotime(X: np.ndarray, root_cell: int | None,
-                                       n_components: int) -> np.ndarray:
+def _compute_simple_diffusion_pseudotime(X: np.ndarray, root_cell: int | None, n_components: int) -> np.ndarray:
     """Compute simplified diffusion pseudotime."""
     if root_cell is None:
         # Choose cell with highest expression variance as root
@@ -425,7 +421,8 @@ def _compute_simple_diffusion_pseudotime(X: np.ndarray, root_cell: int | None,
 
     # Compute pairwise distances
     from scipy.spatial.distance import pdist, squareform
-    distances = squareform(pdist(X, metric='euclidean'))
+
+    distances = squareform(pdist(X, metric="euclidean"))
 
     # Compute shortest path distances from root
     pseudotime = _compute_shortest_path_distances(distances, root_cell)
@@ -464,8 +461,7 @@ def _compute_shortest_path_distances(distances: np.ndarray, root: int) -> np.nda
     return pseudotime
 
 
-def _compute_cluster_connectivity(cluster_labels: np.ndarray,
-                                unique_clusters: np.ndarray) -> np.ndarray:
+def _compute_cluster_connectivity(cluster_labels: np.ndarray, unique_clusters: np.ndarray) -> np.ndarray:
     """Compute connectivity matrix between clusters."""
     n_clusters = len(unique_clusters)
     connectivity = np.zeros((n_clusters, n_clusters))
@@ -490,8 +486,7 @@ def _compute_cluster_connectivity(cluster_labels: np.ndarray,
     return connectivity
 
 
-def _compute_cluster_pseudotime(connectivity: np.ndarray,
-                              unique_clusters: np.ndarray) -> Dict[Any, float]:
+def _compute_cluster_pseudotime(connectivity: np.ndarray, unique_clusters: np.ndarray) -> Dict[Any, float]:
     """Compute pseudotime for clusters based on connectivity."""
     n_clusters = len(unique_clusters)
 
@@ -532,8 +527,9 @@ def _compute_cluster_pseudotime(connectivity: np.ndarray,
     return cluster_pseudotime
 
 
-def _compute_slingshot_trajectory(X: np.ndarray, cluster_labels: np.ndarray,
-                                start_cluster: str, end_clusters: List[str]) -> Dict[str, Any]:
+def _compute_slingshot_trajectory(
+    X: np.ndarray, cluster_labels: np.ndarray, start_cluster: str, end_clusters: List[str]
+) -> Dict[str, Any]:
     """Compute simplified Slingshot-like trajectory."""
     unique_clusters = np.unique(cluster_labels)
 
@@ -549,10 +545,10 @@ def _compute_slingshot_trajectory(X: np.ndarray, cluster_labels: np.ndarray,
     for end_cluster in end_clusters:
         # Simple path: start -> end
         branch = {
-            'start': start_cluster,
-            'end': end_cluster,
-            'path': [start_cluster, end_cluster],
-            'length': np.linalg.norm(centroids[end_cluster] - centroids[start_cluster]),
+            "start": start_cluster,
+            "end": end_cluster,
+            "path": [start_cluster, end_cluster],
+            "length": np.linalg.norm(centroids[end_cluster] - centroids[start_cluster]),
         }
         branches.append(branch)
 
@@ -566,14 +562,15 @@ def _compute_slingshot_trajectory(X: np.ndarray, cluster_labels: np.ndarray,
         cluster_pseudotime[cluster] = distance / max_distance if max_distance > 0 else 0
 
     return {
-        'branches': branches,
-        'cluster_pseudotime': cluster_pseudotime,
-        'centroids': centroids,
+        "branches": branches,
+        "cluster_pseudotime": cluster_pseudotime,
+        "centroids": centroids,
     }
 
 
-def _detect_trajectory_branches(sorted_pseudotime: np.ndarray, sorted_indices: np.ndarray,
-                              min_branch_size: int) -> Dict[int, np.ndarray]:
+def _detect_trajectory_branches(
+    sorted_pseudotime: np.ndarray, sorted_indices: np.ndarray, min_branch_size: int
+) -> Dict[int, np.ndarray]:
     """Detect branches in pseudotime-sorted data."""
     # Simple branch detection using density changes
     # This is a highly simplified implementation
@@ -621,9 +618,3 @@ def _find_local_maxima(data: np.ndarray, min_distance: int = 10) -> List[int]:
                 maxima.append(i)
 
     return maxima
-
-
-
-
-
-

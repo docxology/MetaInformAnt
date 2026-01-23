@@ -42,8 +42,8 @@ def read_fastq(path: str | Path) -> Dict[str, Tuple[str, str]]:
     reads = {}
 
     # Open file (handle gzip compression)
-    opener = gzip.open if path.suffix == '.gz' else open
-    mode = 'rt' if path.suffix == '.gz' else 'r'
+    opener = gzip.open if path.suffix == ".gz" else open
+    mode = "rt" if path.suffix == ".gz" else "r"
 
     with opener(path, mode) as f:
         while True:
@@ -52,7 +52,7 @@ def read_fastq(path: str | Path) -> Dict[str, Tuple[str, str]]:
             if not header_line:
                 break  # End of file
 
-            if not header_line.startswith('@'):
+            if not header_line.startswith("@"):
                 raise ValueError(f"Invalid FASTQ format: expected '@' at line start, got '{header_line[:20]}...'")
 
             seq_line = f.readline().strip()
@@ -63,7 +63,9 @@ def read_fastq(path: str | Path) -> Dict[str, Tuple[str, str]]:
                 raise ValueError("Incomplete FASTQ record")
 
             if len(seq_line) != len(qual_line):
-                raise ValueError(f"Sequence and quality string lengths don't match: {len(seq_line)} vs {len(qual_line)}")
+                raise ValueError(
+                    f"Sequence and quality string lengths don't match: {len(seq_line)} vs {len(qual_line)}"
+                )
 
             # Extract read ID (remove @ and take first word)
             read_id = header_line[1:].split()[0]
@@ -90,7 +92,7 @@ def write_fastq(sequences: Dict[str, Tuple[str, str]], path: str | Path) -> None
     # Create parent directories if needed
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(path, 'w') as f:
+    with open(path, "w") as f:
         for read_id, (sequence, quality) in sequences.items():
             if len(sequence) != len(quality):
                 raise ValueError(f"Sequence and quality lengths don't match for read {read_id}")
@@ -122,12 +124,12 @@ def assess_quality(fastq_path: str | Path) -> Dict[str, Any]:
 
     if not reads:
         return {
-            'total_reads': 0,
-            'mean_quality': 0.0,
-            'median_quality': 0.0,
-            'quality_distribution': {},
-            'gc_content': 0.0,
-            'read_lengths': []
+            "total_reads": 0,
+            "mean_quality": 0.0,
+            "median_quality": 0.0,
+            "quality_distribution": {},
+            "gc_content": 0.0,
+            "read_lengths": [],
         }
 
     total_reads = len(reads)
@@ -143,7 +145,7 @@ def assess_quality(fastq_path: str | Path) -> Dict[str, Any]:
 
         # Calculate GC content
         seq_upper = sequence.upper()
-        gc_counts += seq_upper.count('G') + seq_upper.count('C')
+        gc_counts += seq_upper.count("G") + seq_upper.count("C")
         total_bases += len(sequence)
 
         read_lengths.append(len(sequence))
@@ -162,15 +164,15 @@ def assess_quality(fastq_path: str | Path) -> Dict[str, Any]:
     gc_content = (gc_counts / total_bases * 100) if total_bases > 0 else 0.0
 
     return {
-        'total_reads': total_reads,
-        'mean_quality': round(mean_quality, 2),
-        'median_quality': median_quality,
-        'quality_distribution': quality_distribution,
-        'gc_content': round(gc_content, 2),
-        'read_lengths': read_lengths,
-        'min_length': min(read_lengths) if read_lengths else 0,
-        'max_length': max(read_lengths) if read_lengths else 0,
-        'mean_length': sum(read_lengths) / len(read_lengths) if read_lengths else 0.0
+        "total_reads": total_reads,
+        "mean_quality": round(mean_quality, 2),
+        "median_quality": median_quality,
+        "quality_distribution": quality_distribution,
+        "gc_content": round(gc_content, 2),
+        "read_lengths": read_lengths,
+        "min_length": min(read_lengths) if read_lengths else 0,
+        "max_length": max(read_lengths) if read_lengths else 0,
+        "mean_length": sum(read_lengths) / len(read_lengths) if read_lengths else 0.0,
     }
 
 
@@ -192,8 +194,8 @@ def filter_reads(fastq_path: str | Path, min_quality: int = 20) -> Iterator[str]
     """
     # Open file (handle gzip compression)
     path = Path(fastq_path)
-    opener = gzip.open if path.suffix == '.gz' else open
-    mode = 'rt' if path.suffix == '.gz' else 'r'
+    opener = gzip.open if path.suffix == ".gz" else open
+    mode = "rt" if path.suffix == ".gz" else "r"
 
     with opener(path, mode) as f:
         while True:
@@ -203,9 +205,9 @@ def filter_reads(fastq_path: str | Path, min_quality: int = 20) -> Iterator[str]
                 line = f.readline()
                 if not line:  # End of file
                     return
-                lines.append(line.rstrip('\n'))
+                lines.append(line.rstrip("\n"))
 
-            if not lines[0].startswith('@'):
+            if not lines[0].startswith("@"):
                 continue  # Skip invalid records
 
             sequence = lines[1]
@@ -220,7 +222,7 @@ def filter_reads(fastq_path: str | Path, min_quality: int = 20) -> Iterator[str]
 
             if avg_quality >= min_quality:
                 # Yield complete FASTQ record
-                yield '\n'.join(lines)
+                yield "\n".join(lines)
 
 
 def convert_fastq_to_fasta(fastq_path: str | Path, fasta_path: str | Path) -> None:
@@ -236,7 +238,7 @@ def convert_fastq_to_fasta(fastq_path: str | Path, fasta_path: str | Path) -> No
     """
     reads = read_fastq(fastq_path)
 
-    with open(fasta_path, 'w') as f:
+    with open(fasta_path, "w") as f:
         for read_id, (sequence, _) in reads.items():
             f.write(f">{read_id}\n")
             f.write(f"{sequence}\n")
@@ -244,8 +246,9 @@ def convert_fastq_to_fasta(fastq_path: str | Path, fasta_path: str | Path) -> No
     logger.info(f"Converted {len(reads)} reads from FASTQ to FASTA")
 
 
-def trim_reads(fastq_path: str | Path, output_path: str | Path,
-               min_length: int = 50, trim_5p: int = 0, trim_3p: int = 0) -> None:
+def trim_reads(
+    fastq_path: str | Path, output_path: str | Path, min_length: int = 50, trim_5p: int = 0, trim_3p: int = 0
+) -> None:
     """Trim reads and filter by minimum length.
 
     Args:
@@ -300,9 +303,9 @@ def gc_content(seq: str) -> float:
         return 0.0
 
     seq = seq.upper()
-    gc_count = seq.count('G') + seq.count('C')
+    gc_count = seq.count("G") + seq.count("C")
     # Exclude N's and other non-standard bases from total count
-    valid_bases = seq.count('A') + seq.count('T') + seq.count('G') + seq.count('C')
+    valid_bases = seq.count("A") + seq.count("T") + seq.count("G") + seq.count("C")
     total_count = valid_bases
 
     return gc_count / total_count if total_count > 0 else 0.0
@@ -332,8 +335,8 @@ def average_phred_by_position(fastq_path: str | Path) -> Dict[int, float]:
     position_qualities = defaultdict(list)
 
     # Open file (handle gzip compression)
-    opener = gzip.open if fastq_path.suffix == '.gz' else open
-    mode = 'rt' if fastq_path.suffix == '.gz' else 'r'
+    opener = gzip.open if fastq_path.suffix == ".gz" else open
+    mode = "rt" if fastq_path.suffix == ".gz" else "r"
 
     with opener(fastq_path, mode) as f:
         line_num = 0
@@ -346,8 +349,7 @@ def average_phred_by_position(fastq_path: str | Path) -> Dict[int, float]:
                     position_qualities[pos].append(quality_score)
 
     # Calculate averages
-    return {pos: sum(qualities) / len(qualities)
-            for pos, qualities in position_qualities.items()}
+    return {pos: sum(qualities) / len(qualities) for pos, qualities in position_qualities.items()}
 
 
 def iter_fastq(fastq_path: str | Path) -> Iterator[Tuple[str, str, str]]:
@@ -370,8 +372,8 @@ def iter_fastq(fastq_path: str | Path) -> Iterator[Tuple[str, str, str]]:
         raise FileNotFoundError(f"FASTQ file not found: {fastq_path}")
 
     # Open file (handle gzip compression)
-    opener = gzip.open if fastq_path.suffix == '.gz' else open
-    mode = 'rt' if fastq_path.suffix == '.gz' else 'r'
+    opener = gzip.open if fastq_path.suffix == ".gz" else open
+    mode = "rt" if fastq_path.suffix == ".gz" else "r"
 
     with opener(fastq_path, mode) as f:
         while True:
@@ -388,7 +390,7 @@ def iter_fastq(fastq_path: str | Path) -> Iterator[Tuple[str, str, str]]:
                 raise ValueError("Incomplete FASTQ record")
 
             # Extract read ID (everything after @ up to first space)
-            read_id = header_line[1:].split()[0] if header_line.startswith('@') else header_line.split()[0]
+            read_id = header_line[1:].split()[0] if header_line.startswith("@") else header_line.split()[0]
             yield read_id, seq_line, qual_line
 
 
@@ -419,11 +421,11 @@ def calculate_per_base_quality(fastq_path: str | Path) -> Dict[int, Dict[str, fl
     position_stats = {}
     for pos in range(first_read_len):
         position_stats[pos] = {
-            'mean_quality': 0.0,
-            'median_quality': 0.0,
-            'min_quality': float('inf'),
-            'max_quality': 0.0,
-            'qualities': []
+            "mean_quality": 0.0,
+            "median_quality": 0.0,
+            "min_quality": float("inf"),
+            "max_quality": 0.0,
+            "qualities": [],
         }
 
     # Collect quality scores for each position
@@ -433,21 +435,21 @@ def calculate_per_base_quality(fastq_path: str | Path) -> Dict[int, Dict[str, fl
         for pos, q in enumerate(qualities):
             if pos < first_read_len:  # Safety check
                 stats = position_stats[pos]
-                stats['qualities'].append(q)
-                stats['min_quality'] = min(stats['min_quality'], q)
-                stats['max_quality'] = max(stats['max_quality'], q)
+                stats["qualities"].append(q)
+                stats["min_quality"] = min(stats["min_quality"], q)
+                stats["max_quality"] = max(stats["max_quality"], q)
 
     # Calculate summary statistics
     for pos, stats in position_stats.items():
-        qualities = stats['qualities']
+        qualities = stats["qualities"]
         if qualities:
-            stats['mean_quality'] = sum(qualities) / len(qualities)
-            stats['median_quality'] = sorted(qualities)[len(qualities) // 2]
+            stats["mean_quality"] = sum(qualities) / len(qualities)
+            stats["median_quality"] = sorted(qualities)[len(qualities) // 2]
         else:
-            stats['min_quality'] = 0.0
+            stats["min_quality"] = 0.0
 
         # Remove raw qualities list to save memory
-        del stats['qualities']
+        del stats["qualities"]
 
     return position_stats
 
@@ -466,16 +468,10 @@ def summarize_fastq(fastq_path: str | Path) -> Dict[str, int]:
         raise FileNotFoundError(f"FASTQ file not found: {fastq_path}")
 
     # Open file (handle gzip compression)
-    opener = gzip.open if fastq_path.suffix == '.gz' else open
-    mode = 'rt' if fastq_path.suffix == '.gz' else 'r'
+    opener = gzip.open if fastq_path.suffix == ".gz" else open
+    mode = "rt" if fastq_path.suffix == ".gz" else "r"
 
-    summary = {
-        'total_reads': 0,
-        'total_bases': 0,
-        'min_length': float('inf'),
-        'max_length': 0,
-        'mean_length': 0.0
-    }
+    summary = {"total_reads": 0, "total_bases": 0, "min_length": float("inf"), "max_length": 0, "mean_length": 0.0}
 
     lengths = []
 
@@ -487,19 +483,17 @@ def summarize_fastq(fastq_path: str | Path) -> Dict[str, int]:
                 seq = line.strip()
                 seq_len = len(seq)
                 lengths.append(seq_len)
-                summary['total_reads'] += 1
-                summary['total_bases'] += seq_len
-                summary['min_length'] = min(summary['min_length'], seq_len)
-                summary['max_length'] = max(summary['max_length'], seq_len)
+                summary["total_reads"] += 1
+                summary["total_bases"] += seq_len
+                summary["min_length"] = min(summary["min_length"], seq_len)
+                summary["max_length"] = max(summary["max_length"], seq_len)
 
     if lengths:
-        summary['mean_length'] = sum(lengths) / len(lengths)
+        summary["mean_length"] = sum(lengths) / len(lengths)
     else:
-        summary['min_length'] = 0
+        summary["min_length"] = 0
 
     return summary
-
-
 
 
 class FastqRecord:
@@ -517,6 +511,7 @@ class FastqRecord:
         quality_string: Quality scores as ASCII string
         quality_scores: Quality scores as integer list (Phred scale)
     """
+
     def __init__(self, header: str, sequence: str, quality_string: str):
         """Initialize FastqRecord.
 
@@ -566,7 +561,7 @@ class FastqRecord:
         """Calculate GC content of the sequence."""
         if not self.sequence:
             return 0.0
-        gc_count = self.sequence.count('G') + self.sequence.count('C')
+        gc_count = self.sequence.count("G") + self.sequence.count("C")
         return gc_count / len(self.sequence)
 
     def length(self) -> int:
@@ -577,7 +572,7 @@ class FastqRecord:
         """Convert record to FASTQ format string."""
         return f"@{self.header}\n{self.sequence}\n+\n{self.quality_string}\n"
 
-    def trim_low_quality(self, min_quality: int = 20) -> 'FastqRecord':
+    def trim_low_quality(self, min_quality: int = 20) -> "FastqRecord":
         """Trim low-quality bases from 3' end.
 
         Args:
@@ -601,7 +596,7 @@ class FastqRecord:
         return self
 
     @classmethod
-    def from_string(cls, fastq_string: str) -> 'FastqRecord':
+    def from_string(cls, fastq_string: str) -> "FastqRecord":
         """Create FastqRecord from FASTQ format string.
 
         Args:
@@ -613,16 +608,16 @@ class FastqRecord:
         Raises:
             ValueError: If string format is invalid
         """
-        lines = fastq_string.strip().split('\n')
+        lines = fastq_string.strip().split("\n")
         if len(lines) != 4:
             raise ValueError("FASTQ record must have exactly 4 lines")
 
-        header = lines[0].lstrip('@')
+        header = lines[0].lstrip("@")
         sequence = lines[1]
         separator = lines[2]
         quality_string = lines[3]
 
-        if not separator.startswith('+'):
+        if not separator.startswith("+"):
             raise ValueError("Third line must start with '+'")
 
         return cls(header, sequence, quality_string)
@@ -643,6 +638,8 @@ class FastqRecord:
         """Check equality with another FastqRecord."""
         if not isinstance(other, FastqRecord):
             return False
-        return (self.header == other.header and
-                self.sequence == other.sequence and
-                self.quality_string == other.quality_string)
+        return (
+            self.header == other.header
+            and self.sequence == other.sequence
+            and self.quality_string == other.quality_string
+        )

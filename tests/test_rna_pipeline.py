@@ -48,17 +48,17 @@ class TestSummarizeCurateTables:
         """Test summarizing directory with TSV files."""
         curate_dir = tmp_path / "curate"
         curate_dir.mkdir()
-        
+
         # Create some TSV files
         (curate_dir / "summary.tsv").write_text("test")
         (curate_dir / "metadata.tsv").write_text("test")
         (curate_dir / "summary.tsv").write_text("test")  # Duplicate name
-        
+
         # Create subdirectory with TSV
         subdir = curate_dir / "subdir"
         subdir.mkdir()
         (subdir / "data.tsv").write_text("test")
-        
+
         counts = summarize_curate_tables(curate_dir)
         assert counts["summary.tsv"] == 1  # Counts by filename, not path
         assert counts["metadata.tsv"] == 1
@@ -68,14 +68,12 @@ class TestSummarizeCurateTables:
         """Test that non-TSV files are ignored."""
         curate_dir = tmp_path / "curate"
         curate_dir.mkdir()
-        
+
         (curate_dir / "data.tsv").write_text("test")
         (curate_dir / "data.txt").write_text("test")
         (curate_dir / "data.csv").write_text("test")
-        
+
         counts = summarize_curate_tables(curate_dir)
         assert "data.tsv" in counts
         assert "data.txt" not in counts
         assert "data.csv" not in counts
-
-

@@ -17,6 +17,7 @@ from metainformant.core import logging, errors, validation
 try:
     from sklearn.preprocessing import StandardScaler
     from sklearn.decomposition import PCA
+
     HAS_SKLEARN = True
 except ImportError:
     HAS_SKLEARN = False
@@ -29,8 +30,7 @@ logger = logging.get_logger(__name__)
 from .preprocessing import SingleCellData
 
 
-def bbknn_integration(data: SingleCellData, batch_key: str,
-                     n_neighbors: int = 15) -> SingleCellData:
+def bbknn_integration(data: SingleCellData, batch_key: str, n_neighbors: int = 15) -> SingleCellData:
     """Perform BBKNN (Batch Balanced K-Nearest Neighbors) integration.
 
     Args:
@@ -48,8 +48,7 @@ def bbknn_integration(data: SingleCellData, batch_key: str,
     """
     if not HAS_SKLEARN:
         raise ImportError(
-            "scikit-learn is required for BBKNN integration. "
-            "Install with: uv pip install scikit-learn"
+            "scikit-learn is required for BBKNN integration. " "Install with: uv pip install scikit-learn"
         )
 
     validation.validate_type(data, SingleCellData, "data")
@@ -63,7 +62,7 @@ def bbknn_integration(data: SingleCellData, batch_key: str,
     result = data.copy()
 
     # Get expression matrix and batch labels
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
     batch_labels = data.obs[batch_key].values
     unique_batches = np.unique(batch_labels)
 
@@ -102,7 +101,7 @@ def bbknn_integration(data: SingleCellData, batch_key: str,
 
                 # Find neighbors from batch1 to batch2
                 if len(batch2_indices) >= n_neighbors:
-                    nbrs = NearestNeighbors(n_neighbors=n_neighbors, metric='euclidean')
+                    nbrs = NearestNeighbors(n_neighbors=n_neighbors, metric="euclidean")
                     nbrs.fit(X_batch2)
                     distances, indices = nbrs.kneighbors(X_batch1)
 
@@ -114,7 +113,7 @@ def bbknn_integration(data: SingleCellData, batch_key: str,
 
                 # Find neighbors from batch2 to batch1 (for undirected graph)
                 if i != j and len(batch1_indices) >= n_neighbors:  # Don't duplicate self-batch
-                    nbrs = NearestNeighbors(n_neighbors=n_neighbors, metric='euclidean')
+                    nbrs = NearestNeighbors(n_neighbors=n_neighbors, metric="euclidean")
                     nbrs.fit(X_batch1)
                     distances, indices = nbrs.kneighbors(X_batch2)
 
@@ -124,20 +123,21 @@ def bbknn_integration(data: SingleCellData, batch_key: str,
                             batch_adjacency[global_i, global_j] = 1.0 / (distances[local_i, k] + 1e-6)
 
     # Store the integrated adjacency matrix
-    result.uns['bbknn'] = {
-        'batch_key': batch_key,
-        'n_neighbors': n_neighbors,
-        'n_batches': len(unique_batches),
-        'batch_adjacency_shape': batch_adjacency.shape,
+    result.uns["bbknn"] = {
+        "batch_key": batch_key,
+        "n_neighbors": n_neighbors,
+        "n_batches": len(unique_batches),
+        "batch_adjacency_shape": batch_adjacency.shape,
     }
 
     # For visualization, we can compute a 2D embedding from the graph
     # This is a simplified approach
     try:
         from sklearn.manifold import TSNE
-        X_embed = TSNE(n_components=2, random_state=42, perplexity=min(30, n_cells-1)).fit_transform(X_pca)
-        result.obs['bbknn_1'] = X_embed[:, 0]
-        result.obs['bbknn_2'] = X_embed[:, 1]
+
+        X_embed = TSNE(n_components=2, random_state=42, perplexity=min(30, n_cells - 1)).fit_transform(X_pca)
+        result.obs["bbknn_1"] = X_embed[:, 0]
+        result.obs["bbknn_2"] = X_embed[:, 1]
     except Exception as e:
         logger.warning(f"Could not compute BBKNN embedding: {e}")
 
@@ -145,8 +145,7 @@ def bbknn_integration(data: SingleCellData, batch_key: str,
     return result
 
 
-def harmony_integration(data: SingleCellData, batch_key: str,
-                       n_components: int = 50) -> SingleCellData:
+def harmony_integration(data: SingleCellData, batch_key: str, n_components: int = 50) -> SingleCellData:
     """Perform Harmony integration for batch correction.
 
     Args:
@@ -164,8 +163,7 @@ def harmony_integration(data: SingleCellData, batch_key: str,
     """
     if not HAS_SKLEARN:
         raise ImportError(
-            "scikit-learn is required for Harmony integration. "
-            "Install with: uv pip install scikit-learn"
+            "scikit-learn is required for Harmony integration. " "Install with: uv pip install scikit-learn"
         )
 
     validation.validate_type(data, SingleCellData, "data")
@@ -179,7 +177,7 @@ def harmony_integration(data: SingleCellData, batch_key: str,
     result = data.copy()
 
     # Get expression matrix and batch labels
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
     batch_labels = data.obs[batch_key].values
 
     # Harmony-like batch correction (simplified implementation)
@@ -207,13 +205,13 @@ def harmony_integration(data: SingleCellData, batch_key: str,
     # Store Harmony results
     result.obs = result.obs.copy() if result.obs is not None else pd.DataFrame()
     for i in range(min(n_components, 10)):  # Store first 10 components
-        result.obs[f'harmony_{i+1}'] = X_harmony[:, i]
+        result.obs[f"harmony_{i+1}"] = X_harmony[:, i]
 
-    result.uns['harmony'] = {
-        'batch_key': batch_key,
-        'n_components': n_components,
-        'n_batches': len(unique_batches),
-        'explained_variance_ratio': pca.explained_variance_ratio_[:n_components].tolist(),
+    result.uns["harmony"] = {
+        "batch_key": batch_key,
+        "n_components": n_components,
+        "n_batches": len(unique_batches),
+        "explained_variance_ratio": pca.explained_variance_ratio_[:n_components].tolist(),
     }
 
     logger.info(f"Harmony integration completed: {n_components} components")
@@ -237,8 +235,7 @@ def scanorama_integration(data_list: List[SingleCellData], batch_key: str) -> Si
     """
     if not HAS_SKLEARN:
         raise ImportError(
-            "scikit-learn is required for Scanorama integration. "
-            "Install with: uv pip install scikit-learn"
+            "scikit-learn is required for Scanorama integration. " "Install with: uv pip install scikit-learn"
         )
 
     if not data_list:
@@ -256,7 +253,7 @@ def scanorama_integration(data_list: List[SingleCellData], batch_key: str) -> Si
     batch_labels = []
 
     for i, data in enumerate(data_list):
-        X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+        X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
         all_X.append(X)
 
         obs = data.obs.copy() if data.obs is not None else pd.DataFrame(index=range(data.n_obs))
@@ -297,18 +294,16 @@ def scanorama_integration(data_list: List[SingleCellData], batch_key: str) -> Si
 
     # Create integrated SingleCellData
     integrated_data = SingleCellData(
-        X=X_integrated,
-        obs=obs_combined,
-        var=pd.DataFrame(index=[f'PC{i+1}' for i in range(X_integrated.shape[1])])
+        X=X_integrated, obs=obs_combined, var=pd.DataFrame(index=[f"PC{i+1}" for i in range(X_integrated.shape[1])])
     )
 
     # Add integration metadata
-    integrated_data.uns['scanorama'] = {
-        'n_datasets': len(data_list),
-        'batch_key': batch_key,
-        'total_cells': X_combined.shape[0],
-        'total_genes': X_combined.shape[1],
-        'explained_variance_ratio': pca.explained_variance_ratio_.tolist(),
+    integrated_data.uns["scanorama"] = {
+        "n_datasets": len(data_list),
+        "batch_key": batch_key,
+        "total_cells": X_combined.shape[0],
+        "total_genes": X_combined.shape[1],
+        "explained_variance_ratio": pca.explained_variance_ratio_.tolist(),
     }
 
     logger.info("Scanorama integration completed")
@@ -331,10 +326,7 @@ def mnn_integration(data_list: List[SingleCellData], batch_key: str) -> SingleCe
         ImportError: If scikit-learn not available
     """
     if not HAS_SKLEARN:
-        raise ImportError(
-            "scikit-learn is required for MNN integration. "
-            "Install with: uv pip install scikit-learn"
-        )
+        raise ImportError("scikit-learn is required for MNN integration. " "Install with: uv pip install scikit-learn")
 
     if len(data_list) < 2:
         raise errors.ValidationError("MNN integration requires at least 2 datasets")
@@ -355,8 +347,8 @@ def mnn_integration(data_list: List[SingleCellData], batch_key: str) -> SingleCe
         logger.info(f"Integrating dataset {i}")
 
         # Get expression matrices
-        X1 = integrated_data.X.toarray() if hasattr(integrated_data.X, 'toarray') else integrated_data.X
-        X2 = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+        X1 = integrated_data.X.toarray() if hasattr(integrated_data.X, "toarray") else integrated_data.X
+        X2 = data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
         # Find mutual nearest neighbors
         mnn_pairs = _find_mutual_nearest_neighbors(X1, X2, k=20)
@@ -388,22 +380,21 @@ def mnn_integration(data_list: List[SingleCellData], batch_key: str) -> SingleCe
 
     # Update the integrated data with PCA coordinates
     integrated_data.X = X_pca
-    integrated_data.var = pd.DataFrame(index=[f'PC{i+1}' for i in range(X_pca.shape[1])])
+    integrated_data.var = pd.DataFrame(index=[f"PC{i+1}" for i in range(X_pca.shape[1])])
 
     # Add integration metadata
-    integrated_data.uns['mnn'] = {
-        'n_datasets': len(data_list),
-        'batch_key': batch_key,
-        'total_cells': X_integrated.shape[0],
-        'explained_variance_ratio': pca.explained_variance_ratio_.tolist(),
+    integrated_data.uns["mnn"] = {
+        "n_datasets": len(data_list),
+        "batch_key": batch_key,
+        "total_cells": X_integrated.shape[0],
+        "explained_variance_ratio": pca.explained_variance_ratio_.tolist(),
     }
 
     logger.info("MNN integration completed")
     return integrated_data
 
 
-def combat_integration(data: SingleCellData, batch_key: str,
-                      covariates: Optional[List[str]] = None) -> SingleCellData:
+def combat_integration(data: SingleCellData, batch_key: str, covariates: Optional[List[str]] = None) -> SingleCellData:
     """Perform ComBat batch effect correction.
 
     Args:
@@ -429,7 +420,7 @@ def combat_integration(data: SingleCellData, batch_key: str,
     result = data.copy()
 
     # Get expression matrix and batch labels
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
     batch_labels = data.obs[batch_key].values
 
     # Simplified ComBat-like correction
@@ -473,10 +464,10 @@ def combat_integration(data: SingleCellData, batch_key: str,
     result.X = X_corrected
 
     # Store ComBat metadata
-    result.uns['combat'] = {
-        'batch_key': batch_key,
-        'n_batches': len(unique_batches),
-        'covariates': covariates or [],
+    result.uns["combat"] = {
+        "batch_key": batch_key,
+        "n_batches": len(unique_batches),
+        "covariates": covariates or [],
     }
 
     logger.info("ComBat integration completed")
@@ -488,12 +479,12 @@ def _find_mutual_nearest_neighbors(X1: np.ndarray, X2: np.ndarray, k: int = 20) 
     from sklearn.neighbors import NearestNeighbors
 
     # Find kNN from X1 to X2
-    nbrs1to2 = NearestNeighbors(n_neighbors=k, metric='euclidean')
+    nbrs1to2 = NearestNeighbors(n_neighbors=k, metric="euclidean")
     nbrs1to2.fit(X2)
     distances1to2, indices1to2 = nbrs1to2.kneighbors(X1)
 
     # Find kNN from X2 to X1
-    nbrs2to1 = NearestNeighbors(n_neighbors=k, metric='euclidean')
+    nbrs2to1 = NearestNeighbors(n_neighbors=k, metric="euclidean")
     nbrs2to1.fit(X1)
     distances2to1, indices2to1 = nbrs2to1.kneighbors(X2)
 
@@ -509,8 +500,9 @@ def _find_mutual_nearest_neighbors(X1: np.ndarray, X2: np.ndarray, k: int = 20) 
     return mnn_pairs
 
 
-def _correct_batch_effects_mnn(X1: np.ndarray, X2: np.ndarray,
-                              mnn_pairs: List[Tuple[int, int]]) -> Tuple[np.ndarray, np.ndarray]:
+def _correct_batch_effects_mnn(
+    X1: np.ndarray, X2: np.ndarray, mnn_pairs: List[Tuple[int, int]]
+) -> Tuple[np.ndarray, np.ndarray]:
     """Correct batch effects using MNN pairs."""
     if not mnn_pairs:
         return X1, X2
@@ -529,9 +521,9 @@ def _correct_batch_effects_mnn(X1: np.ndarray, X2: np.ndarray,
     return X1_corrected, X2_corrected
 
 
-def integrate_multiple_batches(data_list: List[SingleCellData],
-                             integration_method: str = "scanorama",
-                             **kwargs) -> SingleCellData:
+def integrate_multiple_batches(
+    data_list: List[SingleCellData], integration_method: str = "scanorama", **kwargs
+) -> SingleCellData:
     """Integrate multiple single-cell datasets using specified method.
 
     Args:
@@ -574,8 +566,9 @@ def integrate_multiple_batches(data_list: List[SingleCellData],
         raise errors.ValidationError(f"Unsupported integration method: {integration_method}")
 
 
-def evaluate_integration_quality(integrated_data: SingleCellData,
-                                batch_key: str, cluster_key: Optional[str] = None) -> Dict[str, Any]:
+def evaluate_integration_quality(
+    integrated_data: SingleCellData, batch_key: str, cluster_key: Optional[str] = None
+) -> Dict[str, Any]:
     """Evaluate the quality of data integration.
 
     Args:
@@ -598,14 +591,14 @@ def evaluate_integration_quality(integrated_data: SingleCellData,
     logger.info("Evaluating integration quality")
 
     batch_labels = integrated_data.obs[batch_key].values
-    X = integrated_data.X.toarray() if hasattr(integrated_data.X, 'toarray') else integrated_data.X
+    X = integrated_data.X.toarray() if hasattr(integrated_data.X, "toarray") else integrated_data.X
 
     unique_batches = np.unique(batch_labels)
     n_batches = len(unique_batches)
 
     metrics = {
-        'n_batches': n_batches,
-        'batch_sizes': [np.sum(batch_labels == batch) for batch in unique_batches],
+        "n_batches": n_batches,
+        "batch_sizes": [np.sum(batch_labels == batch) for batch in unique_batches],
     }
 
     # Batch mixing score (simplified)
@@ -627,7 +620,7 @@ def evaluate_integration_quality(integrated_data: SingleCellData,
         different_batch_fraction = np.mean(neighbor_batches != own_batch)
         batch_mixing_scores.append(different_batch_fraction)
 
-    metrics['mean_batch_mixing_score'] = np.mean(batch_mixing_scores)
+    metrics["mean_batch_mixing_score"] = np.mean(batch_mixing_scores)
 
     # Within-batch vs between-batch distances
     within_batch_distances = []
@@ -642,10 +635,9 @@ def evaluate_integration_quality(integrated_data: SingleCellData,
                 between_batch_distances.append(dist)
 
     if within_batch_distances and between_batch_distances:
-        metrics['mean_within_batch_distance'] = np.mean(within_batch_distances)
-        metrics['mean_between_batch_distance'] = np.mean(between_batch_distances)
-        metrics['batch_distance_ratio'] = (np.mean(between_batch_distances) /
-                                         np.mean(within_batch_distances))
+        metrics["mean_within_batch_distance"] = np.mean(within_batch_distances)
+        metrics["mean_between_batch_distance"] = np.mean(between_batch_distances)
+        metrics["batch_distance_ratio"] = np.mean(between_batch_distances) / np.mean(within_batch_distances)
 
     # Cluster-batch association if clusters available
     if cluster_key and cluster_key in integrated_data.obs.columns:
@@ -657,15 +649,9 @@ def evaluate_integration_quality(integrated_data: SingleCellData,
         contingency = pd.crosstab(cluster_labels, batch_labels)
         chi2, p_value, dof, expected = chi2_contingency(contingency)
 
-        metrics['cluster_batch_chi2'] = chi2
-        metrics['cluster_batch_p_value'] = p_value
-        metrics['cluster_batch_independence'] = p_value > 0.05  # True if independent
+        metrics["cluster_batch_chi2"] = chi2
+        metrics["cluster_batch_p_value"] = p_value
+        metrics["cluster_batch_independence"] = p_value > 0.05  # True if independent
 
     logger.info("Integration quality evaluation completed")
     return metrics
-
-
-
-
-
-

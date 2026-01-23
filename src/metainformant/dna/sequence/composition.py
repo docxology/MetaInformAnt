@@ -26,7 +26,7 @@ def gc_content(seq: str) -> float:
         return 0.0
 
     seq_upper = seq.upper()
-    gc_count = seq_upper.count('G') + seq_upper.count('C')
+    gc_count = seq_upper.count("G") + seq_upper.count("C")
     total_count = len(seq_upper)
 
     return gc_count / total_count if total_count > 0 else 0.0
@@ -47,8 +47,8 @@ def gc_skew(seq: str) -> float:
         return 0.0
 
     seq_upper = seq.upper()
-    g_count = seq_upper.count('G')
-    c_count = seq_upper.count('C')
+    g_count = seq_upper.count("G")
+    c_count = seq_upper.count("C")
 
     if g_count + c_count == 0:
         return 0.0
@@ -75,9 +75,9 @@ def cumulative_gc_skew(seq: str) -> List[float]:
     c_count = 0
 
     for base in seq_upper:
-        if base == 'G':
+        if base == "G":
             g_count += 1
-        elif base == 'C':
+        elif base == "C":
             c_count += 1
 
         if g_count + c_count > 0:
@@ -105,8 +105,8 @@ def at_skew(seq: str) -> float:
         return 0.0
 
     seq_upper = seq.upper()
-    a_count = seq_upper.count('A')
-    t_count = seq_upper.count('T')
+    a_count = seq_upper.count("A")
+    t_count = seq_upper.count("T")
 
     if a_count + t_count == 0:
         return 0.0
@@ -129,8 +129,8 @@ def melting_temperature(seq: str) -> float:
         return 0.0
 
     seq_upper = seq.upper()
-    gc_count = seq_upper.count('G') + seq_upper.count('C')
-    at_count = seq_upper.count('A') + seq_upper.count('T')
+    gc_count = seq_upper.count("G") + seq_upper.count("C")
+    at_count = seq_upper.count("A") + seq_upper.count("T")
 
     return float(4 * gc_count + 2 * at_count)
 
@@ -145,16 +145,16 @@ def nucleotide_frequencies(seq: str) -> dict[str, float]:
         Dictionary mapping nucleotides to frequencies
     """
     if not seq:
-        return {'A': 0.0, 'T': 0.0, 'G': 0.0, 'C': 0.0}
+        return {"A": 0.0, "T": 0.0, "G": 0.0, "C": 0.0}
 
     seq_upper = seq.upper()
     length = len(seq_upper)
 
     frequencies = {
-        'A': seq_upper.count('A') / length,
-        'T': seq_upper.count('T') / length,
-        'G': seq_upper.count('G') / length,
-        'C': seq_upper.count('C') / length,
+        "A": seq_upper.count("A") / length,
+        "T": seq_upper.count("T") / length,
+        "G": seq_upper.count("G") / length,
+        "C": seq_upper.count("C") / length,
     }
 
     return frequencies
@@ -178,7 +178,7 @@ def dinucleotide_frequencies(seq: str) -> dict[str, float]:
     seq_upper = seq.upper()
 
     for i in range(len(seq_upper) - 1):
-        dinuc = seq_upper[i:i + 2]
+        dinuc = seq_upper[i : i + 2]
         dinucs.append(dinuc)
 
     counts = Counter(dinucs)
@@ -209,7 +209,7 @@ def codon_frequencies(seq: str) -> dict[str, float]:
     seq_upper = seq.upper()
 
     for i in range(0, len(seq_upper) - 2, 3):
-        codon = seq_upper[i:i + 3]
+        codon = seq_upper[i : i + 3]
         codons.append(codon)
 
     counts = Counter(codons)
@@ -245,7 +245,7 @@ def amino_acid_frequencies(seq: str) -> dict[str, float]:
     from collections import Counter
 
     # Count amino acids (exclude stop codons)
-    aa_counts = Counter(protein.replace('*', ''))
+    aa_counts = Counter(protein.replace("*", ""))
 
     total = sum(aa_counts.values())
     frequencies = {}
@@ -272,11 +272,11 @@ def purine_pyrimidine_ratio(seq: str) -> float:
         return 1.0
 
     seq_upper = seq.upper()
-    purines = seq_upper.count('A') + seq_upper.count('G')
-    pyrimidines = seq_upper.count('C') + seq_upper.count('T')
+    purines = seq_upper.count("A") + seq_upper.count("G")
+    pyrimidines = seq_upper.count("C") + seq_upper.count("T")
 
     if pyrimidines == 0:
-        return float('inf') if purines > 0 else 1.0
+        return float("inf") if purines > 0 else 1.0
 
     return purines / pyrimidines
 
@@ -299,17 +299,29 @@ def base_pair_stacking_energy(seq: str) -> float:
     # Simplified stacking energies (kcal/mol at 37°C)
     # Based on SantaLucia (1998) nearest-neighbor parameters
     stacking_energies = {
-        'AA': -1.0, 'AT': -0.9, 'AG': -1.3, 'AC': -1.5,
-        'TA': -0.6, 'TT': -1.0, 'TG': -1.4, 'TC': -1.3,
-        'GA': -1.1, 'GT': -1.5, 'GG': -1.6, 'GC': -2.1,
-        'CA': -1.7, 'CT': -1.8, 'CG': -2.7, 'CC': -1.5,
+        "AA": -1.0,
+        "AT": -0.9,
+        "AG": -1.3,
+        "AC": -1.5,
+        "TA": -0.6,
+        "TT": -1.0,
+        "TG": -1.4,
+        "TC": -1.3,
+        "GA": -1.1,
+        "GT": -1.5,
+        "GG": -1.6,
+        "GC": -2.1,
+        "CA": -1.7,
+        "CT": -1.8,
+        "CG": -2.7,
+        "CC": -1.5,
     }
 
     seq_upper = seq.upper()
     energy = 0.0
 
     for i in range(len(seq_upper) - 1):
-        dinuc = seq_upper[i:i + 2]
+        dinuc = seq_upper[i : i + 2]
         energy += stacking_energies.get(dinuc, 0.0)
 
     return energy
@@ -331,7 +343,7 @@ def sequence_complexity(seq: str, window_size: int = 10) -> List[float]:
     complexities = []
 
     for i in range(len(seq) - window_size + 1):
-        window = seq[i:i + window_size]
+        window = seq[i : i + window_size]
 
         # Calculate Shannon entropy
         from collections import Counter
@@ -353,8 +365,9 @@ def sequence_complexity(seq: str, window_size: int = 10) -> List[float]:
     return complexities
 
 
-def cpg_islands(seq: str, min_length: int = 200, min_gc: float = 0.5,
-                min_cpg_ratio: float = 0.6) -> List[tuple[int, int]]:
+def cpg_islands(
+    seq: str, min_length: int = 200, min_gc: float = 0.5, min_cpg_ratio: float = 0.6
+) -> List[tuple[int, int]]:
     """Identify CpG islands in DNA sequence.
 
     Args:
@@ -378,11 +391,11 @@ def cpg_islands(seq: str, min_length: int = 200, min_gc: float = 0.5,
         total_bases = 0
 
         while i < len(seq_upper) and total_bases < min_length:
-            if seq_upper[i] in 'GC':
+            if seq_upper[i] in "GC":
                 gc_count += 1
 
             # Check for CpG dinucleotide
-            if i < len(seq_upper) - 1 and seq_upper[i:i + 2] == 'CG':
+            if i < len(seq_upper) - 1 and seq_upper[i : i + 2] == "CG":
                 cpg_count += 1
 
             total_bases += 1
@@ -391,7 +404,7 @@ def cpg_islands(seq: str, min_length: int = 200, min_gc: float = 0.5,
         # Check if this region meets criteria
         if total_bases >= min_length:
             gc_ratio = gc_count / total_bases
-            expected_cpg = (seq_upper[start:i].count('C') * seq_upper[start:i].count('G')) / total_bases
+            expected_cpg = (seq_upper[start:i].count("C") * seq_upper[start:i].count("G")) / total_bases
             observed_cpg = cpg_count
 
             if expected_cpg > 0:
@@ -405,6 +418,3 @@ def cpg_islands(seq: str, min_length: int = 200, min_gc: float = 0.5,
         i = start + 1  # Slide window
 
     return islands
-
-
-

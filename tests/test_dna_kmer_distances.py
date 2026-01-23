@@ -1,4 +1,5 @@
 """Tests for DNA k-mer distances."""
+
 from __future__ import annotations
 
 from metainformant.dna.alignment import distances

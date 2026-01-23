@@ -124,7 +124,7 @@ def extract_numbers(text: str) -> list[float]:
         List of extracted numeric values
     """
     # Find all sequences of digits and decimal points
-    numbers = re.findall(r'\d+\.?\d*', text)
+    numbers = re.findall(r"\d+\.?\d*", text)
     return [float(num) for num in numbers if num]
 
 
@@ -141,7 +141,7 @@ def truncate_text(text: str, max_length: int, suffix: str = "...") -> str:
     """
     if len(text) <= max_length:
         return text
-    return text[:max_length - len(suffix)] + suffix
+    return text[: max_length - len(suffix)] + suffix
 
 
 def count_words(text: str) -> int:
@@ -166,5 +166,5 @@ def extract_email_addresses(text: str) -> list[str]:
     Returns:
         List of email addresses found
     """
-    email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    email_pattern = r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b"
     return re.findall(email_pattern, text)

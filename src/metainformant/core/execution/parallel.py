@@ -40,8 +40,10 @@ def thread_map(
         try:
             if timeout is not None:
                 import signal
+
                 def timeout_handler(signum, frame):
                     raise TimeoutError(f"Task timed out after {timeout} seconds")
+
                 old_handler = signal.signal(signal.SIGALRM, timeout_handler)
                 signal.alarm(int(timeout))
                 try:
@@ -93,8 +95,10 @@ def thread_map_unordered(
         try:
             if timeout is not None:
                 import signal
+
                 def timeout_handler(signum, frame):
                     raise TimeoutError(f"Task timed out after {timeout} seconds")
+
                 old_handler = signal.signal(signal.SIGALRM, timeout_handler)
                 signal.alarm(int(timeout))
                 try:
@@ -137,7 +141,7 @@ def parallel_batch(
     Returns:
         List of all results
     """
-    batches = [items[i:i + batch_size] for i in range(0, len(items), batch_size)]
+    batches = [items[i : i + batch_size] for i in range(0, len(items), batch_size)]
     batch_results = thread_map(func, batches, max_workers=max_workers)
     return [result for batch_result in batch_results for result in batch_result]
 
@@ -146,8 +150,10 @@ def cpu_count() -> int:
     """Get the number of CPU cores available."""
     try:
         import multiprocessing
+
         return multiprocessing.cpu_count()
     except ImportError:
         # Fallback for systems without multiprocessing
         import os
+
         return os.cpu_count() or 1

@@ -79,14 +79,8 @@ def test_load_life_events_config_json(tmp_path: Path) -> None:
     config_data = {
         "work_dir": "output/life_events/test",
         "threads": 6,
-        "embedding": {
-            "embedding_dim": 100,
-            "window_size": 5
-        },
-        "model": {
-            "model_type": "embedding",
-            "random_state": 42
-        }
+        "embedding": {"embedding_dim": 100, "window_size": 5},
+        "model": {"model_type": "embedding", "random_state": 42},
     }
     dump_json(config_data, config_file)
 
@@ -103,7 +97,7 @@ def test_load_life_events_config_toml(tmp_path: Path) -> None:
         import tomllib
     except ImportError:
         pytest.skip("TOML support not available (requires Python 3.11+)")
-    
+
     config_file = tmp_path / "test_config.toml"
     config_content = """
 work_dir = "output/life_events/test"
@@ -173,7 +167,7 @@ def test_life_events_config_malformed(tmp_path: Path) -> None:
     malformed_file.write_text("invalid: yaml: content: [")
     with pytest.raises((ValueError, Exception)):
         load_life_events_config(malformed_file)
-    
+
     # Malformed JSON
     malformed_json = tmp_path / "malformed.json"
     malformed_json.write_text("{invalid json")
@@ -228,4 +222,3 @@ output:
     assert config.model["random_state"] == 42
     assert config.workflow["save_embeddings"] is True
     assert config.output["output_dir"] == "output/results"
-

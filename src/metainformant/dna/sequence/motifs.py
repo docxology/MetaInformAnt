@@ -71,14 +71,25 @@ def find_motif_positions(seq: str, motif: str) -> List[int]:
 
     # Convert IUPAC codes to regex patterns
     iupac_to_regex = {
-        'A': 'A', 'C': 'C', 'G': 'G', 'T': 'T',
-        'R': '[AG]', 'Y': '[CT]', 'S': '[GC]', 'W': '[AT]',
-        'K': '[GT]', 'M': '[AC]', 'B': '[CGT]', 'D': '[AGT]',
-        'H': '[ACT]', 'V': '[ACG]', 'N': '[ACGT]'
+        "A": "A",
+        "C": "C",
+        "G": "G",
+        "T": "T",
+        "R": "[AG]",
+        "Y": "[CT]",
+        "S": "[GC]",
+        "W": "[AT]",
+        "K": "[GT]",
+        "M": "[AC]",
+        "B": "[CGT]",
+        "D": "[AGT]",
+        "H": "[ACT]",
+        "V": "[ACG]",
+        "N": "[ACGT]",
     }
 
     # Build regex pattern
-    regex_pattern = ''
+    regex_pattern = ""
     for char in motif.upper():
         if char in iupac_to_regex:
             regex_pattern += iupac_to_regex[char]
@@ -125,7 +136,7 @@ def create_pwm(sequences: List[str]) -> pd.DataFrame:
         raise ValueError("Sequences cannot be empty")
 
     # Initialize PWM matrix
-    nucleotides = ['A', 'C', 'G', 'T']
+    nucleotides = ["A", "C", "G", "T"]
     pwm = np.zeros((seq_length, 4))
 
     # Count nucleotide frequencies at each position
@@ -146,11 +157,7 @@ def create_pwm(sequences: List[str]) -> pd.DataFrame:
     pwm = pwm / pwm.sum(axis=1, keepdims=True)
 
     # Create DataFrame
-    df = pd.DataFrame(
-        pwm,
-        columns=nucleotides,
-        index=[f'pos_{i}' for i in range(seq_length)]
-    )
+    df = pd.DataFrame(pwm, columns=nucleotides, index=[f"pos_{i}" for i in range(seq_length)])
 
     return df
 
@@ -183,7 +190,7 @@ def score_sequence_pwm(sequence: str, pwm: pd.DataFrame) -> List[float]:
 
     seq_length = len(sequence)
     pwm_length = len(pwm)
-    nucleotides = ['A', 'C', 'G', 'T']
+    nucleotides = ["A", "C", "G", "T"]
 
     scores = []
 
@@ -282,16 +289,13 @@ def discover_motifs(sequences: List[str], motif_length: int = 6, min_occurrences
     for seq in sequences:
         seq = seq.upper()
         for i in range(len(seq) - motif_length + 1):
-            kmer = seq[i:i + motif_length]
+            kmer = seq[i : i + motif_length]
             # Only consider canonical nucleotides
-            if all(c in 'ACGT' for c in kmer):
+            if all(c in "ACGT" for c in kmer):
                 kmer_counts[kmer] += 1
 
     # Filter by minimum occurrences
-    filtered_motifs = [
-        (motif, count) for motif, count in kmer_counts.items()
-        if count >= min_occurrences
-    ]
+    filtered_motifs = [(motif, count) for motif, count in kmer_counts.items() if count >= min_occurrences]
 
     # Sort by frequency (descending)
     filtered_motifs.sort(key=lambda x: x[1], reverse=True)
@@ -352,7 +356,7 @@ def find_palindromic_motifs(seq: str, min_length: int = 6) -> List[Tuple[str, in
 
     for i in range(len(seq_upper) - min_length + 1):
         for length in range(min_length, len(seq_upper) - i + 1):
-            substring = seq_upper[i:i + length]
+            substring = seq_upper[i : i + length]
             if is_palindrome(substring):
                 palindromes.append((substring, i))
                 break  # Take the longest palindrome starting at this position
@@ -382,17 +386,9 @@ def is_palindrome(seq: str) -> bool:
         return True
 
     seq_upper = seq.upper()
-    complement = {'A': 'T', 'T': 'A', 'C': 'G', 'G': 'C'}
+    complement = {"A": "T", "T": "A", "C": "G", "G": "C"}
 
     # Check if sequence equals its reverse complement
-    reversed_complement = ''.join(complement.get(c, c) for c in reversed(seq_upper))
+    reversed_complement = "".join(complement.get(c, c) for c in reversed(seq_upper))
 
     return seq_upper == reversed_complement
-
-
-
-
-
-
-
-

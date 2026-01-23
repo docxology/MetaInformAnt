@@ -65,12 +65,12 @@ def test_build_amalgkit_command_with_v0_12_20_features():
     cmd1 = build_amalgkit_command("metadata", {"resolve_names": "yes", "search_string": "test"})
     assert "--resolve_names" in cmd1
     assert "yes" in cmd1
-    
+
     # Test select with mark_missing_rank
     cmd2 = build_amalgkit_command("select", {"mark_missing_rank": "genus", "out_dir": "test"})
     assert "--mark_missing_rank" in cmd2
     assert "genus" in cmd2
-    
+
     # Test select with all new parameters
     cmd3 = build_amalgkit_command(
         "select",

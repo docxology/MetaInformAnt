@@ -16,9 +16,9 @@ from metainformant.core import logging, validation, errors
 logger = logging.get_logger(__name__)
 
 
-def generate_population_sequences(n_sequences: int, length: int, *,
-                                theta: float = 0.01, n_sites: int = 1000,
-                                rng: random.Random | None = None) -> List[str]:
+def generate_population_sequences(
+    n_sequences: int, length: int, *, theta: float = 0.01, n_sites: int = 1000, rng: random.Random | None = None
+) -> List[str]:
     """Generate a population of DNA sequences with neutral mutations.
 
     Args:
@@ -45,7 +45,7 @@ def generate_population_sequences(n_sequences: int, length: int, *,
     np.random.seed(rng.randint(0, 2**32))
 
     # Generate ancestral sequence
-    ancestral_seq = ''.join(rng.choices("ATCG", k=length))
+    ancestral_seq = "".join(rng.choices("ATCG", k=length))
 
     # Generate mutation positions
     mutation_positions = rng.sample(range(length), min(n_sites, length))
@@ -63,14 +63,21 @@ def generate_population_sequences(n_sequences: int, length: int, *,
                 possible_mutations = [b for b in "ATCG" if b != current_base]
                 seq[pos] = rng.choice(possible_mutations)
 
-        sequences.append(''.join(seq))
+        sequences.append("".join(seq))
 
     return sequences
 
 
-def generate_two_populations(n_pop1: int, n_pop2: int, length: int, *,
-                           f_st: float = 0.1, theta: float = 0.01,
-                           n_sites: int = 1000, rng: random.Random | None = None) -> Tuple[List[str], List[str]]:
+def generate_two_populations(
+    n_pop1: int,
+    n_pop2: int,
+    length: int,
+    *,
+    f_st: float = 0.1,
+    theta: float = 0.01,
+    n_sites: int = 1000,
+    rng: random.Random | None = None,
+) -> Tuple[List[str], List[str]]:
     """Generate two populations with specified differentiation (F_ST).
 
     Args:
@@ -101,9 +108,7 @@ def generate_two_populations(n_pop1: int, n_pop2: int, length: int, *,
     np.random.seed(rng.randint(0, 2**32))
 
     # Generate ancestral population
-    ancestral_pop = generate_population_sequences(
-        max(n_pop1, n_pop2), length, theta=theta, n_sites=n_sites, rng=rng
-    )
+    ancestral_pop = generate_population_sequences(max(n_pop1, n_pop2), length, theta=theta, n_sites=n_sites, rng=rng)
 
     # Split into two populations
     pop1_indices = rng.sample(range(len(ancestral_pop)), n_pop1)
@@ -126,15 +131,20 @@ def generate_two_populations(n_pop1: int, n_pop2: int, length: int, *,
                     current_base = seq_list[pos]
                     possible_mutations = [b for b in "ATCG" if b != current_base]
                     seq_list[pos] = rng.choice(possible_mutations)
-                    pop2[i] = ''.join(seq_list)
+                    pop2[i] = "".join(seq_list)
 
     return pop1, pop2
 
 
-def generate_genotype_matrix(n_individuals: int, n_snps: int, *,
-                           maf_min: float = 0.05, maf_max: float = 0.5,
-                           hwe_deviation: float = 0.0,
-                           rng: random.Random | None = None) -> np.ndarray:
+def generate_genotype_matrix(
+    n_individuals: int,
+    n_snps: int,
+    *,
+    maf_min: float = 0.05,
+    maf_max: float = 0.5,
+    hwe_deviation: float = 0.0,
+    rng: random.Random | None = None,
+) -> np.ndarray:
     """Generate a genotype matrix for population genetics analysis.
 
     Args:
@@ -174,7 +184,7 @@ def generate_genotype_matrix(n_individuals: int, n_snps: int, *,
                 # Perfect HWE
                 p_aa = (1 - maf) ** 2
                 p_ab = 2 * maf * (1 - maf)
-                p_bb = maf ** 2
+                p_bb = maf**2
 
                 genotype = rng.choices([0, 1, 2], weights=[p_aa, p_ab, p_bb])[0]
             else:
@@ -185,17 +195,22 @@ def generate_genotype_matrix(n_individuals: int, n_snps: int, *,
                 if rng.random() < homozygosity_bias:
                     genotype = rng.choice([0, 2])  # Favor homozygotes
                 else:
-                    genotype = rng.choices([0, 1, 2], weights=[(1-maf)**2, 2*maf*(1-maf), maf**2])[0]
+                    genotype = rng.choices([0, 1, 2], weights=[(1 - maf) ** 2, 2 * maf * (1 - maf), maf**2])[0]
 
             genotype_matrix[ind_idx, snp_idx] = genotype
 
     return genotype_matrix
 
 
-def simulate_bottleneck_population(initial_size: int, bottleneck_size: int,
-                                 final_size: int, generations: int, *,
-                                 mutation_rate: float = 1e-8,
-                                 rng: random.Random | None = None) -> Dict[str, Any]:
+def simulate_bottleneck_population(
+    initial_size: int,
+    bottleneck_size: int,
+    final_size: int,
+    generations: int,
+    *,
+    mutation_rate: float = 1e-8,
+    rng: random.Random | None = None,
+) -> Dict[str, Any]:
     """Simulate a population bottleneck followed by recovery.
 
     Args:
@@ -271,10 +286,14 @@ def simulate_bottleneck_population(initial_size: int, bottleneck_size: int,
     }
 
 
-def simulate_population_expansion(initial_size: int, final_size: int,
-                                expansion_time: int, *,
-                                mutation_rate: float = 1e-8,
-                                rng: random.Random | None = None) -> Dict[str, Any]:
+def simulate_population_expansion(
+    initial_size: int,
+    final_size: int,
+    expansion_time: int,
+    *,
+    mutation_rate: float = 1e-8,
+    rng: random.Random | None = None,
+) -> Dict[str, Any]:
     """Simulate exponential population expansion.
 
     Args:
@@ -338,10 +357,14 @@ def simulate_population_expansion(initial_size: int, final_size: int,
     }
 
 
-def generate_site_frequency_spectrum(n_samples: int, n_sites: int, *,
-                                   demographic_model: str = "constant",
-                                   parameters: Dict[str, float] | None = None,
-                                   rng: random.Random | None = None) -> np.ndarray:
+def generate_site_frequency_spectrum(
+    n_samples: int,
+    n_sites: int,
+    *,
+    demographic_model: str = "constant",
+    parameters: Dict[str, float] | None = None,
+    rng: random.Random | None = None,
+) -> np.ndarray:
     """Generate a site frequency spectrum under different demographic models.
 
     Args:
@@ -386,9 +409,9 @@ def generate_site_frequency_spectrum(n_samples: int, n_sites: int, *,
             # Favor high frequency variants (old bottleneck)
             bottleneck_strength = parameters.get("bottleneck_strength", 0.1)
             if rng.random() < bottleneck_strength:
-                freq = rng.randint(n_samples//2, n_samples-1)  # High frequency
+                freq = rng.randint(n_samples // 2, n_samples - 1)  # High frequency
             else:
-                freq = rng.randint(1, n_samples//2)  # Low frequency
+                freq = rng.randint(1, n_samples // 2)  # Low frequency
 
         # Ensure valid frequency
         freq = max(1, min(freq, n_samples - 1))
@@ -398,10 +421,14 @@ def generate_site_frequency_spectrum(n_samples: int, n_sites: int, *,
     return sfs
 
 
-def generate_linkage_disequilibrium_data(n_individuals: int, n_snps: int, *,
-                                       recombination_rate: float = 1e-8,
-                                       selection_coefficient: float = 0.0,
-                                       rng: random.Random | None = None) -> Tuple[np.ndarray, np.ndarray]:
+def generate_linkage_disequilibrium_data(
+    n_individuals: int,
+    n_snps: int,
+    *,
+    recombination_rate: float = 1e-8,
+    selection_coefficient: float = 0.0,
+    rng: random.Random | None = None,
+) -> Tuple[np.ndarray, np.ndarray]:
     """Generate genotype data with linkage disequilibrium patterns.
 
     Args:
@@ -492,10 +519,15 @@ def generate_linkage_disequilibrium_data(n_individuals: int, n_snps: int, *,
     return genotype_matrix, ld_matrix
 
 
-def simulate_admixture(n_populations: int, population_sizes: List[int],
-                     admixture_proportions: np.ndarray, generations: int, *,
-                     migration_rate: float = 0.01,
-                     rng: random.Random | None = None) -> Dict[str, Any]:
+def simulate_admixture(
+    n_populations: int,
+    population_sizes: List[int],
+    admixture_proportions: np.ndarray,
+    generations: int,
+    *,
+    migration_rate: float = 0.01,
+    rng: random.Random | None = None,
+) -> Dict[str, Any]:
     """Simulate population admixture.
 
     Args:
@@ -566,9 +598,14 @@ def simulate_admixture(n_populations: int, population_sizes: List[int],
     }
 
 
-def simulate_selection(genotype_matrix: np.ndarray, fitness_effects: np.ndarray,
-                      generations: int, *, selection_strength: float = 0.1,
-                      rng: random.Random | None = None) -> Dict[str, Any]:
+def simulate_selection(
+    genotype_matrix: np.ndarray,
+    fitness_effects: np.ndarray,
+    generations: int,
+    *,
+    selection_strength: float = 0.1,
+    rng: random.Random | None = None,
+) -> Dict[str, Any]:
     """Simulate natural selection on genotypes.
 
     Args:
@@ -626,7 +663,7 @@ def simulate_selection(genotype_matrix: np.ndarray, fitness_effects: np.ndarray,
             for i, genotype in enumerate(genotypes):
                 fitness_snp[i] = fitness_effects[snp, genotype]
 
-            fitness_values *= (1 + selection_strength * fitness_snp)
+            fitness_values *= 1 + selection_strength * fitness_snp
 
         # Normalize fitness (Wright-Fisher model)
         fitness_values /= np.mean(fitness_values)
@@ -640,11 +677,7 @@ def simulate_selection(genotype_matrix: np.ndarray, fitness_effects: np.ndarray,
 
             # Create weighted sampling
             weights = fitness_values
-            selected_indices = rng.choices(
-                range(n_individuals),
-                weights=weights,
-                k=n_individuals
-            )
+            selected_indices = rng.choices(range(n_individuals), weights=weights, k=n_individuals)
 
             next_genotypes[:, snp] = genotypes[selected_indices]
 
@@ -658,9 +691,3 @@ def simulate_selection(genotype_matrix: np.ndarray, fitness_effects: np.ndarray,
         "generations": generations,
         "selection_strength": selection_strength,
     }
-
-
-
-
-
-

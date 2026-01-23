@@ -20,19 +20,14 @@ logger = logging.get_logger(__name__)
 # Optional imports with graceful fallbacks
 try:
     import networkx as nx
+
     HAS_NETWORKX = True
 except ImportError:
     nx = None
     HAS_NETWORKX = False
 
 
-def plot_phylo_tree(
-    tree: Any,
-    *,
-    ax: Axes | None = None,
-    output_path: str | Path | None = None,
-    **kwargs
-) -> Axes:
+def plot_phylo_tree(tree: Any, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs) -> Axes:
     """Create a basic phylogenetic tree visualization.
 
     Args:
@@ -52,7 +47,7 @@ def plot_phylo_tree(
         raise ImportError("NetworkX required for phylogenetic tree plotting")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (10, 8)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 8)))
 
     # Convert tree to NetworkX if needed
     if isinstance(tree, nx.DiGraph):
@@ -69,34 +64,28 @@ def plot_phylo_tree(
         G,
         pos=pos,
         ax=ax,
-        with_labels=kwargs.get('with_labels', True),
-        node_color=kwargs.get('node_color', 'lightgray'),
-        node_size=kwargs.get('node_size', 200),
-        edge_color=kwargs.get('edge_color', 'black'),
-        width=kwargs.get('width', 1),
-        arrows=kwargs.get('arrows', False),  # Usually no arrows in trees
-        **kwargs
+        with_labels=kwargs.get("with_labels", True),
+        node_color=kwargs.get("node_color", "lightgray"),
+        node_size=kwargs.get("node_size", 200),
+        edge_color=kwargs.get("edge_color", "black"),
+        width=kwargs.get("width", 1),
+        arrows=kwargs.get("arrows", False),  # Usually no arrows in trees
+        **kwargs,
     )
 
-    ax.set_title('Phylogenetic Tree')
-    ax.set_xlabel('Branch Length')
-    ax.set_ylabel('Taxa')
+    ax.set_title("Phylogenetic Tree")
+    ax.set_xlabel("Branch Length")
+    ax.set_ylabel("Taxa")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Phylogenetic tree plot saved to {output_path}")
 
     return ax
 
 
-def circular_tree_plot(
-    tree: Any,
-    *,
-    ax: Axes | None = None,
-    output_path: str | Path | None = None,
-    **kwargs
-) -> Axes:
+def circular_tree_plot(tree: Any, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs) -> Axes:
     """Create a circular phylogenetic tree visualization.
 
     Args:
@@ -115,7 +104,7 @@ def circular_tree_plot(
         raise ImportError("NetworkX required for phylogenetic tree plotting")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (10, 10)), subplot_kw={'projection': 'polar'})
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 10)), subplot_kw={"projection": "polar"})
 
     # Convert tree to NetworkX if needed
     if isinstance(tree, nx.DiGraph):
@@ -131,33 +120,27 @@ def circular_tree_plot(
         G,
         pos=pos,
         ax=ax,
-        with_labels=kwargs.get('with_labels', True),
-        node_color=kwargs.get('node_color', 'lightblue'),
-        node_size=kwargs.get('node_size', 150),
-        edge_color=kwargs.get('edge_color', 'gray'),
-        width=kwargs.get('width', 1),
-        arrows=kwargs.get('arrows', False),
-        **kwargs
+        with_labels=kwargs.get("with_labels", True),
+        node_color=kwargs.get("node_color", "lightblue"),
+        node_size=kwargs.get("node_size", 150),
+        edge_color=kwargs.get("edge_color", "gray"),
+        width=kwargs.get("width", 1),
+        arrows=kwargs.get("arrows", False),
+        **kwargs,
     )
 
-    ax.set_title('Circular Phylogenetic Tree')
+    ax.set_title("Circular Phylogenetic Tree")
     ax.set_rlabel_position(0)  # Move radial labels
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Circular phylogenetic tree plot saved to {output_path}")
 
     return ax
 
 
-def unrooted_tree_plot(
-    tree: Any,
-    *,
-    ax: Axes | None = None,
-    output_path: str | Path | None = None,
-    **kwargs
-) -> Axes:
+def unrooted_tree_plot(tree: Any, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs) -> Axes:
     """Create an unrooted phylogenetic tree visualization.
 
     Args:
@@ -176,7 +159,7 @@ def unrooted_tree_plot(
         raise ImportError("NetworkX required for phylogenetic tree plotting")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (10, 10)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 10)))
 
     # Convert tree to NetworkX if needed
     if isinstance(tree, nx.Graph):
@@ -185,38 +168,33 @@ def unrooted_tree_plot(
         G = _convert_tree_to_networkx(tree, directed=False)
 
     # Use spring layout for unrooted trees (approximates unrooted layout)
-    pos = nx.spring_layout(G, **kwargs.get('layout_kwargs', {'seed': 42}))
+    pos = nx.spring_layout(G, **kwargs.get("layout_kwargs", {"seed": 42}))
 
     # Draw unrooted tree
     nx.draw(
         G,
         pos=pos,
         ax=ax,
-        with_labels=kwargs.get('with_labels', True),
-        node_color=kwargs.get('node_color', 'lightgreen'),
-        node_size=kwargs.get('node_size', 200),
-        edge_color=kwargs.get('edge_color', 'black'),
-        width=kwargs.get('width', 1.5),
-        **kwargs
+        with_labels=kwargs.get("with_labels", True),
+        node_color=kwargs.get("node_color", "lightgreen"),
+        node_size=kwargs.get("node_size", 200),
+        edge_color=kwargs.get("edge_color", "black"),
+        width=kwargs.get("width", 1.5),
+        **kwargs,
     )
 
-    ax.set_title('Unrooted Phylogenetic Tree')
+    ax.set_title("Unrooted Phylogenetic Tree")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Unrooted phylogenetic tree plot saved to {output_path}")
 
     return ax
 
 
 def tree_comparison_plot(
-    tree1: Any,
-    tree2: Any,
-    *,
-    ax: Axes | None = None,
-    output_path: str | Path | None = None,
-    **kwargs
+    tree1: Any, tree2: Any, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
 ) -> Axes:
     """Create a side-by-side comparison of two phylogenetic trees.
 
@@ -237,7 +215,7 @@ def tree_comparison_plot(
         raise ImportError("NetworkX required for phylogenetic tree plotting")
 
     if ax is None:
-        fig, axes = plt.subplots(1, 2, figsize=kwargs.pop('figsize', (15, 8)))
+        fig, axes = plt.subplots(1, 2, figsize=kwargs.pop("figsize", (15, 8)))
     else:
         # Assume ax is a single axes, create subplots anyway
         fig = ax.figure
@@ -249,33 +227,26 @@ def tree_comparison_plot(
 
     # Plot first tree
     pos1 = _hierarchical_tree_layout(G1)
-    nx.draw(G1, pos=pos1, ax=axes[0], with_labels=True, node_color='lightblue',
-            node_size=150, arrows=False)
-    axes[0].set_title('Tree 1')
+    nx.draw(G1, pos=pos1, ax=axes[0], with_labels=True, node_color="lightblue", node_size=150, arrows=False)
+    axes[0].set_title("Tree 1")
 
     # Plot second tree
     pos2 = _hierarchical_tree_layout(G2)
-    nx.draw(G2, pos=pos2, ax=axes[1], with_labels=True, node_color='lightcoral',
-            node_size=150, arrows=False)
-    axes[1].set_title('Tree 2')
+    nx.draw(G2, pos=pos2, ax=axes[1], with_labels=True, node_color="lightcoral", node_size=150, arrows=False)
+    axes[1].set_title("Tree 2")
 
     plt.tight_layout()
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Tree comparison plot saved to {output_path}")
 
     return axes[0]  # Return first axes for consistency
 
 
 def tree_annotation_plot(
-    tree: Any,
-    annotations: Dict[str, Any],
-    *,
-    ax: Axes | None = None,
-    output_path: str | Path | None = None,
-    **kwargs
+    tree: Any, annotations: Dict[str, Any], *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
 ) -> Axes:
     """Create an annotated phylogenetic tree visualization.
 
@@ -296,7 +267,7 @@ def tree_annotation_plot(
         raise ImportError("NetworkX required for phylogenetic tree plotting")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (12, 10)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (12, 10)))
 
     # Convert tree to NetworkX
     G = _convert_tree_to_networkx(tree) if not isinstance(tree, nx.DiGraph) else tree
@@ -307,12 +278,12 @@ def tree_annotation_plot(
         if node in annotations:
             # Use annotation to determine color (simplified)
             annot = annotations[node]
-            if isinstance(annot, dict) and 'color' in annot:
-                node_colors.append(annot['color'])
+            if isinstance(annot, dict) and "color" in annot:
+                node_colors.append(annot["color"])
             else:
-                node_colors.append('lightgray')
+                node_colors.append("lightgray")
         else:
-            node_colors.append('lightgray')
+            node_colors.append("lightgray")
 
     # Use hierarchical layout
     pos = _hierarchical_tree_layout(G)
@@ -322,13 +293,13 @@ def tree_annotation_plot(
         G,
         pos=pos,
         ax=ax,
-        with_labels=kwargs.get('with_labels', True),
+        with_labels=kwargs.get("with_labels", True),
         node_color=node_colors,
-        node_size=kwargs.get('node_size', 250),
-        edge_color=kwargs.get('edge_color', 'black'),
-        width=kwargs.get('width', 1.2),
-        arrows=kwargs.get('arrows', False),
-        **kwargs
+        node_size=kwargs.get("node_size", 250),
+        edge_color=kwargs.get("edge_color", "black"),
+        width=kwargs.get("width", 1.2),
+        arrows=kwargs.get("arrows", False),
+        **kwargs,
     )
 
     # Add annotation legends or labels
@@ -338,22 +309,27 @@ def tree_annotation_plot(
         for annot in annotations.values():
             if isinstance(annot, dict):
                 for key, value in annot.items():
-                    if key != 'color':
+                    if key != "color":
                         unique_annotations.add(f"{key}: {value}")
 
         # Add text annotations for nodes
         for node, annot in annotations.items():
             if node in pos and isinstance(annot, dict):
                 x, y = pos[node]
-                if 'label' in annot:
-                    ax.text(x + 0.1, y, annot['label'], fontsize=8,
-                           bbox=dict(boxstyle="round,pad=0.2", facecolor="white", alpha=0.8))
+                if "label" in annot:
+                    ax.text(
+                        x + 0.1,
+                        y,
+                        annot["label"],
+                        fontsize=8,
+                        bbox=dict(boxstyle="round,pad=0.2", facecolor="white", alpha=0.8),
+                    )
 
-    ax.set_title('Annotated Phylogenetic Tree')
+    ax.set_title("Annotated Phylogenetic Tree")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Annotated phylogenetic tree plot saved to {output_path}")
 
     return ax
@@ -371,6 +347,7 @@ def _convert_tree_to_networkx(tree: Any, directed: bool = True) -> nx.Graph:
 
     # Handle dict-based tree representation
     if isinstance(tree, dict):
+
         def add_edges(parent, children):
             for child, subtree in children.items():
                 G.add_edge(parent, child)
@@ -382,6 +359,7 @@ def _convert_tree_to_networkx(tree: Any, directed: bool = True) -> nx.Graph:
 
         # Find root (node with no parent in edges)
         all_nodes = set()
+
         def collect_nodes(node, subtree):
             all_nodes.add(node)
             if isinstance(subtree, dict):
@@ -485,9 +463,3 @@ def _circular_tree_layout(G: nx.DiGraph) -> Dict[str, Tuple[float, float]]:
                     pos[node] = (avg_x, avg_y)
 
     return pos
-
-
-
-
-
-

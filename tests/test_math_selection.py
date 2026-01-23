@@ -56,14 +56,14 @@ class TestMultilevelSelectionDecomposition:
         individual_deviations = [0.1, -0.1, 0.2, -0.2, 0.0, 0.1]
         group_selection = 0.5
         individual_selection = 0.3
-        
+
         between, within, total = multilevel_selection_decomposition(
             group_means=group_means,
             individual_deviations=individual_deviations,
             selection_strength_group=group_selection,
-            selection_strength_individual=individual_selection
+            selection_strength_individual=individual_selection,
         )
-        
+
         assert isinstance(between, float)
         assert isinstance(within, float)
         assert isinstance(total, float)
@@ -76,14 +76,14 @@ class TestMultilevelSelectionDecomposition:
         individual_deviations = [0.1, -0.1, 0.0]
         group_selection = 0.5
         individual_selection = 0.3
-        
+
         between, within, total = multilevel_selection_decomposition(
             group_means=group_means,
             individual_deviations=individual_deviations,
             selection_strength_group=group_selection,
-            selection_strength_individual=individual_selection
+            selection_strength_individual=individual_selection,
         )
-        
+
         # With single group, between-group component should be zero
         assert between == 0.0
         assert within >= 0
@@ -95,14 +95,14 @@ class TestMultilevelSelectionDecomposition:
         individual_deviations = [0.1, -0.1, 0.2, -0.2, 0.0, 0.1]
         group_selection = 0.5
         individual_selection = 0.3
-        
+
         between, within, total = multilevel_selection_decomposition(
             group_means=group_means,
             individual_deviations=individual_deviations,
             selection_strength_group=group_selection,
-            selection_strength_individual=individual_selection
+            selection_strength_individual=individual_selection,
         )
-        
+
         # With equal group means, between-group component should be zero
         assert between == 0.0
         assert total == within
@@ -113,16 +113,14 @@ class TestMultilevelSelectionDecomposition:
         individual_deviations = [0.1, -0.1, 0.2, -0.2, 0.0, 0.1]
         group_selection = 0.5
         individual_selection = 0.0
-        
+
         between, within, total = multilevel_selection_decomposition(
             group_means=group_means,
             individual_deviations=individual_deviations,
             selection_strength_group=group_selection,
-            selection_strength_individual=individual_selection
+            selection_strength_individual=individual_selection,
         )
-        
+
         # With zero individual selection, within-group component should be zero
         assert within == 0.0
         assert total == between
-
-

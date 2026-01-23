@@ -7,7 +7,7 @@ coalescent theory, and evolutionary computations.
 from __future__ import annotations
 
 import math
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -76,8 +76,7 @@ def expected_coalescent_waiting_times(sample_size: int, Ne: float) -> List[float
     return waiting_times
 
 
-def expected_r2_from_Ne_c(recombination_rate: float, Ne: float,
-                         distance_bp: float) -> float:
+def expected_r2_from_Ne_c(recombination_rate: float, Ne: float, distance_bp: float) -> float:
     """Calculate expected LD (r²) from effective population size and recombination.
 
     Args:
@@ -131,8 +130,9 @@ def fixation_probability(selection_coefficient: float, population_size: int) -> 
         return (1 - math.exp(-2 * s)) / (1 - math.exp(-4 * N * s))
 
 
-def bottleneck_effective_size(initial_size: int, bottleneck_size: int,
-                             bottleneck_duration: int, final_size: int) -> float:
+def bottleneck_effective_size(
+    initial_size: int, bottleneck_size: int, bottleneck_duration: int, final_size: int
+) -> float:
     """Calculate effective population size after bottleneck.
 
     Args:
@@ -146,7 +146,7 @@ def bottleneck_effective_size(initial_size: int, bottleneck_size: int,
     """
     # Simplified approximation
     # Ne = 1 / (1/N_initial + 1/N_bottleneck * duration + 1/N_final)
-    Ne = 1.0 / (1.0/initial_size + bottleneck_duration * 1.0/bottleneck_size + 1.0/final_size)
+    Ne = 1.0 / (1.0 / initial_size + bottleneck_duration * 1.0 / bottleneck_size + 1.0 / final_size)
     return Ne
 
 
@@ -170,11 +170,12 @@ def effective_size_from_family_size_variance(family_sizes: List[int]) -> float:
     if variance > 1:
         return mean_family_size / (variance - 1)
     else:
-        return float('inf')  # No variance means infinite Ne
+        return float("inf")  # No variance means infinite Ne
 
 
-def bootstrap_confidence_interval(values: List[float], confidence_level: float = 0.95,
-                                n_bootstraps: int = 1000) -> Tuple[float, float]:
+def bootstrap_confidence_interval(
+    values: List[float], confidence_level: float = 0.95, n_bootstraps: int = 1000
+) -> Tuple[float, float]:
     """Calculate bootstrap confidence interval.
 
     Args:
@@ -206,8 +207,9 @@ def bootstrap_confidence_interval(values: List[float], confidence_level: float =
     return (lower_bound, upper_bound)
 
 
-def calculate_confidence_intervals(values: List[float], confidence_level: float = 0.95,
-                                 method: str = "bootstrap") -> tuple[float, float]:
+def calculate_confidence_intervals(
+    values: List[float], confidence_level: float = 0.95, method: str = "bootstrap"
+) -> tuple[float, float]:
     """Calculate confidence intervals for population genetic statistics.
 
     Args:
@@ -261,6 +263,7 @@ def calculate_confidence_intervals(values: List[float], confidence_level: float 
         else:
             # General case using normal distribution
             from scipy import stats
+
             z = stats.norm.ppf((1 + confidence_level) / 2)
 
         lower_bound = mean_val - z * se
@@ -280,8 +283,9 @@ def calculate_confidence_intervals(values: List[float], confidence_level: float 
     return float(lower_bound), float(upper_bound)
 
 
-def compare_population_statistic(pop1_stats: Dict[str, Any], pop2_stats: Dict[str, Any],
-                                statistic_name: str) -> Dict[str, Any]:
+def compare_population_statistic(
+    pop1_stats: Dict[str, Any], pop2_stats: Dict[str, Any], statistic_name: str
+) -> Dict[str, Any]:
     """Compare a population genetic statistic between two populations.
 
     Args:
@@ -338,9 +342,7 @@ def compare_statistics(stats1: Dict[str, float], stats2: Dict[str, float]) -> Di
 
     for stat_name in common_stats:
         results[stat_name] = compare_population_statistic(
-            {"variance": 1.0, **stats1},  # Add default variance
-            {"variance": 1.0, **stats2},
-            stat_name
+            {"variance": 1.0, **stats1}, {"variance": 1.0, **stats2}, stat_name  # Add default variance
         )
 
     return results
@@ -391,8 +393,7 @@ def detect_outliers(values: List[float], method: str = "iqr", threshold: float =
     }
 
 
-def permutation_test(values1: List[float], values2: List[float],
-                    n_permutations: int = 1000) -> Dict[str, Any]:
+def permutation_test(values1: List[float], values2: List[float], n_permutations: int = 1000) -> Dict[str, Any]:
     """Perform permutation test to compare two distributions.
 
     Args:
@@ -449,7 +450,7 @@ def tajimas_d_outliers(d_values: List[float], window_size: int = 10) -> Dict[str
 
     # Calculate local statistics using sliding window
     for i in range(len(d_values) - window_size + 1):
-        window = d_values[i:i + window_size]
+        window = d_values[i : i + window_size]
         window_mean = np.mean(window)
         window_std = np.std(window)
 
@@ -491,6 +492,7 @@ def skewness(values: List[float]) -> float:
     if not values or len(values) < 3:
         return 0.0
     from scipy.stats import skew
+
     return float(skew(values))
 
 
@@ -499,5 +501,5 @@ def kurtosis(values: List[float]) -> float:
     if not values or len(values) < 4:
         return 0.0
     from scipy.stats import kurtosis as scipy_kurtosis
-    return float(scipy_kurtosis(values))
 
+    return float(scipy_kurtosis(values))

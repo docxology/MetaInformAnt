@@ -19,6 +19,7 @@ from pathlib import Path
 
 import pytest
 
+
 # Test conftest.py fixtures and utilities
 class TestConftestFixtures:
     """Test conftest.py fixtures and configuration."""
@@ -26,9 +27,14 @@ class TestConftestFixtures:
     def test_uv_environment_info_fixture(self, uv_environment_info):
         """Test uv_environment_info fixture provides expected structure."""
         required_keys = [
-            "uv_available", "uv_cache_dir", "uv_project_env",
-            "virtual_env", "metainformant_venv", "python_path",
-            "test_data_dir", "output_dir"
+            "uv_available",
+            "uv_cache_dir",
+            "uv_project_env",
+            "virtual_env",
+            "metainformant_venv",
+            "python_path",
+            "test_data_dir",
+            "output_dir",
         ]
 
         for key in required_keys:
@@ -193,8 +199,7 @@ class TestUtilsModule:
         from tests.utils import validate_fasta_file, create_sample_fasta_file
 
         # Valid FASTA
-        valid_fasta = create_sample_fasta_file(isolated_tmp_dir / "valid.fasta",
-                                             {"seq1": "ATCG", "seq2": "GCTA"})
+        valid_fasta = create_sample_fasta_file(isolated_tmp_dir / "valid.fasta", {"seq1": "ATCG", "seq2": "GCTA"})
         assert validate_fasta_file(valid_fasta)
 
         # Invalid file
@@ -207,8 +212,7 @@ class TestUtilsModule:
         from tests.utils import validate_fastq_file, create_sample_fastq_file
 
         # Valid FASTQ
-        valid_fastq = create_sample_fastq_file(isolated_tmp_dir / "valid.fastq",
-                                             {"read1": "ATCG", "read2": "GCTA"})
+        valid_fastq = create_sample_fastq_file(isolated_tmp_dir / "valid.fastq", {"read1": "ATCG", "read2": "GCTA"})
         assert validate_fastq_file(valid_fastq)
 
         # Invalid file
@@ -297,6 +301,7 @@ class TestEnvironmentSetup:
     def test_src_directory_in_path(self):
         """Test that src directory is in Python path during tests."""
         import sys
+
         src_path = str(Path("src").resolve())
 
         # Should be in sys.path during test execution
@@ -310,8 +315,9 @@ class TestEnvironmentSetup:
     def test_utils_module_imports(self):
         """Test that tests.utils module can be imported."""
         import tests.utils
-        assert hasattr(tests.utils, 'check_external_tool_available')
-        assert hasattr(tests.utils, 'require_external_tool')
+
+        assert hasattr(tests.utils, "check_external_tool_available")
+        assert hasattr(tests.utils, "require_external_tool")
 
 
 class TestDependencyVerification:
@@ -320,23 +326,27 @@ class TestDependencyVerification:
     def test_pytest_available(self):
         """Test that pytest is available."""
         import pytest
+
         assert pytest is not None
 
     def test_basic_test_imports(self):
         """Test that basic test imports work."""
         import pathlib
         import tempfile
+
         assert pathlib is not None
         assert tempfile is not None
 
     def test_pathlib_available(self):
         """Test pathlib is available."""
         import pathlib
+
         assert pathlib is not None
 
     def test_tempfile_available(self):
         """Test tempfile is available."""
         import tempfile
+
         assert tempfile is not None
 
 
@@ -420,6 +430,3 @@ class TestPerformanceTracker:
         performance_tracker.track_time("test_function", 1.5)
         avg_time = performance_tracker.get_average_time("test_function")
         assert avg_time == 1.5
-
-
-

@@ -31,8 +31,7 @@ def test_miami_plot(tmp_path: Path) -> None:
     ]
 
     output_path = tmp_path / "miami_plot.png"
-    result = miami_plot(trait1_results, trait2_results, output_path,
-                       trait1_name="Trait A", trait2_name="Trait B")
+    result = miami_plot(trait1_results, trait2_results, output_path, trait1_name="Trait A", trait2_name="Trait B")
 
     assert result["status"] == "success"
     assert output_path.exists()
@@ -55,7 +54,7 @@ def test_multi_trait_manhattan(tmp_path: Path) -> None:
         "Trait C": [
             {"CHROM": "1", "POS": 1100, "p_value": 1e-5},
             {"CHROM": "1", "POS": 2100, "p_value": 1e-3},
-        ]
+        ],
     }
 
     output_path = tmp_path / "multi_trait_manhattan.png"
@@ -83,8 +82,9 @@ def test_concordance_plot(tmp_path: Path) -> None:
     ]
 
     output_path = tmp_path / "concordance_plot.png"
-    result = concordance_plot(discovery_results, replication_results, output_path,
-                            title="Discovery vs Replication Concordance")
+    result = concordance_plot(
+        discovery_results, replication_results, output_path, title="Discovery vs Replication Concordance"
+    )
 
     assert result["status"] == "success"
     assert output_path.exists()
@@ -99,7 +99,7 @@ def test_cross_cohort_forest(tmp_path: Path) -> None:
         ],
         "Cohort B": [
             {"CHROM": "1", "POS": 1000, "beta": 0.7, "p_value": 1e-7},
-        ]
+        ],
     }
 
     output_path = tmp_path / "forest_plot.png"
@@ -150,7 +150,7 @@ def test_concordance_plot_perfect_correlation(tmp_path: Path) -> None:
 
     replication_results = [
         {"CHROM": "1", "POS": 1000, "beta": 0.5, "p_value": 1e-7},  # Perfect match
-        {"CHROM": "1", "POS": 2000, "beta": -0.3, "p_value": 1e-5}, # Perfect match
+        {"CHROM": "1", "POS": 2000, "beta": -0.3, "p_value": 1e-5},  # Perfect match
     ]
 
     output_path = tmp_path / "perfect_concordance.png"

@@ -269,7 +269,7 @@ graph TD
 - **Statistical & ML Methods**: GWAS, population genetics, machine learning pipelines
 - **Single-Cell Genomics**: Complete scRNA-seq analysis workflows
 - **Network Analysis**: Biological networks, pathways, community detection algorithms
-- **Visualization Suite**: 20+ specialized plotting modules with publication-quality output
+- **Visualization Suite**: 14 specialized plotting modules with 57+ plot types and publication-quality output
 - **Modular Architecture**: Individual modules or complete end-to-end workflows
 - **Comprehensive Documentation**: 70+ README files with technical specifications
 - **Implementation Testing**: Real methods in tests, no mocks or stubs
@@ -364,7 +364,7 @@ See `scripts/core/run_demo.py` for the workflow demonstration. Outputs are saved
 | **Protein** | [protein/](src/metainformant/protein/) | ✅ **Complete** | Sequences, structures, AlphaFold, UniProt, functional analysis |
 | **GWAS** | [gwas/](src/metainformant/gwas/) | ✅ **Complete** | Association testing, QC, population structure, visualization |
 | **Math** | [math/](src/metainformant/math/) | ✅ **Complete** | Population genetics, coalescent, selection, epidemiology |
-| **Visualization** | [visualization/](src/metainformant/visualization/) | ✅ **Complete** | 20+ plot types, animations, publication-quality output |
+| **Visualization** | [visualization/](src/metainformant/visualization/) | ✅ **Complete** | 57+ plot types, animations, publication-quality output |
 | **Ontology** | [ontology/](src/metainformant/ontology/) | ✅ **Complete** | GO analysis, semantic similarity, functional annotation |
 | **Quality** | [quality/](src/metainformant/quality/) | ✅ **Complete** | FASTQ analysis, validation, contamination detection |
 

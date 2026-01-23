@@ -25,7 +25,7 @@ class TestGenerateConfigYaml:
             "run_ids": ["SRR123", "SRR456"],
             "study_ids": ["SRP001"],
         }
-        
+
         yaml_content = discovery.generate_config_yaml(species_name, species_data)
         assert isinstance(yaml_content, str)
         assert "Homo sapiens" in yaml_content
@@ -48,7 +48,7 @@ class TestGenerateConfigYaml:
             "level": "chromosome",
             "annotation_release": "110",
         }
-        
+
         yaml_content = discovery.generate_config_yaml(species_name, species_data, genome_info)
         assert "GCF_000001405.40" in yaml_content
         assert "genome:" in yaml_content
@@ -64,7 +64,7 @@ class TestGenerateConfigYaml:
             "study_ids": ["SRP002"],
         }
         repo_root = Path("/test/repo")
-        
+
         yaml_content = discovery.generate_config_yaml(species_name, species_data, repo_root=repo_root)
         assert "/test/repo" in yaml_content
         assert "output/amalgkit" in yaml_content
@@ -96,7 +96,7 @@ class TestSelectBestAssembly:
                 "assembly_stats": {"contig_n50": 1000000},
             },
         ]
-        
+
         result = discovery._select_best_assembly(assemblies)
         assert result is not None
         assert result["assembly"]["assembly_accession"].startswith("GCF_")
@@ -119,7 +119,7 @@ class TestSelectBestAssembly:
                 "assembly_stats": {"contig_n50": 1000000},
             },
         ]
-        
+
         result = discovery._select_best_assembly(assemblies)
         assert result is not None
         assert result["assembly"]["assembly_level"] == "chromosome"
@@ -134,7 +134,7 @@ class TestDiscoveryDocumentation:
             discovery.generate_config_yaml,
             discovery._select_best_assembly,
         ]
-        
+
         for func in functions:
             assert func.__doc__ is not None, f"{func.__name__} missing docstring"
             assert len(func.__doc__.strip()) > 0
@@ -144,9 +144,10 @@ class TestDiscoveryDocumentation:
         """Test that search_species_with_rnaseq requires Biopython."""
         try:
             from metainformant.rna.analysis.discovery import BIOPYTHON_AVAILABLE
+
             if not BIOPYTHON_AVAILABLE:
                 pytest.skip("Biopython not available")
-            
+
             # If available, test basic functionality
             result = discovery.search_species_with_rnaseq(
                 '"Homo sapiens"[Organism] AND RNA-Seq[Strategy]',
@@ -161,13 +162,13 @@ class TestDiscoveryDocumentation:
         """Test that get_genome_info requires ncbi-datasets-pylib."""
         try:
             from metainformant.rna.analysis.discovery import NCBI_DATASETS_AVAILABLE
+
             if not NCBI_DATASETS_AVAILABLE:
                 pytest.skip("ncbi-datasets-pylib not available")
-            
+
             # If available, test basic functionality
             result = discovery.get_genome_info("9606", "Homo sapiens")
             # May return None if no assemblies found, or dict if found
             assert result is None or isinstance(result, dict)
         except ImportError:
             pytest.skip("ncbi-datasets-pylib not available for genome info")
-

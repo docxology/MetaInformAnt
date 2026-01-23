@@ -50,9 +50,9 @@ def jukes_cantor_distance(seq1: str, seq2: str) -> float:
 
     # Jukes-Cantor correction
     if p >= 0.75:  # Maximum possible under Jukes-Cantor model
-        return float('inf')  # Infinite distance
+        return float("inf")  # Infinite distance
 
-    distance = -0.75 * math.log(1 - (4/3) * p)
+    distance = -0.75 * math.log(1 - (4 / 3) * p)
     return distance
 
 
@@ -89,10 +89,10 @@ def kimura_distance(seq1: str, seq2: str) -> float:
     transversions = 0  # A<->C, A<->T, G<->C, G<->T
     total_sites = 0
 
-    transition_pairs = {('A', 'G'), ('G', 'A'), ('C', 'T'), ('T', 'C')}
+    transition_pairs = {("A", "G"), ("G", "A"), ("C", "T"), ("T", "C")}
 
     for a, b in zip(seq1.upper(), seq2.upper()):
-        if a not in 'ATCG' or b not in 'ATCG':
+        if a not in "ATCG" or b not in "ATCG":
             raise ValueError(f"Invalid nucleotide: {a} or {b}")
 
         if a != b:
@@ -112,13 +112,13 @@ def kimura_distance(seq1: str, seq2: str) -> float:
 
     # Kimura 2-parameter distance
     if P + Q >= 1.0:  # Maximum possible
-        return float('inf')
+        return float("inf")
 
     # Avoid division by zero and log of negative values
     if P >= 0.5 or Q >= 0.5:
-        return float('inf')
+        return float("inf")
 
-    distance = -0.5 * math.log((1 - 2*P - Q) * math.sqrt(1 - 2*Q))
+    distance = -0.5 * math.log((1 - 2 * P - Q) * math.sqrt(1 - 2 * Q))
     return distance
 
 
@@ -156,7 +156,7 @@ def p_distance(seq1: str, seq2: str) -> float:
     total_sites = 0
 
     for a, b in zip(seq1.upper(), seq2.upper()):
-        if a not in 'ATCG' or b not in 'ATCG':
+        if a not in "ATCG" or b not in "ATCG":
             raise ValueError(f"Invalid nucleotide: {a} or {b}")
 
         if a != b:
@@ -196,7 +196,7 @@ def hamming_distance(seq1: str, seq2: str) -> int:
 
     distance = 0
     for a, b in zip(seq1.upper(), seq2.upper()):
-        if a not in 'ATCG' or b not in 'ATCG':
+        if a not in "ATCG" or b not in "ATCG":
             raise ValueError(f"Invalid nucleotide: {a} or {b}")
         if a != b:
             distance += 1
@@ -257,7 +257,7 @@ def distance_matrix(sequences: Dict[str, str], method: str = "jukes_cantor") -> 
             try:
                 distance = distance_func(seq1, seq2)
                 # Handle infinite distances
-                if distance == float('inf'):
+                if distance == float("inf"):
                     distance = np.nan
             except (ValueError, ZeroDivisionError):
                 distance = np.nan
@@ -266,11 +266,7 @@ def distance_matrix(sequences: Dict[str, str], method: str = "jukes_cantor") -> 
             distance_matrix_array[j, i] = distance  # Symmetric matrix
 
     # Create pandas DataFrame
-    df = pd.DataFrame(
-        distance_matrix_array,
-        index=seq_ids,
-        columns=seq_ids
-    )
+    df = pd.DataFrame(distance_matrix_array, index=seq_ids, columns=seq_ids)
 
     return df
 
@@ -317,7 +313,7 @@ def kmer_distance(seq1: str, seq2: str, k: int = 3) -> float:
 
     def get_kmer_counts(seq: str, k: int) -> Counter:
         """Get k-mer counts for a sequence."""
-        return Counter(seq[i:i+k] for i in range(len(seq) - k + 1))
+        return Counter(seq[i : i + k] for i in range(len(seq) - k + 1))
 
     if len(seq1) < k or len(seq2) < k:
         return 1.0  # Maximum distance for very short sequences
@@ -330,8 +326,8 @@ def kmer_distance(seq1: str, seq2: str, k: int = 3) -> float:
 
     # Calculate cosine similarity
     dot_product = sum(counts1.get(kmer, 0) * counts2.get(kmer, 0) for kmer in all_kmers)
-    norm1 = math.sqrt(sum(count ** 2 for count in counts1.values()))
-    norm2 = math.sqrt(sum(count ** 2 for count in counts2.values()))
+    norm1 = math.sqrt(sum(count**2 for count in counts1.values()))
+    norm2 = math.sqrt(sum(count**2 for count in counts2.values()))
 
     if norm1 == 0 or norm2 == 0:
         return 1.0
@@ -386,16 +382,16 @@ def tamura_nei_distance(seq1: str, seq2: str, kappa: float = 2.0) -> float:
     transversions = 0
     total_sites = 0
 
-    transition_pairs = {('A', 'G'), ('G', 'A'), ('C', 'T'), ('T', 'C')}
+    transition_pairs = {("A", "G"), ("G", "A"), ("C", "T"), ("T", "C")}
 
     # Count GC content for transversion rate calculation
     gc_count = 0
 
     for a, b in zip(seq1.upper(), seq2.upper()):
-        if a not in 'ATCG' or b not in 'ATCG':
+        if a not in "ATCG" or b not in "ATCG":
             raise ValueError(f"Invalid nucleotide: {a} or {b}")
 
-        if a == 'G' or a == 'C':
+        if a == "G" or a == "C":
             gc_count += 1
 
         if a != b:
@@ -421,20 +417,20 @@ def tamura_nei_distance(seq1: str, seq2: str, kappa: float = 2.0) -> float:
     # more complex parameter estimation
 
     if P + Q >= 1.0:
-        return float('inf')
+        return float("inf")
 
     # Simplified Tamura-Nei (using kappa for transition bias)
     try:
-        term1 = -kappa * math.log(1 - P/kappa - Q)
-        term2 = -(1/kappa) * math.log(1 - Q)
+        term1 = -kappa * math.log(1 - P / kappa - Q)
+        term2 = -(1 / kappa) * math.log(1 - Q)
 
         if term1 < 0 or term2 < 0:
-            return float('inf')
+            return float("inf")
 
         distance = term1 + term2
         return distance
     except (ValueError, ZeroDivisionError):
-        return float('inf')
+        return float("inf")
 
 
 def kmer_distance_matrix(sequences: Dict[str, str], k: int = 3) -> pd.DataFrame:
@@ -470,7 +466,7 @@ def kmer_distance_matrix(sequences: Dict[str, str], k: int = 3) -> pd.DataFrame:
             try:
                 distance = kmer_distance(seq1, seq2, k)
                 # Handle infinite distances
-                if distance == float('inf'):
+                if distance == float("inf"):
                     distance = np.nan
             except (ValueError, ZeroDivisionError):
                 distance = np.nan
@@ -479,11 +475,7 @@ def kmer_distance_matrix(sequences: Dict[str, str], k: int = 3) -> pd.DataFrame:
             distance_matrix_array[j, i] = distance  # Symmetric matrix
 
     # Create pandas DataFrame
-    df = pd.DataFrame(
-        distance_matrix_array,
-        index=seq_ids,
-        columns=seq_ids
-    )
+    df = pd.DataFrame(distance_matrix_array, index=seq_ids, columns=seq_ids)
 
     return df
 
@@ -531,13 +523,6 @@ def sequence_identity_matrix(sequences: Dict[str, str]) -> pd.DataFrame:
         identity_matrix_array[i, i] = 1.0
 
     # Create pandas DataFrame
-    df = pd.DataFrame(
-        identity_matrix_array,
-        index=seq_ids,
-        columns=seq_ids
-    )
+    df = pd.DataFrame(identity_matrix_array, index=seq_ids, columns=seq_ids)
 
     return df
-
-
-

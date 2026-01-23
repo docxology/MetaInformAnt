@@ -260,9 +260,7 @@ def validate_environment() -> Dict[str, Any]:
     recommendations = []
 
     if not deps["virtual_env"][0]:
-        recommendations.append(
-            "Virtual environment recommended: python -m venv .venv && source .venv/bin/activate"
-        )
+        recommendations.append("Virtual environment recommended: python -m venv .venv && source .venv/bin/activate")
 
     if not deps["amalgkit"][0]:
         recommendations.append("Install amalgkit: uv pip install amalgkit")

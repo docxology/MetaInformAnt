@@ -69,7 +69,6 @@ __all__ = [
     "community",
     "BiologicalNetwork",
     "centrality_measures",
-
     # Biological network types
     "ppi",
     "pathway",
@@ -85,6 +84,3 @@ __all__ = [
     "network_enrichment_analysis",
     "predict_interactions",
 ]
-
-
-

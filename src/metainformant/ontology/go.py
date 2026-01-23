@@ -34,14 +34,14 @@ def count_go_scripts(go_dir: Path) -> int:
     """
     go_dir = validation.validate_path_is_dir(go_dir)
 
-    script_extensions = ['.py', '.r', '.sh', '.pl']
+    script_extensions = [".py", ".r", ".sh", ".pl"]
     go_files = []
 
     for ext in script_extensions:
-        go_files.extend(paths.find_files_by_extension(go_dir, ext.lstrip('.')))
+        go_files.extend(paths.find_files_by_extension(go_dir, ext.lstrip(".")))
 
     # Filter for GO-related files
-    go_related = [f for f in go_files if 'go' in f.name.lower() or 'ontology' in f.name.lower()]
+    go_related = [f for f in go_files if "go" in f.name.lower() or "ontology" in f.name.lower()]
 
     logger.info(f"Found {len(go_related)} GO-related scripts in {go_dir}")
     return len(go_related)
@@ -68,7 +68,7 @@ def load_go_obo(path: str | Path) -> Ontology:
     ontology = parse_obo(path)
 
     # Validate it's a GO ontology
-    if not any('Gene Ontology' in str(value) for value in ontology.metadata.values()):
+    if not any("Gene Ontology" in str(value) for value in ontology.metadata.values()):
         logger.warning("Loaded ontology may not be Gene Ontology - missing GO metadata")
 
     logger.info(f"Loaded GO ontology with {len(ontology)} terms")
@@ -169,7 +169,7 @@ def validate_go_ontology(onto: Ontology) -> tuple[bool, List[str]]:
     issues = []
 
     # Check for required namespaces
-    required_namespaces = {'biological_process', 'molecular_function', 'cellular_component'}
+    required_namespaces = {"biological_process", "molecular_function", "cellular_component"}
     found_namespaces = set()
 
     for term in onto.terms.values():
@@ -190,7 +190,7 @@ def validate_go_ontology(onto: Ontology) -> tuple[bool, List[str]]:
         issues.append("No relationships found in ontology")
 
     # Check for GO ID format
-    go_id_pattern = re.compile(r'GO:\d{7}')
+    go_id_pattern = re.compile(r"GO:\d{7}")
     invalid_ids = []
 
     for term_id in onto.terms.keys():
@@ -227,7 +227,7 @@ def enrich_genes(
     background: List[str] | None,
     annotations: Dict[str, Set[str]],
     alpha: float = 0.05,
-    method: str = "fisher"
+    method: str = "fisher",
 ) -> pd.DataFrame:
     """Perform Gene Ontology enrichment analysis.
 
@@ -257,7 +257,7 @@ def enrich_genes(
     validation.validate_not_empty(genes, "genes")
     validation.validate_not_none(annotations, "annotations")
 
-    if method not in ['fisher', 'hypergeometric']:
+    if method not in ["fisher", "hypergeometric"]:
         raise ValueError(f"Unsupported method: {method}. Use 'fisher' or 'hypergeometric'.")
 
     # Prepare background
@@ -303,41 +303,40 @@ def enrich_genes(
             continue
 
         # Calculate enrichment
-        if method == 'fisher':
+        if method == "fisher":
             p_value = _fisher_exact_test(
-                in_query_and_term, in_query_not_term,
-                not_in_query_and_term, not_in_query_not_term
+                in_query_and_term, in_query_not_term, not_in_query_and_term, not_in_query_not_term
             )
         else:  # hypergeometric
-            p_value = _hypergeometric_test(
-                in_query_and_term, len(annotated_set), len(gene_set), len(background_set)
-            )
+            p_value = _hypergeometric_test(in_query_and_term, len(annotated_set), len(gene_set), len(background_set))
 
         # Calculate enrichment ratio
         expected = (len(annotated_set) * len(gene_set)) / len(background_set)
-        enrichment = in_query_and_term / expected if expected > 0 else float('inf')
+        enrichment = in_query_and_term / expected if expected > 0 else float("inf")
 
-        results.append({
-            'go_term': go_term,
-            'p_value': p_value,
-            'enrichment': enrichment,
-            'observed': in_query_and_term,
-            'expected': expected,
-            'term_size': len(annotated_set),
-            'query_size': len(gene_set)
-        })
+        results.append(
+            {
+                "go_term": go_term,
+                "p_value": p_value,
+                "enrichment": enrichment,
+                "observed": in_query_and_term,
+                "expected": expected,
+                "term_size": len(annotated_set),
+                "query_size": len(gene_set),
+            }
+        )
 
     # Convert to DataFrame and sort
     df = pd.DataFrame(results)
     if len(df) > 0:
-        df = df.sort_values('p_value')
+        df = df.sort_values("p_value")
 
         # Apply multiple testing correction (Bonferroni)
-        df['bonferroni_p'] = df['p_value'] * len(df)
-        df['bonferroni_p'] = df['bonferroni_p'].clip(upper=1.0)
+        df["bonferroni_p"] = df["p_value"] * len(df)
+        df["bonferroni_p"] = df["bonferroni_p"].clip(upper=1.0)
 
         # Filter by significance
-        significant = df[df['bonferroni_p'] <= alpha].copy()
+        significant = df[df["bonferroni_p"] <= alpha].copy()
         logger.info(f"Found {len(significant)} significantly enriched GO terms (alpha={alpha})")
     else:
         logger.warning("No enrichment results generated")
@@ -346,11 +345,7 @@ def enrich_genes(
 
 
 def semantic_similarity(
-    term1: str,
-    term2: str,
-    term_ic: Dict[str, float],
-    hierarchy: Dict[str, Set[str]],
-    method: str = "resnik"
+    term1: str, term2: str, term_ic: Dict[str, float], hierarchy: Dict[str, Set[str]], method: str = "resnik"
 ) -> float:
     """Calculate semantic similarity between two GO terms.
 
@@ -375,7 +370,7 @@ def semantic_similarity(
         ...     method="resnik"
         ... )
     """
-    if method not in ['resnik', 'lin', 'jiang-conrath']:
+    if method not in ["resnik", "lin", "jiang-conrath"]:
         raise ValueError(f"Unsupported method: {method}")
 
     if term1 not in term_ic or term2 not in term_ic:
@@ -395,11 +390,11 @@ def semantic_similarity(
     mica = max(common_ancestors, key=lambda x: term_ic.get(x, 0.0))
     mica_ic = term_ic.get(mica, 0.0)
 
-    if method == 'resnik':
+    if method == "resnik":
         # Resnik similarity: IC of MICA
         similarity = mica_ic
 
-    elif method == 'lin':
+    elif method == "lin":
         # Lin similarity: 2 * IC(MICA) / (IC(term1) + IC(term2))
         ic1 = term_ic[term1]
         ic2 = term_ic[term2]
@@ -428,7 +423,8 @@ def _fisher_exact_test(a: int, b: int, c: int, d: int) -> float:
     # Simplified implementation - in practice, would use scipy.stats.fisher_exact
     try:
         from scipy.stats import fisher_exact
-        _, p_value = fisher_exact([[a, b], [c, d]], alternative='greater')
+
+        _, p_value = fisher_exact([[a, b], [c, d]], alternative="greater")
         return p_value
     except ImportError:
         # Fallback calculation using hypergeometric distribution
@@ -439,17 +435,27 @@ def _hypergeometric_test(k: int, K: int, n: int, N: int) -> float:
     """Calculate hypergeometric test p-value."""
     try:
         from scipy.stats import hypergeom
+
         # P(X >= k) where X ~ Hypergeometric(N, K, n)
         p_value = hypergeom.sf(k - 1, N, K, n)
         return p_value
     except ImportError:
         # Very simplified approximation
         from math import exp, lgamma
+
         try:
             # Log probability calculation
-            log_p = (lgamma(K + 1) + lgamma(N - K + 1) + lgamma(n + 1) + lgamma(N - n + 1) -
-                    lgamma(N + 1) - lgamma(k + 1) - lgamma(K - k + 1) -
-                    lgamma(n - k + 1) - lgamma(N - K - n + k + 1))
+            log_p = (
+                lgamma(K + 1)
+                + lgamma(N - K + 1)
+                + lgamma(n + 1)
+                + lgamma(N - n + 1)
+                - lgamma(N + 1)
+                - lgamma(k + 1)
+                - lgamma(K - k + 1)
+                - lgamma(n - k + 1)
+                - lgamma(N - K - n + k + 1)
+            )
             return min(1.0, exp(log_p))
         except (ValueError, OverflowError):
             return 1.0  # Conservative fallback
@@ -511,9 +517,3 @@ def build_hierarchy_dict(onto: Ontology) -> Dict[str, Set[str]]:
 
 # Import re at module level for GO ID validation
 import re
-
-
-
-
-
-

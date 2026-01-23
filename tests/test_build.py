@@ -25,14 +25,15 @@ class TestBuildArtifacts:
     def test_package_can_be_imported(self):
         """Test that the package can be imported after installation."""
         # This tests the installed package
-        assert hasattr(metainformant, '__version__')
+        assert hasattr(metainformant, "__version__")
         assert isinstance(metainformant.__version__, str)
-        assert len(metainformant.__version__.split('.')) >= 2
+        assert len(metainformant.__version__.split(".")) >= 2
 
     def test_core_modules_importable(self):
         """Test that core modules can be imported."""
         try:
             from metainformant.core import io, paths, logging, config
+
             assert True  # Import successful
         except ImportError as e:
             pytest.fail(f"Core module import failed: {e}")
@@ -40,28 +41,28 @@ class TestBuildArtifacts:
     def test_domain_modules_importable(self):
         """Test that domain modules can be imported."""
         domains_to_test = [
-            'dna.sequence',
-            'rna.analysis',
-            'protein.structure',
-            'gwas.analysis',
-            'epigenome.analysis',
-            'ontology.go',
-            'phenotype.analysis',
-            'ecology.analysis',
-            'math.population_genetics',
-            'ml.models',
-            'networks.analysis',
-            'singlecell.analysis',
-            'quality.analysis',
-            'visualization.plots',
-            'simulation.models',
-            'life_events.analysis'
+            "dna.sequence",
+            "rna.analysis",
+            "protein.structure",
+            "gwas.analysis",
+            "epigenome.analysis",
+            "ontology.go",
+            "phenotype.analysis",
+            "ecology.analysis",
+            "math.population_genetics",
+            "ml.models",
+            "networks.analysis",
+            "singlecell.analysis",
+            "quality.analysis",
+            "visualization.plots",
+            "simulation.models",
+            "life_events.analysis",
         ]
 
         failed_imports = []
         for module in domains_to_test:
             try:
-                __import__(f'metainformant.{module}')
+                __import__(f"metainformant.{module}")
             except ImportError as e:
                 failed_imports.append(f"{module}: {e}")
 
@@ -72,13 +73,10 @@ class TestBuildArtifacts:
         """Test that CLI command is available."""
         try:
             result = subprocess.run(
-                [sys.executable, '-m', 'metainformant', '--help'],
-                capture_output=True,
-                text=True,
-                timeout=10
+                [sys.executable, "-m", "metainformant", "--help"], capture_output=True, text=True, timeout=10
             )
             assert result.returncode == 0
-            assert 'metainformant' in result.stdout.lower()
+            assert "metainformant" in result.stdout.lower()
         except (subprocess.TimeoutExpired, FileNotFoundError):
             pytest.fail("CLI command not available or timed out")
 
@@ -95,23 +93,25 @@ class TestPackageStructure:
         pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
         assert pyproject_path.exists(), "pyproject.toml not found"
 
-        with open(pyproject_path, 'r') as f:
+        with open(pyproject_path, "r") as f:
             content = f.read()
 
         # Extract version from pyproject.toml
         import re
+
         version_match = re.search(r'version = "([^"]+)"', content)
         assert version_match, "Version not found in pyproject.toml"
 
         pyproject_version = version_match.group(1)
-        assert package_version == pyproject_version, \
-            f"Version mismatch: package={package_version}, pyproject={pyproject_version}"
+        assert (
+            package_version == pyproject_version
+        ), f"Version mismatch: package={package_version}, pyproject={pyproject_version}"
 
     def test_package_metadata(self):
         """Test package metadata is accessible."""
         # Test that we can import and access basic metadata
-        assert hasattr(metainformant, '__version__')
-        assert hasattr(metainformant, '__doc__')
+        assert hasattr(metainformant, "__version__")
+        assert hasattr(metainformant, "__doc__")
         assert metainformant.__doc__ is not None
 
 
@@ -161,6 +161,7 @@ class TestDocumentationBuild:
 
         # Try to import the configuration (basic syntax check)
         import importlib.util
+
         spec = importlib.util.spec_from_file_location("conf", conf_py)
         assert spec is not None, "Cannot load Sphinx configuration"
 
@@ -183,11 +184,11 @@ print("Core import successful")
 """
 
         result = subprocess.run(
-            [sys.executable, '-c', test_code],
+            [sys.executable, "-c", test_code],
             cwd=Path(__file__).parent.parent,
             capture_output=True,
             text=True,
-            timeout=30
+            timeout=30,
         )
 
         assert result.returncode == 0, f"Import test failed: {result.stderr}"
@@ -204,12 +205,12 @@ class TestEntryPoints:
         pyproject_path = Path(__file__).parent.parent / "pyproject.toml"
         assert pyproject_path.exists()
 
-        with open(pyproject_path, 'r') as f:
+        with open(pyproject_path, "r") as f:
             content = f.read()
 
         # Check for entry points section
-        assert '[project.scripts]' in content, "Entry points not defined in pyproject.toml"
-        assert 'metainformant =' in content, "metainformant entry point not found"
+        assert "[project.scripts]" in content, "Entry points not defined in pyproject.toml"
+        assert "metainformant =" in content, "metainformant entry point not found"
 
     def test_entry_point_functionality(self):
         """Test that entry points work correctly."""
@@ -219,10 +220,7 @@ class TestEntryPoints:
 
         # Test that the entry point can be executed
         result = subprocess.run(
-            [sys.executable, '-m', 'metainformant', '--version'],
-            capture_output=True,
-            text=True,
-            timeout=10
+            [sys.executable, "-m", "metainformant", "--version"], capture_output=True, text=True, timeout=10
         )
 
         assert result.returncode == 0, f"Entry point failed: {result.stderr}"
@@ -252,19 +250,12 @@ class TestBuiltPackage:
             venv_dir = Path(temp_dir) / "test_venv"
 
             # Create virtual environment
-            subprocess.run(
-                [sys.executable, '-m', 'venv', str(venv_dir)],
-                check=True,
-                capture_output=True
-            )
+            subprocess.run([sys.executable, "-m", "venv", str(venv_dir)], check=True, capture_output=True)
 
             # Install package
             pip_path = venv_dir / "bin" / "pip"
             result = subprocess.run(
-                [str(pip_path), 'install', str(built_package)],
-                capture_output=True,
-                text=True,
-                cwd=temp_dir
+                [str(pip_path), "install", str(built_package)], capture_output=True, text=True, cwd=temp_dir
             )
 
             assert result.returncode == 0, f"Installation failed: {result.stderr}"
@@ -272,10 +263,10 @@ class TestBuiltPackage:
             # Test import in the virtual environment
             python_path = venv_dir / "bin" / "python"
             test_result = subprocess.run(
-                [str(python_path), '-c', 'import metainformant; print("Import successful")'],
+                [str(python_path), "-c", 'import metainformant; print("Import successful")'],
                 capture_output=True,
                 text=True,
-                cwd=temp_dir
+                cwd=temp_dir,
             )
 
             assert test_result.returncode == 0, f"Import failed: {test_result.stderr}"
@@ -285,16 +276,16 @@ class TestBuiltPackage:
         """Test that wheel contains proper metadata."""
         import zipfile
 
-        with zipfile.ZipFile(built_package, 'r') as zf:
+        with zipfile.ZipFile(built_package, "r") as zf:
             # Look for METADATA file
-            metadata_files = [name for name in zf.namelist() if name.endswith('METADATA')]
+            metadata_files = [name for name in zf.namelist() if name.endswith("METADATA")]
             assert len(metadata_files) > 0, "No METADATA file found in wheel"
 
             # Read metadata
             with zf.open(metadata_files[0]) as f:
-                metadata = f.read().decode('utf-8')
+                metadata = f.read().decode("utf-8")
 
             # Check for required fields
-            assert 'Name: metainformant' in metadata
-            assert f'Version: {metainformant.__version__}' in metadata
-            assert 'Summary:' in metadata
+            assert "Name: metainformant" in metadata
+            assert f"Version: {metainformant.__version__}" in metadata
+            assert "Summary:" in metadata

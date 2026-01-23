@@ -18,13 +18,19 @@ logger = get_logger(__name__)
 try:
     from sklearn.base import BaseEstimator
     from sklearn.feature_selection import (
-        SelectKBest, SelectPercentile, SelectFdr, SelectFpr,
-        RFE, RFECV, SelectFromModel
+        SelectKBest,
+        SelectPercentile,
+        SelectFdr,
+        SelectFpr,
+        RFE,
+        RFECV,
+        SelectFromModel,
     )
     from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
     from sklearn.linear_model import Lasso, LogisticRegression
     from sklearn.preprocessing import StandardScaler
     from sklearn.model_selection import cross_val_score, StratifiedKFold
+
     HAS_SKLEARN = True
 except ImportError:
     HAS_SKLEARN = False
@@ -32,11 +38,7 @@ except ImportError:
 
 
 def select_features_univariate(
-    X: np.ndarray,
-    y: np.ndarray,
-    method: str = "f_classif",
-    k: int | str = "all",
-    **kwargs: Any
+    X: np.ndarray, y: np.ndarray, method: str = "f_classif", k: int | str = "all", **kwargs: Any
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Select features using univariate statistical tests.
 
@@ -65,18 +67,23 @@ def select_features_univariate(
     # Import statistical tests
     if method == "f_classif":
         from sklearn.feature_selection import f_classif
+
         score_func = f_classif
     elif method == "chi2":
         from sklearn.feature_selection import chi2
+
         score_func = chi2
     elif method == "mutual_info_classif":
         from sklearn.feature_selection import mutual_info_classif
+
         score_func = mutual_info_classif
     elif method == "f_regression":
         from sklearn.feature_selection import f_regression
+
         score_func = f_regression
     elif method == "mutual_info_regression":
         from sklearn.feature_selection import mutual_info_regression
+
         score_func = mutual_info_regression
     else:
         raise ValueError(f"Unknown univariate method: {method}")
@@ -86,7 +93,7 @@ def select_features_univariate(
         selector = SelectKBest(score_func=score_func, k="all", **kwargs)
     elif isinstance(k, int):
         selector = SelectKBest(score_func=score_func, k=k, **kwargs)
-    elif isinstance(k, str) and k.endswith('%'):
+    elif isinstance(k, str) and k.endswith("%"):
         # Percentage-based selection
         percentile = int(k[:-1])
         selector = SelectPercentile(score_func=score_func, percentile=percentile, **kwargs)
@@ -97,10 +104,7 @@ def select_features_univariate(
     X_selected = selector.fit_transform(X, y)
     selected_indices = selector.get_support(indices=True)
 
-    logger.info(
-        f"Selected {len(selected_indices)} features using {method} "
-        f"(k={k} from {X.shape[1]} total)"
-    )
+    logger.info(f"Selected {len(selected_indices)} features using {method} " f"(k={k} from {X.shape[1]} total)")
 
     return X_selected, selected_indices
 
@@ -112,7 +116,7 @@ def select_features_recursive(
     n_features_to_select: int | None = None,
     step: float = 0.1,
     cv: int = 5,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Select features using recursive elimination.
 
@@ -140,29 +144,15 @@ def select_features_recursive(
 
     # Use RFECV if no specific number requested
     if n_features_to_select is None:
-        selector = RFECV(
-            estimator=estimator,
-            step=step,
-            cv=cv,
-            min_features_to_select=1,
-            **kwargs
-        )
+        selector = RFECV(estimator=estimator, step=step, cv=cv, min_features_to_select=1, **kwargs)
     else:
-        selector = RFE(
-            estimator=estimator,
-            n_features_to_select=n_features_to_select,
-            step=step,
-            **kwargs
-        )
+        selector = RFE(estimator=estimator, n_features_to_select=n_features_to_select, step=step, **kwargs)
 
     # Fit and transform
     X_selected = selector.fit_transform(X, y)
     selected_indices = selector.get_support(indices=True)
 
-    logger.info(
-        f"Selected {len(selected_indices)} features using recursive elimination "
-        f"(from {X.shape[1]} total)"
-    )
+    logger.info(f"Selected {len(selected_indices)} features using recursive elimination " f"(from {X.shape[1]} total)")
 
     return X_selected, selected_indices
 
@@ -174,7 +164,7 @@ def select_features_stability(
     n_bootstraps: int = 100,
     threshold: float = 0.5,
     random_state: int | None = None,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Select features using stability-based selection.
 
@@ -216,27 +206,14 @@ def select_features_stability(
             # Apply base selection method
             if method == "rf":
                 selector = SelectFromModel(
-                    RandomForestClassifier(
-                        n_estimators=50,
-                        random_state=random_state,
-                        **kwargs
-                    ),
-                    threshold="median"
+                    RandomForestClassifier(n_estimators=50, random_state=random_state, **kwargs), threshold="median"
                 )
             elif method == "lasso":
                 selector = SelectFromModel(
-                    LogisticRegression(
-                        penalty='l1',
-                        solver='liblinear',
-                        random_state=random_state,
-                        **kwargs
-                    )
+                    LogisticRegression(penalty="l1", solver="liblinear", random_state=random_state, **kwargs)
                 )
             elif method == "univariate":
-                selector = SelectKBest(
-                    k=int(n_features * 0.5),  # Select 50% in each iteration
-                    **kwargs
-                )
+                selector = SelectKBest(k=int(n_features * 0.5), **kwargs)  # Select 50% in each iteration
             else:
                 raise ValueError(f"Unknown stability method: {method}")
 
@@ -256,19 +233,14 @@ def select_features_stability(
     X_selected = X[:, selected_indices]
 
     logger.info(
-        f"Selected {len(selected_indices)} stable features "
-        f"(threshold={threshold}, bootstraps={n_bootstraps})"
+        f"Selected {len(selected_indices)} stable features " f"(threshold={threshold}, bootstraps={n_bootstraps})"
     )
 
     return X_selected, selected_indices
 
 
 def biological_feature_ranking(
-    X: np.ndarray,
-    y: np.ndarray,
-    feature_names: List[str] | None = None,
-    method: str = "importance",
-    **kwargs: Any
+    X: np.ndarray, y: np.ndarray, feature_names: List[str] | None = None, method: str = "importance", **kwargs: Any
 ) -> Dict[str, Any]:
     """Rank features for biological interpretation.
 
@@ -292,45 +264,38 @@ def biological_feature_ranking(
         feature_names = [f"feature_{i}" for i in range(X.shape[1])]
 
     results = {
-        'method': method,
-        'n_features': X.shape[1],
-        'feature_names': feature_names,
+        "method": method,
+        "n_features": X.shape[1],
+        "feature_names": feature_names,
     }
 
     if method == "importance":
         # Use Random Forest feature importance
-        rf = RandomForestClassifier(
-            n_estimators=100,
-            random_state=42,
-            **kwargs
-        )
+        rf = RandomForestClassifier(n_estimators=100, random_state=42, **kwargs)
         rf.fit(X, y)
 
         importances = rf.feature_importances_
         sorted_indices = np.argsort(importances)[::-1]
 
-        results['rankings'] = [
-            {
-                'feature': feature_names[i],
-                'importance': float(importances[i]),
-                'rank': rank + 1
-            }
+        results["rankings"] = [
+            {"feature": feature_names[i], "importance": float(importances[i]), "rank": rank + 1}
             for rank, i in enumerate(sorted_indices)
         ]
 
     elif method == "univariate":
         # Use F-test for classification
         from sklearn.feature_selection import f_classif
+
         f_scores, p_values = f_classif(X, y)
 
         sorted_indices = np.argsort(f_scores)[::-1]
 
-        results['rankings'] = [
+        results["rankings"] = [
             {
-                'feature': feature_names[i],
-                'f_score': float(f_scores[i]),
-                'p_value': float(p_values[i]),
-                'rank': rank + 1
+                "feature": feature_names[i],
+                "f_score": float(f_scores[i]),
+                "p_value": float(p_values[i]),
+                "rank": rank + 1,
             }
             for rank, i in enumerate(sorted_indices)
         ]
@@ -339,13 +304,8 @@ def biological_feature_ranking(
         # Use stability selection
         _, selected_indices = select_features_stability(X, y, **kwargs)
 
-        results['rankings'] = [
-            {
-                'feature': feature_names[i],
-                'selected': True,
-                'rank': rank + 1
-            }
-            for rank, i in enumerate(selected_indices)
+        results["rankings"] = [
+            {"feature": feature_names[i], "selected": True, "rank": rank + 1} for rank, i in enumerate(selected_indices)
         ]
 
     else:
@@ -356,11 +316,7 @@ def biological_feature_ranking(
 
 
 def select_features_biological(
-    X: np.ndarray,
-    y: np.ndarray,
-    methods: List[str] = None,
-    feature_names: List[str] | None = None,
-    **kwargs: Any
+    X: np.ndarray, y: np.ndarray, methods: List[str] = None, feature_names: List[str] | None = None, **kwargs: Any
 ) -> Dict[str, Any]:
     """Comprehensive biological feature selection.
 
@@ -378,70 +334,64 @@ def select_features_biological(
         Dictionary with selection results from all methods
     """
     if methods is None:
-        methods = ['univariate', 'recursive', 'stability']
+        methods = ["univariate", "recursive", "stability"]
 
     if feature_names is None:
         feature_names = [f"feature_{i}" for i in range(X.shape[1])]
 
     results = {
-        'input_shape': X.shape,
-        'methods': {},
-        'consensus': {},
+        "input_shape": X.shape,
+        "methods": {},
+        "consensus": {},
     }
 
     # Apply each method
     for method in methods:
         try:
-            if method == 'univariate':
-                X_sel, indices = select_features_univariate(
-                    X, y, k='all', **kwargs.get('univariate', {})
-                )
+            if method == "univariate":
+                X_sel, indices = select_features_univariate(X, y, k="all", **kwargs.get("univariate", {}))
                 selected_features = [feature_names[i] for i in indices]
 
-            elif method == 'recursive':
-                X_sel, indices = select_features_recursive(
-                    X, y, **kwargs.get('recursive', {})
-                )
+            elif method == "recursive":
+                X_sel, indices = select_features_recursive(X, y, **kwargs.get("recursive", {}))
                 selected_features = [feature_names[i] for i in indices]
 
-            elif method == 'stability':
-                X_sel, indices = select_features_stability(
-                    X, y, **kwargs.get('stability', {})
-                )
+            elif method == "stability":
+                X_sel, indices = select_features_stability(X, y, **kwargs.get("stability", {}))
                 selected_features = [feature_names[i] for i in indices]
 
             else:
                 raise ValueError(f"Unknown method: {method}")
 
-            results['methods'][method] = {
-                'selected_features': selected_features,
-                'n_selected': len(selected_features),
-                'selected_indices': indices.tolist(),
+            results["methods"][method] = {
+                "selected_features": selected_features,
+                "n_selected": len(selected_features),
+                "selected_indices": indices.tolist(),
             }
 
         except Exception as e:
             logger.error(f"Feature selection method {method} failed: {e}")
-            results['methods'][method] = {'error': str(e)}
+            results["methods"][method] = {"error": str(e)}
 
     # Calculate consensus (features selected by multiple methods)
     if len(methods) > 1:
         all_selected = []
-        for method_result in results['methods'].values():
-            if 'selected_features' in method_result:
-                all_selected.extend(method_result['selected_features'])
+        for method_result in results["methods"].values():
+            if "selected_features" in method_result:
+                all_selected.extend(method_result["selected_features"])
 
         from collections import Counter
+
         consensus_counts = Counter(all_selected)
 
         consensus_features = [
-            feature for feature, count in consensus_counts.items()
-            if count >= 2  # Selected by at least 2 methods
+            feature for feature, count in consensus_counts.items() if count >= 2  # Selected by at least 2 methods
         ]
 
-        results['consensus'] = {
-            'features': consensus_features,
-            'n_features': len(consensus_features),
-            'selection_counts': dict(consensus_counts),
+        results["consensus"] = {
+            "features": consensus_features,
+            "n_features": len(consensus_features),
+            "selection_counts": dict(consensus_counts),
         }
 
     return results
@@ -472,26 +422,17 @@ def evaluate_feature_selection(
     X_selected = X[:, selected_indices]
 
     # Train classifier on selected features
-    clf = RandomForestClassifier(
-        n_estimators=100,
-        random_state=random_state
-    )
+    clf = RandomForestClassifier(n_estimators=100, random_state=random_state)
 
     # Cross-validation
     cv = StratifiedKFold(n_splits=cv_folds, shuffle=True, random_state=random_state)
-    scores = cross_val_score(clf, X_selected, y, cv=cv, scoring='accuracy')
+    scores = cross_val_score(clf, X_selected, y, cv=cv, scoring="accuracy")
 
     return {
-        'n_features_selected': len(selected_indices),
-        'n_features_total': X.shape[1],
-        'selection_ratio': len(selected_indices) / X.shape[1],
-        'cv_accuracy_mean': float(scores.mean()),
-        'cv_accuracy_std': float(scores.std()),
-        'cv_scores': scores.tolist(),
+        "n_features_selected": len(selected_indices),
+        "n_features_total": X.shape[1],
+        "selection_ratio": len(selected_indices) / X.shape[1],
+        "cv_accuracy_mean": float(scores.mean()),
+        "cv_accuracy_std": float(scores.std()),
+        "cv_scores": scores.tolist(),
     }
-
-
-
-
-
-

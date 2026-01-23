@@ -48,12 +48,7 @@ def test_plot_event_embeddings(tmp_path):
     embeddings = learn_event_embeddings(sequences, embedding_dim=50, random_state=42)
 
     output_path = tmp_path / "embeddings.png"
-    fig = plot_event_embeddings(
-        embeddings,
-        method="pca",
-        n_components=2,
-        output_path=output_path
-    )
+    fig = plot_event_embeddings(embeddings, method="pca", n_components=2, output_path=output_path)
 
     assert fig is not None
     assert output_path.exists()
@@ -74,12 +69,7 @@ def test_plot_event_embeddings_3d(tmp_path):
     embeddings = learn_event_embeddings(sequences, embedding_dim=50, random_state=42)
 
     output_path = tmp_path / "embeddings_3d.png"
-    fig = plot_event_embeddings(
-        embeddings,
-        method="pca",
-        n_components=3,
-        output_path=output_path
-    )
+    fig = plot_event_embeddings(embeddings, method="pca", n_components=3, output_path=output_path)
 
     assert fig is not None
 
@@ -91,20 +81,18 @@ def test_plot_attention_heatmap(tmp_path):
     except ImportError:
         pytest.skip("Visualization functions require matplotlib")
 
-    attention_weights = np.array([
-        [0.5, 0.3, 0.2],
-        [0.3, 0.4, 0.3],
-        [0.2, 0.3, 0.5],
-    ])
+    attention_weights = np.array(
+        [
+            [0.5, 0.3, 0.2],
+            [0.3, 0.4, 0.3],
+            [0.2, 0.3, 0.5],
+        ]
+    )
 
     event_tokens = ["health:diagnosis", "occupation:job_change", "education:degree"]
 
     output_path = tmp_path / "attention.png"
-    fig = plot_attention_heatmap(
-        attention_weights,
-        event_tokens,
-        output_path=output_path
-    )
+    fig = plot_attention_heatmap(attention_weights, event_tokens, output_path=output_path)
 
     assert fig is not None
     assert output_path.exists()
@@ -125,11 +113,7 @@ def test_plot_prediction_importance(tmp_path):
     }
 
     output_path = tmp_path / "importance.png"
-    fig = plot_prediction_importance(
-        importance,
-        top_n=3,
-        output_path=output_path
-    )
+    fig = plot_prediction_importance(importance, top_n=3, output_path=output_path)
 
     assert fig is not None
     assert output_path.exists()
@@ -146,4 +130,3 @@ def test_plot_prediction_importance_empty():
 
     fig = plot_prediction_importance(importance, top_n=10)
     assert fig is not None
-

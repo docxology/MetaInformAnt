@@ -8,11 +8,11 @@ differential expression analysis, and multi-species comparative studies.
 from __future__ import annotations
 
 # Import subpackages
-from . import core        # Base configs and utils
-from . import analysis    # Analysis modules
-from . import amalgkit    # Amalgkit integration
-from . import engine      # Orchestration engine (depends on others)
-from . import steps       # Step runners shim
+from . import core  # Base configs and utils
+from . import analysis  # Analysis modules
+from . import amalgkit  # Amalgkit integration
+from . import engine  # Orchestration engine (depends on others)
+from . import steps  # Step runners shim
 
 # Import modules from subpackages for backward compatibility
 from .core import (
@@ -58,33 +58,27 @@ __all__ = [
     "analysis",
     "core",
     "engine",
-
     # Core workflow management
     "workflow",
     "orchestration",
     "pipeline",
     "monitoring",
     "progress_tracker",
-
     # Amalgkit integration
     "amalgkit_module",
-
     # Configuration and setup
     "configs",
-
     # Environment and discovery
     "discovery",
     "environment",
     "validate_environment",
     "genome_prep",
     "protein_integration",
-
     # Utilities
     "cleanup",
     "deps",
     "metadata_filter",
     "validation",
-
     # Direct exports
     "RNAPipelineConfig",
     "AmalgkitRunLayout",
@@ -93,4 +87,3 @@ __all__ = [
     "AmalgkitWorkflowConfig",
     "steps",
 ]
-

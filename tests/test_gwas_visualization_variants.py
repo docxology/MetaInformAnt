@@ -19,9 +19,7 @@ from metainformant.gwas.visualization.visualization_variants import (
 def test_maf_distribution(tmp_path: Path) -> None:
     """Test MAF distribution plot."""
     # Create sample GWAS results with MAF data
-    results = [
-        {"MAF": maf} for maf in np.random.beta(2, 5, 100)
-    ]
+    results = [{"MAF": maf} for maf in np.random.beta(2, 5, 100)]
 
     output_path = tmp_path / "maf_dist.png"
     result = maf_distribution(results, output_path)
@@ -53,9 +51,7 @@ def test_variant_density_plot(tmp_path: Path) -> None:
 def test_hwe_deviation_plot(tmp_path: Path) -> None:
     """Test HWE deviation plot."""
     # Create sample GWAS results with HWE p-values
-    results = [
-        {"HWE_P": hwe_p} for hwe_p in np.random.uniform(0, 1, 100)
-    ]
+    results = [{"HWE_P": hwe_p} for hwe_p in np.random.uniform(0, 1, 100)]
 
     output_path = tmp_path / "hwe_deviation.png"
     result = hwe_deviation_plot(results, output_path)
@@ -95,7 +91,7 @@ def test_missingness_plot_invalid_params(tmp_path: Path) -> None:
 def test_transition_transversion_plot(tmp_path: Path) -> None:
     """Test transition/transversion ratio plot."""
     # Create sample GWAS results with REF/ALT alleles
-    bases = ['A', 'C', 'G', 'T']
+    bases = ["A", "C", "G", "T"]
     results = []
     for _ in range(100):
         ref = np.random.choice(bases)

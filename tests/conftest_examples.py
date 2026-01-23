@@ -27,16 +27,32 @@ def examples_base_dir() -> Path:
 @pytest.fixture(scope="session")
 def example_domains(examples_base_dir: Path) -> list[str]:
     """Provide list of available example domains."""
-    return [d.name for d in examples_base_dir.iterdir()
-            if d.is_dir() and not d.name.startswith('.')]
+    return [d.name for d in examples_base_dir.iterdir() if d.is_dir() and not d.name.startswith(".")]
 
 
-@pytest.fixture(params=[
-    "core", "dna", "rna", "gwas", "protein", "epigenome", "ontology",
-    "phenotype", "ecology", "math", "information", "life_events",
-    "multiomics", "singlecell", "quality", "networks", "ml",
-    "simulation", "visualization"
-])
+@pytest.fixture(
+    params=[
+        "core",
+        "dna",
+        "rna",
+        "gwas",
+        "protein",
+        "epigenome",
+        "ontology",
+        "phenotype",
+        "ecology",
+        "math",
+        "information",
+        "life_events",
+        "multiomics",
+        "singlecell",
+        "quality",
+        "networks",
+        "ml",
+        "simulation",
+        "visualization",
+    ]
+)
 def domain(request, example_domains) -> str:
     """Parametrize tests across all domains."""
     domain = request.param
@@ -67,7 +83,7 @@ def example_file(request, domain_examples) -> Path:
         pytest.skip("No examples available in domain")
 
     # Allow parametrization by example name
-    example_name = getattr(request, 'param', None)
+    example_name = getattr(request, "param", None)
     if example_name:
         example_path = None
         for ex in domain_examples:
@@ -118,11 +134,7 @@ def mock_example_environment(monkeypatch, temp_example_dir: Path) -> Dict[str, A
     monkeypatch.setenv("MPLBACKEND", "Agg")
     monkeypatch.setattr("metainformant.core.io.paths.PLATFORM", "test")
 
-    return {
-        "output_dir": mock_output,
-        "temp_dir": temp_example_dir,
-        "env_vars": dict(os.environ)
-    }
+    return {"output_dir": mock_output, "temp_dir": temp_example_dir, "env_vars": dict(os.environ)}
 
 
 @pytest.fixture(scope="session")
@@ -131,7 +143,8 @@ def example_dependencies() -> Dict[str, Any]:
     deps_file = Path("examples/dependencies.json")
     if deps_file.exists():
         import json
-        with open(deps_file, 'r') as f:
+
+        with open(deps_file, "r") as f:
             return json.load(f)
     return {}
 
@@ -169,7 +182,7 @@ def check_example_dependencies(example_dependencies: Dict[str, Any]):
             return {
                 "available": len(missing_required) == 0,
                 "missing_required": missing_required,
-                "missing_optional": missing_optional
+                "missing_optional": missing_optional,
             }
         else:
             return {"available": True, "missing_required": [], "missing_optional": []}
@@ -181,12 +194,14 @@ def check_example_dependencies(example_dependencies: Dict[str, Any]):
                 # Handle submodules
                 module_parts = package_name.split(".")
                 import importlib
+
                 module = importlib.import_module(module_parts[0])
                 for part in module_parts[1:]:
                     module = getattr(module, part)
                 return True
             else:
                 import importlib
+
                 importlib.import_module(package_name)
                 return True
         except ImportError:
@@ -213,11 +228,7 @@ def performance_tracker() -> Dict[str, Any]:
     """Provide a performance tracker for examples."""
     import time
 
-    tracker = {
-        "start_times": {},
-        "end_times": {},
-        "durations": {}
-    }
+    tracker = {"start_times": {}, "end_times": {}, "durations": {}}
 
     def start_tracking(name: str):
         tracker["start_times"][name] = time.time()
@@ -249,26 +260,23 @@ def example_validator():
             return {"valid": False, "issues": ["File does not exist"]}
 
         try:
-            with open(example_path, 'r', encoding='utf-8') as f:
+            with open(example_path, "r", encoding="utf-8") as f:
                 content = f.read()
 
             # Check syntax
-            compile(content, str(example_path), 'exec')
+            compile(content, str(example_path), "exec")
 
             # Check required elements
             if 'if __name__ == "__main__":' not in content:
                 issues.append("Missing main guard")
 
-            if 'def main():' not in content:
+            if "def main():" not in content:
                 issues.append("Missing main function")
 
-            if 'output/examples/' not in content:
+            if "output/examples/" not in content:
                 issues.append("No output directory usage")
 
-            return {
-                "valid": len(issues) == 0,
-                "issues": issues
-            }
+            return {"valid": len(issues) == 0, "issues": issues}
 
         except SyntaxError as e:
             return {"valid": False, "issues": [f"Syntax error: {e}"]}
@@ -281,22 +289,10 @@ def example_validator():
 # Markers for conditional testing
 def pytest_configure(config):
     """Configure pytest with custom markers."""
-    config.addinivalue_line(
-        "markers",
-        "requires_amalgkit: mark test as requiring amalgkit CLI tool"
-    )
-    config.addinivalue_line(
-        "markers",
-        "requires_network: mark test as requiring network access"
-    )
-    config.addinivalue_line(
-        "markers",
-        "slow: mark test as slow running"
-    )
-    config.addinivalue_line(
-        "markers",
-        "example_domain(domain): mark test as specific to an example domain"
-    )
+    config.addinivalue_line("markers", "requires_amalgkit: mark test as requiring amalgkit CLI tool")
+    config.addinivalue_line("markers", "requires_network: mark test as requiring network access")
+    config.addinivalue_line("markers", "slow: mark test as slow running")
+    config.addinivalue_line("markers", "example_domain(domain): mark test as specific to an example domain")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -320,12 +316,7 @@ def _check_external_tool(tool_name: str) -> bool:
     import subprocess
 
     try:
-        result = subprocess.run(
-            ["which", tool_name],
-            capture_output=True,
-            text=True,
-            timeout=5
-        )
+        result = subprocess.run(["which", tool_name], capture_output=True, text=True, timeout=5)
         return result.returncode == 0
     except:
         return False
@@ -336,7 +327,7 @@ def _check_network_available() -> bool:
     import urllib.request
 
     try:
-        urllib.request.urlopen('http://httpbin.org/get', timeout=5)
+        urllib.request.urlopen("http://httpbin.org/get", timeout=5)
         return True
     except:
         return False

@@ -24,7 +24,7 @@ def lineplot(
     *,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Create a line plot.
 
@@ -48,7 +48,7 @@ def lineplot(
             raise ValueError(f"x and y arrays must have same length: {len(x)} != {len(y)}")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (8, 6)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (8, 6)))
 
     y_data = y if y is not None else x
     x_data = x if y is not None else np.arange(len(x))
@@ -57,19 +57,14 @@ def lineplot(
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Line plot saved to {output_path}")
 
     return ax
 
 
 def scatter_plot(
-    x: np.ndarray,
-    y: np.ndarray,
-    *,
-    ax: Axes | None = None,
-    output_path: str | Path | None = None,
-    **kwargs
+    x: np.ndarray, y: np.ndarray, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
 ) -> Axes:
     """Create a scatter plot.
 
@@ -93,25 +88,20 @@ def scatter_plot(
         raise ValueError(f"x and y arrays must have same length: {len(x)} != {len(y)}")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (8, 6)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (8, 6)))
 
     ax.scatter(x, y, **kwargs)
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Scatter plot saved to {output_path}")
 
     return ax
 
 
 def heatmap(
-    data: np.ndarray,
-    *,
-    cmap: str = "viridis",
-    ax: Axes | None = None,
-    output_path: str | Path | None = None,
-    **kwargs
+    data: np.ndarray, *, cmap: str = "viridis", ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
 ) -> Axes:
     """Create a 2D heatmap.
 
@@ -134,14 +124,14 @@ def heatmap(
         raise ValueError(f"Data must be 2D array, got {data.ndim}D")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (8, 6)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (8, 6)))
 
     im = ax.imshow(data, cmap=cmap, **kwargs)
     plt.colorbar(im, ax=ax)
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Heatmap saved to {output_path}")
 
     return ax
@@ -153,7 +143,7 @@ def bar_plot(
     *,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Create a bar plot.
 
@@ -179,13 +169,13 @@ def bar_plot(
         raise ValueError(f"x and height arrays must have same length: {len(x)} != {len(height)}")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (8, 6)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (8, 6)))
 
     ax.bar(x, height, **kwargs)
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Bar plot saved to {output_path}")
 
     return ax
@@ -197,7 +187,7 @@ def pie_chart(
     *,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Create a pie chart.
 
@@ -222,26 +212,21 @@ def pie_chart(
             raise ValueError(f"labels and sizes arrays must have same length: {len(labels)} != {len(sizes)}")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (8, 6)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (8, 6)))
 
     ax.pie(sizes, labels=labels, **kwargs)
-    ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle
+    ax.axis("equal")  # Equal aspect ratio ensures that pie is drawn as a circle
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Pie chart saved to {output_path}")
 
     return ax
 
 
 def area_plot(
-    x: np.ndarray,
-    y: np.ndarray,
-    *,
-    ax: Axes | None = None,
-    output_path: str | Path | None = None,
-    **kwargs
+    x: np.ndarray, y: np.ndarray, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
 ) -> Axes:
     """Create a filled area plot.
 
@@ -265,25 +250,20 @@ def area_plot(
         raise ValueError(f"x and y arrays must have same length: {len(x)} != {len(y)}")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (8, 6)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (8, 6)))
 
     ax.fill_between(x, y, **kwargs)
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Area plot saved to {output_path}")
 
     return ax
 
 
 def step_plot(
-    x: np.ndarray,
-    y: np.ndarray,
-    *,
-    ax: Axes | None = None,
-    output_path: str | Path | None = None,
-    **kwargs
+    x: np.ndarray, y: np.ndarray, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
 ) -> Axes:
     """Create a step plot.
 
@@ -307,19 +287,13 @@ def step_plot(
         raise ValueError(f"x and y arrays must have same length: {len(x)} != {len(y)}")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (8, 6)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (8, 6)))
 
     ax.step(x, y, **kwargs)
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Step plot saved to {output_path}")
 
     return ax
-
-
-
-
-
-

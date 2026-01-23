@@ -1,4 +1,5 @@
 """Comprehensive tests for core.io.cache module."""
+
 from __future__ import annotations
 
 import time
@@ -145,7 +146,7 @@ class TestCacheHelperFunctions:
         cache_dir.mkdir()
         (cache_dir / "file1.json").write_text('{"v":1}')
         (cache_dir / "file2.json").write_text('{"v":2}')
-        
+
         info = core_cache.get_cache_info(cache_dir)
         assert info["total_files"] == 2  # Actual key name
         assert "exists" in info
@@ -154,9 +155,9 @@ class TestCacheHelperFunctions:
         """Test clearing cache directory."""
         cache_dir = tmp_path / "cache"
         cache_dir.mkdir()
-        (cache_dir / "file1.json").write_text('{}')
-        (cache_dir / "file2.json").write_text('{}')
-        
+        (cache_dir / "file1.json").write_text("{}")
+        (cache_dir / "file2.json").write_text("{}")
+
         removed = core_cache.clear_cache_dir(cache_dir)
         assert removed == 2
         assert len(list(cache_dir.glob("*.json"))) == 0

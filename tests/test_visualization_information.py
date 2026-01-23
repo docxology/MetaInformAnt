@@ -19,6 +19,7 @@ from metainformant.visualization.analysis.information import (
 # Check for optional dependencies
 try:
     import networkx as nx
+
     HAS_NETWORKX = True
 except ImportError:
     HAS_NETWORKX = False
@@ -30,36 +31,32 @@ class TestPlotEntropyProfile:
     def test_basic_entropy_profile_plot(self):
         """Test basic entropy profile plot creation."""
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         # Create sample entropy data
-        entropy_data = {
-            'Sequence_A': [1.5, 2.1, 2.8, 3.2, 3.5],
-            'Sequence_B': [1.3, 1.9, 2.4, 2.9, 3.1]
-        }
+        entropy_data = {"Sequence_A": [1.5, 2.1, 2.8, 3.2, 3.5], "Sequence_B": [1.3, 1.9, 2.4, 2.9, 3.1]}
 
         ax = plot_entropy_profile(entropy_data)
         assert ax is not None
         assert len(ax.lines) == 2  # Two sequences
-        plt.close('all')
+        plt.close("all")
 
     def test_entropy_profile_with_output_path(self, tmp_path: Path):
         """Test entropy profile plot with output path."""
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
-        entropy_data = {
-            'Seq1': [1.0, 1.5, 2.0, 2.3],
-            'Seq2': [0.8, 1.2, 1.8, 2.1]
-        }
+        entropy_data = {"Seq1": [1.0, 1.5, 2.0, 2.3], "Seq2": [0.8, 1.2, 1.8, 2.1]}
         output_path = tmp_path / "entropy_profile.png"
 
         ax = plot_entropy_profile(entropy_data, output_path=output_path)
         assert ax is not None
         assert output_path.exists()
-        plt.close('all')
+        plt.close("all")
 
     def test_entropy_profile_empty_data(self):
         """Test entropy profile plot with empty data."""
@@ -70,9 +67,7 @@ class TestPlotEntropyProfile:
 
     def test_entropy_profile_invalid_data(self):
         """Test entropy profile plot with invalid data types."""
-        entropy_data = {
-            'Seq1': "not a list"  # Should be list/array
-        }
+        entropy_data = {"Seq1": "not a list"}  # Should be list/array
 
         with pytest.raises(ValueError, match="must be a list or array"):
             plot_entropy_profile(entropy_data)
@@ -84,7 +79,8 @@ class TestPlotMutualInformationMatrix:
     def test_basic_mutual_information_matrix_plot(self):
         """Test basic mutual information matrix plot creation."""
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         # Create sample MI matrix
@@ -96,30 +92,30 @@ class TestPlotMutualInformationMatrix:
         # Set diagonal to some value (self-information)
         np.fill_diagonal(mi_matrix, 1.0)
 
-        labels = [f'Var_{i}' for i in range(n_vars)]
+        labels = [f"Var_{i}" for i in range(n_vars)]
 
         ax = plot_mutual_information_matrix(mi_matrix, labels)
         assert ax is not None
-        plt.close('all')
+        plt.close("all")
 
     def test_mutual_information_matrix_without_labels(self):
         """Test mutual information matrix plot without labels."""
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
-        mi_matrix = np.array([[1.0, 0.5, 0.3],
-                             [0.5, 1.0, 0.2],
-                             [0.3, 0.2, 1.0]])
+        mi_matrix = np.array([[1.0, 0.5, 0.3], [0.5, 1.0, 0.2], [0.3, 0.2, 1.0]])
 
         ax = plot_mutual_information_matrix(mi_matrix)
         assert ax is not None
-        plt.close('all')
+        plt.close("all")
 
     def test_mutual_information_matrix_with_output_path(self, tmp_path: Path):
         """Test mutual information matrix plot with output path."""
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         mi_matrix = np.array([[1.0, 0.8], [0.8, 1.0]])
@@ -128,12 +124,11 @@ class TestPlotMutualInformationMatrix:
         ax = plot_mutual_information_matrix(mi_matrix, output_path=output_path)
         assert ax is not None
         assert output_path.exists()
-        plt.close('all')
+        plt.close("all")
 
     def test_mutual_information_matrix_nonsquare(self):
         """Test mutual information matrix plot with non-square matrix."""
-        mi_matrix = np.array([[1.0, 0.5, 0.3],
-                             [0.5, 1.0, 0.2]])  # Not square
+        mi_matrix = np.array([[1.0, 0.5, 0.3], [0.5, 1.0, 0.2]])  # Not square
 
         with pytest.raises(ValueError, match="must be square"):
             plot_mutual_information_matrix(mi_matrix)
@@ -141,7 +136,7 @@ class TestPlotMutualInformationMatrix:
     def test_mutual_information_matrix_mismatched_labels(self):
         """Test mutual information matrix plot with mismatched label count."""
         mi_matrix = np.array([[1.0, 0.5], [0.5, 1.0]])
-        labels = ['A', 'B', 'C']  # Too many labels
+        labels = ["A", "B", "C"]  # Too many labels
 
         with pytest.raises(ValueError, match="must match matrix dimensions"):
             plot_mutual_information_matrix(mi_matrix, labels)
@@ -153,38 +148,34 @@ class TestPlotRenyiSpectra:
     def test_basic_renyi_spectra_plot(self):
         """Test basic Rényi spectra plot creation."""
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         # Create sample Rényi data
         alpha_values = [0.5, 1.0, 1.5, 2.0]
-        renyi_data = {
-            'Distribution_A': [2.1, 2.0, 1.9, 1.8],
-            'Distribution_B': [2.3, 2.2, 2.0, 1.9]
-        }
+        renyi_data = {"Distribution_A": [2.1, 2.0, 1.9, 1.8], "Distribution_B": [2.3, 2.2, 2.0, 1.9]}
 
         ax = plot_renyi_spectra(renyi_data, alpha_values)
         assert ax is not None
         assert len(ax.lines) == 3  # Two distributions + Shannon marker (alpha=1)
-        plt.close('all')
+        plt.close("all")
 
     def test_renyi_spectra_with_output_path(self, tmp_path: Path):
         """Test Rényi spectra plot with output path."""
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         alpha_values = [0.5, 1.0, 2.0]
-        renyi_data = {
-            'Dist1': [1.8, 1.5, 1.3],
-            'Dist2': [2.0, 1.8, 1.5]
-        }
+        renyi_data = {"Dist1": [1.8, 1.5, 1.3], "Dist2": [2.0, 1.8, 1.5]}
         output_path = tmp_path / "renyi_spectra.png"
 
         ax = plot_renyi_spectra(renyi_data, alpha_values, output_path=output_path)
         assert ax is not None
         assert output_path.exists()
-        plt.close('all')
+        plt.close("all")
 
     def test_renyi_spectra_empty_data(self):
         """Test Rényi spectra plot with empty data."""
@@ -197,9 +188,7 @@ class TestPlotRenyiSpectra:
     def test_renyi_spectra_mismatched_lengths(self):
         """Test Rényi spectra plot with mismatched data lengths."""
         alpha_values = [0.5, 1.0, 2.0]  # 3 values
-        renyi_data = {
-            'Dist1': [1.8, 1.5]  # Only 2 values
-        }
+        renyi_data = {"Dist1": [1.8, 1.5]}  # Only 2 values
 
         with pytest.raises(ValueError, match="must match alpha values length"):
             plot_renyi_spectra(renyi_data, alpha_values)
@@ -211,7 +200,8 @@ class TestPlotInformationLandscape:
     def test_basic_information_landscape_plot(self):
         """Test basic information landscape plot creation."""
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         # Create sample landscape data
@@ -220,12 +210,13 @@ class TestPlotInformationLandscape:
 
         ax = plot_information_landscape(landscape_data)
         assert ax is not None
-        plt.close('all')
+        plt.close("all")
 
     def test_information_landscape_with_coords(self):
         """Test information landscape plot with coordinate arrays."""
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         landscape_data = np.random.rand(5, 5)
@@ -234,12 +225,13 @@ class TestPlotInformationLandscape:
 
         ax = plot_information_landscape(landscape_data, x_coords, y_coords)
         assert ax is not None
-        plt.close('all')
+        plt.close("all")
 
     def test_information_landscape_with_output_path(self, tmp_path: Path):
         """Test information landscape plot with output path."""
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         landscape_data = np.random.rand(4, 4)
@@ -248,7 +240,7 @@ class TestPlotInformationLandscape:
         ax = plot_information_landscape(landscape_data, output_path=output_path)
         assert ax is not None
         assert output_path.exists()
-        plt.close('all')
+        plt.close("all")
 
     def test_information_landscape_invalid_dimensions(self):
         """Test information landscape plot with invalid dimensions."""
@@ -267,17 +259,17 @@ class TestPlotInformationNetwork:
             pytest.skip("NetworkX required for information network plotting")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         # Create sample network data
-        nodes = ['A', 'B', 'C', 'D', 'E']
-        edges = [('A', 'B', 0.8), ('A', 'C', 0.6), ('B', 'D', 0.7),
-                ('C', 'D', 0.5), ('D', 'E', 0.9)]
+        nodes = ["A", "B", "C", "D", "E"]
+        edges = [("A", "B", 0.8), ("A", "C", 0.6), ("B", "D", 0.7), ("C", "D", 0.5), ("D", "E", 0.9)]
 
         ax = plot_information_network(nodes, edges)
         assert ax is not None
-        plt.close('all')
+        plt.close("all")
 
     def test_information_network_with_output_path(self, tmp_path: Path):
         """Test information network plot with output path."""
@@ -285,17 +277,18 @@ class TestPlotInformationNetwork:
             pytest.skip("NetworkX required for information network plotting")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
-        nodes = ['X', 'Y', 'Z']
-        edges = [('X', 'Y', 0.5), ('Y', 'Z', 0.7)]
+        nodes = ["X", "Y", "Z"]
+        edges = [("X", "Y", 0.5), ("Y", "Z", 0.7)]
         output_path = tmp_path / "info_network.png"
 
         ax = plot_information_network(nodes, edges, output_path=output_path)
         assert ax is not None
         assert output_path.exists()
-        plt.close('all')
+        plt.close("all")
 
     def test_information_network_empty_nodes(self):
         """Test information network plot with empty nodes."""
@@ -303,7 +296,7 @@ class TestPlotInformationNetwork:
             pytest.skip("NetworkX required for information network plotting")
 
         nodes = []
-        edges = [('A', 'B', 0.5)]
+        edges = [("A", "B", 0.5)]
 
         with pytest.raises(ValueError, match="cannot be empty"):
             plot_information_network(nodes, edges)
@@ -313,8 +306,8 @@ class TestPlotInformationNetwork:
         if not HAS_NETWORKX:
             pytest.skip("NetworkX required for information network plotting")
 
-        nodes = ['A', 'B', 'C']
-        edges = [('A', 'D', 0.5)]  # D is not in nodes
+        nodes = ["A", "B", "C"]
+        edges = [("A", "D", 0.5)]  # D is not in nodes
 
         with pytest.raises(ValueError, match="connects unknown nodes"):
             plot_information_network(nodes, edges)
@@ -324,14 +317,8 @@ class TestPlotInformationNetwork:
         if HAS_NETWORKX:
             pytest.skip("NetworkX is available")
 
-        nodes = ['A', 'B']
-        edges = [('A', 'B', 0.5)]
+        nodes = ["A", "B"]
+        edges = [("A", "B", 0.5)]
 
         with pytest.raises(ImportError, match="NetworkX required"):
             plot_information_network(nodes, edges)
-
-
-
-
-
-

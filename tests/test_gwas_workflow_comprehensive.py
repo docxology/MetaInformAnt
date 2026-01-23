@@ -25,7 +25,9 @@ samples:
 association:
   model: linear
   trait: height
-""".format(work_dir=str(tmp_path / "output"))
+""".format(
+        work_dir=str(tmp_path / "output")
+    )
     config_file.write_text(config_content)
 
     config = load_gwas_config(config_file)
@@ -69,17 +71,13 @@ chr1	500	rs5	A	T	90	PASS	.	GT	0/0	1/1	0/1	0/0	1/1
     config_data = {
         "work_dir": str(work_dir),
         "threads": 2,
-        "variants": {
-            "vcf_files": [str(vcf_file)]
-        },
+        "variants": {"vcf_files": [str(vcf_file)]},
         "qc": {
             "min_maf": 0.0,  # Include all variants for testing
             "max_missing": 1.0,
             "min_qual": 0.0,
         },
-        "samples": {
-            "phenotype_file": str(phenotype_file)
-        },
+        "samples": {"phenotype_file": str(phenotype_file)},
         "structure": {
             "compute_pca": True,
             "n_components": 2,
@@ -98,7 +96,7 @@ chr1	500	rs5	A	T	90	PASS	.	GT	0/0	1/1	0/1	0/0	1/1
         "output": {
             "results_dir": str(work_dir / "results"),
             "plots_dir": str(work_dir / "plots"),
-        }
+        },
     }
     dump_json(config_data, config_file, indent=2)
 
@@ -108,7 +106,7 @@ chr1	500	rs5	A	T	90	PASS	.	GT	0/0	1/1	0/1	0/0	1/1
 
     # Workflow should complete (may have warnings but should not fail completely)
     assert result["status"] in ["completed", "failed"]  # May fail if VCF writing not implemented
-    
+
     # Check that some steps were executed
     assert "steps" in result
     assert len(result["steps"]) > 0
@@ -156,6 +154,7 @@ def test_gwas_workflow_genome_download(tmp_path: Path, pytestconfig) -> None:
 
     # Check network connectivity and NCBI datasets API availability
     import requests
+
     try:
         # Check basic connectivity
         response = requests.get("https://www.ncbi.nlm.nih.gov", timeout=5)
@@ -163,7 +162,9 @@ def test_gwas_workflow_genome_download(tmp_path: Path, pytestconfig) -> None:
             pytest.skip("NCBI website not accessible")
 
         # Check if NCBI datasets API is responsive
-        response = requests.head("https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/GCF_000001405.40/download", timeout=10)
+        response = requests.head(
+            "https://api.ncbi.nlm.nih.gov/datasets/v2/genome/accession/GCF_000001405.40/download", timeout=10
+        )
         if response.status_code not in (200, 302, 404):  # 404 is OK, means accession exists but needs different params
             pytest.skip(f"NCBI datasets API not accessible (status: {response.status_code})")
     except (requests.RequestException, requests.Timeout):
@@ -181,14 +182,12 @@ def test_gwas_workflow_genome_download(tmp_path: Path, pytestconfig) -> None:
             "dest_dir": str(work_dir / "genome"),
             "include": ["genome"],
         },
-        "variants": {
-            "vcf_files": []
-        }
+        "variants": {"vcf_files": []},
     }
     dump_json(config_data, config_file, indent=2)
 
     config = load_gwas_config(config_file)
-    
+
     # Try to run workflow (genome download may take time or fail offline)
     try:
         result = execute_gwas_workflow(config, check=False)
@@ -217,7 +216,9 @@ def test_gwas_workflow_missing_phenotype(tmp_path: Path) -> None:
     """Test GWAS workflow with missing phenotype file."""
     work_dir = tmp_path / "gwas_test"
     vcf_file = tmp_path / "test.vcf"
-    vcf_file.write_text("##fileformat=VCFv4.2\n#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	S1\nchr1	100	rs1	A	G	60	PASS	.	GT	0/1\n")
+    vcf_file.write_text(
+        "##fileformat=VCFv4.2\n#CHROM	POS	ID	REF	ALT	QUAL	FILTER	INFO	FORMAT	S1\nchr1	100	rs1	A	G	60	PASS	.	GT	0/1\n"
+    )
 
     config_file = tmp_path / "config.yaml"
     config_data = {
@@ -234,4 +235,3 @@ def test_gwas_workflow_missing_phenotype(tmp_path: Path) -> None:
     # Should fail gracefully
     assert result["status"] == "failed"
     assert "error" in result
-

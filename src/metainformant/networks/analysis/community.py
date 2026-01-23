@@ -17,6 +17,7 @@ logger = logging.get_logger(__name__)
 # Optional dependencies for community detection
 try:
     import networkx as nx
+
     HAS_NETWORKX = True
 except ImportError:
     HAS_NETWORKX = False
@@ -24,6 +25,7 @@ except ImportError:
 
 try:
     import community as community_louvain
+
     HAS_LOUVAIN = True
 except ImportError:
     HAS_LOUVAIN = False
@@ -31,17 +33,14 @@ except ImportError:
 
 try:
     import numpy as np
+
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
 
 
 def louvain_communities(
-    graph: Any,
-    resolution: float = 1.0,
-    randomize: bool = True,
-    random_state: Optional[int] = None,
-    **kwargs: Any
+    graph: Any, resolution: float = 1.0, randomize: bool = True, random_state: Optional[int] = None, **kwargs: Any
 ) -> List[List[str]]:
     """Detect communities using the Louvain method.
 
@@ -65,6 +64,7 @@ def louvain_communities(
         raise ImportError("networkx required for community detection")
     if not HAS_LOUVAIN:
         from metainformant.core.utils.optional_deps import warn_optional_dependency
+
         warn_optional_dependency("python-louvain", "Louvain community detection")
         raise ImportError("python-louvain required for Louvain method")
 
@@ -74,12 +74,7 @@ def louvain_communities(
         np.random.seed(random_state)
 
     # Run Louvain algorithm
-    partition = community_louvain.best_partition(
-        graph,
-        resolution=resolution,
-        randomize=randomize,
-        **kwargs
-    )
+    partition = community_louvain.best_partition(graph, resolution=resolution, randomize=randomize, **kwargs)
 
     # Convert partition to community lists
     communities = {}
@@ -97,11 +92,7 @@ def louvain_communities(
 
 
 def leiden_communities(
-    graph: Any,
-    resolution: float = 1.0,
-    n_iterations: int = -1,
-    random_state: Optional[int] = None,
-    **kwargs: Any
+    graph: Any, resolution: float = 1.0, n_iterations: int = -1, random_state: Optional[int] = None, **kwargs: Any
 ) -> List[List[str]]:
     """Detect communities using the Leiden method.
 
@@ -127,6 +118,7 @@ def leiden_communities(
     try:
         import igraph as ig
         import leidenalg as la
+
         HAS_LEIDEN = True
     except ImportError:
         HAS_LEIDEN = False
@@ -143,15 +135,11 @@ def leiden_communities(
 
     # Run Leiden algorithm
     partition = la.find_partition(
-        ig_graph,
-        la.ModularityVertexPartition,
-        resolution_parameter=resolution,
-        n_iterations=n_iterations,
-        **kwargs
+        ig_graph, la.ModularityVertexPartition, resolution_parameter=resolution, n_iterations=n_iterations, **kwargs
     )
 
     # Convert back to community lists
-    communities = [list(partition.subgraph(i).vs['name']) for i in range(len(partition))]
+    communities = [list(partition.subgraph(i).vs["name"]) for i in range(len(partition))]
 
     # Sort by size
     communities.sort(key=len, reverse=True)
@@ -176,27 +164,24 @@ def _nx_to_igraph(nx_graph: Any) -> Any:
 
     # Add vertices with names
     ig_graph.add_vertices(len(nodes))
-    ig_graph.vs['name'] = nodes
+    ig_graph.vs["name"] = nodes
 
     # Add edges
     edge_list = [(node_map[u], node_map[v]) for u, v in edges]
     ig_graph.add_edges(edge_list)
 
     # Add edge weights if present
-    if nx.get_edge_attributes(nx_graph, 'weight'):
+    if nx.get_edge_attributes(nx_graph, "weight"):
         weights = []
         for u, v in edges:
-            weight = nx_graph[u][v].get('weight', 1.0)
+            weight = nx_graph[u][v].get("weight", 1.0)
             weights.append(weight)
-        ig_graph.es['weight'] = weights
+        ig_graph.es["weight"] = weights
 
     return ig_graph
 
 
-def greedy_modularity_communities(
-    graph: Any,
-    **kwargs: Any
-) -> List[List[str]]:
+def greedy_modularity_communities(graph: Any, **kwargs: Any) -> List[List[str]]:
     """Detect communities using greedy modularity optimization.
 
     This is NetworkX's built-in greedy modularity algorithm.
@@ -228,11 +213,7 @@ def greedy_modularity_communities(
     return community_lists
 
 
-def girvan_newman_communities(
-    graph: Any,
-    n_communities: Optional[int] = None,
-    **kwargs: Any
-) -> List[List[str]]:
+def girvan_newman_communities(graph: Any, n_communities: Optional[int] = None, **kwargs: Any) -> List[List[str]]:
     """Detect communities using Girvan-Newman algorithm.
 
     This algorithm progressively removes edges with highest betweenness centrality.
@@ -274,10 +255,7 @@ def girvan_newman_communities(
     return community_lists
 
 
-def label_propagation_communities(
-    graph: Any,
-    **kwargs: Any
-) -> List[List[str]]:
+def label_propagation_communities(graph: Any, **kwargs: Any) -> List[List[str]]:
     """Detect communities using label propagation algorithm.
 
     This algorithm assigns labels to nodes and iteratively updates them
@@ -306,10 +284,7 @@ def label_propagation_communities(
     return community_lists
 
 
-def asyn_lpa_communities(
-    graph: Any,
-    **kwargs: Any
-) -> List[List[str]]:
+def asyn_lpa_communities(graph: Any, **kwargs: Any) -> List[List[str]]:
     """Detect communities using asynchronous label propagation.
 
     Args:
@@ -335,11 +310,7 @@ def asyn_lpa_communities(
     return community_lists
 
 
-def fluid_communities(
-    graph: Any,
-    k: int,
-    **kwargs: Any
-) -> List[List[str]]:
+def fluid_communities(graph: Any, k: int, **kwargs: Any) -> List[List[str]]:
     """Detect communities using the fluid communities algorithm.
 
     Args:
@@ -366,11 +337,7 @@ def fluid_communities(
     return community_lists
 
 
-def detect_communities(
-    graph: Any,
-    method: str = "louvain",
-    **kwargs: Any
-) -> List[List[str]]:
+def detect_communities(graph: Any, method: str = "louvain", **kwargs: Any) -> List[List[str]]:
     """Unified interface for community detection.
 
     Args:
@@ -385,13 +352,13 @@ def detect_communities(
         ValueError: If method not supported
     """
     method_map = {
-        'louvain': louvain_communities,
-        'leiden': leiden_communities,
-        'greedy': greedy_modularity_communities,
-        'girvan_newman': girvan_newman_communities,
-        'label_propagation': label_propagation_communities,
-        'asyn_lpa': asyn_lpa_communities,
-        'fluid': fluid_communities,
+        "louvain": louvain_communities,
+        "leiden": leiden_communities,
+        "greedy": greedy_modularity_communities,
+        "girvan_newman": girvan_newman_communities,
+        "label_propagation": label_propagation_communities,
+        "asyn_lpa": asyn_lpa_communities,
+        "fluid": fluid_communities,
     }
 
     if method not in method_map:
@@ -401,10 +368,7 @@ def detect_communities(
     return method_map[method](graph, **kwargs)
 
 
-def evaluate_communities(
-    graph: Any,
-    communities: List[List[str]]
-) -> Dict[str, Any]:
+def evaluate_communities(graph: Any, communities: List[List[str]]) -> Dict[str, Any]:
     """Evaluate quality of community partitioning.
 
     Args:
@@ -433,7 +397,7 @@ def evaluate_communities(
         else:
             # Fallback using NetworkX
             modularity = nx.algorithms.community.modularity(graph, communities)
-    except:
+    except (nx.NetworkXError, ValueError, ZeroDivisionError):
         modularity = None
 
     # Calculate community statistics
@@ -441,16 +405,16 @@ def evaluate_communities(
     n_communities = len(communities)
 
     evaluation = {
-        'n_communities': n_communities,
-        'modularity': modularity,
-        'community_sizes': {
-            'mean': float(np.mean(community_sizes)),
-            'std': float(np.std(community_sizes)),
-            'min': int(np.min(community_sizes)),
-            'max': int(np.max(community_sizes)),
-            'sizes': community_sizes,
+        "n_communities": n_communities,
+        "modularity": modularity,
+        "community_sizes": {
+            "mean": float(np.mean(community_sizes)),
+            "std": float(np.std(community_sizes)),
+            "min": int(np.min(community_sizes)),
+            "max": int(np.max(community_sizes)),
+            "sizes": community_sizes,
         },
-        'coverage': sum(community_sizes) / len(graph.nodes()) if graph.nodes() else 0,
+        "coverage": sum(community_sizes) / len(graph.nodes()) if graph.nodes() else 0,
     }
 
     # Calculate conductance for each community
@@ -460,24 +424,20 @@ def evaluate_communities(
             try:
                 conductance = nx.algorithms.cuts.conductance(graph, community)
                 conductances.append(conductance)
-            except:
+            except (nx.NetworkXError, ZeroDivisionError):
                 pass
 
     if conductances:
-        evaluation['conductance'] = {
-            'mean': float(np.mean(conductances)),
-            'std': float(np.std(conductances)),
-            'values': conductances,
+        evaluation["conductance"] = {
+            "mean": float(np.mean(conductances)),
+            "std": float(np.std(conductances)),
+            "values": conductances,
         }
 
     return evaluation
 
 
-def compare_community_methods(
-    graph: Any,
-    methods: Optional[List[str]] = None,
-    **kwargs: Any
-) -> Dict[str, Any]:
+def compare_community_methods(graph: Any, methods: Optional[List[str]] = None, **kwargs: Any) -> Dict[str, Any]:
     """Compare different community detection methods.
 
     Args:
@@ -489,7 +449,7 @@ def compare_community_methods(
         Dictionary with comparison results
     """
     if methods is None:
-        methods = ['louvain', 'greedy', 'label_propagation']
+        methods = ["louvain", "greedy", "label_propagation"]
 
     results = {}
 
@@ -499,34 +459,31 @@ def compare_community_methods(
             evaluation = evaluate_communities(graph, communities)
 
             results[method] = {
-                'communities': communities,
-                'evaluation': evaluation,
-                'n_communities': len(communities),
+                "communities": communities,
+                "evaluation": evaluation,
+                "n_communities": len(communities),
             }
 
         except Exception as e:
             logger.warning(f"Method {method} failed: {e}")
-            results[method] = {'error': str(e)}
+            results[method] = {"error": str(e)}
 
     # Find best method by modularity
     valid_results = [
-        (method, result.get('evaluation', {}).get('modularity', 0))
+        (method, result.get("evaluation", {}).get("modularity", 0))
         for method, result in results.items()
-        if isinstance(result, dict) and 'evaluation' in result
+        if isinstance(result, dict) and "evaluation" in result
     ]
 
     if valid_results:
         best_method = max(valid_results, key=lambda x: x[1] if x[1] is not None else -1)[0]
-        results['best_method'] = best_method
+        results["best_method"] = best_method
 
     return results
 
 
 def hierarchical_communities(
-    graph: Any,
-    method: str = "louvain",
-    max_levels: int = 5,
-    **kwargs: Any
+    graph: Any, method: str = "louvain", max_levels: int = 5, **kwargs: Any
 ) -> List[List[List[str]]]:
     """Detect hierarchical community structure.
 
@@ -578,8 +535,7 @@ def hierarchical_communities(
                                 inter_edges += 1
 
                     if inter_edges > 0:
-                        meta_graph.add_edge(f"community_{i}", f"community_{j}",
-                                          weight=inter_edges)
+                        meta_graph.add_edge(f"community_{i}", f"community_{j}", weight=inter_edges)
 
         current_graph = meta_graph
 
@@ -647,24 +603,24 @@ def community_metrics(graph: Any, communities: List[List[str]]) -> Dict[str, Any
 
     # Basic community statistics
     community_sizes = [len(comm) for comm in communities]
-    metrics['n_communities'] = len(communities)
-    metrics['community_sizes'] = {
-        'mean': float(np.mean(community_sizes)),
-        'std': float(np.std(community_sizes)),
-        'min': int(np.min(community_sizes)),
-        'max': int(np.max(community_sizes)),
-        'sizes': community_sizes,
+    metrics["n_communities"] = len(communities)
+    metrics["community_sizes"] = {
+        "mean": float(np.mean(community_sizes)),
+        "std": float(np.std(community_sizes)),
+        "min": int(np.min(community_sizes)),
+        "max": int(np.max(community_sizes)),
+        "sizes": community_sizes,
     }
 
     # Modularity
     try:
-        metrics['modularity'] = modularity(graph, communities)
+        metrics["modularity"] = modularity(graph, communities)
     except Exception:
-        metrics['modularity'] = None
+        metrics["modularity"] = None
 
     # Coverage (fraction of nodes in communities)
     total_nodes_in_communities = sum(len(comm) for comm in communities)
-    metrics['coverage'] = total_nodes_in_communities / len(graph.nodes()) if graph.nodes() else 0
+    metrics["coverage"] = total_nodes_in_communities / len(graph.nodes()) if graph.nodes() else 0
 
     # Conductance for each community
     conductances = []
@@ -673,16 +629,16 @@ def community_metrics(graph: Any, communities: List[List[str]]) -> Dict[str, Any
             try:
                 conductance = nx.algorithms.cuts.conductance(graph, community)
                 conductances.append(conductance)
-            except:
+            except (nx.NetworkXError, ZeroDivisionError):
                 pass
 
     if conductances:
-        metrics['conductance'] = {
-            'mean': float(np.mean(conductances)),
-            'std': float(np.std(conductances)),
-            'min': float(np.min(conductances)) if conductances else None,
-            'max': float(np.max(conductances)) if conductances else None,
-            'values': conductances,
+        metrics["conductance"] = {
+            "mean": float(np.mean(conductances)),
+            "std": float(np.std(conductances)),
+            "min": float(np.min(conductances)) if conductances else None,
+            "max": float(np.max(conductances)) if conductances else None,
+            "values": conductances,
         }
 
     # Internal density for each community
@@ -697,20 +653,18 @@ def community_metrics(graph: Any, communities: List[List[str]]) -> Dict[str, Any
             densities.append(density)
 
     if densities:
-        metrics['internal_density'] = {
-            'mean': float(np.mean(densities)),
-            'std': float(np.std(densities)),
-            'values': densities,
+        metrics["internal_density"] = {
+            "mean": float(np.mean(densities)),
+            "std": float(np.std(densities)),
+            "values": densities,
         }
 
     # Community quality score (composite metric)
-    mod_score = metrics['modularity'] if metrics['modularity'] is not None else 0
-    cov_score = metrics['coverage']
-    cond_score = 1 - metrics['conductance']['mean'] if 'conductance' in metrics and conductances else 0.5
-    dens_score = metrics['internal_density']['mean'] if 'internal_density' in metrics and densities else 0.5
+    mod_score = metrics["modularity"] if metrics["modularity"] is not None else 0
+    cov_score = metrics["coverage"]
+    cond_score = 1 - metrics["conductance"]["mean"] if "conductance" in metrics and conductances else 0.5
+    dens_score = metrics["internal_density"]["mean"] if "internal_density" in metrics and densities else 0.5
 
-    metrics['quality_score'] = (mod_score + cov_score + cond_score + dens_score) / 4
+    metrics["quality_score"] = (mod_score + cov_score + cond_score + dens_score) / 4
 
     return metrics
-
-

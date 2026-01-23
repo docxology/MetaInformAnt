@@ -19,13 +19,13 @@ from metainformant.phenotype.data.scraper import AntWikiScraper, AntWikiScraperC
 
 def _handle_antwiki_403(e: Exception) -> None:
     """Handle AntWiki 403 errors consistently.
-    
+
     Centralized error handling for AntWiki blocking automated requests.
     Raises pytest.skip if 403 error detected, otherwise re-raises exception.
-    
+
     Args:
         e: Exception to check for 403 status
-        
+
     Raises:
         pytest.skip.Exception: If 403 Forbidden error detected
         Exception: Re-raises original exception if not 403
@@ -44,10 +44,10 @@ def _handle_antwiki_403(e: Exception) -> None:
 @pytest.fixture
 def antwiki_scraper_config(tmp_path: Path) -> AntWikiScraperConfig:
     """Fixture providing common AntWiki scraper configuration for tests.
-    
+
     Args:
         tmp_path: Pytest temporary directory fixture
-        
+
     Returns:
         AntWikiScraperConfig with test-appropriate settings
     """
@@ -203,7 +203,9 @@ def test_rate_limiting(antwiki_scraper_config: AntWikiScraperConfig) -> None:
         elapsed = time.time() - start_time
 
         # Should take at least delay_seconds between requests
-        assert elapsed >= antwiki_scraper_config.delay_seconds, f"Rate limiting not working: {elapsed} < {antwiki_scraper_config.delay_seconds}"
+        assert (
+            elapsed >= antwiki_scraper_config.delay_seconds
+        ), f"Rate limiting not working: {elapsed} < {antwiki_scraper_config.delay_seconds}"
 
     except (requests.ConnectionError, requests.Timeout) as e:
         pytest.skip(f"Network unavailable: {e}")
@@ -272,6 +274,7 @@ def test_get_species_list(antwiki_scraper_config: AntWikiScraperConfig) -> None:
     """Test discovering species list from AntWiki."""
     # First check if we can access AntWiki at all
     import requests
+
     try:
         response = requests.get("https://www.antwiki.org/wiki/Category:Ants", timeout=5)
         if response.status_code == 403:
@@ -280,6 +283,7 @@ def test_get_species_list(antwiki_scraper_config: AntWikiScraperConfig) -> None:
         pytest.skip("AntWiki not accessible. Network may be unavailable.")
 
     from metainformant.core.utils.errors import NetworkError
+
     try:
         scraper = AntWikiScraper(antwiki_scraper_config)
 
@@ -310,6 +314,7 @@ def test_scrape_all_species_with_limit(antwiki_scraper_config: AntWikiScraperCon
     """Test scraping multiple species with limit."""
     # First check if we can access AntWiki at all
     import requests
+
     try:
         response = requests.get("https://www.antwiki.org/wiki/Category:Ants", timeout=5)
         if response.status_code == 403:
@@ -351,4 +356,3 @@ def test_scrape_all_species_with_limit(antwiki_scraper_config: AntWikiScraperCon
         _handle_antwiki_403(e)
     except (requests.ConnectionError, requests.Timeout) as e:
         pytest.skip(f"Network unavailable: {e}")
-

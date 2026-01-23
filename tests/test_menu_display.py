@@ -159,7 +159,3 @@ class TestClearScreen:
         """Test clearing screen when not TTY."""
         # This test would require mocking sys.stdout.isatty
         pass
-
-
-
-

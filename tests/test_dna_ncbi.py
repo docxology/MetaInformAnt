@@ -1,4 +1,5 @@
 """Tests for NCBI DNA data functions."""
+
 from __future__ import annotations
 
 import importlib.util
@@ -16,8 +17,9 @@ def _check_ncbi_datasets_installed() -> bool:
         return False
 
 
-@pytest.mark.skipif(_check_ncbi_datasets_installed(), 
-                    reason="ncbi-datasets installed; test only for missing dependency case")
+@pytest.mark.skipif(
+    _check_ncbi_datasets_installed(), reason="ncbi-datasets installed; test only for missing dependency case"
+)
 def test_ncbi_datasets_optional_dependency_errors():
     """Test that clear errors are raised when ncbi-datasets is not installed."""
     # This test only runs when ncbi-datasets is NOT installed

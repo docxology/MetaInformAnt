@@ -17,6 +17,7 @@ from metainformant.visualization.genomics.networks import (
 # Check for optional dependencies
 try:
     import networkx as nx
+
     HAS_NETWORKX = True
 except ImportError:
     HAS_NETWORKX = False
@@ -31,7 +32,8 @@ class TestPlotNetworkBasic:
             pytest.skip("NetworkX required for network plotting")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         # Create a simple test graph
@@ -39,7 +41,7 @@ class TestPlotNetworkBasic:
 
         ax = plot_network_basic(G)
         assert ax is not None
-        plt.close('all')
+        plt.close("all")
 
     def test_basic_network_plot_with_output_path(self, tmp_path: Path):
         """Test basic network plot with output path."""
@@ -47,7 +49,8 @@ class TestPlotNetworkBasic:
             pytest.skip("NetworkX required for network plotting")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         G = nx.complete_graph(5)
@@ -56,7 +59,7 @@ class TestPlotNetworkBasic:
         ax = plot_network_basic(G, output_path=output_path)
         assert ax is not None
         assert output_path.exists()
-        plt.close('all')
+        plt.close("all")
 
     def test_basic_network_plot_no_networkx(self):
         """Test basic network plot when NetworkX is not available."""
@@ -79,14 +82,15 @@ class TestPlotNetworkCircular:
             pytest.skip("NetworkX required for network plotting")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         G = nx.cycle_graph(8)
 
         ax = plot_network_circular(G)
         assert ax is not None
-        plt.close('all')
+        plt.close("all")
 
     def test_circular_network_plot_with_output_path(self, tmp_path: Path):
         """Test circular network plot with output path."""
@@ -94,7 +98,8 @@ class TestPlotNetworkCircular:
             pytest.skip("NetworkX required for network plotting")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         G = nx.path_graph(6)
@@ -103,7 +108,7 @@ class TestPlotNetworkCircular:
         ax = plot_network_circular(G, output_path=output_path)
         assert ax is not None
         assert output_path.exists()
-        plt.close('all')
+        plt.close("all")
 
 
 class TestPlotNetworkHierarchical:
@@ -115,16 +120,17 @@ class TestPlotNetworkHierarchical:
             pytest.skip("NetworkX required for network plotting")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         # Create a simple directed graph that can be hierarchical
         G = nx.DiGraph()
-        G.add_edges_from([('A', 'B'), ('A', 'C'), ('B', 'D'), ('C', 'E')])
+        G.add_edges_from([("A", "B"), ("A", "C"), ("B", "D"), ("C", "E")])
 
         ax = plot_network_hierarchical(G)
         assert ax is not None
-        plt.close('all')
+        plt.close("all")
 
     def test_hierarchical_network_plot_undirected(self):
         """Test hierarchical network plot with undirected graph."""
@@ -132,14 +138,15 @@ class TestPlotNetworkHierarchical:
             pytest.skip("NetworkX required for network plotting")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         G = nx.star_graph(5)  # Undirected star graph
 
         ax = plot_network_hierarchical(G)
         assert ax is not None
-        plt.close('all')
+        plt.close("all")
 
     def test_hierarchical_network_plot_with_output_path(self, tmp_path: Path):
         """Test hierarchical network plot with output path."""
@@ -147,7 +154,8 @@ class TestPlotNetworkHierarchical:
             pytest.skip("NetworkX required for network plotting")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         G = nx.balanced_tree(2, 3)
@@ -156,7 +164,7 @@ class TestPlotNetworkHierarchical:
         ax = plot_network_hierarchical(G, output_path=output_path)
         assert ax is not None
         assert output_path.exists()
-        plt.close('all')
+        plt.close("all")
 
 
 class TestPlotNetworkForceDirected:
@@ -168,14 +176,15 @@ class TestPlotNetworkForceDirected:
             pytest.skip("NetworkX required for network plotting")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         G = nx.erdos_renyi_graph(15, 0.2, seed=42)
 
         ax = plot_network_force_directed(G)
         assert ax is not None
-        plt.close('all')
+        plt.close("all")
 
     def test_force_directed_network_plot_with_output_path(self, tmp_path: Path):
         """Test force-directed network plot with output path."""
@@ -183,7 +192,8 @@ class TestPlotNetworkForceDirected:
             pytest.skip("NetworkX required for network plotting")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         G = nx.watts_strogatz_graph(10, 3, 0.1, seed=42)
@@ -192,7 +202,7 @@ class TestPlotNetworkForceDirected:
         ax = plot_network_force_directed(G, output_path=output_path)
         assert ax is not None
         assert output_path.exists()
-        plt.close('all')
+        plt.close("all")
 
 
 class TestPlotCommunityNetwork:
@@ -204,7 +214,8 @@ class TestPlotCommunityNetwork:
             pytest.skip("NetworkX required for network plotting")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         # Create a test graph with communities
@@ -218,7 +229,7 @@ class TestPlotCommunityNetwork:
 
         ax = plot_community_network(G, communities)
         assert ax is not None
-        plt.close('all')
+        plt.close("all")
 
     def test_community_network_plot_with_output_path(self, tmp_path: Path):
         """Test community network plot with output path."""
@@ -226,7 +237,8 @@ class TestPlotCommunityNetwork:
             pytest.skip("NetworkX required for network plotting")
 
         import matplotlib
-        matplotlib.use('Agg')
+
+        matplotlib.use("Agg")
         import matplotlib.pyplot as plt
 
         G = nx.complete_graph(6)
@@ -236,7 +248,7 @@ class TestPlotCommunityNetwork:
         ax = plot_community_network(G, communities, output_path=output_path)
         assert ax is not None
         assert output_path.exists()
-        plt.close('all')
+        plt.close("all")
 
     def test_community_network_plot_empty_communities(self):
         """Test community network plot with empty communities."""
@@ -259,9 +271,3 @@ class TestPlotCommunityNetwork:
 
         with pytest.raises(ImportError, match="NetworkX required"):
             plot_community_network(fake_graph, communities)
-
-
-
-
-
-

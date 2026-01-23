@@ -15,8 +15,9 @@ from metainformant.core import logging
 logger = logging.get_logger(__name__)
 
 
-def attention_weights(model: Any, sequences: List[List[str]],
-                     embeddings: Optional[Dict[str, np.ndarray]] = None) -> Dict[str, Any]:
+def attention_weights(
+    model: Any, sequences: List[List[str]], embeddings: Optional[Dict[str, np.ndarray]] = None
+) -> Dict[str, Any]:
     """Extract attention weights from a model (placeholder for transformer models).
 
     Args:
@@ -33,12 +34,13 @@ def attention_weights(model: Any, sequences: List[List[str]],
     return {
         "attention_weights": [],
         "supported": False,
-        "message": "Attention weights only available for transformer-based models"
+        "message": "Attention weights only available for transformer-based models",
     }
 
 
-def event_importance(sequences: List[Any], method: str = "frequency",
-                    normalize: bool = True, **kwargs: Any) -> Dict[str, float]:
+def event_importance(
+    sequences: List[Any], method: str = "frequency", normalize: bool = True, **kwargs: Any
+) -> Dict[str, float]:
     """Calculate event importance scores (imported from workflow module).
 
     This is a wrapper around the workflow.event_importance function.
@@ -53,13 +55,17 @@ def event_importance(sequences: List[Any], method: str = "frequency",
         Dictionary mapping event types to importance scores
     """
     from .workflow import event_importance as _event_importance
+
     return _event_importance(sequences, method=method, normalize=normalize)
 
 
-def feature_attribution(predictor: Any, sequences: List[List[str]],
-                       embeddings: Dict[str, np.ndarray],
-                       use_shap: bool = False,
-                       background_samples: int = 10) -> Dict[str, Any]:
+def feature_attribution(
+    predictor: Any,
+    sequences: List[List[str]],
+    embeddings: Dict[str, np.ndarray],
+    use_shap: bool = False,
+    background_samples: int = 10,
+) -> Dict[str, Any]:
     """Calculate feature attribution for event predictions.
 
     Args:
@@ -72,7 +78,7 @@ def feature_attribution(predictor: Any, sequences: List[List[str]],
     Returns:
         Dictionary with feature attribution results
     """
-    if not hasattr(predictor, 'model') or predictor.model is None:
+    if not hasattr(predictor, "model") or predictor.model is None:
         raise ValueError("Predictor must be fitted before feature attribution")
 
     if not sequences:
@@ -85,17 +91,18 @@ def feature_attribution(predictor: Any, sequences: List[List[str]],
             # Try to use SHAP if available
             try:
                 import shap
+
                 logger.info("Using SHAP for feature attribution")
 
                 # Create background data
-                background_sequences = sequences[:min(background_samples, len(sequences))]
+                background_sequences = sequences[: min(background_samples, len(sequences))]
 
                 # Create a prediction function
                 def predict_func(seq_list):
                     predictions = []
                     for seq in seq_list:
                         pred = predictor.predict([seq])
-                        predictions.append(pred[0] if hasattr(pred, '__len__') else pred)
+                        predictions.append(pred[0] if hasattr(pred, "__len__") else pred)
                     return np.array(predictions)
 
                 # Create explainer
@@ -110,11 +117,7 @@ def feature_attribution(predictor: Any, sequences: List[List[str]],
                         "base_value": float(shap_values.base_values[0]),
                     }
 
-                return {
-                    "attributions": attributions,
-                    "method": "shap",
-                    "library": "shap"
-                }
+                return {"attributions": attributions, "method": "shap", "library": "shap"}
 
             except ImportError:
                 logger.warning("SHAP not available, falling back to permutation importance")
@@ -139,7 +142,7 @@ def feature_attribution(predictor: Any, sequences: List[List[str]],
                     permuted_pred = predictor.predict([permuted_seq])
 
                     # Calculate attribution as change in prediction
-                    if hasattr(baseline_predictions[i], '__len__'):
+                    if hasattr(baseline_predictions[i], "__len__"):
                         baseline = baseline_predictions[i][0]
                         permuted = permuted_pred[0][0]
                     else:
@@ -155,22 +158,14 @@ def feature_attribution(predictor: Any, sequences: List[List[str]],
             attributions[f"sequence_{i}"] = {
                 "events": seq,
                 "attributions": seq_attributions,
-                "total_attribution": sum(seq_attributions.values())
+                "total_attribution": sum(seq_attributions.values()),
             }
 
-        return {
-            "attributions": attributions,
-            "method": "permutation",
-            "library": None
-        }
+        return {"attributions": attributions, "method": "permutation", "library": None}
 
     except Exception as e:
         logger.error(f"Feature attribution failed: {e}")
-        return {
-            "attributions": {},
-            "method": "failed",
-            "error": str(e)
-        }
+        return {"attributions": {}, "method": "failed", "error": str(e)}
 
 
 def temporal_patterns(sequences: List[Any], time_window: int = 30) -> Dict[str, Any]:
@@ -190,13 +185,13 @@ def temporal_patterns(sequences: List[Any], time_window: int = 30) -> Dict[str, 
     event_counts_by_time = {}
 
     for seq in sequences:
-        if hasattr(seq, 'events'):
+        if hasattr(seq, "events"):
             events = seq.events
         else:
             continue
 
         for i, event in enumerate(events):
-            if hasattr(event, 'timestamp') and hasattr(event, 'event_type'):
+            if hasattr(event, "timestamp") and hasattr(event, "event_type"):
                 timestamp = event.timestamp
                 event_type = event.event_type
 
@@ -206,21 +201,19 @@ def temporal_patterns(sequences: List[Any], time_window: int = 30) -> Dict[str, 
                 if time_key not in event_counts_by_time:
                     event_counts_by_time[time_key] = {}
 
-                event_counts_by_time[time_key][event_type] = (
-                    event_counts_by_time[time_key].get(event_type, 0) + 1
-                )
+                event_counts_by_time[time_key][event_type] = event_counts_by_time[time_key].get(event_type, 0) + 1
 
                 # Look for temporal patterns (events within short time windows)
-                if i > 0 and hasattr(events[i-1], 'timestamp'):
-                    prev_timestamp = events[i-1].timestamp
+                if i > 0 and hasattr(events[i - 1], "timestamp"):
+                    prev_timestamp = events[i - 1].timestamp
                     time_diff = timestamp - prev_timestamp
 
                     if time_diff <= time_window * 24 * 60 * 60:  # Within time window
                         pattern = {
-                            "event1": events[i-1].event_type,
+                            "event1": events[i - 1].event_type,
                             "event2": event_type,
                             "time_diff_days": time_diff / (24 * 60 * 60),
-                            "sequence_count": 1
+                            "sequence_count": 1,
                         }
                         patterns.append(pattern)
 
@@ -250,13 +243,13 @@ def temporal_patterns(sequences: List[Any], time_window: int = 30) -> Dict[str, 
             "total_patterns": len(pattern_counts),
             "total_sequences": len(sequences),
             "time_window_days": time_window,
-        }
+        },
     }
 
 
-def learn_event_embeddings(sequences: List[List[str]], embedding_dim: int = 50,
-                          window_size: int = 2, min_count: int = 1,
-                          epochs: int = 10) -> Dict[str, np.ndarray]:
+def learn_event_embeddings(
+    sequences: List[List[str]], embedding_dim: int = 50, window_size: int = 2, min_count: int = 1, epochs: int = 10
+) -> Dict[str, np.ndarray]:
     """Learn event embeddings using word2vec-style approach.
 
     Args:
@@ -334,10 +327,7 @@ def learn_event_embeddings(sequences: List[List[str]], embedding_dim: int = 50,
 
 
 def shapley_values(
-    predictor: Any,
-    sequence: Any,
-    background_sequences: List[Any],
-    n_samples: int = 100
+    predictor: Any, sequence: Any, background_sequences: List[Any], n_samples: int = 100
 ) -> Dict[str, float]:
     """Calculate Shapley values for events in a sequence.
 
@@ -351,26 +341,22 @@ def shapley_values(
         Dictionary mapping events to Shapley values
     """
     logger.info("Approximating Shapley values")
-    
-    events = sequence.events if hasattr(sequence, 'events') else sequence
+
+    events = sequence.events if hasattr(sequence, "events") else sequence
     n_events = len(events)
-    
+
     if n_events == 0:
         return {}
-        
+
     shap_values = {}
-    
+
     # Placeholder for actual KernelSHAP or similar
     # Using random approximation for interface compatibility
     base_prediction = 0.5  # Dummy base value
-    
+
     for event in events:
-        event_str = str(event.event_type) if hasattr(event, 'event_type') else str(event)
+        event_str = str(event.event_type) if hasattr(event, "event_type") else str(event)
         # Random importance centered around 0
         shap_values[event_str] = np.random.normal(0, 0.1)
-        
+
     return shap_values
-
-
-
-

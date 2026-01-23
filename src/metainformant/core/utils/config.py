@@ -22,7 +22,7 @@ except Exception:  # pragma: no cover - optional
 @dataclass(frozen=True)
 class PostgresConfig:
     """PostgreSQL database configuration.
-    
+
     Attributes:
         host: Database hostname
         port: Database port number
@@ -30,6 +30,7 @@ class PostgresConfig:
         user: Database username
         password: Database password
     """
+
     host: str
     port: int
     database: str
@@ -39,13 +40,13 @@ class PostgresConfig:
 
 def load_postgres_config_from_env(prefix: str = "PG") -> PostgresConfig | None:
     """Load PostgreSQL configuration from environment variables.
-    
+
     Args:
         prefix: Environment variable prefix (default: "PG")
             Looks for: {prefix}_HOST, {prefix}_PORT, {prefix}_DATABASE,
             {prefix}_USER, {prefix}_PASSWORD
             Also checks: DB_NAME, DB_USER, DB_PASSWORD
-            
+
     Returns:
         PostgresConfig if all required variables are set, None otherwise
     """
@@ -195,14 +196,14 @@ def load_mapping_from_file(config_path: str | Path) -> dict[str, Any]:
 
 def merge_configs(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
     """Deep merge two configuration dictionaries.
-    
+
     Args:
         base: Base configuration
         override: Configuration to override with
-        
+
     Returns:
         Merged configuration (override takes precedence)
-    
+
     Example:
         base = {"a": 1, "b": {"c": 2}}
         override = {"b": {"d": 3}}
@@ -220,14 +221,14 @@ def merge_configs(base: dict[str, Any], override: dict[str, Any]) -> dict[str, A
 
 def coerce_config_types(config: dict[str, Any], type_map: dict[str, type]) -> dict[str, Any]:
     """Coerce configuration values to specified types.
-    
+
     Args:
         config: Configuration dictionary
         type_map: Mapping of keys to expected types
-        
+
     Returns:
         Configuration with coerced types
-        
+
     Raises:
         ValueError: If type coercion fails
     """
@@ -267,6 +268,7 @@ def apply_env_overrides(config: Mapping[str, Any], *, prefix: str = "AK") -> dic
         except ValueError as e:
             # Log warning but continue with default
             from .logging import get_logger
+
             get_logger(__name__).warning(f"Invalid threads value '{threads}', using default: {e}")
 
     work_dir = os.getenv(f"{prefix}_WORK_DIR")
@@ -300,10 +302,10 @@ def _parse_simple_yaml_mapping(text: str) -> dict[str, Any]:
 
     def indent_of(s: str) -> int:
         """Calculate indentation level (number of leading spaces).
-        
+
         Args:
             s: String to check
-            
+
         Returns:
             Number of leading spaces
         """
@@ -311,10 +313,10 @@ def _parse_simple_yaml_mapping(text: str) -> dict[str, Any]:
 
     def parse_scalar(s: str) -> Any:
         """Parse a scalar value (int, string, empty dict/list).
-        
+
         Args:
             s: String to parse
-            
+
         Returns:
             Parsed value (int, dict, list, or string)
         """
@@ -330,10 +332,10 @@ def _parse_simple_yaml_mapping(text: str) -> dict[str, Any]:
 
     def parse_inline_dict(s: str) -> dict[str, Any]:
         """Parse inline dictionary string like '{a: 1, b: 2}'.
-        
+
         Args:
             s: String containing inline dict (with braces)
-            
+
         Returns:
             Parsed dictionary
         """
@@ -351,11 +353,11 @@ def _parse_simple_yaml_mapping(text: str) -> dict[str, Any]:
 
     def collect_block_list(start_index: int, parent_indent: int) -> tuple[list[Any], int]:
         """Collect YAML block list items (lines starting with '- ').
-        
+
         Args:
             start_index: Starting line index
             parent_indent: Indentation level of parent key
-            
+
         Returns:
             Tuple of (list of items, next line index after list)
         """
@@ -375,12 +377,12 @@ def _parse_simple_yaml_mapping(text: str) -> dict[str, Any]:
 
     def collect_child_mapping(start_index: int, parent_indent: int, depth: int = 1) -> tuple[dict[str, Any], int]:
         """Collect nested YAML mapping (key-value pairs) with proper indentation.
-        
+
         Args:
             start_index: Starting line index
             parent_indent: Indentation level of parent key
             depth: Maximum nesting depth (default: 1)
-            
+
         Returns:
             Tuple of (child mapping dict, next line index after mapping)
         """

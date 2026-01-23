@@ -17,11 +17,7 @@ from metainformant.core import logging, validation
 logger = logging.get_logger(__name__)
 
 
-def differential_entropy(
-    samples: np.ndarray,
-    method: str = "histogram",
-    bins: Optional[int] = None
-) -> float:
+def differential_entropy(samples: np.ndarray, method: str = "histogram", bins: Optional[int] = None) -> float:
     """Calculate differential entropy of continuous data.
 
     Args:
@@ -53,10 +49,7 @@ def differential_entropy(
         raise ValueError(f"Unknown method: {method}")
 
 
-def _differential_entropy_histogram(
-    samples: np.ndarray,
-    bins: Optional[int] = None
-) -> float:
+def _differential_entropy_histogram(samples: np.ndarray, bins: Optional[int] = None) -> float:
     """Estimate differential entropy using histogram method."""
     if bins is None:
         # Use Sturges' rule for number of bins
@@ -91,7 +84,7 @@ def _differential_entropy_kde(samples: np.ndarray) -> float:
         raise ImportError("scikit-learn required for KDE entropy estimation")
 
     # Fit KDE
-    kde = KernelDensity(bandwidth='scott', kernel='gaussian')
+    kde = KernelDensity(bandwidth="scott", kernel="gaussian")
     kde.fit(samples.reshape(-1, 1))
 
     # Evaluate on a grid
@@ -137,7 +130,7 @@ def _differential_entropy_knn(samples: np.ndarray, k: int = 3) -> float:
         sorted_dists = np.sort(dists)[1:]  # Remove self-distance
 
         if len(sorted_dists) >= k:
-            distances[i] = sorted_dists[k-1]
+            distances[i] = sorted_dists[k - 1]
         else:
             distances[i] = sorted_dists[-1]  # Use furthest available
 
@@ -159,10 +152,7 @@ def _differential_entropy_knn(samples: np.ndarray, k: int = 3) -> float:
 
 
 def mutual_information_continuous(
-    x: np.ndarray,
-    y: np.ndarray,
-    method: str = "histogram",
-    bins: Optional[int] = None
+    x: np.ndarray, y: np.ndarray, method: str = "histogram", bins: Optional[int] = None
 ) -> float:
     """Calculate mutual information between two continuous variables.
 
@@ -200,10 +190,7 @@ def mutual_information_continuous(
 
 
 def kl_divergence_continuous(
-    p_samples: np.ndarray,
-    q_samples: np.ndarray,
-    method: str = "histogram",
-    bins: Optional[int] = None
+    p_samples: np.ndarray, q_samples: np.ndarray, method: str = "histogram", bins: Optional[int] = None
 ) -> float:
     """Calculate KL divergence between two continuous distributions.
 
@@ -233,11 +220,7 @@ def kl_divergence_continuous(
         raise ValueError(f"Unknown method: {method}")
 
 
-def _kl_divergence_histogram(
-    p_samples: np.ndarray,
-    q_samples: np.ndarray,
-    bins: Optional[int] = None
-) -> float:
+def _kl_divergence_histogram(p_samples: np.ndarray, q_samples: np.ndarray, bins: Optional[int] = None) -> float:
     """Estimate KL divergence using histogram method."""
     if bins is None:
         # Use combined data range for bins
@@ -245,8 +228,7 @@ def _kl_divergence_histogram(
         bins = int(np.ceil(np.log2(len(all_samples)) + 1))
 
     # Create histograms
-    combined_range = (min(p_samples.min(), q_samples.min()),
-                     max(p_samples.max(), q_samples.max()))
+    combined_range = (min(p_samples.min(), q_samples.min()), max(p_samples.max(), q_samples.max()))
 
     hist_p, bin_edges = np.histogram(p_samples, bins=bins, range=combined_range, density=True)
     hist_q, _ = np.histogram(q_samples, bins=bins, range=combined_range, density=True)
@@ -261,10 +243,7 @@ def _kl_divergence_histogram(
     return max(0.0, kl_div)  # Ensure non-negative
 
 
-def _kl_divergence_kde(
-    p_samples: np.ndarray,
-    q_samples: np.ndarray
-) -> float:
+def _kl_divergence_kde(p_samples: np.ndarray, q_samples: np.ndarray) -> float:
     """Estimate KL divergence using KDE method."""
     try:
         from sklearn.neighbors import KernelDensity
@@ -272,8 +251,8 @@ def _kl_divergence_kde(
         raise ImportError("scikit-learn required for KDE KL divergence")
 
     # Fit KDEs
-    kde_p = KernelDensity(bandwidth='scott', kernel='gaussian')
-    kde_q = KernelDensity(bandwidth='scott', kernel='gaussian')
+    kde_p = KernelDensity(bandwidth="scott", kernel="gaussian")
+    kde_q = KernelDensity(bandwidth="scott", kernel="gaussian")
 
     kde_p.fit(p_samples.reshape(-1, 1))
     kde_q.fit(q_samples.reshape(-1, 1))
@@ -306,19 +285,12 @@ def _kl_divergence_kde(
     return max(0.0, kl_div)
 
 
-def entropy_estimation(
-    samples: np.ndarray,
-    method: str = "histogram",
-    bins: Optional[int] = None
-) -> float:
+def entropy_estimation(samples: np.ndarray, method: str = "histogram", bins: Optional[int] = None) -> float:
     """Unified interface for entropy estimation (alias for differential_entropy)."""
     return differential_entropy(samples, method=method, bins=bins)
 
 
-def copula_entropy(
-    samples: np.ndarray,
-    method: str = "histogram"
-) -> float:
+def copula_entropy(samples: np.ndarray, method: str = "histogram") -> float:
     """Calculate copula entropy (normalized entropy for dependence analysis).
 
     Copula entropy measures the dependence between variables while being
@@ -347,7 +319,7 @@ def copula_entropy(
 
     for i in range(n_vars):
         # Rank transformation (empirical CDF)
-        ranks = stats.rankdata(samples[:, i], method='average')
+        ranks = stats.rankdata(samples[:, i], method="average")
         copula_data[:, i] = ranks / (len(samples) + 1)
 
     # Calculate entropy of copula-transformed data
@@ -365,12 +337,7 @@ def copula_entropy(
     return copula_ent
 
 
-def transfer_entropy_continuous(
-    x: np.ndarray,
-    y: np.ndarray,
-    lag: int = 1,
-    method: str = "histogram"
-) -> float:
+def transfer_entropy_continuous(x: np.ndarray, y: np.ndarray, lag: int = 1, method: str = "histogram") -> float:
     """Calculate transfer entropy for continuous time series.
 
     Args:
@@ -401,29 +368,22 @@ def transfer_entropy_continuous(
     # Transfer entropy: H(Y_{t+1} | Y_t) - H(Y_{t+1} | Y_t, X_t)
     # This is equivalent to: I(Y_{t+1}; X_t | Y_t)
 
-    y_future = y[lag:]      # Y_{t+1}
-    y_past = y[:-lag]       # Y_t
-    x_past = x[:-lag]       # X_t
+    y_future = y[lag:]  # Y_{t+1}
+    y_past = y[:-lag]  # Y_t
+    x_past = x[:-lag]  # X_t
 
     # H(Y_{t+1} | Y_t)
-    h_y_future_given_y_past = conditional_entropy_continuous(
-        y_future, y_past, method=method
-    )
+    h_y_future_given_y_past = conditional_entropy_continuous(y_future, y_past, method=method)
 
     # H(Y_{t+1} | Y_t, X_t)
-    h_y_future_given_y_past_x_past = conditional_entropy_continuous_3d(
-        y_future, y_past, x_past, method=method
-    )
+    h_y_future_given_y_past_x_past = conditional_entropy_continuous_3d(y_future, y_past, x_past, method=method)
 
     te = h_y_future_given_y_past - h_y_future_given_y_past_x_past
     return max(0.0, te)  # Ensure non-negative
 
 
 def conditional_entropy_continuous(
-    x: np.ndarray,
-    y: np.ndarray,
-    method: str = "histogram",
-    bins: Optional[int] = None
+    x: np.ndarray, y: np.ndarray, method: str = "histogram", bins: Optional[int] = None
 ) -> float:
     """Calculate conditional entropy H(X|Y) for continuous variables.
 
@@ -445,11 +405,7 @@ def conditional_entropy_continuous(
 
 
 def conditional_entropy_continuous_3d(
-    x: np.ndarray,
-    y: np.ndarray,
-    z: np.ndarray,
-    method: str = "histogram",
-    bins: Optional[int] = None
+    x: np.ndarray, y: np.ndarray, z: np.ndarray, method: str = "histogram", bins: Optional[int] = None
 ) -> float:
     """Calculate conditional entropy H(X|Y,Z) for continuous variables.
 
@@ -473,11 +429,7 @@ def conditional_entropy_continuous_3d(
     return max(0.0, h_xyz - h_yz)
 
 
-def information_flow_network(
-    time_series_data: np.ndarray,
-    lag: int = 1,
-    method: str = "histogram"
-) -> np.ndarray:
+def information_flow_network(time_series_data: np.ndarray, lag: int = 1, method: str = "histogram") -> np.ndarray:
     """Calculate information flow network from multivariate time series.
 
     Args:
@@ -502,16 +454,7 @@ def information_flow_network(
     for i in range(n_vars):
         for j in range(n_vars):
             if i != j:  # No self-flow
-                te = transfer_entropy_continuous(
-                    time_series_data[i], time_series_data[j],
-                    lag=lag, method=method
-                )
+                te = transfer_entropy_continuous(time_series_data[i], time_series_data[j], lag=lag, method=method)
                 flow_matrix[i, j] = te
 
     return flow_matrix
-
-
-
-
-
-

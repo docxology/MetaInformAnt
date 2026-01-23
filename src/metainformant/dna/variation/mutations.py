@@ -72,67 +72,108 @@ def classify_mutations(ancestral: str, derived: str) -> Dict[str, int]:
     if len(ancestral) != len(derived):
         raise ValueError("Sequences must have equal length")
 
-    mutation_types = {
-        'transitions': 0,
-        'transversions': 0,
-        'synonymous': 0,
-        'nonsynonymous': 0,
-        'total': 0
-    }
+    mutation_types = {"transitions": 0, "transversions": 0, "synonymous": 0, "nonsynonymous": 0, "total": 0}
 
     # Transition pairs: A<->G, C<->T
-    transition_pairs = {('A', 'G'), ('G', 'A'), ('C', 'T'), ('T', 'C')}
+    transition_pairs = {("A", "G"), ("G", "A"), ("C", "T"), ("T", "C")}
 
     # Codon translation table (simplified)
     genetic_code = {
-        'TTT': 'F', 'TTC': 'F', 'TTA': 'L', 'TTG': 'L',
-        'TCT': 'S', 'TCC': 'S', 'TCA': 'S', 'TCG': 'S',
-        'TAT': 'Y', 'TAC': 'Y', 'TAA': '*', 'TAG': '*',
-        'TGT': 'C', 'TGC': 'C', 'TGA': '*', 'TGG': 'W',
-        'CTT': 'L', 'CTC': 'L', 'CTA': 'L', 'CTG': 'L',
-        'CCT': 'P', 'CCC': 'P', 'CCA': 'P', 'CCG': 'P',
-        'CAT': 'H', 'CAC': 'H', 'CAA': 'Q', 'CAG': 'Q',
-        'CGT': 'R', 'CGC': 'R', 'CGA': 'R', 'CGG': 'R',
-        'ATT': 'I', 'ATC': 'I', 'ATA': 'I', 'ATG': 'M',
-        'ACT': 'T', 'ACC': 'T', 'ACA': 'T', 'ACG': 'T',
-        'AAT': 'N', 'AAC': 'N', 'AAA': 'K', 'AAG': 'K',
-        'AGT': 'S', 'AGC': 'S', 'AGA': 'R', 'AGG': 'R',
-        'GTT': 'V', 'GTC': 'V', 'GTA': 'V', 'GTG': 'V',
-        'GCT': 'G', 'GCC': 'G', 'GCA': 'G', 'GCG': 'G',
-        'GAT': 'D', 'GAC': 'D', 'GAA': 'E', 'GAG': 'E',
-        'GGT': 'G', 'GGC': 'G', 'GGA': 'G', 'GGG': 'G'
+        "TTT": "F",
+        "TTC": "F",
+        "TTA": "L",
+        "TTG": "L",
+        "TCT": "S",
+        "TCC": "S",
+        "TCA": "S",
+        "TCG": "S",
+        "TAT": "Y",
+        "TAC": "Y",
+        "TAA": "*",
+        "TAG": "*",
+        "TGT": "C",
+        "TGC": "C",
+        "TGA": "*",
+        "TGG": "W",
+        "CTT": "L",
+        "CTC": "L",
+        "CTA": "L",
+        "CTG": "L",
+        "CCT": "P",
+        "CCC": "P",
+        "CCA": "P",
+        "CCG": "P",
+        "CAT": "H",
+        "CAC": "H",
+        "CAA": "Q",
+        "CAG": "Q",
+        "CGT": "R",
+        "CGC": "R",
+        "CGA": "R",
+        "CGG": "R",
+        "ATT": "I",
+        "ATC": "I",
+        "ATA": "I",
+        "ATG": "M",
+        "ACT": "T",
+        "ACC": "T",
+        "ACA": "T",
+        "ACG": "T",
+        "AAT": "N",
+        "AAC": "N",
+        "AAA": "K",
+        "AAG": "K",
+        "AGT": "S",
+        "AGC": "S",
+        "AGA": "R",
+        "AGG": "R",
+        "GTT": "V",
+        "GTC": "V",
+        "GTA": "V",
+        "GTG": "V",
+        "GCT": "G",
+        "GCC": "G",
+        "GCA": "G",
+        "GCG": "G",
+        "GAT": "D",
+        "GAC": "D",
+        "GAA": "E",
+        "GAG": "E",
+        "GGT": "G",
+        "GGC": "G",
+        "GGA": "G",
+        "GGG": "G",
     }
 
     for i, (a, d) in enumerate(zip(ancestral.upper(), derived.upper())):
         if a != d:
-            mutation_types['total'] += 1
+            mutation_types["total"] += 1
 
             # Classify transition vs transversion
             if (a, d) in transition_pairs:
-                mutation_types['transitions'] += 1
+                mutation_types["transitions"] += 1
             else:
-                mutation_types['transversions'] += 1
+                mutation_types["transversions"] += 1
 
             # Check if this affects protein coding (simplified)
             # Look at codon context
             codon_start = (i // 3) * 3
             if codon_start + 3 <= len(ancestral):
-                ancestral_codon = ancestral[codon_start:codon_start+3].upper()
-                derived_codon = ancestral_codon[:i % 3] + d + ancestral_codon[i % 3 + 1:]
+                ancestral_codon = ancestral[codon_start : codon_start + 3].upper()
+                derived_codon = ancestral_codon[: i % 3] + d + ancestral_codon[i % 3 + 1 :]
 
-                ancestral_aa = genetic_code.get(ancestral_codon, 'X')
-                derived_aa = genetic_code.get(derived_codon, 'X')
+                ancestral_aa = genetic_code.get(ancestral_codon, "X")
+                derived_aa = genetic_code.get(derived_codon, "X")
 
                 if ancestral_aa == derived_aa:
-                    mutation_types['synonymous'] += 1
+                    mutation_types["synonymous"] += 1
                 else:
-                    mutation_types['nonsynonymous'] += 1
+                    mutation_types["nonsynonymous"] += 1
 
     return mutation_types
 
 
-def generate_point_mutations(sequence: str, num_mutations: int,
-                           mutation_rate: float = 0.001) -> str:
+def generate_point_mutations(sequence: str, num_mutations: int, mutation_rate: float = 0.001) -> str:
     """Generate point mutations in a DNA sequence.
 
     Args:
@@ -152,7 +193,7 @@ def generate_point_mutations(sequence: str, num_mutations: int,
     if not sequence:
         return sequence
 
-    nucleotides = ['A', 'C', 'G', 'T']
+    nucleotides = ["A", "C", "G", "T"]
     mutated = list(sequence.upper())
 
     mutations_applied = 0
@@ -169,11 +210,10 @@ def generate_point_mutations(sequence: str, num_mutations: int,
                 mutated[i] = random.choice(possible)
                 mutations_applied += 1
 
-    return ''.join(mutated)
+    return "".join(mutated)
 
 
-def simulate_sequence_evolution(sequence: str, generations: int,
-                              mutation_rate: float = 0.001) -> List[str]:
+def simulate_sequence_evolution(sequence: str, generations: int, mutation_rate: float = 0.001) -> List[str]:
     """Simulate sequence evolution under mutation pressure.
 
     Args:
@@ -198,8 +238,7 @@ def simulate_sequence_evolution(sequence: str, generations: int,
     for gen in range(generations):
         # Mutate the current sequence
         current_seq = evolutionary_lineage[-1]
-        mutated_seq = generate_point_mutations(current_seq, num_mutations=1,
-                                             mutation_rate=mutation_rate)
+        mutated_seq = generate_point_mutations(current_seq, num_mutations=1, mutation_rate=mutation_rate)
         evolutionary_lineage.append(mutated_seq)
 
     return evolutionary_lineage
@@ -227,10 +266,10 @@ def find_mutational_hotspots(sequence: str, window_size: int = 10) -> List[Tuple
     hotspots = []
 
     for i in range(len(sequence) - window_size + 1):
-        window = sequence[i:i + window_size].upper()
+        window = sequence[i : i + window_size].upper()
 
         # Calculate GC content (simple hotspot predictor)
-        gc_count = window.count('G') + window.count('C')
+        gc_count = window.count("G") + window.count("C")
         gc_content = gc_count / window_size
 
         # Calculate repeat content
@@ -295,14 +334,9 @@ def detect_selection_signatures(sequence: str, reference_sequences: List[str]) -
         True
     """
     if not reference_sequences:
-        return {'diversity': 0.0, 'conservation': 1.0}
+        return {"diversity": 0.0, "conservation": 1.0}
 
-    metrics = {
-        'diversity': 0.0,
-        'conservation': 0.0,
-        'synonymous_sites': 0,
-        'nonsynonymous_sites': 0
-    }
+    metrics = {"diversity": 0.0, "conservation": 0.0, "synonymous_sites": 0, "nonsynonymous_sites": 0}
 
     # Simple diversity calculation
     diversities = []
@@ -312,16 +346,15 @@ def detect_selection_signatures(sequence: str, reference_sequences: List[str]) -
             diversities.append(div)
 
     if diversities:
-        metrics['diversity'] = sum(diversities) / len(diversities)
+        metrics["diversity"] = sum(diversities) / len(diversities)
 
         # Conservation is inverse of diversity
-        metrics['conservation'] = 1.0 - metrics['diversity']
+        metrics["conservation"] = 1.0 - metrics["diversity"]
 
     return metrics
 
 
-def generate_mutant_library(sequence: str, positions: List[int],
-                          mutations: List[str]) -> List[str]:
+def generate_mutant_library(sequence: str, positions: List[int], mutations: List[str]) -> List[str]:
     """Generate a library of mutant sequences.
 
     Args:
@@ -347,7 +380,7 @@ def generate_mutant_library(sequence: str, positions: List[int],
         if 0 <= pos < len(sequence):
             mutant = list(sequence)
             mutant[pos] = mutation.upper()
-            mutants.append(''.join(mutant))
+            mutants.append("".join(mutant))
 
     return mutants
 
@@ -375,26 +408,21 @@ def analyze_mutation_spectrum(sequence: str, reference: str) -> Dict[str, any]:
     mutation_types = classify_mutations(reference, sequence)
 
     # Calculate mutation density
-    mutation_density = mutation_types['total'] / len(sequence) if sequence else 0
+    mutation_density = mutation_types["total"] / len(sequence) if sequence else 0
 
     # Calculate transition/transversion ratio
-    ti_tv_ratio = (mutation_types['transitions'] / mutation_types['transversions']
-                  if mutation_types['transversions'] > 0 else float('inf'))
+    ti_tv_ratio = (
+        mutation_types["transitions"] / mutation_types["transversions"]
+        if mutation_types["transversions"] > 0
+        else float("inf")
+    )
 
     spectrum = {
-        'mutation_types': mutation_types,
-        'mutation_density': mutation_density,
-        'ti_tv_ratio': ti_tv_ratio,
-        'sequence_length': len(sequence),
-        'substitution_matrix': calculate_substitution_matrix(reference, sequence)
+        "mutation_types": mutation_types,
+        "mutation_density": mutation_density,
+        "ti_tv_ratio": ti_tv_ratio,
+        "sequence_length": len(sequence),
+        "substitution_matrix": calculate_substitution_matrix(reference, sequence),
     }
 
     return spectrum
-
-
-
-
-
-
-
-

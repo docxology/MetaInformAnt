@@ -113,7 +113,7 @@ def clean_environment(monkeypatch) -> Iterator[None]:
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_environment():
     """Set up test environment including PYTHONPATH and dependency checks.
-    
+
     This fixture runs automatically for all tests and ensures:
     - PYTHONPATH includes src/ so metainformant can be imported
     - User local bin is in PATH for CLI tools
@@ -125,14 +125,14 @@ def setup_test_environment():
     src_dir = repo_root / "src"
     if src_dir.exists() and str(src_dir) not in sys.path:
         sys.path.insert(0, str(src_dir))
-    
+
     # Ensure user local bin is in PATH (common for --user installs)
     user_bin = Path.home() / ".local" / "bin"
     if user_bin.exists():
         current_path = os.environ.get("PATH", "")
         if str(user_bin) not in current_path:
             os.environ["PATH"] = f"{user_bin}:{current_path}"
-    
+
     # Set PYTHONPATH if not already set
     pythonpath = os.environ.get("PYTHONPATH", "")
     if str(src_dir) not in pythonpath:
@@ -140,17 +140,17 @@ def setup_test_environment():
             os.environ["PYTHONPATH"] = f"{src_dir}:{pythonpath}"
         else:
             os.environ["PYTHONPATH"] = str(src_dir)
-    
+
     # Auto-configure UV environment variables for filesystem compatibility
     # This handles FAT filesystems that don't support symlinks
     try:
         from metainformant.core.filesystem import get_uv_cache_dir, get_venv_location
-        
+
         # Get UV cache directory (respects existing UV_CACHE_DIR if set)
         uv_cache_dir = get_uv_cache_dir(repo_root)
         if "UV_CACHE_DIR" not in os.environ:
             os.environ["UV_CACHE_DIR"] = str(uv_cache_dir)
-        
+
         # Get venv location (respects existing UV_PROJECT_ENVIRONMENT or METAINFORMANT_VENV if set)
         venv_location = get_venv_location(repo_root)
         if "UV_PROJECT_ENVIRONMENT" not in os.environ:
@@ -164,7 +164,7 @@ def setup_test_environment():
         try:
             import subprocess
             import platform
-            
+
             # Detect filesystem type
             fs_type = "unknown"
             system = platform.system().lower()
@@ -184,7 +184,7 @@ def setup_test_environment():
                                 fs_type = parts[1].lower()
                 except Exception:
                     pass
-            
+
             # Check if FAT filesystem (no symlink support)
             no_symlink_fs = {"exfat", "fat32", "fat", "vfat", "msdos"}
             if fs_type in no_symlink_fs:
@@ -215,7 +215,7 @@ def setup_test_environment():
 @pytest.fixture(scope="session", autouse=True)
 def load_ncbi_config():
     """Load NCBI configuration from config file if NCBI_EMAIL not in environment.
-    
+
     This fixture runs automatically for all tests and ensures NCBI_EMAIL
     is set from config/ncbi.yaml if not already set in environment.
     """
@@ -223,7 +223,7 @@ def load_ncbi_config():
         try:
             from pathlib import Path
             from metainformant.core.utils.config import load_mapping_from_file
-            
+
             config_path = Path(__file__).parent.parent / "config" / "ncbi.yaml"
             if config_path.exists():
                 config = load_mapping_from_file(config_path)
@@ -250,7 +250,7 @@ def ensure_amalgkit_available():
     from pathlib import Path
     import pytest
     from metainformant.rna.amalgkit.amalgkit import check_cli_available, ensure_cli_available
-    
+
     # Ensure user local bin is in PATH (common for --user installs)
     user_bin = Path.home() / ".local" / "bin"
     if user_bin.exists():
@@ -283,7 +283,7 @@ def ensure_amalgkit_available():
 
 class TestFileSystem:
     """Helper filesystem for testing file operations using real I/O operations.
-    
+
     This class uses real file operations via tmp_path, following the NO_MOCKING_POLICY.
     It provides convenience methods for creating test files in isolated temporary directories.
     """
@@ -311,7 +311,7 @@ class TestFileSystem:
 @pytest.fixture(scope="function")
 def test_filesystem(isolated_tmp_dir) -> TestFileSystem:
     """Provide a test filesystem helper for testing.
-    
+
     Uses real file operations via tmp_path, following NO_MOCKING_POLICY.
     """
     return TestFileSystem(isolated_tmp_dir)
@@ -320,13 +320,14 @@ def test_filesystem(isolated_tmp_dir) -> TestFileSystem:
 @pytest.fixture(scope="function", autouse=True)
 def cleanup_matplotlib_figures():
     """Automatically close all matplotlib figures after each test.
-    
+
     This prevents RuntimeWarnings about too many open figures and ensures
     proper cleanup of visualization resources.
     """
     yield
     try:
         import matplotlib.pyplot as plt
+
         plt.close("all")
     except ImportError:
         pass  # matplotlib not available, nothing to clean up
@@ -516,7 +517,7 @@ def _check_test_dependencies(test_type: str = "fast") -> dict[str, bool]:
         "fast": ["pytest", "pytest_cov"],
         "network": ["pytest", "pytest_cov", "requests"],
         "external": ["pytest", "pytest_cov"],
-        "all": ["pytest", "pytest_cov", "pytest_xdist", "pytest_benchmark"]
+        "all": ["pytest", "pytest_cov", "pytest_xdist", "pytest_benchmark"],
     }
 
     for dep in uv_deps.get(test_type, uv_deps["fast"]):

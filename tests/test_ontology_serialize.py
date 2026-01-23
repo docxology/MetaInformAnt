@@ -94,7 +94,6 @@ class TestSerialization:
         onto = Ontology()
         save_path = tmp_path / "empty.json"
         save_ontology(onto, save_path)
-        
+
         loaded = load_ontology(save_path)
         assert loaded.num_terms() == 0
-

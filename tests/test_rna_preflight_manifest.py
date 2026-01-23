@@ -16,6 +16,7 @@ def test_preflight_manifest_when_amalgkit_missing(tmp_path: Path):
     ok, _ = check_cli_available()
     if not ok:
         import pytest
+
         pytest.skip("amalgkit CLI not available; skipping real preflight/manifest smoke test")
 
     cfg = AmalgkitWorkflowConfig(work_dir=tmp_path / "work", threads=1)
@@ -28,4 +29,4 @@ def test_preflight_manifest_when_amalgkit_missing(tmp_path: Path):
     # Manifest may or may not exist depending on which step fails
     manifest = cfg.work_dir / "amalgkit.manifest.jsonl"
     ok, msg = check_cli_available()
-    assert not ok or 'available' in msg.lower() or 'found' in msg.lower()
+    assert not ok or "available" in msg.lower() or "found" in msg.lower()

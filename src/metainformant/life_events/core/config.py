@@ -34,6 +34,7 @@ class LifeEventsWorkflowConfig:
         min_event_count: Minimum event frequency for embedding
         sequence_max_length: Maximum sequence length for models
     """
+
     work_dir: Path
     embedding_dim: int = 100
     model_type: str = "embedding"
@@ -63,38 +64,37 @@ class LifeEventsWorkflowConfig:
     def to_dict(self) -> Dict[str, Any]:
         """Convert config to dictionary."""
         return {
-            'work_dir': str(self.work_dir),
-            'embedding_dim': self.embedding_dim,
-            'model_type': self.model_type,
-            'learning_rate': self.learning_rate,
-            'batch_size': self.batch_size,
-            'epochs': self.epochs,
-            'random_seed': self.random_seed,
-            'output_dir': str(self.output_dir) if self.output_dir else None,
-            'log_level': self.log_level,
-            'use_gpu': self.use_gpu,
-            'save_models': self.save_models,
-            'cross_validation_folds': self.cross_validation_folds,
-            'test_split': self.test_split,
-            'embedding_window': self.embedding_window,
-            'min_event_count': self.min_event_count,
-            'sequence_max_length': self.sequence_max_length,
+            "work_dir": str(self.work_dir),
+            "embedding_dim": self.embedding_dim,
+            "model_type": self.model_type,
+            "learning_rate": self.learning_rate,
+            "batch_size": self.batch_size,
+            "epochs": self.epochs,
+            "random_seed": self.random_seed,
+            "output_dir": str(self.output_dir) if self.output_dir else None,
+            "log_level": self.log_level,
+            "use_gpu": self.use_gpu,
+            "save_models": self.save_models,
+            "cross_validation_folds": self.cross_validation_folds,
+            "test_split": self.test_split,
+            "embedding_window": self.embedding_window,
+            "min_event_count": self.min_event_count,
+            "sequence_max_length": self.sequence_max_length,
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> LifeEventsWorkflowConfig:
         """Create config from dictionary."""
         # Convert string paths to Path objects
-        if 'work_dir' in data:
-            data['work_dir'] = Path(data['work_dir'])
-        if 'output_dir' in data and data['output_dir']:
-            data['output_dir'] = Path(data['output_dir'])
+        if "work_dir" in data:
+            data["work_dir"] = Path(data["work_dir"])
+        if "output_dir" in data and data["output_dir"]:
+            data["output_dir"] = Path(data["output_dir"])
 
         return cls(**data)
 
 
-def load_life_events_config(config_file: str | Path,
-                           prefix: str = "LE") -> LifeEventsWorkflowConfig:
+def load_life_events_config(config_file: str | Path, prefix: str = "LE") -> LifeEventsWorkflowConfig:
     """Load life events configuration from file with environment overrides.
 
     Args:
@@ -115,7 +115,7 @@ def load_life_events_config(config_file: str | Path,
     raw_config = core_config.apply_env_overrides(raw_config, prefix=prefix)
 
     # Validate required fields
-    if 'work_dir' not in raw_config:
+    if "work_dir" not in raw_config:
         raise ValueError("Configuration must specify 'work_dir'")
 
     # Convert and validate
@@ -149,17 +149,20 @@ def save_config(config: LifeEventsWorkflowConfig, output_file: str | Path) -> No
     config_dict = config.to_dict()
 
     # Determine format from extension
-    if str(output_file).endswith('.yaml') or str(output_file).endswith('.yml'):
+    if str(output_file).endswith(".yaml") or str(output_file).endswith(".yml"):
         import yaml
-        with open(output_file, 'w') as f:
+
+        with open(output_file, "w") as f:
             yaml.dump(config_dict, f, default_flow_style=False)
-    elif str(output_file).endswith('.json'):
+    elif str(output_file).endswith(".json"):
         import json
-        with open(output_file, 'w') as f:
+
+        with open(output_file, "w") as f:
             json.dump(config_dict, f, indent=2)
     else:
         raise ValueError(f"Unsupported config format: {output_file}")
 
     from metainformant.core import logging
+
     logger = logging.get_logger(__name__)
     logger.info(f"Saved configuration to {output_file}")

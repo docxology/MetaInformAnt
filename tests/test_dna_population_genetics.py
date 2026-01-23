@@ -1,4 +1,5 @@
 """Tests for DNA population genetics functions."""
+
 from __future__ import annotations
 
 import pytest

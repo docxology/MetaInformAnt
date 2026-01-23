@@ -382,7 +382,7 @@ def graph_operation():
 - Alignment algorithms: Needleman-Wunsch, Smith-Waterman implementations
 
 ### Visualization Module
-- 12+ specialized plotting modules
+- 14 specialized plotting modules with 57+ unique plot types
 - All functions return real matplotlib Figure objects (never None)
 - Output to `output/visualization/` with informative filenames
 

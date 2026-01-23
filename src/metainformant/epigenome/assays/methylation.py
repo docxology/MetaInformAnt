@@ -21,8 +21,7 @@ logger = logging.get_logger(__name__)
 class MethylationSite:
     """Represents a single CpG methylation site."""
 
-    def __init__(self, chromosome: str, position: int, methylated_reads: int,
-                 total_reads: int, strand: str = '+'):
+    def __init__(self, chromosome: str, position: int, methylated_reads: int, total_reads: int, strand: str = "+"):
         """Initialize a methylation site.
 
         Args:
@@ -59,13 +58,13 @@ class MethylationSite:
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary representation."""
         return {
-            'chromosome': self.chromosome,
-            'position': self.position,
-            'methylated_reads': self.methylated_reads,
-            'total_reads': self.total_reads,
-            'methylation_level': self.methylation_level,
-            'coverage': self.coverage,
-            'strand': self.strand,
+            "chromosome": self.chromosome,
+            "position": self.position,
+            "methylated_reads": self.methylated_reads,
+            "total_reads": self.total_reads,
+            "methylation_level": self.methylation_level,
+            "coverage": self.coverage,
+            "strand": self.strand,
         }
 
 
@@ -90,13 +89,13 @@ def load_methylation_bedgraph(path: str | Path, min_coverage: int = 1) -> Dict[s
     methylation_data = defaultdict(list)
 
     try:
-        with io.open_text_auto(path, 'rt') as f:
+        with io.open_text_auto(path, "rt") as f:
             for line_num, line in enumerate(f, 1):
                 line = line.strip()
-                if not line or line.startswith('#') or line.startswith('track'):
+                if not line or line.startswith("#") or line.startswith("track"):
                     continue
 
-                parts = line.split('\t')
+                parts = line.split("\t")
                 if len(parts) < 4:
                     logger.warning(f"Skipping malformed line {line_num}: {line}")
                     continue
@@ -118,7 +117,7 @@ def load_methylation_bedgraph(path: str | Path, min_coverage: int = 1) -> Dict[s
                             chromosome=chromosome,
                             position=start_pos,
                             methylated_reads=methylated_reads,
-                            total_reads=total_reads
+                            total_reads=total_reads,
                         )
                         methylation_data[chromosome].append(site)
 
@@ -157,13 +156,13 @@ def load_methylation_cov(path: str | Path, min_coverage: int = 1) -> Dict[str, L
     methylation_data = defaultdict(list)
 
     try:
-        with io.open_text_auto(path, 'rt') as f:
+        with io.open_text_auto(path, "rt") as f:
             for line_num, line in enumerate(f, 1):
                 line = line.strip()
-                if not line or line.startswith('#'):
+                if not line or line.startswith("#"):
                     continue
 
-                parts = line.split('\t')
+                parts = line.split("\t")
                 if len(parts) < 6:
                     logger.warning(f"Skipping malformed line {line_num}: {line}")
                     continue
@@ -181,7 +180,7 @@ def load_methylation_cov(path: str | Path, min_coverage: int = 1) -> Dict[str, L
                             position=position,
                             methylated_reads=methylated_reads,
                             total_reads=total_reads,
-                            strand=parts[2] if len(parts) > 2 else '+'
+                            strand=parts[2] if len(parts) > 2 else "+",
                         )
                         methylation_data[chromosome].append(site)
 
@@ -274,11 +273,13 @@ def calculate_methylation_statistics(methylation_data: Dict[str, List[Methylatio
     return stats
 
 
-def find_differentially_methylated_regions(site_data1: Dict[str, List[MethylationSite]],
-                                          site_data2: Dict[str, List[MethylationSite]],
-                                          delta_threshold: float = 0.2,
-                                          p_value_threshold: float = 0.05,
-                                          min_sites: int = 3) -> List[Dict[str, Any]]:
+def find_differentially_methylated_regions(
+    site_data1: Dict[str, List[MethylationSite]],
+    site_data2: Dict[str, List[MethylationSite]],
+    delta_threshold: float = 0.2,
+    p_value_threshold: float = 0.05,
+    min_sites: int = 3,
+) -> List[Dict[str, Any]]:
     """Find differentially methylated regions between two conditions.
 
     Args:
@@ -329,13 +330,15 @@ def find_differentially_methylated_regions(site_data1: Dict[str, List[Methylatio
                 # Use Fisher's exact test approximation for difference significance
                 try:
                     # Calculate expected difference significance
-                    p_diff = abs(site1.methylated_reads/site1.coverage - site2.methylated_reads/site2.coverage)
+                    p_diff = abs(site1.methylated_reads / site1.coverage - site2.methylated_reads / site2.coverage)
                     # Simplified p-value calculation (in practice, use proper statistical test)
-                    se_diff = math.sqrt((site1.methylation_level * (1 - site1.methylation_level) / site1.coverage) +
-                                      (site2.methylation_level * (1 - site2.methylation_level) / site2.coverage))
+                    se_diff = math.sqrt(
+                        (site1.methylation_level * (1 - site1.methylation_level) / site1.coverage)
+                        + (site2.methylation_level * (1 - site2.methylation_level) / site2.coverage)
+                    )
                     z_score = p_diff / se_diff if se_diff > 0 else 0
                     p_value = 2 * (1 - statistics.NormalDist().cdf(abs(z_score)))  # Two-tailed
-                except:
+                except (ValueError, ZeroDivisionError, statistics.StatisticsError):
                     p_value = 1.0
             else:
                 p_value = 1.0
@@ -344,39 +347,43 @@ def find_differentially_methylated_regions(site_data1: Dict[str, List[Methylatio
                 if current_dmr is None:
                     # Start new DMR
                     current_dmr = {
-                        'chromosome': chromosome,
-                        'start': pos,
-                        'end': pos,
-                        'sites': [pos],
-                        'mean_delta': delta,
-                        'mean_p_value': p_value,
-                        'direction': 'hyper' if site1.methylation_level > site2.methylation_level else 'hypo'
+                        "chromosome": chromosome,
+                        "start": pos,
+                        "end": pos,
+                        "sites": [pos],
+                        "mean_delta": delta,
+                        "mean_p_value": p_value,
+                        "direction": "hyper" if site1.methylation_level > site2.methylation_level else "hypo",
                     }
                 else:
                     # Extend current DMR
-                    current_dmr['end'] = pos
-                    current_dmr['sites'].append(pos)
-                    current_dmr['mean_delta'] = (current_dmr['mean_delta'] * (len(current_dmr['sites']) - 1) + delta) / len(current_dmr['sites'])
-                    current_dmr['mean_p_value'] = min(current_dmr['mean_p_value'], p_value)
+                    current_dmr["end"] = pos
+                    current_dmr["sites"].append(pos)
+                    current_dmr["mean_delta"] = (
+                        current_dmr["mean_delta"] * (len(current_dmr["sites"]) - 1) + delta
+                    ) / len(current_dmr["sites"])
+                    current_dmr["mean_p_value"] = min(current_dmr["mean_p_value"], p_value)
             else:
                 # End current DMR if it meets minimum size
-                if current_dmr and len(current_dmr['sites']) >= min_sites:
+                if current_dmr and len(current_dmr["sites"]) >= min_sites:
                     dmr_list.append(current_dmr)
                 current_dmr = None
 
         # Don't forget the last DMR
-        if current_dmr and len(current_dmr['sites']) >= min_sites:
+        if current_dmr and len(current_dmr["sites"]) >= min_sites:
             dmr_list.append(current_dmr)
 
     logger.info(f"Found {len(dmr_list)} differentially methylated regions")
     return dmr_list
 
 
-def identify_cpg_islands(methylation_data: Dict[str, List[MethylationSite]],
-                        window_size: int = 200,
-                        step_size: int = 50,
-                        min_gc: float = 0.5,
-                        min_cpg_ratio: float = 0.6) -> List[Dict[str, Any]]:
+def identify_cpg_islands(
+    methylation_data: Dict[str, List[MethylationSite]],
+    window_size: int = 200,
+    step_size: int = 50,
+    min_gc: float = 0.5,
+    min_cpg_ratio: float = 0.6,
+) -> List[Dict[str, Any]]:
     """Identify CpG islands based on methylation patterns.
 
     Args:
@@ -430,26 +437,29 @@ def identify_cpg_islands(methylation_data: Dict[str, List[MethylationSite]],
             cpg_ratio = avg_methylation * 1.2  # Simplified estimation
 
             if gc_content >= min_gc and cpg_ratio >= min_cpg_ratio:
-                cpg_islands.append({
-                    'chromosome': chromosome,
-                    'start': start_pos,
-                    'end': end_pos,
-                    'sites': len(window_sites),
-                    'avg_methylation': avg_methylation,
-                    'gc_content': gc_content,
-                    'cpg_ratio': cpg_ratio,
-                })
+                cpg_islands.append(
+                    {
+                        "chromosome": chromosome,
+                        "start": start_pos,
+                        "end": end_pos,
+                        "sites": len(window_sites),
+                        "avg_methylation": avg_methylation,
+                        "gc_content": gc_content,
+                        "cpg_ratio": cpg_ratio,
+                    }
+                )
 
     # Remove overlapping islands (keep the one with highest CpG ratio)
-    cpg_islands.sort(key=lambda x: x['cpg_ratio'], reverse=True)
+    cpg_islands.sort(key=lambda x: x["cpg_ratio"], reverse=True)
 
     filtered_islands = []
     for island in cpg_islands:
         # Check for overlap with already selected islands
         overlaps = False
         for selected in filtered_islands:
-            if (island['chromosome'] == selected['chromosome'] and
-                not (island['end'] <= selected['start'] or island['start'] >= selected['end'])):
+            if island["chromosome"] == selected["chromosome"] and not (
+                island["end"] <= selected["start"] or island["start"] >= selected["end"]
+            ):
                 overlaps = True
                 break
 
@@ -460,8 +470,9 @@ def identify_cpg_islands(methylation_data: Dict[str, List[MethylationSite]],
     return filtered_islands
 
 
-def calculate_methylation_entropy(methylation_data: Dict[str, List[MethylationSite]],
-                                window_size: int = 1000) -> Dict[str, List[Tuple[int, float]]]:
+def calculate_methylation_entropy(
+    methylation_data: Dict[str, List[MethylationSite]], window_size: int = 1000
+) -> Dict[str, List[Tuple[int, float]]]:
     """Calculate methylation entropy across genomic regions.
 
     Args:
@@ -524,8 +535,7 @@ def calculate_methylation_entropy(methylation_data: Dict[str, List[MethylationSi
     return entropy_profiles
 
 
-def export_methylation_bedgraph(methylation_data: Dict[str, List[MethylationSite]],
-                              output_path: str | Path) -> None:
+def export_methylation_bedgraph(methylation_data: Dict[str, List[MethylationSite]], output_path: str | Path) -> None:
     """Export methylation data to BEDgraph format.
 
     Args:
@@ -536,9 +546,11 @@ def export_methylation_bedgraph(methylation_data: Dict[str, List[MethylationSite
 
     logger.info(f"Exporting methylation data to BEDgraph: {output_path}")
 
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         # Write track header
-        f.write('track type=bedGraph name="Methylation" description="DNA Methylation Levels" visibility=full color=200,100,0\n')
+        f.write(
+            'track type=bedGraph name="Methylation" description="DNA Methylation Levels" visibility=full color=200,100,0\n'
+        )
 
         for chromosome in sorted(methylation_data.keys()):
             sites = methylation_data[chromosome]
@@ -562,8 +574,8 @@ def load_cpg_table(path: str | Path) -> pd.DataFrame:
     """
     import pandas as pd
 
-    df = pd.read_csv(path, sep='\t')
-    required_cols = ['chrom', 'pos', 'methylated', 'unmethylated']
+    df = pd.read_csv(path, sep="\t")
+    required_cols = ["chrom", "pos", "methylated", "unmethylated"]
 
     if not all(col in df.columns for col in required_cols):
         raise ValueError(f"TSV file must contain columns: {required_cols}")
@@ -580,13 +592,13 @@ def compute_beta_values(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         DataFrame with added 'beta' column
     """
-    if 'methylated' not in df.columns or 'unmethylated' not in df.columns:
+    if "methylated" not in df.columns or "unmethylated" not in df.columns:
         raise ValueError("DataFrame must contain 'methylated' and 'unmethylated' columns")
 
     df_copy = df.copy()
-    total_reads = df_copy['methylated'] + df_copy['unmethylated']
-    df_copy['beta'] = df_copy['methylated'] / total_reads
-    df_copy['beta'] = df_copy['beta'].fillna(0.0)  # Handle division by zero
+    total_reads = df_copy["methylated"] + df_copy["unmethylated"]
+    df_copy["beta"] = df_copy["methylated"] / total_reads
+    df_copy["beta"] = df_copy["beta"].fillna(0.0)  # Handle division by zero
 
     return df_copy
 
@@ -600,14 +612,15 @@ def summarize_beta_by_chromosome(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         DataFrame with summary statistics by chromosome
     """
-    if 'chrom' not in df.columns or 'beta' not in df.columns:
+    if "chrom" not in df.columns or "beta" not in df.columns:
         raise ValueError("DataFrame must contain 'chrom' and 'beta' columns")
 
-    return df.groupby('chrom')['beta'].agg(['mean', 'std', 'min', 'max', 'count'])
+    return df.groupby("chrom")["beta"].agg(["mean", "std", "min", "max", "count"])
 
 
-def generate_methylation_report(methylation_data: Dict[str, List[MethylationSite]],
-                               output_path: Optional[str | Path] = None) -> str:
+def generate_methylation_report(
+    methylation_data: Dict[str, List[MethylationSite]], output_path: Optional[str | Path] = None
+) -> str:
     """Generate a comprehensive methylation analysis report.
 
     Args:
@@ -636,7 +649,7 @@ def generate_methylation_report(methylation_data: Dict[str, List[MethylationSite
         report_lines.append("")
 
         # Coverage distribution
-        coverage_dist = stats.get('coverage_distribution', {})
+        coverage_dist = stats.get("coverage_distribution", {})
         if coverage_dist:
             report_lines.append("Coverage Distribution:")
             for cov_range, count in sorted(coverage_dist.items()):
@@ -644,21 +657,22 @@ def generate_methylation_report(methylation_data: Dict[str, List[MethylationSite
             report_lines.append("")
 
         # Top chromosomes
-        chr_stats = stats.get('chromosome_stats', {})
+        chr_stats = stats.get("chromosome_stats", {})
         if chr_stats:
             report_lines.append("Per-Chromosome Statistics (Top 5):")
-            sorted_chrs = sorted(chr_stats.items(), key=lambda x: x[1]['sites'], reverse=True)[:5]
+            sorted_chrs = sorted(chr_stats.items(), key=lambda x: x[1]["sites"], reverse=True)[:5]
             for chr_name, chr_data in sorted_chrs:
-                report_lines.append(f"  {chr_name}: {chr_data['sites']:,} sites, {chr_data['mean_methylation']:.3f} mean methylation")
+                report_lines.append(
+                    f"  {chr_name}: {chr_data['sites']:,} sites, {chr_data['mean_methylation']:.3f} mean methylation"
+                )
             report_lines.append("")
 
     report = "\n".join(report_lines)
 
     if output_path:
         output_path = Path(output_path)
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             f.write(report)
         logger.info(f"Methylation report saved to {output_path}")
 
     return report
-

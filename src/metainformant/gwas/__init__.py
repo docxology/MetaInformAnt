@@ -8,10 +8,10 @@ multiple testing correction, and publication-quality visualization.
 from __future__ import annotations
 
 # Import subpackages (making them available at package level)
-from . import data         # Configuration and data acquisition
-from . import visualization # Visualization tools
-from . import analysis     # Core analysis logic (depends on data)
-from . import workflow     # Workflow orchestration (depends on all)
+from . import data  # Configuration and data acquisition
+from . import visualization  # Visualization tools
+from . import analysis  # Core analysis logic (depends on data)
+from . import workflow  # Workflow orchestration (depends on all)
 
 # Import modules from subpackages for backward compatibility and ease of use
 from .analysis import (
@@ -59,7 +59,12 @@ from .visualization.visualization_population import pca_scree_plot, admixture_pl
 from .visualization.visualization_comparison import multi_trait_manhattan
 from .visualization.visualization_effects import functional_enrichment_plot
 from .visualization.visualization_statistical import power_plot
-from .visualization.visualization_regional import recombination_rate_plot, effect_direction_plot, regional_plot, regional_ld_plot
+from .visualization.visualization_regional import (
+    recombination_rate_plot,
+    effect_direction_plot,
+    regional_plot,
+    regional_ld_plot,
+)
 from .visualization.visualization_genome import genome_wide_ld_heatmap
 
 from .workflow.workflow import GWASWorkflowConfig, execute_gwas_workflow, run_gwas
@@ -76,7 +81,6 @@ __all__ = [
     "data",
     "visualization",
     "workflow",
-
     # Core GWAS analysis
     "apply_qc_filters",
     "parse_vcf_full",
@@ -87,14 +91,12 @@ __all__ = [
     "estimate_population_structure",
     "association",
     "correction",
-    
     # Data acquisition
     "download",
     "download_variant_data",
     "sra_download",
     "calling",
     "config",
-
     # Visualization suite
     "visualization_module",
     "visualization_comparison",
@@ -119,7 +121,6 @@ __all__ = [
     "regional_ld_plot",
     "genome_wide_ld_heatmap",
     "admixture_plot",
-    
     # Workflow
     "execute_gwas_workflow",
     "run_gwas",

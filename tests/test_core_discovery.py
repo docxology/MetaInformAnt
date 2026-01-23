@@ -156,4 +156,3 @@ class TestDiscoverWorkflows:
         """Test discovering workflows with None repo_root."""
         workflows = discovery.discover_workflows(None)
         assert isinstance(workflows, list)
-

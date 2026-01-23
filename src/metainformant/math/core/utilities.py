@@ -52,8 +52,7 @@ def correlation_coefficient(x: List[float], y: List[float]) -> float:
     return correlation(x, y)
 
 
-def linear_regression(x: Sequence[float] | np.ndarray, 
-                      y: Sequence[float] | np.ndarray) -> tuple[float, float, float]:
+def linear_regression(x: Sequence[float] | np.ndarray, y: Sequence[float] | np.ndarray) -> tuple[float, float, float]:
     """Perform linear regression and return slope, intercept, and r-squared.
 
     Args:
@@ -125,7 +124,7 @@ def fisher_exact_test(a: int, b: int, c: int, d: int) -> tuple[float, float]:
     """
     # Calculate odds ratio
     if b * c == 0:
-        odds_ratio = float('inf') if a * d != 0 else 0.0
+        odds_ratio = float("inf") if a * d != 0 else 0.0
     else:
         odds_ratio = (a * d) / (b * c)
 
@@ -145,17 +144,20 @@ def fisher_exact_test(a: int, b: int, c: int, d: int) -> tuple[float, float]:
         chi_square = 0.0
     else:
         observed = np.array([[a, b], [c, d]])
-        expected = np.array([
-            [row1_total * col1_total / total, row1_total * (total - col1_total) / total],
-            [(total - row1_total) * col1_total / total, (total - row1_total) * (total - col1_total) / total]
-        ])
+        expected = np.array(
+            [
+                [row1_total * col1_total / total, row1_total * (total - col1_total) / total],
+                [(total - row1_total) * col1_total / total, (total - row1_total) * (total - col1_total) / total],
+            ]
+        )
 
         # Continuity correction
-        chi_square = np.sum((np.abs(observed - expected) - 0.5)**2 / expected)
+        chi_square = np.sum((np.abs(observed - expected) - 0.5) ** 2 / expected)
 
     # Convert to p-value (chi-square with 1 df)
     try:
         from scipy import stats
+
         p_value = 1 - stats.chi2.cdf(chi_square, 1)
     except ImportError:
         # Fallback approximation

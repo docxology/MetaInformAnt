@@ -30,10 +30,10 @@ class AntWikiRecord:
             ValueError: If required fields are missing
         """
         self.raw_data = data
-        self.species_name = data.get('species_name', '')
-        self.genus = data.get('genus', '')
-        self.subfamily = data.get('subfamily', '')
-        self.tribe = data.get('tribe', '')
+        self.species_name = data.get("species_name", "")
+        self.genus = data.get("genus", "")
+        self.subfamily = data.get("subfamily", "")
+        self.tribe = data.get("tribe", "")
 
         # Validate required fields
         if not self.species_name:
@@ -43,49 +43,55 @@ class AntWikiRecord:
 
         # Extract phenotype data
         self.phenotypes = self._extract_phenotypes(data)
-        self.morphology = data.get('morphology', {})
-        self.behavior = data.get('behavior', {})
-        self.ecology = data.get('ecology', {})
-        self.distribution = data.get('distribution', {})
+        self.morphology = data.get("morphology", {})
+        self.behavior = data.get("behavior", {})
+        self.ecology = data.get("ecology", {})
+        self.distribution = data.get("distribution", {})
 
         # Metadata
-        self.last_updated = data.get('last_updated')
-        self.data_source = data.get('data_source', 'antwiki')
-        self.confidence_score = data.get('confidence_score', 1.0)
+        self.last_updated = data.get("last_updated")
+        self.data_source = data.get("data_source", "antwiki")
+        self.confidence_score = data.get("confidence_score", 1.0)
 
     def _extract_phenotypes(self, data: Dict[str, Any]) -> Dict[str, Any]:
         """Extract phenotype information from raw data."""
         phenotypes = {}
 
         # Size-related phenotypes
-        if 'morphology' in data:
-            morph = data['morphology']
-            phenotypes.update({
-                'body_length': morph.get('body_length_mm'),
-                'head_width': morph.get('head_width_mm'),
-                'worker_size': morph.get('worker_size_category'),
-                'queen_size': morph.get('queen_size_category'),
-            })
+        if "morphology" in data:
+            morph = data["morphology"]
+            phenotypes.update(
+                {
+                    "body_length": morph.get("body_length_mm"),
+                    "head_width": morph.get("head_width_mm"),
+                    "worker_size": morph.get("worker_size_category"),
+                    "queen_size": morph.get("queen_size_category"),
+                }
+            )
 
         # Color phenotypes
-        if 'color' in data:
-            color_data = data['color']
-            phenotypes.update({
-                'head_color': color_data.get('head'),
-                'thorax_color': color_data.get('thorax'),
-                'gaster_color': color_data.get('gaster'),
-                'leg_color': color_data.get('legs'),
-            })
+        if "color" in data:
+            color_data = data["color"]
+            phenotypes.update(
+                {
+                    "head_color": color_data.get("head"),
+                    "thorax_color": color_data.get("thorax"),
+                    "gaster_color": color_data.get("gaster"),
+                    "leg_color": color_data.get("legs"),
+                }
+            )
 
         # Behavioral phenotypes
-        if 'behavior' in data:
-            behavior = data['behavior']
-            phenotypes.update({
-                'foraging_strategy': behavior.get('foraging_strategy'),
-                'nest_type': behavior.get('nest_type'),
-                'colony_size': behavior.get('colony_size_category'),
-                'activity_pattern': behavior.get('activity_pattern'),
-            })
+        if "behavior" in data:
+            behavior = data["behavior"]
+            phenotypes.update(
+                {
+                    "foraging_strategy": behavior.get("foraging_strategy"),
+                    "nest_type": behavior.get("nest_type"),
+                    "colony_size": behavior.get("colony_size_category"),
+                    "activity_pattern": behavior.get("activity_pattern"),
+                }
+            )
 
         # Remove None values
         return {k: v for k, v in phenotypes.items() if v is not None}
@@ -126,18 +132,18 @@ class AntWikiRecord:
     def to_dict(self) -> Dict[str, Any]:
         """Convert record to dictionary."""
         return {
-            'species_name': self.species_name,
-            'genus': self.genus,
-            'subfamily': self.subfamily,
-            'tribe': self.tribe,
-            'phenotypes': self.phenotypes,
-            'morphology': self.morphology,
-            'behavior': self.behavior,
-            'ecology': self.ecology,
-            'distribution': self.distribution,
-            'last_updated': self.last_updated,
-            'data_source': self.data_source,
-            'confidence_score': self.confidence_score,
+            "species_name": self.species_name,
+            "genus": self.genus,
+            "subfamily": self.subfamily,
+            "tribe": self.tribe,
+            "phenotypes": self.phenotypes,
+            "morphology": self.morphology,
+            "behavior": self.behavior,
+            "ecology": self.ecology,
+            "distribution": self.distribution,
+            "last_updated": self.last_updated,
+            "data_source": self.data_source,
+            "confidence_score": self.confidence_score,
         }
 
 
@@ -166,10 +172,10 @@ def load_antwiki_json(path: str | Path, validate: bool = True) -> List[AntWikiRe
         # Handle different JSON structures
         if isinstance(data, dict):
             # Single record or wrapped data
-            if 'records' in data:
-                records_data = data['records']
-            elif 'species' in data:
-                records_data = data['species']
+            if "records" in data:
+                records_data = data["records"]
+            elif "species" in data:
+                records_data = data["species"]
             else:
                 # Assume it's a single record
                 records_data = [data]
@@ -246,23 +252,25 @@ def save_antwiki_json(records: List[AntWikiRecord], path: str | Path) -> None:
 
     # Convert records to dictionaries
     data = {
-        'metadata': {
-            'total_records': len(records),
-            'export_timestamp': str(path.stat().st_mtime) if path.exists() else None,
-            'data_source': 'antwiki',
+        "metadata": {
+            "total_records": len(records),
+            "export_timestamp": str(path.stat().st_mtime) if path.exists() else None,
+            "data_source": "antwiki",
         },
-        'records': [record.to_dict() for record in records]
+        "records": [record.to_dict() for record in records],
     }
 
     io.dump_json(data, path, indent=2)
     logger.info(f"Saved {len(records)} AntWiki records to {path}")
 
 
-def filter_antwiki_records(records: List[AntWikiRecord],
-                          genus: Optional[str] = None,
-                          subfamily: Optional[str] = None,
-                          min_confidence: float = 0.0,
-                          required_phenotypes: Optional[List[str]] = None) -> List[AntWikiRecord]:
+def filter_antwiki_records(
+    records: List[AntWikiRecord],
+    genus: Optional[str] = None,
+    subfamily: Optional[str] = None,
+    min_confidence: float = 0.0,
+    required_phenotypes: Optional[List[str]] = None,
+) -> List[AntWikiRecord]:
     """Filter AntWiki records based on criteria.
 
     Args:
@@ -299,8 +307,7 @@ def filter_antwiki_records(records: List[AntWikiRecord],
     return filtered
 
 
-def get_phenotype_distribution(records: List[AntWikiRecord],
-                              phenotype_name: str) -> Dict[str, Any]:
+def get_phenotype_distribution(records: List[AntWikiRecord], phenotype_name: str) -> Dict[str, Any]:
     """Get distribution statistics for a phenotype across records.
 
     Args:
@@ -335,20 +342,24 @@ def get_phenotype_distribution(records: List[AntWikiRecord],
     # Add numeric statistics if applicable
     numeric_values = [v for v in values if isinstance(v, (int, float))]
     if numeric_values:
-        stats.update({
-            "mean": sum(numeric_values) / len(numeric_values),
-            "min": min(numeric_values),
-            "max": max(numeric_values),
-            "median": sorted(numeric_values)[len(numeric_values) // 2],
-        })
+        stats.update(
+            {
+                "mean": sum(numeric_values) / len(numeric_values),
+                "min": min(numeric_values),
+                "max": max(numeric_values),
+                "median": sorted(numeric_values)[len(numeric_values) // 2],
+            }
+        )
 
     return stats
 
 
-def find_similar_species(records: List[AntWikiRecord],
-                        target_record: AntWikiRecord,
-                        phenotype_weights: Optional[Dict[str, float]] = None,
-                        top_k: int = 10) -> List[Tuple[AntWikiRecord, float]]:
+def find_similar_species(
+    records: List[AntWikiRecord],
+    target_record: AntWikiRecord,
+    phenotype_weights: Optional[Dict[str, float]] = None,
+    top_k: int = 10,
+) -> List[Tuple[AntWikiRecord, float]]:
     """Find species similar to a target record based on phenotypes.
 
     Args:
@@ -362,11 +373,11 @@ def find_similar_species(records: List[AntWikiRecord],
     """
     if phenotype_weights is None:
         phenotype_weights = {
-            'body_length': 0.3,
-            'head_width': 0.3,
-            'worker_size': 0.2,
-            'foraging_strategy': 0.1,
-            'nest_type': 0.1,
+            "body_length": 0.3,
+            "head_width": 0.3,
+            "worker_size": 0.2,
+            "foraging_strategy": 0.1,
+            "nest_type": 0.1,
         }
 
     similarities = []
@@ -396,8 +407,9 @@ def find_similar_species(records: List[AntWikiRecord],
     return similarities[:top_k]
 
 
-def create_phenotype_matrix(records: List[AntWikiRecord],
-                           phenotype_names: Optional[List[str]] = None) -> Tuple[List[str], List[str], List[List[Any]]]:
+def create_phenotype_matrix(
+    records: List[AntWikiRecord], phenotype_names: Optional[List[str]] = None
+) -> Tuple[List[str], List[str], List[List[Any]]]:
     """Create a phenotype matrix for statistical analysis.
 
     Args:
@@ -430,8 +442,7 @@ def create_phenotype_matrix(records: List[AntWikiRecord],
     return species_names, phenotype_names, matrix
 
 
-def generate_antwiki_report(records: List[AntWikiRecord],
-                           output_path: Optional[str | Path] = None) -> str:
+def generate_antwiki_report(records: List[AntWikiRecord], output_path: Optional[str | Path] = None) -> str:
     """Generate a summary report of AntWiki data.
 
     Args:
@@ -489,14 +500,8 @@ def generate_antwiki_report(records: List[AntWikiRecord],
 
     if output_path:
         output_path = Path(output_path)
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             f.write(report)
         logger.info(f"AntWiki report saved to {output_path}")
 
     return report
-
-
-
-
-
-

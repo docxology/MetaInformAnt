@@ -1,4 +1,5 @@
 """Comprehensive tests for core.io.paths module."""
+
 from __future__ import annotations
 
 import os
@@ -145,9 +146,9 @@ class TestFindFilesByExtension:
         (tmp_path / "a.txt").touch()
         (tmp_path / "b.txt").touch()
         (tmp_path / "c.py").touch()
-        
+
         results = core_paths.find_files_by_extension(tmp_path, ".txt")
-        
+
         assert len(results) == 2
         assert all(str(r).endswith(".txt") for r in results)
 
@@ -160,7 +161,7 @@ class TestGetFileSize:
         file = tmp_path / "test.txt"
         content = b"hello world"
         file.write_bytes(content)
-        
+
         size = core_paths.get_file_size(file)
         assert size == len(content)
 
@@ -177,7 +178,7 @@ class TestGetDirectorySize:
         """Test directory size calculation."""
         (tmp_path / "a.txt").write_bytes(b"a" * 100)
         (tmp_path / "b.txt").write_bytes(b"b" * 200)
-        
+
         size = core_paths.get_directory_size(tmp_path)
         assert size == 300
 
@@ -192,7 +193,7 @@ class TestSanitizeFilename:
 
     def test_sanitize_filename_special_chars(self) -> None:
         """Test removal of special characters."""
-        result = core_paths.sanitize_filename("file<>:\"/\\|?*.txt")
+        result = core_paths.sanitize_filename('file<>:"/\\|?*.txt')
         assert "<" not in result
         assert ">" not in result
 

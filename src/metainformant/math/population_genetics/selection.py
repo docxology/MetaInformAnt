@@ -30,8 +30,7 @@ def breeders_equation_response(heritability: float, selection_differential: floa
     return heritability * selection_differential
 
 
-def kin_selection_response(individual_fitness: float, kin_fitness: float,
-                          relatedness: float) -> float:
+def kin_selection_response(individual_fitness: float, kin_fitness: float, relatedness: float) -> float:
     """Calculate kin selection response.
 
     Args:
@@ -47,8 +46,7 @@ def kin_selection_response(individual_fitness: float, kin_fitness: float,
     return relatedness * kin_fitness - individual_fitness
 
 
-def mutation_update(allele_frequency: float, mutation_rate_forward: float,
-                   mutation_rate_backward: float) -> float:
+def mutation_update(allele_frequency: float, mutation_rate_forward: float, mutation_rate_backward: float) -> float:
     """Update allele frequency due to mutation.
 
     Args:
@@ -71,8 +69,9 @@ def mutation_update(allele_frequency: float, mutation_rate_forward: float,
     return max(0, min(1, new_frequency))
 
 
-def selection_update(allele_frequency: float, selection_coefficient: float,
-                    dominance_coefficient: float = 0.5) -> float:
+def selection_update(
+    allele_frequency: float, selection_coefficient: float, dominance_coefficient: float = 0.5
+) -> float:
     """Update allele frequency due to selection.
 
     Args:
@@ -196,16 +195,16 @@ def selection_intensity(trait_values: List[float], fitness_values: List[float]) 
     """
     # i = S / sigma_trait
     from .statistics import standard_deviation
-    
+
     S = selection_differential(trait_values, fitness_values)
     sigma = standard_deviation(trait_values)
-    
+
     if sigma == 0:
         return 0.0
-        
+
     if sigma == 0:
         return 0.0
-        
+
     return S / sigma
 
 
@@ -248,11 +247,9 @@ def mutation_selection_balance_dominant(mutation_rate: float, selection_coeffici
     return mutation_rate / selection_coefficient
 
 
-
-def multilevel_selection_decomposition(group_trait_mean: float,
-                                     individual_trait_variance: float,
-                                     group_trait_variance: float,
-                                     group_size: int) -> Dict[str, float]:
+def multilevel_selection_decomposition(
+    group_trait_mean: float, individual_trait_variance: float, group_trait_variance: float, group_size: int
+) -> Dict[str, float]:
     """Decompose selection into individual and group-level components.
 
     Args:
@@ -277,8 +274,8 @@ def multilevel_selection_decomposition(group_trait_mean: float,
     group_selection = (group_trait_variance * group_size) / total_variance if total_variance > 0 else 0
 
     return {
-        'total_variance': total_variance,
-        'individual_level_selection': individual_selection,
-        'group_level_selection': group_selection,
-        'multilevel_selection_ratio': group_selection / individual_selection if individual_selection > 0 else 0
+        "total_variance": total_variance,
+        "individual_level_selection": individual_selection,
+        "group_level_selection": group_selection,
+        "multilevel_selection_ratio": group_selection / individual_selection if individual_selection > 0 else 0,
     }

@@ -16,7 +16,7 @@ class TestAntWiki:
         """Test loading AntWiki JSON with list format."""
         test_data = [
             {"species": "Camponotus pennsylvanicus", "trait": "body_length", "value": 12.5},
-            {"species": "Formica rufa", "trait": "head_width", "value": 2.1}
+            {"species": "Formica rufa", "trait": "head_width", "value": 2.1},
         ]
 
         test_json_file = tmp_path / "antwiki_test.json"
@@ -71,12 +71,10 @@ class TestAntWiki:
     def test_antwiki_json_structure(self, tmp_path: Path):
         """Test that AntWiki data has expected structure."""
         # Create valid test data
-        test_data = [
-            {"species": "Camponotus pennsylvanicus", "measurements": {"length": 10.0}, "traits": ["arboreal"]}
-        ]
+        test_data = [{"species": "Camponotus pennsylvanicus", "measurements": {"length": 10.0}, "traits": ["arboreal"]}]
         test_file = tmp_path / "antwiki_test.json"
         test_file.write_text(json.dumps(test_data))
-        
+
         # Load test data
         result = load_antwiki_json(test_file)
 
@@ -85,17 +83,17 @@ class TestAntWiki:
             entry = result[0]
             assert "species" in entry or "taxon" in entry
             assert isinstance(entry, dict)
-            
+
     def test_antwiki_json_validation(self, tmp_path: Path):
         """Test data validation."""
         # Test missing species field
         invalid_data = [{"measurements": {"length": 10.0}}]
         test_file = tmp_path / "invalid.json"
         test_file.write_text(json.dumps(invalid_data))
-        
+
         with pytest.raises(ValidationError):
             load_antwiki_json(test_file)
-            
+
         # Test with validate=False should work
         result = load_antwiki_json(test_file, validate=False)
         assert len(result) == 1

@@ -16,7 +16,7 @@ def test_generate_all_plots(tmp_path: Path) -> None:
     """Test generating all plots for a GWAS analysis."""
     # Create sample GWAS results file
     association_file = tmp_path / "gwas_results.tsv"
-    with open(association_file, 'w') as f:
+    with open(association_file, "w") as f:
         f.write("CHROM\tPOS\tp_value\tBETA\tSE\n")
         f.write("1\t1000\t1e-8\t0.2\t0.05\n")
         f.write("1\t2000\t1e-6\t-0.1\t0.04\n")
@@ -43,7 +43,7 @@ def test_generate_all_plots_minimal(tmp_path: Path) -> None:
     """Test generating plots with minimal data."""
     # Create minimal GWAS results file
     association_file = tmp_path / "minimal_results.tsv"
-    with open(association_file, 'w') as f:
+    with open(association_file, "w") as f:
         f.write("CHROM\tPOS\tp_value\n")
         f.write("1\t1000\t1e-7\n")
         f.write("2\t2000\t1e-6\n")

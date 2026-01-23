@@ -17,8 +17,7 @@ from metainformant.core import logging
 logger = logging.get_logger(__name__)
 
 
-def ddm_mean_decision_time(drift_rate: float, boundary: float,
-                          noise_sd: float = 1.0) -> float:
+def ddm_mean_decision_time(drift_rate: float, boundary: float, noise_sd: float = 1.0) -> float:
     """Calculate mean decision time for drift-diffusion model.
 
     Args:
@@ -43,8 +42,7 @@ def ddm_mean_decision_time(drift_rate: float, boundary: float,
     return mean_time
 
 
-def ddm_analytic_accuracy(drift_rate: float, boundary: float,
-                         noise_sd: float = 1.0) -> float:
+def ddm_analytic_accuracy(drift_rate: float, boundary: float, noise_sd: float = 1.0) -> float:
     """Calculate analytic accuracy for drift-diffusion model.
 
     Args:
@@ -70,9 +68,14 @@ def ddm_analytic_accuracy(drift_rate: float, boundary: float,
     return accuracy
 
 
-def ddm_log_likelihood(rt: float, choice: int, drift_rate: float,
-                      boundary_separation: float, starting_point: float = 0.5,
-                      non_decision_time: float = 0.0) -> float:
+def ddm_log_likelihood(
+    rt: float,
+    choice: int,
+    drift_rate: float,
+    boundary_separation: float,
+    starting_point: float = 0.5,
+    non_decision_time: float = 0.0,
+) -> float:
     """Calculate log-likelihood for a single DDM trial.
 
     Args:
@@ -87,7 +90,7 @@ def ddm_log_likelihood(rt: float, choice: int, drift_rate: float,
         Log-likelihood of the trial
     """
     if rt <= non_decision_time:
-        return float('-inf')  # Impossible trial
+        return float("-inf")  # Impossible trial
 
     if choice not in [1, 2]:
         raise ValueError("Choice must be 1 or 2")
@@ -108,24 +111,25 @@ def ddm_log_likelihood(rt: float, choice: int, drift_rate: float,
     if drift_rate > 0:
         mean_time = (boundary_separation - z) / drift_rate
         # Variance approximation
-        var_time = (boundary_separation - z) * boundary_separation / (3 * (drift_rate ** 2))
+        var_time = (boundary_separation - z) * boundary_separation / (3 * (drift_rate**2))
     else:
         # If drift_rate is negative, it's impossible to reach upper boundary
-        return float('-inf')
+        return float("-inf")
 
     if var_time <= 0:
-        return float('-inf')
+        return float("-inf")
 
     # Log-likelihood assuming normal distribution
     try:
         log_lik = stats.norm.logpdf(decision_time, loc=mean_time, scale=math.sqrt(var_time))
         return log_lik
     except (ValueError, ZeroDivisionError):
-        return float('-inf')
+        return float("-inf")
 
 
-def fit_ddm_parameters(rt_data: list[float], choice_data: list[int],
-                      bounds: dict[str, tuple[float, float]] | None = None) -> dict[str, float]:
+def fit_ddm_parameters(
+    rt_data: list[float], choice_data: list[int], bounds: dict[str, tuple[float, float]] | None = None
+) -> dict[str, float]:
     """Fit DDM parameters to data using maximum likelihood.
 
     Args:
@@ -145,81 +149,76 @@ def fit_ddm_parameters(rt_data: list[float], choice_data: list[int],
     # Default bounds
     if bounds is None:
         bounds = {
-            'drift_rate': (0.01, 2.0),
-            'boundary_separation': (0.5, 3.0),
-            'starting_point': (0.2, 0.8),
-            'non_decision_time': (0.0, 0.5)
+            "drift_rate": (0.01, 2.0),
+            "boundary_separation": (0.5, 3.0),
+            "starting_point": (0.2, 0.8),
+            "non_decision_time": (0.0, 0.5),
         }
 
     # Try to use scipy.optimize for better fitting
     try:
         from scipy.optimize import minimize
-        
+
         # Negative log-likelihood function for minimization
         def neg_log_lik(params):
             v, a, z, t0 = params
             # Pentalize invalid parameters
             if a <= 0 or not (0 < z < 1) or t0 < 0:
                 return 1e10
-                
+
             total_log_lik = 0.0
             for rt, choice in zip(rt_data, choice_data):
                 # Check for impossible RTs (t0 > rt) to avoid infinite penalties blowing up optimization
                 if rt <= t0:
                     return 1e10
-                
+
                 ll = ddm_log_likelihood(rt, choice, v, a, z, t0)
-                if ll == float('-inf'):
+                if ll == float("-inf"):
                     return 1e10
                 total_log_lik += ll
             return -total_log_lik
 
         # Initial guess (middle of bounds)
         initial_guess = [
-            np.mean(bounds['drift_rate']),
-            np.mean(bounds['boundary_separation']),
-            np.mean(bounds['starting_point']),
-            np.mean(bounds['non_decision_time'])
+            np.mean(bounds["drift_rate"]),
+            np.mean(bounds["boundary_separation"]),
+            np.mean(bounds["starting_point"]),
+            np.mean(bounds["non_decision_time"]),
         ]
-        
+
         # Bounds for optimization
         # Note: L-BFGS-B handles bounds well
         opt_bounds = [
-            bounds['drift_rate'],
-            bounds['boundary_separation'],
-            bounds['starting_point'],
-            bounds['non_decision_time']
+            bounds["drift_rate"],
+            bounds["boundary_separation"],
+            bounds["starting_point"],
+            bounds["non_decision_time"],
         ]
-        
-        result = minimize(
-            neg_log_lik, 
-            initial_guess, 
-            method='L-BFGS-B', 
-            bounds=opt_bounds
-        )
-        
+
+        result = minimize(neg_log_lik, initial_guess, method="L-BFGS-B", bounds=opt_bounds)
+
         if result.success:
             best_params = {
-                'drift_rate': result.x[0],
-                'boundary_separation': result.x[1],
-                'starting_point': result.x[2],
-                'non_decision_time': result.x[3],
-                'log_likelihood': -result.fun
+                "drift_rate": result.x[0],
+                "boundary_separation": result.x[1],
+                "starting_point": result.x[2],
+                "non_decision_time": result.x[3],
+                "log_likelihood": -result.fun,
             }
             return best_params
-            
+
     except ImportError:
         logger.warning("scipy.optimize not available, falling back to grid search")
 
     # Simple grid search (Fallback)
     best_params = None
-    best_likelihood = float('-inf')
+    best_likelihood = float("-inf")
 
     # Coarse grid search
-    drift_rates = np.linspace(bounds['drift_rate'][0], bounds['drift_rate'][1], 10)
-    boundary_separations = np.linspace(bounds['boundary_separation'][0], bounds['boundary_separation'][1], 10)
-    starting_points = np.linspace(bounds['starting_point'][0], bounds['starting_point'][1], 5)
-    non_decision_times = np.linspace(bounds['non_decision_time'][0], bounds['non_decision_time'][1], 5)
+    drift_rates = np.linspace(bounds["drift_rate"][0], bounds["drift_rate"][1], 10)
+    boundary_separations = np.linspace(bounds["boundary_separation"][0], bounds["boundary_separation"][1], 10)
+    starting_points = np.linspace(bounds["starting_point"][0], bounds["starting_point"][1], 5)
+    non_decision_times = np.linspace(bounds["non_decision_time"][0], bounds["non_decision_time"][1], 5)
 
     for v in drift_rates:
         for a in boundary_separations:
@@ -233,21 +232,21 @@ def fit_ddm_parameters(rt_data: list[float], choice_data: list[int],
                     if total_log_lik > best_likelihood:
                         best_likelihood = total_log_lik
                         best_params = {
-                            'drift_rate': v,
-                            'boundary_separation': a,
-                            'starting_point': z,
-                            'non_decision_time': t0,
-                            'log_likelihood': best_likelihood
+                            "drift_rate": v,
+                            "boundary_separation": a,
+                            "starting_point": z,
+                            "non_decision_time": t0,
+                            "log_likelihood": best_likelihood,
                         }
 
     if best_params is None:
         # Fallback to reasonable defaults
         best_params = {
-            'drift_rate': 0.5,
-            'boundary_separation': 1.0,
-            'starting_point': 0.5,
-            'non_decision_time': 0.2,
-            'log_likelihood': float('-inf')
+            "drift_rate": 0.5,
+            "boundary_separation": 1.0,
+            "starting_point": 0.5,
+            "non_decision_time": 0.2,
+            "log_likelihood": float("-inf"),
         }
 
     return best_params

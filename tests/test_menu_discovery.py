@@ -77,12 +77,12 @@ def main():
 
     def test_extract_bash_metadata(self, tmp_path: Path) -> None:
         """Test extracting metadata from bash script."""
-        script_content = '''#!/bin/bash
+        script_content = """#!/bin/bash
 # Test script for workflow execution
 # This script runs a complete workflow
 
 set -euo pipefail
-'''
+"""
         script_path = tmp_path / "test_script.sh"
         script_path.write_text(script_content)
 
@@ -251,7 +251,3 @@ class TestGenerateMenuFromScripts:
         item = menu_rna.items[0]
         assert item.action.startswith("script:")
         assert "run_workflow" in item.label
-
-
-
-

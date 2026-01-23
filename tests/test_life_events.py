@@ -18,11 +18,7 @@ class TestEvent:
 
     def test_event_creation_basic(self):
         """Test basic event creation."""
-        event = Event(
-            event_type="job_change",
-            timestamp=datetime(2020, 1, 1, 12, 0, 0),
-            domain="occupation"
-        )
+        event = Event(event_type="job_change", timestamp=datetime(2020, 1, 1, 12, 0, 0), domain="occupation")
         assert event.event_type == "job_change"
         assert event.domain == "occupation"
         assert isinstance(event.timestamp, datetime)
@@ -34,38 +30,26 @@ class TestEvent:
             event_type="diagnosis",
             timestamp=datetime(2020, 2, 1),
             domain="health",
-            attributes={"condition": "diabetes", "severity": "mild"}
+            attributes={"condition": "diabetes", "severity": "mild"},
         )
         assert event.attributes["condition"] == "diabetes"
         assert event.attributes["severity"] == "mild"
 
     def test_event_creation_with_numeric_timestamp(self):
         """Test event creation with numeric timestamp."""
-        event = Event(
-            event_type="move",
-            timestamp=1577836800.0,  # Unix timestamp
-            domain="address"
-        )
+        event = Event(event_type="move", timestamp=1577836800.0, domain="address")  # Unix timestamp
         assert isinstance(event.timestamp, datetime)
         assert event.timestamp.timestamp() == 1577836800.0
 
     def test_event_validation_empty_type(self):
         """Test that empty event_type raises ValueError."""
         with pytest.raises(ValueError, match="event_type cannot be empty"):
-            Event(
-                event_type="",
-                timestamp=datetime.now(),
-                domain="occupation"
-            )
+            Event(event_type="", timestamp=datetime.now(), domain="occupation")
 
     def test_event_validation_empty_domain(self):
         """Test that empty domain raises ValueError."""
         with pytest.raises(ValueError, match="domain cannot be empty"):
-            Event(
-                event_type="job_change",
-                timestamp=datetime.now(),
-                domain=""
-            )
+            Event(event_type="job_change", timestamp=datetime.now(), domain="")
 
     def test_event_to_dict(self):
         """Test event serialization to dictionary."""
@@ -73,7 +57,7 @@ class TestEvent:
             event_type="job_change",
             timestamp=datetime(2020, 1, 1, 12, 0, 0),
             domain="occupation",
-            attributes={"company": "ABC Corp"}
+            attributes={"company": "ABC Corp"},
         )
         data = event.to_dict()
         assert data["event_type"] == "job_change"
@@ -87,7 +71,7 @@ class TestEvent:
             "event_type": "job_change",
             "timestamp": "2020-01-01T12:00:00",
             "domain": "occupation",
-            "attributes": {"company": "ABC Corp"}
+            "attributes": {"company": "ABC Corp"},
         }
         event = Event.from_dict(data)
         assert event.event_type == "job_change"
@@ -96,11 +80,7 @@ class TestEvent:
 
     def test_event_from_dict_numeric_timestamp(self):
         """Test event from dict with numeric timestamp."""
-        data = {
-            "event_type": "move",
-            "timestamp": 1577836800.0,
-            "domain": "address"
-        }
+        data = {"event_type": "move", "timestamp": 1577836800.0, "domain": "address"}
         event = Event.from_dict(data)
         assert isinstance(event.timestamp, datetime)
 
@@ -156,10 +136,7 @@ class TestEventSequence:
             Event("event3", datetime(2020, 3, 1), "occupation"),
         ]
         seq = EventSequence(person_id="person1", events=events)
-        filtered = seq.filter_by_time(
-            start_time=datetime(2020, 1, 15),
-            end_time=datetime(2020, 2, 15)
-        )
+        filtered = seq.filter_by_time(start_time=datetime(2020, 1, 15), end_time=datetime(2020, 2, 15))
         assert len(filtered.events) == 1
         assert filtered.events[0].event_type == "event2"
 
@@ -236,10 +213,10 @@ class TestEventSequence:
                     "event_type": "job_change",
                     "timestamp": "2020-01-01T12:00:00",
                     "domain": "occupation",
-                    "attributes": {}
+                    "attributes": {},
                 }
             ],
-            "metadata": {"source": "test"}
+            "metadata": {"source": "test"},
         }
         seq = EventSequence.from_dict(data)
         assert seq.person_id == "person1"
@@ -258,12 +235,8 @@ class TestEventDatabase:
 
     def test_database_creation_with_sequences(self):
         """Test creating database with sequences."""
-        seq1 = EventSequence(person_id="person1", events=[
-            Event("event1", datetime(2020, 1, 1), "occupation")
-        ])
-        seq2 = EventSequence(person_id="person2", events=[
-            Event("event2", datetime(2020, 2, 1), "health")
-        ])
+        seq1 = EventSequence(person_id="person1", events=[Event("event1", datetime(2020, 1, 1), "occupation")])
+        seq2 = EventSequence(person_id="person2", events=[Event("event2", datetime(2020, 2, 1), "health")])
         db = EventDatabase(sequences=[seq1, seq2])
         assert len(db.sequences) == 2
 
@@ -277,13 +250,19 @@ class TestEventDatabase:
 
     def test_database_filter_by_domain(self):
         """Test filtering database by domain."""
-        seq1 = EventSequence(person_id="person1", events=[
-            Event("job_change", datetime(2020, 1, 1), "occupation"),
-            Event("diagnosis", datetime(2020, 2, 1), "health"),
-        ])
-        seq2 = EventSequence(person_id="person2", events=[
-            Event("move", datetime(2020, 3, 1), "address"),
-        ])
+        seq1 = EventSequence(
+            person_id="person1",
+            events=[
+                Event("job_change", datetime(2020, 1, 1), "occupation"),
+                Event("diagnosis", datetime(2020, 2, 1), "health"),
+            ],
+        )
+        seq2 = EventSequence(
+            person_id="person2",
+            events=[
+                Event("move", datetime(2020, 3, 1), "address"),
+            ],
+        )
         db = EventDatabase(sequences=[seq1, seq2])
         health_db = db.filter_by_domain("health")
         assert len(health_db.sequences) == 2  # Both sequences, but filtered
@@ -292,13 +271,19 @@ class TestEventDatabase:
 
     def test_database_get_statistics(self):
         """Test getting database statistics."""
-        seq1 = EventSequence(person_id="person1", events=[
-            Event("job_change", datetime(2020, 1, 1), "occupation"),
-            Event("diagnosis", datetime(2020, 2, 1), "health"),
-        ])
-        seq2 = EventSequence(person_id="person2", events=[
-            Event("move", datetime(2020, 3, 1), "address"),
-        ])
+        seq1 = EventSequence(
+            person_id="person1",
+            events=[
+                Event("job_change", datetime(2020, 1, 1), "occupation"),
+                Event("diagnosis", datetime(2020, 2, 1), "health"),
+            ],
+        )
+        seq2 = EventSequence(
+            person_id="person2",
+            events=[
+                Event("move", datetime(2020, 3, 1), "address"),
+            ],
+        )
         db = EventDatabase(sequences=[seq1, seq2])
         stats = db.get_statistics()
         assert stats["n_sequences"] == 2
@@ -319,12 +304,18 @@ class TestEventDatabase:
 
     def test_database_to_dataframe(self):
         """Test converting database to DataFrame."""
-        seq1 = EventSequence(person_id="person1", events=[
-            Event("event1", datetime(2020, 1, 1), "occupation"),
-        ])
-        seq2 = EventSequence(person_id="person2", events=[
-            Event("event2", datetime(2020, 2, 1), "health"),
-        ])
+        seq1 = EventSequence(
+            person_id="person1",
+            events=[
+                Event("event1", datetime(2020, 1, 1), "occupation"),
+            ],
+        )
+        seq2 = EventSequence(
+            person_id="person2",
+            events=[
+                Event("event2", datetime(2020, 2, 1), "health"),
+            ],
+        )
         db = EventDatabase(sequences=[seq1, seq2])
         df = db.to_dataframe()
         assert len(df) == 2
@@ -339,9 +330,12 @@ class TestEventDatabase:
 
     def test_database_to_dict(self):
         """Test database serialization."""
-        seq = EventSequence(person_id="person1", events=[
-            Event("event1", datetime(2020, 1, 1), "occupation"),
-        ])
+        seq = EventSequence(
+            person_id="person1",
+            events=[
+                Event("event1", datetime(2020, 1, 1), "occupation"),
+            ],
+        )
         db = EventDatabase(sequences=[seq], metadata={"source": "test"})
         data = db.to_dict()
         assert len(data["sequences"]) == 1
@@ -358,17 +352,15 @@ class TestEventDatabase:
                             "event_type": "job_change",
                             "timestamp": "2020-01-01T12:00:00",
                             "domain": "occupation",
-                            "attributes": {}
+                            "attributes": {},
                         }
                     ],
-                    "metadata": {}
+                    "metadata": {},
                 }
             ],
-            "metadata": {"source": "test"}
+            "metadata": {"source": "test"},
         }
         db = EventDatabase.from_dict(data)
         assert len(db.sequences) == 1
         assert db.metadata["source"] == "test"
         assert db.sequences[0].person_id == "person1"
-
-

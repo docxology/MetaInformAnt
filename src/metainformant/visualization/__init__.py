@@ -93,15 +93,12 @@ __all__ = [
     "analysis",
     "genomics",
     "plots",
-
     # Core plotting functionality
     "basic",
     "plots",
-
     # Statistical visualizations
     "statistical",
     "quality",
-
     # Biological data visualizations
     "genomics_module",
     "expression",
@@ -110,17 +107,14 @@ __all__ = [
     "plot_phylo_tree",
     "circular_tree_plot",
     "unrooted_tree_plot",
-
     # Advanced plotting
     "dimred",
     "multidim",
     "timeseries",
     "animations",
     "specialized",
-
     # Information theory visualizations
     "information",
-
     # Domain-specific visualizations
     "protein",
     "epigenome",
@@ -130,9 +124,3 @@ __all__ = [
     "math",
     "multiomics",
 ]
-
-
-
-
-
-

@@ -139,7 +139,3 @@ def execute_script(script_path: Path, args: list[str] | None = None) -> int:
     else:
         print(f"Error: Unsupported script type: {script_path.suffix}")
         return 1
-
-
-
-

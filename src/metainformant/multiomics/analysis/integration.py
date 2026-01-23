@@ -21,6 +21,7 @@ try:
     from sklearn.preprocessing import StandardScaler
     from sklearn.decomposition import PCA, NMF
     from sklearn.cross_decomposition import CCA
+
     HAS_SKLEARN = True
 except ImportError:
     HAS_SKLEARN = False
@@ -37,8 +38,12 @@ class MultiOmicsData:
     data from multiple omics types with proper alignment and metadata.
     """
 
-    def __init__(self, data: Dict[str, pd.DataFrame], sample_ids: List[str] | None = None,
-                 feature_ids: Dict[str, List[str]] | None = None):
+    def __init__(
+        self,
+        data: Dict[str, pd.DataFrame],
+        sample_ids: List[str] | None = None,
+        feature_ids: Dict[str, List[str]] | None = None,
+    ):
         """Initialize multi-omics data container.
 
         Args:
@@ -86,7 +91,7 @@ class MultiOmicsData:
 
         return sorted(list(common_samples)) if common_samples else []
 
-    def subset_samples(self, sample_ids: List[str]) -> 'MultiOmicsData':
+    def subset_samples(self, sample_ids: List[str]) -> "MultiOmicsData":
         """Create subset with specified samples."""
         subset_data = {}
         for omics_type, df in self.data.items():
@@ -105,12 +110,14 @@ class MultiOmicsData:
         return self.metadata.get(key)
 
 
-def integrate_omics_data(dna_data: pd.DataFrame | None = None,
-                        rna_data: pd.DataFrame | None = None,
-                        protein_data: pd.DataFrame | None = None,
-                        epigenome_data: pd.DataFrame | None = None,
-                        metabolomics_data: pd.DataFrame | None = None,
-                        **kwargs) -> Dict[str, Any]:
+def integrate_omics_data(
+    dna_data: pd.DataFrame | None = None,
+    rna_data: pd.DataFrame | None = None,
+    protein_data: pd.DataFrame | None = None,
+    epigenome_data: pd.DataFrame | None = None,
+    metabolomics_data: pd.DataFrame | None = None,
+    **kwargs,
+) -> Dict[str, Any]:
     """Integrate data from multiple omics types.
 
     Args:
@@ -128,11 +135,11 @@ def integrate_omics_data(dna_data: pd.DataFrame | None = None,
         ValueError: If no data provided or incompatible data shapes
     """
     omics_data = {
-        'dna': dna_data,
-        'rna': rna_data,
-        'protein': protein_data,
-        'epigenome': epigenome_data,
-        'metabolomics': metabolomics_data,
+        "dna": dna_data,
+        "rna": rna_data,
+        "protein": protein_data,
+        "epigenome": epigenome_data,
+        "metabolomics": metabolomics_data,
     }
 
     # Filter out None values
@@ -148,17 +155,17 @@ def integrate_omics_data(dna_data: pd.DataFrame | None = None,
 
     # Store original shapes and metadata
     metadata = {
-        'n_omics_types': len(available_omics),
-        'omics_types': list(available_omics.keys()),
-        'original_shapes': {k: v.shape for k, v in available_omics.items()},
-        'n_samples': None,
-        'n_features': {k: v.shape[1] for k, v in available_omics.items()},
+        "n_omics_types": len(available_omics),
+        "omics_types": list(available_omics.keys()),
+        "original_shapes": {k: v.shape for k, v in available_omics.items()},
+        "n_samples": None,
+        "n_features": {k: v.shape[1] for k, v in available_omics.items()},
     }
 
     # Determine common samples
     sample_intersection = None
     for data in available_omics.values():
-        current_samples = set(data.index if hasattr(data, 'index') else range(data.shape[0]))
+        current_samples = set(data.index if hasattr(data, "index") else range(data.shape[0]))
         if sample_intersection is None:
             sample_intersection = current_samples
         else:
@@ -167,46 +174,48 @@ def integrate_omics_data(dna_data: pd.DataFrame | None = None,
     if not sample_intersection:
         raise errors.ValidationError("No common samples found across omics datasets")
 
-    metadata['n_samples'] = len(sample_intersection)
-    metadata['common_samples'] = sorted(list(sample_intersection))
+    metadata["n_samples"] = len(sample_intersection)
+    metadata["common_samples"] = sorted(list(sample_intersection))
 
     # Align data to common samples
     aligned_data = {}
     for omics_type, data in available_omics.items():
-        if hasattr(data, 'index'):
+        if hasattr(data, "index"):
             # pandas DataFrame
             aligned_data[omics_type] = data.loc[list(sample_intersection)]
         else:
             # numpy array - assume samples are in same order
-            sample_indices = [i for i, sample in enumerate(data.index if hasattr(data, 'index') else range(data.shape[0]))
-                            if sample in sample_intersection]
+            sample_indices = [
+                i
+                for i, sample in enumerate(data.index if hasattr(data, "index") else range(data.shape[0]))
+                if sample in sample_intersection
+            ]
             aligned_data[omics_type] = data[sample_indices]
 
     # Perform multi-omics integration
-    integration_method = kwargs.get('method', 'correlation')
+    integration_method = kwargs.get("method", "correlation")
     integrated_results = {}
 
-    if integration_method == 'correlation':
+    if integration_method == "correlation":
         integrated_results = _integrate_by_correlation(aligned_data, **kwargs)
-    elif integration_method == 'joint_pca':
+    elif integration_method == "joint_pca":
         integrated_results = joint_pca(aligned_data, **kwargs)
-    elif integration_method == 'joint_nmf':
+    elif integration_method == "joint_nmf":
         integrated_results = joint_nmf(aligned_data, **kwargs)
-    elif integration_method == 'cca':
+    elif integration_method == "cca":
         integrated_results = canonical_correlation(aligned_data, **kwargs)
     else:
         raise errors.ValidationError(f"Unsupported integration method: {integration_method}")
 
     # Add metadata to results
-    integrated_results['metadata'] = metadata
-    integrated_results['integration_method'] = integration_method
+    integrated_results["metadata"] = metadata
+    integrated_results["integration_method"] = integration_method
 
     logger.info(f"Multi-omics integration completed using {integration_method}")
     return integrated_results
 
 
-def joint_pca(multiomics_data: Dict[str, pd.DataFrame],
-              n_components: int = 50, **kwargs) -> Dict[str, Any]:
+def joint_pca(multiomics_data: Dict[str, pd.DataFrame], n_components: int = 50, **kwargs) -> Dict[str, Any]:
     """Perform joint PCA across multiple omics datasets.
 
     Args:
@@ -222,10 +231,7 @@ def joint_pca(multiomics_data: Dict[str, pd.DataFrame],
         ValueError: If data shapes incompatible
     """
     if not HAS_SKLEARN:
-        raise ImportError(
-            "scikit-learn is required for joint PCA. "
-            "Install with: uv pip install scikit-learn"
-        )
+        raise ImportError("scikit-learn is required for joint PCA. " "Install with: uv pip install scikit-learn")
 
     validation.validate_range(n_components, min_val=2, name="n_components")
 
@@ -251,24 +257,27 @@ def joint_pca(multiomics_data: Dict[str, pd.DataFrame],
 
     for omics_type, data in multiomics_data.items():
         n_features = data.shape[1]
-        loadings[omics_type] = pca.components_[:, feature_start:feature_start + n_features].T
+        loadings[omics_type] = pca.components_[:, feature_start : feature_start + n_features].T
         feature_start += n_features
 
     results = {
-        'pca_scores': pca_scores,
-        'pca_loadings': pca.components_,
-        'omics_loadings': loadings,
-        'explained_variance_ratio': pca.explained_variance_ratio_,
-        'cumulative_explained_variance': np.cumsum(pca.explained_variance_ratio_),
-        'singular_values': pca.singular_values_,
+        "pca_scores": pca_scores,
+        "pca_loadings": pca.components_,
+        "omics_loadings": loadings,
+        "explained_variance_ratio": pca.explained_variance_ratio_,
+        "cumulative_explained_variance": np.cumsum(pca.explained_variance_ratio_),
+        "singular_values": pca.singular_values_,
     }
 
-    logger.info(f"Joint PCA completed: {len(results['explained_variance_ratio'])} components explain {results['cumulative_explained_variance'][-1]:.1%} variance")
+    logger.info(
+        f"Joint PCA completed: {len(results['explained_variance_ratio'])} components explain {results['cumulative_explained_variance'][-1]:.1%} variance"
+    )
     return results
 
 
-def joint_nmf(multiomics_data: Dict[str, pd.DataFrame],
-              n_components: int = 50, max_iter: int = 200, **kwargs) -> Dict[str, Any]:
+def joint_nmf(
+    multiomics_data: Dict[str, pd.DataFrame], n_components: int = 50, max_iter: int = 200, **kwargs
+) -> Dict[str, Any]:
     """Perform joint NMF across multiple omics datasets.
 
     Args:
@@ -285,10 +294,7 @@ def joint_nmf(multiomics_data: Dict[str, pd.DataFrame],
         ValueError: If data contains negative values
     """
     if not HAS_SKLEARN:
-        raise ImportError(
-            "scikit-learn is required for joint NMF. "
-            "Install with: uv pip install scikit-learn"
-        )
+        raise ImportError("scikit-learn is required for joint NMF. " "Install with: uv pip install scikit-learn")
 
     validation.validate_range(n_components, min_val=2, name="n_components")
     validation.validate_range(max_iter, min_val=10, name="max_iter")
@@ -306,8 +312,7 @@ def joint_nmf(multiomics_data: Dict[str, pd.DataFrame],
     concatenated_data = concatenated_data.fillna(concatenated_data.mean())
 
     # Perform NMF
-    nmf = NMF(n_components=min(n_components, concatenated_data.shape[1]),
-              max_iter=max_iter, **kwargs)
+    nmf = NMF(n_components=min(n_components, concatenated_data.shape[1]), max_iter=max_iter, **kwargs)
     W = nmf.fit_transform(concatenated_data.values)
     H = nmf.components_
 
@@ -317,23 +322,22 @@ def joint_nmf(multiomics_data: Dict[str, pd.DataFrame],
 
     for omics_type, data in multiomics_data.items():
         n_features = data.shape[1]
-        omics_components[omics_type] = H[:, feature_start:feature_start + n_features]
+        omics_components[omics_type] = H[:, feature_start : feature_start + n_features]
         feature_start += n_features
 
     results = {
-        'W_matrix': W,  # Sample factors
-        'H_matrix': H,  # Feature factors
-        'omics_components': omics_components,
-        'reconstruction_error': nmf.reconstruction_err_,
-        'n_iter': nmf.n_iter_,
+        "W_matrix": W,  # Sample factors
+        "H_matrix": H,  # Feature factors
+        "omics_components": omics_components,
+        "reconstruction_error": nmf.reconstruction_err_,
+        "n_iter": nmf.n_iter_,
     }
 
     logger.info(f"Joint NMF completed: reconstruction error = {results['reconstruction_error']:.4f}")
     return results
 
 
-def canonical_correlation(multiomics_data: Dict[str, pd.DataFrame],
-                         n_components: int = 10, **kwargs) -> Dict[str, Any]:
+def canonical_correlation(multiomics_data: Dict[str, pd.DataFrame], n_components: int = 10, **kwargs) -> Dict[str, Any]:
     """Perform canonical correlation analysis between omics datasets.
 
     Args:
@@ -350,8 +354,7 @@ def canonical_correlation(multiomics_data: Dict[str, pd.DataFrame],
     """
     if not HAS_SKLEARN:
         raise ImportError(
-            "scikit-learn is required for canonical correlation analysis. "
-            "Install with: uv pip install scikit-learn"
+            "scikit-learn is required for canonical correlation analysis. " "Install with: uv pip install scikit-learn"
         )
 
     if len(multiomics_data) != 2:
@@ -380,12 +383,12 @@ def canonical_correlation(multiomics_data: Dict[str, pd.DataFrame],
     X_c, Y_c = cca.fit_transform(X_scaled, Y_scaled)
 
     results = {
-        'cca_scores_X': X_c,
-        'cca_scores_Y': Y_c,
-        'cca_coefficients_X': cca.x_weights_,
-        'cca_coefficients_Y': cca.y_weights_,
-        'canonical_correlations': cca.score(X_scaled, Y_scaled),
-        'omics_types': omics_types,
+        "cca_scores_X": X_c,
+        "cca_scores_Y": Y_c,
+        "cca_coefficients_X": cca.x_weights_,
+        "cca_coefficients_Y": cca.y_weights_,
+        "canonical_correlations": cca.score(X_scaled, Y_scaled),
+        "omics_types": omics_types,
     }
 
     logger.info(f"CCA completed: {len(results['canonical_correlations'])} components")
@@ -414,8 +417,7 @@ def from_dna_variants(vcf_data: pd.DataFrame, **kwargs) -> pd.DataFrame:
     return processed_data
 
 
-def from_rna_expression(expression_data: pd.DataFrame,
-                       normalize: bool = True, **kwargs) -> pd.DataFrame:
+def from_rna_expression(expression_data: pd.DataFrame, normalize: bool = True, **kwargs) -> pd.DataFrame:
     """Convert RNA expression data for multi-omics integration.
 
     Args:
@@ -437,16 +439,13 @@ def from_rna_expression(expression_data: pd.DataFrame,
 
         scaler = StandardScaler()
         processed_data = pd.DataFrame(
-            scaler.fit_transform(processed_data),
-            index=processed_data.index,
-            columns=processed_data.columns
+            scaler.fit_transform(processed_data), index=processed_data.index, columns=processed_data.columns
         )
 
     return processed_data
 
 
-def from_protein_abundance(protein_data: pd.DataFrame,
-                          normalize: bool = True, **kwargs) -> pd.DataFrame:
+def from_protein_abundance(protein_data: pd.DataFrame, normalize: bool = True, **kwargs) -> pd.DataFrame:
     """Convert protein abundance data for multi-omics integration.
 
     Args:
@@ -465,16 +464,13 @@ def from_protein_abundance(protein_data: pd.DataFrame,
         # Z-score normalization
         scaler = StandardScaler()
         processed_data = pd.DataFrame(
-            scaler.fit_transform(processed_data),
-            index=processed_data.index,
-            columns=processed_data.columns
+            scaler.fit_transform(processed_data), index=processed_data.index, columns=processed_data.columns
         )
 
     return processed_data
 
 
-def from_epigenome_data(epigenome_data: pd.DataFrame,
-                       data_type: str = "methylation", **kwargs) -> pd.DataFrame:
+def from_epigenome_data(epigenome_data: pd.DataFrame, data_type: str = "methylation", **kwargs) -> pd.DataFrame:
     """Convert epigenome data for multi-omics integration.
 
     Args:
@@ -500,8 +496,7 @@ def from_epigenome_data(epigenome_data: pd.DataFrame,
     return processed_data
 
 
-def from_metabolomics(metabolomics_data: pd.DataFrame,
-                     normalize: bool = True, **kwargs) -> pd.DataFrame:
+def from_metabolomics(metabolomics_data: pd.DataFrame, normalize: bool = True, **kwargs) -> pd.DataFrame:
     """Convert metabolomics data for multi-omics integration.
 
     Args:
@@ -524,9 +519,7 @@ def from_metabolomics(metabolomics_data: pd.DataFrame,
 
         scaler = StandardScaler()
         processed_data = pd.DataFrame(
-            scaler.fit_transform(processed_data),
-            index=processed_data.index,
-            columns=processed_data.columns
+            scaler.fit_transform(processed_data), index=processed_data.index, columns=processed_data.columns
         )
 
     return processed_data
@@ -549,24 +542,24 @@ def _integrate_by_correlation(aligned_data: Dict[str, pd.DataFrame], **kwargs) -
                 data2 = aligned_data[omics2].values
 
                 # Compute correlation matrix
-                corr_matrix = np.corrcoef(data1.T, data2.T)[:data1.shape[1], data1.shape[1]:]
+                corr_matrix = np.corrcoef(data1.T, data2.T)[: data1.shape[1], data1.shape[1] :]
 
                 correlation_matrices[f"{omics1}_{omics2}"] = {
-                    'correlation_matrix': corr_matrix,
-                    'mean_correlation': np.mean(np.abs(corr_matrix)),
-                    'max_correlation': np.max(np.abs(corr_matrix)),
-                    'omics1_features': aligned_data[omics1].columns.tolist(),
-                    'omics2_features': aligned_data[omics2].columns.tolist(),
+                    "correlation_matrix": corr_matrix,
+                    "mean_correlation": np.mean(np.abs(corr_matrix)),
+                    "max_correlation": np.max(np.abs(corr_matrix)),
+                    "omics1_features": aligned_data[omics1].columns.tolist(),
+                    "omics2_features": aligned_data[omics2].columns.tolist(),
                 }
 
-    results['correlation_matrices'] = correlation_matrices
+    results["correlation_matrices"] = correlation_matrices
 
     # Find most correlated feature pairs
     top_correlations = []
     for pair_name, corr_data in correlation_matrices.items():
-        corr_matrix = corr_data['correlation_matrix']
-        features1 = corr_data['omics1_features']
-        features2 = corr_data['omics2_features']
+        corr_matrix = corr_data["correlation_matrix"]
+        features1 = corr_data["omics1_features"]
+        features2 = corr_data["omics2_features"]
 
         # Find top correlations
         n_top = min(100, corr_matrix.size)  # Top 100 or all if fewer
@@ -574,14 +567,16 @@ def _integrate_by_correlation(aligned_data: Dict[str, pd.DataFrame], **kwargs) -
 
         for idx in flat_indices:
             i, j = np.unravel_index(idx, corr_matrix.shape)
-            top_correlations.append({
-                'omics_pair': pair_name,
-                'feature1': features1[i],
-                'feature2': features2[j],
-                'correlation': corr_matrix[i, j],
-            })
+            top_correlations.append(
+                {
+                    "omics_pair": pair_name,
+                    "feature1": features1[i],
+                    "feature2": features2[j],
+                    "correlation": corr_matrix[i, j],
+                }
+            )
 
-    results['top_correlations'] = sorted(top_correlations, key=lambda x: abs(x['correlation']), reverse=True)
+    results["top_correlations"] = sorted(top_correlations, key=lambda x: abs(x["correlation"]), reverse=True)
 
     return results
 
@@ -602,7 +597,7 @@ def _validate_omics_data_compatibility(omics_data: Dict[str, pd.DataFrame]) -> N
     # Check for reasonable sample overlap (at least some samples should be shared)
     sample_sets = []
     for data in omics_data.values():
-        if hasattr(data, 'index'):
+        if hasattr(data, "index"):
             sample_sets.append(set(data.index))
         else:
             sample_sets.append(set(range(data.shape[0])))
@@ -618,8 +613,7 @@ def _validate_omics_data_compatibility(omics_data: Dict[str, pd.DataFrame]) -> N
         logger.warning(f"Low sample overlap across datasets: {overlap_fraction:.1%}")
 
 
-def compute_multiomics_similarity(omics_data: Dict[str, pd.DataFrame],
-                                method: str = "correlation") -> np.ndarray:
+def compute_multiomics_similarity(omics_data: Dict[str, pd.DataFrame], method: str = "correlation") -> np.ndarray:
     """Compute similarity matrix across all samples using multi-omics data.
 
     Args:
@@ -638,8 +632,7 @@ def compute_multiomics_similarity(omics_data: Dict[str, pd.DataFrame],
 
     if method == "cosine" and not HAS_SKLEARN:
         raise ImportError(
-            "scikit-learn is required for cosine similarity. "
-            "Install with: uv pip install scikit-learn"
+            "scikit-learn is required for cosine similarity. " "Install with: uv pip install scikit-learn"
         )
 
     logger.info(f"Computing multi-omics similarity using {method}")
@@ -656,18 +649,19 @@ def compute_multiomics_similarity(omics_data: Dict[str, pd.DataFrame],
     elif method == "euclidean":
         # Convert distance to similarity
         from scipy.spatial.distance import pdist, squareform
-        distances = squareform(pdist(concatenated, metric='euclidean'))
+
+        distances = squareform(pdist(concatenated, metric="euclidean"))
         # Convert to similarity (inverse distance)
         similarity = 1 / (1 + distances)
     elif method == "cosine":
         from sklearn.metrics.pairwise import cosine_similarity
+
         similarity = cosine_similarity(concatenated)
 
     return similarity
 
 
-def find_multiomics_modules(omics_data: Dict[str, pd.DataFrame],
-                           n_modules: int = 10, **kwargs) -> Dict[str, Any]:
+def find_multiomics_modules(omics_data: Dict[str, pd.DataFrame], n_modules: int = 10, **kwargs) -> Dict[str, Any]:
     """Identify multi-omics modules (co-regulated features across omics types).
 
     Args:
@@ -694,27 +688,26 @@ def find_multiomics_modules(omics_data: Dict[str, pd.DataFrame],
     for i in range(n_modules):
         module_features = {}
 
-        for omics_type, components in nmf_results['omics_components'].items():
+        for omics_type, components in nmf_results["omics_components"].items():
             # Find features with high loading in this component
             loadings = components[i, :]
             top_features = np.argsort(loadings)[-10:]  # Top 10 features
 
             module_features[omics_type] = {
-                'features': [omics_data[omics_type].columns[j] for j in top_features],
-                'loadings': loadings[top_features].tolist(),
+                "features": [omics_data[omics_type].columns[j] for j in top_features],
+                "loadings": loadings[top_features].tolist(),
             }
 
         modules[f"module_{i+1}"] = {
-            'features': module_features,
-            'sample_weights': nmf_results['W_matrix'][:, i].tolist(),
+            "features": module_features,
+            "sample_weights": nmf_results["W_matrix"][:, i].tolist(),
         }
 
     results = {
-        'modules': modules,
-        'nmf_results': nmf_results,
-        'n_modules': n_modules,
+        "modules": modules,
+        "nmf_results": nmf_results,
+        "n_modules": n_modules,
     }
 
     logger.info(f"Multi-omics module detection completed: {n_modules} modules found")
     return results
-

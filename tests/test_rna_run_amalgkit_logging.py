@@ -15,6 +15,7 @@ def test_run_amalgkit_writes_logs(tmp_path: Path):
     ok, _ = check_cli_available()
     if not ok:
         import pytest
+
         pytest.skip("amalgkit CLI not available; skipping run_amalgkit logging test")
 
     logs = tmp_path / "logs"

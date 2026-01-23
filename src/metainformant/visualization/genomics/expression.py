@@ -22,6 +22,7 @@ logger = logging.get_logger(__name__)
 # Optional imports with graceful fallbacks
 try:
     import seaborn as sns
+
     HAS_SEABORN = True
 except ImportError:
     sns = None
@@ -29,11 +30,7 @@ except ImportError:
 
 
 def plot_expression_heatmap(
-    data: pd.DataFrame,
-    *,
-    ax: Axes | None = None,
-    output_path: str | Path | None = None,
-    **kwargs
+    data: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
 ) -> Axes:
     """Create a gene expression heatmap.
 
@@ -60,7 +57,7 @@ def plot_expression_heatmap(
         raise ValueError("Expression data must contain numeric columns")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (12, 8)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (12, 8)))
 
     # Use seaborn if available, otherwise matplotlib
     if HAS_SEABORN:
@@ -69,19 +66,19 @@ def plot_expression_heatmap(
         sns.heatmap(
             z_scored,
             ax=ax,
-            cmap=kwargs.get('cmap', 'RdYlBu_r'),
-            center=kwargs.get('center', 0),
-            annot=kwargs.get('annot', False),
-            fmt=kwargs.get('fmt', '.2f'),
-            **kwargs
+            cmap=kwargs.get("cmap", "RdYlBu_r"),
+            center=kwargs.get("center", 0),
+            annot=kwargs.get("annot", False),
+            fmt=kwargs.get("fmt", ".2f"),
+            **kwargs,
         )
-        ax.set_title('Gene Expression Heatmap (Z-score normalized)')
+        ax.set_title("Gene Expression Heatmap (Z-score normalized)")
     else:
         logger.warning("Seaborn not available, using basic heatmap")
         # Basic matplotlib heatmap
-        im = ax.imshow(numeric_data.values, cmap=kwargs.get('cmap', 'viridis'), **kwargs)
+        im = ax.imshow(numeric_data.values, cmap=kwargs.get("cmap", "viridis"), **kwargs)
         plt.colorbar(im, ax=ax)
-        ax.set_title('Gene Expression Heatmap')
+        ax.set_title("Gene Expression Heatmap")
 
         # Set tick labels if not too many
         if len(data.index) <= 20:
@@ -89,22 +86,18 @@ def plot_expression_heatmap(
             ax.set_yticklabels(data.index, fontsize=8)
         if len(data.columns) <= 20:
             ax.set_xticks(range(len(data.columns)))
-            ax.set_xticklabels(data.columns, rotation=45, ha='right', fontsize=8)
+            ax.set_xticklabels(data.columns, rotation=45, ha="right", fontsize=8)
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Expression heatmap saved to {output_path}")
 
     return ax
 
 
 def plot_enrichment_barplot(
-    enrichment_results: pd.DataFrame,
-    *,
-    ax: Axes | None = None,
-    output_path: str | Path | None = None,
-    **kwargs
+    enrichment_results: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
 ) -> Axes:
     """Create a pathway enrichment barplot.
 
@@ -132,9 +125,9 @@ def plot_enrichment_barplot(
 
     for col in enrichment_results.columns:
         col_lower = col.lower()
-        if 'term' in col_lower or 'pathway' in col_lower or 'description' in col_lower:
+        if "term" in col_lower or "pathway" in col_lower or "description" in col_lower:
             term_col = col
-        elif 'padj' in col_lower or 'p.adjust' in col_lower or 'fdr' in col_lower:
+        elif "padj" in col_lower or "p.adjust" in col_lower or "fdr" in col_lower:
             pval_col = col
 
     if term_col is None:
@@ -143,7 +136,7 @@ def plot_enrichment_barplot(
         raise ValueError("Enrichment results must contain an adjusted p-value column")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (10, 6)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 6)))
 
     # Sort by p-value and take top N
     sorted_results = enrichment_results.sort_values(pval_col).head(20)
@@ -156,37 +149,33 @@ def plot_enrichment_barplot(
 
     ax.set_yticks(y_pos)
     # Truncate long term names
-    term_labels = [term[:50] + '...' if len(str(term)) > 50 else str(term) for term in terms]
+    term_labels = [term[:50] + "..." if len(str(term)) > 50 else str(term) for term in terms]
     ax.set_yticklabels(term_labels, fontsize=8)
-    ax.set_xlabel('-log₁₀(adjusted p-value)')
-    ax.set_title('Pathway Enrichment Results')
+    ax.set_xlabel("-log₁₀(adjusted p-value)")
+    ax.set_title("Pathway Enrichment Results")
 
     # Add count/size information if available
     count_col = None
     for col in enrichment_results.columns:
-        if 'count' in col.lower() or 'size' in col.lower():
+        if "count" in col.lower() or "size" in col.lower():
             count_col = col
             break
 
     if count_col and count_col in sorted_results.columns:
         # Add text annotations for counts
         for i, count in enumerate(sorted_results[count_col]):
-            ax.text(neg_log_pvals.iloc[i] + 0.1, i, f'n={count}', va='center', fontsize=8)
+            ax.text(neg_log_pvals.iloc[i] + 0.1, i, f"n={count}", va="center", fontsize=8)
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Enrichment barplot saved to {output_path}")
 
     return ax
 
 
 def plot_differential_expression(
-    data: pd.DataFrame,
-    *,
-    ax: Axes | None = None,
-    output_path: str | Path | None = None,
-    **kwargs
+    data: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
 ) -> Axes:
     """Create a differential expression analysis plot.
 
@@ -215,11 +204,11 @@ def plot_differential_expression(
 
     for col in data.columns:
         col_lower = col.lower()
-        if 'log2foldchange' in col_lower or 'logfc' in col_lower or 'log2fc' in col_lower:
+        if "log2foldchange" in col_lower or "logfc" in col_lower or "log2fc" in col_lower:
             logfc_col = col
-        elif 'padj' in col_lower or 'p.adjust' in col_lower or 'adj.p' in col_lower:
+        elif "padj" in col_lower or "p.adjust" in col_lower or "adj.p" in col_lower:
             pval_col = col
-        elif 'basemean' in col_lower or 'mean' in col_lower or 'avg' in col_lower:
+        elif "basemean" in col_lower or "mean" in col_lower or "avg" in col_lower:
             mean_col = col
 
     if logfc_col is None:
@@ -228,71 +217,56 @@ def plot_differential_expression(
         raise ValueError("Differential expression data must contain an adjusted p-value column")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (10, 8)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 8)))
 
     # Prepare data
     plot_data = data.copy()
-    plot_data['logP'] = -np.log10(plot_data[pval_col].clip(lower=1e-300))
+    plot_data["logP"] = -np.log10(plot_data[pval_col].clip(lower=1e-300))
 
     # Color points based on significance
     colors = []
     for _, row in plot_data.iterrows():
-        if row['logP'] >= -np.log10(0.05) and abs(row[logfc_col]) >= 1:
-            colors.append('red')  # Significant and large fold change
-        elif row['logP'] >= -np.log10(0.05):
-            colors.append('orange')  # Significant
+        if row["logP"] >= -np.log10(0.05) and abs(row[logfc_col]) >= 1:
+            colors.append("red")  # Significant and large fold change
+        elif row["logP"] >= -np.log10(0.05):
+            colors.append("orange")  # Significant
         elif abs(row[logfc_col]) >= 1:
-            colors.append('blue')  # Large fold change
+            colors.append("blue")  # Large fold change
         else:
-            colors.append('gray')  # Not significant
+            colors.append("gray")  # Not significant
 
     # Plot with size based on expression level if available
-    sizes = kwargs.pop('s', 20)
+    sizes = kwargs.pop("s", 20)
     if mean_col and mean_col in plot_data.columns:
         # Scale point sizes by expression level
         mean_vals = plot_data[mean_col]
         sizes = 20 + (mean_vals - mean_vals.min()) / (mean_vals.max() - mean_vals.min()) * 80
 
-    ax.scatter(
-        plot_data[logfc_col],
-        plot_data['logP'],
-        c=colors,
-        s=sizes,
-        alpha=kwargs.get('alpha', 0.6),
-        **kwargs
-    )
+    ax.scatter(plot_data[logfc_col], plot_data["logP"], c=colors, s=sizes, alpha=kwargs.get("alpha", 0.6), **kwargs)
 
     # Add threshold lines
-    ax.axhline(y=-np.log10(0.05), color='black', linestyle='--', alpha=0.7)
-    ax.axvline(x=1, color='black', linestyle='--', alpha=0.7)
-    ax.axvline(x=-1, color='black', linestyle='--', alpha=0.7)
+    ax.axhline(y=-np.log10(0.05), color="black", linestyle="--", alpha=0.7)
+    ax.axvline(x=1, color="black", linestyle="--", alpha=0.7)
+    ax.axvline(x=-1, color="black", linestyle="--", alpha=0.7)
 
-    ax.set_xlabel('log₂(Fold Change)')
-    ax.set_ylabel('-log₁₀(adjusted p-value)')
-    ax.set_title('Differential Expression Analysis')
+    ax.set_xlabel("log₂(Fold Change)")
+    ax.set_ylabel("-log₁₀(adjusted p-value)")
+    ax.set_title("Differential Expression Analysis")
 
     # Add legend
     legend_elements = [
-        plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='red',
-                  markersize=8, label='Significant & |FC| ≥ 2'),
-        plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='orange',
-                  markersize=8, label='Significant'),
-        plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='blue',
-                  markersize=8, label='|FC| ≥ 2'),
-        plt.Line2D([0], [0], marker='o', color='w', markerfacecolor='gray',
-                  markersize=8, label='Not significant')
+        plt.Line2D(
+            [0], [0], marker="o", color="w", markerfacecolor="red", markersize=8, label="Significant & |FC| ≥ 2"
+        ),
+        plt.Line2D([0], [0], marker="o", color="w", markerfacecolor="orange", markersize=8, label="Significant"),
+        plt.Line2D([0], [0], marker="o", color="w", markerfacecolor="blue", markersize=8, label="|FC| ≥ 2"),
+        plt.Line2D([0], [0], marker="o", color="w", markerfacecolor="gray", markersize=8, label="Not significant"),
     ]
-    ax.legend(handles=legend_elements, loc='best', fontsize=8)
+    ax.legend(handles=legend_elements, loc="best", fontsize=8)
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Differential expression plot saved to {output_path}")
 
     return ax
-
-
-
-
-
-

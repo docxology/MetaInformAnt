@@ -1,4 +1,5 @@
 """Tests for DNA sequence utility functions."""
+
 from __future__ import annotations
 
 from metainformant.dna import sequences
@@ -25,7 +26,7 @@ def test_gc_content_edge_cases() -> None:
     # All GC
     gc = sequences.gc_content("GCGCGC")
     assert gc == 1.0
-    
+
     # No GC
     gc = sequences.gc_content("ATATAT")
     assert gc == 0.0

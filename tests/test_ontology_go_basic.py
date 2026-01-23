@@ -32,7 +32,7 @@ def test_load_go_and_traverse(tmp_path: Path) -> None:
     # Write a summary under output/
     out = write_go_summary(onto)
     assert out.exists()
-    
+
     # Validate GO ontology
     is_valid, errors = validate_go_ontology(onto)
     # Should be valid for test data
@@ -61,9 +61,10 @@ def test_write_go_summary_custom_path(tmp_path: Path) -> None:
     summary_path = write_go_summary(onto, dest=custom_path)
     assert summary_path == custom_path
     assert summary_path.exists()
-    
+
     # Verify summary contains expected fields
     import json
+
     summary_data = json.loads(summary_path.read_text())
     assert "num_terms" in summary_data
     assert "namespaces" in summary_data

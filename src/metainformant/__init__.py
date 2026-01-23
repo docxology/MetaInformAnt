@@ -76,37 +76,30 @@ __all__ = [
     "__version__",
     "__author__",
     "__license__",
-
     # Core infrastructure (always available)
     "core",
-
     # Molecular analysis modules
     "dna",
     "rna",
     "protein",
     "epigenome",
-
     # Statistical & ML modules
     "gwas",
     "math",
     "ml",
     "information",
-
     # Systems biology modules
     "networks",
     "multiomics",
     "singlecell",
     "simulation",
-
     # Annotation & metadata modules
     "ontology",
     "phenotype",
     "ecology",
     "life_events",
-
     # Utilities
     "quality",
     "visualization",
     "menu",
 ]
-

@@ -21,6 +21,7 @@ class TestCommunityEcology:
     def test_shannon_diversity_equal_abundances(self):
         """Test Shannon diversity with equal abundances."""
         import math
+
         result = community.shannon_diversity([1, 1, 1, 1])
         expected = -4 * (0.25 * math.log(0.25))  # -sum(p * ln(p)) = -4 * (0.25 * ln(0.25))
         assert abs(result - expected) < 1e-10
@@ -39,7 +40,7 @@ class TestCommunityEcology:
     def test_simpson_diversity_basic(self):
         """Test Simpson diversity index calculation."""
         result = community.simpson_diversity([1, 1, 1, 1])
-        expected = 1 - sum((0.25)**2 for _ in range(4))  # 1 - 4*(0.25)^2
+        expected = 1 - sum((0.25) ** 2 for _ in range(4))  # 1 - 4*(0.25)^2
         assert abs(result - expected) < 1e-10
 
     def test_simpson_diversity_empty(self):
@@ -113,32 +114,32 @@ class TestCommunityEcology:
         metrics = community.community_metrics(abundances)
 
         # Check all metrics are present
-        expected_keys = ['shannon', 'simpson', 'richness', 'pielou', 'chao1']
+        expected_keys = ["shannon", "simpson", "richness", "pielou", "chao1"]
         for key in expected_keys:
             assert key in metrics
             assert isinstance(metrics[key], (int, float))
 
         # Check values are reasonable
-        assert metrics['richness'] == 8
-        assert 0 <= metrics['shannon'] <= 3.0
-        assert 0 <= metrics['simpson'] <= 1.0
-        assert 0 <= metrics['pielou'] <= 1.0
-        assert metrics['chao1'] >= metrics['richness']
+        assert metrics["richness"] == 8
+        assert 0 <= metrics["shannon"] <= 3.0
+        assert 0 <= metrics["simpson"] <= 1.0
+        assert 0 <= metrics["pielou"] <= 1.0
+        assert metrics["chao1"] >= metrics["richness"]
 
     def test_community_metrics_empty(self):
         """Test community metrics with empty data."""
         metrics = community.community_metrics([])
-        assert metrics['richness'] == 0
-        assert metrics['shannon'] == 0.0
-        assert metrics['simpson'] == 0.0
-        assert metrics['pielou'] == 0.0
-        assert metrics['chao1'] == 0.0
+        assert metrics["richness"] == 0
+        assert metrics["shannon"] == 0.0
+        assert metrics["simpson"] == 0.0
+        assert metrics["pielou"] == 0.0
+        assert metrics["chao1"] == 0.0
 
     def test_community_metrics_all_zeros(self):
         """Test community metrics with all zero abundances."""
         metrics = community.community_metrics([0, 0, 0])
-        assert metrics['richness'] == 0
-        assert metrics['shannon'] == 0.0
-        assert metrics['simpson'] == 0.0
-        assert metrics['pielou'] == 0.0
-        assert metrics['chao1'] == 0.0
+        assert metrics["richness"] == 0
+        assert metrics["shannon"] == 0.0
+        assert metrics["simpson"] == 0.0
+        assert metrics["pielou"] == 0.0
+        assert metrics["chao1"] == 0.0

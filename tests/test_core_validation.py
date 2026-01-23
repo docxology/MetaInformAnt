@@ -222,6 +222,7 @@ class TestValidateJsonSchema:
 
         try:
             import jsonschema  # noqa: F401
+
             # If jsonschema is available, test should work
             validate_json_schema(data, schema_file)
         except ImportError:
@@ -257,4 +258,3 @@ class TestValidatorDecorator:
         is_even(4, "number")
         with pytest.raises(ValidationError, match="number failed validation"):
             is_even(3, "number")
-

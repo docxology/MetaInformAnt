@@ -413,8 +413,3 @@ class TestGraphUtilities:
         expression = {"GENE1": 10.0, "GENE2": 8.0, "GENE3": 12.0}
         activity = pathway_activity_score(pn, "path1", expression)
         assert activity > 0.0
-
-
-
-
-

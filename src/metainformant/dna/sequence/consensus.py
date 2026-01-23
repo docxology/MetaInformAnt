@@ -52,12 +52,12 @@ def generate_consensus(sequences: List[str], threshold: float = 0.5) -> str:
 
         for seq in sequences:
             base = seq[pos].upper()
-            if base in 'ATCG':
+            if base in "ATCG":
                 base_counts[base] = base_counts.get(base, 0) + 1
                 total_bases += 1
 
         if not base_counts:
-            consensus.append('N')  # No valid bases
+            consensus.append("N")  # No valid bases
             continue
 
         # Find base with highest frequency
@@ -71,7 +71,7 @@ def generate_consensus(sequences: List[str], threshold: float = 0.5) -> str:
             # Use ambiguity code
             consensus.append(_get_iupac_code(base_counts))
 
-    return ''.join(consensus)
+    return "".join(consensus)
 
 
 def consensus_with_ambiguity(sequences: List[str]) -> str:
@@ -108,15 +108,15 @@ def consensus_with_ambiguity(sequences: List[str]) -> str:
 
         for seq in sequences:
             base = seq[pos].upper()
-            if base in 'ATCG':
+            if base in "ATCG":
                 base_counts[base] = base_counts.get(base, 0) + 1
 
         if not base_counts:
-            consensus.append('N')
+            consensus.append("N")
         else:
             consensus.append(_get_iupac_code(base_counts))
 
-    return ''.join(consensus)
+    return "".join(consensus)
 
 
 def _get_iupac_code(base_counts: Dict[str, int]) -> str:
@@ -131,35 +131,35 @@ def _get_iupac_code(base_counts: Dict[str, int]) -> str:
     bases = set(base_counts.keys())
 
     # Remove gaps and invalid characters
-    bases.discard('-')
-    bases = bases.intersection(set('ATCG'))
+    bases.discard("-")
+    bases = bases.intersection(set("ATCG"))
 
     if not bases:
-        return 'N'
+        return "N"
     elif len(bases) == 1:
         return list(bases)[0]
-    elif bases == {'A', 'G'}:
-        return 'R'
-    elif bases == {'C', 'T'}:
-        return 'Y'
-    elif bases == {'G', 'C'}:
-        return 'S'
-    elif bases == {'A', 'T'}:
-        return 'W'
-    elif bases == {'G', 'T'}:
-        return 'K'
-    elif bases == {'A', 'C'}:
-        return 'M'
-    elif bases == {'A', 'C', 'G'}:
-        return 'V'
-    elif bases == {'A', 'C', 'T'}:
-        return 'H'
-    elif bases == {'A', 'G', 'T'}:
-        return 'D'
-    elif bases == {'C', 'G', 'T'}:
-        return 'B'
+    elif bases == {"A", "G"}:
+        return "R"
+    elif bases == {"C", "T"}:
+        return "Y"
+    elif bases == {"G", "C"}:
+        return "S"
+    elif bases == {"A", "T"}:
+        return "W"
+    elif bases == {"G", "T"}:
+        return "K"
+    elif bases == {"A", "C"}:
+        return "M"
+    elif bases == {"A", "C", "G"}:
+        return "V"
+    elif bases == {"A", "C", "T"}:
+        return "H"
+    elif bases == {"A", "G", "T"}:
+        return "D"
+    elif bases == {"C", "G", "T"}:
+        return "B"
     else:  # All four bases
-        return 'N'
+        return "N"
 
 
 def quality_weighted_consensus(sequences: List[str], qualities: List[List[int]]) -> str:
@@ -199,25 +199,25 @@ def quality_weighted_consensus(sequences: List[str], qualities: List[List[int]])
 
     for pos in range(seq_length):
         # Calculate weighted base frequencies
-        weighted_counts = {'A': 0.0, 'C': 0.0, 'G': 0.0, 'T': 0.0}
+        weighted_counts = {"A": 0.0, "C": 0.0, "G": 0.0, "T": 0.0}
 
         for seq, qual_list in zip(sequences, qualities):
             base = seq[pos].upper()
             quality = qual_list[pos]
 
-            if base in 'ATCG':
+            if base in "ATCG":
                 # Use quality as weight (Phred score)
                 weight = 10 ** (quality / -10.0)  # Convert to probability
                 weighted_counts[base] += weight
 
         # Find base with highest weighted count
         if all(count == 0 for count in weighted_counts.values()):
-            consensus.append('N')
+            consensus.append("N")
         else:
             best_base = max(weighted_counts.items(), key=lambda x: x[1])[0]
             consensus.append(best_base)
 
-    return ''.join(consensus)
+    return "".join(consensus)
 
 
 def consensus_statistics(sequences: List[str]) -> Dict[str, any]:
@@ -237,11 +237,11 @@ def consensus_statistics(sequences: List[str]) -> Dict[str, any]:
     """
     if not sequences:
         return {
-            'total_positions': 0,
-            'conserved_positions': 0,
-            'conservation': 0.0,
-            'ambiguous_positions': 0,
-            'gap_positions': 0
+            "total_positions": 0,
+            "conserved_positions": 0,
+            "conservation": 0.0,
+            "ambiguous_positions": 0,
+            "gap_positions": 0,
         }
 
     seq_length = len(sequences[0])
@@ -255,15 +255,15 @@ def consensus_statistics(sequences: List[str]) -> Dict[str, any]:
         for seq in sequences:
             if pos < len(seq):
                 base = seq[pos].upper()
-                if base in 'ATCG-':
+                if base in "ATCG-":
                     bases.append(base)
 
         if not bases:
             continue
 
         # Count unique bases (excluding gaps)
-        unique_bases = set(b for b in bases if b != '-')
-        gap_count = bases.count('-')
+        unique_bases = set(b for b in bases if b != "-")
+        gap_count = bases.count("-")
 
         if gap_count > 0:
             gap_positions += 1
@@ -276,12 +276,12 @@ def consensus_statistics(sequences: List[str]) -> Dict[str, any]:
     conservation = conserved_positions / seq_length if seq_length > 0 else 0.0
 
     return {
-        'total_positions': seq_length,
-        'conserved_positions': conserved_positions,
-        'conservation': conservation,
-        'ambiguous_positions': ambiguous_positions,
-        'gap_positions': gap_positions,
-        'sequences_count': len(sequences)
+        "total_positions": seq_length,
+        "conserved_positions": conserved_positions,
+        "conservation": conservation,
+        "ambiguous_positions": ambiguous_positions,
+        "gap_positions": gap_positions,
+        "sequences_count": len(sequences),
     }
 
 
@@ -347,18 +347,18 @@ def consensus_from_alignment(alignment: List[str]) -> Tuple[str, Dict[str, any]]
     stats = consensus_statistics(alignment)
 
     # Choose best consensus (prefer majority if highly conserved)
-    if stats['conservation'] > 0.8:
+    if stats["conservation"] > 0.8:
         final_consensus = majority_cons
     else:
         final_consensus = strict_cons
 
     analysis = {
-        'majority_consensus': majority_cons,
-        'strict_consensus': strict_cons,
-        'final_consensus': final_consensus,
-        'statistics': stats,
-        'alignment_length': len(alignment[0]) if alignment else 0,
-        'sequence_count': len(alignment)
+        "majority_consensus": majority_cons,
+        "strict_consensus": strict_cons,
+        "final_consensus": final_consensus,
+        "statistics": stats,
+        "alignment_length": len(alignment[0]) if alignment else 0,
+        "sequence_count": len(alignment),
     }
 
     return final_consensus, analysis
@@ -396,7 +396,7 @@ def find_consensus_breaks(sequences: List[str], window_size: int = 10) -> List[T
 
         # Calculate conservation for this window
         stats = consensus_statistics(window_seqs)
-        conservation = stats['conservation']
+        conservation = stats["conservation"]
 
         breaks.append((start, conservation))
 
@@ -441,11 +441,3 @@ def bootstrap_consensus(sequences: List[str], n_bootstraps: int = 100) -> Tuple[
     confidence = agreements / n_bootstraps
 
     return final_consensus, confidence
-
-
-
-
-
-
-
-

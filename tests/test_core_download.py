@@ -34,8 +34,8 @@ def test_download_with_progress_file_scheme_creates_file_and_heartbeat(tmp_path:
     assert hb.exists()
     # Must contain at least these keys
     text = hb.read_text(encoding="utf-8")
-    assert "\"status\"" in text
-    assert "\"bytes_downloaded\"" in text
+    assert '"status"' in text
+    assert '"bytes_downloaded"' in text
 
 
 def test_monitor_subprocess_directory_growth_writes_heartbeat(tmp_path: Path) -> None:
@@ -74,7 +74,7 @@ def test_monitor_subprocess_directory_growth_writes_heartbeat(tmp_path: Path) ->
     assert bytes_done >= 5 * 65536
     assert hb.exists()
     text = hb.read_text(encoding="utf-8")
-    assert "\"status\"" in text
+    assert '"status"' in text
 
 
 def test_monitor_subprocess_file_count_tracks_expected_files(tmp_path: Path) -> None:
@@ -102,7 +102,7 @@ def test_monitor_subprocess_file_count_tracks_expected_files(tmp_path: Path) -> 
         process=proc,
         watch_dir=out_dir,
         heartbeat_path=hb,
-        expected_files=['a.txt', 'b.txt'],
+        expected_files=["a.txt", "b.txt"],
         heartbeat_interval=1,
         show_progress=False,
         desc="test-files",
@@ -113,8 +113,8 @@ def test_monitor_subprocess_file_count_tracks_expected_files(tmp_path: Path) -> 
     assert (out_dir / "b.txt").exists()
     assert hb.exists()
     text = hb.read_text(encoding="utf-8")
-    assert "\"progress\"" in text
-    assert "\"file_count\"" in text
+    assert '"progress"' in text
+    assert '"file_count"' in text
 
 
 def test_monitor_subprocess_sample_progress_counts_completion_glob(tmp_path: Path) -> None:
@@ -154,7 +154,7 @@ def test_monitor_subprocess_sample_progress_counts_completion_glob(tmp_path: Pat
     assert hb.exists()
     assert len(list(quant_dir.glob("*/abundance.tsv"))) == 3
     text = hb.read_text(encoding="utf-8")
-    assert "\"sample_count\"" in text
+    assert '"sample_count"' in text
 
 
 @pytest.mark.network
@@ -180,5 +180,3 @@ def test_download_with_progress_http_creates_heartbeat(tmp_path: Path) -> None:
     assert dest.exists()
     hb = dest.parent / ".downloads" / f"{dest.name}.heartbeat.json"
     assert hb.exists()
-
-

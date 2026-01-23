@@ -35,20 +35,20 @@ def parse_vcf_full(vcf_path: Union[str, Path]) -> Dict[str, Any]:
     logger.info(f"Parsing VCF file: {vcf_path}")
 
     data = {
-        'samples': [],
-        'variants': [],
-        'genotypes': [],  # Will be numpy array in full implementation
-        'metadata': {}
+        "samples": [],
+        "variants": [],
+        "genotypes": [],  # Will be numpy array in full implementation
+        "metadata": {},
     }
 
     try:
         # Open file (handle gzipped files)
-        if str(vcf_path).endswith('.gz'):
+        if str(vcf_path).endswith(".gz"):
             opener = gzip.open
-            mode = 'rt'
+            mode = "rt"
         else:
             opener = open
-            mode = 'r'
+            mode = "r"
 
         with opener(vcf_path, mode) as f:
             for line_num, line in enumerate(f, 1):
@@ -57,22 +57,22 @@ def parse_vcf_full(vcf_path: Union[str, Path]) -> Dict[str, Any]:
                 if not line:
                     continue
 
-                if line.startswith('##'):
+                if line.startswith("##"):
                     # Metadata lines
-                    if '=' in line:
-                        key, value = line[2:].split('=', 1)
-                        data['metadata'][key] = value
+                    if "=" in line:
+                        key, value = line[2:].split("=", 1)
+                        data["metadata"][key] = value
                     continue
 
-                if line.startswith('#'):
+                if line.startswith("#"):
                     # Header line with sample names
-                    parts = line[1:].split('\t')
+                    parts = line[1:].split("\t")
                     if len(parts) > 9:  # CHROM, POS, ID, REF, ALT, QUAL, FILTER, INFO, FORMAT, then samples
-                        data['samples'] = parts[9:]
+                        data["samples"] = parts[9:]
                     continue
 
                 # Variant line
-                parts = line.split('\t')
+                parts = line.split("\t")
                 if len(parts) < 10:
                     continue
 
@@ -82,39 +82,49 @@ def parse_vcf_full(vcf_path: Union[str, Path]) -> Dict[str, Any]:
                     var_id = parts[2]
                     ref = parts[3]
                     alt = parts[4]
-                    qual = float(parts[5]) if parts[5] != '.' else None
+                    qual = float(parts[5]) if parts[5] != "." else None
                     filter_field = parts[6]
                     info = parts[7]
                     format_field = parts[8]
 
                     variant = {
-                        'chrom': chrom,
-                        'pos': pos,
-                        'id': var_id,
-                        'ref': ref,
-                        'alt': alt.split(','),
-                        'qual': qual,
-                        'filter': filter_field,
-                        'info': info,
-                        'format': format_field
+                        "chrom": chrom,
+                        "pos": pos,
+                        "id": var_id,
+                        "ref": ref,
+                        "alt": alt.split(","),
+                        "qual": qual,
+                        "filter": filter_field,
+                        "info": info,
+                        "format": format_field,
                     }
 
-                    data['variants'].append(variant)
+                    data["variants"].append(variant)
 
                     # Parse genotypes for each sample
                     genotype_row = []
                     for sample_gt in parts[9:]:
-                        # Simplified genotype parsing
-                        gt_value = 0  # Default to reference
-                        if sample_gt and sample_gt != './.':
-                            # Extract first allele from GT field
-                            gt_parts = sample_gt.split(':')[0].split('/')
-                            if len(gt_parts) >= 1 and gt_parts[0].isdigit():
-                                gt_value = int(gt_parts[0])
+                        # Parse GT field (handles both "/" and "|" separators)
+                        gt_field = sample_gt.split(":")[0] if sample_gt else "./."
+
+                        # Handle missing genotypes
+                        if gt_field in ("./.", ".|.", ".", ""):
+                            gt_value = -1  # Missing
+                        else:
+                            # Split by / or |
+                            sep = "|" if "|" in gt_field else "/"
+                            gt_parts = gt_field.split(sep)
+
+                            # Sum alleles: 0/0=0, 0/1=1, 1/1=2
+                            try:
+                                allele_sum = sum(int(a) for a in gt_parts if a.isdigit())
+                                gt_value = allele_sum
+                            except (ValueError, TypeError):
+                                gt_value = -1  # Missing/invalid
 
                         genotype_row.append(gt_value)
 
-                    data['genotypes'].append(genotype_row)
+                    data["genotypes"].append(genotype_row)
 
                 except (ValueError, IndexError) as e:
                     logger.warning(f"Error parsing variant at line {line_num}: {e}")
@@ -122,6 +132,14 @@ def parse_vcf_full(vcf_path: Union[str, Path]) -> Dict[str, Any]:
 
     except Exception as e:
         raise ValueError(f"Error reading VCF file {vcf_path}: {e}")
+
+    # Transpose genotypes: from [variant][sample] to [sample][variant]
+    # Test expects genotypes[sample_idx][variant_idx]
+    if data["genotypes"]:
+        n_variants = len(data["genotypes"])
+        n_samples = len(data["genotypes"][0]) if n_variants > 0 else 0
+        transposed = [[data["genotypes"][v][s] for v in range(n_variants)] for s in range(n_samples)]
+        data["genotypes"] = transposed
 
     logger.info(f"Parsed {len(data['variants'])} variants for {len(data['samples'])} samples")
 
@@ -210,15 +228,17 @@ def filter_by_missing(genotypes: List[List[int]], missing_threshold: float = 0.1
 
 
 def test_hwe(genotypes: List[List[int]], alpha: float = 0.05) -> List[float]:
-    """Test variants for Hardy-Weinberg equilibrium.
+    """Test variants for Hardy-Weinberg equilibrium using chi-square test.
 
     Args:
         genotypes: Genotype matrix (variants x samples)
-        alpha: Significance threshold
+        alpha: Significance threshold (unused, kept for API compatibility)
 
     Returns:
         List of p-values for HWE test
     """
+    import math
+
     p_values = []
 
     for variant_genotypes in genotypes:
@@ -241,60 +261,159 @@ def test_hwe(genotypes: List[List[int]], alpha: float = 0.05) -> List[float]:
         expected_ab = 2 * p * q * total
         expected_bb = q * q * total
 
-        # Chi-square test
-        try:
-            chi_square = (
-                ((aa_count - expected_aa) ** 2) / expected_aa if expected_aa > 0 else 0 +
-                ((ab_count - expected_ab) ** 2) / expected_ab if expected_ab > 0 else 0 +
-                ((bb_count - expected_bb) ** 2) / expected_bb if expected_bb > 0 else 0
-            )
+        # Chi-square test with 1 degree of freedom
+        chi_square = 0.0
+        if expected_aa > 0:
+            chi_square += ((aa_count - expected_aa) ** 2) / expected_aa
+        if expected_ab > 0:
+            chi_square += ((ab_count - expected_ab) ** 2) / expected_ab
+        if expected_bb > 0:
+            chi_square += ((bb_count - expected_bb) ** 2) / expected_bb
 
-            # Simplified p-value calculation (would use scipy.stats.chi2.sf in practice)
-            # For now, use a basic approximation
-            if chi_square > 5.99:  # Chi-square critical value for df=2, alpha=0.05
-                p_value = 0.05
-            else:
-                p_value = 0.95
-
-            p_values.append(p_value)
-
-        except ZeroDivisionError:
-            p_values.append(1.0)
+        # Calculate p-value using chi-square distribution with df=1
+        # Using incomplete gamma function approximation
+        p_value = _chi2_sf(chi_square, df=1)
+        p_values.append(p_value)
 
     return p_values
 
 
-def apply_qc_filters(vcf_data: Dict[str, Any], min_maf: float = 0.01,
-                    max_missing: float = 0.1, min_hwe_p: float = 1e-6) -> Dict[str, Any]:
+def _chi2_sf(x: float, df: int = 1) -> float:
+    """Calculate survival function (1 - CDF) for chi-square distribution.
+
+    Uses incomplete gamma function approximation for the chi-square distribution.
+
+    Args:
+        x: Chi-square statistic
+        df: Degrees of freedom
+
+    Returns:
+        p-value (probability of observing chi-square >= x under null)
+    """
+    import math
+
+    if x <= 0:
+        return 1.0
+
+    # For df=1, we can use the relationship with standard normal
+    if df == 1:
+        # chi2 with df=1 is square of standard normal
+        # P(chi2 > x) = 2 * P(Z > sqrt(x)) = 2 * (1 - Phi(sqrt(x))) = erfc(sqrt(x/2))
+        z = math.sqrt(x / 2)
+        return math.erfc(z)
+
+    # For other df, use incomplete gamma function approximation
+    # P(chi2 > x) = 1 - P(chi2 <= x) = 1 - gammainc(df/2, x/2)
+    # Using Pearson's approximation for larger df
+    a = df / 2
+    z = x / 2
+
+    # Series approximation for regularized incomplete gamma function
+    if z < a + 1:
+        # Use series expansion
+        ap = a
+        sum_val = 1.0 / a
+        delta = sum_val
+        for _ in range(100):
+            ap += 1
+            delta *= z / ap
+            sum_val += delta
+            if abs(delta) < abs(sum_val) * 1e-10:
+                break
+        return 1.0 - sum_val * math.exp(-z + a * math.log(z) - math.lgamma(a))
+    else:
+        # Use continued fraction
+        b = z + 1 - a
+        c = 1.0 / 1e-30
+        d = 1.0 / b
+        h = d
+        for i in range(1, 100):
+            an = -i * (i - a)
+            b += 2
+            d = an * d + b
+            if abs(d) < 1e-30:
+                d = 1e-30
+            c = b + an / c
+            if abs(c) < 1e-30:
+                c = 1e-30
+            d = 1.0 / d
+            delta = d * c
+            h *= delta
+            if abs(delta - 1.0) < 1e-10:
+                break
+        return h * math.exp(-z + a * math.log(z) - math.lgamma(a))
+
+
+def apply_qc_filters(
+    vcf_input: Union[str, Path, Dict[str, Any]], qc_config: Optional[Dict[str, Any]] = None
+) -> Dict[str, Any]:
     """Apply comprehensive quality control filters to VCF data.
 
     Args:
-        vcf_data: Parsed VCF data dictionary
-        min_maf: Minimum minor allele frequency
-        max_missing: Maximum missing data proportion
-        min_hwe_p: Minimum HWE p-value threshold
+        vcf_input: VCF file path or pre-parsed VCF data dictionary
+        qc_config: QC configuration dictionary with keys:
+            - min_maf: Minimum minor allele frequency (default 0.01)
+            - max_missing: Maximum missing data proportion (default 0.1)
+            - min_hwe_p: Minimum HWE p-value threshold (default 1e-6)
+            - min_qual: Minimum variant quality (optional)
 
     Returns:
-        Filtered VCF data dictionary
+        Dictionary with status and QC results
     """
     logger.info("Applying QC filters to VCF data")
 
-    genotypes = vcf_data.get('genotypes', [])
-    if not genotypes:
+    # Parse VCF if path is provided
+    if isinstance(vcf_input, (str, Path)):
+        vcf_data = parse_vcf_full(vcf_input)
+    else:
+        vcf_data = vcf_input
+
+    # Extract QC parameters from config
+    if qc_config is None:
+        qc_config = {}
+    min_maf = qc_config.get("min_maf", 0.01)
+    max_missing = qc_config.get("max_missing", 0.1)
+    min_hwe_p = qc_config.get("min_hwe_p", 1e-6)
+
+    # Get genotypes - need to transpose from [sample][variant] to [variant][sample] for filtering
+    genotypes_by_sample = vcf_data.get("genotypes", [])
+    if not genotypes_by_sample:
         logger.warning("No genotype data found in VCF")
-        return vcf_data
+        return {
+            "status": "success",
+            "num_variants_before": 0,
+            "num_variants_after": 0,
+            "filtered_data": vcf_data,
+        }
+
+    # Transpose genotypes to [variant][sample] for filtering functions
+    n_samples = len(genotypes_by_sample)
+    n_variants = len(genotypes_by_sample[0]) if n_samples > 0 else 0
+    genotypes = [[genotypes_by_sample[s][v] for s in range(n_samples)] for v in range(n_variants)]
+
+    num_variants_before = len(genotypes)
 
     # Apply filters
     filtered_genotypes, maf_indices = filter_by_maf(genotypes, min_maf)
     if not filtered_genotypes:
         logger.warning("No variants passed MAF filter")
-        return {**vcf_data, 'genotypes': [], 'variants': []}
+        return {
+            "status": "success",
+            "num_variants_before": num_variants_before,
+            "num_variants_after": 0,
+            "filtered_data": {**vcf_data, "genotypes": [], "variants": []},
+        }
 
     # Re-filter by missing data on MAF-filtered set
     filtered_genotypes, missing_indices = filter_by_missing(filtered_genotypes, max_missing)
     if not filtered_genotypes:
         logger.warning("No variants passed missing data filter")
-        return {**vcf_data, 'genotypes': [], 'variants': []}
+        return {
+            "status": "success",
+            "num_variants_before": num_variants_before,
+            "num_variants_after": 0,
+            "filtered_data": {**vcf_data, "genotypes": [], "variants": []},
+        }
 
     # Map back to original indices
     final_indices = [maf_indices[i] for i in missing_indices]
@@ -306,21 +425,28 @@ def apply_qc_filters(vcf_data: Dict[str, Any], min_maf: float = 0.01,
     final_indices = [final_indices[i] for i in hwe_kept]
 
     # Filter variants accordingly
-    filtered_variants = [vcf_data['variants'][i] for i in final_indices]
+    filtered_variants = [vcf_data["variants"][i] for i in final_indices]
 
-    logger.info(f"QC filtering complete: {len(final_genotypes)}/{len(genotypes)} variants passed")
+    # Transpose final genotypes back to [sample][variant]
+    n_final_variants = len(final_genotypes)
+    final_genotypes_by_sample = [[final_genotypes[v][s] for v in range(n_final_variants)] for s in range(n_samples)]
+
+    logger.info(f"QC filtering complete: {len(final_genotypes)}/{num_variants_before} variants passed")
 
     return {
-        **vcf_data,
-        'genotypes': final_genotypes,
-        'variants': filtered_variants,
-        'qc_filters': {
-            'min_maf': min_maf,
-            'max_missing': max_missing,
-            'min_hwe_p': min_hwe_p,
-            'variants_before': len(genotypes),
-            'variants_after': len(final_genotypes)
-        }
+        "status": "success",
+        "num_variants_before": num_variants_before,
+        "num_variants_after": len(final_genotypes),
+        "filtered_data": {
+            **vcf_data,
+            "genotypes": final_genotypes_by_sample,
+            "variants": filtered_variants,
+        },
+        "qc_filters": {
+            "min_maf": min_maf,
+            "max_missing": max_missing,
+            "min_hwe_p": min_hwe_p,
+        },
     }
 
 
@@ -338,29 +464,47 @@ def write_filtered_vcf(filtered_data: Dict[str, Any], output_path: Union[str, Pa
 
     # This is a placeholder implementation
     # Full implementation would reconstruct VCF format from filtered data
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         f.write("##fileformat=VCFv4.2\n")
         f.write("#CHROM\tPOS\tID\tREF\tALT\tQUAL\tFILTER\tINFO\tFORMAT")
-        for sample in filtered_data.get('samples', []):
+        for sample in filtered_data.get("samples", []):
             f.write(f"\t{sample}")
         f.write("\n")
 
         # Write filtered variants (simplified)
-        for i, variant in enumerate(filtered_data.get('variants', [])):
-            f.write(f"{variant['chrom']}\t{variant['pos']}\t{variant['id']}\t{variant['ref']}\t{','.join(variant['alt'])}\t")
-            f.write(f"{variant.get('qual', '.')}\t{variant.get('filter', 'PASS')}\t{variant.get('info', '.')}\t{variant.get('format', 'GT')}")
-            # Write genotypes (simplified)
-            genotypes = filtered_data.get('genotypes', [[]] * len(filtered_data.get('variants', [])))
-            if i < len(genotypes):
-                for gt in genotypes[i]:
-                    f.write(f"\t{gt}|{gt}")
+        for i, variant in enumerate(filtered_data.get("variants", [])):
+            f.write(
+                f"{variant['chrom']}\t{variant['pos']}\t{variant['id']}\t{variant['ref']}\t{','.join(variant['alt'])}\t"
+            )
+            f.write(
+                f"{variant.get('qual', '.')}\t{variant.get('filter', 'PASS')}\t{variant.get('info', '.')}\t{variant.get('format', 'GT')}"
+            )
+            # Write genotypes (convert numeric to VCF GT format)
+            variant_count = len(filtered_data.get("variants", []))
+            all_genotypes = filtered_data.get("genotypes", [])
+            if not all_genotypes:
+                all_genotypes = [[] for _ in range(variant_count)]
+            if i < len(all_genotypes):
+                for gt in all_genotypes[i]:
+                    # Convert numeric genotype to VCF GT format
+                    if gt < 0:
+                        f.write("\t./.")  # Missing genotype
+                    elif gt == 0:
+                        f.write("\t0/0")  # Homozygous reference
+                    elif gt == 1:
+                        f.write("\t0/1")  # Heterozygous
+                    elif gt == 2:
+                        f.write("\t1/1")  # Homozygous alternate
+                    else:
+                        f.write(f"\t{gt}/{gt}")  # Generic case
             f.write("\n")
 
     logger.info(f"Filtered VCF written with {len(filtered_data.get('variants', []))} variants")
 
 
-def extract_variant_regions(vcf_data: Dict[str, Any], regions: List[Tuple[str, int, int]],
-                           padding: int = 0) -> Dict[str, Any]:
+def extract_variant_regions(
+    vcf_data: Dict[str, Any], regions: List[Tuple[str, int, int]], padding: int = 0
+) -> Dict[str, Any]:
     """Extract variants within specified genomic regions.
 
     Args:
@@ -375,7 +519,7 @@ def extract_variant_regions(vcf_data: Dict[str, Any], regions: List[Tuple[str, i
         logger.warning("No regions specified, returning all data")
         return vcf_data.copy()
 
-    variants = vcf_data.get('variants', [])
+    variants = vcf_data.get("variants", [])
     if not variants:
         logger.warning("No variants in VCF data")
         return vcf_data.copy()
@@ -385,30 +529,28 @@ def extract_variant_regions(vcf_data: Dict[str, Any], regions: List[Tuple[str, i
     filtered_indices = []
 
     for i, variant in enumerate(variants):
-        chrom = variant.get('chrom', '')
-        pos = variant.get('pos', 0)
+        chrom = variant.get("chrom", "")
+        pos = variant.get("pos", 0)
 
         # Check if variant falls within any region
         for region_chrom, region_start, region_end in regions:
-            if (chrom == region_chrom and
-                region_start - padding <= pos <= region_end + padding):
+            if chrom == region_chrom and region_start - padding <= pos <= region_end + padding:
                 filtered_variants.append(variant)
                 filtered_indices.append(i)
                 break
 
     # Filter genotypes if present
     filtered_genotypes = []
-    genotypes = vcf_data.get('genotypes', [])
+    genotypes = vcf_data.get("genotypes", [])
     if genotypes and len(genotypes) == len(variants):
         filtered_genotypes = [genotypes[i] for i in filtered_indices]
 
     # Create result dictionary
     result = vcf_data.copy()
-    result['variants'] = filtered_variants
+    result["variants"] = filtered_variants
     if filtered_genotypes:
-        result['genotypes'] = filtered_genotypes
+        result["genotypes"] = filtered_genotypes
 
     logger.info(f"Extracted {len(filtered_variants)} variants from {len(regions)} regions")
 
     return result
-

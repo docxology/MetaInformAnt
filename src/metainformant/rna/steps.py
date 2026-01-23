@@ -17,7 +17,7 @@ from metainformant.rna.amalgkit.amalgkit import (
     curate,
     csca,
     sanity,
-    config
+    config,
 )
 
 STEP_RUNNERS = {

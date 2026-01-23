@@ -58,7 +58,6 @@ __all__ = [
     "assays",
     "visualization",
     "workflow",
-
     # Epigenetic assays
     "atacseq",
     "chipseq",
@@ -67,11 +66,9 @@ __all__ = [
     "load_cpg_table",
     "summarize_beta_by_chromosome",
     "read_bedgraph",
-
     # Data visualization and tracks
     "tracks",
     "visualization_module",
-    
     # Workflow
     "workflow_module",
 ]

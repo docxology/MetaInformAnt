@@ -19,6 +19,7 @@ try:
     from . import embeddings
     from . import models
     from . import config
+
     EMBEDDINGS_AVAILABLE = True
 except ImportError:
     EMBEDDINGS_AVAILABLE = False
@@ -30,7 +31,7 @@ def analyze_life_course(
     outcomes: Optional[List[str]] = None,
     output_dir: Optional[Union[str, Path]] = None,
     config_obj: Optional[Any] = None,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Dict[str, Any]:
     """Analyze life event sequences with optional outcome prediction.
 
@@ -67,7 +68,7 @@ def analyze_life_course(
         "sequence_stats": {},
         "model_results": {},
         "predictions": {},
-        "visualizations": []
+        "visualizations": [],
     }
 
     # Basic sequence statistics
@@ -84,15 +85,12 @@ def analyze_life_course(
         else:
             # Learn embeddings
             logger.info("Learning event embeddings...")
-            embedding_results = embeddings.learn_event_embeddings(
-                sequences, output_dir=output_dir, **kwargs
-            )
+            embedding_results = embeddings.learn_event_embeddings(sequences, output_dir=output_dir, **kwargs)
 
             # Train prediction model
             logger.info("Training prediction model...")
             model_results = models.train_event_predictor(
-                sequences, outcomes, embedding_results=embedding_results,
-                output_dir=output_dir, **kwargs
+                sequences, outcomes, embedding_results=embedding_results, output_dir=output_dir, **kwargs
             )
 
             # Generate predictions
@@ -113,9 +111,8 @@ def analyze_life_course(
     # Generate visualizations if matplotlib available
     try:
         from . import visualization
-        vis_results = _generate_analysis_visualizations(
-            sequences, outcomes, output_dir, results
-        )
+
+        vis_results = _generate_analysis_visualizations(sequences, outcomes, output_dir, results)
         results["visualizations"] = vis_results
     except ImportError:
         logger.warning("Visualization not available")
@@ -147,7 +144,7 @@ def _compute_sequence_stats(sequences: List[Any]) -> Dict[str, Any]:
     for seq in sequences:
         for event in seq.events:
             stats["unique_event_types"].add(event.event_type)
-            if hasattr(event, 'domain'):
+            if hasattr(event, "domain"):
                 stats["unique_domains"].add(event.domain)
 
     stats["unique_event_types"] = list(stats["unique_event_types"])
@@ -159,10 +156,7 @@ def _compute_sequence_stats(sequences: List[Any]) -> Dict[str, Any]:
 
 
 def _generate_analysis_visualizations(
-    sequences: List[Any],
-    outcomes: Optional[List[str]],
-    output_dir: Path,
-    results: Dict[str, Any]
+    sequences: List[Any], outcomes: Optional[List[str]], output_dir: Path, results: Dict[str, Any]
 ) -> List[Dict[str, str]]:
     """Generate analysis visualizations."""
     visualizations = []
@@ -174,33 +168,24 @@ def _generate_analysis_visualizations(
         fig = visualization.plot_sequence_length_distribution(sequences)
         if fig:
             length_plot = output_dir / "sequence_lengths.png"
-            fig.savefig(length_plot, dpi=300, bbox_inches='tight')
-            visualizations.append({
-                "type": "sequence_length_distribution",
-                "file": str(length_plot)
-            })
+            fig.savefig(length_plot, dpi=300, bbox_inches="tight")
+            visualizations.append({"type": "sequence_length_distribution", "file": str(length_plot)})
 
         # Domain distribution if domains available
-        if any(hasattr(event, 'domain') for seq in sequences for event in seq.events):
+        if any(hasattr(event, "domain") for seq in sequences for event in seq.events):
             fig = visualization.plot_domain_distribution(sequences)
             if fig:
                 domain_plot = output_dir / "domain_distribution.png"
-                fig.savefig(domain_plot, dpi=300, bbox_inches='tight')
-                visualizations.append({
-                    "type": "domain_distribution",
-                    "file": str(domain_plot)
-                })
+                fig.savefig(domain_plot, dpi=300, bbox_inches="tight")
+                visualizations.append({"type": "domain_distribution", "file": str(domain_plot)})
 
         # Outcome distribution if outcomes available
         if outcomes:
             fig = visualization.plot_outcome_distribution(outcomes)
             if fig:
                 outcome_plot = output_dir / "outcome_distribution.png"
-                fig.savefig(outcome_plot, dpi=300, bbox_inches='tight')
-                visualizations.append({
-                    "type": "outcome_distribution",
-                    "file": str(outcome_plot)
-                })
+                fig.savefig(outcome_plot, dpi=300, bbox_inches="tight")
+                visualizations.append({"type": "outcome_distribution", "file": str(outcome_plot)})
 
     except Exception as e:
         logger.warning(f"Error generating visualizations: {e}")
@@ -213,7 +198,7 @@ def compare_populations(
     sequences2: List[Any],
     group_names: tuple[str, str] = ("Group1", "Group2"),
     output_dir: Optional[Union[str, Path]] = None,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Dict[str, Any]:
     """Compare two populations of life event sequences.
 
@@ -244,7 +229,7 @@ def compare_populations(
         "group1_stats": _compute_sequence_stats(sequences1),
         "group2_stats": _compute_sequence_stats(sequences2),
         "comparison": {},
-        "visualizations": []
+        "visualizations": [],
     }
 
     # Statistical comparisons
@@ -253,16 +238,12 @@ def compare_populations(
     # Generate comparison visualizations
     try:
         from . import visualization
-        fig = visualization.plot_population_comparison(
-            sequences1, sequences2, group_names=group_names
-        )
+
+        fig = visualization.plot_population_comparison(sequences1, sequences2, group_names=group_names)
         if fig:
             comp_plot = output_dir / "population_comparison.png"
-            fig.savefig(comp_plot, dpi=300, bbox_inches='tight')
-            results["visualizations"].append({
-                "type": "population_comparison",
-                "file": str(comp_plot)
-            })
+            fig.savefig(comp_plot, dpi=300, bbox_inches="tight")
+            results["visualizations"].append({"type": "population_comparison", "file": str(comp_plot)})
     except Exception as e:
         logger.warning(f"Error generating comparison visualizations: {e}")
 
@@ -275,9 +256,7 @@ def compare_populations(
 
 
 def _compare_sequence_groups(
-    sequences1: List[Any],
-    sequences2: List[Any],
-    group_names: tuple[str, str]
+    sequences1: List[Any], sequences2: List[Any], group_names: tuple[str, str]
 ) -> Dict[str, Any]:
     """Compare two groups of sequences statistically."""
     # Basic statistical tests
@@ -288,8 +267,8 @@ def _compare_sequence_groups(
         "length_comparison": {
             "group1_mean": sum(lengths1) / len(lengths1) if lengths1 else 0,
             "group2_mean": sum(lengths2) / len(lengths2) if lengths2 else 0,
-            "group1_median": sorted(lengths1)[len(lengths1)//2] if lengths1 else 0,
-            "group2_median": sorted(lengths2)[len(lengths2)//2] if lengths2 else 0,
+            "group1_median": sorted(lengths1)[len(lengths1) // 2] if lengths1 else 0,
+            "group2_median": sorted(lengths2)[len(lengths2) // 2] if lengths2 else 0,
         }
     }
 
@@ -309,13 +288,15 @@ def _compare_sequence_groups(
         "group1_unique": len(types1),
         "group2_unique": len(types2),
         "overlap": len(types1 & types2),
-        "jaccard_similarity": len(types1 & types2) / len(types1 | types2) if (types1 | types2) else 0
+        "jaccard_similarity": len(types1 & types2) / len(types1 | types2) if (types1 | types2) else 0,
     }
 
     return comparison
 
-def compare_populations(group1: List[EventSequence], group2: List[EventSequence],
-                      output_dir: Optional[Union[str, Path]] = None) -> Dict[str, Any]:
+
+def compare_populations(
+    group1: List[EventSequence], group2: List[EventSequence], output_dir: Optional[Union[str, Path]] = None
+) -> Dict[str, Any]:
     """Compare two populations of life event sequences.
 
     Args:
@@ -345,33 +326,35 @@ def compare_populations(group1: List[EventSequence], group2: List[EventSequence]
         "sequence_length": {
             "group1_mean": np.mean([len(seq.events) for seq in group1]),
             "group2_mean": np.mean([len(seq.events) for seq in group2]),
-            "difference": abs(np.mean([len(seq.events) for seq in group1]) -
-                              np.mean([len(seq.events) for seq in group2]))
+            "difference": abs(
+                np.mean([len(seq.events) for seq in group1]) - np.mean([len(seq.events) for seq in group2])
+            ),
         },
         "event_diversity": {
-            "group1_unique_events": len(set(event.event_type
-                                            for seq in group1
-                                            for event in seq.events)),
-            "group2_unique_events": len(set(event.event_type
-                                            for seq in group2
-                                            for event in seq.events))
+            "group1_unique_events": len(set(event.event_type for seq in group1 for event in seq.events)),
+            "group2_unique_events": len(set(event.event_type for seq in group2 for event in seq.events)),
         },
         "temporal_range": {
-            "group1_days": (max(event.timestamp for seq in group1 for event in seq.events) -
-                           min(event.timestamp for seq in group1 for event in seq.events)).days,
-            "group2_days": (max(event.timestamp for seq in group2 for event in seq.events) -
-                           min(event.timestamp for seq in group2 for event in seq.events)).days
-        }
+            "group1_days": (
+                max(event.timestamp for seq in group1 for event in seq.events)
+                - min(event.timestamp for seq in group1 for event in seq.events)
+            ).days,
+            "group2_days": (
+                max(event.timestamp for seq in group2 for event in seq.events)
+                - min(event.timestamp for seq in group2 for event in seq.events)
+            ).days,
+        },
     }
 
     # Generate comparison plots if output directory provided
     if output_dir:
         try:
             from .visualization import plot_population_comparison
+
             plot_path = output_dir / "population_comparison.png"
-            plot_population_comparison(group1, group2,
-                                     group1_label="Group 1", group2_label="Group 2",
-                                     output_path=plot_path)
+            plot_population_comparison(
+                group1, group2, group1_label="Group 1", group2_label="Group 2", output_path=plot_path
+            )
         except ImportError:
             logger.warning("Population comparison plot not available")
 
@@ -379,13 +362,16 @@ def compare_populations(group1: List[EventSequence], group2: List[EventSequence]
         "group1": group1_stats,
         "group2": group2_stats,
         "comparison": comparison,
-        "output_dir": str(output_dir) if output_dir else None
+        "output_dir": str(output_dir) if output_dir else None,
     }
 
-def intervention_analysis(sequences: List[EventSequence],
-                        intervention_time: float,
-                        output_dir: Optional[Union[str, Path]] = None,
-                        outcomes: Optional[List[Any]] = None) -> Dict[str, Any]:
+
+def intervention_analysis(
+    sequences: List[EventSequence],
+    intervention_time: float,
+    output_dir: Optional[Union[str, Path]] = None,
+    outcomes: Optional[List[Any]] = None,
+) -> Dict[str, Any]:
     """Analyze the effects of an intervention on life event sequences.
 
     Args:
@@ -424,10 +410,12 @@ def intervention_analysis(sequences: List[EventSequence],
             post_sequences.append(EventSequence(person_id=f"{seq.person_id}_post", events=post_events))
 
     # Analyze pre-intervention
-    pre_analysis = analyze_life_course(pre_sequences, outcomes[:len(pre_sequences)] if outcomes else None)
+    pre_analysis = analyze_life_course(pre_sequences, outcomes[: len(pre_sequences)] if outcomes else None)
 
     # Analyze post-intervention
-    post_analysis = analyze_life_course(post_sequences, outcomes[len(pre_sequences):] if outcomes and len(outcomes) > len(pre_sequences) else None)
+    post_analysis = analyze_life_course(
+        post_sequences, outcomes[len(pre_sequences) :] if outcomes and len(outcomes) > len(pre_sequences) else None
+    )
 
     # Calculate differences
     differences = {}
@@ -440,10 +428,11 @@ def intervention_analysis(sequences: List[EventSequence],
     if output_dir:
         try:
             from .visualization import plot_intervention_effects
+
             plot_path = output_dir / "intervention_effects.png"
-            plot_intervention_effects(pre_sequences, post_sequences,
-                                    intervention_time=intervention_datetime,
-                                    output_path=plot_path)
+            plot_intervention_effects(
+                pre_sequences, post_sequences, intervention_time=intervention_datetime, output_path=plot_path
+            )
         except ImportError:
             logger.warning("Intervention effects plot not available")
 
@@ -454,11 +443,13 @@ def intervention_analysis(sequences: List[EventSequence],
         "intervention_time": intervention_time,
         "n_pre_sequences": len(pre_sequences),
         "n_post_sequences": len(post_sequences),
-        "output_dir": str(output_dir) if output_dir else None
+        "output_dir": str(output_dir) if output_dir else None,
     }
 
-def event_importance(sequences: List[EventSequence], method: str = 'frequency',
-                    normalize: bool = True) -> Dict[str, float]:
+
+def event_importance(
+    sequences: List[EventSequence], method: str = "frequency", normalize: bool = True
+) -> Dict[str, float]:
     """Calculate event importance scores using various methods.
 
     Args:
@@ -495,15 +486,15 @@ def event_importance(sequences: List[EventSequence], method: str = 'frequency',
 
             # Track transitions
             if i > 0:
-                prev_event = seq.events[i-1].event_type
+                prev_event = seq.events[i - 1].event_type
                 transition_key = f"{prev_event}->{event_type}"
                 event_transitions[transition_key] = event_transitions.get(transition_key, 0) + 1
 
-    if method == 'frequency':
+    if method == "frequency":
         # Simple frequency-based importance
         importance_scores = event_counts.copy()
 
-    elif method == 'temporal':
+    elif method == "temporal":
         # Importance based on temporal positioning
         importance_scores = {}
         for event_type, positions in event_positions.items():
@@ -511,15 +502,13 @@ def event_importance(sequences: List[EventSequence], method: str = 'frequency',
             avg_position = sum(positions) / len(positions)
             importance_scores[event_type] = 1.0 - avg_position  # Earlier = more important
 
-    elif method == 'transition':
+    elif method == "transition":
         # Importance based on being transition hubs
         importance_scores = {}
         for event_type in event_counts.keys():
             # Count incoming and outgoing transitions
-            incoming = sum(count for key, count in event_transitions.items()
-                          if key.endswith(f"->{event_type}"))
-            outgoing = sum(count for key, count in event_transitions.items()
-                          if key.startswith(f"{event_type}->"))
+            incoming = sum(count for key, count in event_transitions.items() if key.endswith(f"->{event_type}"))
+            outgoing = sum(count for key, count in event_transitions.items() if key.startswith(f"{event_type}->"))
             importance_scores[event_type] = incoming + outgoing
 
     if normalize and importance_scores:

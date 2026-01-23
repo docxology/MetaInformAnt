@@ -32,9 +32,9 @@ class NCBIClient:
         self.session = requests.Session()
 
         # Set headers
-        headers = {'User-Agent': 'metainformant/0.2.0'}
+        headers = {"User-Agent": "metainformant/0.2.0"}
         if email:
-            headers['From'] = email
+            headers["From"] = email
         self.session.headers.update(headers)
 
     def search_nucleotide(self, query: str, max_results: int = 100) -> List[Dict[str, Any]]:
@@ -49,15 +49,15 @@ class NCBIClient:
         """
         # First, search using esearch
         search_params = {
-            'db': 'nucleotide',
-            'term': query,
-            'retmax': min(max_results, 1000),  # NCBI limit
-            'retmode': 'json',
-            'usehistory': 'y'
+            "db": "nucleotide",
+            "term": query,
+            "retmax": min(max_results, 1000),  # NCBI limit
+            "retmode": "json",
+            "usehistory": "y",
         }
 
         if self.api_key:
-            search_params['api_key'] = self.api_key
+            search_params["api_key"] = self.api_key
 
         try:
             response = self.session.get(f"{self.base_url}/esearch.fcgi", params=search_params)
@@ -65,28 +65,24 @@ class NCBIClient:
 
             search_data = response.json()
 
-            if 'esearchresult' not in search_data:
+            if "esearchresult" not in search_data:
                 return []
 
-            id_list = search_data['esearchresult'].get('idlist', [])
-            webenv = search_data['esearchresult'].get('webenv')
-            query_key = search_data['esearchresult'].get('querykey')
+            id_list = search_data["esearchresult"].get("idlist", [])
+            webenv = search_data["esearchresult"].get("webenv")
+            query_key = search_data["esearchresult"].get("querykey")
 
             if not id_list:
                 return []
 
             # Fetch summaries using esummary
-            summary_params = {
-                'db': 'nucleotide',
-                'id': ','.join(id_list[:max_results]),
-                'retmode': 'json'
-            }
+            summary_params = {"db": "nucleotide", "id": ",".join(id_list[:max_results]), "retmode": "json"}
 
             if webenv and query_key:
-                summary_params.update({'WebEnv': webenv, 'query_key': query_key})
+                summary_params.update({"WebEnv": webenv, "query_key": query_key})
 
             if self.api_key:
-                summary_params['api_key'] = self.api_key
+                summary_params["api_key"] = self.api_key
 
             summary_response = self.session.get(f"{self.base_url}/esummary.fcgi", params=summary_params)
             summary_response.raise_for_status()
@@ -94,20 +90,22 @@ class NCBIClient:
             summary_data = summary_response.json()
 
             results = []
-            if 'result' in summary_data:
+            if "result" in summary_data:
                 for uid in id_list[:max_results]:
-                    if uid in summary_data['result']:
-                        result = summary_data['result'][uid]
-                        results.append({
-                            'id': uid,
-                            'accession': result.get('accessionversion', ''),
-                            'title': result.get('title', ''),
-                            'organism': result.get('organism', ''),
-                            'length': result.get('slen', 0),
-                            'moltype': result.get('moltype', ''),
-                            'created': result.get('createdate', ''),
-                            'updated': result.get('updatedate', '')
-                        })
+                    if uid in summary_data["result"]:
+                        result = summary_data["result"][uid]
+                        results.append(
+                            {
+                                "id": uid,
+                                "accession": result.get("accessionversion", ""),
+                                "title": result.get("title", ""),
+                                "organism": result.get("organism", ""),
+                                "length": result.get("slen", 0),
+                                "moltype": result.get("moltype", ""),
+                                "created": result.get("createdate", ""),
+                                "updated": result.get("updatedate", ""),
+                            }
+                        )
 
             return results
 
@@ -126,15 +124,10 @@ class NCBIClient:
         """
         try:
             # Use efetch to get sequence
-            fetch_params = {
-                'db': 'nucleotide',
-                'id': accession,
-                'rettype': 'fasta',
-                'retmode': 'text'
-            }
+            fetch_params = {"db": "nucleotide", "id": accession, "rettype": "fasta", "retmode": "text"}
 
             if self.api_key:
-                fetch_params['api_key'] = self.api_key
+                fetch_params["api_key"] = self.api_key
 
             response = self.session.get(f"{self.base_url}/efetch.fcgi", params=fetch_params)
             response.raise_for_status()
@@ -142,12 +135,12 @@ class NCBIClient:
             content = response.text
 
             # Parse FASTA format
-            lines = content.strip().split('\n')
+            lines = content.strip().split("\n")
             if len(lines) < 2:
                 return None
 
             # Skip header line and join sequence
-            sequence = ''.join(lines[1:]).replace('\n', '')
+            sequence = "".join(lines[1:]).replace("\n", "")
 
             return sequence
 
@@ -167,15 +160,15 @@ class NCBIClient:
         """
         # Similar to nucleotide search but for protein database
         search_params = {
-            'db': 'protein',
-            'term': query,
-            'retmax': min(max_results, 1000),
-            'retmode': 'json',
-            'usehistory': 'y'
+            "db": "protein",
+            "term": query,
+            "retmax": min(max_results, 1000),
+            "retmode": "json",
+            "usehistory": "y",
         }
 
         if self.api_key:
-            search_params['api_key'] = self.api_key
+            search_params["api_key"] = self.api_key
 
         try:
             response = self.session.get(f"{self.base_url}/esearch.fcgi", params=search_params)
@@ -183,23 +176,19 @@ class NCBIClient:
 
             search_data = response.json()
 
-            if 'esearchresult' not in search_data:
+            if "esearchresult" not in search_data:
                 return []
 
-            id_list = search_data['esearchresult'].get('idlist', [])
+            id_list = search_data["esearchresult"].get("idlist", [])
 
             if not id_list:
                 return []
 
             # Fetch summaries
-            summary_params = {
-                'db': 'protein',
-                'id': ','.join(id_list[:max_results]),
-                'retmode': 'json'
-            }
+            summary_params = {"db": "protein", "id": ",".join(id_list[:max_results]), "retmode": "json"}
 
             if self.api_key:
-                summary_params['api_key'] = self.api_key
+                summary_params["api_key"] = self.api_key
 
             summary_response = self.session.get(f"{self.base_url}/esummary.fcgi", params=summary_params)
             summary_response.raise_for_status()
@@ -207,19 +196,21 @@ class NCBIClient:
             summary_data = summary_response.json()
 
             results = []
-            if 'result' in summary_data:
+            if "result" in summary_data:
                 for uid in id_list[:max_results]:
-                    if uid in summary_data['result']:
-                        result = summary_data['result'][uid]
-                        results.append({
-                            'id': uid,
-                            'accession': result.get('accessionversion', ''),
-                            'name': result.get('name', ''),
-                            'organism': result.get('organism', ''),
-                            'length': result.get('slen', 0),
-                            'created': result.get('createdate', ''),
-                            'updated': result.get('updatedate', '')
-                        })
+                    if uid in summary_data["result"]:
+                        result = summary_data["result"][uid]
+                        results.append(
+                            {
+                                "id": uid,
+                                "accession": result.get("accessionversion", ""),
+                                "name": result.get("name", ""),
+                                "organism": result.get("organism", ""),
+                                "length": result.get("slen", 0),
+                                "created": result.get("createdate", ""),
+                                "updated": result.get("updatedate", ""),
+                            }
+                        )
 
             return results
 
@@ -237,29 +228,25 @@ class NCBIClient:
             Taxonomy information dictionary
         """
         try:
-            summary_params = {
-                'db': 'taxonomy',
-                'id': str(tax_id),
-                'retmode': 'json'
-            }
+            summary_params = {"db": "taxonomy", "id": str(tax_id), "retmode": "json"}
 
             if self.api_key:
-                summary_params['api_key'] = self.api_key
+                summary_params["api_key"] = self.api_key
 
             response = self.session.get(f"{self.base_url}/esummary.fcgi", params=summary_params)
             response.raise_for_status()
 
             data = response.json()
 
-            if 'result' in data and str(tax_id) in data['result']:
-                result = data['result'][str(tax_id)]
+            if "result" in data and str(tax_id) in data["result"]:
+                result = data["result"][str(tax_id)]
                 return {
-                    'tax_id': tax_id,
-                    'scientific_name': result.get('scientificname', ''),
-                    'common_name': result.get('commonname', ''),
-                    'rank': result.get('rank', ''),
-                    'division': result.get('division', ''),
-                    'lineage': result.get('lineage', ''),
+                    "tax_id": tax_id,
+                    "scientific_name": result.get("scientificname", ""),
+                    "common_name": result.get("commonname", ""),
+                    "rank": result.get("rank", ""),
+                    "division": result.get("division", ""),
+                    "lineage": result.get("lineage", ""),
                 }
 
             return None
@@ -325,11 +312,3 @@ def get_taxonomy_info(tax_id: int, api_key: Optional[str] = None) -> Optional[Di
     """
     client = NCBIClient(api_key=api_key)
     return client.get_taxonomy_info(tax_id)
-
-
-
-
-
-
-
-

@@ -1,4 +1,5 @@
 """Tests for DNA mutation functions."""
+
 from metainformant.dna.variation import mutations
 from metainformant.dna.alignment import distances
 

@@ -7,7 +7,7 @@ embeddings, and predictive models.
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 from metainformant.core import logging
 
@@ -18,6 +18,7 @@ try:
     import matplotlib.pyplot as plt
     import matplotlib.dates as mdates
     import numpy as np
+
     HAS_MATPLOTLIB = True
 except ImportError:
     HAS_MATPLOTLIB = False
@@ -25,6 +26,7 @@ except ImportError:
 
 try:
     import seaborn as sns
+
     HAS_SEABORN = True
 except ImportError:
     HAS_SEABORN = False
@@ -36,7 +38,7 @@ def plot_event_timeline(
     output_path: Optional[str] = None,
     figsize: tuple[int, int] = (12, 6),
     show_domains: bool = True,
-    title: str = "Life Event Timeline"
+    title: str = "Life Event Timeline",
 ) -> Optional[Any]:
     """Plot a timeline of life events.
 
@@ -70,44 +72,50 @@ def plot_event_timeline(
     event_types = [event.event_type for event in events]
 
     # Create scatter plot with different colors for domains
-    domains = [event.domain for event in events] if hasattr(events[0], 'domain') else ['default'] * len(events)
+    domains = [event.domain for event in events] if hasattr(events[0], "domain") else ["default"] * len(events)
     unique_domains = list(set(domains))
 
     colors = plt.cm.tab10(np.linspace(0, 1, len(unique_domains)))
     domain_colors = dict(zip(unique_domains, colors))
 
     for i, event in enumerate(events):
-        color = domain_colors.get(event.domain if hasattr(event, 'domain') else 'default', 'blue')
-        ax.scatter(event.timestamp, i, c=[color], s=100, alpha=0.7, edgecolors='black', linewidth=1)
+        color = domain_colors.get(event.domain if hasattr(event, "domain") else "default", "blue")
+        ax.scatter(event.timestamp, i, c=[color], s=100, alpha=0.7, edgecolors="black", linewidth=1)
 
         # Add event type label
-        ax.annotate(event.event_type, (event.timestamp, i),
-                   xytext=(5, 5), textcoords='offset points',
-                   fontsize=8, ha='left', va='bottom',
-                   bbox=dict(boxstyle='round,pad=0.2', facecolor='white', alpha=0.8))
+        ax.annotate(
+            event.event_type,
+            (event.timestamp, i),
+            xytext=(5, 5),
+            textcoords="offset points",
+            fontsize=8,
+            ha="left",
+            va="bottom",
+            bbox=dict(boxstyle="round,pad=0.2", facecolor="white", alpha=0.8),
+        )
 
     # Format x-axis as dates
-    ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d"))
     ax.xaxis.set_major_locator(mdates.YearLocator())
-    plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha='right')
+    plt.setp(ax.xaxis.get_majorticklabels(), rotation=45, ha="right")
 
-    ax.set_xlabel('Date')
-    ax.set_ylabel('Event Order')
-    ax.set_title(f'{title} - {sequence.person_id}')
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Event Order")
+    ax.set_title(f"{title} - {sequence.person_id}")
     ax.grid(True, alpha=0.3)
 
     # Add domain legend if requested
     if show_domains and len(unique_domains) > 1:
-        legend_elements = [plt.Line2D([0], [0], marker='o', color='w',
-                                     markerfacecolor=color, markersize=10,
-                                     label=domain)
-                          for domain, color in domain_colors.items()]
-        ax.legend(handles=legend_elements, title='Domains', loc='upper right')
+        legend_elements = [
+            plt.Line2D([0], [0], marker="o", color="w", markerfacecolor=color, markersize=10, label=domain)
+            for domain, color in domain_colors.items()
+        ]
+        ax.legend(handles=legend_elements, title="Domains", loc="upper right")
 
     plt.tight_layout()
 
     if output_path:
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved timeline plot to {output_path}")
 
     return fig
@@ -118,7 +126,7 @@ def plot_event_embeddings(
     output_path: Optional[str] = None,
     method: str = "pca",
     figsize: tuple[int, int] = (10, 8),
-    title: str = "Event Sequence Embeddings"
+    title: str = "Event Sequence Embeddings",
 ) -> Optional[Any]:
     """Plot event sequence embeddings.
 
@@ -136,29 +144,34 @@ def plot_event_embeddings(
         logger.warning("matplotlib not available for embedding plotting")
         return None
 
-    if 'embeddings' not in embeddings:
+    if "embeddings" not in embeddings:
         logger.error("No embeddings data provided")
         return None
 
-    embedding_matrix = np.array(embeddings['embeddings'])
+    embedding_matrix = np.array(embeddings["embeddings"])
     if embedding_matrix.shape[1] > 2:
         # Reduce to 2D if needed
         if method.lower() == "pca":
             from sklearn.decomposition import PCA
+
             reducer = PCA(n_components=2)
         elif method.lower() == "tsne":
             from sklearn.manifold import TSNE
+
             reducer = TSNE(n_components=2, random_state=42)
         elif method.lower() == "umap":
             try:
                 import umap
+
                 reducer = umap.UMAP(n_components=2, random_state=42)
             except ImportError:
                 logger.warning("UMAP not available, falling back to PCA")
                 from sklearn.decomposition import PCA
+
                 reducer = PCA(n_components=2)
         else:
             from sklearn.decomposition import PCA
+
             reducer = PCA(n_components=2)
 
         embedding_2d = reducer.fit_transform(embedding_matrix)
@@ -168,22 +181,21 @@ def plot_event_embeddings(
     fig, ax = plt.subplots(figsize=figsize)
 
     # Plot embeddings
-    scatter = ax.scatter(embedding_2d[:, 0], embedding_2d[:, 1],
-                        c=range(len(embedding_2d)), cmap='viridis', alpha=0.7)
+    scatter = ax.scatter(embedding_2d[:, 0], embedding_2d[:, 1], c=range(len(embedding_2d)), cmap="viridis", alpha=0.7)
 
-    ax.set_xlabel(f'{method.upper()} Component 1')
-    ax.set_ylabel(f'{method.upper()} Component 2')
+    ax.set_xlabel(f"{method.upper()} Component 1")
+    ax.set_ylabel(f"{method.upper()} Component 2")
     ax.set_title(title)
     ax.grid(True, alpha=0.3)
 
     # Add colorbar
     cbar = plt.colorbar(scatter, ax=ax)
-    cbar.set_label('Sequence Index')
+    cbar.set_label("Sequence Index")
 
     plt.tight_layout()
 
     if output_path:
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved embedding plot to {output_path}")
 
     return fig
@@ -193,7 +205,7 @@ def plot_attention_heatmap(
     attention_weights: Any,
     output_path: Optional[str] = None,
     figsize: tuple[int, int] = (12, 8),
-    title: str = "Attention Weights Heatmap"
+    title: str = "Attention Weights Heatmap",
 ) -> Optional[Any]:
     """Plot attention weights as a heatmap.
 
@@ -212,14 +224,15 @@ def plot_attention_heatmap(
 
     if not HAS_SEABORN:
         from metainformant.core.utils.optional_deps import warn_optional_dependency
+
         warn_optional_dependency("seaborn", "attention heatmap visualization")
         return None
 
     # Convert attention weights to numpy array
-    if hasattr(attention_weights, 'detach'):
+    if hasattr(attention_weights, "detach"):
         # PyTorch tensor
         weights = attention_weights.detach().cpu().numpy()
-    elif hasattr(attention_weights, 'numpy'):
+    elif hasattr(attention_weights, "numpy"):
         # NumPy array or similar
         weights = np.array(attention_weights)
     else:
@@ -239,17 +252,16 @@ def plot_attention_heatmap(
     fig, ax = plt.subplots(figsize=figsize)
 
     # Plot heatmap
-    sns.heatmap(weights, cmap='YlOrRd', ax=ax, square=True,
-                cbar_kws={'label': 'Attention Weight'})
+    sns.heatmap(weights, cmap="YlOrRd", ax=ax, square=True, cbar_kws={"label": "Attention Weight"})
 
-    ax.set_xlabel('Target Position')
-    ax.set_ylabel('Source Position')
+    ax.set_xlabel("Target Position")
+    ax.set_ylabel("Source Position")
     ax.set_title(title)
 
     plt.tight_layout()
 
     if output_path:
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved attention heatmap to {output_path}")
 
     return fig
@@ -260,7 +272,7 @@ def plot_prediction_importance(
     output_path: Optional[str] = None,
     figsize: tuple[int, int] = (10, 6),
     title: str = "Feature Importance",
-    top_n: Optional[int] = None
+    top_n: Optional[int] = None,
 ) -> Optional[Any]:
     """Plot feature importance for predictions.
 
@@ -289,23 +301,22 @@ def plot_prediction_importance(
     fig, ax = plt.subplots(figsize=figsize)
 
     # Create horizontal bar plot
-    bars = ax.barh(range(len(features)), importances, color='skyblue', alpha=0.8)
+    bars = ax.barh(range(len(features)), importances, color="skyblue", alpha=0.8)
 
     ax.set_yticks(range(len(features)))
     ax.set_yticklabels(features)
-    ax.set_xlabel('Importance Score')
+    ax.set_xlabel("Importance Score")
     ax.set_title(title)
     ax.grid(True, alpha=0.3)
 
     # Add value labels on bars
     for i, (bar, importance) in enumerate(zip(bars, importances)):
-        ax.text(importance + 0.01, i, f'{importance:.3f}',
-               va='center', fontsize=8)
+        ax.text(importance + 0.01, i, f"{importance:.3f}", va="center", fontsize=8)
 
     plt.tight_layout()
 
     if output_path:
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved importance plot to {output_path}")
 
     return fig
@@ -315,7 +326,7 @@ def plot_domain_distribution(
     sequences: List[Any],
     output_path: Optional[str] = None,
     figsize: tuple[int, int] = (12, 6),
-    title: str = "Event Domain Distribution"
+    title: str = "Event Domain Distribution",
 ) -> Optional[Any]:
     """Plot distribution of event domains across sequences.
 
@@ -336,7 +347,7 @@ def plot_domain_distribution(
     domain_counts = {}
     for sequence in sequences:
         for event in sequence.events:
-            if hasattr(event, 'domain'):
+            if hasattr(event, "domain"):
                 domain = event.domain
                 domain_counts[domain] = domain_counts.get(domain, 0) + 1
 
@@ -349,24 +360,24 @@ def plot_domain_distribution(
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=figsize)
 
     # Bar plot
-    bars = ax1.bar(range(len(domains)), counts, color='lightcoral', alpha=0.7)
+    bars = ax1.bar(range(len(domains)), counts, color="lightcoral", alpha=0.7)
     ax1.set_xticks(range(len(domains)))
-    ax1.set_xticklabels(domains, rotation=45, ha='right')
-    ax1.set_ylabel('Count')
-    ax1.set_title('Domain Counts')
+    ax1.set_xticklabels(domains, rotation=45, ha="right")
+    ax1.set_ylabel("Count")
+    ax1.set_title("Domain Counts")
     ax1.grid(True, alpha=0.3)
 
     # Pie chart
-    ax2.pie(counts, labels=domains, autopct='%1.1f%%', startangle=90)
-    ax2.set_title('Domain Proportions')
-    ax2.axis('equal')
+    ax2.pie(counts, labels=domains, autopct="%1.1f%%", startangle=90)
+    ax2.set_title("Domain Proportions")
+    ax2.axis("equal")
 
     fig.suptitle(title, fontsize=14)
 
     plt.tight_layout()
 
     if output_path:
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved domain distribution plot to {output_path}")
 
     return fig
@@ -378,7 +389,7 @@ def plot_intervention_effects(
     pre_outcomes: Optional[np.ndarray] = None,
     post_outcomes: Optional[np.ndarray] = None,
     output_path: Optional[Union[str, Path]] = None,
-    figsize: Tuple[int, int] = (12, 6)
+    figsize: Tuple[int, int] = (12, 6),
 ) -> Any:
     """Plot intervention effects on life event sequences and outcomes.
 
@@ -403,38 +414,48 @@ def plot_intervention_effects(
     pre_lengths = [len(seq.events) for seq in pre_sequences]
     post_lengths = [len(seq.events) for seq in post_sequences]
 
-    ax1.boxplot([pre_lengths, post_lengths], labels=['Pre-intervention', 'Post-intervention'])
-    ax1.set_ylabel('Number of Events')
-    ax1.set_title('Sequence Length Changes')
+    ax1.boxplot([pre_lengths, post_lengths], labels=["Pre-intervention", "Post-intervention"])
+    ax1.set_ylabel("Number of Events")
+    ax1.set_title("Sequence Length Changes")
     ax1.grid(True, alpha=0.3)
 
     # Plot 2: Outcome comparison (if provided)
     if pre_outcomes is not None and post_outcomes is not None:
         ax2.scatter(pre_outcomes, post_outcomes, alpha=0.7, s=50)
-        ax2.plot([min(pre_outcomes), max(pre_outcomes)], [min(pre_outcomes), max(pre_outcomes)],
-                'r--', alpha=0.7, label='No change')
-        ax2.set_xlabel('Pre-intervention Outcomes')
-        ax2.set_ylabel('Post-intervention Outcomes')
-        ax2.set_title('Outcome Changes')
+        ax2.plot(
+            [min(pre_outcomes), max(pre_outcomes)],
+            [min(pre_outcomes), max(pre_outcomes)],
+            "r--",
+            alpha=0.7,
+            label="No change",
+        )
+        ax2.set_xlabel("Pre-intervention Outcomes")
+        ax2.set_ylabel("Post-intervention Outcomes")
+        ax2.set_title("Outcome Changes")
         ax2.legend()
         ax2.grid(True, alpha=0.3)
 
         # Add correlation coefficient
         if len(pre_outcomes) > 1:
             corr = np.corrcoef(pre_outcomes, post_outcomes)[0, 1]
-            ax2.text(0.05, 0.95, f'Correlation: {corr:.3f}',
-                    transform=ax2.transAxes, fontsize=10,
-                    verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+            ax2.text(
+                0.05,
+                0.95,
+                f"Correlation: {corr:.3f}",
+                transform=ax2.transAxes,
+                fontsize=10,
+                verticalalignment="top",
+                bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8),
+            )
 
     else:
-        ax2.text(0.5, 0.5, 'No outcome data provided',
-                transform=ax2.transAxes, ha='center', va='center', fontsize=12)
-        ax2.set_title('Outcome Comparison (No Data)')
+        ax2.text(0.5, 0.5, "No outcome data provided", transform=ax2.transAxes, ha="center", va="center", fontsize=12)
+        ax2.set_title("Outcome Comparison (No Data)")
 
     plt.tight_layout()
 
     if output_path:
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved intervention effects plot to {output_path}")
 
     return fig
@@ -444,7 +465,7 @@ def plot_outcome_distribution(
     outcomes: np.ndarray,
     output_path: Optional[Union[str, Path]] = None,
     plot_type: str = "histogram",
-    figsize: Tuple[int, int] = (10, 6)
+    figsize: Tuple[int, int] = (10, 6),
 ) -> Any:
     """Plot distribution of outcomes.
 
@@ -464,34 +485,34 @@ def plot_outcome_distribution(
     fig, ax = plt.subplots(figsize=figsize)
 
     if plot_type == "histogram":
-        ax.hist(outcomes, bins=20, alpha=0.7, edgecolor='black')
-        ax.set_xlabel('Outcome Value')
-        ax.set_ylabel('Frequency')
-        ax.set_title('Outcome Distribution Histogram')
+        ax.hist(outcomes, bins=20, alpha=0.7, edgecolor="black")
+        ax.set_xlabel("Outcome Value")
+        ax.set_ylabel("Frequency")
+        ax.set_title("Outcome Distribution Histogram")
 
     elif plot_type == "boxplot":
         ax.boxplot(outcomes)
-        ax.set_ylabel('Outcome Value')
-        ax.set_title('Outcome Distribution Boxplot')
+        ax.set_ylabel("Outcome Value")
+        ax.set_title("Outcome Distribution Boxplot")
         ax.set_xticks([1])
-        ax.set_xticklabels(['Outcomes'])
+        ax.set_xticklabels(["Outcomes"])
 
     elif plot_type == "violin":
         # Create violin plot manually since seaborn might not be available
         if len(outcomes) > 0:
             # Simple approximation of violin plot
             parts = ax.violinplot(outcomes, showmeans=True, showmedians=True)
-            ax.set_ylabel('Outcome Value')
-            ax.set_title('Outcome Distribution Violin Plot')
+            ax.set_ylabel("Outcome Value")
+            ax.set_title("Outcome Distribution Violin Plot")
             ax.set_xticks([1])
-            ax.set_xticklabels(['Outcomes'])
+            ax.set_xticklabels(["Outcomes"])
 
     else:
         logger.warning(f"Unknown plot type: {plot_type}, using histogram")
-        ax.hist(outcomes, bins=20, alpha=0.7, edgecolor='black')
-        ax.set_xlabel('Outcome Value')
-        ax.set_ylabel('Frequency')
-        ax.set_title('Outcome Distribution Histogram')
+        ax.hist(outcomes, bins=20, alpha=0.7, edgecolor="black")
+        ax.set_xlabel("Outcome Value")
+        ax.set_ylabel("Frequency")
+        ax.set_title("Outcome Distribution Histogram")
 
     # Add statistics
     if len(outcomes) > 0:
@@ -499,14 +520,20 @@ def plot_outcome_distribution(
         median_val = np.median(outcomes)
         std_val = np.std(outcomes)
 
-        stats_text = f'Mean: {mean_val:.3f}\nMedian: {median_val:.3f}\nStd: {std_val:.3f}'
-        ax.text(0.05, 0.95, stats_text, transform=ax.transAxes,
-                verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+        stats_text = f"Mean: {mean_val:.3f}\nMedian: {median_val:.3f}\nStd: {std_val:.3f}"
+        ax.text(
+            0.05,
+            0.95,
+            stats_text,
+            transform=ax.transAxes,
+            verticalalignment="top",
+            bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8),
+        )
 
     plt.tight_layout()
 
     if output_path:
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved outcome distribution plot to {output_path}")
 
     return fig
@@ -516,7 +543,7 @@ def plot_event_frequency_heatmap(
     sequences: List[EventSequence],
     output_path: Optional[Union[str, Path]] = None,
     time_bins: int = 10,
-    figsize: Tuple[int, int] = (12, 8)
+    figsize: Tuple[int, int] = (12, 8),
 ) -> Any:
     """Plot event frequency heatmap over time.
 
@@ -582,26 +609,26 @@ def plot_event_frequency_heatmap(
 
     # Plot heatmap
     fig, ax = plt.subplots(figsize=figsize)
-    im = ax.imshow(frequency_matrix, cmap='YlOrRd', aspect='auto')
+    im = ax.imshow(frequency_matrix, cmap="YlOrRd", aspect="auto")
 
     # Set labels
     ax.set_xticks(range(time_bins))
     ax.set_yticks(range(len(event_types)))
-    ax.set_xticklabels([f'Bin {i+1}' for i in range(time_bins)], rotation=45, ha='right')
-    ax.set_yticklabels([event.split(':')[-1] for event in event_types])
+    ax.set_xticklabels([f"Bin {i+1}" for i in range(time_bins)], rotation=45, ha="right")
+    ax.set_yticklabels([event.split(":")[-1] for event in event_types])
 
-    ax.set_title('Event Frequency Heatmap Over Time')
-    ax.set_xlabel('Time Bin')
-    ax.set_ylabel('Event Type')
+    ax.set_title("Event Frequency Heatmap Over Time")
+    ax.set_xlabel("Time Bin")
+    ax.set_ylabel("Event Type")
 
     # Add colorbar
     cbar = plt.colorbar(im, ax=ax, shrink=0.8)
-    cbar.set_label('Event Count')
+    cbar.set_label("Event Count")
 
     plt.tight_layout()
 
     if output_path:
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved event frequency heatmap to {output_path}")
 
     return fig
@@ -611,7 +638,7 @@ def plot_event_cooccurrence(
     sequences: List[EventSequence],
     output_path: Optional[Union[str, Path]] = None,
     top_n: int = 20,
-    figsize: Tuple[int, int] = (12, 10)
+    figsize: Tuple[int, int] = (12, 10),
 ) -> Any:
     """Plot event co-occurrence matrix.
 
@@ -668,26 +695,26 @@ def plot_event_cooccurrence(
 
     # Plot heatmap
     fig, ax = plt.subplots(figsize=figsize)
-    im = ax.imshow(matrix, cmap='YlOrRd', aspect='auto')
+    im = ax.imshow(matrix, cmap="YlOrRd", aspect="auto")
 
     # Set labels
     ax.set_xticks(range(n_events))
     ax.set_yticks(range(n_events))
-    ax.set_xticklabels([event.split(':')[-1] for event in top_events], rotation=45, ha='right')
-    ax.set_yticklabels([event.split(':')[-1] for event in top_events])
+    ax.set_xticklabels([event.split(":")[-1] for event in top_events], rotation=45, ha="right")
+    ax.set_yticklabels([event.split(":")[-1] for event in top_events])
 
-    ax.set_title('Event Co-occurrence Matrix')
-    ax.set_xlabel('Event 2')
-    ax.set_ylabel('Event 1')
+    ax.set_title("Event Co-occurrence Matrix")
+    ax.set_xlabel("Event 2")
+    ax.set_ylabel("Event 1")
 
     # Add colorbar
     cbar = plt.colorbar(im, ax=ax, shrink=0.8)
-    cbar.set_label('Observed/Expected Ratio')
+    cbar.set_label("Observed/Expected Ratio")
 
     plt.tight_layout()
 
     if output_path:
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved event co-occurrence plot to {output_path}")
 
     return fig
@@ -697,7 +724,7 @@ def plot_embedding_clusters(
     embeddings: Dict[str, np.ndarray],
     clusters: Optional[Dict[str, int]] = None,
     output_path: Optional[Union[str, Path]] = None,
-    figsize: Tuple[int, int] = (12, 8)
+    figsize: Tuple[int, int] = (12, 8),
 ) -> Any:
     """Plot embedding clusters for life events.
 
@@ -728,11 +755,11 @@ def plot_embedding_clusters(
 
         colors = plt.cm.tab10(np.linspace(0, 1, len(cluster_data)))
         for i, (cluster_id, values) in enumerate(cluster_data.items()):
-            ax1.hist(values, alpha=0.7, label=f'Cluster {cluster_id}', color=colors[i])
+            ax1.hist(values, alpha=0.7, label=f"Cluster {cluster_id}", color=colors[i])
 
-        ax1.set_xlabel('Mean Embedding Value')
-        ax1.set_ylabel('Frequency')
-        ax1.set_title('Embedding Distributions by Cluster')
+        ax1.set_xlabel("Mean Embedding Value")
+        ax1.set_ylabel("Frequency")
+        ax1.set_title("Embedding Distributions by Cluster")
         ax1.legend()
 
     # Plot 2: Embedding similarity heatmap
@@ -755,12 +782,12 @@ def plot_embedding_clusters(
                 if norm1 > 0 and norm2 > 0:
                     similarity_matrix[i, j] = dot_product / (norm1 * norm2)
 
-        im = ax2.imshow(similarity_matrix, cmap='viridis', aspect='auto')
+        im = ax2.imshow(similarity_matrix, cmap="viridis", aspect="auto")
         ax2.set_xticks(range(n_events))
         ax2.set_yticks(range(n_events))
-        ax2.set_xticklabels([et.split(':')[-1] for et in event_types], rotation=45, ha='right')
-        ax2.set_yticklabels([et.split(':')[-1] for et in event_types])
-        ax2.set_title('Embedding Similarity Matrix')
+        ax2.set_xticklabels([et.split(":")[-1] for et in event_types], rotation=45, ha="right")
+        ax2.set_yticklabels([et.split(":")[-1] for et in event_types])
+        ax2.set_title("Embedding Similarity Matrix")
 
         # Add colorbar
         plt.colorbar(im, ax=ax2, shrink=0.8)
@@ -768,7 +795,7 @@ def plot_embedding_clusters(
     plt.tight_layout()
 
     if output_path:
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved embedding clusters plot to {output_path}")
 
     return fig
@@ -778,7 +805,7 @@ def plot_domain_timeline(
     sequences: List[EventSequence],
     output_path: Optional[Union[str, Path]] = None,
     max_sequences: int = 10,
-    figsize: Tuple[int, int] = (12, 8)
+    figsize: Tuple[int, int] = (12, 8),
 ) -> Any:
     """Plot domain timeline showing life domains over time.
 
@@ -798,7 +825,7 @@ def plot_domain_timeline(
     plt.tight_layout()
 
     if output_path:
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved domain timeline plot to {output_path}")
 
     return fig
@@ -810,7 +837,7 @@ def plot_population_comparison(
     labels: Tuple[str, str] = ("Population 1", "Population 2"),
     metric: str = "sequence_length",
     output_path: Optional[str] = None,
-    figsize: Tuple[int, int] = (10, 6)
+    figsize: Tuple[int, int] = (10, 6),
 ) -> Any:
     """Compare two populations based on a metric.
 
@@ -838,25 +865,25 @@ def plot_population_comparison(
 
     fig, ax = plt.subplots(figsize=figsize)
     ax.boxplot([data1, data2], labels=labels)
-    ax.set_ylabel(metric.replace('_', ' ').title())
-    ax.set_title(f'Population Comparison: {metric}')
-    
+    ax.set_ylabel(metric.replace("_", " ").title())
+    ax.set_title(f"Population Comparison: {metric}")
+
     if output_path:
         plt.savefig(output_path)
-        
+
     return fig
 
     fig, ax = plt.subplots(figsize=figsize)
 
     # Define colors for different domains
     domain_colors = {
-        'education': '#1f77b4',  # blue
-        'career': '#ff7f0e',     # orange
-        'family': '#2ca02c',     # green
-        'health': '#d62728',     # red
-        'finance': '#9467bd',    # purple
-        'housing': '#8c564b',    # brown
-        'other': '#7f7f7f'       # gray
+        "education": "#1f77b4",  # blue
+        "career": "#ff7f0e",  # orange
+        "family": "#2ca02c",  # green
+        "health": "#d62728",  # red
+        "finance": "#9467bd",  # purple
+        "housing": "#8c564b",  # brown
+        "other": "#7f7f7f",  # gray
     }
 
     # Plot each sequence
@@ -866,7 +893,7 @@ def plot_population_comparison(
         # Group events by domain
         domain_periods = {}
         for event in seq.events:
-            domain = getattr(event, 'domain', 'other')
+            domain = getattr(event, "domain", "other")
             if domain not in domain_periods:
                 domain_periods[domain] = []
             domain_periods[domain].append(event.timestamp)
@@ -876,37 +903,39 @@ def plot_population_comparison(
             if timestamps:
                 # Sort timestamps
                 timestamps.sort()
-                color = domain_colors.get(domain, domain_colors['other'])
+                color = domain_colors.get(domain, domain_colors["other"])
 
                 # Plot events as points
                 for ts in timestamps:
-                    ax.scatter(ts, y_pos, color=color, s=50, alpha=0.7, marker='o')
+                    ax.scatter(ts, y_pos, color=color, s=50, alpha=0.7, marker="o")
 
                 # Add domain label
-                ax.text(timestamps[0], y_pos + 0.3, domain.capitalize(),
-                       fontsize=8, ha='left', va='bottom', color=color)
+                ax.text(
+                    timestamps[0], y_pos + 0.3, domain.capitalize(), fontsize=8, ha="left", va="bottom", color=color
+                )
 
     # Customize plot
     ax.set_yticks(range(len(sequences)))
     ax.set_yticklabels([f"Person {seq.person_id}" for seq in sequences])
-    ax.set_xlabel('Time')
-    ax.set_title('Life Domain Timeline')
+    ax.set_xlabel("Time")
+    ax.set_title("Life Domain Timeline")
     ax.grid(True, alpha=0.3)
 
     # Add legend
-    legend_elements = [plt.Line2D([0], [0], marker='o', color='w',
-                                 markerfacecolor=color, markersize=8,
-                                 label=domain.capitalize())
-                      for domain, color in domain_colors.items()]
-    ax.legend(handles=legend_elements, loc='upper right', fontsize=8)
+    legend_elements = [
+        plt.Line2D([0], [0], marker="o", color="w", markerfacecolor=color, markersize=8, label=domain.capitalize())
+        for domain, color in domain_colors.items()
+    ]
+    ax.legend(handles=legend_elements, loc="upper right", fontsize=8)
 
     plt.tight_layout()
 
     if output_path:
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved domain timeline plot to {output_path}")
 
     return fig
+
 
 def plot_population_comparison(
     group1_sequences: List[EventSequence],
@@ -914,7 +943,7 @@ def plot_population_comparison(
     group1_label: str = "Group 1",
     group2_label: str = "Group 2",
     output_path: Optional[Union[str, Path]] = None,
-    figsize: Tuple[int, int] = (12, 8)
+    figsize: Tuple[int, int] = (12, 8),
 ) -> Any:
     """Plot comparison of two populations based on their life event sequences.
 
@@ -941,8 +970,8 @@ def plot_population_comparison(
 
     # Plot 1: Sequence length comparison
     axes[0, 0].boxplot([group1_lengths, group2_lengths], labels=[group1_label, group2_label])
-    axes[0, 0].set_ylabel('Number of Events')
-    axes[0, 0].set_title('Sequence Length Comparison')
+    axes[0, 0].set_ylabel("Number of Events")
+    axes[0, 0].set_title("Sequence Length Comparison")
     axes[0, 0].grid(True, alpha=0.3)
 
     # Plot 2: Event type diversity
@@ -958,8 +987,8 @@ def plot_population_comparison(
 
     diversity_data = [len(group1_event_types), len(group2_event_types)]
     axes[0, 1].bar([group1_label, group2_label], diversity_data, alpha=0.7)
-    axes[0, 1].set_ylabel('Unique Event Types')
-    axes[0, 1].set_title('Event Type Diversity')
+    axes[0, 1].set_ylabel("Unique Event Types")
+    axes[0, 1].set_title("Event Type Diversity")
     axes[0, 1].grid(True, alpha=0.3)
 
     # Plot 3: Event frequency comparison (top 5 events)
@@ -980,8 +1009,7 @@ def plot_population_comparison(
             event_counts_group2[event.event_type] += 1
 
     # Get top 5 events by total count
-    total_counts = {event: event_counts_group1[event] + event_counts_group2[event]
-                   for event in all_events}
+    total_counts = {event: event_counts_group1[event] + event_counts_group2[event] for event in all_events}
     top_events = sorted(total_counts.items(), key=lambda x: x[1], reverse=True)[:5]
     top_event_names = [event for event, count in top_events]
 
@@ -991,12 +1019,12 @@ def plot_population_comparison(
     x = np.arange(len(top_event_names))
     width = 0.35
 
-    axes[1, 0].bar(x - width/2, group1_top_counts, width, label=group1_label, alpha=0.7)
-    axes[1, 0].bar(x + width/2, group2_top_counts, width, label=group2_label, alpha=0.7)
-    axes[1, 0].set_ylabel('Event Count')
-    axes[1, 0].set_title('Top Event Frequencies')
+    axes[1, 0].bar(x - width / 2, group1_top_counts, width, label=group1_label, alpha=0.7)
+    axes[1, 0].bar(x + width / 2, group2_top_counts, width, label=group2_label, alpha=0.7)
+    axes[1, 0].set_ylabel("Event Count")
+    axes[1, 0].set_title("Top Event Frequencies")
     axes[1, 0].set_xticks(x)
-    axes[1, 0].set_xticklabels([name.split(':')[-1] for name in top_event_names], rotation=45, ha='right')
+    axes[1, 0].set_xticklabels([name.split(":")[-1] for name in top_event_names], rotation=45, ha="right")
     axes[1, 0].legend()
     axes[1, 0].grid(True, alpha=0.3)
 
@@ -1008,7 +1036,7 @@ def plot_population_comparison(
         # Simple similarity based on event type overlap
         similarities = []
         for i in range(len(sequences)):
-            for j in range(i+1, len(sequences)):
+            for j in range(i + 1, len(sequences)):
                 events1 = set(event.event_type for event in sequences[i].events)
                 events2 = set(event.event_type for event in sequences[j].events)
                 if events1 or events2:
@@ -1021,25 +1049,26 @@ def plot_population_comparison(
     group2_similarity = calculate_sequence_similarity(group2_sequences)
 
     axes[1, 1].bar([group1_label, group2_label], [group1_similarity, group2_similarity], alpha=0.7)
-    axes[1, 1].set_ylabel('Mean Sequence Similarity')
-    axes[1, 1].set_title('Within-Group Similarity')
+    axes[1, 1].set_ylabel("Mean Sequence Similarity")
+    axes[1, 1].set_title("Within-Group Similarity")
     axes[1, 1].set_ylim(0, 1)
     axes[1, 1].grid(True, alpha=0.3)
 
     plt.tight_layout()
 
     if output_path:
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved population comparison plot to {output_path}")
 
     return fig
+
 
 def plot_prediction_accuracy(
     y_true: np.ndarray,
     y_pred: np.ndarray,
     task_type: str = "classification",
     output_path: Optional[Union[str, Path]] = None,
-    figsize: Tuple[int, int] = (12, 8)
+    figsize: Tuple[int, int] = (12, 8),
 ) -> Any:
     """Plot prediction accuracy and related metrics.
 
@@ -1063,44 +1092,53 @@ def plot_prediction_accuracy(
 
         # Confusion matrix
         from sklearn.metrics import confusion_matrix
+
         cm = confusion_matrix(y_true, y_pred)
-        axes[0, 0].imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
-        axes[0, 0].set_title('Confusion Matrix')
-        axes[0, 0].set_xlabel('Predicted')
-        axes[0, 0].set_ylabel('True')
+        axes[0, 0].imshow(cm, interpolation="nearest", cmap=plt.cm.Blues)
+        axes[0, 0].set_title("Confusion Matrix")
+        axes[0, 0].set_xlabel("Predicted")
+        axes[0, 0].set_ylabel("True")
 
         # Add text annotations
-        thresh = cm.max() / 2.
+        thresh = cm.max() / 2.0
         for i in range(cm.shape[0]):
             for j in range(cm.shape[1]):
-                axes[0, 0].text(j, i, format(cm[i, j], 'd'),
-                               ha="center", va="center",
-                               color="white" if cm[i, j] > thresh else "black")
+                axes[0, 0].text(
+                    j,
+                    i,
+                    format(cm[i, j], "d"),
+                    ha="center",
+                    va="center",
+                    color="white" if cm[i, j] > thresh else "black",
+                )
 
         # ROC curve
         from sklearn.metrics import roc_curve, auc
+
         fpr, tpr, _ = roc_curve(y_true, y_pred)
         roc_auc = auc(fpr, tpr)
 
-        axes[0, 1].plot(fpr, tpr, color='darkorange', lw=2, label=f'ROC curve (area = {roc_auc:.2f})')
-        axes[0, 1].plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
+        axes[0, 1].plot(fpr, tpr, color="darkorange", lw=2, label=f"ROC curve (area = {roc_auc:.2f})")
+        axes[0, 1].plot([0, 1], [0, 1], color="navy", lw=2, linestyle="--")
         axes[0, 1].set_xlim([0.0, 1.0])
         axes[0, 1].set_ylim([0.0, 1.05])
-        axes[0, 1].set_xlabel('False Positive Rate')
-        axes[0, 1].set_ylabel('True Positive Rate')
-        axes[0, 1].set_title('Receiver Operating Characteristic')
+        axes[0, 1].set_xlabel("False Positive Rate")
+        axes[0, 1].set_ylabel("True Positive Rate")
+        axes[0, 1].set_title("Receiver Operating Characteristic")
         axes[0, 1].legend(loc="lower right")
 
         # Precision-Recall curve
         from sklearn.metrics import precision_recall_curve, average_precision_score
+
         precision, recall, _ = precision_recall_curve(y_true, y_pred)
         average_precision = average_precision_score(y_true, y_pred)
 
-        axes[1, 0].plot(recall, precision, color='blue', lw=2,
-                       label=f'Precision-Recall curve (AP = {average_precision:.2f})')
-        axes[1, 0].set_xlabel('Recall')
-        axes[1, 0].set_ylabel('Precision')
-        axes[1, 0].set_title('Precision-Recall Curve')
+        axes[1, 0].plot(
+            recall, precision, color="blue", lw=2, label=f"Precision-Recall curve (AP = {average_precision:.2f})"
+        )
+        axes[1, 0].set_xlabel("Recall")
+        axes[1, 0].set_ylabel("Precision")
+        axes[1, 0].set_title("Precision-Recall Curve")
         axes[1, 0].legend(loc="lower left")
 
         # Accuracy over different thresholds (simplified)
@@ -1111,10 +1149,10 @@ def plot_prediction_accuracy(
             acc = np.mean(pred_binary == y_true)
             accuracies.append(acc)
 
-        axes[1, 1].plot(thresholds, accuracies, 'o-', color='green')
-        axes[1, 1].set_xlabel('Threshold')
-        axes[1, 1].set_ylabel('Accuracy')
-        axes[1, 1].set_title('Accuracy vs Threshold')
+        axes[1, 1].plot(thresholds, accuracies, "o-", color="green")
+        axes[1, 1].set_xlabel("Threshold")
+        axes[1, 1].set_ylabel("Accuracy")
+        axes[1, 1].set_title("Accuracy vs Threshold")
         axes[1, 1].grid(True)
 
     elif task_type == "regression":
@@ -1123,42 +1161,42 @@ def plot_prediction_accuracy(
 
         # Predicted vs Actual scatter
         axes[0, 0].scatter(y_true, y_pred, alpha=0.6)
-        axes[0, 0].plot([y_true.min(), y_true.max()], [y_true.min(), y_true.max()], 'r--', lw=2)
-        axes[0, 0].set_xlabel('True Values')
-        axes[0, 0].set_ylabel('Predicted Values')
-        axes[0, 0].set_title('Predicted vs Actual')
+        axes[0, 0].plot([y_true.min(), y_true.max()], [y_true.min(), y_true.max()], "r--", lw=2)
+        axes[0, 0].set_xlabel("True Values")
+        axes[0, 0].set_ylabel("Predicted Values")
+        axes[0, 0].set_title("Predicted vs Actual")
 
         # Residuals plot
         residuals = y_pred - y_true
         axes[0, 1].scatter(y_pred, residuals, alpha=0.6)
-        axes[0, 1].axhline(y=0, color='r', linestyle='--')
-        axes[0, 1].set_xlabel('Predicted Values')
-        axes[0, 1].set_ylabel('Residuals')
-        axes[0, 1].set_title('Residuals Plot')
+        axes[0, 1].axhline(y=0, color="r", linestyle="--")
+        axes[0, 1].set_xlabel("Predicted Values")
+        axes[0, 1].set_ylabel("Residuals")
+        axes[0, 1].set_title("Residuals Plot")
 
         # Residuals distribution
-        axes[1, 0].hist(residuals, bins=20, alpha=0.7, edgecolor='black')
-        axes[1, 0].set_xlabel('Residual Value')
-        axes[1, 0].set_ylabel('Frequency')
-        axes[1, 0].set_title('Residuals Distribution')
+        axes[1, 0].hist(residuals, bins=20, alpha=0.7, edgecolor="black")
+        axes[1, 0].set_xlabel("Residual Value")
+        axes[1, 0].set_ylabel("Frequency")
+        axes[1, 0].set_title("Residuals Distribution")
 
         # Q-Q plot of residuals
         from scipy import stats
+
         probplot = stats.probplot(residuals, dist="norm", plot=axes[1, 1])
-        axes[1, 1].set_title('Q-Q Plot of Residuals')
+        axes[1, 1].set_title("Q-Q Plot of Residuals")
 
     plt.tight_layout()
 
     if output_path:
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved prediction accuracy plot to {output_path}")
 
     return fig
 
+
 def plot_sequence_length_distribution(
-    sequences: List[EventSequence],
-    output_path: Optional[Union[str, Path]] = None,
-    figsize: Tuple[int, int] = (10, 6)
+    sequences: List[EventSequence], output_path: Optional[Union[str, Path]] = None, figsize: Tuple[int, int] = (10, 6)
 ) -> Any:
     """Plot distribution of sequence lengths.
 
@@ -1184,16 +1222,16 @@ def plot_sequence_length_distribution(
         return None
 
     # Plot histogram
-    axes[0].hist(lengths, bins=20, alpha=0.7, edgecolor='black')
-    axes[0].set_xlabel('Sequence Length')
-    axes[0].set_ylabel('Frequency')
-    axes[0].set_title('Sequence Length Distribution')
+    axes[0].hist(lengths, bins=20, alpha=0.7, edgecolor="black")
+    axes[0].set_xlabel("Sequence Length")
+    axes[0].set_ylabel("Frequency")
+    axes[0].set_title("Sequence Length Distribution")
     axes[0].grid(True, alpha=0.3)
 
     # Plot box plot
     axes[1].boxplot(lengths, vert=False)
-    axes[1].set_xlabel('Sequence Length')
-    axes[1].set_title('Sequence Length Box Plot')
+    axes[1].set_xlabel("Sequence Length")
+    axes[1].set_title("Sequence Length Box Plot")
     axes[1].grid(True, alpha=0.3)
 
     # Add statistics text
@@ -1203,23 +1241,28 @@ def plot_sequence_length_distribution(
     min_len = np.min(lengths)
     max_len = np.max(lengths)
 
-    stats_text = f'n = {len(lengths)}\nMean: {mean_len:.1f}\nMedian: {median_len:.1f}\nStd: {std_len:.1f}\nRange: {min_len}-{max_len}'
-    axes[0].text(0.95, 0.95, stats_text, transform=axes[0].transAxes,
-                verticalalignment='top', horizontalalignment='right',
-                bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+    stats_text = f"n = {len(lengths)}\nMean: {mean_len:.1f}\nMedian: {median_len:.1f}\nStd: {std_len:.1f}\nRange: {min_len}-{max_len}"
+    axes[0].text(
+        0.95,
+        0.95,
+        stats_text,
+        transform=axes[0].transAxes,
+        verticalalignment="top",
+        horizontalalignment="right",
+        bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8),
+    )
 
     plt.tight_layout()
 
     if output_path:
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved sequence length distribution plot to {output_path}")
 
     return fig
 
+
 def plot_sequence_similarity(
-    sequences: List[EventSequence],
-    output_path: Optional[Union[str, Path]] = None,
-    figsize: Tuple[int, int] = (10, 8)
+    sequences: List[EventSequence], output_path: Optional[Union[str, Path]] = None, figsize: Tuple[int, int] = (10, 8)
 ) -> Any:
     """Plot pairwise sequence similarities.
 
@@ -1238,6 +1281,7 @@ def plot_sequence_similarity(
     try:
         from sklearn.metrics.pairwise import cosine_similarity
         from sklearn.feature_extraction.text import TfidfVectorizer
+
         HAS_SKLEARN = True
     except ImportError:
         logger.warning("sklearn not available, cannot create sequence similarity plot")
@@ -1249,7 +1293,7 @@ def plot_sequence_similarity(
     for seq in sequences:
         # Create a string representation of the sequence
         event_types = [event.event_type for event in seq.events]
-        sequence_strings.append(' '.join(event_types))
+        sequence_strings.append(" ".join(event_types))
 
     if len(sequence_strings) < 2:
         logger.warning("Need at least 2 sequences for similarity analysis")
@@ -1259,44 +1303,45 @@ def plot_sequence_similarity(
     vectorizer = TfidfVectorizer()
     try:
         tfidf_matrix = vectorizer.fit_transform(sequence_strings)
-        
+
         # Calculate cosine similarity
         similarity_matrix = cosine_similarity(tfidf_matrix)
-        
+
         # Plot heatmap
         fig, ax = plt.subplots(figsize=figsize)
-        im = ax.imshow(similarity_matrix, cmap='viridis', aspect='auto', vmin=0, vmax=1)
-        
+        im = ax.imshow(similarity_matrix, cmap="viridis", aspect="auto", vmin=0, vmax=1)
+
         # Set labels
         n_seq = len(sequences)
         ax.set_xticks(range(n_seq))
         ax.set_yticks(range(n_seq))
-        ax.set_xticklabels([f'Seq {i+1}' for i in range(n_seq)], rotation=45, ha='right')
-        ax.set_yticklabels([f'Seq {i+1}' for i in range(n_seq)])
-        
-        ax.set_title('Sequence Similarity Matrix (Cosine Similarity)')
-        
+        ax.set_xticklabels([f"Seq {i+1}" for i in range(n_seq)], rotation=45, ha="right")
+        ax.set_yticklabels([f"Seq {i+1}" for i in range(n_seq)])
+
+        ax.set_title("Sequence Similarity Matrix (Cosine Similarity)")
+
         # Add colorbar
         cbar = plt.colorbar(im, ax=ax, shrink=0.8)
-        cbar.set_label('Similarity Score')
-        
+        cbar.set_label("Similarity Score")
+
         plt.tight_layout()
-        
+
         if output_path:
-            plt.savefig(output_path, dpi=300, bbox_inches='tight')
+            plt.savefig(output_path, dpi=300, bbox_inches="tight")
             logger.info(f"Saved sequence similarity plot to {output_path}")
-        
+
         return fig
-        
+
     except Exception as e:
         logger.warning(f"Failed to compute similarities: {e}")
         return None
+
 
 def plot_temporal_density(
     sequences: List[EventSequence],
     output_path: Optional[Union[str, Path]] = None,
     bins: int = 20,
-    figsize: Tuple[int, int] = (12, 6)
+    figsize: Tuple[int, int] = (12, 6),
 ) -> Any:
     """Plot temporal density of events across all sequences.
 
@@ -1324,63 +1369,70 @@ def plot_temporal_density(
         return None
 
     # Convert timestamps to numerical values (days since earliest event)
-    timestamps_numeric = [(ts - min(all_timestamps)).total_seconds() / (24 * 3600) 
-                         for ts in all_timestamps]
+    timestamps_numeric = [(ts - min(all_timestamps)).total_seconds() / (24 * 3600) for ts in all_timestamps]
 
     fig, axes = plt.subplots(1, 2, figsize=figsize)
 
     # Plot histogram
-    counts, bin_edges, _ = axes[0].hist(timestamps_numeric, bins=bins, alpha=0.7, edgecolor='black')
-    axes[0].set_xlabel('Time (days)')
-    axes[0].set_ylabel('Event Count')
-    axes[0].set_title('Event Temporal Distribution')
+    counts, bin_edges, _ = axes[0].hist(timestamps_numeric, bins=bins, alpha=0.7, edgecolor="black")
+    axes[0].set_xlabel("Time (days)")
+    axes[0].set_ylabel("Event Count")
+    axes[0].set_title("Event Temporal Distribution")
     axes[0].grid(True, alpha=0.3)
 
     # Plot density estimate
     try:
         from scipy import stats
+
         # Use Gaussian kernel density estimation
         kde = stats.gaussian_kde(timestamps_numeric)
         x_range = np.linspace(min(timestamps_numeric), max(timestamps_numeric), 200)
         density = kde(x_range)
-        
-        axes[1].plot(x_range, density, 'b-', linewidth=2)
+
+        axes[1].plot(x_range, density, "b-", linewidth=2)
         axes[1].fill_between(x_range, density, alpha=0.3)
-        axes[1].set_xlabel('Time (days)')
-        axes[1].set_ylabel('Density')
-        axes[1].set_title('Event Temporal Density (KDE)')
+        axes[1].set_xlabel("Time (days)")
+        axes[1].set_ylabel("Density")
+        axes[1].set_title("Event Temporal Density (KDE)")
         axes[1].grid(True, alpha=0.3)
-        
+
     except ImportError:
         # Fallback: just show histogram again
-        axes[1].hist(timestamps_numeric, bins=bins, alpha=0.7, edgecolor='black')
-        axes[1].set_xlabel('Time (days)')
-        axes[1].set_ylabel('Event Count')
-        axes[1].set_title('Event Temporal Distribution (Histogram)')
+        axes[1].hist(timestamps_numeric, bins=bins, alpha=0.7, edgecolor="black")
+        axes[1].set_xlabel("Time (days)")
+        axes[1].set_ylabel("Event Count")
+        axes[1].set_title("Event Temporal Distribution (Histogram)")
         axes[1].grid(True, alpha=0.3)
 
     # Add statistics
     mean_time = np.mean(timestamps_numeric)
     median_time = np.median(timestamps_numeric)
     std_time = np.std(timestamps_numeric)
-    
-    stats_text = f'Events: {len(all_timestamps)}\nMean: {mean_time:.1f} days\nMedian: {median_time:.1f} days\nStd: {std_time:.1f} days'
-    axes[0].text(0.02, 0.98, stats_text, transform=axes[0].transAxes,
-                verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+
+    stats_text = f"Events: {len(all_timestamps)}\nMean: {mean_time:.1f} days\nMedian: {median_time:.1f} days\nStd: {std_time:.1f} days"
+    axes[0].text(
+        0.02,
+        0.98,
+        stats_text,
+        transform=axes[0].transAxes,
+        verticalalignment="top",
+        bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8),
+    )
 
     plt.tight_layout()
 
     if output_path:
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved temporal density plot to {output_path}")
 
     return fig
+
 
 def plot_temporal_patterns(
     sequences: List[EventSequence],
     importance_scores: Optional[Dict[int, float]] = None,
     output_path: Optional[Union[str, Path]] = None,
-    figsize: Tuple[int, int] = (14, 8)
+    figsize: Tuple[int, int] = (14, 8),
 ) -> Any:
     """Plot temporal patterns of life events with importance highlighting.
 
@@ -1425,12 +1477,19 @@ def plot_temporal_patterns(
                 # Convert to relative time
                 rel_time = (event.timestamp - min_time).total_seconds() / (24 * 3600)  # days
                 ax1.scatter(rel_time, i, color=seq_color, s=50, alpha=0.8)
-                ax1.text(rel_time, i + 0.1, event.event_type.split(':')[-1],
-                        fontsize=6, ha='center', va='bottom', rotation=45)
+                ax1.text(
+                    rel_time,
+                    i + 0.1,
+                    event.event_type.split(":")[-1],
+                    fontsize=6,
+                    ha="center",
+                    va="bottom",
+                    rotation=45,
+                )
 
-    ax1.set_xlabel('Time (days)')
-    ax1.set_ylabel('Sequence Index')
-    ax1.set_title('Temporal Patterns of Life Events')
+    ax1.set_xlabel("Time (days)")
+    ax1.set_ylabel("Sequence Index")
+    ax1.set_title("Temporal Patterns of Life Events")
     ax1.grid(True, alpha=0.3)
 
     # Plot 2: Event type frequency over time
@@ -1460,14 +1519,14 @@ def plot_temporal_patterns(
                     freq_matrix[event_idx, time_bin] += 1
 
         # Plot as heatmap
-        im = ax2.imshow(freq_matrix, aspect='auto', cmap='Blues')
+        im = ax2.imshow(freq_matrix, aspect="auto", cmap="Blues")
         ax2.set_xticks(range(len(time_bins) - 1))
         ax2.set_yticks(range(len(event_types)))
-        ax2.set_xticklabels([f'{time_bins[i]:.1f}' for i in range(len(time_bins) - 1)])
-        ax2.set_yticklabels([et.split(':')[-1] for et in event_types])
-        ax2.set_xlabel('Time Bin (days)')
-        ax2.set_ylabel('Event Type')
-        ax2.set_title('Event Frequency Over Time')
+        ax2.set_xticklabels([f"{time_bins[i]:.1f}" for i in range(len(time_bins) - 1)])
+        ax2.set_yticklabels([et.split(":")[-1] for et in event_types])
+        ax2.set_xlabel("Time Bin (days)")
+        ax2.set_ylabel("Event Type")
+        ax2.set_title("Event Frequency Over Time")
 
         # Add colorbar
         plt.colorbar(im, ax=ax2, shrink=0.8)
@@ -1475,13 +1534,18 @@ def plot_temporal_patterns(
     plt.tight_layout()
 
     if output_path:
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved temporal patterns plot to {output_path}")
 
     return fig
 
-def plot_transition_network(sequences: List[EventSequence], output_path: Optional[Union[str, Path]] = None,
-                          top_n: int = 10, figsize: Tuple[int, int] = (12, 8)) -> Any:
+
+def plot_transition_network(
+    sequences: List[EventSequence],
+    output_path: Optional[Union[str, Path]] = None,
+    top_n: int = 10,
+    figsize: Tuple[int, int] = (12, 8),
+) -> Any:
     """Plot transition network between event types.
 
     Args:
@@ -1499,6 +1563,7 @@ def plot_transition_network(sequences: List[EventSequence], output_path: Optiona
 
     try:
         import networkx as nx
+
         HAS_NETWORKX = True
     except ImportError:
         logger.warning("networkx not available, cannot create transition network plot")
@@ -1537,7 +1602,7 @@ def plot_transition_network(sequences: List[EventSequence], output_path: Optiona
 
     # Add nodes
     for event_type in top_event_types:
-        G.add_node(event_type, label=event_type.split(':')[-1])
+        G.add_node(event_type, label=event_type.split(":")[-1])
 
     # Add edges with weights
     for (from_event, to_event), weight in sorted_transitions:
@@ -1551,45 +1616,41 @@ def plot_transition_network(sequences: List[EventSequence], output_path: Optiona
 
     # Draw nodes
     node_sizes = [G.degree(node) * 100 + 300 for node in G.nodes()]
-    nx.draw_networkx_nodes(G, pos, ax=ax, node_size=node_sizes,
-                          node_color='lightblue', alpha=0.7)
+    nx.draw_networkx_nodes(G, pos, ax=ax, node_size=node_sizes, node_color="lightblue", alpha=0.7)
 
     # Draw edges
     edges = G.edges()
-    weights = [G[u][v]['weight'] for u, v in edges]
+    weights = [G[u][v]["weight"] for u, v in edges]
     max_weight = max(weights) if weights else 1
 
     # Scale edge widths
     edge_widths = [w / max_weight * 5 + 1 for w in weights]
-    nx.draw_networkx_edges(G, pos, ax=ax, width=edge_widths,
-                          edge_color='gray', alpha=0.6, arrows=True,
-                          arrowsize=20, arrowstyle='->')
+    nx.draw_networkx_edges(
+        G, pos, ax=ax, width=edge_widths, edge_color="gray", alpha=0.6, arrows=True, arrowsize=20, arrowstyle="->"
+    )
 
     # Draw labels
-    labels = {node: node.split(':')[-1] for node in G.nodes()}
-    nx.draw_networkx_labels(G, pos, labels, ax=ax, font_size=8, font_weight='bold')
+    labels = {node: node.split(":")[-1] for node in G.nodes()}
+    nx.draw_networkx_labels(G, pos, labels, ax=ax, font_size=8, font_weight="bold")
 
     # Add edge labels for weights
-    edge_labels = {(u, v): str(G[u][v]['weight']) for u, v in edges}
+    edge_labels = {(u, v): str(G[u][v]["weight"]) for u, v in edges}
     nx.draw_networkx_edge_labels(G, pos, edge_labels, ax=ax, font_size=6)
 
-    ax.set_title(f'Event Transition Network\n(Top {top_n} transitions)')
-    ax.axis('off')
+    ax.set_title(f"Event Transition Network\n(Top {top_n} transitions)")
+    ax.axis("off")
 
     plt.tight_layout()
 
     if output_path:
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Saved transition network plot to {output_path}")
 
     return fig
 
 
 def plot_prediction_accuracy(
-    y_true: Any,
-    y_pred: Any,
-    metric: str = 'accuracy',
-    output_path: Optional[str] = None
+    y_true: Any, y_pred: Any, metric: str = "accuracy", output_path: Optional[str] = None
 ) -> Any:
     """Plot prediction accuracy metrics.
 
@@ -1605,23 +1666,22 @@ def plot_prediction_accuracy(
     if not HAS_MATPLOTLIB:
         logger.warning("matplotlib not available")
         return None
-        
+
     fig, ax = plt.subplots(figsize=(8, 6))
-    
+
     # Placeholder plot (scatter)
     ax.scatter(y_true, y_pred, alpha=0.5)
-    
+
     if len(y_true) > 0 and len(y_pred) > 0:
         min_val = min(np.min(y_true), np.min(y_pred))
         max_val = max(np.max(y_true), np.max(y_pred))
-        ax.plot([min_val, max_val], [min_val, max_val], 'k--', alpha=0.7)
-    
-    ax.set_xlabel('True Values')
-    ax.set_ylabel('Predicted Values')
-    ax.set_title(f'Prediction {metric.title()}')
-    
+        ax.plot([min_val, max_val], [min_val, max_val], "k--", alpha=0.7)
+
+    ax.set_xlabel("True Values")
+    ax.set_ylabel("Predicted Values")
+    ax.set_title(f"Prediction {metric.title()}")
+
     if output_path:
         plt.savefig(output_path)
-        
-    return fig
 
+    return fig

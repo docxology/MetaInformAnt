@@ -156,4 +156,3 @@ class TestFuzzyFindSymbol:
         results = symbols.fuzzy_find_symbol("XyzAbc123", "function", repo_root, threshold=0.9)
         assert isinstance(results, list)
         # Should return empty or very few results with high threshold
-

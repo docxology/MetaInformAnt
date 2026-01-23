@@ -38,8 +38,9 @@ class Agent:
         self.energy += delta
         self.energy = max(0, self.energy)
 
-    def reproduce(self, partner: Agent | None = None, mutation_rate: float = 0.01,
-                  rng: random.Random | None = None) -> Agent:
+    def reproduce(
+        self, partner: Agent | None = None, mutation_rate: float = 0.01, rng: random.Random | None = None
+    ) -> Agent:
         """Create offspring agent."""
         if rng is None:
             rng = random.Random()
@@ -102,16 +103,13 @@ class Ecosystem:
 
     def get_agents_at_position(self, position: Tuple[int, int]) -> List[Agent]:
         """Get all agents at a specific position."""
-        return [agent for agent in self.agents.values()
-                if agent.position == position and agent.alive]
+        return [agent for agent in self.agents.values() if agent.position == position and agent.alive]
 
     def get_agents_by_type(self, agent_type: str) -> List[Agent]:
         """Get all agents of a specific type."""
-        return [agent for agent in self.agents.values()
-                if agent.agent_type == agent_type and agent.alive]
+        return [agent for agent in self.agents.values() if agent.agent_type == agent_type and agent.alive]
 
-    def get_neighboring_positions(self, position: Tuple[int, int],
-                                radius: int = 1) -> List[Tuple[int, int]]:
+    def get_neighboring_positions(self, position: Tuple[int, int], radius: int = 1) -> List[Tuple[int, int]]:
         """Get positions within radius of given position."""
         x, y = position
         neighbors = []
@@ -133,9 +131,9 @@ class Ecosystem:
         return (rng.randint(0, self.size[0] - 1), rng.randint(0, self.size[1] - 1))
 
 
-def create_ecosystem(n_agents: int, agent_types: List[str],
-                    environment_size: Tuple[int, int], *,
-                    rng: random.Random | None = None) -> Ecosystem:
+def create_ecosystem(
+    n_agents: int, agent_types: List[str], environment_size: Tuple[int, int], *, rng: random.Random | None = None
+) -> Ecosystem:
     """Create an ecosystem with randomly placed agents.
 
     Args:
@@ -187,7 +185,7 @@ def create_ecosystem(n_agents: int, agent_types: List[str],
                 agent_type=agent_type,
                 position=position,
                 properties=properties,
-                energy=rng.uniform(50, 150)
+                energy=rng.uniform(50, 150),
             )
 
             ecosystem.add_agent(agent)
@@ -196,8 +194,9 @@ def create_ecosystem(n_agents: int, agent_types: List[str],
     return ecosystem
 
 
-def run_simulation(ecosystem: Ecosystem, n_steps: int, *,
-                  record_interval: int = 1, rng: random.Random | None = None) -> List[Dict[str, Any]]:
+def run_simulation(
+    ecosystem: Ecosystem, n_steps: int, *, record_interval: int = 1, rng: random.Random | None = None
+) -> List[Dict[str, Any]]:
     """Run ecosystem simulation for specified number of steps.
 
     Args:
@@ -336,8 +335,9 @@ def simulation_step(ecosystem: Ecosystem, rng: random.Random) -> None:
         ecosystem.add_agent(new_agent)
 
 
-def add_agent(ecosystem: Ecosystem, agent_type: str, position: Tuple[int, int], *,
-             properties: Dict[str, Any] | None = None) -> None:
+def add_agent(
+    ecosystem: Ecosystem, agent_type: str, position: Tuple[int, int], *, properties: Dict[str, Any] | None = None
+) -> None:
     """Add a new agent to the ecosystem.
 
     Args:
@@ -359,13 +359,7 @@ def add_agent(ecosystem: Ecosystem, agent_type: str, position: Tuple[int, int], 
     # Generate unique ID
     agent_id = max(ecosystem.agents.keys()) + 1 if ecosystem.agents else 1
 
-    agent = Agent(
-        id=agent_id,
-        agent_type=agent_type,
-        position=position,
-        properties=properties,
-        energy=100.0
-    )
+    agent = Agent(id=agent_id, agent_type=agent_type, position=position, properties=properties, energy=100.0)
 
     ecosystem.add_agent(agent)
 
@@ -464,7 +458,7 @@ def calculate_biodiversity_metrics(simulation_data: List[Dict[str, Any]]) -> Dic
     # Simpson diversity
     if total_individuals > 0:
         proportions = [count / total_individuals for count in agent_counts.values()]
-        simpson = 1 - sum(p ** 2 for p in proportions)
+        simpson = 1 - sum(p**2 for p in proportions)
     else:
         simpson = 0
 
@@ -499,10 +493,14 @@ def count_agents_by_type(ecosystem: Ecosystem) -> Dict[str, int]:
     return counts
 
 
-def simulate_predator_prey(ecosystem: Ecosystem, n_steps: int, *,
-                          predator_efficiency: float = 0.8,
-                          prey_reproduction: float = 0.1,
-                          rng: random.Random | None = None) -> List[Dict[str, Any]]:
+def simulate_predator_prey(
+    ecosystem: Ecosystem,
+    n_steps: int,
+    *,
+    predator_efficiency: float = 0.8,
+    prey_reproduction: float = 0.1,
+    rng: random.Random | None = None,
+) -> List[Dict[str, Any]]:
     """Run a predator-prey simulation.
 
     Args:
@@ -577,9 +575,9 @@ def simulate_predator_prey(ecosystem: Ecosystem, n_steps: int, *,
     return snapshots
 
 
-def simulate_competition(ecosystem: Ecosystem, n_steps: int, *,
-                        competition_strength: float = 0.5,
-                        rng: random.Random | None = None) -> List[Dict[str, Any]]:
+def simulate_competition(
+    ecosystem: Ecosystem, n_steps: int, *, competition_strength: float = 0.5, rng: random.Random | None = None
+) -> List[Dict[str, Any]]:
     """Run a competition simulation between agent types.
 
     Args:
@@ -628,8 +626,9 @@ def simulate_competition(ecosystem: Ecosystem, n_steps: int, *,
             "step": step,
             "occupied_positions": len(positions_occupied),
             "agent_counts": count_agents_by_type(ecosystem),
-            "competition_events": len([a for a in ecosystem.agents.values()
-                                     if not a.alive and a.energy <= 0]),  # Deaths from competition
+            "competition_events": len(
+                [a for a in ecosystem.agents.values() if not a.alive and a.energy <= 0]
+            ),  # Deaths from competition
         }
         snapshots.append(snapshot)
 
@@ -646,8 +645,7 @@ class GridWorld:
     interact, and evolve according to specified rules.
     """
 
-    def __init__(self, width: int, height: int, num_agents: int,
-                 rng: Optional[Any] = None, **kwargs: Any):
+    def __init__(self, width: int, height: int, num_agents: int, rng: Optional[Any] = None, **kwargs: Any):
         """Initialize the grid world.
 
         Args:
@@ -664,18 +662,14 @@ class GridWorld:
         # Initialize random number generator
         if rng is None:
             import random
+
             self.rng = random.Random()
         else:
             self.rng = rng
 
         # Create agents
         for i in range(num_agents):
-            agent = Agent(
-                agent_id=i,
-                x=self.rng.randint(0, width - 1),
-                y=self.rng.randint(0, height - 1),
-                energy=100.0
-            )
+            agent = Agent(agent_id=i, x=self.rng.randint(0, width - 1), y=self.rng.randint(0, height - 1), energy=100.0)
             self.agents.append(agent)
 
         # Simulation state
@@ -705,10 +699,10 @@ class GridWorld:
         self.time_step += 1
 
         return {
-            'time_step': self.time_step,
-            'num_agents': len(self.agents),
-            'agent_positions': [(a.x, a.y) for a in self.agents],
-            'total_energy': sum(a.energy for a in self.agents)
+            "time_step": self.time_step,
+            "num_agents": len(self.agents),
+            "agent_positions": [(a.x, a.y) for a in self.agents],
+            "total_energy": sum(a.energy for a in self.agents),
         }
 
     def get_agent_positions(self) -> List[Tuple[int, int]]:
@@ -727,8 +721,7 @@ class GridWorld:
         """
         return [agent.energy for agent in self.agents]
 
-    def add_agent(self, x: Optional[int] = None, y: Optional[int] = None,
-                  energy: float = 100.0) -> Agent:
+    def add_agent(self, x: Optional[int] = None, y: Optional[int] = None, energy: float = 100.0) -> Agent:
         """Add a new agent to the world.
 
         Args:
@@ -744,12 +737,7 @@ class GridWorld:
         if y is None:
             y = self.rng.randint(0, self.height - 1)
 
-        agent = Agent(
-            agent_id=len(self.agents),
-            x=x,
-            y=y,
-            energy=energy
-        )
+        agent = Agent(agent_id=len(self.agents), x=x, y=y, energy=energy)
         self.agents.append(agent)
         return agent
 
@@ -795,4 +783,3 @@ class GridWorld:
             step_result = self.step()
             results.append(step_result)
         return results
-

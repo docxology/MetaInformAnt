@@ -16,9 +16,9 @@ from metainformant.core import logging, validation, errors
 logger = logging.get_logger(__name__)
 
 
-def simulate_counts_negative_binomial(n_samples: int, n_features: int,
-                                    means: np.ndarray, dispersions: np.ndarray,
-                                    rng: random.Random | None = None) -> np.ndarray:
+def simulate_counts_negative_binomial(
+    n_samples: int, n_features: int, means: np.ndarray, dispersions: np.ndarray, rng: random.Random | None = None
+) -> np.ndarray:
     """Simulate RNA-seq counts using negative binomial distribution.
 
     Args:
@@ -87,9 +87,9 @@ def simulate_counts_negative_binomial(n_samples: int, n_features: int,
     return counts
 
 
-def simulate_differential_expression(n_samples: int, n_features: int,
-                                   fold_changes: np.ndarray,
-                                   rng: random.Random | None = None) -> Tuple[np.ndarray, np.ndarray]:
+def simulate_differential_expression(
+    n_samples: int, n_features: int, fold_changes: np.ndarray, rng: random.Random | None = None
+) -> Tuple[np.ndarray, np.ndarray]:
     """Simulate differential expression with specified fold changes.
 
     Args:
@@ -142,15 +142,11 @@ def simulate_differential_expression(n_samples: int, n_features: int,
 
     # Generate expression for group 0 (baseline)
     group0_means = baseline_means
-    group0_counts = simulate_counts_negative_binomial(
-        group_sizes[0], n_features, group0_means, dispersions, rng=rng
-    )
+    group0_counts = simulate_counts_negative_binomial(group_sizes[0], n_features, group0_means, dispersions, rng=rng)
 
     # Generate expression for group 1 (modified)
     group1_means = modified_means
-    group1_counts = simulate_counts_negative_binomial(
-        group_sizes[1], n_features, group1_means, dispersions, rng=rng
-    )
+    group1_counts = simulate_counts_negative_binomial(group_sizes[1], n_features, group1_means, dispersions, rng=rng)
 
     # Combine into single matrix
     expression_matrix = np.vstack([group0_counts, group1_counts])
@@ -158,10 +154,14 @@ def simulate_differential_expression(n_samples: int, n_features: int,
     return expression_matrix, group_labels.astype(int)
 
 
-def simulate_bulk_rnaseq(n_samples: int, n_genes: int, *,
-                        library_sizes: Optional[np.ndarray] = None,
-                        gene_means: Optional[np.ndarray] = None,
-                        rng: random.Random | None = None) -> np.ndarray:
+def simulate_bulk_rnaseq(
+    n_samples: int,
+    n_genes: int,
+    *,
+    library_sizes: Optional[np.ndarray] = None,
+    gene_means: Optional[np.ndarray] = None,
+    rng: random.Random | None = None,
+) -> np.ndarray:
     """Simulate bulk RNA-seq count data.
 
     Args:
@@ -224,10 +224,9 @@ def simulate_bulk_rnaseq(n_samples: int, n_genes: int, *,
     return counts
 
 
-def simulate_single_cell_rnaseq(n_cells: int, n_genes: int, *,
-                               n_cell_types: int = 5,
-                               dropout_rate: float = 0.3,
-                               rng: random.Random | None = None) -> Tuple[np.ndarray, np.ndarray]:
+def simulate_single_cell_rnaseq(
+    n_cells: int, n_genes: int, *, n_cell_types: int = 5, dropout_rate: float = 0.3, rng: random.Random | None = None
+) -> Tuple[np.ndarray, np.ndarray]:
     """Simulate single-cell RNA-seq data with cell types and dropout.
 
     Args:
@@ -266,7 +265,7 @@ def simulate_single_cell_rnaseq(n_cells: int, n_genes: int, *,
     for ct in range(n_cell_types):
         # Each cell type has different expression patterns
         # Some genes are highly expressed in this cell type
-        marker_genes = np.random.choice(n_genes, size=n_genes//10, replace=False)
+        marker_genes = np.random.choice(n_genes, size=n_genes // 10, replace=False)
         cell_type_means[ct, marker_genes] = np.random.exponential(50, len(marker_genes))
 
         # Background expression for all genes
@@ -295,9 +294,9 @@ def simulate_single_cell_rnaseq(n_cells: int, n_genes: int, *,
     return expression_matrix.astype(int), cell_type_labels
 
 
-def simulate_time_series_expression(n_timepoints: int, n_genes: int, *,
-                                  oscillation_freq: Optional[np.ndarray] = None,
-                                  rng: random.Random | None = None) -> np.ndarray:
+def simulate_time_series_expression(
+    n_timepoints: int, n_genes: int, *, oscillation_freq: Optional[np.ndarray] = None, rng: random.Random | None = None
+) -> np.ndarray:
     """Simulate time-series gene expression with oscillatory patterns.
 
     Args:
@@ -320,7 +319,7 @@ def simulate_time_series_expression(n_timepoints: int, n_genes: int, *,
 
     np.random.seed(rng.randint(0, 2**32))
 
-    time_points = np.linspace(0, 4*np.pi, n_timepoints)  # Two full cycles
+    time_points = np.linspace(0, 4 * np.pi, n_timepoints)  # Two full cycles
 
     # Generate oscillation frequencies
     if oscillation_freq is None:
@@ -334,7 +333,7 @@ def simulate_time_series_expression(n_timepoints: int, n_genes: int, *,
     for t in range(n_timepoints):
         for g in range(n_genes):
             # Sine wave with random phase and amplitude
-            phase = rng.uniform(0, 2*np.pi)
+            phase = rng.uniform(0, 2 * np.pi)
             amplitude = rng.uniform(10, 100)
             baseline = rng.uniform(5, 20)
 
@@ -349,9 +348,9 @@ def simulate_time_series_expression(n_timepoints: int, n_genes: int, *,
     return counts.astype(int)
 
 
-def simulate_spatial_expression(n_spots: int, n_genes: int, *,
-                              spatial_patterns: str = "random",
-                              rng: random.Random | None = None) -> Tuple[np.ndarray, np.ndarray]:
+def simulate_spatial_expression(
+    n_spots: int, n_genes: int, *, spatial_patterns: str = "random", rng: random.Random | None = None
+) -> Tuple[np.ndarray, np.ndarray]:
     """Simulate spatially resolved RNA expression data.
 
     Args:
@@ -424,7 +423,7 @@ def simulate_spatial_expression(n_spots: int, n_genes: int, *,
         # Add spatial autocorrelation
         for i in range(n_spots):
             # Nearby spots have similar expression (simplified)
-            nearby_indices = np.argsort(np.sum((coordinates - coordinates[i])**2, axis=1))[:5]
+            nearby_indices = np.argsort(np.sum((coordinates - coordinates[i]) ** 2, axis=1))[:5]
             nearby_mean = np.mean(means[nearby_indices])
             means[i] = 0.7 * means[i] + 0.3 * nearby_mean
 
@@ -438,10 +437,13 @@ def simulate_spatial_expression(n_spots: int, n_genes: int, *,
     return expression_matrix.astype(int), coordinates
 
 
-def add_technical_noise(expression_matrix: np.ndarray, *,
-                       amplification_bias: float = 0.1,
-                       sequencing_depth: Optional[float] = None,
-                       rng: random.Random | None = None) -> np.ndarray:
+def add_technical_noise(
+    expression_matrix: np.ndarray,
+    *,
+    amplification_bias: float = 0.1,
+    sequencing_depth: Optional[float] = None,
+    rng: random.Random | None = None,
+) -> np.ndarray:
     """Add technical noise to expression matrix.
 
     Args:
@@ -482,9 +484,3 @@ def add_technical_noise(expression_matrix: np.ndarray, *,
     noisy_matrix = np.random.poisson(noisy_matrix)
 
     return noisy_matrix.astype(int)
-
-
-
-
-
-

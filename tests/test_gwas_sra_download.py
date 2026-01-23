@@ -24,7 +24,7 @@ class TestCheckSRAToolsAvailable:
 
     def test_check_sra_tools_available_real(self):
         """Test real check for SRA tools availability.
-        
+
         Uses real subprocess calls following NO_MOCKING_POLICY.
         """
         available = check_sra_tools_available()
@@ -45,7 +45,7 @@ class TestDownloadSRARun:
     @pytest.mark.external_tool
     @pytest.mark.skipif(
         not shutil.which("fasterq-dump") and not shutil.which("fastq-dump"),
-        reason="SRA Toolkit not available - real implementation requires fasterq-dump or fastq-dump"
+        reason="SRA Toolkit not available - real implementation requires fasterq-dump or fastq-dump",
     )
     def test_download_sra_run_requires_tools(self, tmp_path: Path):
         """Test that download requires SRA tools to be available.
@@ -55,6 +55,7 @@ class TestDownloadSRARun:
         """
         # Check if SRA tools are available
         import shutil
+
         sra_tools = ["fasterq-dump", "prefetch", "fastq-dump"]
         available_tools = [tool for tool in sra_tools if shutil.which(tool)]
 
@@ -70,7 +71,7 @@ class TestDownloadSRARun:
                 tmp_path,
                 use_fasterq=True,
                 threads=1,
-                timeout=5  # Very short timeout for testing
+                timeout=5,  # Very short timeout for testing
             )
             # If it succeeds, verify structure
             assert isinstance(result, dict)
@@ -88,7 +89,7 @@ class TestDownloadSRARun:
         """
         if not check_sra_tools_available():
             pytest.skip("SRA Toolkit not available - real implementation requires tools")
-        
+
         # Test with clearly invalid accession
         try:
             result = download_sra_run("INVALID_ACCESSION", tmp_path)
@@ -104,7 +105,7 @@ class TestDownloadSRAProject:
 
     @pytest.mark.skipif(
         not shutil.which("fasterq-dump") and not shutil.which("fastq-dump"),
-        reason="SRA Toolkit not available - real implementation requires tools"
+        reason="SRA Toolkit not available - real implementation requires tools",
     )
     @pytest.mark.network
     @pytest.mark.external_tool
@@ -114,11 +115,7 @@ class TestDownloadSRAProject:
         Verifies function structure without requiring actual download.
         """
         try:
-            result = download_sra_project(
-                "SRP000001",  # Example project
-                tmp_path,
-                max_runs=1  # Limit for testing
-            )
+            result = download_sra_project("SRP000001", tmp_path, max_runs=1)  # Example project  # Limit for testing
             assert isinstance(result, dict)
         except Exception:
             # Expected if tools unavailable or project invalid
@@ -159,5 +156,3 @@ class TestSearchSRAForOrganism:
         except Exception:
             # Network or API errors are acceptable
             pass
-
-

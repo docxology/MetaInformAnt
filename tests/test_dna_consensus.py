@@ -1,4 +1,5 @@
 """Tests for DNA consensus sequence generation."""
+
 from __future__ import annotations
 
 import pytest

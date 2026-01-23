@@ -1,0 +1,14 @@
+{
+	"n_targets": 20873,
+	"n_bootstraps": 0,
+	"n_processed": 26354787,
+	"n_pseudoaligned": 17780777,
+	"n_unique": 11633886,
+	"p_pseudoaligned": 67.5,
+	"p_unique": 44.1,
+	"kallisto_version": "0.51.1",
+	"index_version": 13,
+	"k-mer length": 31,
+	"start_time": "Thu Jan 22 14:37:31 2026",
+	"call": "kallisto quant --threads 4 -i output/amalgkit/shared/genome/Pogonomyrmex_barbatus/index/Pogonomyrmex_barbatus_transcripts.idx -o output/amalgkit/pbarbatus_all/work/quant/SRR14740492 output/amalgkit/pbarbatus_all/work/getfastq/SRR14740492/SRR14740492_1.amalgkit.fastq.gz output/amalgkit/pbarbatus_all/work/getfastq/SRR14740492/SRR14740492_2.amalgkit.fastq.gz"
+}

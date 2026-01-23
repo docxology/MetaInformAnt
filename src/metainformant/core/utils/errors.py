@@ -17,7 +17,7 @@ utilities for robust operation across all modules.
 2. **Use error_context() for Context**: Wrap operations that might fail:
    ```python
    from metainformant.core.utils.errors import error_context
-   
+
    with error_context("Failed to process file"):
        process_file(path)
    ```
@@ -25,7 +25,7 @@ utilities for robust operation across all modules.
 3. **Log Errors with Context**: Always log errors with exc_info=True:
    ```python
    from metainformant.core.utils.logging import get_logger
-   
+
    logger = get_logger(__name__)
    try:
        operation()
@@ -37,7 +37,7 @@ utilities for robust operation across all modules.
 4. **Use retry_with_backoff() for Transient Errors**: For network operations:
    ```python
    from metainformant.core.utils.errors import retry_with_backoff, NetworkError
-   
+
    @retry_with_backoff(max_attempts=3, exceptions=(NetworkError,))
    def download_file(url):
        # Network operation
@@ -222,7 +222,7 @@ def validate_type(value: Any, expected_type: type | tuple[type, ...], name: str 
         ValidationError: If value is not of expected type
     """
     if not isinstance(value, expected_type):
-        type_names = expected_type.__name__ if isinstance(expected_type, type) else ", ".join(t.__name__ for t in expected_type)
+        type_names = (
+            expected_type.__name__ if isinstance(expected_type, type) else ", ".join(t.__name__ for t in expected_type)
+        )
         raise ValidationError(f"{name} must be of type {type_names}, got {type(value).__name__}")
-
-

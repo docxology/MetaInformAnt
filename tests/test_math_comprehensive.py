@@ -357,9 +357,3 @@ class TestEdgeCases:
 
         prob = fixation_probability(0.01, 1000, selection_coefficient=-100.0)
         assert 0.0 <= prob <= 1.0
-
-
-
-
-
-

@@ -17,6 +17,7 @@ from metainformant.core import logging, errors, validation
 try:
     import matplotlib.pyplot as plt
     import matplotlib.patches as mpatches
+
     HAS_MATPLOTLIB = True
 except ImportError:
     plt = None
@@ -29,8 +30,7 @@ logger = logging.get_logger(__name__)
 from metainformant.singlecell.data.preprocessing import SingleCellData
 
 
-def plot_umap(data: SingleCellData, color: Optional[str] = None,
-             **kwargs) -> Any:
+def plot_umap(data: SingleCellData, color: Optional[str] = None, **kwargs) -> Any:
     """Create UMAP plot of single-cell data.
 
     Args:
@@ -52,14 +52,14 @@ def plot_umap(data: SingleCellData, color: Optional[str] = None,
     validation.validate_type(data, SingleCellData, "data")
 
     # Find UMAP coordinates
-    umap_cols = [col for col in (data.obs.columns if data.obs is not None else []) if col.upper().startswith('UMAP')]
+    umap_cols = [col for col in (data.obs.columns if data.obs is not None else []) if col.upper().startswith("UMAP")]
 
     if len(umap_cols) < 2:
         raise errors.ValidationError("UMAP coordinates not found in data.obs. Run umap_reduction first.")
 
     x_col, y_col = umap_cols[0], umap_cols[1]
 
-    fig, ax = plt.subplots(figsize=kwargs.get('figsize', (8, 6)))
+    fig, ax = plt.subplots(figsize=kwargs.get("figsize", (8, 6)))
 
     # Get coordinates
     x = data.obs[x_col].values
@@ -77,27 +77,38 @@ def plot_umap(data: SingleCellData, color: Optional[str] = None,
 
             for cat, cat_color in color_dict.items():
                 mask = colors == cat
-                ax.scatter(x[mask], y[mask], c=[cat_color], label=str(cat),
-                          alpha=kwargs.get('alpha', 0.6), s=kwargs.get('s', 20))
+                ax.scatter(
+                    x[mask],
+                    y[mask],
+                    c=[cat_color],
+                    label=str(cat),
+                    alpha=kwargs.get("alpha", 0.6),
+                    s=kwargs.get("s", 20),
+                )
 
-            ax.legend(title=color, bbox_to_anchor=(1.05, 1), loc='upper left')
+            ax.legend(title=color, bbox_to_anchor=(1.05, 1), loc="upper left")
         else:
-            scatter = ax.scatter(x, y, c=colors, cmap=kwargs.get('cmap', 'viridis'),
-                               alpha=kwargs.get('alpha', 0.6), s=kwargs.get('s', 20))
+            scatter = ax.scatter(
+                x,
+                y,
+                c=colors,
+                cmap=kwargs.get("cmap", "viridis"),
+                alpha=kwargs.get("alpha", 0.6),
+                s=kwargs.get("s", 20),
+            )
             plt.colorbar(scatter, ax=ax, label=color)
     else:
-        ax.scatter(x, y, alpha=kwargs.get('alpha', 0.6), s=kwargs.get('s', 20))
+        ax.scatter(x, y, alpha=kwargs.get("alpha", 0.6), s=kwargs.get("s", 20))
 
     ax.set_xlabel(x_col)
     ax.set_ylabel(y_col)
-    ax.set_title('UMAP Projection')
+    ax.set_title("UMAP Projection")
 
     plt.tight_layout()
     return fig
 
 
-def plot_tsne(data: SingleCellData, color: Optional[str] = None,
-             **kwargs) -> Any:
+def plot_tsne(data: SingleCellData, color: Optional[str] = None, **kwargs) -> Any:
     """Create t-SNE plot of single-cell data.
 
     Args:
@@ -119,14 +130,14 @@ def plot_tsne(data: SingleCellData, color: Optional[str] = None,
     validation.validate_type(data, SingleCellData, "data")
 
     # Find t-SNE coordinates
-    tsne_cols = [col for col in (data.obs.columns if data.obs is not None else []) if 'tSNE' in col or 'TSNE' in col]
+    tsne_cols = [col for col in (data.obs.columns if data.obs is not None else []) if "tSNE" in col or "TSNE" in col]
 
     if len(tsne_cols) < 2:
         raise errors.ValidationError("t-SNE coordinates not found in data.obs. Run tsne_reduction first.")
 
     x_col, y_col = tsne_cols[0], tsne_cols[1]
 
-    fig, ax = plt.subplots(figsize=kwargs.get('figsize', (8, 6)))
+    fig, ax = plt.subplots(figsize=kwargs.get("figsize", (8, 6)))
 
     # Get coordinates
     x = data.obs[x_col].values
@@ -143,27 +154,38 @@ def plot_tsne(data: SingleCellData, color: Optional[str] = None,
 
             for cat, cat_color in color_dict.items():
                 mask = colors == cat
-                ax.scatter(x[mask], y[mask], c=[cat_color], label=str(cat),
-                          alpha=kwargs.get('alpha', 0.6), s=kwargs.get('s', 20))
+                ax.scatter(
+                    x[mask],
+                    y[mask],
+                    c=[cat_color],
+                    label=str(cat),
+                    alpha=kwargs.get("alpha", 0.6),
+                    s=kwargs.get("s", 20),
+                )
 
-            ax.legend(title=color, bbox_to_anchor=(1.05, 1), loc='upper left')
+            ax.legend(title=color, bbox_to_anchor=(1.05, 1), loc="upper left")
         else:
-            scatter = ax.scatter(x, y, c=colors, cmap=kwargs.get('cmap', 'viridis'),
-                               alpha=kwargs.get('alpha', 0.6), s=kwargs.get('s', 20))
+            scatter = ax.scatter(
+                x,
+                y,
+                c=colors,
+                cmap=kwargs.get("cmap", "viridis"),
+                alpha=kwargs.get("alpha", 0.6),
+                s=kwargs.get("s", 20),
+            )
             plt.colorbar(scatter, ax=ax, label=color)
     else:
-        ax.scatter(x, y, alpha=kwargs.get('alpha', 0.6), s=kwargs.get('s', 20))
+        ax.scatter(x, y, alpha=kwargs.get("alpha", 0.6), s=kwargs.get("s", 20))
 
     ax.set_xlabel(x_col)
     ax.set_ylabel(y_col)
-    ax.set_title('t-SNE Projection')
+    ax.set_title("t-SNE Projection")
 
     plt.tight_layout()
     return fig
 
 
-def plot_pca(data: SingleCellData, color: Optional[str] = None,
-            n_components: int = 2, **kwargs) -> Any:
+def plot_pca(data: SingleCellData, color: Optional[str] = None, n_components: int = 2, **kwargs) -> Any:
     """Create PCA plot of single-cell data.
 
     Args:
@@ -189,15 +211,18 @@ def plot_pca(data: SingleCellData, color: Optional[str] = None,
         raise errors.ValidationError("n_components must be 2 or 3")
 
     # Find PCA coordinates
-    pca_cols = [col for col in (data.obs.columns if data.obs is not None else [])
-               if col.upper().startswith('PC') and col[2:].isdigit()]
+    pca_cols = [
+        col
+        for col in (data.obs.columns if data.obs is not None else [])
+        if col.upper().startswith("PC") and col[2:].isdigit()
+    ]
 
     if len(pca_cols) < n_components:
         raise errors.ValidationError(f"PCA coordinates not found in data.obs. Run pca_reduction first.")
 
     if n_components == 2:
         x_col, y_col = pca_cols[0], pca_cols[1]
-        fig, ax = plt.subplots(figsize=kwargs.get('figsize', (8, 6)))
+        fig, ax = plt.subplots(figsize=kwargs.get("figsize", (8, 6)))
 
         x = data.obs[x_col].values
         y = data.obs[y_col].values
@@ -212,26 +237,39 @@ def plot_pca(data: SingleCellData, color: Optional[str] = None,
 
                 for cat, cat_color in color_dict.items():
                     mask = colors == cat
-                    ax.scatter(x[mask], y[mask], c=[cat_color], label=str(cat),
-                              alpha=kwargs.get('alpha', 0.6), s=kwargs.get('s', 20))
+                    ax.scatter(
+                        x[mask],
+                        y[mask],
+                        c=[cat_color],
+                        label=str(cat),
+                        alpha=kwargs.get("alpha", 0.6),
+                        s=kwargs.get("s", 20),
+                    )
 
-                ax.legend(title=color, bbox_to_anchor=(1.05, 1), loc='upper left')
+                ax.legend(title=color, bbox_to_anchor=(1.05, 1), loc="upper left")
             else:
-                scatter = ax.scatter(x, y, c=colors, cmap=kwargs.get('cmap', 'viridis'),
-                                   alpha=kwargs.get('alpha', 0.6), s=kwargs.get('s', 20))
+                scatter = ax.scatter(
+                    x,
+                    y,
+                    c=colors,
+                    cmap=kwargs.get("cmap", "viridis"),
+                    alpha=kwargs.get("alpha", 0.6),
+                    s=kwargs.get("s", 20),
+                )
                 plt.colorbar(scatter, ax=ax, label=color)
         else:
-            ax.scatter(x, y, alpha=kwargs.get('alpha', 0.6), s=kwargs.get('s', 20))
+            ax.scatter(x, y, alpha=kwargs.get("alpha", 0.6), s=kwargs.get("s", 20))
 
         ax.set_xlabel(x_col)
         ax.set_ylabel(y_col)
-        ax.set_title('PCA Projection')
+        ax.set_title("PCA Projection")
 
     else:  # 3D plot
         from mpl_toolkits.mplot3d import Axes3D
+
         x_col, y_col, z_col = pca_cols[0], pca_cols[1], pca_cols[2]
-        fig = plt.figure(figsize=kwargs.get('figsize', (10, 8)))
-        ax = fig.add_subplot(111, projection='3d')
+        fig = plt.figure(figsize=kwargs.get("figsize", (10, 8)))
+        ax = fig.add_subplot(111, projection="3d")
 
         x = data.obs[x_col].values
         y = data.obs[y_col].values
@@ -239,23 +277,29 @@ def plot_pca(data: SingleCellData, color: Optional[str] = None,
 
         if color and data.obs is not None and color in data.obs.columns:
             colors = data.obs[color].values
-            scatter = ax.scatter(x, y, z, c=colors, cmap=kwargs.get('cmap', 'viridis'),
-                               alpha=kwargs.get('alpha', 0.6), s=kwargs.get('s', 20))
+            scatter = ax.scatter(
+                x,
+                y,
+                z,
+                c=colors,
+                cmap=kwargs.get("cmap", "viridis"),
+                alpha=kwargs.get("alpha", 0.6),
+                s=kwargs.get("s", 20),
+            )
             plt.colorbar(scatter, ax=ax, label=color)
         else:
-            ax.scatter(x, y, z, alpha=kwargs.get('alpha', 0.6), s=kwargs.get('s', 20))
+            ax.scatter(x, y, z, alpha=kwargs.get("alpha", 0.6), s=kwargs.get("s", 20))
 
         ax.set_xlabel(x_col)
         ax.set_ylabel(y_col)
         ax.set_zlabel(z_col)
-        ax.set_title('PCA Projection (3D)')
+        ax.set_title("PCA Projection (3D)")
 
     plt.tight_layout()
     return fig
 
 
-def plot_trajectory(data: SingleCellData, trajectory_key: str,
-                   color_by_pseudotime: bool = True, **kwargs) -> Any:
+def plot_trajectory(data: SingleCellData, trajectory_key: str, color_by_pseudotime: bool = True, **kwargs) -> Any:
     """Create trajectory plot showing pseudotime and cell ordering.
 
     Args:
@@ -282,9 +326,8 @@ def plot_trajectory(data: SingleCellData, trajectory_key: str,
 
     # Find embedding coordinates for plotting
     embedding_cols = None
-    for method in ['umap', 'tsne', 'pca']:
-        coords = [col for col in (data.obs.columns if data.obs is not None else [])
-                 if method.upper() in col.upper()]
+    for method in ["umap", "tsne", "pca"]:
+        coords = [col for col in (data.obs.columns if data.obs is not None else []) if method.upper() in col.upper()]
         if len(coords) >= 2:
             embedding_cols = coords[:2]
             break
@@ -292,7 +335,7 @@ def plot_trajectory(data: SingleCellData, trajectory_key: str,
     if embedding_cols is None:
         raise errors.ValidationError("No embedding coordinates found. Run dimensionality reduction first.")
 
-    fig, ax = plt.subplots(figsize=kwargs.get('figsize', (10, 8)))
+    fig, ax = plt.subplots(figsize=kwargs.get("figsize", (10, 8)))
 
     x = data.obs[embedding_cols[0]].values
     y = data.obs[embedding_cols[1]].values
@@ -300,45 +343,56 @@ def plot_trajectory(data: SingleCellData, trajectory_key: str,
     # Color by pseudotime if available
     pseudotime_col = None
     if color_by_pseudotime:
-        pseudotime_cols = [col for col in (data.obs.columns if data.obs is not None else [])
-                          if 'pseudotime' in col.lower() or 'ptime' in col.lower()]
+        pseudotime_cols = [
+            col
+            for col in (data.obs.columns if data.obs is not None else [])
+            if "pseudotime" in col.lower() or "ptime" in col.lower()
+        ]
         if pseudotime_cols:
             pseudotime_col = pseudotime_cols[0]
 
     if pseudotime_col:
         colors = data.obs[pseudotime_col].values
-        scatter = ax.scatter(x, y, c=colors, cmap=kwargs.get('cmap', 'viridis'),
-                           alpha=kwargs.get('alpha', 0.7), s=kwargs.get('s', 30))
-        plt.colorbar(scatter, ax=ax, label='Pseudotime')
+        scatter = ax.scatter(
+            x, y, c=colors, cmap=kwargs.get("cmap", "viridis"), alpha=kwargs.get("alpha", 0.7), s=kwargs.get("s", 30)
+        )
+        plt.colorbar(scatter, ax=ax, label="Pseudotime")
     else:
-        ax.scatter(x, y, alpha=kwargs.get('alpha', 0.7), s=kwargs.get('s', 30))
+        ax.scatter(x, y, alpha=kwargs.get("alpha", 0.7), s=kwargs.get("s", 30))
 
     # Add trajectory-specific elements
     trajectory_data = data.uns[trajectory_key]
 
-    if trajectory_key == 'dpt':
+    if trajectory_key == "dpt":
         # Add root cell marker
-        root_cell = trajectory_data.get('root_cell')
+        root_cell = trajectory_data.get("root_cell")
         if root_cell is not None and root_cell < len(x):
-            ax.scatter([x[root_cell]], [y[root_cell]], c='red', s=100,
-                      marker='*', edgecolors='black', linewidth=2, label='Root Cell')
+            ax.scatter(
+                [x[root_cell]],
+                [y[root_cell]],
+                c="red",
+                s=100,
+                marker="*",
+                edgecolors="black",
+                linewidth=2,
+                label="Root Cell",
+            )
             ax.legend()
 
-    elif trajectory_key == 'paga':
+    elif trajectory_key == "paga":
         # Add connectivity information (simplified)
         # In practice, this would draw edges between connected clusters
-        ax.set_title('PAGA Trajectory')
+        ax.set_title("PAGA Trajectory")
 
     ax.set_xlabel(embedding_cols[0])
     ax.set_ylabel(embedding_cols[1])
-    ax.set_title(f'Trajectory Plot ({trajectory_key.upper()})')
+    ax.set_title(f"Trajectory Plot ({trajectory_key.upper()})")
 
     plt.tight_layout()
     return fig
 
 
-def plot_marker_expression(data: SingleCellData, marker_genes: List[str],
-                          method: str = 'dotplot', **kwargs) -> Any:
+def plot_marker_expression(data: SingleCellData, marker_genes: List[str], method: str = "dotplot", **kwargs) -> Any:
     """Create marker gene expression plots.
 
     Args:
@@ -372,23 +426,24 @@ def plot_marker_expression(data: SingleCellData, marker_genes: List[str],
     logger.info(f"Plotting {len(available_genes)} marker genes using {method}")
 
     # Get expression data
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
     gene_indices = [data.var.index.get_loc(gene) for gene in available_genes]
 
-    if method == 'dotplot':
+    if method == "dotplot":
         return _plot_marker_dotplot(data, available_genes, gene_indices, X, **kwargs)
-    elif method == 'heatmap':
+    elif method == "heatmap":
         return _plot_marker_heatmap(data, available_genes, gene_indices, X, **kwargs)
-    elif method == 'violin':
+    elif method == "violin":
         return _plot_marker_violin(data, available_genes, gene_indices, X, **kwargs)
     else:
         raise errors.ValidationError(f"Unsupported plot method: {method}")
 
 
-def _plot_marker_dotplot(data: SingleCellData, genes: List[str], gene_indices: List[int],
-                        X: np.ndarray, **kwargs) -> Any:
+def _plot_marker_dotplot(
+    data: SingleCellData, genes: List[str], gene_indices: List[int], X: np.ndarray, **kwargs
+) -> Any:
     """Create dot plot for marker genes."""
-    fig, ax = plt.subplots(figsize=kwargs.get('figsize', (len(genes) * 0.8, 6)))
+    fig, ax = plt.subplots(figsize=kwargs.get("figsize", (len(genes) * 0.8, 6)))
 
     # Calculate fraction of cells expressing each gene and mean expression
     fractions = []
@@ -409,34 +464,34 @@ def _plot_marker_dotplot(data: SingleCellData, genes: List[str], gene_indices: L
     sizes = np.array(fractions) * 1000  # Scale for visibility
     sizes = np.clip(sizes, 10, 500)  # Reasonable size range
 
-    scatter = ax.scatter(means, y_pos, s=sizes, c=means,
-                        cmap=kwargs.get('cmap', 'Reds'), alpha=0.7, edgecolors='black')
+    scatter = ax.scatter(means, y_pos, s=sizes, c=means, cmap=kwargs.get("cmap", "Reds"), alpha=0.7, edgecolors="black")
 
     ax.set_yticks(y_pos)
     ax.set_yticklabels(genes)
-    ax.set_xlabel('Mean Expression (among expressing cells)')
-    ax.set_title('Marker Gene Expression (Dot Plot)')
+    ax.set_xlabel("Mean Expression (among expressing cells)")
+    ax.set_title("Marker Gene Expression (Dot Plot)")
 
     # Add colorbar
-    plt.colorbar(scatter, ax=ax, label='Mean Expression')
+    plt.colorbar(scatter, ax=ax, label="Mean Expression")
 
     # Add size legend
     sizes_legend = [0.2, 0.5, 0.8]
-    size_labels = ['20%', '50%', '80%']
-    legend_elements = [plt.scatter([], [], s=size*1000, c='gray', alpha=0.7, edgecolors='black')
-                      for size in sizes_legend]
-    ax.legend(legend_elements, size_labels, title='Fraction Expressing',
-             bbox_to_anchor=(1.05, 1), loc='upper left')
+    size_labels = ["20%", "50%", "80%"]
+    legend_elements = [
+        plt.scatter([], [], s=size * 1000, c="gray", alpha=0.7, edgecolors="black") for size in sizes_legend
+    ]
+    ax.legend(legend_elements, size_labels, title="Fraction Expressing", bbox_to_anchor=(1.05, 1), loc="upper left")
 
     plt.tight_layout()
     return fig
 
 
-def _plot_marker_heatmap(data: SingleCellData, genes: List[str], gene_indices: List[int],
-                        X: np.ndarray, **kwargs) -> Any:
+def _plot_marker_heatmap(
+    data: SingleCellData, genes: List[str], gene_indices: List[int], X: np.ndarray, **kwargs
+) -> Any:
     """Create heatmap for marker genes."""
     # Subsample cells for visualization if too many
-    max_cells = kwargs.get('max_cells', 1000)
+    max_cells = kwargs.get("max_cells", 1000)
     n_cells = X.shape[0]
 
     if n_cells > max_cells:
@@ -449,28 +504,28 @@ def _plot_marker_heatmap(data: SingleCellData, genes: List[str], gene_indices: L
     # Get expression for marker genes
     marker_expr = X_plot[:, gene_indices].T
 
-    fig, ax = plt.subplots(figsize=kwargs.get('figsize', (12, len(genes) * 0.5)))
+    fig, ax = plt.subplots(figsize=kwargs.get("figsize", (12, len(genes) * 0.5)))
 
     # Create heatmap
-    im = ax.imshow(marker_expr, aspect='auto', cmap=kwargs.get('cmap', 'viridis'),
-                  interpolation='nearest')
+    im = ax.imshow(marker_expr, aspect="auto", cmap=kwargs.get("cmap", "viridis"), interpolation="nearest")
 
     ax.set_yticks(np.arange(len(genes)))
     ax.set_yticklabels(genes)
-    ax.set_xlabel('Cells')
-    ax.set_title('Marker Gene Expression (Heatmap)')
+    ax.set_xlabel("Cells")
+    ax.set_title("Marker Gene Expression (Heatmap)")
 
     # Add colorbar
-    plt.colorbar(im, ax=ax, label='Expression Level')
+    plt.colorbar(im, ax=ax, label="Expression Level")
 
     plt.tight_layout()
     return fig
 
 
-def _plot_marker_violin(data: SingleCellData, genes: List[str], gene_indices: List[int],
-                       X: np.ndarray, **kwargs) -> Any:
+def _plot_marker_violin(
+    data: SingleCellData, genes: List[str], gene_indices: List[int], X: np.ndarray, **kwargs
+) -> Any:
     """Create violin plots for marker genes."""
-    fig, ax = plt.subplots(figsize=kwargs.get('figsize', (len(genes) * 0.8, 6)))
+    fig, ax = plt.subplots(figsize=kwargs.get("figsize", (len(genes) * 0.8, 6)))
 
     # Collect expression data for each gene
     expr_data = []
@@ -483,16 +538,16 @@ def _plot_marker_violin(data: SingleCellData, genes: List[str], gene_indices: Li
     parts = ax.violinplot(expr_data, showmeans=True, showextrema=True)
 
     # Customize violin plot
-    for pc in parts['bodies']:
-        pc.set_facecolor('lightblue')
-        pc.set_edgecolor('black')
+    for pc in parts["bodies"]:
+        pc.set_facecolor("lightblue")
+        pc.set_edgecolor("black")
         pc.set_alpha(0.7)
 
     # Set labels
     ax.set_xticks(np.arange(1, len(genes) + 1))
-    ax.set_xticklabels(genes, rotation=45, ha='right')
-    ax.set_ylabel('Expression Level')
-    ax.set_title('Marker Gene Expression (Violin Plot)')
+    ax.set_xticklabels(genes, rotation=45, ha="right")
+    ax.set_ylabel("Expression Level")
+    ax.set_title("Marker Gene Expression (Violin Plot)")
 
     # Add grid
     ax.grid(True, alpha=0.3)
@@ -520,54 +575,54 @@ def plot_qc_metrics(data: SingleCellData, **kwargs) -> Any:
 
     validation.validate_type(data, SingleCellData, "data")
 
-    if data.obs is None or 'n_counts' not in data.obs.columns:
+    if data.obs is None or "n_counts" not in data.obs.columns:
         logger.warning("QC metrics not found. Run calculate_qc_metrics first.")
         data = data  # Would call calculate_qc_metrics in real implementation
 
-    fig, axes = plt.subplots(2, 2, figsize=kwargs.get('figsize', (12, 10)))
+    fig, axes = plt.subplots(2, 2, figsize=kwargs.get("figsize", (12, 10)))
 
     # Histogram of total counts
-    if 'n_counts' in data.obs.columns:
-        axes[0, 0].hist(data.obs['n_counts'], bins=50, alpha=0.7, color='blue', edgecolor='black')
-        axes[0, 0].axvline(data.obs['n_counts'].median(), color='red', linestyle='--', label='Median')
-        axes[0, 0].set_xlabel('Total Counts')
-        axes[0, 0].set_ylabel('Number of Cells')
-        axes[0, 0].set_title('Total Counts Distribution')
+    if "n_counts" in data.obs.columns:
+        axes[0, 0].hist(data.obs["n_counts"], bins=50, alpha=0.7, color="blue", edgecolor="black")
+        axes[0, 0].axvline(data.obs["n_counts"].median(), color="red", linestyle="--", label="Median")
+        axes[0, 0].set_xlabel("Total Counts")
+        axes[0, 0].set_ylabel("Number of Cells")
+        axes[0, 0].set_title("Total Counts Distribution")
         axes[0, 0].legend()
 
     # Histogram of genes detected
-    if 'n_genes' in data.obs.columns:
-        axes[0, 1].hist(data.obs['n_genes'], bins=50, alpha=0.7, color='green', edgecolor='black')
-        axes[0, 1].axvline(data.obs['n_genes'].median(), color='red', linestyle='--', label='Median')
-        axes[0, 1].set_xlabel('Number of Genes')
-        axes[0, 1].set_ylabel('Number of Cells')
-        axes[0, 1].set_title('Genes Detected Distribution')
+    if "n_genes" in data.obs.columns:
+        axes[0, 1].hist(data.obs["n_genes"], bins=50, alpha=0.7, color="green", edgecolor="black")
+        axes[0, 1].axvline(data.obs["n_genes"].median(), color="red", linestyle="--", label="Median")
+        axes[0, 1].set_xlabel("Number of Genes")
+        axes[0, 1].set_ylabel("Number of Cells")
+        axes[0, 1].set_title("Genes Detected Distribution")
         axes[0, 1].legend()
 
     # Scatter plot: counts vs genes
-    if 'n_counts' in data.obs.columns and 'n_genes' in data.obs.columns:
-        axes[1, 0].scatter(data.obs['n_counts'], data.obs['n_genes'],
-                          alpha=0.6, s=20, color='purple')
-        axes[1, 0].set_xlabel('Total Counts')
-        axes[1, 0].set_ylabel('Number of Genes')
-        axes[1, 0].set_title('Counts vs Genes')
+    if "n_counts" in data.obs.columns and "n_genes" in data.obs.columns:
+        axes[1, 0].scatter(data.obs["n_counts"], data.obs["n_genes"], alpha=0.6, s=20, color="purple")
+        axes[1, 0].set_xlabel("Total Counts")
+        axes[1, 0].set_ylabel("Number of Genes")
+        axes[1, 0].set_title("Counts vs Genes")
 
     # Mitochondrial percentage histogram
-    if 'pct_mito' in data.obs.columns:
-        axes[1, 1].hist(data.obs['pct_mito'], bins=50, alpha=0.7, color='red', edgecolor='black')
-        axes[1, 1].axvline(data.obs['pct_mito'].median(), color='blue', linestyle='--', label='Median')
-        axes[1, 1].set_xlabel('Mitochondrial Percentage')
-        axes[1, 1].set_ylabel('Number of Cells')
-        axes[1, 1].set_title('Mitochondrial Content')
+    if "pct_mito" in data.obs.columns:
+        axes[1, 1].hist(data.obs["pct_mito"], bins=50, alpha=0.7, color="red", edgecolor="black")
+        axes[1, 1].axvline(data.obs["pct_mito"].median(), color="blue", linestyle="--", label="Median")
+        axes[1, 1].set_xlabel("Mitochondrial Percentage")
+        axes[1, 1].set_ylabel("Number of Cells")
+        axes[1, 1].set_title("Mitochondrial Content")
         axes[1, 1].legend()
 
-    plt.suptitle('Single-Cell QC Metrics', fontsize=16)
+    plt.suptitle("Single-Cell QC Metrics", fontsize=16)
     plt.tight_layout()
     return fig
 
 
-def plot_cluster_comparison(data: SingleCellData, cluster_cols: List[str],
-                           embedding_cols: Optional[List[str]] = None, **kwargs) -> Any:
+def plot_cluster_comparison(
+    data: SingleCellData, cluster_cols: List[str], embedding_cols: Optional[List[str]] = None, **kwargs
+) -> Any:
     """Compare different clustering results side by side.
 
     Args:
@@ -599,7 +654,7 @@ def plot_cluster_comparison(data: SingleCellData, cluster_cols: List[str],
 
     # Find embedding coordinates
     if embedding_cols is None:
-        for method in ['umap', 'tsne', 'pca']:
+        for method in ["umap", "tsne", "pca"]:
             coords = [col for col in data.obs.columns if method.upper() in col.upper()]
             if len(coords) >= 2:
                 embedding_cols = coords[:2]
@@ -609,7 +664,7 @@ def plot_cluster_comparison(data: SingleCellData, cluster_cols: List[str],
         raise errors.ValidationError("Embedding coordinates not found")
 
     n_clusters = len(cluster_cols)
-    fig, axes = plt.subplots(1, n_clusters, figsize=kwargs.get('figsize', (6*n_clusters, 5)))
+    fig, axes = plt.subplots(1, n_clusters, figsize=kwargs.get("figsize", (6 * n_clusters, 5)))
 
     if n_clusters == 1:
         axes = [axes]
@@ -628,8 +683,7 @@ def plot_cluster_comparison(data: SingleCellData, cluster_cols: List[str],
 
         for j, cluster in enumerate(unique_clusters):
             mask = clusters == cluster
-            ax.scatter(x[mask], y[mask], c=[colors[j]], label=str(cluster),
-                      alpha=0.7, s=20, edgecolors='none')
+            ax.scatter(x[mask], y[mask], c=[colors[j]], label=str(cluster), alpha=0.7, s=20, edgecolors="none")
 
         ax.set_xlabel(embedding_cols[0])
         ax.set_ylabel(embedding_cols[1])
@@ -637,14 +691,8 @@ def plot_cluster_comparison(data: SingleCellData, cluster_cols: List[str],
 
         # Only show legend for first plot to avoid crowding
         if i == 0:
-            ax.legend(title='Cluster', bbox_to_anchor=(1.05, 1), loc='upper left')
+            ax.legend(title="Cluster", bbox_to_anchor=(1.05, 1), loc="upper left")
 
-    plt.suptitle('Cluster Comparison', fontsize=16)
+    plt.suptitle("Cluster Comparison", fontsize=16)
     plt.tight_layout()
     return fig
-
-
-
-
-
-

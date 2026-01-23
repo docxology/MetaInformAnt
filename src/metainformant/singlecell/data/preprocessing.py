@@ -19,17 +19,24 @@ logger = logging.get_logger(__name__)
 # Try to import anndata, but provide fallback if not available
 try:
     import anndata as ad
+
     HAS_ANNDATA = True
 except ImportError:
     ad = None
     HAS_ANNDATA = False
 
+
 # Custom SingleCellData class as fallback when anndata is not available
 class SingleCellData:
     """Fallback single-cell data structure when anndata is not available."""
 
-    def __init__(self, X: np.ndarray, obs: pd.DataFrame | None = None,
-                 var: pd.DataFrame | None = None, uns: Dict[str, Any] | None = None):
+    def __init__(
+        self,
+        X: np.ndarray,
+        obs: pd.DataFrame | None = None,
+        var: pd.DataFrame | None = None,
+        uns: Dict[str, Any] | None = None,
+    ):
         self.X = X  # Expression matrix (cells x genes)
         self.obs = obs if obs is not None else pd.DataFrame(index=range(X.shape[0]))  # Cell metadata
         self.var = var if var is not None else pd.DataFrame(index=range(X.shape[1]))  # Gene metadata
@@ -53,7 +60,7 @@ class SingleCellData:
             X=self.X.copy(),
             obs=self.obs.copy() if self.obs is not None else None,
             var=self.var.copy() if self.var is not None else None,
-            uns=self.uns.copy()
+            uns=self.uns.copy(),
         )
 
     def to_df(self) -> pd.DataFrame:
@@ -85,6 +92,7 @@ def load_count_matrix(filepath: str | Path, format: str = "h5ad", **kwargs) -> S
     if format == "h5ad":
         if not HAS_ANNDATA:
             from metainformant.core.utils.optional_deps import warn_optional_dependency
+
             warn_optional_dependency("anndata", "H5AD file format support")
             raise errors.ConfigurationError("h5ad format requires anndata package")
 
@@ -120,6 +128,7 @@ def load_count_matrix(filepath: str | Path, format: str = "h5ad", **kwargs) -> S
 
             # Load matrix
             from scipy.io import mmread
+
             X = mmread(matrix_file).toarray().T  # Transpose to cells x genes
 
             # Load gene names
@@ -145,12 +154,7 @@ def load_count_matrix(filepath: str | Path, format: str = "h5ad", **kwargs) -> S
 
 def _annadata_to_singlecelldata(adata: Any) -> SingleCellData:
     """Convert AnnData object to SingleCellData."""
-    return SingleCellData(
-        X=adata.X,
-        obs=adata.obs,
-        var=adata.var,
-        uns=adata.uns
-    )
+    return SingleCellData(X=adata.X, obs=adata.obs, var=adata.var, uns=adata.uns)
 
 
 def calculate_qc_metrics(data: SingleCellData) -> SingleCellData:
@@ -173,7 +177,7 @@ def calculate_qc_metrics(data: SingleCellData) -> SingleCellData:
     result = data.copy()
 
     # Basic QC metrics
-    X_dense = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X_dense = data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
     # Per-cell metrics
     n_counts = np.sum(X_dense, axis=1)  # Total counts per cell
@@ -181,9 +185,8 @@ def calculate_qc_metrics(data: SingleCellData) -> SingleCellData:
     pct_mito = np.zeros(data.n_obs)  # Placeholder for mitochondrial percentage
 
     # Detect mitochondrial genes (simple heuristic)
-    if data.var is not None and hasattr(data.var, 'index'):
-        mt_genes = [i for i, gene in enumerate(data.var.index)
-                   if gene.upper().startswith(('MT-', 'MT.', 'MT_'))]
+    if data.var is not None and hasattr(data.var, "index"):
+        mt_genes = [i for i, gene in enumerate(data.var.index) if gene.upper().startswith(("MT-", "MT.", "MT_"))]
         if mt_genes:
             mt_counts = np.sum(X_dense[:, mt_genes], axis=1)
             pct_mito = 100 * mt_counts / n_counts
@@ -196,37 +199,39 @@ def calculate_qc_metrics(data: SingleCellData) -> SingleCellData:
 
     # Add to obs (cell metrics)
     result.obs = result.obs.copy() if result.obs is not None else pd.DataFrame()
-    result.obs['n_counts'] = n_counts
-    result.obs['n_genes'] = n_genes
-    result.obs['pct_mito'] = pct_mito
+    result.obs["n_counts"] = n_counts
+    result.obs["n_genes"] = n_genes
+    result.obs["pct_mito"] = pct_mito
 
     # Add to var (gene metrics)
     result.var = result.var.copy() if result.var is not None else pd.DataFrame()
-    result.var['n_cells'] = n_cells
-    result.var['mean_expression'] = mean_expression
-    result.var['pct_dropout'] = pct_dropout
+    result.var["n_cells"] = n_cells
+    result.var["mean_expression"] = mean_expression
+    result.var["pct_dropout"] = pct_dropout
 
     # Store summary statistics in uns
-    result.uns['qc_summary'] = {
-        'total_cells': data.n_obs,
-        'total_genes': data.n_vars,
-        'mean_counts_per_cell': float(np.mean(n_counts)),
-        'mean_genes_per_cell': float(np.mean(n_genes)),
-        'mean_mito_pct': float(np.mean(pct_mito)),
-        'median_counts_per_cell': float(np.median(n_counts)),
-        'median_genes_per_cell': float(np.median(n_genes)),
+    result.uns["qc_summary"] = {
+        "total_cells": data.n_obs,
+        "total_genes": data.n_vars,
+        "mean_counts_per_cell": float(np.mean(n_counts)),
+        "mean_genes_per_cell": float(np.mean(n_genes)),
+        "mean_mito_pct": float(np.mean(pct_mito)),
+        "median_counts_per_cell": float(np.median(n_counts)),
+        "median_genes_per_cell": float(np.median(n_genes)),
     }
 
     logger.info("QC metrics calculated successfully")
     return result
 
 
-def filter_cells(data: SingleCellData,
-                min_counts: int | None = None,
-                max_counts: int | None = None,
-                min_genes: int | None = None,
-                max_genes: int | None = None,
-                max_mito_percent: float | None = None) -> SingleCellData:
+def filter_cells(
+    data: SingleCellData,
+    min_counts: int | None = None,
+    max_counts: int | None = None,
+    min_genes: int | None = None,
+    max_genes: int | None = None,
+    max_mito_percent: float | None = None,
+) -> SingleCellData:
     """Filter cells based on QC metrics.
 
     Args:
@@ -248,7 +253,7 @@ def filter_cells(data: SingleCellData,
     logger.info("Filtering cells based on QC metrics")
 
     # Check if QC metrics are available
-    if 'n_counts' not in data.obs.columns:
+    if "n_counts" not in data.obs.columns:
         logger.warning("QC metrics not found in data.obs. Run calculate_qc_metrics first.")
         data = calculate_qc_metrics(data)
 
@@ -256,15 +261,15 @@ def filter_cells(data: SingleCellData,
     keep_cells = np.ones(data.n_obs, dtype=bool)
 
     if min_counts is not None:
-        keep_cells &= data.obs['n_counts'] >= min_counts
+        keep_cells &= data.obs["n_counts"] >= min_counts
     if max_counts is not None:
-        keep_cells &= data.obs['n_counts'] <= max_counts
+        keep_cells &= data.obs["n_counts"] <= max_counts
     if min_genes is not None:
-        keep_cells &= data.obs['n_genes'] >= min_genes
+        keep_cells &= data.obs["n_genes"] >= min_genes
     if max_genes is not None:
-        keep_cells &= data.obs['n_genes'] <= max_genes
+        keep_cells &= data.obs["n_genes"] <= max_genes
     if max_mito_percent is not None:
-        keep_cells &= data.obs['pct_mito'] <= max_mito_percent
+        keep_cells &= data.obs["pct_mito"] <= max_mito_percent
 
     n_kept = np.sum(keep_cells)
     n_filtered = data.n_obs - n_kept
@@ -276,20 +281,18 @@ def filter_cells(data: SingleCellData,
         X=data.X[keep_cells, :],
         obs=data.obs.iloc[keep_cells].copy() if data.obs is not None else None,
         var=data.var.copy() if data.var is not None else None,
-        uns=data.uns.copy()
+        uns=data.uns.copy(),
     )
 
     # Update QC summary
-    if 'qc_summary' in result.uns:
-        result.uns['qc_summary']['cells_after_filtering'] = n_kept
-        result.uns['qc_summary']['cells_filtered'] = n_filtered
+    if "qc_summary" in result.uns:
+        result.uns["qc_summary"]["cells_after_filtering"] = n_kept
+        result.uns["qc_summary"]["cells_filtered"] = n_filtered
 
     return result
 
 
-def filter_genes(data: SingleCellData,
-                min_cells: int | None = None,
-                max_cells: int | None = None) -> SingleCellData:
+def filter_genes(data: SingleCellData, min_cells: int | None = None, max_cells: int | None = None) -> SingleCellData:
     """Filter genes based on expression criteria.
 
     Args:
@@ -308,7 +311,7 @@ def filter_genes(data: SingleCellData,
     logger.info("Filtering genes based on expression criteria")
 
     # Check if QC metrics are available
-    if 'n_cells' not in data.var.columns:
+    if "n_cells" not in data.var.columns:
         logger.warning("Gene QC metrics not found in data.var. Run calculate_qc_metrics first.")
         data = calculate_qc_metrics(data)
 
@@ -316,9 +319,9 @@ def filter_genes(data: SingleCellData,
     keep_genes = np.ones(data.n_vars, dtype=bool)
 
     if min_cells is not None:
-        keep_genes &= data.var['n_cells'] >= min_cells
+        keep_genes &= data.var["n_cells"] >= min_cells
     if max_cells is not None:
-        keep_genes &= data.var['n_cells'] <= max_cells
+        keep_genes &= data.var["n_cells"] <= max_cells
 
     n_kept = np.sum(keep_genes)
     n_filtered = data.n_vars - n_kept
@@ -330,19 +333,20 @@ def filter_genes(data: SingleCellData,
         X=data.X[:, keep_genes],
         obs=data.obs.copy() if data.obs is not None else None,
         var=data.var.iloc[keep_genes].copy() if data.var is not None else None,
-        uns=data.uns.copy()
+        uns=data.uns.copy(),
     )
 
     # Update QC summary
-    if 'qc_summary' in result.uns:
-        result.uns['qc_summary']['genes_after_filtering'] = n_kept
-        result.uns['qc_summary']['genes_filtered'] = n_filtered
+    if "qc_summary" in result.uns:
+        result.uns["qc_summary"]["genes_after_filtering"] = n_kept
+        result.uns["qc_summary"]["genes_filtered"] = n_filtered
 
     return result
 
 
-def normalize_counts(data: SingleCellData, target_sum: float | None = None,
-                    normalize_method: str = "total") -> SingleCellData:
+def normalize_counts(
+    data: SingleCellData, target_sum: float | None = None, normalize_method: str = "total"
+) -> SingleCellData:
     """Normalize gene expression counts.
 
     Args:
@@ -368,7 +372,7 @@ def normalize_counts(data: SingleCellData, target_sum: float | None = None,
     result = data.copy()
 
     # Convert to dense if needed
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
     X_normalized = X.astype(float)
 
     if normalize_method == "total":
@@ -398,10 +402,10 @@ def normalize_counts(data: SingleCellData, target_sum: float | None = None,
         X_normalized = X / size_factors[:, np.newaxis] * target_sum
 
     # Store normalization info
-    result.uns['normalization'] = {
-        'method': normalize_method,
-        'target_sum': target_sum,
-        'size_factors': size_factors.tolist() if 'size_factors' in locals() else None,
+    result.uns["normalization"] = {
+        "method": normalize_method,
+        "target_sum": target_sum,
+        "size_factors": size_factors.tolist() if "size_factors" in locals() else None,
     }
 
     result.X = X_normalized
@@ -434,7 +438,7 @@ def log_transform(data: SingleCellData, base: float = np.e) -> SingleCellData:
     result = data.copy()
 
     # Convert to dense if needed
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
     if base == np.e:
         X_log = np.log(X + 1)  # Add pseudocount
@@ -452,18 +456,17 @@ def log_transform(data: SingleCellData, base: float = np.e) -> SingleCellData:
     result.X = X_log
 
     # Store transformation info
-    result.uns['transformation'] = {
-        'type': transform_type,
-        'base': base,
-        'pseudocount': 1,
+    result.uns["transformation"] = {
+        "type": transform_type,
+        "base": base,
+        "pseudocount": 1,
     }
 
     logger.info("Log transformation completed")
     return result
 
 
-def scale_data(data: SingleCellData, zero_center: bool = True,
-              max_value: float | None = None) -> SingleCellData:
+def scale_data(data: SingleCellData, zero_center: bool = True, max_value: float | None = None) -> SingleCellData:
     """Scale gene expression data.
 
     Args:
@@ -485,7 +488,7 @@ def scale_data(data: SingleCellData, zero_center: bool = True,
     result = data.copy()
 
     # Convert to dense if needed
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
     X_scaled = X.astype(float)
 
     # Zero-center if requested
@@ -505,19 +508,20 @@ def scale_data(data: SingleCellData, zero_center: bool = True,
     result.X = X_scaled
 
     # Store scaling info
-    result.uns['scaling'] = {
-        'zero_centered': zero_center,
-        'max_value': max_value,
-        'gene_means': gene_means.tolist() if zero_center else None,
-        'gene_stds': gene_stds.tolist(),
+    result.uns["scaling"] = {
+        "zero_centered": zero_center,
+        "max_value": max_value,
+        "gene_means": gene_means.tolist() if zero_center else None,
+        "gene_stds": gene_stds.tolist(),
     }
 
     logger.info("Data scaling completed")
     return result
 
 
-def identify_highly_variable_genes(data: SingleCellData, n_top_genes: int = 2000,
-                                  flavor: str = "seurat") -> SingleCellData:
+def identify_highly_variable_genes(
+    data: SingleCellData, n_top_genes: int = 2000, flavor: str = "seurat"
+) -> SingleCellData:
     """Identify highly variable genes.
 
     Args:
@@ -543,12 +547,12 @@ def identify_highly_variable_genes(data: SingleCellData, n_top_genes: int = 2000
     result = data.copy()
 
     # Convert to dense if needed
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
     # Calculate gene statistics
     gene_means = np.mean(X, axis=0)
     gene_vars = np.var(X, axis=0)
-    gene_cv2 = gene_vars / (gene_means ** 2 + 1e-10)  # Coefficient of variation squared
+    gene_cv2 = gene_vars / (gene_means**2 + 1e-10)  # Coefficient of variation squared
 
     if flavor == "seurat":
         # Seurat method: fit mean-variance relationship
@@ -577,28 +581,27 @@ def identify_highly_variable_genes(data: SingleCellData, n_top_genes: int = 2000
 
     # Add to var DataFrame
     result.var = result.var.copy() if result.var is not None else pd.DataFrame()
-    result.var['highly_variable'] = highly_variable
-    result.var['gene_mean'] = gene_means
-    result.var['gene_variance'] = gene_vars
-    result.var['gene_cv2'] = gene_cv2
+    result.var["highly_variable"] = highly_variable
+    result.var["gene_mean"] = gene_means
+    result.var["gene_variance"] = gene_vars
+    result.var["gene_cv2"] = gene_cv2
 
     if flavor == "seurat":
-        result.var['fitted_cv2'] = fitted_cv2
-        result.var['standardized_variance'] = standardized_var
+        result.var["fitted_cv2"] = fitted_cv2
+        result.var["standardized_variance"] = standardized_var
 
     # Store HVG info
-    result.uns['highly_variable_genes'] = {
-        'method': flavor,
-        'n_top_genes': n_top_genes,
-        'n_selected': np.sum(highly_variable),
+    result.uns["highly_variable_genes"] = {
+        "method": flavor,
+        "n_top_genes": n_top_genes,
+        "n_selected": np.sum(highly_variable),
     }
 
     logger.info(f"Identified {np.sum(highly_variable)} highly variable genes")
     return result
 
 
-def remove_batch_effects(data: SingleCellData, batch_key: str,
-                        method: str = "regress_out") -> SingleCellData:
+def remove_batch_effects(data: SingleCellData, batch_key: str, method: str = "regress_out") -> SingleCellData:
     """Remove batch effects from expression data.
 
     Args:
@@ -627,7 +630,7 @@ def remove_batch_effects(data: SingleCellData, batch_key: str,
     result = data.copy()
 
     # Convert to dense if needed
-    X = data.X.toarray() if hasattr(data.X, 'toarray') else data.X
+    X = data.X.toarray() if hasattr(data.X, "toarray") else data.X
 
     if method == "regress_out":
         # Simple linear regression of batch effects
@@ -671,16 +674,11 @@ def remove_batch_effects(data: SingleCellData, batch_key: str,
     result.X = X_corrected
 
     # Store batch correction info
-    result.uns['batch_correction'] = {
-        'method': method,
-        'batch_key': batch_key,
-        'n_batches': len(np.unique(data.obs[batch_key])),
+    result.uns["batch_correction"] = {
+        "method": method,
+        "batch_key": batch_key,
+        "n_batches": len(np.unique(data.obs[batch_key])),
     }
 
     logger.info("Batch effect correction completed")
     return result
-
-
-
-
-

@@ -520,6 +520,7 @@ class TestCoreMethods:
         # Test CSV operations (if pandas available)
         try:
             import pandas as pd
+
             df = pd.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]})
             csv_path = tmp_path / "test.csv"
 
@@ -540,6 +541,7 @@ class TestCoreMethods:
         # Test Parquet operations (if pandas available)
         try:
             import pandas as pd
+
             df = pd.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]})
             parquet_path = tmp_path / "test.parquet"
 

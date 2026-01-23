@@ -243,17 +243,21 @@ def calculate_data_integrity_score(data: Dict[str, Any], data_type: str = "fastq
         total_checks += 1
         if "basic_statistics" in data and data["basic_statistics"].get("total_reads", 0) > 0:
             passed_checks += 1
-            integrity_checks.append({
-                "check": "has_reads",
-                "passed": True,
-                "message": "FASTQ file contains reads",
-            })
+            integrity_checks.append(
+                {
+                    "check": "has_reads",
+                    "passed": True,
+                    "message": "FASTQ file contains reads",
+                }
+            )
         else:
-            integrity_checks.append({
-                "check": "has_reads",
-                "passed": False,
-                "message": "FASTQ file contains no reads",
-            })
+            integrity_checks.append(
+                {
+                    "check": "has_reads",
+                    "passed": False,
+                    "message": "FASTQ file contains no reads",
+                }
+            )
 
         # Check for reasonable quality scores
         total_checks += 1
@@ -261,17 +265,21 @@ def calculate_data_integrity_score(data: Dict[str, Any], data_type: str = "fastq
             mean_qual = data["basic_statistics"].get("mean_quality", 0)
             if 10 <= mean_qual <= 50:  # Reasonable quality range
                 passed_checks += 1
-                integrity_checks.append({
-                    "check": "quality_range",
-                    "passed": True,
-                    "message": f"Mean quality ({mean_qual:.1f}) is within reasonable range",
-                })
+                integrity_checks.append(
+                    {
+                        "check": "quality_range",
+                        "passed": True,
+                        "message": f"Mean quality ({mean_qual:.1f}) is within reasonable range",
+                    }
+                )
             else:
-                integrity_checks.append({
-                    "check": "quality_range",
-                    "passed": False,
-                    "message": f"Mean quality ({mean_qual:.1f}) is outside reasonable range",
-                })
+                integrity_checks.append(
+                    {
+                        "check": "quality_range",
+                        "passed": False,
+                        "message": f"Mean quality ({mean_qual:.1f}) is outside reasonable range",
+                    }
+                )
 
         # Check for sequence length consistency
         total_checks += 1
@@ -279,17 +287,21 @@ def calculate_data_integrity_score(data: Dict[str, Any], data_type: str = "fastq
             lengths = [item["length"] for item in data["sequence_length_distribution"].get("distribution", [])]
             if lengths and len(set(lengths)) <= 3:  # Allow some variation
                 passed_checks += 1
-                integrity_checks.append({
-                    "check": "length_consistency",
-                    "passed": True,
-                    "message": "Sequence lengths are reasonably consistent",
-                })
+                integrity_checks.append(
+                    {
+                        "check": "length_consistency",
+                        "passed": True,
+                        "message": "Sequence lengths are reasonably consistent",
+                    }
+                )
             else:
-                integrity_checks.append({
-                    "check": "length_consistency",
-                    "passed": False,
-                    "message": "Sequence lengths vary significantly",
-                })
+                integrity_checks.append(
+                    {
+                        "check": "length_consistency",
+                        "passed": False,
+                        "message": "Sequence lengths vary significantly",
+                    }
+                )
 
     integrity_score = (passed_checks / total_checks * 100) if total_checks > 0 else 0
 
@@ -301,8 +313,9 @@ def calculate_data_integrity_score(data: Dict[str, Any], data_type: str = "fastq
     }
 
 
-def compare_quality_metrics(dataset1: Dict[str, Any], dataset2: Dict[str, Any],
-                          data_type: str = "fastq") -> Dict[str, Any]:
+def compare_quality_metrics(
+    dataset1: Dict[str, Any], dataset2: Dict[str, Any], data_type: str = "fastq"
+) -> Dict[str, Any]:
     """Compare quality metrics between two datasets.
 
     Args:
@@ -337,8 +350,9 @@ def compare_quality_metrics(dataset1: Dict[str, Any], dataset2: Dict[str, Any],
     return comparison
 
 
-def generate_quality_report(quality_data: Dict[str, Any], data_type: str = "fastq",
-                          output_path: Optional[str | Path] = None) -> str:
+def generate_quality_report(
+    quality_data: Dict[str, Any], data_type: str = "fastq", output_path: Optional[str | Path] = None
+) -> str:
     """Generate a comprehensive quality control report.
 
     Args:
@@ -404,15 +418,16 @@ def generate_quality_report(quality_data: Dict[str, Any], data_type: str = "fast
 
     if output_path:
         output_path = Path(output_path)
-        with open(output_path, 'w') as f:
+        with open(output_path, "w") as f:
             f.write(report)
         logger.info(f"Quality report saved to {output_path}")
 
     return report
 
 
-def batch_quality_analysis(file_paths: List[str | Path], data_type: str = "fastq",
-                          n_reads: Optional[int] = None) -> Dict[str, Any]:
+def batch_quality_analysis(
+    file_paths: List[str | Path], data_type: str = "fastq", n_reads: Optional[int] = None
+) -> Dict[str, Any]:
     """Perform quality analysis on multiple files.
 
     Args:
@@ -430,6 +445,7 @@ def batch_quality_analysis(file_paths: List[str | Path], data_type: str = "fastq
             logger.info(f"Analyzing {file_path}")
             if data_type == "fastq":
                 from .fastq import analyze_fastq_quality
+
                 quality_data = analyze_fastq_quality(file_path, n_reads)
             else:
                 # Placeholder for other data types
@@ -569,7 +585,7 @@ def calculate_duplication_metrics(duplication_levels: Dict[int, int]) -> Dict[st
         count = duplication_levels[level]
         distribution[f"level_{level}"] = {
             "count": count,
-            "percentage": (count / total_reads) * 100 if total_reads > 0 else 0
+            "percentage": (count / total_reads) * 100 if total_reads > 0 else 0,
         }
 
     metrics["distribution"] = distribution
@@ -610,7 +626,7 @@ def calculate_gc_metrics(gc_content: List[float]) -> Dict[str, Any]:
         bin_end = bin_edges[i + 1]
         distribution[f"{bin_start:.1f}-{bin_end:.1f}"] = {
             "count": int(count),
-            "percentage": (count / len(gc_content)) * 100
+            "percentage": (count / len(gc_content)) * 100,
         }
 
     metrics["distribution"] = distribution
@@ -646,6 +662,7 @@ def calculate_length_metrics(lengths: List[int]) -> Dict[str, Any]:
         metrics["length_range"] = metrics["max_length"] - metrics["min_length"]
         # Most common lengths
         from collections import Counter
+
         length_counts = Counter(lengths)
         most_common = length_counts.most_common(5)
         metrics["most_common_lengths"] = [{"length": length, "count": count} for length, count in most_common]
@@ -686,7 +703,7 @@ def calculate_quality_metrics(quality_scores: List[float]) -> Dict[str, Any]:
         bin_end = bin_edges[i + 1]
         distribution[f"{int(bin_start)}-{int(bin_end)}"] = {
             "count": int(count),
-            "percentage": (count / len(quality_scores)) * 100
+            "percentage": (count / len(quality_scores)) * 100,
         }
 
     metrics["distribution"] = distribution
@@ -725,11 +742,12 @@ def calculate_complexity_metrics(sequences: List[str]) -> Dict[str, Any]:
     all_kmers = []
     for seq in sequences:
         if len(seq) >= k:
-            kmers = [seq[i:i+k] for i in range(len(seq) - k + 1)]
+            kmers = [seq[i : i + k] for i in range(len(seq) - k + 1)]
             all_kmers.extend(kmers)
 
     if all_kmers:
         from collections import Counter
+
         kmer_counts = Counter(all_kmers)
         total_kmers = len(all_kmers)
 
@@ -759,7 +777,7 @@ def calculate_complexity_metrics(sequences: List[str]) -> Dict[str, Any]:
     # GC content complexity (deviation from 0.5)
     gc_contents = []
     for seq in sequences:
-        gc_count = seq.upper().count('G') + seq.upper().count('C')
+        gc_count = seq.upper().count("G") + seq.upper().count("C")
         gc_content = gc_count / len(seq) if seq else 0
         gc_contents.append(gc_content)
 
@@ -769,4 +787,3 @@ def calculate_complexity_metrics(sequences: List[str]) -> Dict[str, Any]:
         metrics["gc_complexity"] = gc_complexity
 
     return metrics
-

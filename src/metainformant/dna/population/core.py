@@ -96,7 +96,7 @@ def nucleotide_diversity(seqs: Sequence[str]) -> float:
                 base2 = seq2[pos]
 
                 # Skip gaps and ambiguous bases
-                if base1 in 'ATCG' and base2 in 'ATCG':
+                if base1 in "ATCG" and base2 in "ATCG":
                     if base1 != base2:
                         differences += 1
                     valid_sites += 1
@@ -201,7 +201,7 @@ def segregating_sites(seqs: Sequence[str]) -> int:
 
         for seq in seqs:
             base = seq[pos].upper()
-            if base in 'ATCG':
+            if base in "ATCG":
                 bases_at_pos.add(base)
 
         if len(bases_at_pos) > 1:
@@ -240,8 +240,8 @@ def hudson_fst(pop1: Sequence[str], pop2: Sequence[str]) -> float:
 
     for pos in range(seq_length):
         # Get alleles at this position for both populations
-        alleles_pop1 = [seq[pos].upper() for seq in pop1 if seq[pos].upper() in 'ATCG']
-        alleles_pop2 = [seq[pos].upper() for seq in pop2 if seq[pos].upper() in 'ATCG']
+        alleles_pop1 = [seq[pos].upper() for seq in pop1 if seq[pos].upper() in "ATCG"]
+        alleles_pop2 = [seq[pos].upper() for seq in pop2 if seq[pos].upper() in "ATCG"]
 
         if not alleles_pop1 or not alleles_pop2:
             continue
@@ -360,7 +360,7 @@ def expected_heterozygosity(genotype_matrix: Sequence[Sequence[int]]) -> float:
     for locus in genotype_matrix:
         freqs = allele_frequencies([locus])  # Wrap in list for single locus
         p = freqs[0]  # Allele frequency
-        q = 1 - p    # Other allele frequency
+        q = 1 - p  # Other allele frequency
 
         # H_E = 2pq for diploid organisms
         he = 2 * p * q
@@ -431,8 +431,8 @@ def linkage_disequilibrium(seqs: Sequence[str], pos1: int, pos2: int) -> float:
         raise ValueError("Position out of sequence bounds")
 
     # Get alleles at both positions
-    alleles1 = [seq[pos1].upper() for seq in seqs if seq[pos1].upper() in 'ATCG']
-    alleles2 = [seq[pos2].upper() for seq in seqs if seq[pos2].upper() in 'ATCG']
+    alleles1 = [seq[pos1].upper() for seq in seqs if seq[pos1].upper() in "ATCG"]
+    alleles2 = [seq[pos2].upper() for seq in seqs if seq[pos2].upper() in "ATCG"]
 
     if len(alleles1) != len(alleles2):
         raise ValueError("Positions have different numbers of valid alleles")
@@ -492,13 +492,14 @@ def _count_singletons(seqs: Sequence[str]) -> int:
     singletons = 0
 
     for pos in range(seq_length):
-        alleles = [seq[pos].upper() for seq in seqs if seq[pos].upper() in 'ATCG']
+        alleles = [seq[pos].upper() for seq in seqs if seq[pos].upper() in "ATCG"]
 
         if len(alleles) < 2:
             continue
 
         # Count frequency of each allele
         from collections import Counter
+
         counts = Counter(alleles)
 
         # Check if any allele appears exactly once
@@ -514,6 +515,7 @@ def _allele_frequencies_from_list(alleles: List[str]) -> dict[str, float]:
         return {}
 
     from collections import Counter
+
     counts = Counter(alleles)
     total = len(alleles)
 
@@ -542,7 +544,7 @@ def _fst_single_locus(freq1: dict[str, float], freq2: dict[str, float]) -> float
         f2 = freq2.get(allele, 0)
         total_freq[allele] = (f1 + f2) / 2
 
-    h_t = 1 - sum(freq ** 2 for freq in total_freq.values())
+    h_t = 1 - sum(freq**2 for freq in total_freq.values())
 
     # F_ST = (H_T - H_S) / H_T
     fst = (h_t - h_s) / h_t if h_t > 0 else 0.0
@@ -573,11 +575,3 @@ def _variance_pi_theta(n: int, s: int) -> float:
     variance = e1 * s + e2 * s * (s - 1)
 
     return max(variance, 0.01)  # Avoid division by zero
-
-
-
-
-
-
-
-

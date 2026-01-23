@@ -28,7 +28,7 @@ def manhattan_plot(
     pval_col: str = "P",
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Create a Manhattan plot for GWAS results.
 
@@ -55,11 +55,11 @@ def manhattan_plot(
         raise ValueError(f"Missing required columns: {missing_cols}")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (12, 6)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (12, 6)))
 
     # Prepare data
     plot_data = data.copy()
-    plot_data['logP'] = -np.log10(plot_data[pval_col].clip(lower=1e-300))  # Avoid log(0)
+    plot_data["logP"] = -np.log10(plot_data[pval_col].clip(lower=1e-300))  # Avoid log(0)
 
     # Calculate cumulative positions for chromosomes
     chromosomes = sorted(plot_data[chr_col].unique())
@@ -69,7 +69,7 @@ def manhattan_plot(
     for chr_num in chromosomes:
         chr_mask = plot_data[chr_col] == chr_num
         chr_starts[chr_num] = cumulative_pos
-        plot_data.loc[chr_mask, 'cumulative_pos'] = plot_data.loc[chr_mask, pos_col] + cumulative_pos
+        plot_data.loc[chr_mask, "cumulative_pos"] = plot_data.loc[chr_mask, pos_col] + cumulative_pos
         cumulative_pos += plot_data.loc[chr_mask, pos_col].max() + 1e7  # Add gap between chromosomes
 
     # Plot points colored by chromosome
@@ -77,12 +77,12 @@ def manhattan_plot(
     for i, chr_num in enumerate(chromosomes):
         chr_mask = plot_data[chr_col] == chr_num
         ax.scatter(
-            plot_data.loc[chr_mask, 'cumulative_pos'],
-            plot_data.loc[chr_mask, 'logP'],
+            plot_data.loc[chr_mask, "cumulative_pos"],
+            plot_data.loc[chr_mask, "logP"],
             c=[colors[i]],
-            s=kwargs.get('s', 1),
-            alpha=kwargs.get('alpha', 0.8),
-            **kwargs
+            s=kwargs.get("s", 1),
+            alpha=kwargs.get("alpha", 0.8),
+            **kwargs,
         )
 
     # Add chromosome labels at centers
@@ -91,25 +91,26 @@ def manhattan_plot(
     for chr_num in chromosomes:
         chr_mask = plot_data[chr_col] == chr_num
         if chr_mask.any():
-            center_pos = (plot_data.loc[chr_mask, 'cumulative_pos'].min() +
-                         plot_data.loc[chr_mask, 'cumulative_pos'].max()) / 2
+            center_pos = (
+                plot_data.loc[chr_mask, "cumulative_pos"].min() + plot_data.loc[chr_mask, "cumulative_pos"].max()
+            ) / 2
             chr_centers.append(center_pos)
             chr_labels.append(str(chr_num))
 
     ax.set_xticks(chr_centers)
     ax.set_xticklabels(chr_labels)
-    ax.set_xlabel('Chromosome')
-    ax.set_ylabel('-log₁₀(p-value)')
-    ax.set_title('Manhattan Plot')
-    ax.axhline(y=-np.log10(5e-8), color='red', linestyle='--', alpha=0.7, label='Genome-wide significance')
+    ax.set_xlabel("Chromosome")
+    ax.set_ylabel("-log₁₀(p-value)")
+    ax.set_title("Manhattan Plot")
+    ax.axhline(y=-np.log10(5e-8), color="red", linestyle="--", alpha=0.7, label="Genome-wide significance")
 
     # Add significance threshold legend if line is visible
-    if plot_data['logP'].max() > -np.log10(5e-8):
+    if plot_data["logP"].max() > -np.log10(5e-8):
         ax.legend()
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Manhattan plot saved to {output_path}")
 
     return ax
@@ -122,7 +123,7 @@ def volcano_plot(
     pval_col: str = "padj",
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Create a volcano plot for differential expression analysis.
 
@@ -148,45 +149,45 @@ def volcano_plot(
         raise ValueError(f"Missing required columns: {missing_cols}")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (8, 6)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (8, 6)))
 
     # Prepare data
     plot_data = data.copy()
-    plot_data['logP'] = -np.log10(plot_data[pval_col].clip(lower=1e-300))
+    plot_data["logP"] = -np.log10(plot_data[pval_col].clip(lower=1e-300))
 
     # Color points based on significance and fold change
     colors = []
     for _, row in plot_data.iterrows():
-        if row['logP'] >= -np.log10(0.05) and abs(row[log2fc_col]) >= 1:
-            colors.append('red')  # Significant and large fold change
-        elif row['logP'] >= -np.log10(0.05):
-            colors.append('orange')  # Significant
+        if row["logP"] >= -np.log10(0.05) and abs(row[log2fc_col]) >= 1:
+            colors.append("red")  # Significant and large fold change
+        elif row["logP"] >= -np.log10(0.05):
+            colors.append("orange")  # Significant
         elif abs(row[log2fc_col]) >= 1:
-            colors.append('blue')  # Large fold change
+            colors.append("blue")  # Large fold change
         else:
-            colors.append('gray')  # Not significant
+            colors.append("gray")  # Not significant
 
     ax.scatter(
         plot_data[log2fc_col],
-        plot_data['logP'],
+        plot_data["logP"],
         c=colors,
-        s=kwargs.get('s', 20),
-        alpha=kwargs.get('alpha', 0.6),
-        **kwargs
+        s=kwargs.get("s", 20),
+        alpha=kwargs.get("alpha", 0.6),
+        **kwargs,
     )
 
     # Add threshold lines
-    ax.axhline(y=-np.log10(0.05), color='black', linestyle='--', alpha=0.7)
-    ax.axvline(x=1, color='black', linestyle='--', alpha=0.7)
-    ax.axvline(x=-1, color='black', linestyle='--', alpha=0.7)
+    ax.axhline(y=-np.log10(0.05), color="black", linestyle="--", alpha=0.7)
+    ax.axvline(x=1, color="black", linestyle="--", alpha=0.7)
+    ax.axvline(x=-1, color="black", linestyle="--", alpha=0.7)
 
-    ax.set_xlabel('log₂(Fold Change)')
-    ax.set_ylabel('-log₁₀(adjusted p-value)')
-    ax.set_title('Volcano Plot')
+    ax.set_xlabel("log₂(Fold Change)")
+    ax.set_ylabel("-log₁₀(adjusted p-value)")
+    ax.set_title("Volcano Plot")
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Volcano plot saved to {output_path}")
 
     return ax
@@ -200,7 +201,7 @@ def regional_plot(
     end: int,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Create a regional association plot for a specific genomic region.
 
@@ -225,61 +226,52 @@ def regional_plot(
         raise ValueError("Start position must be less than end position")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (10, 6)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (10, 6)))
 
     # Filter data for the specified region
-    region_mask = (
-        (data['CHR'].astype(str) == str(chr)) &
-        (data['BP'] >= start) &
-        (data['BP'] <= end)
-    )
+    region_mask = (data["CHR"].astype(str) == str(chr)) & (data["BP"] >= start) & (data["BP"] <= end)
     region_data = data[region_mask].copy()
 
     if region_data.empty:
         logger.warning(f"No data found in region {chr}:{start}-{end}")
-        ax.text(0.5, 0.5, f'No data in region {chr}:{start}-{end}',
-                transform=ax.transAxes, ha='center', va='center')
+        ax.text(0.5, 0.5, f"No data in region {chr}:{start}-{end}", transform=ax.transAxes, ha="center", va="center")
         ax.set_xlim(start, end)
-        ax.set_xlabel(f'Position on chromosome {chr}')
-        ax.set_ylabel('-log₁₀(p-value)')
-        ax.set_title(f'Regional Plot - {chr}:{start}-{end}')
+        ax.set_xlabel(f"Position on chromosome {chr}")
+        ax.set_ylabel("-log₁₀(p-value)")
+        ax.set_title(f"Regional Plot - {chr}:{start}-{end}")
         return ax
 
     # Calculate relative positions
-    region_data['relative_pos'] = region_data['BP'] - start
-    region_data['logP'] = -np.log10(region_data['P'].clip(lower=1e-300))
+    region_data["relative_pos"] = region_data["BP"] - start
+    region_data["logP"] = -np.log10(region_data["P"].clip(lower=1e-300))
 
     # Plot association results
     ax.scatter(
-        region_data['relative_pos'],
-        region_data['logP'],
-        s=kwargs.get('s', 30),
-        alpha=kwargs.get('alpha', 0.7),
-        **kwargs
+        region_data["relative_pos"],
+        region_data["logP"],
+        s=kwargs.get("s", 30),
+        alpha=kwargs.get("alpha", 0.7),
+        **kwargs,
     )
 
     # Add recombination rate if available (placeholder)
     # This would require additional data sources
 
-    ax.set_xlabel(f'Position on chromosome {chr} (bp from {start:,})')
-    ax.set_ylabel('-log₁₀(p-value)')
-    ax.set_title(f'Regional Association Plot - {chr}:{start:,}-{end:,}')
-    ax.axhline(y=-np.log10(5e-8), color='red', linestyle='--', alpha=0.7)
+    ax.set_xlabel(f"Position on chromosome {chr} (bp from {start:,})")
+    ax.set_ylabel("-log₁₀(p-value)")
+    ax.set_title(f"Regional Association Plot - {chr}:{start:,}-{end:,}")
+    ax.axhline(y=-np.log10(5e-8), color="red", linestyle="--", alpha=0.7)
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Regional plot saved to {output_path}")
 
     return ax
 
 
 def circular_manhattan_plot(
-    data: pd.DataFrame,
-    *,
-    ax: Axes | None = None,
-    output_path: str | Path | None = None,
-    **kwargs
+    data: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
 ) -> Axes:
     """Create a circular Manhattan plot.
 
@@ -295,61 +287,55 @@ def circular_manhattan_plot(
     validation.validate_type(data, pd.DataFrame, "data")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (8, 8)), subplot_kw={'projection': 'polar'})
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (8, 8)), subplot_kw={"projection": "polar"})
 
     # Prepare data similar to linear Manhattan plot
     plot_data = data.copy()
-    plot_data['logP'] = -np.log10(plot_data['P'].clip(lower=1e-300))
+    plot_data["logP"] = -np.log10(plot_data["P"].clip(lower=1e-300))
 
     # Calculate angles for chromosomes (divide circle evenly)
-    chromosomes = sorted(plot_data['CHR'].unique())
-    chr_angles = np.linspace(0, 2*np.pi, len(chromosomes) + 1)[:-1]
+    chromosomes = sorted(plot_data["CHR"].unique())
+    chr_angles = np.linspace(0, 2 * np.pi, len(chromosomes) + 1)[:-1]
 
     # Plot each chromosome
     for i, (chr_num, angle) in enumerate(zip(chromosomes, chr_angles)):
-        chr_mask = plot_data['CHR'] == chr_num
+        chr_mask = plot_data["CHR"] == chr_num
         chr_data = plot_data[chr_mask]
 
         # Normalize positions within chromosome to angle range
-        chr_start = chr_data['BP'].min()
-        chr_end = chr_data['BP'].max()
+        chr_start = chr_data["BP"].min()
+        chr_end = chr_data["BP"].max()
         chr_range = chr_end - chr_start
 
         if chr_range > 0:
-            relative_angles = angle + (chr_data['BP'] - chr_start) / chr_range * (2*np.pi / len(chromosomes))
+            relative_angles = angle + (chr_data["BP"] - chr_start) / chr_range * (2 * np.pi / len(chromosomes))
 
             ax.scatter(
                 relative_angles,
-                chr_data['logP'],
-                s=kwargs.get('s', 2),
-                alpha=kwargs.get('alpha', 0.7),
-                label=f'Chr {chr_num}' if i < 5 else "",  # Label first few chromosomes
-                **kwargs
+                chr_data["logP"],
+                s=kwargs.get("s", 2),
+                alpha=kwargs.get("alpha", 0.7),
+                label=f"Chr {chr_num}" if i < 5 else "",  # Label first few chromosomes
+                **kwargs,
             )
 
     # Add chromosome labels
     for angle, chr_num in zip(chr_angles, chromosomes):
-        ax.text(angle, ax.get_ylim()[1] * 1.1, f'{chr_num}',
-                ha='center', va='bottom', fontsize=8)
+        ax.text(angle, ax.get_ylim()[1] * 1.1, f"{chr_num}", ha="center", va="bottom", fontsize=8)
 
-    ax.set_title('Circular Manhattan Plot')
+    ax.set_title("Circular Manhattan Plot")
     ax.set_rlabel_position(90)
     ax.grid(True, alpha=0.3)
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Circular Manhattan plot saved to {output_path}")
 
     return ax
 
 
-def chromosome_ideogram(
-    *,
-    ax: Axes | None = None,
-    output_path: str | Path | None = None,
-    **kwargs
-) -> Axes:
+def chromosome_ideogram(*, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs) -> Axes:
     """Create a chromosome ideogram visualization.
 
     Args:
@@ -361,16 +347,35 @@ def chromosome_ideogram(
         matplotlib Axes object
     """
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (12, 4)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (12, 4)))
 
     # Simplified chromosome ideogram (would need real cytogenetic data)
-    chromosomes = list(range(1, 23)) + ['X', 'Y']
+    chromosomes = list(range(1, 23)) + ["X", "Y"]
     chr_lengths = {
-        1: 248956422, 2: 242193529, 3: 198295559, 4: 190214555, 5: 181538259,
-        6: 170805979, 7: 159345973, 8: 145138636, 9: 138394717, 10: 133797422,
-        11: 135086622, 12: 133275309, 13: 114364328, 14: 107043718, 15: 101991189,
-        16: 90338345, 17: 83257441, 18: 80373285, 19: 58617616, 20: 64444167,
-        21: 46709983, 22: 50818468, 'X': 156040895, 'Y': 57227415
+        1: 248956422,
+        2: 242193529,
+        3: 198295559,
+        4: 190214555,
+        5: 181538259,
+        6: 170805979,
+        7: 159345973,
+        8: 145138636,
+        9: 138394717,
+        10: 133797422,
+        11: 135086622,
+        12: 133275309,
+        13: 114364328,
+        14: 107043718,
+        15: 101991189,
+        16: 90338345,
+        17: 83257441,
+        18: 80373285,
+        19: 58617616,
+        20: 64444167,
+        21: 46709983,
+        22: 50818468,
+        "X": 156040895,
+        "Y": 57227415,
     }
 
     # Plot chromosomes as horizontal bars
@@ -379,18 +384,17 @@ def chromosome_ideogram(
 
     for i, chr_name in enumerate(chromosomes):
         length = chr_lengths.get(chr_name, chr_lengths[1])  # fallback
-        ax.barh(i, length / max_length, height=0.8, alpha=0.7,
-                color='lightblue', edgecolor='black')
+        ax.barh(i, length / max_length, height=0.8, alpha=0.7, color="lightblue", edgecolor="black")
 
     ax.set_yticks(y_positions)
-    ax.set_yticklabels([f'{c}' for c in chromosomes])
-    ax.set_xlabel('Relative Chromosome Length')
-    ax.set_title('Human Chromosome Ideogram')
+    ax.set_yticklabels([f"{c}" for c in chromosomes])
+    ax.set_xlabel("Relative Chromosome Length")
+    ax.set_title("Human Chromosome Ideogram")
     ax.grid(True, alpha=0.3)
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Chromosome ideogram saved to {output_path}")
 
     return ax
@@ -402,7 +406,7 @@ def coverage_plot(
     *,
     ax: Axes | None = None,
     output_path: str | Path | None = None,
-    **kwargs
+    **kwargs,
 ) -> Axes:
     """Create a sequencing coverage plot.
 
@@ -426,30 +430,26 @@ def coverage_plot(
         raise ValueError("Coverage and positions arrays must have same length")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (12, 4)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (12, 4)))
 
     ax.plot(positions, coverage, **kwargs)
     ax.fill_between(positions, coverage, alpha=0.3, **kwargs)
 
-    ax.set_xlabel('Genomic Position')
-    ax.set_ylabel('Coverage Depth')
-    ax.set_title('Sequencing Coverage')
+    ax.set_xlabel("Genomic Position")
+    ax.set_ylabel("Coverage Depth")
+    ax.set_title("Sequencing Coverage")
     ax.grid(True, alpha=0.3)
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Coverage plot saved to {output_path}")
 
     return ax
 
 
 def variant_plot(
-    variants: pd.DataFrame,
-    *,
-    ax: Axes | None = None,
-    output_path: str | Path | None = None,
-    **kwargs
+    variants: pd.DataFrame, *, ax: Axes | None = None, output_path: str | Path | None = None, **kwargs
 ) -> Axes:
     """Create a variant visualization plot.
 
@@ -468,35 +468,29 @@ def variant_plot(
     validation.validate_type(variants, pd.DataFrame, "variants")
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=kwargs.pop('figsize', (12, 6)))
+        fig, ax = plt.subplots(figsize=kwargs.pop("figsize", (12, 6)))
 
     # Assume variants has POS and some value column
-    if 'POS' not in variants.columns:
+    if "POS" not in variants.columns:
         raise ValueError("Variants DataFrame must contain 'POS' column")
 
     # Simple variant visualization - plot positions
-    positions = variants['POS'].values
+    positions = variants["POS"].values
     y_values = np.ones(len(positions))  # Default y-position
 
     # Add some jitter for visibility
     y_values += np.random.uniform(-0.1, 0.1, len(positions))
 
-    ax.scatter(positions, y_values, s=kwargs.get('s', 10), alpha=0.7, **kwargs)
+    ax.scatter(positions, y_values, s=kwargs.get("s", 10), alpha=0.7, **kwargs)
 
-    ax.set_xlabel('Genomic Position')
-    ax.set_ylabel('Variants')
-    ax.set_title('Variant Positions')
+    ax.set_xlabel("Genomic Position")
+    ax.set_ylabel("Variants")
+    ax.set_title("Variant Positions")
     ax.set_yticks([])  # Hide y-axis ticks
 
     if output_path:
         paths.ensure_directory(Path(output_path).parent)
-        plt.savefig(output_path, dpi=300, bbox_inches='tight')
+        plt.savefig(output_path, dpi=300, bbox_inches="tight")
         logger.info(f"Variant plot saved to {output_path}")
 
     return ax
-
-
-
-
-
-

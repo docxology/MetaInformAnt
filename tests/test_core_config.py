@@ -1,4 +1,5 @@
 """Comprehensive tests for core.utils.config module."""
+
 from __future__ import annotations
 
 import json
@@ -14,11 +15,7 @@ class TestPostgresConfig:
     def test_postgres_config_creation(self) -> None:
         """Test creating PostgresConfig."""
         cfg = core_config.PostgresConfig(
-            host="localhost",
-            port=5432,
-            database="testdb",
-            user="admin",
-            password="secret"
+            host="localhost", port=5432, database="testdb", user="admin", password="secret"
         )
         assert cfg.host == "localhost"
         assert cfg.port == 5432
@@ -34,13 +31,13 @@ class TestLoadPostgresConfigFromEnv:
         env_vars = ["PG_HOST", "PG_DATABASE", "PG_USER", "PG_PASSWORD", "PG_PORT"]
         for k in env_vars:
             env_backup[k] = os.environ.get(k)
-        
+
         os.environ["PG_HOST"] = "dbhost"
         os.environ["PG_DATABASE"] = "mydb"
         os.environ["PG_USER"] = "myuser"
         os.environ["PG_PASSWORD"] = "mypass"
         os.environ["PG_PORT"] = "5433"
-        
+
         try:
             cfg = core_config.load_postgres_config_from_env()
             assert cfg is not None
@@ -59,7 +56,7 @@ class TestLoadPostgresConfigFromEnv:
         # Clear potentially set vars
         for k in ["PG_HOST", "PG_DATABASE", "PG_USER", "PG_PASSWORD"]:
             os.environ.pop(k, None)
-        
+
         cfg = core_config.load_postgres_config_from_env()
         # Should return None if not all required vars are set
         # (depends on implementation)
@@ -73,7 +70,7 @@ class TestLoadConfigFile:
         config_path = tmp_path / "config.json"
         config_data = {"key1": "value1", "nested": {"key2": 123}}
         config_path.write_text(json.dumps(config_data))
-        
+
         loaded = core_config.load_config_file(config_path)
         assert loaded == config_data
 
@@ -107,16 +104,13 @@ class TestLoadTypedEnv:
         keys = [f"{prefix}_STR", f"{prefix}_INT", f"{prefix}_BOOL"]
         for k in keys:
             env_backup[k] = os.environ.get(k)
-        
+
         os.environ[f"{prefix}_STR"] = "hello"
         os.environ[f"{prefix}_INT"] = "42"
         os.environ[f"{prefix}_BOOL"] = "true"
-        
+
         try:
-            values = core_config.load_typed_env(
-                prefix=prefix,
-                keys={"STR": str, "INT": int, "BOOL": bool}
-            )
+            values = core_config.load_typed_env(prefix=prefix, keys={"STR": str, "INT": int, "BOOL": bool})
             assert values["STR"] == "hello"
             assert values["INT"] == 42
             assert values["BOOL"] is True
@@ -132,7 +126,7 @@ class TestLoadTypedEnv:
         prefix = "TEST_BOOL"
         os.environ.pop(f"{prefix}_VAL", None)
         os.environ[f"{prefix}_VAL"] = "false"
-        
+
         try:
             values = core_config.load_typed_env(prefix=prefix, keys={"VAL": bool})
             assert values.get("VAL") is False
@@ -148,7 +142,7 @@ class TestLoadMappingFromFile:
         path = tmp_path / "config.json"
         data = {"settings": {"threads": 4}}
         path.write_text(json.dumps(data))
-        
+
         loaded = core_config.load_mapping_from_file(path)
         assert loaded == data
 
@@ -156,7 +150,7 @@ class TestLoadMappingFromFile:
         """Test unsupported file extension raises error."""
         path = tmp_path / "config.xyz"
         path.write_text("{}")
-        
+
         try:
             core_config.load_mapping_from_file(path)
             assert False, "Should have raised ValueError"
@@ -171,9 +165,9 @@ class TestMergeConfigs:
         """Test basic config merge."""
         base = {"a": 1, "b": 2}
         override = {"b": 3, "c": 4}
-        
+
         merged = core_config.merge_configs(base, override)
-        
+
         assert merged["a"] == 1  # From base
         assert merged["b"] == 3  # Overridden
         assert merged["c"] == 4  # From override
@@ -182,9 +176,9 @@ class TestMergeConfigs:
         """Test nested config merge."""
         base = {"a": 1, "nested": {"x": 1, "y": 2}}
         override = {"nested": {"y": 3, "z": 4}}
-        
+
         merged = core_config.merge_configs(base, override)
-        
+
         assert merged["nested"]["x"] == 1  # From base
         assert merged["nested"]["y"] == 3  # Overridden
         assert merged["nested"]["z"] == 4  # From override
@@ -194,7 +188,7 @@ class TestMergeConfigs:
         base = {"a": 1}
         merged = core_config.merge_configs(base, {})
         assert merged == {"a": 1}
-        
+
         merged2 = core_config.merge_configs({}, {"a": 1})
         assert merged2 == {"a": 1}
 
@@ -206,9 +200,9 @@ class TestCoerceConfigTypes:
         """Test basic type coercion."""
         config = {"port": "8080", "debug": "true"}
         type_map = {"port": int, "debug": bool}
-        
+
         coerced = core_config.coerce_config_types(config, type_map)
-        
+
         assert coerced["port"] == 8080
         assert coerced["debug"] is True
 
@@ -216,9 +210,9 @@ class TestCoerceConfigTypes:
         """Test that keys not in type_map are preserved."""
         config = {"port": "8080", "name": "server"}
         type_map = {"port": int}
-        
+
         coerced = core_config.coerce_config_types(config, type_map)
-        
+
         assert coerced["port"] == 8080
         assert coerced["name"] == "server"  # Preserved as string
 
@@ -229,7 +223,7 @@ class TestApplyEnvOverrides:
     def test_apply_env_overrides_threads(self) -> None:
         """Test THREADS override."""
         os.environ["AK_THREADS"] = "16"
-        
+
         try:
             config = {"threads": 4}
             result = core_config.apply_env_overrides(config, prefix="AK")
@@ -240,7 +234,7 @@ class TestApplyEnvOverrides:
     def test_apply_env_overrides_work_dir(self) -> None:
         """Test WORK_DIR override."""
         os.environ["AK_WORK_DIR"] = "/custom/work"
-        
+
         try:
             config = {"work_dir": "/default"}
             result = core_config.apply_env_overrides(config, prefix="AK")

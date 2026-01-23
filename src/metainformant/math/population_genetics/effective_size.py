@@ -14,8 +14,7 @@ from metainformant.core import logging
 logger = logging.get_logger(__name__)
 
 
-def effective_size_sex_ratio(male_size: float, female_size: float,
-                           sex_ratio: float = 0.5) -> float:
+def effective_size_sex_ratio(male_size: float, female_size: float, sex_ratio: float = 0.5) -> float:
     """Calculate effective population size accounting for unequal sex ratios.
 
     Args:
@@ -75,6 +74,6 @@ def harmonic_mean_effective_size(population_sizes: List[float]) -> float:
     harmonic_sum = sum(1.0 / size for size in population_sizes)
 
     if harmonic_sum == 0:
-        return float('inf')
+        return float("inf")
 
     return n_generations / harmonic_sum

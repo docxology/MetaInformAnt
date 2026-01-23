@@ -22,12 +22,12 @@ class TestProgressTracker:
         """Test ProgressTracker initialization."""
         state_file = tmp_path / "progress_state.json"
         dashboard_file = tmp_path / "progress_dashboard.txt"
-        
+
         tracker = ProgressTracker(
             state_file=state_file,
             dashboard_file=dashboard_file,
         )
-        
+
         assert tracker.state_file == state_file
         assert tracker.dashboard_file == dashboard_file
         assert isinstance(tracker.state, dict)
@@ -37,10 +37,10 @@ class TestProgressTracker:
         """Test initialize_species method."""
         state_file = tmp_path / "progress_state.json"
         tracker = ProgressTracker(state_file=state_file)
-        
+
         sample_ids = ["SRR123", "SRR456", "SRR789"]
         tracker.initialize_species("test_species", 3, sample_ids)
-        
+
         assert tracker.state["test_species"]["total"] == 3
         assert tracker.state["test_species"]["need_download"] == set(sample_ids)
         assert len(tracker.state["test_species"]["need_download"]) == 3
@@ -50,10 +50,10 @@ class TestProgressTracker:
         """Test on_download_start method."""
         state_file = tmp_path / "progress_state.json"
         tracker = ProgressTracker(state_file=state_file)
-        
+
         tracker.initialize_species("test_species", 1, ["SRR123"])
         tracker.on_download_start("test_species", "SRR123")
-        
+
         assert "SRR123" in tracker.state["test_species"]["ongoing_download"]
         assert "SRR123" not in tracker.state["test_species"]["need_download"]
 
@@ -62,11 +62,11 @@ class TestProgressTracker:
         """Test on_download_complete method."""
         state_file = tmp_path / "progress_state.json"
         tracker = ProgressTracker(state_file=state_file)
-        
+
         tracker.initialize_species("test_species", 1, ["SRR123"])
         tracker.on_download_start("test_species", "SRR123")
         tracker.on_download_complete("test_species", "SRR123")
-        
+
         assert "SRR123" in tracker.state["test_species"]["needs_quant"]
         assert "SRR123" not in tracker.state["test_species"]["ongoing_download"]
 
@@ -75,12 +75,12 @@ class TestProgressTracker:
         """Test on_quantification_complete method."""
         state_file = tmp_path / "progress_state.json"
         tracker = ProgressTracker(state_file=state_file)
-        
+
         tracker.initialize_species("test_species", 1, ["SRR123"])
         tracker.on_download_start("test_species", "SRR123")
         tracker.on_download_complete("test_species", "SRR123")
         tracker.on_quant_complete("test_species", "SRR123")
-        
+
         assert "SRR123" in tracker.state["test_species"]["needs_delete"]
         assert "SRR123" not in tracker.state["test_species"]["needs_quant"]
 
@@ -89,13 +89,13 @@ class TestProgressTracker:
         """Test on_deletion_complete method."""
         state_file = tmp_path / "progress_state.json"
         tracker = ProgressTracker(state_file=state_file)
-        
+
         tracker.initialize_species("test_species", 1, ["SRR123"])
         tracker.on_download_start("test_species", "SRR123")
         tracker.on_download_complete("test_species", "SRR123")
         tracker.on_quant_complete("test_species", "SRR123")
         tracker.on_delete_complete("test_species", "SRR123")
-        
+
         assert "SRR123" in tracker.state["test_species"]["completed"]
         assert "SRR123" not in tracker.state["test_species"]["needs_delete"]
 
@@ -104,13 +104,13 @@ class TestProgressTracker:
         """Test that state is persisted to disk."""
         state_file = tmp_path / "progress_state.json"
         tracker1 = ProgressTracker(state_file=state_file)
-        
+
         tracker1.initialize_species("test_species", 2, ["SRR123", "SRR456"])
         tracker1.on_download_start("test_species", "SRR123")
-        
+
         # Create new tracker and load state
         tracker2 = ProgressTracker(state_file=state_file)
-        
+
         assert tracker2.state["test_species"]["total"] == 2
         assert "SRR123" in tracker2.state["test_species"]["ongoing_download"]
         assert "SRR456" in tracker2.state["test_species"]["need_download"]
@@ -120,13 +120,13 @@ class TestProgressTracker:
         """Test get_species_summary method."""
         state_file = tmp_path / "progress_state.json"
         tracker = ProgressTracker(state_file=state_file)
-        
+
         tracker.initialize_species("test_species", 3, ["SRR123", "SRR456", "SRR789"])
         tracker.on_download_start("test_species", "SRR123")
         tracker.on_download_complete("test_species", "SRR123")
         tracker.on_quant_complete("test_species", "SRR123")
         tracker.on_delete_complete("test_species", "SRR123")
-        
+
         summary = tracker.get_species_state("test_species")
         assert isinstance(summary, dict)
         assert summary["total"] == 3
@@ -148,6 +148,7 @@ class TestGetTracker:
         """Test get_tracker with custom paths."""
         # Reset global tracker instance to test custom paths
         import metainformant.rna.progress_tracker as pt_module
+
         pt_module._tracker_instance = None
 
         state_file = tmp_path / "custom_state.json"
@@ -170,4 +171,3 @@ class TestProgressTrackerDocumentation:
         """Verify get_tracker function has docstring."""
         assert get_tracker.__doc__ is not None
         assert len(get_tracker.__doc__.strip()) > 0
-

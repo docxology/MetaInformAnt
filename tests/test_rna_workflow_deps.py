@@ -17,6 +17,7 @@ def test_workflow_skips_steps_when_missing_deps(tmp_path: Path):
     ok, _ = check_cli_available()
     if not ok:
         import pytest
+
         pytest.skip("amalgkit CLI not available; skipping dependency-skip workflow test")
 
     cfg = AmalgkitWorkflowConfig(work_dir=tmp_path / "work", threads=1)

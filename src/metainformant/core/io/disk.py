@@ -129,15 +129,12 @@ def ensure_disk_space(
         RuntimeError: If cleanup fails to free enough space
     """
     total, used, free, percent_str = get_disk_usage(path)
-    percent_val = float(percent_str.strip('%')) / 100 if percent_str.strip('%') else 0
+    percent_val = float(percent_str.strip("%")) / 100 if percent_str.strip("%") else 0
 
     if free >= required_bytes:
         return True
 
-    logger.warning(
-        f"Insufficient disk space: {free} bytes free, "
-        f"{required_bytes} bytes required"
-    )
+    logger.warning(f"Insufficient disk space: {free} bytes free, " f"{required_bytes} bytes required")
 
     # Attempt cleanup if usage is high
     if percent_val >= cleanup_threshold:
@@ -154,9 +151,7 @@ def ensure_disk_space(
 
     if free < required_bytes:
         raise RuntimeError(
-            f"Insufficient disk space: {free} bytes free, "
-            f"{required_bytes} bytes required. "
-            f"Usage: {percent_str}"
+            f"Insufficient disk space: {free} bytes free, " f"{required_bytes} bytes required. " f"Usage: {percent_str}"
         )
 
     return True
@@ -358,38 +353,32 @@ def monitor_disk_space(
     """
     try:
         total, used, free, percent_str = get_disk_usage(path)
-        percent_val = float(percent_str.strip('%')) / 100 if percent_str.strip('%') else 0
+        percent_val = float(percent_str.strip("%")) / 100 if percent_str.strip("%") else 0
 
-        usage_dict = {
-            'total': total,
-            'used': used,
-            'free': free,
-            'percent': percent_val * 100,
-            'path': str(path)
-        }
+        usage_dict = {"total": total, "used": used, "free": free, "percent": percent_val * 100, "path": str(path)}
 
         if percent_val >= critical_threshold:
-            status = 'critical'
+            status = "critical"
             message = f"Critical disk usage: {percent_str} used"
         elif percent_val >= warning_threshold:
-            status = 'warning'
+            status = "warning"
             message = f"High disk usage: {percent_str} used"
         else:
-            status = 'ok'
+            status = "ok"
             message = f"Disk usage normal: {percent_str} used"
 
         return {
-            'status': status,
-            'usage': usage_dict,
-            'message': message,
+            "status": status,
+            "usage": usage_dict,
+            "message": message,
         }
 
     except Exception as e:
         logger.error(f"Disk monitoring failed for {path}: {e}")
         return {
-            'status': 'error',
-            'usage': None,
-            'message': f"Monitoring failed: {e}",
+            "status": "error",
+            "usage": None,
+            "message": f"Monitoring failed: {e}",
         }
 
 
@@ -441,15 +430,15 @@ def get_disk_space_info(path: str | Path) -> Dict[str, Any]:
         Dictionary with disk usage info (GB and percentages)
     """
     total, used, free, percent_used_str = get_disk_usage(path)
-    
+
     total_gb = total / (1024**3)
     used_gb = used / (1024**3)
     free_gb = free / (1024**3)
-    
+
     # Calculate free percent
     percent_free_val = (free / total * 100) if total > 0 else 0
     percent_free_str = f"{percent_free_val:.1f}%"
-    
+
     return {
         "total_gb": total_gb,
         "used_gb": used_gb,
@@ -459,11 +448,7 @@ def get_disk_space_info(path: str | Path) -> Dict[str, Any]:
     }
 
 
-def check_disk_space(
-    path: str | Path, 
-    min_free_gb: float = 1.0, 
-    min_free_percent: float = 5.0
-) -> Tuple[bool, str]:
+def check_disk_space(path: str | Path, min_free_gb: float = 1.0, min_free_percent: float = 5.0) -> Tuple[bool, str]:
     """Check if disk has sufficient free space.
 
     Args:
@@ -476,28 +461,31 @@ def check_disk_space(
     """
     try:
         total, used, free, percent_str = get_disk_usage(path)
-        
+
         free_gb = free / (1024**3)
         free_percent = (free / total * 100) if total > 0 else 0
-        
+
         if free_gb < min_free_gb:
             return False, f"Insufficient free space: {free_gb:.2f} GB available, {min_free_gb:.2f} GB required"
-            
+
         if free_percent < min_free_percent:
-            return False, f"Insufficient free space percentage: {free_percent:.1f}% available, {min_free_percent:.1f}% required"
-            
+            return (
+                False,
+                f"Insufficient free space percentage: {free_percent:.1f}% available, {min_free_percent:.1f}% required",
+            )
+
         return True, "Disk space OK"
-        
+
     except OSError as e:
         return False, f"Error checking disk space: {e}"
 
 
 def detect_drive_size_category(path_or_size: str | Path | int) -> str:
     """Categorize drive size.
-    
+
     Args:
         path_or_size: Path to check or total size in bytes
-        
+
     Returns:
         Category: 'small' (<256GB), 'medium' (256GB-1TB), 'large' (>1TB)
     """
@@ -505,52 +493,50 @@ def detect_drive_size_category(path_or_size: str | Path | int) -> str:
         total, _, _, _ = get_disk_usage(path_or_size)
     else:
         total = float(path_or_size)
-        
+
     gb = total / (1024**3)
     if gb < 256:
-        return 'small'
+        return "small"
     elif gb < 1000:
-        return 'medium'
+        return "medium"
     else:
-        return 'large'
+        return "large"
 
 
 def get_recommended_batch_size(
-    path: str | Path | None = None, 
-    sample_size_gb: float = 1.0, 
-    safety_buffer: float = 0.2
+    path: str | Path | None = None, sample_size_gb: float = 1.0, safety_buffer: float = 0.2
 ) -> int:
     """Get recommended batch size based on disk performance/size.
-    
+
     Args:
         path: Optional path to check disk
         sample_size_gb: Estimated size of one sample in GB
         safety_buffer: Safety buffer fraction (0.0-1.0)
-        
+
     Returns:
         Recommended batch size (number of items)
     """
     # Simple heuristic
     base_batch = 1000
-    
+
     if path:
-        is_ok, msg = check_disk_space(path, min_free_gb=sample_size_gb * 10, min_free_percent=1.0) 
+        is_ok, msg = check_disk_space(path, min_free_gb=sample_size_gb * 10, min_free_percent=1.0)
         if not is_ok:
-            return 8 # Minimum batch
-            
+            return 8  # Minimum batch
+
         try:
             category = detect_drive_size_category(path)
-            if category == 'large':
+            if category == "large":
                 base_batch = 5000
-            elif category == 'medium':
+            elif category == "medium":
                 base_batch = 2000
         except Exception:
             pass
-    
+
     # Adjust for sample size
     if sample_size_gb > 10.0:
         return max(8, int(base_batch / 10))
     elif sample_size_gb > 1.0:
         return max(8, int(base_batch / 2))
-            
+
     return base_batch

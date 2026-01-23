@@ -582,6 +582,7 @@ class TestEdgeCases:
     def test_zero_variance_genes(self):
         """Test handling of zero-variance genes."""
         import warnings
+
         X = np.random.normal(0, 1, (50, 20))
         # Make some genes have zero variance
         X[:, :5] = 1.0  # Constant expression

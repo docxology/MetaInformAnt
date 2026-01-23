@@ -23,9 +23,9 @@ class TestKinshipMatrixProperties:
         for method in ["vanraden", "astle", "yang"]:
             result = compute_kinship_matrix(genotypes, method=method)
             assert result["status"] == "success"
-            
+
             kinship = np.array(result["kinship_matrix"])
-            
+
             # Check symmetry: K = K^T
             assert np.allclose(kinship, kinship.T), f"Kinship matrix not symmetric for {method} method"
 
@@ -42,9 +42,9 @@ class TestKinshipMatrixProperties:
         for method in ["vanraden", "astle", "yang"]:
             result = compute_kinship_matrix(genotypes, method=method)
             assert result["status"] == "success"
-            
+
             kinship = np.array(result["kinship_matrix"])
-            
+
             # Check positive semi-definite: all eigenvalues >= 0
             eigenvalues = np.linalg.eigvals(kinship)
             assert np.all(eigenvalues >= -1e-10), (
@@ -63,13 +63,13 @@ class TestKinshipMatrixProperties:
         for method in ["vanraden", "astle", "yang"]:
             result = compute_kinship_matrix(genotypes, method=method)
             assert result["status"] == "success"
-            
+
             kinship = np.array(result["kinship_matrix"])
             diagonal = np.diag(kinship)
-            
+
             # Diagonal should be non-negative (self-kinship)
             assert np.all(diagonal >= -1e-10), f"Negative diagonal values for {method} method"
-            
+
             # Diagonal should typically be <= 1 (though not strictly required)
             # For most methods, self-kinship should be reasonable
 
@@ -84,22 +84,18 @@ class TestKinshipMatrixProperties:
         for method in ["vanraden", "astle", "yang"]:
             result = compute_kinship_matrix(genotypes, method=method)
             assert result["status"] == "success"
-            
+
             kinship = np.array(result["kinship_matrix"])
-            
+
             # Samples 0 and 1 should have high kinship (they're identical)
             kinship_0_1 = kinship[0, 1]
-            
+
             # For identical samples, kinship should be high
             # Yang method produces lower values (typically ~0.3), others are higher (>0.5)
             if method == "yang":
-                assert kinship_0_1 > 0.2, (
-                    f"Identical samples have low kinship ({kinship_0_1:.4f}) for {method} method"
-                )
+                assert kinship_0_1 > 0.2, f"Identical samples have low kinship ({kinship_0_1:.4f}) for {method} method"
             else:
-                assert kinship_0_1 > 0.5, (
-                    f"Identical samples have low kinship ({kinship_0_1:.4f}) for {method} method"
-                )
+                assert kinship_0_1 > 0.5, f"Identical samples have low kinship ({kinship_0_1:.4f}) for {method} method"
 
     def test_kinship_method_comparison(self):
         """Test that different methods give consistent but not identical results."""
@@ -154,12 +150,12 @@ class TestKinshipMatrixProperties:
         for method in ["vanraden", "astle", "yang"]:
             result = compute_kinship_matrix(genotypes, method=method)
             assert result["status"] == "success"
-            
+
             kinship = np.array(result["kinship_matrix"])
-            
+
             # Should still be symmetric
             assert np.allclose(kinship, kinship.T)
-            
+
             # Should have missing data stats
             assert "missing_data_stats" in result
             assert result["missing_data_stats"]["total_missing"] > 0
@@ -175,11 +171,10 @@ class TestKinshipMatrixProperties:
 
         result = compute_kinship_matrix(genotypes, method="vanraden")
         assert result["status"] == "success"
-        
+
         kinship = np.array(result["kinship_matrix"])
         num_samples = len(genotypes)
-        
+
         # Should be square matrix with shape (num_samples, num_samples)
         assert kinship.shape == (num_samples, num_samples)
         assert result["num_samples"] == num_samples
-

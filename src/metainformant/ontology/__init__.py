@@ -33,15 +33,8 @@ __all__ = [
     "go",
     "obo",
     "query",
-
     # Data structures and utilities
     "types",
     "serialize",
     "visualization",
 ]
-
-
-
-
-
-

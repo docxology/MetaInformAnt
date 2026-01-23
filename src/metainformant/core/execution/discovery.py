@@ -13,8 +13,6 @@ from pathlib import Path
 from typing import Any
 
 
-
-
 @dataclass
 class FunctionInfo:
     """Information about a discovered function."""
@@ -80,7 +78,7 @@ def _parse_function_signature(node: ast.FunctionDef) -> str:
     """Parse function signature from AST node."""
     args = []
     defaults_start = len(node.args.args) - len(node.args.defaults)
-    
+
     for i, arg in enumerate(node.args.args):
         arg_str = arg.arg
         if arg.annotation:
@@ -553,4 +551,3 @@ def discover_workflows(repo_root: str | Path | None = None) -> list[dict[str, An
             )
 
     return workflows
-

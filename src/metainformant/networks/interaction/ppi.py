@@ -16,17 +16,14 @@ logger = logging.get_logger(__name__)
 # Optional dependencies
 try:
     import networkx as nx
+
     HAS_NETWORKX = True
 except ImportError:
     HAS_NETWORKX = False
     logger.warning("networkx not available, PPI analysis disabled")
 
 
-def load_ppi_network(
-    ppi_file: Union[str, Path],
-    format: str = "tsv",
-    **kwargs: Any
-) -> Any:
+def load_ppi_network(ppi_file: Union[str, Path], format: str = "tsv", **kwargs: Any) -> Any:
     """Load PPI network from file.
 
     Args:
@@ -49,13 +46,13 @@ def load_ppi_network(
     if format == "tsv":
         # Assume tab-separated: protein1, protein2, score
         ppi_data = []
-        with open(ppi_file, 'r') as f:
+        with open(ppi_file, "r") as f:
             for line_num, line in enumerate(f):
                 line = line.strip()
-                if not line or line.startswith('#'):
+                if not line or line.startswith("#"):
                     continue
 
-                parts = line.split('\t')
+                parts = line.split("\t")
                 if len(parts) >= 2:
                     protein1, protein2 = parts[0], parts[1]
                     score = float(parts[2]) if len(parts) > 2 else 1.0
@@ -64,8 +61,9 @@ def load_ppi_network(
     elif format == "csv":
         # CSV format
         import csv
+
         ppi_data = []
-        with open(ppi_file, 'r') as f:
+        with open(ppi_file, "r") as f:
             reader = csv.reader(f)
             next(reader, None)  # Skip header
             for row in reader:
@@ -77,10 +75,10 @@ def load_ppi_network(
     elif format == "bioplex":
         # BioPlex format (specific columns)
         ppi_data = []
-        with open(ppi_file, 'r') as f:
-            header = next(f).strip().split('\t')
+        with open(ppi_file, "r") as f:
+            header = next(f).strip().split("\t")
             for line in f:
-                parts = line.strip().split('\t')
+                parts = line.strip().split("\t")
                 if len(parts) > 1:
                     # BioPlex has specific column indices
                     protein1 = parts[0]
@@ -91,18 +89,18 @@ def load_ppi_network(
     elif format == "intact":
         # IntAct PSI-MI TAB format
         ppi_data = []
-        with open(ppi_file, 'r') as f:
+        with open(ppi_file, "r") as f:
             for line in f:
-                if line.startswith('#'):
+                if line.startswith("#"):
                     continue
-                parts = line.split('\t')
+                parts = line.split("\t")
                 if len(parts) >= 6:
                     # IntAct format: ID interactor A, ID interactor B, etc.
                     protein1_id = parts[0]
                     protein2_id = parts[1]
                     # Extract protein names from IDs
-                    protein1 = protein1_id.split(':')[-1] if ':' in protein1_id else protein1_id
-                    protein2 = protein2_id.split(':')[-1] if ':' in protein2_id else protein2_id
+                    protein1 = protein1_id.split(":")[-1] if ":" in protein1_id else protein1_id
+                    protein2 = protein2_id.split(":")[-1] if ":" in protein2_id else protein2_id
                     score = 1.0
                     ppi_data.append((protein1, protein2, score))
 
@@ -115,9 +113,9 @@ def load_ppi_network(
     for protein1, protein2, score in ppi_data:
         if G.has_edge(protein1, protein2):
             # Update existing edge with higher score
-            current_score = G[protein1][protein2].get('weight', 0)
+            current_score = G[protein1][protein2].get("weight", 0)
             if score > current_score:
-                G[protein1][protein2]['weight'] = score
+                G[protein1][protein2]["weight"] = score
         else:
             G.add_edge(protein1, protein2, weight=score)
 
@@ -125,10 +123,7 @@ def load_ppi_network(
     return G
 
 
-def construct_ppi_network_from_interactions(
-    interactions: List[Tuple[str, str, float]],
-    **kwargs: Any
-) -> Any:
+def construct_ppi_network_from_interactions(interactions: List[Tuple[str, str, float]], **kwargs: Any) -> Any:
     """Construct PPI network from interaction list.
 
     Args:
@@ -149,9 +144,9 @@ def construct_ppi_network_from_interactions(
     for protein1, protein2, score in interactions:
         if G.has_edge(protein1, protein2):
             # Keep higher score
-            current_score = G[protein1][protein2].get('weight', 0)
+            current_score = G[protein1][protein2].get("weight", 0)
             if score > current_score:
-                G[protein1][protein2]['weight'] = score
+                G[protein1][protein2]["weight"] = score
         else:
             G.add_edge(protein1, protein2, weight=score)
 
@@ -159,10 +154,7 @@ def construct_ppi_network_from_interactions(
     return G
 
 
-def ppi_network_analysis(
-    ppi_graph: Any,
-    **kwargs: Any
-) -> Dict[str, Any]:
+def ppi_network_analysis(ppi_graph: Any, **kwargs: Any) -> Dict[str, Any]:
     """Comprehensive analysis of PPI network properties.
 
     Args:
@@ -179,84 +171,81 @@ def ppi_network_analysis(
         raise ImportError("networkx required for PPI analysis")
 
     analysis = {
-        'basic_stats': {
-            'n_proteins': len(ppi_graph.nodes()),
-            'n_interactions': len(ppi_graph.edges()),
+        "basic_stats": {
+            "n_proteins": len(ppi_graph.nodes()),
+            "n_interactions": len(ppi_graph.edges()),
         }
     }
 
-    if analysis['basic_stats']['n_proteins'] == 0:
+    if analysis["basic_stats"]["n_proteins"] == 0:
         return analysis
 
     # Degree analysis
     degrees = [d for n, d in ppi_graph.degree()]
-    analysis['degree_distribution'] = {
-        'mean_degree': float(sum(degrees) / len(degrees)),
-        'max_degree': max(degrees),
-        'min_degree': min(degrees),
-        'degrees': degrees,
+    analysis["degree_distribution"] = {
+        "mean_degree": float(sum(degrees) / len(degrees)),
+        "max_degree": max(degrees),
+        "min_degree": min(degrees),
+        "degrees": degrees,
     }
 
     # Connected components
     components = list(nx.connected_components(ppi_graph))
     component_sizes = [len(c) for c in components]
 
-    analysis['connectivity'] = {
-        'n_components': len(components),
-        'largest_component_size': max(component_sizes) if component_sizes else 0,
-        'component_sizes': component_sizes,
-        'isolated_proteins': len([c for c in components if len(c) == 1]),
+    analysis["connectivity"] = {
+        "n_components": len(components),
+        "largest_component_size": max(component_sizes) if component_sizes else 0,
+        "component_sizes": component_sizes,
+        "isolated_proteins": len([c for c in components if len(c) == 1]),
     }
 
     # Clustering coefficient
     try:
         avg_clustering = nx.average_clustering(ppi_graph)
-        analysis['clustering'] = {
-            'average_clustering_coefficient': avg_clustering,
+        analysis["clustering"] = {
+            "average_clustering_coefficient": avg_clustering,
         }
     except Exception as e:
         logger.warning(f"Could not calculate clustering coefficient: {e}")
-        analysis['clustering'] = {'error': str(e)}
+        analysis["clustering"] = {"error": str(e)}
 
     # Network density
     n_nodes = len(ppi_graph.nodes())
     max_edges = n_nodes * (n_nodes - 1) / 2
     density = len(ppi_graph.edges()) / max_edges if max_edges > 0 else 0
 
-    analysis['topology'] = {
-        'density': density,
-        'average_shortest_path_length': None,  # Too expensive for large networks
+    analysis["topology"] = {
+        "density": density,
+        "average_shortest_path_length": None,  # Too expensive for large networks
     }
 
     # Centrality measures (sample for large networks)
-    max_nodes_for_centrality = kwargs.get('max_nodes_for_centrality', 1000)
+    max_nodes_for_centrality = kwargs.get("max_nodes_for_centrality", 1000)
 
     if n_nodes <= max_nodes_for_centrality:
         try:
             degree_cent = nx.degree_centrality(ppi_graph)
             betweenness_cent = nx.betweenness_centrality(ppi_graph)
 
-            analysis['centrality'] = {
-                'degree_centrality': dict(list(degree_cent.items())[:10]),  # Top 10
-                'betweenness_centrality': dict(list(betweenness_cent.items())[:10]),
+            analysis["centrality"] = {
+                "degree_centrality": dict(list(degree_cent.items())[:10]),  # Top 10
+                "betweenness_centrality": dict(list(betweenness_cent.items())[:10]),
             }
         except Exception as e:
             logger.warning(f"Could not calculate centrality: {e}")
-            analysis['centrality'] = {'error': str(e)}
+            analysis["centrality"] = {"error": str(e)}
     else:
-        analysis['centrality'] = {
-            'skipped': True,
-            'reason': f'Network too large ({n_nodes} > {max_nodes_for_centrality} nodes)',
+        analysis["centrality"] = {
+            "skipped": True,
+            "reason": f"Network too large ({n_nodes} > {max_nodes_for_centrality} nodes)",
         }
 
     return analysis
 
 
 def find_ppi_hubs(
-    ppi_graph: Any,
-    degree_threshold: Optional[int] = None,
-    percentile: float = 95.0,
-    **kwargs: Any
+    ppi_graph: Any, degree_threshold: Optional[int] = None, percentile: float = 95.0, **kwargs: Any
 ) -> List[Tuple[str, int]]:
     """Identify hub proteins in PPI network.
 
@@ -284,8 +273,7 @@ def find_ppi_hubs(
         degree_threshold = int(np.percentile(degree_values, percentile))
 
     # Find hubs
-    hubs = [(protein, degree) for protein, degree in degrees.items()
-            if degree >= degree_threshold]
+    hubs = [(protein, degree) for protein, degree in degrees.items() if degree >= degree_threshold]
 
     # Sort by degree descending
     hubs.sort(key=lambda x: x[1], reverse=True)
@@ -294,11 +282,7 @@ def find_ppi_hubs(
     return hubs
 
 
-def ppi_network_clustering(
-    ppi_graph: Any,
-    method: str = "louvain",
-    **kwargs: Any
-) -> List[List[str]]:
+def ppi_network_clustering(ppi_graph: Any, method: str = "louvain", **kwargs: Any) -> List[List[str]]:
     """Cluster PPI network into functional modules.
 
     Args:
@@ -322,9 +306,7 @@ def ppi_network_clustering(
 
 
 def analyze_ppi_disease_associations(
-    ppi_graph: Any,
-    disease_proteins: Dict[str, List[str]],
-    **kwargs: Any
+    ppi_graph: Any, disease_proteins: Dict[str, List[str]], **kwargs: Any
 ) -> Dict[str, Any]:
     """Analyze disease associations in PPI network.
 
@@ -355,13 +337,14 @@ def analyze_ppi_disease_associations(
 
         # Analyze disease module properties
         associations[disease] = {
-            'proteins_in_network': len(disease_proteins_in_network),
-            'total_proteins': len(proteins),
-            'subgraph_edges': len(disease_subgraph.edges()),
-            'subgraph_density': (
-                len(disease_subgraph.edges()) /
-                (len(disease_proteins_in_network) * (len(disease_proteins_in_network) - 1) / 2)
-                if len(disease_proteins_in_network) > 1 else 0
+            "proteins_in_network": len(disease_proteins_in_network),
+            "total_proteins": len(proteins),
+            "subgraph_edges": len(disease_subgraph.edges()),
+            "subgraph_density": (
+                len(disease_subgraph.edges())
+                / (len(disease_proteins_in_network) * (len(disease_proteins_in_network) - 1) / 2)
+                if len(disease_proteins_in_network) > 1
+                else 0
             ),
         }
 
@@ -371,16 +354,12 @@ def analyze_ppi_disease_associations(
             disease_neighbors.update(ppi_graph.neighbors(protein))
         disease_neighbors -= set(disease_proteins_in_network)
 
-        associations[disease]['external_connections'] = len(disease_neighbors)
+        associations[disease]["external_connections"] = len(disease_neighbors)
 
     return associations
 
 
-def ppi_network_comparison(
-    ppi_graph1: Any,
-    ppi_graph2: Any,
-    **kwargs: Any
-) -> Dict[str, Any]:
+def ppi_network_comparison(ppi_graph1: Any, ppi_graph2: Any, **kwargs: Any) -> Dict[str, Any]:
     """Compare two PPI networks.
 
     Args:
@@ -398,8 +377,8 @@ def ppi_network_comparison(
         raise ImportError("networkx required for network comparison")
 
     comparison = {
-        'network1_stats': ppi_network_analysis(ppi_graph1),
-        'network2_stats': ppi_network_analysis(ppi_graph2),
+        "network1_stats": ppi_network_analysis(ppi_graph1),
+        "network2_stats": ppi_network_analysis(ppi_graph2),
     }
 
     # Common proteins
@@ -407,11 +386,11 @@ def ppi_network_comparison(
     proteins2 = set(ppi_graph2.nodes())
     common_proteins = proteins1 & proteins2
 
-    comparison['protein_overlap'] = {
-        'common_proteins': len(common_proteins),
-        'unique_to_1': len(proteins1 - proteins2),
-        'unique_to_2': len(proteins2 - proteins1),
-        'jaccard_similarity': len(common_proteins) / len(proteins1 | proteins2),
+    comparison["protein_overlap"] = {
+        "common_proteins": len(common_proteins),
+        "unique_to_1": len(proteins1 - proteins2),
+        "unique_to_2": len(proteins2 - proteins1),
+        "jaccard_similarity": len(common_proteins) / len(proteins1 | proteins2),
     }
 
     # Common interactions
@@ -419,21 +398,18 @@ def ppi_network_comparison(
     edges2 = set(ppi_graph2.edges())
     common_edges = edges1 & edges2
 
-    comparison['interaction_overlap'] = {
-        'common_interactions': len(common_edges),
-        'unique_to_1': len(edges1 - edges2),
-        'unique_to_2': len(edges2 - edges1),
-        'jaccard_similarity': len(common_edges) / len(edges1 | edges2),
+    comparison["interaction_overlap"] = {
+        "common_interactions": len(common_edges),
+        "unique_to_1": len(edges1 - edges2),
+        "unique_to_2": len(edges2 - edges1),
+        "jaccard_similarity": len(common_edges) / len(edges1 | edges2),
     }
 
     return comparison
 
 
 def ppi_network_enrichment(
-    protein_list: List[str],
-    ppi_graph: Any,
-    background_proteins: Optional[List[str]] = None,
-    **kwargs: Any
+    protein_list: List[str], ppi_graph: Any, background_proteins: Optional[List[str]] = None, **kwargs: Any
 ) -> Dict[str, Any]:
     """Test for enrichment of protein interactions.
 
@@ -460,7 +436,7 @@ def ppi_network_enrichment(
     background_proteins = [p for p in background_proteins if p in ppi_graph.nodes()]
 
     if not test_proteins:
-        return {'error': 'No test proteins found in PPI network'}
+        return {"error": "No test proteins found in PPI network"}
 
     # Count interactions within test set
     test_subgraph = ppi_graph.subgraph(test_proteins)
@@ -472,11 +448,7 @@ def ppi_network_enrichment(
     total_possible_interactions = n_background * (n_background - 1) / 2
     observed_background_interactions = len(ppi_graph.edges())
 
-    expected_interactions = (
-        observed_background_interactions *
-        (n_test * (n_test - 1) / 2) /
-        total_possible_interactions
-    )
+    expected_interactions = observed_background_interactions * (n_test * (n_test - 1) / 2) / total_possible_interactions
 
     # Calculate enrichment statistics
     enrichment_ratio = observed_interactions / expected_interactions if expected_interactions > 0 else 1.0
@@ -484,27 +456,23 @@ def ppi_network_enrichment(
     # Statistical significance (approximate)
     try:
         import scipy.stats as stats
+
         # Use Poisson approximation for large numbers
         p_value = 1 - stats.poisson.cdf(observed_interactions - 1, expected_interactions)
     except ImportError:
         p_value = None
 
     return {
-        'observed_interactions': observed_interactions,
-        'expected_interactions': expected_interactions,
-        'enrichment_ratio': enrichment_ratio,
-        'p_value': p_value,
-        'test_proteins': len(test_proteins),
-        'background_proteins': len(background_proteins),
+        "observed_interactions": observed_interactions,
+        "expected_interactions": expected_interactions,
+        "enrichment_ratio": enrichment_ratio,
+        "p_value": p_value,
+        "test_proteins": len(test_proteins),
+        "background_proteins": len(background_proteins),
     }
 
 
-def save_ppi_network(
-    ppi_graph: Any,
-    output_file: Union[str, Path],
-    format: str = "tsv",
-    **kwargs: Any
-) -> None:
+def save_ppi_network(ppi_graph: Any, output_file: Union[str, Path], format: str = "tsv", **kwargs: Any) -> None:
     """Save PPI network to file.
 
     Args:
@@ -523,19 +491,20 @@ def save_ppi_network(
     output_file.parent.mkdir(parents=True, exist_ok=True)
 
     if format == "tsv":
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             f.write("#protein1\tprotein2\tscore\n")
             for u, v, data in ppi_graph.edges(data=True):
-                score = data.get('weight', 1.0)
+                score = data.get("weight", 1.0)
                 f.write(f"{u}\t{v}\t{score}\n")
 
     elif format == "csv":
         import csv
-        with open(output_file, 'w', newline='') as f:
+
+        with open(output_file, "w", newline="") as f:
             writer = csv.writer(f)
-            writer.writerow(['protein1', 'protein2', 'score'])
+            writer.writerow(["protein1", "protein2", "score"])
             for u, v, data in ppi_graph.edges(data=True):
-                score = data.get('weight', 1.0)
+                score = data.get("weight", 1.0)
                 writer.writerow([u, v, score])
 
     elif format == "json":
@@ -572,8 +541,7 @@ class ProteinNetwork:
         self.metadata = {}
 
     @classmethod
-    def from_file(cls, filepath: Union[str, Path], format: str = "tsv",
-                 name: str = "") -> 'ProteinNetwork':
+    def from_file(cls, filepath: Union[str, Path], format: str = "tsv", name: str = "") -> "ProteinNetwork":
         """Load protein network from file.
 
         Args:
@@ -586,13 +554,12 @@ class ProteinNetwork:
         """
         graph = load_ppi_network(filepath, format=format)
         network = cls(graph=graph, name=name or Path(filepath).stem)
-        network.metadata['source_file'] = str(filepath)
-        network.metadata['format'] = format
+        network.metadata["source_file"] = str(filepath)
+        network.metadata["format"] = format
         return network
 
     @classmethod
-    def from_interactions(cls, interactions: List[Tuple[str, str]],
-                         name: str = "") -> 'ProteinNetwork':
+    def from_interactions(cls, interactions: List[Tuple[str, str]], name: str = "") -> "ProteinNetwork":
         """Create network from list of protein interactions.
 
         Args:
@@ -609,8 +576,8 @@ class ProteinNetwork:
         graph.add_edges_from(interactions)
 
         network = cls(graph=graph, name=name)
-        network.metadata['n_interactions'] = len(interactions)
-        network.metadata['n_proteins'] = len(graph.nodes())
+        network.metadata["n_interactions"] = len(interactions)
+        network.metadata["n_proteins"] = len(graph.nodes())
         return network
 
     def get_proteins(self) -> List[str]:
@@ -737,7 +704,9 @@ class ProteinNetwork:
             "n_interactions": len(self.graph.edges()),
             "n_components": len(self.connected_components()),
             "largest_component_size": len(self.largest_component()),
-            "average_degree": sum(dict(self.graph.degree()).values()) / len(self.graph.nodes()) if self.graph.nodes() else 0,
+            "average_degree": (
+                sum(dict(self.graph.degree()).values()) / len(self.graph.nodes()) if self.graph.nodes() else 0
+            ),
             "density": nx.density(self.graph),
         }
 
@@ -766,7 +735,7 @@ def predict_interactions(
     method: str = "similarity",
     threshold: float = 0.5,
     max_predictions_per_protein: int = 10,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Dict[str, List[Dict[str, Any]]]:
     """Predict protein-protein interactions for target proteins.
 
@@ -790,9 +759,7 @@ def predict_interactions(
             logger.warning("Known network required for similarity method")
             return {}
 
-        predictions = _predict_by_similarity(
-            target_proteins, known_network, threshold, max_predictions_per_protein
-        )
+        predictions = _predict_by_similarity(target_proteins, known_network, threshold, max_predictions_per_protein)
 
     elif method == "correlation":
         # Correlation-based prediction using feature similarity
@@ -800,9 +767,7 @@ def predict_interactions(
             logger.warning("Features required for correlation method")
             return {}
 
-        predictions = _predict_by_correlation(
-            target_proteins, features, threshold, max_predictions_per_protein
-        )
+        predictions = _predict_by_correlation(target_proteins, features, threshold, max_predictions_per_protein)
 
     elif method == "guilt-by-association":
         # Guilt-by-association using known network neighbors
@@ -831,10 +796,7 @@ def predict_interactions(
 
 
 def _predict_by_similarity(
-    target_proteins: List[str],
-    known_network: ProteinNetwork,
-    threshold: float,
-    max_predictions: int
+    target_proteins: List[str], known_network: ProteinNetwork, threshold: float, max_predictions: int
 ) -> Dict[str, List[Dict[str, Any]]]:
     """Predict interactions using network similarity."""
     predictions = {}
@@ -859,14 +821,12 @@ def _predict_by_similarity(
                 similarity = len(target_neighbors & protein_neighbors) / len(target_neighbors | protein_neighbors)
 
                 if similarity >= threshold:
-                    candidate_predictions.append({
-                        'partner': protein,
-                        'confidence': similarity,
-                        'method': 'jaccard_similarity'
-                    })
+                    candidate_predictions.append(
+                        {"partner": protein, "confidence": similarity, "method": "jaccard_similarity"}
+                    )
 
             # Sort by confidence and limit
-            candidate_predictions.sort(key=lambda x: x['confidence'], reverse=True)
+            candidate_predictions.sort(key=lambda x: x["confidence"], reverse=True)
             predictions[target] = candidate_predictions[:max_predictions]
         else:
             # Target not in network, predict based on common neighbors
@@ -877,11 +837,9 @@ def _predict_by_similarity(
                 # This is a simplified approach - in practice would use more sophisticated methods
                 confidence = 0.5  # Placeholder confidence
                 if confidence >= threshold:
-                    candidate_predictions.append({
-                        'partner': protein,
-                        'confidence': confidence,
-                        'method': 'network_similarity'
-                    })
+                    candidate_predictions.append(
+                        {"partner": protein, "confidence": confidence, "method": "network_similarity"}
+                    )
 
             predictions[target] = candidate_predictions[:max_predictions]
 
@@ -889,10 +847,7 @@ def _predict_by_similarity(
 
 
 def _predict_by_correlation(
-    target_proteins: List[str],
-    features: Dict[str, List[float]],
-    threshold: float,
-    max_predictions: int
+    target_proteins: List[str], features: Dict[str, List[float]], threshold: float, max_predictions: int
 ) -> Dict[str, List[Dict[str, Any]]]:
     """Predict interactions using feature correlation."""
     predictions = {}
@@ -919,26 +874,21 @@ def _predict_by_correlation(
                     try:
                         correlation = abs(np.corrcoef(target_features, protein_features)[0, 1])
                         if correlation >= threshold:
-                            candidate_predictions.append({
-                                'partner': protein,
-                                'confidence': correlation,
-                                'method': 'feature_correlation'
-                            })
-                    except:
+                            candidate_predictions.append(
+                                {"partner": protein, "confidence": correlation, "method": "feature_correlation"}
+                            )
+                    except (ValueError, FloatingPointError, np.linalg.LinAlgError):
                         continue
 
         # Sort by confidence and limit
-        candidate_predictions.sort(key=lambda x: x['confidence'], reverse=True)
+        candidate_predictions.sort(key=lambda x: x["confidence"], reverse=True)
         predictions[target] = candidate_predictions[:max_predictions]
 
     return predictions
 
 
 def _predict_by_guilt_by_association(
-    target_proteins: List[str],
-    known_network: ProteinNetwork,
-    threshold: float,
-    max_predictions: int
+    target_proteins: List[str], known_network: ProteinNetwork, threshold: float, max_predictions: int
 ) -> Dict[str, List[Dict[str, Any]]]:
     """Predict interactions using guilt-by-association."""
     predictions = {}
@@ -971,14 +921,12 @@ def _predict_by_guilt_by_association(
                 if total_neighbors > 0:
                     confidence = shared_neighbors / total_neighbors
                     if confidence >= threshold:
-                        candidate_predictions.append({
-                            'partner': candidate,
-                            'confidence': confidence,
-                            'method': 'guilt_by_association'
-                        })
+                        candidate_predictions.append(
+                            {"partner": candidate, "confidence": confidence, "method": "guilt_by_association"}
+                        )
 
         # Sort by confidence and limit
-        candidate_predictions.sort(key=lambda x: x['confidence'], reverse=True)
+        candidate_predictions.sort(key=lambda x: x["confidence"], reverse=True)
         predictions[target] = candidate_predictions[:max_predictions]
 
     return predictions
@@ -990,7 +938,7 @@ def _predict_by_ml(
     features: Dict[str, List[float]],
     threshold: float,
     max_predictions: int,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Dict[str, List[Dict[str, Any]]]:
     """Predict interactions using machine learning."""
     predictions = {}
@@ -1003,8 +951,9 @@ def _predict_by_ml(
     return _predict_by_correlation(target_proteins, features, threshold, max_predictions)
 
 
-def load_string_interactions(interactions_df: Any, proteins_df: Optional[Any] = None,
-                           confidence_threshold: int = 400) -> 'ProteinNetwork':
+def load_string_interactions(
+    interactions_df: Any, proteins_df: Optional[Any] = None, confidence_threshold: int = 400
+) -> "ProteinNetwork":
     """Load PPI network from STRING database format.
 
     Args:
@@ -1022,39 +971,46 @@ def load_string_interactions(interactions_df: Any, proteins_df: Optional[Any] = 
     network = ProteinNetwork(name="STRING_PPI")
 
     # Load interactions
-    if hasattr(interactions_df, 'iterrows'):  # pandas DataFrame
+    if hasattr(interactions_df, "iterrows"):  # pandas DataFrame
         for _, row in interactions_df.iterrows():
-            protein1 = str(row['protein1'])
-            protein2 = str(row['protein2'])
-            score = int(row['combined_score'])
+            protein1 = str(row["protein1"])
+            protein2 = str(row["protein2"])
+            score = int(row["combined_score"])
 
             if score >= confidence_threshold:
                 if network.graph.has_edge(protein1, protein2):
-                    current_score = network.graph[protein1][protein2].get('weight', 0)
+                    current_score = network.graph[protein1][protein2].get("weight", 0)
                     if score > current_score:
-                        network.graph[protein1][protein2]['weight'] = score
+                        network.graph[protein1][protein2]["weight"] = score
                 else:
                     network.graph.add_edge(protein1, protein2, weight=score)
 
     # Load protein metadata if provided
-    if proteins_df is not None and hasattr(proteins_df, 'iterrows'):
+    if proteins_df is not None and hasattr(proteins_df, "iterrows"):
         network.protein_metadata = {}
         for _, row in proteins_df.iterrows():
-            protein_id = str(row['protein_id'])
+            protein_id = str(row["protein_id"])
             metadata = {
-                'gene_name': row.get('gene_name', ''),
-                'protein_name': row.get('protein_name', ''),
+                "gene_name": row.get("gene_name", ""),
+                "protein_name": row.get("protein_name", ""),
             }
             network.protein_metadata[protein_id] = metadata
 
-    logger.info(f"Loaded STRING PPI network: {len(network.graph.nodes())} proteins, "
-               f"{len(network.graph.edges())} interactions (threshold: {confidence_threshold})")
+    logger.info(
+        f"Loaded STRING PPI network: {len(network.graph.nodes())} proteins, "
+        f"{len(network.graph.edges())} interactions (threshold: {confidence_threshold})"
+    )
     return network
 
 
-def functional_enrichment_ppi(protein_list: List[str], ppi_network: 'ProteinNetwork',
-                            function_key: str = 'function', background_proteins: List[str] | None = None,
-                            min_overlap: int = 2, max_p_value: float = 0.05) -> Dict[str, Dict[str, Any]]:
+def functional_enrichment_ppi(
+    protein_list: List[str],
+    ppi_network: "ProteinNetwork",
+    function_key: str = "function",
+    background_proteins: List[str] | None = None,
+    min_overlap: int = 2,
+    max_p_value: float = 0.05,
+) -> Dict[str, Dict[str, Any]]:
     """Perform functional enrichment analysis on a protein list using PPI network.
 
     Args:
@@ -1133,7 +1089,7 @@ def functional_enrichment_ppi(protein_list: List[str], ppi_network: 'ProteinNetw
                     p_value = 1e-10  # Very significant
                     break
 
-            enrichment_ratio = (overlap / n) / (K / N) if (K / N) > 0 else float('inf')
+            enrichment_ratio = (overlap / n) / (K / N) if (K / N) > 0 else float("inf")
 
             if p_value <= max_p_value:
                 enrichment_results[func] = {
@@ -1142,7 +1098,7 @@ def functional_enrichment_ppi(protein_list: List[str], ppi_network: 'ProteinNetw
                     "background_count": background_count,
                     "enrichment_ratio": enrichment_ratio,
                     "p_value": p_value,
-                    "proteins": test_functions[func]
+                    "proteins": test_functions[func],
                 }
 
     return enrichment_results

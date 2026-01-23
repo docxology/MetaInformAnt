@@ -1,4 +1,5 @@
 """Tests for DNA variant VCF parsing."""
+
 from __future__ import annotations
 
 from pathlib import Path

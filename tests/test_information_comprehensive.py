@@ -272,10 +272,10 @@ class TestIntegration:
         """Test properties of conditional entropy."""
         x = [0, 1, 0, 1, 0, 1]
         y = [0, 1, 0, 1, 0, 1]
-        
+
         h_x = shannon_entropy_from_counts(Counter(x))
         h_x_given_y = conditional_entropy(x, y)
-        
+
         # H(X|Y) <= H(X)
         assert h_x_given_y <= h_x + 1e-10
 
@@ -283,11 +283,11 @@ class TestIntegration:
         """Test properties of mutual information."""
         x = [0, 1, 0, 1, 0, 1]
         y = [0, 1, 0, 1, 0, 1]
-        
+
         h_x = shannon_entropy_from_counts(Counter(x))
         h_y = shannon_entropy_from_counts(Counter(y))
         mi = mutual_information(x, y)
-        
+
         # I(X; Y) <= min(H(X), H(Y))
         assert mi <= min(h_x, h_y) + 1e-10
         # I(X; Y) >= 0
@@ -420,9 +420,7 @@ class TestEstimationMethods:
         corrected = bias_correction(1.5, n_samples=100, n_bins=10, measure="entropy")
         assert corrected > 1.5  # Should increase for entropy
 
-        corrected_mi = bias_correction(
-            0.5, n_samples=100, n_bins=10, measure="mutual_information"
-        )
+        corrected_mi = bias_correction(0.5, n_samples=100, n_bins=10, measure="mutual_information")
         assert corrected_mi <= 0.5  # Should decrease for MI
 
 
@@ -498,7 +496,7 @@ class TestExportedFunctions:
     def test_shannon_entropy_from_counts_exported(self):
         """Test that shannon_entropy_from_counts is accessible from main import."""
         from metainformant.information import shannon_entropy_from_counts
-        
+
         counts = {"A": 50, "T": 30, "G": 20}
         entropy = shannon_entropy_from_counts(counts)
         assert entropy > 0.0
@@ -506,7 +504,7 @@ class TestExportedFunctions:
     def test_information_content_from_annotations_exported(self):
         """Test that information_content_from_annotations is accessible from main import."""
         from metainformant.information import information_content_from_annotations
-        
+
         gene_annotations = {
             "gene1": {"GO:0008150", "GO:0003674"},
             "gene2": {"GO:0008150", "GO:0005524"},
@@ -514,4 +512,3 @@ class TestExportedFunctions:
         term_ic = information_content_from_annotations(gene_annotations)
         assert isinstance(term_ic, dict)
         assert len(term_ic) > 0
-

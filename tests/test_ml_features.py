@@ -307,7 +307,7 @@ class TestStabilityFeatureSelection:
         np.random.seed(999)
         X_random = np.random.randn(60, 25)
         y_random = np.random.randint(0, 2, 60)
-        
+
         # Use threshold > 1.0 which is impossible (frequencies are in [0, 1])
         with pytest.warns(UserWarning, match="No features meet stability threshold"):
             X_selected, selected_indices = select_features_stability(

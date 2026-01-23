@@ -20,8 +20,7 @@ from metainformant.core import io, logging, paths
 logger = logging.get_logger(__name__)
 
 
-def download_genome_package(accession: str, output_dir: str | Path,
-                          include: List[str] | None = None) -> Path:
+def download_genome_package(accession: str, output_dir: str | Path, include: List[str] | None = None) -> Path:
     """Download genome package from NCBI Datasets API.
 
     Args:
@@ -53,7 +52,7 @@ def download_genome_package(accession: str, output_dir: str | Path,
 
     params = {}
     if include:
-        params['include'] = ','.join(include)
+        params["include"] = ",".join(include)
 
     logger.info(f"Downloading genome {accession} from NCBI Datasets")
 
@@ -63,17 +62,18 @@ def download_genome_package(accession: str, output_dir: str | Path,
 
         # Save as zip file
         zip_path = output_dir / f"{accession}.zip"
-        with open(zip_path, 'wb') as f:
+        with open(zip_path, "wb") as f:
             f.write(response.content)
 
         logger.info(f"Downloaded genome package to {zip_path}")
 
         # Extract zip (basic extraction)
         import zipfile
+
         extract_dir = output_dir / accession
         extract_dir.mkdir(exist_ok=True)
 
-        with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+        with zipfile.ZipFile(zip_path, "r") as zip_ref:
             zip_ref.extractall(extract_dir)
 
         # Remove zip file
@@ -86,9 +86,9 @@ def download_genome_package(accession: str, output_dir: str | Path,
         raise
 
 
-def download_genome_package_best_effort(accession: str, output_dir: str | Path,
-                                       include: List[str] | None = None,
-                                       ftp_url: Optional[str] = None) -> Path:
+def download_genome_package_best_effort(
+    accession: str, output_dir: str | Path, include: List[str] | None = None, ftp_url: Optional[str] = None
+) -> Path:
     """Download genome package with fallback strategies.
 
     This function tries multiple approaches to download genome data:
@@ -153,7 +153,7 @@ def is_valid_assembly_accession(accession: str) -> bool:
 
     # NCBI assembly accession patterns
     # GCF_##########.## or GCA_##########
-    pattern = r'^(GCF|GCA)_[0-9]{9,}(\.[0-9]+)?$'
+    pattern = r"^(GCF|GCA)_[0-9]{9,}(\.[0-9]+)?$"
 
     return bool(re.match(pattern, accession))
 
@@ -178,13 +178,13 @@ def validate_accession(accession: str) -> bool:
 
     # Common NCBI accession patterns
     patterns = [
-        r'^GC[FA]_\d{9}\.\d+$',  # GCF_000001405.39 (RefSeq)
-        r'^GCA_\d{9}\.\d+$',     # GCA_000001405.39 (GenBank)
-        r'^ASM\d+$',             # ASM2732 (older format)
-        r'^chr\d+$',             # chr1, chr2, etc.
-        r'^NC_\d{6}$',           # NC_000001 (chromosome)
-        r'^NT_\d{6}$',           # NT_000001 (contig)
-        r'^NW_\d{8}$',           # NW_001838827 (scaffold)
+        r"^GC[FA]_\d{9}\.\d+$",  # GCF_000001405.39 (RefSeq)
+        r"^GCA_\d{9}\.\d+$",  # GCA_000001405.39 (GenBank)
+        r"^ASM\d+$",  # ASM2732 (older format)
+        r"^chr\d+$",  # chr1, chr2, etc.
+        r"^NC_\d{6}$",  # NC_000001 (chromosome)
+        r"^NT_\d{6}$",  # NT_000001 (contig)
+        r"^NW_\d{8}$",  # NW_001838827 (scaffold)
     ]
 
     return any(re.match(pattern, accession) for pattern in patterns)
@@ -222,30 +222,30 @@ def get_genome_metadata(accession: str) -> Dict[str, Any]:
         data = response.json()
 
         # Extract relevant metadata
-        if 'reports' in data and data['reports']:
-            report = data['reports'][0]
+        if "reports" in data and data["reports"]:
+            report = data["reports"][0]
 
             metadata = {
-                'accession': accession,
-                'organism_name': report.get('organism', {}).get('organism_name', 'Unknown'),
-                'tax_id': report.get('organism', {}).get('tax_id'),
-                'assembly_level': report.get('assembly_info', {}).get('assembly_level'),
-                'assembly_method': report.get('assembly_info', {}).get('assembly_method'),
-                'genome_size': report.get('assembly_stats', {}).get('total_sequence_length'),
-                'gc_percent': report.get('assembly_stats', {}).get('gc_percent'),
-                'contig_count': report.get('assembly_stats', {}).get('contig_count'),
-                'scaffold_count': report.get('assembly_stats', {}).get('scaffold_count'),
-                'release_date': report.get('assembly_info', {}).get('release_date'),
-                'submitter': report.get('assembly_info', {}).get('submitter'),
+                "accession": accession,
+                "organism_name": report.get("organism", {}).get("organism_name", "Unknown"),
+                "tax_id": report.get("organism", {}).get("tax_id"),
+                "assembly_level": report.get("assembly_info", {}).get("assembly_level"),
+                "assembly_method": report.get("assembly_info", {}).get("assembly_method"),
+                "genome_size": report.get("assembly_stats", {}).get("total_sequence_length"),
+                "gc_percent": report.get("assembly_stats", {}).get("gc_percent"),
+                "contig_count": report.get("assembly_stats", {}).get("contig_count"),
+                "scaffold_count": report.get("assembly_stats", {}).get("scaffold_count"),
+                "release_date": report.get("assembly_info", {}).get("release_date"),
+                "submitter": report.get("assembly_info", {}).get("submitter"),
             }
 
             return metadata
         else:
-            return {'accession': accession, 'error': 'No metadata found'}
+            return {"accession": accession, "error": "No metadata found"}
 
     except requests.RequestException as e:
         logger.error(f"Failed to retrieve metadata for {accession}: {e}")
-        return {'accession': accession, 'error': str(e)}
+        return {"accession": accession, "error": str(e)}
 
 
 def list_genome_assemblies(organism: str, max_results: int = 10) -> List[Dict[str, Any]]:
@@ -268,10 +268,10 @@ def list_genome_assemblies(organism: str, max_results: int = 10) -> List[Dict[st
     api_url = "https://api.ncbi.nlm.nih.gov/datasets/v2/genome"
 
     params = {
-        'filters.reference_only': 'false',
-        'filters.assembly_source': 'refseq',
-        'taxon': organism,
-        'page_size': max_results
+        "filters.reference_only": "false",
+        "filters.assembly_source": "refseq",
+        "taxon": organism,
+        "page_size": max_results,
     }
 
     try:
@@ -281,14 +281,14 @@ def list_genome_assemblies(organism: str, max_results: int = 10) -> List[Dict[st
         data = response.json()
 
         assemblies = []
-        if 'reports' in data:
-            for report in data['reports']:
+        if "reports" in data:
+            for report in data["reports"]:
                 assembly_info = {
-                    'accession': report.get('accession'),
-                    'organism_name': report.get('organism', {}).get('organism_name'),
-                    'assembly_level': report.get('assembly_info', {}).get('assembly_level'),
-                    'genome_size': report.get('assembly_stats', {}).get('total_sequence_length'),
-                    'release_date': report.get('assembly_info', {}).get('release_date'),
+                    "accession": report.get("accession"),
+                    "organism_name": report.get("organism", {}).get("organism_name"),
+                    "assembly_level": report.get("assembly_info", {}).get("assembly_level"),
+                    "genome_size": report.get("assembly_stats", {}).get("total_sequence_length"),
+                    "release_date": report.get("assembly_info", {}).get("release_date"),
                 }
                 assemblies.append(assembly_info)
 
@@ -321,7 +321,7 @@ def download_reference_genome(species: str, output_dir: str | Path) -> Optional[
         return None
 
     # Take the first (usually the reference)
-    accession = assemblies[0]['accession']
+    accession = assemblies[0]["accession"]
 
     try:
         return download_genome_package_best_effort(accession, output_dir)
@@ -364,25 +364,105 @@ def _download_from_ftp(ftp_url: str, output_dir: Path) -> Path:
     return output_dir
 
 
-def get_chromosome_lengths(accession: str) -> Dict[str, int]:
-    """Get chromosome/contig lengths for a genome assembly.
+def get_chromosome_lengths(accession: str, email: str | None = None) -> Dict[str, int]:
+    """Get chromosome/contig lengths for a genome assembly using NCBI Entrez.
 
     Args:
-        accession: Genome accession
+        accession: Genome accession (e.g., 'GCF_000001405.39' for human)
+        email: Email for NCBI Entrez API
 
     Returns:
-        Dictionary mapping chromosome names to lengths
+        Dictionary mapping chromosome/contig names to lengths in base pairs
 
     Example:
-        >>> # Get chromosome lengths for human genome
+        >>> # Get chromosome lengths for human genome (requires network)
         >>> # lengths = get_chromosome_lengths("GCF_000001405.39")
-        >>> # isinstance(lengths, dict)
+        >>> # len(lengths) > 0  # Will have chromosomes
         >>> # True
     """
-    # This would typically query NCBI for chromosome information
-    # For now, return empty dict as placeholder
-    logger.warning("get_chromosome_lengths not yet fully implemented")
-    return {}
+    try:
+        from Bio import Entrez
+    except ImportError:
+        logger.warning("biopython required for chromosome length lookup - returning empty dict")
+        return {}
+
+    import os
+
+    if not email:
+        email = os.environ.get("NCBI_EMAIL", "metainformant@example.com")
+    Entrez.email = email
+
+    logger.info(f"Fetching chromosome lengths for: {accession}")
+
+    try:
+        # Search for the assembly in NCBI
+        handle = Entrez.esearch(db="assembly", term=accession, retmax=1)
+        search_results = Entrez.read(handle)
+        handle.close()
+
+        id_list = search_results.get("IdList", [])
+        if not id_list:
+            logger.warning(f"Assembly not found: {accession}")
+            return {}
+
+        # Fetch assembly summary
+        handle = Entrez.esummary(db="assembly", id=id_list[0])
+        summary = Entrez.read(handle)
+        handle.close()
+
+        # Get nucleotide accessions and their lengths
+        chromosome_lengths: Dict[str, int] = {}
+
+        # Try to get chromosome info from the assembly report
+        doc_sum = summary.get("DocumentSummarySet", {}).get("DocumentSummary", [])
+        if doc_sum:
+            # Get the FTP path to assembly report
+            ftp_path = doc_sum[0].get("FtpPath_GenBank", "") or doc_sum[0].get("FtpPath_RefSeq", "")
+
+            if ftp_path:
+                # Parse assembly stats from report file if available
+                logger.info(f"Assembly found, fetching sequence lengths...")
+
+                # Alternative: Get sequences directly from nucleotide database
+                # Search for sequences belonging to this assembly
+                nuc_term = f"{accession}[Assembly] AND chromosome[Title]"
+                nuc_handle = Entrez.esearch(db="nucleotide", term=nuc_term, retmax=100)
+                nuc_results = Entrez.read(nuc_handle)
+                nuc_handle.close()
+
+                nuc_ids = nuc_results.get("IdList", [])
+                if nuc_ids:
+                    # Fetch sequence lengths in batches
+                    for i in range(0, len(nuc_ids), 50):
+                        batch = nuc_ids[i : i + 50]
+                        handle = Entrez.esummary(db="nucleotide", id=",".join(batch))
+                        summaries = Entrez.read(handle)
+                        handle.close()
+
+                        for seq_sum in summaries:
+                            title = seq_sum.get("Title", "")
+                            length = int(seq_sum.get("Length", 0))
+                            acc = seq_sum.get("Caption", "")
+
+                            # Extract chromosome name from title
+                            chrom_name = acc
+                            if "chromosome" in title.lower():
+                                # Try to extract chromosome number
+                                import re
+
+                                match = re.search(r"chromosome\s+(\w+)", title, re.IGNORECASE)
+                                if match:
+                                    chrom_name = f"chr{match.group(1)}"
+
+                            if length > 0:
+                                chromosome_lengths[chrom_name] = length
+
+        logger.info(f"Found {len(chromosome_lengths)} chromosome/contig lengths")
+        return chromosome_lengths
+
+    except Exception as e:
+        logger.warning(f"Failed to get chromosome lengths: {e}")
+        return {}
 
 
 def validate_genome_files(genome_dir: str | Path) -> Dict[str, Any]:
@@ -403,25 +483,22 @@ def validate_genome_files(genome_dir: str | Path) -> Dict[str, Any]:
     genome_dir = Path(genome_dir)
 
     if not genome_dir.exists():
-        return {'valid': False, 'error': 'Directory does not exist'}
+        return {"valid": False, "error": "Directory does not exist"}
 
     # Look for common genome file types
     fasta_files = list(genome_dir.glob("*.fasta")) + list(genome_dir.glob("*.fa"))
     gff_files = list(genome_dir.glob("*.gff")) + list(genome_dir.glob("*.gff3"))
 
     results = {
-        'valid': True,
-        'fasta_files': len(fasta_files),
-        'gff_files': len(gff_files),
-        'total_files': len(list(genome_dir.glob("*"))),
-        'issues': []
+        "valid": True,
+        "fasta_files": len(fasta_files),
+        "gff_files": len(gff_files),
+        "total_files": len(list(genome_dir.glob("*"))),
+        "issues": [],
     }
 
     if not fasta_files:
-        results['issues'].append("No FASTA files found")
-        results['valid'] = False
+        results["issues"].append("No FASTA files found")
+        results["valid"] = False
 
     return results
-
-
-

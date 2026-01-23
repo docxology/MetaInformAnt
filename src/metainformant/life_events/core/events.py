@@ -29,6 +29,7 @@ class Event:
         domain: Life domain this event belongs to (e.g., 'occupation', 'health', 'family')
         attributes: Additional event-specific attributes
     """
+
     event_type: str
     timestamp: datetime
     domain: str
@@ -40,7 +41,7 @@ class Event:
             raise ValueError("event_type cannot be empty")
         if not self.domain:
             raise ValueError("domain cannot be empty")
-        
+
         # Auto-convert numeric timestamp to datetime
         if isinstance(self.timestamp, (int, float)):
             self.timestamp = datetime.fromtimestamp(self.timestamp)
@@ -50,26 +51,26 @@ class Event:
     def to_dict(self) -> Dict[str, Any]:
         """Convert event to dictionary for serialization."""
         return {
-            'event_type': self.event_type,
-            'timestamp': self.timestamp.isoformat(),
-            'domain': self.domain,
-            'attributes': self.attributes
+            "event_type": self.event_type,
+            "timestamp": self.timestamp.isoformat(),
+            "domain": self.domain,
+            "attributes": self.attributes,
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> Event:
         """Create event from dictionary."""
-        timestamp = data['timestamp']
+        timestamp = data["timestamp"]
         if isinstance(timestamp, (int, float)):
             ts_obj = datetime.fromtimestamp(timestamp)
         else:
             ts_obj = datetime.fromisoformat(timestamp)
-            
+
         return cls(
-            event_type=data['event_type'],
+            event_type=data["event_type"],
             timestamp=ts_obj,
-            domain=data['domain'],
-            attributes=data.get('attributes', {})
+            domain=data["domain"],
+            attributes=data.get("attributes", {}),
         )
 
     def __str__(self) -> str:
@@ -124,10 +125,7 @@ class EventSequence:
         Returns:
             New EventSequence with filtered events
         """
-        filtered_events = [
-            e for e in self.events
-            if start <= e.timestamp <= end
-        ]
+        filtered_events = [e for e in self.events if start <= e.timestamp <= end]
         return EventSequence(self.person_id, filtered_events)
 
     def get_event_types(self) -> List[str]:
@@ -143,28 +141,24 @@ class EventSequence:
         data = []
         for event in self.events:
             row = {
-                'person_id': self.person_id,
-                'event_type': event.event_type,
-                'timestamp': event.timestamp,
-                'domain': event.domain,
-                **event.attributes
+                "person_id": self.person_id,
+                "event_type": event.event_type,
+                "timestamp": event.timestamp,
+                "domain": event.domain,
+                **event.attributes,
             }
             data.append(row)
         return pd.DataFrame(data)
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert sequence to dictionary for serialization."""
-        return {
-            'person_id': self.person_id,
-            'events': [e.to_dict() for e in self.events],
-            'metadata': self.metadata
-        }
+        return {"person_id": self.person_id, "events": [e.to_dict() for e in self.events], "metadata": self.metadata}
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> EventSequence:
         """Create sequence from dictionary."""
-        events = [Event.from_dict(e_data) for e_data in data['events']]
-        return cls(data['person_id'], events, metadata=data.get('metadata'))
+        events = [Event.from_dict(e_data) for e_data in data["events"]]
+        return cls(data["person_id"], events, metadata=data.get("metadata"))
 
     def __len__(self) -> int:
         return len(self.events)
@@ -227,10 +221,7 @@ class EventDatabase:
         Returns:
             New EventDatabase with filtered sequences
         """
-        filtered_sequences = [
-            seq.filter_by_domain(domain)
-            for seq in self.sequences
-        ]
+        filtered_sequences = [seq.filter_by_domain(domain) for seq in self.sequences]
         # Remove empty sequences
         # filtered_sequences = [seq for seq in filtered_sequences if len(seq) > 0]
         return EventDatabase(filtered_sequences)
@@ -245,10 +236,7 @@ class EventDatabase:
         Returns:
             New EventDatabase with filtered sequences
         """
-        filtered_sequences = [
-            seq.filter_by_time_range(start, end)
-            for seq in self.sequences
-        ]
+        filtered_sequences = [seq.filter_by_time_range(start, end) for seq in self.sequences]
         # Remove empty sequences
         # filtered_sequences = [seq for seq in filtered_sequences if len(seq) > 0]
         return EventDatabase(filtered_sequences)
@@ -262,7 +250,7 @@ class EventDatabase:
         total_events = sum(len(seq) for seq in self.sequences)
         event_types = set()
         domains = set()
-        
+
         # Count occurrences
         domain_counts = {}
         event_type_counts = {}
@@ -272,21 +260,21 @@ class EventDatabase:
             seq_domains = seq.get_domains()
             event_types.update(seq_types)
             domains.update(seq_domains)
-            
+
             for event in seq.events:
                 domain_counts[event.domain] = domain_counts.get(event.domain, 0) + 1
                 event_type_counts[event.event_type] = event_type_counts.get(event.event_type, 0) + 1
 
         return {
-            'num_sequences': len(self.sequences),
-            'n_sequences': len(self.sequences),
-            'total_events': total_events,
-            'n_events': total_events,
-            'unique_event_types': len(event_types),
-            'unique_domains': len(domains),
-            'domains': domain_counts,
-            'event_types': event_type_counts,
-            'avg_events_per_sequence': total_events / len(self.sequences) if self.sequences else 0
+            "num_sequences": len(self.sequences),
+            "n_sequences": len(self.sequences),
+            "total_events": total_events,
+            "n_events": total_events,
+            "unique_event_types": len(event_types),
+            "unique_domains": len(domains),
+            "domains": domain_counts,
+            "event_types": event_type_counts,
+            "avg_events_per_sequence": total_events / len(self.sequences) if self.sequences else 0,
         }
 
     def to_dataframe(self) -> pd.DataFrame:
@@ -300,12 +288,9 @@ class EventDatabase:
         Args:
             path: Output file path
         """
-        data = {
-            'sequences': [seq.to_dict() for seq in self.sequences],
-            'statistics': self.get_statistics()
-        }
+        data = {"sequences": [seq.to_dict() for seq in self.sequences], "statistics": self.get_statistics()}
 
-        with open(path, 'w') as f:
+        with open(path, "w") as f:
             json.dump(data, f, indent=2, default=str)
 
         logger.info(f"Saved {len(self.sequences)} sequences to {path}")
@@ -320,25 +305,25 @@ class EventDatabase:
         Returns:
             EventDatabase instance
         """
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
             data = json.load(f)
 
-        sequences = [EventSequence.from_dict(seq_data) for seq_data in data['sequences']]
-        return cls(sequences, metadata=data.get('metadata', {}))
+        sequences = [EventSequence.from_dict(seq_data) for seq_data in data["sequences"]]
+        return cls(sequences, metadata=data.get("metadata", {}))
 
     def to_dict(self) -> Dict[str, Any]:
         """Convert database to dictionary for serialization."""
         return {
-            'sequences': [seq.to_dict() for seq in self.sequences],
-            'statistics': self.get_statistics(),
-            'metadata': self.metadata
+            "sequences": [seq.to_dict() for seq in self.sequences],
+            "statistics": self.get_statistics(),
+            "metadata": self.metadata,
         }
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> EventDatabase:
         """Create database from dictionary."""
-        sequences = [EventSequence.from_dict(s) for s in data['sequences']]
-        return cls(sequences, metadata=data.get('metadata'))
+        sequences = [EventSequence.from_dict(s) for s in data["sequences"]]
+        return cls(sequences, metadata=data.get("metadata"))
 
     def __len__(self) -> int:
         return len(self.sequences)

@@ -57,12 +57,12 @@ def _simple_secondary_structure_prediction(sequence: str) -> List[str]:
 
     for aa in sequence.upper():
         # Basic rules based on amino acid properties
-        if aa in {'E', 'A', 'L', 'M', 'H', 'K'}:
-            ss_predictions.append('H')  # Helix formers
-        elif aa in {'V', 'I', 'Y', 'F', 'W', 'C'}:
-            ss_predictions.append('E')  # Sheet formers
+        if aa in {"E", "A", "L", "M", "H", "K"}:
+            ss_predictions.append("H")  # Helix formers
+        elif aa in {"V", "I", "Y", "F", "W", "C"}:
+            ss_predictions.append("E")  # Sheet formers
         else:
-            ss_predictions.append('C')  # Coil
+            ss_predictions.append("C")  # Coil
 
     return ss_predictions
 
@@ -72,23 +72,55 @@ def _improved_secondary_structure_prediction(sequence: str) -> List[str]:
     # Chou-Fasman parameters (simplified but more realistic)
     # Helix propensities (higher values = more likely to form helix)
     helix_propensity = {
-        'E': 1.53, 'A': 1.45, 'L': 1.34, 'H': 1.24, 'M': 1.20, 'Q': 1.17,
-        'W': 1.14, 'V': 1.14, 'F': 1.12, 'K': 1.07, 'I': 1.00, 'T': 0.83,
-        'S': 0.79, 'R': 0.79, 'D': 0.62, 'N': 0.60, 'C': 0.77, 'Y': 0.61,
-        'P': 0.59, 'G': 0.53
+        "E": 1.53,
+        "A": 1.45,
+        "L": 1.34,
+        "H": 1.24,
+        "M": 1.20,
+        "Q": 1.17,
+        "W": 1.14,
+        "V": 1.14,
+        "F": 1.12,
+        "K": 1.07,
+        "I": 1.00,
+        "T": 0.83,
+        "S": 0.79,
+        "R": 0.79,
+        "D": 0.62,
+        "N": 0.60,
+        "C": 0.77,
+        "Y": 0.61,
+        "P": 0.59,
+        "G": 0.53,
     }
 
     # Sheet propensities
     sheet_propensity = {
-        'V': 1.49, 'I': 1.38, 'T': 1.28, 'Y': 1.25, 'F': 1.23, 'W': 1.19,
-        'L': 1.17, 'C': 1.15, 'M': 1.05, 'A': 0.97, 'G': 0.81, 'R': 0.95,
-        'K': 0.74, 'Q': 0.80, 'E': 0.26, 'N': 0.65, 'D': 0.39, 'S': 0.72,
-        'H': 0.71, 'P': 0.36
+        "V": 1.49,
+        "I": 1.38,
+        "T": 1.28,
+        "Y": 1.25,
+        "F": 1.23,
+        "W": 1.19,
+        "L": 1.17,
+        "C": 1.15,
+        "M": 1.05,
+        "A": 0.97,
+        "G": 0.81,
+        "R": 0.95,
+        "K": 0.74,
+        "Q": 0.80,
+        "E": 0.26,
+        "N": 0.65,
+        "D": 0.39,
+        "S": 0.72,
+        "H": 0.71,
+        "P": 0.36,
     }
 
     sequence = sequence.upper()
     n = len(sequence)
-    predictions = ['C'] * n  # Default to coil
+    predictions = ["C"] * n  # Default to coil
 
     # Use sliding window approach
     window_size = 7  # Typical for secondary structure prediction
@@ -105,11 +137,11 @@ def _improved_secondary_structure_prediction(sequence: str) -> List[str]:
 
         # Assign secondary structure based on highest propensity
         if helix_score > sheet_score and helix_score > 0.9:
-            predictions[i] = 'H'
+            predictions[i] = "H"
         elif sheet_score > helix_score and sheet_score > 0.9:
-            predictions[i] = 'E'
+            predictions[i] = "E"
         else:
-            predictions[i] = 'C'
+            predictions[i] = "C"
 
     # Apply minimum length constraints (secondary structures should be at least 3 residues)
     predictions = _apply_minimum_length_constraints(predictions)
@@ -134,9 +166,9 @@ def _apply_minimum_length_constraints(predictions: List[str]) -> List[str]:
         length = j - i
 
         # If secondary structure element is too short, convert to coil
-        if current_ss in ['H', 'E'] and length < 3:
+        if current_ss in ["H", "E"] and length < 3:
             for k in range(i, j):
-                result[k] = 'C'
+                result[k] = "C"
 
         i = j
 
@@ -153,17 +185,14 @@ def _psipred_prediction(sequence: str) -> List[str]:
         psipred_url = "http://bioinf.cs.ucl.ac.uk/psipred/api/submit"
 
         # Prepare submission data
-        submission_data = {
-            'input': sequence,
-            'format': 'fasta'
-        }
+        submission_data = {"input": sequence, "format": "fasta"}
 
         # Submit job
         response = requests.post(psipred_url, data=submission_data, timeout=30)
 
         if response.status_code == 200:
             result_data = response.json()
-            job_id = result_data.get('job_id')
+            job_id = result_data.get("job_id")
 
             # Poll for results (simplified - would need proper polling implementation)
             result_url = f"http://bioinf.cs.ucl.ac.uk/psipred/api/result/{job_id}"
@@ -172,7 +201,7 @@ def _psipred_prediction(sequence: str) -> List[str]:
                 result_response = requests.get(result_url, timeout=30)
                 if result_response.status_code == 200:
                     prediction_data = result_response.json()
-                    ss_string = prediction_data.get('prediction', '')
+                    ss_string = prediction_data.get("prediction", "")
                     if ss_string:
                         return list(ss_string)
 
@@ -200,12 +229,12 @@ def _jpred_prediction(sequence: str) -> List[str]:
         fasta_data = f">query\n{sequence}"
 
         # Submit job
-        files = {'input': ('query.fasta', fasta_data)}
+        files = {"input": ("query.fasta", fasta_data)}
         response = requests.post(jpred_url, files=files, timeout=30)
 
         if response.status_code == 200:
             result_data = response.json()
-            job_id = result_data.get('jobid')
+            job_id = result_data.get("jobid")
 
             # Poll for results
             result_url = f"http://www.compbio.dundee.ac.uk/jpred4/api/job/{job_id}/results"
@@ -214,7 +243,7 @@ def _jpred_prediction(sequence: str) -> List[str]:
                 result_response = requests.get(result_url, timeout=30)
                 if result_response.status_code == 200:
                     prediction_data = result_response.json()
-                    ss_string = prediction_data.get('jpred', {}).get('prediction', '')
+                    ss_string = prediction_data.get("jpred", {}).get("prediction", "")
                     if ss_string:
                         return list(ss_string)
 
@@ -245,21 +274,21 @@ def calculate_ss_composition(ss_assignments: List[str]) -> Dict[str, float]:
         True
     """
     if not ss_assignments:
-        return {'helix': 0.0, 'sheet': 0.0, 'coil': 0.0}
+        return {"helix": 0.0, "sheet": 0.0, "coil": 0.0}
 
     total = len(ss_assignments)
-    helix_count = sum(1 for ss in ss_assignments if ss == 'H')
-    sheet_count = sum(1 for ss in ss_assignments if ss == 'E')
-    coil_count = sum(1 for ss in ss_assignments if ss == 'C')
+    helix_count = sum(1 for ss in ss_assignments if ss == "H")
+    sheet_count = sum(1 for ss in ss_assignments if ss == "E")
+    coil_count = sum(1 for ss in ss_assignments if ss == "C")
 
     return {
-        'helix': helix_count / total,
-        'sheet': sheet_count / total,
-        'coil': coil_count / total,
-        'helix_count': helix_count,
-        'sheet_count': sheet_count,
-        'coil_count': coil_count,
-        'total_residues': total
+        "helix": helix_count / total,
+        "sheet": sheet_count / total,
+        "coil": coil_count / total,
+        "helix_count": helix_count,
+        "sheet_count": sheet_count,
+        "coil_count": coil_count,
+        "total_residues": total,
     }
 
 
@@ -293,13 +322,15 @@ def identify_ss_elements(ss_assignments: List[str], min_length: int = 3) -> List
             current_length += 1
         else:
             # End of current element
-            if current_length >= min_length and current_type in ['H', 'E']:
-                elements.append({
-                    'type': current_type,
-                    'start': current_start,
-                    'end': current_start + current_length - 1,
-                    'length': current_length
-                })
+            if current_length >= min_length and current_type in ["H", "E"]:
+                elements.append(
+                    {
+                        "type": current_type,
+                        "start": current_start,
+                        "end": current_start + current_length - 1,
+                        "length": current_length,
+                    }
+                )
 
             # Start new element
             current_type = ss_assignments[i]
@@ -307,13 +338,15 @@ def identify_ss_elements(ss_assignments: List[str], min_length: int = 3) -> List
             current_length = 1
 
     # Handle last element
-    if current_length >= min_length and current_type in ['H', 'E']:
-        elements.append({
-            'type': current_type,
-            'start': current_start,
-            'end': current_start + current_length - 1,
-            'length': current_length
-        })
+    if current_length >= min_length and current_type in ["H", "E"]:
+        elements.append(
+            {
+                "type": current_type,
+                "start": current_start,
+                "end": current_start + current_length - 1,
+                "length": current_length,
+            }
+        )
 
     return elements
 
@@ -336,17 +369,17 @@ def compare_ss_predictions(prediction1: List[str], prediction2: List[str]) -> Di
         True
     """
     if len(prediction1) != len(prediction2):
-        return {'accuracy': 0.0, 'matches': 0, 'total': 0}
+        return {"accuracy": 0.0, "matches": 0, "total": 0}
 
     matches = sum(1 for a, b in zip(prediction1, prediction2) if a == b)
     total = len(prediction1)
     accuracy = matches / total if total > 0 else 0.0
 
     return {
-        'accuracy': accuracy,
-        'matches': matches,
-        'total': total,
-        'q3_score': accuracy  # Q3 score for 3-state prediction
+        "accuracy": accuracy,
+        "matches": matches,
+        "total": total,
+        "q3_score": accuracy,  # Q3 score for 3-state prediction
     }
 
 
@@ -366,9 +399,9 @@ def ss_to_dSSP_format(ss_assignments: List[str]) -> str:
         True
     """
     # DSSP codes: H=alpha helix, E=extended strand, blank=coil/other
-    dssp_map = {'H': 'H', 'E': 'E', 'C': ' '}
+    dssp_map = {"H": "H", "E": "E", "C": " "}
 
-    return ''.join(dssp_map.get(ss, ' ') for ss in ss_assignments)
+    return "".join(dssp_map.get(ss, " ") for ss in ss_assignments)
 
 
 def parse_dssp_file(dssp_content: str) -> Dict[str, Any]:
@@ -389,12 +422,7 @@ def parse_dssp_file(dssp_content: str) -> Dict[str, Any]:
     # This would parse actual DSSP output
     # Placeholder implementation
     logger.info("DSSP parsing not fully implemented")
-    return {
-        'sequence': '',
-        'secondary_structure': [],
-        'accessibility': [],
-        'total_residues': 0
-    }
+    return {"sequence": "", "secondary_structure": [], "accessibility": [], "total_residues": 0}
 
 
 def predict_transmembrane_regions(sequence: str) -> List[Dict[str, Any]]:
@@ -418,26 +446,45 @@ def predict_transmembrane_regions(sequence: str) -> List[Dict[str, Any]]:
 
     # Kyte-Doolittle hydrophobicity scale (simplified)
     hydrophobicity = {
-        'I': 4.5, 'V': 4.2, 'L': 3.8, 'P': 3.8, 'F': 2.8, 'C': 2.5, 'M': 1.9, 'A': 1.8,
-        'G': -0.4, 'T': -0.7, 'S': -0.8, 'W': -0.9, 'Y': -1.3, 'Q': -3.5, 'N': -3.5,
-        'E': -3.5, 'D': -3.5, 'H': -3.2, 'K': -3.9, 'R': -4.5
+        "I": 4.5,
+        "V": 4.2,
+        "L": 3.8,
+        "P": 3.8,
+        "F": 2.8,
+        "C": 2.5,
+        "M": 1.9,
+        "A": 1.8,
+        "G": -0.4,
+        "T": -0.7,
+        "S": -0.8,
+        "W": -0.9,
+        "Y": -1.3,
+        "Q": -3.5,
+        "N": -3.5,
+        "E": -3.5,
+        "D": -3.5,
+        "H": -3.2,
+        "K": -3.9,
+        "R": -4.5,
     }
 
     window_size = 19  # Typical TM helix length
-    threshold = 1.5   # Hydrophobicity threshold
+    threshold = 1.5  # Hydrophobicity threshold
 
     for i in range(len(sequence) - window_size + 1):
-        window = sequence[i:i + window_size]
+        window = sequence[i : i + window_size]
         avg_hydro = sum(hydrophobicity.get(aa, 0) for aa in window) / window_size
 
         if avg_hydro > threshold:
-            regions.append({
-                'start': i,
-                'end': i + window_size - 1,
-                'length': window_size,
-                'avg_hydrophobicity': avg_hydro,
-                'sequence': window
-            })
+            regions.append(
+                {
+                    "start": i,
+                    "end": i + window_size - 1,
+                    "length": window_size,
+                    "avg_hydrophobicity": avg_hydro,
+                    "sequence": window,
+                }
+            )
 
     return regions
 
@@ -459,15 +506,49 @@ def calculate_ss_propensities(sequence: str) -> Dict[str, Dict[str, float]]:
     """
     # Chou-Fasman parameters (simplified)
     helix_params = {
-        'P': 0.57, 'V': 0.90, 'I': 1.09, 'M': 0.82, 'F': 1.16, 'Y': 0.72, 'W': 1.14,
-        'A': 1.45, 'E': 0.51, 'L': 1.34, 'H': 0.96, 'Q': 0.98, 'G': 0.53, 'T': 0.82,
-        'S': 0.79, 'R': 0.95, 'K': 0.81, 'D': 0.66, 'N': 0.43, 'C': 0.66
+        "P": 0.57,
+        "V": 0.90,
+        "I": 1.09,
+        "M": 0.82,
+        "F": 1.16,
+        "Y": 0.72,
+        "W": 1.14,
+        "A": 1.45,
+        "E": 0.51,
+        "L": 1.34,
+        "H": 0.96,
+        "Q": 0.98,
+        "G": 0.53,
+        "T": 0.82,
+        "S": 0.79,
+        "R": 0.95,
+        "K": 0.81,
+        "D": 0.66,
+        "N": 0.43,
+        "C": 0.66,
     }
 
     sheet_params = {
-        'P': 0.31, 'V': 1.87, 'I': 1.67, 'M': 1.20, 'F': 1.33, 'Y': 1.24, 'W': 1.01,
-        'A': 0.97, 'E': 0.39, 'L': 1.22, 'H': 0.51, 'Q': 0.58, 'G': 0.81, 'T': 1.20,
-        'S': 0.94, 'R': 0.99, 'K': 0.88, 'D': 0.40, 'N': 0.65, 'C': 1.19
+        "P": 0.31,
+        "V": 1.87,
+        "I": 1.67,
+        "M": 1.20,
+        "F": 1.33,
+        "Y": 1.24,
+        "W": 1.01,
+        "A": 0.97,
+        "E": 0.39,
+        "L": 1.22,
+        "H": 0.51,
+        "Q": 0.58,
+        "G": 0.81,
+        "T": 1.20,
+        "S": 0.94,
+        "R": 0.99,
+        "K": 0.88,
+        "D": 0.40,
+        "N": 0.65,
+        "C": 1.19,
     }
 
     propensities = {}
@@ -475,10 +556,10 @@ def calculate_ss_propensities(sequence: str) -> Dict[str, Dict[str, float]]:
     for aa in set(sequence.upper()):
         if aa in helix_params:
             propensities[aa] = {
-                'helix': helix_params[aa],
-                'sheet': sheet_params[aa],
-                'coil': 1.0,  # Simplified
-                'preferred': 'helix' if helix_params[aa] > sheet_params[aa] else 'sheet'
+                "helix": helix_params[aa],
+                "sheet": sheet_params[aa],
+                "coil": 1.0,  # Simplified
+                "preferred": "helix" if helix_params[aa] > sheet_params[aa] else "sheet",
             }
 
     return propensities
@@ -502,20 +583,20 @@ def validate_ss_prediction(ss_assignments: List[str], sequence: str) -> Dict[str
         True
     """
     validation = {
-        'valid_length': len(ss_assignments) == len(sequence),
-        'valid_states': all(ss in ['H', 'E', 'C'] for ss in ss_assignments),
-        'has_structure': any(ss in ['H', 'E'] for ss in ss_assignments),
-        'issues': []
+        "valid_length": len(ss_assignments) == len(sequence),
+        "valid_states": all(ss in ["H", "E", "C"] for ss in ss_assignments),
+        "has_structure": any(ss in ["H", "E"] for ss in ss_assignments),
+        "issues": [],
     }
 
-    if not validation['valid_length']:
-        validation['issues'].append(f"Length mismatch: {len(ss_assignments)} vs {len(sequence)}")
+    if not validation["valid_length"]:
+        validation["issues"].append(f"Length mismatch: {len(ss_assignments)} vs {len(sequence)}")
 
-    if not validation['valid_states']:
-        invalid = [ss for ss in ss_assignments if ss not in ['H', 'E', 'C']]
-        validation['issues'].append(f"Invalid states: {invalid}")
+    if not validation["valid_states"]:
+        invalid = [ss for ss in ss_assignments if ss not in ["H", "E", "C"]]
+        validation["issues"].append(f"Invalid states: {invalid}")
 
-    if not validation['has_structure']:
-        validation['issues'].append("No secondary structure elements predicted")
+    if not validation["has_structure"]:
+        validation["issues"].append("No secondary structure elements predicted")
 
     return validation

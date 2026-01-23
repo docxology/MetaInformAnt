@@ -39,7 +39,7 @@ def neighbor_joining_tree(id_to_seq: Dict[str, str]) -> Tree:
 
     while len(active_taxa) > 2:
         # Find closest pair
-        min_dist = float('inf')
+        min_dist = float("inf")
         closest_pair = None
 
         active_list = list(active_taxa)
@@ -59,8 +59,12 @@ def neighbor_joining_tree(id_to_seq: Dict[str, str]) -> Tree:
         idx1, idx2 = taxa.index(taxon1), taxa.index(taxon2)
 
         # Calculate branch lengths
-        r1 = sum(distance_matrix[idx1][j] for j in range(len(taxa)) if taxa[j] in active_taxa and j != idx1 and j != idx2)
-        r2 = sum(distance_matrix[idx2][j] for j in range(len(taxa)) if taxa[j] in active_taxa and j != idx1 and j != idx2)
+        r1 = sum(
+            distance_matrix[idx1][j] for j in range(len(taxa)) if taxa[j] in active_taxa and j != idx1 and j != idx2
+        )
+        r2 = sum(
+            distance_matrix[idx2][j] for j in range(len(taxa)) if taxa[j] in active_taxa and j != idx1 and j != idx2
+        )
 
         n_active = len(active_taxa)
         branch1 = (min_dist + (r1 - r2) / (n_active - 2)) / 2
@@ -70,10 +74,7 @@ def neighbor_joining_tree(id_to_seq: Dict[str, str]) -> Tree:
         new_node = f"Node_{len(tree)}"
 
         # Update tree structure
-        tree[new_node] = {
-            taxon1: branch1,
-            taxon2: branch2
-        }
+        tree[new_node] = {taxon1: branch1, taxon2: branch2}
 
         # Remove old taxa and add new node
         active_taxa.remove(taxon1)
@@ -81,9 +82,7 @@ def neighbor_joining_tree(id_to_seq: Dict[str, str]) -> Tree:
         active_taxa.add(new_node)
 
         # Update distance matrix
-        distance_matrix = _update_distance_matrix(
-            distance_matrix, taxa, idx1, idx2, new_node, active_taxa
-        )
+        distance_matrix = _update_distance_matrix(distance_matrix, taxa, idx1, idx2, new_node, active_taxa)
 
         # Update taxa list
         taxa.remove(taxon1)
@@ -96,7 +95,7 @@ def neighbor_joining_tree(id_to_seq: Dict[str, str]) -> Tree:
         final_node = f"Root_{len(tree)}"
         tree[final_node] = {
             remaining[0]: distance_matrix[taxa.index(remaining[0])][taxa.index(remaining[1])] / 2,
-            remaining[1]: distance_matrix[taxa.index(remaining[0])][taxa.index(remaining[1])] / 2
+            remaining[1]: distance_matrix[taxa.index(remaining[0])][taxa.index(remaining[1])] / 2,
         }
 
     return tree
@@ -125,7 +124,7 @@ def upgma_tree(id_to_seq: Dict[str, str]) -> Tree:
 
     while len(active_taxa) > 1:
         # Find closest pair
-        min_dist = float('inf')
+        min_dist = float("inf")
         closest_pair = None
 
         active_list = list(active_taxa)
@@ -156,10 +155,7 @@ def upgma_tree(id_to_seq: Dict[str, str]) -> Tree:
         branch2 = min_dist / 2
 
         # Update tree
-        tree[new_node] = {
-            taxon1: branch1,
-            taxon2: branch2
-        }
+        tree[new_node] = {taxon1: branch1, taxon2: branch2}
 
         # Update cluster sizes
         cluster_sizes[new_node] = total_size
@@ -171,8 +167,7 @@ def upgma_tree(id_to_seq: Dict[str, str]) -> Tree:
 
         # Update distance matrix for UPGMA
         distance_matrix = _update_distance_matrix_upgma(
-            distance_matrix, taxa, idx1, idx2, new_node, active_taxa,
-            size1, size2, total_size
+            distance_matrix, taxa, idx1, idx2, new_node, active_taxa, size1, size2, total_size
         )
 
         # Update taxa list
@@ -192,11 +187,12 @@ def to_newick(tree: Tree) -> str:
     Returns:
         Newick format string
     """
+
     def _to_newick_recursive(node):
         if isinstance(tree[node], dict):
             children = []
             for child, branch_length in tree[node].items():
-                if child == 'bootstrap':
+                if child == "bootstrap":
                     continue
                 if branch_length is not None:
                     children.append(f"{_to_newick_recursive(child)}:{branch_length}")
@@ -219,9 +215,11 @@ def to_newick(tree: Tree) -> str:
     return _to_newick_recursive(root) + ";"
 
 
-def bootstrap_support(tree: Tree, sequences: Dict[str, str], n_replicates: int = 100,
-                     method: str = "nj") -> Tree:
+def bootstrap_support(tree: Tree, sequences: Dict[str, str], n_replicates: int = 100, method: str = "nj") -> Tree:
     """Calculate bootstrap support for tree branches.
+
+    Performs bootstrap analysis by resampling alignment sites with replacement,
+    building trees from resampled data, and counting how often each clade appears.
 
     Args:
         tree: Original tree
@@ -230,32 +228,129 @@ def bootstrap_support(tree: Tree, sequences: Dict[str, str], n_replicates: int =
         method: Tree building method ('nj' or 'upgma')
 
     Returns:
-        Tree with bootstrap support values
+        Tree with bootstrap support values (0-100)
     """
-    # This is a simplified implementation
-    # Full bootstrap would require resampling sites with replacement
-
     logger.info(f"Calculating bootstrap support with {n_replicates} replicates")
 
-    # For now, return original tree with placeholder support values
-    # Real implementation would require site resampling and tree comparison
+    if not sequences:
+        return tree.copy()
 
+    # Get alignment length
+    seq_list = list(sequences.values())
+    if not seq_list:
+        return tree.copy()
+    alignment_length = len(seq_list[0])
+
+    if alignment_length == 0:
+        return tree.copy()
+
+    # Extract clades from original tree
+    original_clades = _extract_clades(tree)
+
+    # Run bootstrap replicates
+    clade_counts = {frozenset(clade): 0 for clade in original_clades}
+
+    np.random.seed(42)  # Reproducibility
+
+    for rep in range(n_replicates):
+        # Resample sites with replacement
+        sampled_sites = np.random.randint(0, alignment_length, alignment_length)
+
+        # Build resampled sequences
+        resampled_seqs = {}
+        for name, seq in sequences.items():
+            resampled_seqs[name] = ''.join(seq[i] if i < len(seq) else '-' for i in sampled_sites)
+
+        # Build tree from resampled data
+        try:
+            # Build tree directly from sequences (functions handle distance matrix internally)
+            if method == "nj":
+                rep_tree = neighbor_joining_tree(resampled_seqs)
+            else:
+                rep_tree = upgma_tree(resampled_seqs)
+
+            # Extract clades from replicate tree
+            rep_clades = _extract_clades(rep_tree)
+
+            # Count matching clades
+            for clade in original_clades:
+                clade_set = frozenset(clade)
+                if clade_set in [frozenset(c) for c in rep_clades]:
+                    clade_counts[clade_set] = clade_counts.get(clade_set, 0) + 1
+
+        except Exception as e:
+            logger.debug(f"Bootstrap replicate {rep} failed: {e}")
+            continue
+
+    # Add bootstrap values to tree
     supported_tree = tree.copy()
 
-    # Add bootstrap values (placeholder)
-    def _add_bootstrap(node):
-        if isinstance(supported_tree[node], dict):
-            for child in supported_tree[node].keys():
-                _add_bootstrap(child)
-            # Add bootstrap support (simplified)
-            supported_tree[node]['bootstrap'] = 85  # Placeholder value
+    def _add_bootstrap_values(node, current_clade=None):
+        if isinstance(supported_tree.get(node), dict):
+            children = [c for c in supported_tree[node].keys() if c != "bootstrap"]
+
+            # Calculate clade for this node
+            clade = _get_descendant_leaves(supported_tree, node)
+            clade_set = frozenset(clade)
+
+            # Get bootstrap support
+            if clade_set in clade_counts:
+                support = int(100 * clade_counts[clade_set] / max(1, n_replicates))
+            else:
+                support = 0
+
+            supported_tree[node]["bootstrap"] = support
+
+            for child in children:
+                _add_bootstrap_values(child)
 
     for root in supported_tree.keys():
-        if supported_tree[root] is not None:
-            _add_bootstrap(root)
+        if supported_tree.get(root) is not None:
+            _add_bootstrap_values(root)
             break
 
     return supported_tree
+
+
+def _extract_clades(tree: Tree) -> List[List[str]]:
+    """Extract all clades (sets of descendant leaves) from a tree."""
+    clades = []
+
+    def _get_leaves(node):
+        if tree.get(node) is None or not isinstance(tree.get(node), dict):
+            return [node]
+        children = [c for c in tree[node].keys() if c != "bootstrap"]
+        leaves = []
+        for child in children:
+            leaves.extend(_get_leaves(child))
+        return leaves
+
+    def _traverse(node):
+        if isinstance(tree.get(node), dict):
+            children = [c for c in tree[node].keys() if c != "bootstrap"]
+            if children:
+                leaves = _get_leaves(node)
+                if len(leaves) > 1:  # Only internal nodes
+                    clades.append(leaves)
+            for child in children:
+                _traverse(child)
+
+    for root in tree.keys():
+        _traverse(root)
+        break
+
+    return clades
+
+
+def _get_descendant_leaves(tree: Tree, node: str) -> List[str]:
+    """Get all leaf descendants of a node."""
+    if tree.get(node) is None or not isinstance(tree.get(node), dict):
+        return [node]
+    children = [c for c in tree[node].keys() if c != "bootstrap"]
+    leaves = []
+    for child in children:
+        leaves.extend(_get_descendant_leaves(tree, child))
+    return leaves
 
 
 def to_ascii(tree: Tree) -> str:
@@ -267,13 +362,14 @@ def to_ascii(tree: Tree) -> str:
     Returns:
         ASCII art string representation
     """
+
     def _build_ascii(node, prefix="", is_last=True):
         lines = []
 
         if isinstance(tree[node], dict):
-            children = [c for c in tree[node].keys() if c != 'bootstrap']
+            children = [c for c in tree[node].keys() if c != "bootstrap"]
             for i, child in enumerate(children):
-                is_last_child = (i == len(children) - 1)
+                is_last_child = i == len(children) - 1
 
                 # Branch symbol
                 branch = "└── " if is_last_child else "├── "
@@ -302,7 +398,7 @@ def to_ascii(tree: Tree) -> str:
     if tree[root]:
         children = list(tree[root].keys())
         for i, child in enumerate(children):
-            is_last = (i == len(children) - 1)
+            is_last = i == len(children) - 1
             branch = "└── " if is_last else "├── "
             child_prefix = "    " if is_last else "│   "
 
@@ -321,13 +417,14 @@ def basic_tree_stats(tree: Tree) -> Dict[str, int]:
     Returns:
         Dictionary with tree statistics
     """
+
     def _count_leaves(node):
         if not isinstance(tree[node], dict):
             return 1
 
         total = 0
         for child in tree[node].keys():
-            if child == 'bootstrap':
+            if child == "bootstrap":
                 continue
             total += _count_leaves(child)
 
@@ -339,7 +436,7 @@ def basic_tree_stats(tree: Tree) -> Dict[str, int]:
 
         total = 1  # Count this node
         for child in tree[node].keys():
-            if child == 'bootstrap':
+            if child == "bootstrap":
                 continue
             total += _count_internal_nodes(child)
 
@@ -454,7 +551,7 @@ def _p_distance(seq1: str, seq2: str) -> float:
     valid_sites = 0
 
     for a, b in zip(seq1.upper(), seq2.upper()):
-        if a in 'ATCG' and b in 'ATCG':
+        if a in "ATCG" and b in "ATCG":
             valid_sites += 1
             if a != b:
                 differences += 1
@@ -470,8 +567,8 @@ def _kmer_frequencies(seq: str, k: int) -> Dict[str, float]:
     kmers = []
 
     for i in range(len(seq_upper) - k + 1):
-        kmer = seq_upper[i:i + k]
-        if all(c in 'ATCG' for c in kmer):
+        kmer = seq_upper[i : i + k]
+        if all(c in "ATCG" for c in kmer):
             kmers.append(kmer)
 
     counts = Counter(kmers)
@@ -501,7 +598,7 @@ def _vector_distance(vec1: Dict[str, float], vec2: Dict[str, float], metric: str
 
     elif metric == "euclidean":
         # Euclidean distance
-        return math.sqrt(sum((vec1.get(k, 0) - vec2.get(k, 0))**2 for k in all_keys))
+        return math.sqrt(sum((vec1.get(k, 0) - vec2.get(k, 0)) ** 2 for k in all_keys))
 
     elif metric == "jaccard":
         # Jaccard distance
@@ -517,33 +614,122 @@ def _vector_distance(vec1: Dict[str, float], vec2: Dict[str, float], metric: str
         raise ValueError(f"Unknown metric: {metric}")
 
 
-def _update_distance_matrix(matrix: List[List[float]], taxa: List[str],
-                          idx1: int, idx2: int, new_node: str,
-                          active_taxa: set) -> List[List[float]]:
-    """Update distance matrix after joining two taxa."""
-    # Simplified update - real NJ uses more complex formula
+def _update_distance_matrix(
+    matrix: List[List[float]], taxa: List[str], idx1: int, idx2: int, new_node: str, active_taxa: set
+) -> List[List[float]]:
+    """Update distance matrix after joining two taxa in neighbor-joining.
+
+    Uses the NJ formula: d(u,k) = (d(i,k) + d(j,k) - d(i,j)) / 2
+    where u is the new node joining i and j.
+    """
     n = len(matrix)
-    new_matrix = [[0.0] * (n - 1) for _ in range(n - 1)]
 
-    # Copy existing distances (simplified)
-    new_taxa = [t for t in taxa if t != taxa[idx1] and t != taxa[idx2]] + [new_node]
+    # Ensure idx1 < idx2 for consistent indexing
+    if idx1 > idx2:
+        idx1, idx2 = idx2, idx1
 
-    return new_matrix  # Placeholder
+    # Create new matrix with one less dimension
+    new_n = n - 1
+    new_matrix = [[0.0] * new_n for _ in range(new_n)]
+
+    # Map old indices to new indices (excluding idx1 and idx2)
+    old_to_new = {}
+    new_idx = 0
+    for old_idx in range(n):
+        if old_idx != idx1 and old_idx != idx2:
+            old_to_new[old_idx] = new_idx
+            new_idx += 1
+
+    # The last index in new matrix is for the joined node
+    joined_idx = new_n - 1
+
+    # Copy distances between remaining taxa
+    for i in range(n):
+        if i == idx1 or i == idx2:
+            continue
+        for j in range(i + 1, n):
+            if j == idx1 or j == idx2:
+                continue
+            new_i = old_to_new[i]
+            new_j = old_to_new[j]
+            new_matrix[new_i][new_j] = matrix[i][j]
+            new_matrix[new_j][new_i] = matrix[i][j]
+
+    # Calculate distances from new node to remaining taxa
+    d_ij = matrix[idx1][idx2]
+    for k in range(n):
+        if k == idx1 or k == idx2:
+            continue
+        new_k = old_to_new[k]
+        # NJ distance formula
+        d_uk = (matrix[idx1][k] + matrix[idx2][k] - d_ij) / 2.0
+        new_matrix[joined_idx][new_k] = d_uk
+        new_matrix[new_k][joined_idx] = d_uk
+
+    return new_matrix
 
 
-def _update_distance_matrix_upgma(matrix: List[List[float]], taxa: List[str],
-                                 idx1: int, idx2: int, new_node: str,
-                                 active_taxa: set, size1: int, size2: int,
-                                 total_size: int) -> List[List[float]]:
-    """Update distance matrix for UPGMA after joining clusters."""
-    # Simplified UPGMA update
+def _update_distance_matrix_upgma(
+    matrix: List[List[float]],
+    taxa: List[str],
+    idx1: int,
+    idx2: int,
+    new_node: str,
+    active_taxa: set,
+    size1: int,
+    size2: int,
+    total_size: int,
+) -> List[List[float]]:
+    """Update distance matrix for UPGMA after joining clusters.
+
+    Uses weighted average: d(u,k) = (size1 * d(i,k) + size2 * d(j,k)) / (size1 + size2)
+    """
     n = len(matrix)
-    new_matrix = [[0.0] * (n - 1) for _ in range(n - 1)]
 
-    # Copy existing distances (simplified)
-    new_taxa = [t for t in taxa if t != taxa[idx1] and t != taxa[idx2]] + [new_node]
+    # Ensure idx1 < idx2 for consistent indexing
+    if idx1 > idx2:
+        idx1, idx2 = idx2, idx1
+        size1, size2 = size2, size1
 
-    return new_matrix  # Placeholder
+    # Create new matrix with one less dimension
+    new_n = n - 1
+    new_matrix = [[0.0] * new_n for _ in range(new_n)]
+
+    # Map old indices to new indices (excluding idx1 and idx2)
+    old_to_new = {}
+    new_idx = 0
+    for old_idx in range(n):
+        if old_idx != idx1 and old_idx != idx2:
+            old_to_new[old_idx] = new_idx
+            new_idx += 1
+
+    # The last index in new matrix is for the joined cluster
+    joined_idx = new_n - 1
+
+    # Copy distances between remaining taxa
+    for i in range(n):
+        if i == idx1 or i == idx2:
+            continue
+        for j in range(i + 1, n):
+            if j == idx1 or j == idx2:
+                continue
+            new_i = old_to_new[i]
+            new_j = old_to_new[j]
+            new_matrix[new_i][new_j] = matrix[i][j]
+            new_matrix[new_j][new_i] = matrix[i][j]
+
+    # Calculate distances from new cluster to remaining taxa (weighted average)
+    cluster_size = size1 + size2
+    for k in range(n):
+        if k == idx1 or k == idx2:
+            continue
+        new_k = old_to_new[k]
+        # UPGMA weighted average distance formula
+        d_uk = (size1 * matrix[idx1][k] + size2 * matrix[idx2][k]) / cluster_size
+        new_matrix[joined_idx][new_k] = d_uk
+        new_matrix[new_k][joined_idx] = d_uk
+
+    return new_matrix
 
 
 def _calculate_tree_height(tree: Tree, node: str) -> int:
@@ -557,11 +743,3 @@ def _calculate_tree_height(tree: Tree, node: str) -> int:
         max_child_height = max(max_child_height, child_height)
 
     return max_child_height + 1
-
-
-
-
-
-
-
-

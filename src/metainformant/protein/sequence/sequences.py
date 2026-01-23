@@ -43,10 +43,10 @@ def read_fasta(path: Union[str, Path]) -> Dict[str, str]:
                 if not line:
                     continue
 
-                if line.startswith('>'):
+                if line.startswith(">"):
                     # Save previous sequence
                     if current_id is not None:
-                        sequences[current_id] = ''.join(current_seq)
+                        sequences[current_id] = "".join(current_seq)
 
                     # Start new sequence
                     current_id = line[1:].split()[0]  # Take first word as ID
@@ -59,7 +59,7 @@ def read_fasta(path: Union[str, Path]) -> Dict[str, str]:
 
         # Save last sequence
         if current_id is not None:
-            sequences[current_id] = ''.join(current_seq)
+            sequences[current_id] = "".join(current_seq)
 
     except Exception as e:
         raise ValueError(f"Error reading FASTA file {path}: {e}")
@@ -82,17 +82,17 @@ def write_fasta(sequences: Dict[str, str], path: Union[str, Path], line_width: i
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
 
-    with io.open_text_auto(path, 'w') as f:
+    with io.open_text_auto(path, "w") as f:
         for seq_id, sequence in sequences.items():
             f.write(f">{seq_id}\n")
 
             if line_width > 0:
                 # Wrap sequence lines
                 for i in range(0, len(sequence), line_width):
-                    f.write(sequence[i:i + line_width] + '\n')
+                    f.write(sequence[i : i + line_width] + "\n")
             else:
                 # Single line per sequence
-                f.write(sequence + '\n')
+                f.write(sequence + "\n")
 
     logger.debug(f"Wrote {len(sequences)} protein sequences to {path}")
 
@@ -110,7 +110,7 @@ def validate_protein_sequence(seq: str) -> bool:
         return False
 
     # Standard amino acid codes (including ambiguous)
-    valid_chars = set('ACDEFGHIKLMNPQRSTVWYBXZJUO-')
+    valid_chars = set("ACDEFGHIKLMNPQRSTVWYBXZJUO-")
     return all(c in valid_chars for c in seq.upper())
 
 
@@ -140,13 +140,28 @@ def molecular_weight(seq: str) -> float:
 
     # Average residue weights (including water loss)
     residue_weights = {
-        'A': 71.0788, 'R': 156.1875, 'N': 114.1038, 'D': 115.0886,
-        'C': 103.1388, 'Q': 128.1307, 'E': 129.1155, 'G': 57.0519,
-        'H': 137.1411, 'I': 113.1594, 'L': 113.1594, 'K': 128.1741,
-        'M': 131.1926, 'F': 147.1766, 'P': 97.1167, 'S': 87.0782,
-        'T': 101.1051, 'W': 186.2132, 'Y': 163.1760, 'V': 99.1326,
-        'U': 150.0388,  # Selenocysteine
-        'O': 237.3018,  # Pyrrolysine
+        "A": 71.0788,
+        "R": 156.1875,
+        "N": 114.1038,
+        "D": 115.0886,
+        "C": 103.1388,
+        "Q": 128.1307,
+        "E": 129.1155,
+        "G": 57.0519,
+        "H": 137.1411,
+        "I": 113.1594,
+        "L": 113.1594,
+        "K": 128.1741,
+        "M": 131.1926,
+        "F": 147.1766,
+        "P": 97.1167,
+        "S": 87.0782,
+        "T": 101.1051,
+        "W": 186.2132,
+        "Y": 163.1760,
+        "V": 99.1326,
+        "U": 150.0388,  # Selenocysteine
+        "O": 237.3018,  # Pyrrolysine
     }
 
     weight = 0.0
@@ -171,8 +186,8 @@ def isoelectric_point(seq: str) -> float:
     # Simplified pI calculation
     # In practice, would use more sophisticated algorithms
 
-    acidic_count = seq.upper().count('D') + seq.upper().count('E')
-    basic_count = seq.upper().count('R') + seq.upper().count('H') + seq.upper().count('K')
+    acidic_count = seq.upper().count("D") + seq.upper().count("E")
+    basic_count = seq.upper().count("R") + seq.upper().count("H") + seq.upper().count("K")
 
     if acidic_count == 0 and basic_count == 0:
         return 7.0  # Neutral
@@ -232,17 +247,33 @@ def hydropathy_score(seq: str, window_size: int = 19) -> List[float]:
     """
     # Kyte-Doolittle hydropathy scale
     kd_scale = {
-        'I': 4.5, 'V': 4.2, 'L': 3.8, 'P': 1.6, 'A': 1.8, 'W': -0.9,
-        'M': 1.9, 'H': -3.2, 'T': -0.7, 'F': 2.8, 'C': 2.5, 'N': -3.5,
-        'Q': -3.5, 'Y': -1.3, 'D': -3.5, 'E': -3.5, 'K': -3.9, 'R': -4.5,
-        'S': -0.8, 'G': -0.4
+        "I": 4.5,
+        "V": 4.2,
+        "L": 3.8,
+        "P": 1.6,
+        "A": 1.8,
+        "W": -0.9,
+        "M": 1.9,
+        "H": -3.2,
+        "T": -0.7,
+        "F": 2.8,
+        "C": 2.5,
+        "N": -3.5,
+        "Q": -3.5,
+        "Y": -1.3,
+        "D": -3.5,
+        "E": -3.5,
+        "K": -3.9,
+        "R": -4.5,
+        "S": -0.8,
+        "G": -0.4,
     }
 
     scores = []
     seq_upper = seq.upper()
 
     for i in range(len(seq_upper) - window_size + 1):
-        window = seq_upper[i:i + window_size]
+        window = seq_upper[i : i + window_size]
         window_score = sum(kd_scale.get(aa, 0.0) for aa in window) / window_size
         scores.append(window_score)
 
@@ -303,11 +334,3 @@ def amino_acid_composition(seq: str) -> Dict[str, float]:
         composition[aa] = (count / total) * 100
 
     return composition
-
-
-
-
-
-
-
-

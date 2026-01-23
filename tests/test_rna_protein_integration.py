@@ -20,7 +20,7 @@ class TestCalculateTranslationEfficiency:
         """Test calculate_translation_efficiency with empty DataFrames."""
         rna_df = pd.DataFrame()
         protein_df = pd.DataFrame()
-        
+
         result = protein_integration.calculate_translation_efficiency(rna_df, protein_df)
         assert isinstance(result, pd.DataFrame)
         assert len(result) == 0
@@ -29,7 +29,7 @@ class TestCalculateTranslationEfficiency:
         """Test calculate_translation_efficiency with no common samples."""
         rna_df = pd.DataFrame({"gene1": [1, 2, 3]}, index=["sample1", "sample2", "sample3"])
         protein_df = pd.DataFrame({"gene1": [1, 2, 3]}, index=["sample4", "sample5", "sample6"])
-        
+
         result = protein_integration.calculate_translation_efficiency(rna_df, protein_df)
         assert isinstance(result, pd.DataFrame)
         assert len(result) == 0
@@ -44,10 +44,8 @@ class TestCalculateTranslationEfficiency:
             {"gene1": [1, 2, 3], "gene2": [0.5, 1, 1.5]},
             index=["sample1", "sample2", "sample3"],
         )
-        
-        result = protein_integration.calculate_translation_efficiency(
-            rna_df, protein_df, method="ratio"
-        )
+
+        result = protein_integration.calculate_translation_efficiency(rna_df, protein_df, method="ratio")
         assert isinstance(result, pd.DataFrame)
         assert len(result) > 0
         assert "gene_id" in result.columns
@@ -64,10 +62,8 @@ class TestCalculateTranslationEfficiency:
             {"gene1": [1, 2, 3, 4, 5]},
             index=["sample1", "sample2", "sample3", "sample4", "sample5"],
         )
-        
-        result = protein_integration.calculate_translation_efficiency(
-            rna_df, protein_df, method="correlation"
-        )
+
+        result = protein_integration.calculate_translation_efficiency(rna_df, protein_df, method="correlation")
         assert isinstance(result, pd.DataFrame)
         if len(result) > 0:
             assert "gene_id" in result.columns
@@ -80,7 +76,7 @@ class TestPredictProteinAbundanceFromRna:
     def test_predict_protein_abundance_empty(self):
         """Test predict_protein_abundance_from_rna with empty DataFrame."""
         rna_df = pd.DataFrame()
-        
+
         result = protein_integration.predict_protein_abundance_from_rna(rna_df)
         assert isinstance(result, pd.DataFrame)
         assert len(result) == 0
@@ -91,10 +87,8 @@ class TestPredictProteinAbundanceFromRna:
             {"gene1": [10, 20, 30], "gene2": [5, 10, 15]},
             index=["sample1", "sample2", "sample3"],
         )
-        
-        result = protein_integration.predict_protein_abundance_from_rna(
-            rna_df, method="linear"
-        )
+
+        result = protein_integration.predict_protein_abundance_from_rna(rna_df, method="linear")
         assert isinstance(result, pd.DataFrame)
         assert result.shape == rna_df.shape
         assert list(result.columns) == list(rna_df.columns)
@@ -114,7 +108,7 @@ class TestPredictProteinAbundanceFromRna:
             {"gene1": [15, 25]},
             index=["test1", "test2"],
         )
-        
+
         result = protein_integration.predict_protein_abundance_from_rna(
             rna_df,
             training_rna=training_rna,
@@ -132,7 +126,7 @@ class TestRibosomeProfilingIntegration:
         """Test ribosome_profiling_integration with empty DataFrames."""
         rna_df = pd.DataFrame()
         ribo_df = pd.DataFrame()
-        
+
         result = protein_integration.ribosome_profiling_integration(rna_df, ribo_df)
         assert isinstance(result, pd.DataFrame)
         assert len(result) == 0
@@ -147,7 +141,7 @@ class TestRibosomeProfilingIntegration:
             {"gene1": [1, 2, 3], "gene2": [0.5, 1, 1.5]},
             index=["sample1", "sample2", "sample3"],
         )
-        
+
         result = protein_integration.ribosome_profiling_integration(rna_df, ribo_df)
         assert isinstance(result, pd.DataFrame)
         assert len(result) > 0
@@ -167,7 +161,7 @@ class TestRibosomeProfilingIntegration:
             {"gene1": [1, 2, 3]},
             index=["sample4", "sample5", "sample6"],
         )
-        
+
         result = protein_integration.ribosome_profiling_integration(rna_df, ribo_df)
         assert isinstance(result, pd.DataFrame)
         assert len(result) == 0
@@ -183,7 +177,7 @@ class TestProteinIntegrationDocumentation:
             protein_integration.predict_protein_abundance_from_rna,
             protein_integration.ribosome_profiling_integration,
         ]
-        
+
         for func in functions:
             assert func.__doc__ is not None, f"{func.__name__} missing docstring"
             assert len(func.__doc__.strip()) > 0
@@ -202,10 +196,8 @@ class TestProteinIntegrationEdgeCases:
             {"gene1": [0, 1, 2]},
             index=["sample1", "sample2", "sample3"],
         )
-        
-        result = protein_integration.calculate_translation_efficiency(
-            rna_df, protein_df, method="ratio"
-        )
+
+        result = protein_integration.calculate_translation_efficiency(rna_df, protein_df, method="ratio")
         # Should filter out zeros
         assert isinstance(result, pd.DataFrame)
 
@@ -219,10 +211,7 @@ class TestProteinIntegrationEdgeCases:
             {"gene1": [1, np.nan, 2]},
             index=["sample1", "sample2", "sample3"],
         )
-        
-        result = protein_integration.calculate_translation_efficiency(
-            rna_df, protein_df, method="ratio"
-        )
+
+        result = protein_integration.calculate_translation_efficiency(rna_df, protein_df, method="ratio")
         # Should filter out NaNs
         assert isinstance(result, pd.DataFrame)
-

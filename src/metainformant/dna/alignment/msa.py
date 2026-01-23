@@ -60,14 +60,11 @@ def _is_tool_available(tool: str) -> bool:
     """Check if an external alignment tool is available."""
     try:
         if tool == "muscle":
-            subprocess.run(["muscle", "-version"],
-                         capture_output=True, check=True, timeout=5)
+            subprocess.run(["muscle", "-version"], capture_output=True, check=True, timeout=5)
         elif tool == "mafft":
-            subprocess.run(["mafft", "--version"],
-                         capture_output=True, check=True, timeout=5)
+            subprocess.run(["mafft", "--version"], capture_output=True, check=True, timeout=5)
         elif tool == "clustalw":
-            subprocess.run(["clustalw2", "-help"],
-                         capture_output=True, check=True, timeout=5)
+            subprocess.run(["clustalw2", "-help"], capture_output=True, check=True, timeout=5)
         return True
     except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
         return False
@@ -120,6 +117,7 @@ def _run_external_alignment(sequences: Dict[str, str], method: str) -> Dict[str,
     finally:
         # Clean up temporary directory
         import shutil
+
         if tmpdir.exists():
             shutil.rmtree(tmpdir, ignore_errors=True)
 
@@ -137,7 +135,7 @@ def _simple_progressive_alignment(sequences: Dict[str, str]) -> Dict[str, str]:
     # Progressively add sequences
     for seq_id in seq_ids[1:]:
         # Find best match among existing aligned sequences
-        best_score = float('-inf')
+        best_score = float("-inf")
         best_aligned = None
 
         for existing_id, existing_seq in aligned.items():
@@ -189,7 +187,7 @@ def generate_consensus_from_alignment(aligned_sequences: Dict[str, str], thresho
     seq_length = len(next(iter(aligned_sequences.values())))
 
     consensus = []
-    nucleotides = ['A', 'C', 'G', 'T', '-']
+    nucleotides = ["A", "C", "G", "T", "-"]
 
     for pos in range(seq_length):
         base_counts = {}
@@ -202,7 +200,7 @@ def generate_consensus_from_alignment(aligned_sequences: Dict[str, str], thresho
                     base_counts[base] = base_counts.get(base, 0) + 1
 
         if not base_counts:
-            consensus.append('N')  # Unknown base
+            consensus.append("N")  # Unknown base
             continue
 
         total_count = sum(base_counts.values())
@@ -216,7 +214,7 @@ def generate_consensus_from_alignment(aligned_sequences: Dict[str, str], thresho
             # Use IUPAC ambiguity code for ties/low confidence
             consensus.append(_get_ambiguity_code(base_counts))
 
-    return ''.join(consensus)
+    return "".join(consensus)
 
 
 def _get_ambiguity_code(base_counts: Dict[str, int]) -> str:
@@ -224,34 +222,34 @@ def _get_ambiguity_code(base_counts: Dict[str, int]) -> str:
     bases = set(base_counts.keys())
 
     # Remove gaps for ambiguity calculation
-    bases.discard('-')
+    bases.discard("-")
 
     if len(bases) == 0:
-        return '-'
+        return "-"
     elif len(bases) == 1:
         return list(bases)[0]
-    elif bases == {'A', 'G'}:
-        return 'R'
-    elif bases == {'C', 'T'}:
-        return 'Y'
-    elif bases == {'G', 'C'}:
-        return 'S'
-    elif bases == {'A', 'T'}:
-        return 'W'
-    elif bases == {'G', 'T'}:
-        return 'K'
-    elif bases == {'A', 'C'}:
-        return 'M'
-    elif bases == {'A', 'C', 'G'}:
-        return 'V'
-    elif bases == {'A', 'C', 'T'}:
-        return 'H'
-    elif bases == {'A', 'G', 'T'}:
-        return 'D'
-    elif bases == {'C', 'G', 'T'}:
-        return 'B'
+    elif bases == {"A", "G"}:
+        return "R"
+    elif bases == {"C", "T"}:
+        return "Y"
+    elif bases == {"G", "C"}:
+        return "S"
+    elif bases == {"A", "T"}:
+        return "W"
+    elif bases == {"G", "T"}:
+        return "K"
+    elif bases == {"A", "C"}:
+        return "M"
+    elif bases == {"A", "C", "G"}:
+        return "V"
+    elif bases == {"A", "C", "T"}:
+        return "H"
+    elif bases == {"A", "G", "T"}:
+        return "D"
+    elif bases == {"C", "G", "T"}:
+        return "B"
     else:  # All four bases
-        return 'N'
+        return "N"
 
 
 def calculate_alignment_quality(aligned_sequences: Dict[str, str]) -> Dict[str, float]:
@@ -270,22 +268,17 @@ def calculate_alignment_quality(aligned_sequences: Dict[str, str]) -> Dict[str, 
         True
     """
     if not aligned_sequences:
-        return {
-            'average_identity': 0.0,
-            'conservation_score': 0.0,
-            'gap_percentage': 0.0,
-            'alignment_length': 0
-        }
+        return {"average_identity": 0.0, "conservation_score": 0.0, "gap_percentage": 0.0, "alignment_length": 0}
 
     seq_list = list(aligned_sequences.values())
     n_sequences = len(seq_list)
 
     if n_sequences < 2:
         return {
-            'average_identity': 1.0,
-            'conservation_score': 1.0,
-            'gap_percentage': 0.0,
-            'alignment_length': len(seq_list[0]) if seq_list else 0
+            "average_identity": 1.0,
+            "conservation_score": 1.0,
+            "gap_percentage": 0.0,
+            "alignment_length": len(seq_list[0]) if seq_list else 0,
         }
 
     alignment_length = len(seq_list[0])
@@ -302,10 +295,10 @@ def calculate_alignment_quality(aligned_sequences: Dict[str, str]) -> Dict[str, 
             gaps = 0
 
             for pos in range(alignment_length):
-                base1 = seq1[pos] if pos < len(seq1) else '-'
-                base2 = seq2[pos] if pos < len(seq2) else '-'
+                base1 = seq1[pos] if pos < len(seq1) else "-"
+                base2 = seq2[pos] if pos < len(seq2) else "-"
 
-                if base1 == '-' or base2 == '-':
+                if base1 == "-" or base2 == "-":
                     gaps += 1
                 elif base1 == base2:
                     matches += 1
@@ -323,16 +316,18 @@ def calculate_alignment_quality(aligned_sequences: Dict[str, str]) -> Dict[str, 
                 conserved_positions += 1
 
     return {
-        'average_identity': total_identity / total_pairs if total_pairs > 0 else 0.0,
-        'conservation_score': conserved_positions / alignment_length if alignment_length > 0 else 0.0,
-        'gap_percentage': (total_gaps / (total_pairs * alignment_length)) * 100 if total_pairs * alignment_length > 0 else 0.0,
-        'alignment_length': alignment_length
+        "average_identity": total_identity / total_pairs if total_pairs > 0 else 0.0,
+        "conservation_score": conserved_positions / alignment_length if alignment_length > 0 else 0.0,
+        "gap_percentage": (
+            (total_gaps / (total_pairs * alignment_length)) * 100 if total_pairs * alignment_length > 0 else 0.0
+        ),
+        "alignment_length": alignment_length,
     }
 
 
 def _write_fasta(sequences: Dict[str, str], filepath: Path) -> None:
     """Write sequences to FASTA format."""
-    with open(filepath, 'w') as f:
+    with open(filepath, "w") as f:
         for seq_id, seq in sequences.items():
             f.write(f">{seq_id}\n")
             f.write(f"{seq}\n")
@@ -344,25 +339,17 @@ def _parse_fasta(fasta_content: str) -> Dict[str, str]:
     current_id = None
     current_seq = []
 
-    for line in fasta_content.strip().split('\n'):
+    for line in fasta_content.strip().split("\n"):
         line = line.strip()
-        if line.startswith('>'):
+        if line.startswith(">"):
             if current_id is not None:
-                sequences[current_id] = ''.join(current_seq)
+                sequences[current_id] = "".join(current_seq)
             current_id = line[1:].split()[0]  # Remove '>' and take first word
             current_seq = []
         elif current_id is not None:
             current_seq.append(line)
 
     if current_id is not None:
-        sequences[current_id] = ''.join(current_seq)
+        sequences[current_id] = "".join(current_seq)
 
     return sequences
-
-
-
-
-
-
-
-

@@ -16,7 +16,7 @@ def test_rna_plan_cli_lists_expected_steps(tmp_path: Path):
     # Add src to PYTHONPATH for module import
     env = os.environ.copy()
     env["PYTHONPATH"] = str(Path(__file__).parent.parent / "src")
-    
+
     cmd = [
         sys.executable,
         "-m",
@@ -43,10 +43,11 @@ def test_rna_plan_cli_lists_expected_steps(tmp_path: Path):
 def test_rna_plan_species_cli_includes_species_and_tissue(tmp_path: Path):
     """Test that 'rna plan-species' CLI includes species and tissue parameters in output."""
     import os
+
     # Add src to PYTHONPATH for module import
     env = os.environ.copy()
     env["PYTHONPATH"] = str(Path(__file__).parent.parent / "src")
-    
+
     cmd = [
         sys.executable,
         "-m",

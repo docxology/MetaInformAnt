@@ -19,18 +19,23 @@ from metainformant.ml.features.dimensionality import (
     reduce_dimensions_umap,
 )
 from metainformant.ml.models.regression import BiologicalRegressor, evaluate_regressor
+
 try:
     from sklearn.model_selection import (
         train_test_split,
     )
+
     HAS_SKLEARN = True
 except ImportError:
     HAS_SKLEARN = False
 
 # Mock for type checking if sklearn missing
 if not HAS_SKLEARN:
+
     def train_test_split(*args, **kwargs):
         pass
+
+
 from metainformant.ml.evaluation.validation import (
     bootstrap_validate,
     cross_validate,

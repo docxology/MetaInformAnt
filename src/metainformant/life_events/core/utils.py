@@ -16,8 +16,9 @@ from metainformant.life_events.core.events import Event, EventSequence
 logger = logging.get_logger(__name__)
 
 
-def add_temporal_noise(sequence: EventSequence, noise_level: float = 0.1,
-                      rng: random.Random | None = None) -> EventSequence:
+def add_temporal_noise(
+    sequence: EventSequence, noise_level: float = 0.1, rng: random.Random | None = None
+) -> EventSequence:
     """Add temporal noise to event timestamps.
 
     Args:
@@ -52,7 +53,7 @@ def add_temporal_noise(sequence: EventSequence, noise_level: float = 0.1,
             event_type=event.event_type,
             description=event.description,
             metadata=event.metadata.copy(),
-            confidence=event.confidence
+            confidence=event.confidence,
         )
         new_events.append(new_event)
 
@@ -60,17 +61,14 @@ def add_temporal_noise(sequence: EventSequence, noise_level: float = 0.1,
     new_events.sort(key=lambda e: e.timestamp)
 
     # Create new sequence
-    new_sequence = EventSequence(
-        person_id=sequence.person_id,
-        events=new_events,
-        metadata=sequence.metadata.copy()
-    )
+    new_sequence = EventSequence(person_id=sequence.person_id, events=new_events, metadata=sequence.metadata.copy())
 
     return new_sequence
 
 
-def generate_realistic_life_events(n_events: int = 50, start_age: float = 0.0,
-                                 end_age: float = 80.0, seed: int | None = None) -> EventSequence:
+def generate_realistic_life_events(
+    n_events: int = 50, start_age: float = 0.0, end_age: float = 80.0, seed: int | None = None
+) -> EventSequence:
     """Generate a realistic sequence of life events.
 
     Args:
@@ -86,18 +84,18 @@ def generate_realistic_life_events(n_events: int = 50, start_age: float = 0.0,
 
     # Define event types and their typical age ranges
     event_types = {
-        'birth': (0, 0),
-        'education_start': (5, 7),
-        'school_graduation': (17, 19),
-        'university_start': (18, 22),
-        'university_graduation': (21, 26),
-        'first_job': (20, 30),
-        'marriage': (25, 35),
-        'first_child': (25, 40),
-        'career_change': (25, 60),
-        'retirement': (60, 70),
-        'health_diagnosis': (30, 80),
-        'relocation': (20, 70)
+        "birth": (0, 0),
+        "education_start": (5, 7),
+        "school_graduation": (17, 19),
+        "university_start": (18, 22),
+        "university_graduation": (21, 26),
+        "first_job": (20, 30),
+        "marriage": (25, 35),
+        "first_child": (25, 40),
+        "career_change": (25, 60),
+        "retirement": (60, 70),
+        "health_diagnosis": (30, 80),
+        "relocation": (20, 70),
     }
 
     events = []
@@ -116,7 +114,7 @@ def generate_realistic_life_events(n_events: int = 50, start_age: float = 0.0,
             timestamp=age,
             event_type=event_type,
             description=f"Generated {event_type} event",
-            metadata={'generated': True, 'event_index': i}
+            metadata={"generated": True, "event_index": i},
         )
         events.append(event)
 
@@ -124,9 +122,7 @@ def generate_realistic_life_events(n_events: int = 50, start_age: float = 0.0,
     events.sort(key=lambda e: e.timestamp)
 
     return EventSequence(
-        person_id="generated_sequence",
-        events=events,
-        metadata={'generated': True, 'n_events': len(events)}
+        person_id="generated_sequence", events=events, metadata={"generated": True, "n_events": len(events)}
     )
 
 
@@ -143,31 +139,31 @@ def get_event_statistics(sequences: List[EventSequence]) -> Dict[str, Any]:
         return {}
 
     stats = {
-        'n_sequences': len(sequences),
-        'total_events': sum(len(seq.events) for seq in sequences),
-        'events_per_sequence': [],
-        'event_types': set(),
-        'duration_stats': []
+        "n_sequences": len(sequences),
+        "total_events": sum(len(seq.events) for seq in sequences),
+        "events_per_sequence": [],
+        "event_types": set(),
+        "duration_stats": [],
     }
 
     for seq in sequences:
-        stats['events_per_sequence'].append(len(seq.events))
-        stats['event_types'].update(event.event_type for event in seq.events)
+        stats["events_per_sequence"].append(len(seq.events))
+        stats["event_types"].update(event.event_type for event in seq.events)
 
         if seq.events:
             timestamps = [event.timestamp for event in seq.events]
             duration = max(timestamps) - min(timestamps)
-            stats['duration_stats'].append(duration)
+            stats["duration_stats"].append(duration)
 
     # Calculate aggregates
-    if stats['events_per_sequence']:
-        stats['mean_events_per_sequence'] = sum(stats['events_per_sequence']) / len(stats['events_per_sequence'])
+    if stats["events_per_sequence"]:
+        stats["mean_events_per_sequence"] = sum(stats["events_per_sequence"]) / len(stats["events_per_sequence"])
 
-    if stats['duration_stats']:
-        stats['mean_duration'] = sum(stats['duration_stats']) / len(stats['duration_stats'])
+    if stats["duration_stats"]:
+        stats["mean_duration"] = sum(stats["duration_stats"]) / len(stats["duration_stats"])
 
-    stats['unique_event_types'] = len(stats['event_types'])
-    stats['event_types'] = list(stats['event_types'])
+    stats["unique_event_types"] = len(stats["event_types"])
+    stats["event_types"] = list(stats["event_types"])
 
     return stats
 
@@ -188,7 +184,7 @@ def load_sequences_from_json(json_path: str | Path) -> List[EventSequence]:
     if not json_path.exists():
         raise FileNotFoundError(f"JSON file not found: {json_path}")
 
-    with open(json_path, 'r') as f:
+    with open(json_path, "r") as f:
         data = json.load(f)
 
     sequences = []
@@ -217,7 +213,7 @@ def load_sequences_from_json(json_path: str | Path) -> List[EventSequence]:
                 event_type=event_data["event_type"],
                 timestamp=event_data["timestamp"],
                 domain=event_data.get("domain"),
-                metadata=event_data.get("metadata", {})
+                metadata=event_data.get("metadata", {}),
             )
             events.append(event)
 
@@ -256,12 +252,7 @@ def validate_sequence(sequence: EventSequence) -> Dict[str, Any]:
         "is_valid": True,
         "issues": [],
         "warnings": [],
-        "stats": {
-            "n_events": len(sequence.events),
-            "event_types": set(),
-            "domains": set(),
-            "date_range": None
-        }
+        "stats": {"n_events": len(sequence.events), "event_types": set(), "domains": set(), "date_range": None},
     }
 
     if not sequence.events:
@@ -273,13 +264,13 @@ def validate_sequence(sequence: EventSequence) -> Dict[str, Any]:
     timestamps = []
     for i, event in enumerate(sequence.events):
         validation["stats"]["event_types"].add(event.event_type)
-        if hasattr(event, 'domain') and event.domain:
+        if hasattr(event, "domain") and event.domain:
             validation["stats"]["domains"].add(event.domain)
 
         if not event.event_type:
             validation["issues"].append(f"Event {i} has no event_type")
 
-        if not hasattr(event, 'timestamp') or event.timestamp is None:
+        if not hasattr(event, "timestamp") or event.timestamp is None:
             validation["issues"].append(f"Event {i} has no timestamp")
         else:
             timestamps.append(event.timestamp)
@@ -292,13 +283,14 @@ def validate_sequence(sequence: EventSequence) -> Dict[str, Any]:
 
         # Calculate date range
         from datetime import datetime
+
         if timestamps:
             min_date = min(timestamps)
             max_date = max(timestamps)
             validation["stats"]["date_range"] = {
-                "start": min_date.isoformat() if hasattr(min_date, 'isoformat') else str(min_date),
-                "end": max_date.isoformat() if hasattr(max_date, 'isoformat') else str(max_date),
-                "span_days": (max_date - min_date).days if hasattr(max_date, '__sub__') else None
+                "start": min_date.isoformat() if hasattr(min_date, "isoformat") else str(min_date),
+                "end": max_date.isoformat() if hasattr(max_date, "isoformat") else str(max_date),
+                "span_days": (max_date - min_date).days if hasattr(max_date, "__sub__") else None,
             }
 
     validation["stats"]["event_types"] = list(validation["stats"]["event_types"])
@@ -315,7 +307,7 @@ def generate_cohort_sequences(
     domains: Optional[List[str]] = None,
     start_year: int = 1980,
     end_year: int = 2020,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> List[EventSequence]:
     """Generate synthetic cohort sequences for testing and simulation.
 
@@ -337,10 +329,21 @@ def generate_cohort_sequences(
     # Default event types and domains
     if event_types is None:
         event_types = [
-            "started_school", "graduated_high_school", "started_college",
-            "graduated_college", "got_first_job", "job_change", "promotion",
-            "started_relationship", "marriage", "divorce", "had_child",
-            "moved_house", "diagnosis", "recovered", "retirement"
+            "started_school",
+            "graduated_high_school",
+            "started_college",
+            "graduated_college",
+            "got_first_job",
+            "job_change",
+            "promotion",
+            "started_relationship",
+            "marriage",
+            "divorce",
+            "had_child",
+            "moved_house",
+            "diagnosis",
+            "recovered",
+            "retirement",
         ]
 
     if domains is None:
@@ -367,7 +370,12 @@ def generate_cohort_sequences(
                 domain = "education"
             elif "job" in event_type or "promotion" in event_type or "retirement" in event_type:
                 domain = "career"
-            elif "relationship" in event_type or "marriage" in event_type or "divorce" in event_type or "child" in event_type:
+            elif (
+                "relationship" in event_type
+                or "marriage" in event_type
+                or "divorce" in event_type
+                or "child" in event_type
+            ):
                 domain = "family"
             elif "diagnosis" in event_type or "recovered" in event_type:
                 domain = "health"
@@ -389,7 +397,7 @@ def generate_cohort_sequences(
                 event_type=event_type,
                 timestamp=timestamp,
                 domain=domain,
-                metadata={"generated": True, "sequence_index": j}
+                metadata={"generated": True, "sequence_index": j},
             )
             events.append(event)
 
@@ -407,7 +415,7 @@ def sequence_embeddings(
     sequences: List[EventSequence],
     method: str = "average",
     embedding_dict: Optional[Dict[str, np.ndarray]] = None,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Dict[str, np.ndarray]:
     """Create sequence-level embeddings from event embeddings.
 
@@ -427,7 +435,7 @@ def sequence_embeddings(
             for event in seq.events:
                 all_event_types.add(event.event_type)
 
-        embedding_dim = kwargs.get('embedding_dim', 50)
+        embedding_dim = kwargs.get("embedding_dim", 50)
         embedding_dict = {}
         for i, event_type in enumerate(all_event_types):
             embedding = np.zeros(embedding_dim)
@@ -486,7 +494,7 @@ def generate_event_chain(
     n_events: int,
     transition_matrix: Optional[Dict[str, Dict[str, float]]] = None,
     event_types: Optional[List[str]] = None,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> List[str]:
     """Generate a causally linked sequence of events using a Markov chain.
 
@@ -504,10 +512,20 @@ def generate_event_chain(
 
     if event_types is None:
         event_types = [
-            "started_school", "graduated_high_school", "started_college",
-            "graduated_college", "got_first_job", "job_change", "promotion",
-            "started_relationship", "marriage", "had_child", "diagnosis",
-            "recovered", "moved_house", "retirement"
+            "started_school",
+            "graduated_high_school",
+            "started_college",
+            "graduated_college",
+            "got_first_job",
+            "job_change",
+            "promotion",
+            "started_relationship",
+            "marriage",
+            "had_child",
+            "diagnosis",
+            "recovered",
+            "moved_house",
+            "retirement",
         ]
 
     # Create default transition matrix if not provided
@@ -582,7 +600,7 @@ def generate_synthetic_life_events(
     domains: Optional[List[str]] = None,
     temporal_patterns: str = "realistic",
     random_state: Optional[int] = None,
-    **kwargs: Any
+    **kwargs: Any,
 ) -> Tuple[List[EventSequence], Optional[List[Any]]]:
     """Generate synthetic life event sequences with realistic patterns.
 
@@ -610,11 +628,24 @@ def generate_synthetic_life_events(
     # Default event types and domains
     if event_types is None:
         event_types = [
-            "started_school", "graduated_high_school", "started_college",
-            "graduated_college", "got_first_job", "job_change", "promotion",
-            "started_relationship", "marriage", "divorce", "had_child",
-            "diagnosis", "recovered", "moved_house", "parent_illness",
-            "financial_difficulty", "inheritance", "retirement"
+            "started_school",
+            "graduated_high_school",
+            "started_college",
+            "graduated_college",
+            "got_first_job",
+            "job_change",
+            "promotion",
+            "started_relationship",
+            "marriage",
+            "divorce",
+            "had_child",
+            "diagnosis",
+            "recovered",
+            "moved_house",
+            "parent_illness",
+            "financial_difficulty",
+            "inheritance",
+            "retirement",
         ]
 
     if domains is None:
@@ -646,8 +677,12 @@ def generate_synthetic_life_events(
         if random.random() < 0.8:  # 80% have education
             for event_type in education_chain:
                 if len(events) < n_events and event_type not in used_events:
-                    year_offset = {"started_school": 0, "graduated_high_school": 4,
-                                 "started_college": 4, "graduated_college": 8}.get(event_type, 0)
+                    year_offset = {
+                        "started_school": 0,
+                        "graduated_high_school": 4,
+                        "started_college": 4,
+                        "graduated_college": 8,
+                    }.get(event_type, 0)
                     event_year = start_year + year_offset
                     event_month = random.randint(1, 12)
                     event_day = random.randint(1, 28)
@@ -655,7 +690,7 @@ def generate_synthetic_life_events(
                     event = Event(
                         event_type=event_type,
                         timestamp=datetime(event_year, event_month, event_day),
-                        domain="education"
+                        domain="education",
                     )
                     events.append(event)
                     used_events.add(event_type)
@@ -671,9 +706,7 @@ def generate_synthetic_life_events(
                     event_day = random.randint(1, 28)
 
                     event = Event(
-                        event_type=event_type,
-                        timestamp=datetime(event_year, event_month, event_day),
-                        domain="career"
+                        event_type=event_type, timestamp=datetime(event_year, event_month, event_day), domain="career"
                     )
                     events.append(event)
                     used_events.add(event_type)
@@ -689,9 +722,7 @@ def generate_synthetic_life_events(
                     event_day = random.randint(1, 28)
 
                     event = Event(
-                        event_type=event_type,
-                        timestamp=datetime(event_year, event_month, event_day),
-                        domain="family"
+                        event_type=event_type, timestamp=datetime(event_year, event_month, event_day), domain="family"
                     )
                     events.append(event)
                     used_events.add(event_type)
@@ -705,9 +736,7 @@ def generate_synthetic_life_events(
                     event_day = random.randint(1, 28)
 
                     event = Event(
-                        event_type=event_type,
-                        timestamp=datetime(event_year, event_month, event_day),
-                        domain="health"
+                        event_type=event_type, timestamp=datetime(event_year, event_month, event_day), domain="health"
                     )
                     events.append(event)
                     used_events.add(event_type)
@@ -721,17 +750,30 @@ def generate_synthetic_life_events(
                 event_day = random.randint(1, 28)
 
                 # Assign domain based on event type
-                domain = "education" if "school" in event_type or "college" in event_type else \
-                        "career" if "job" in event_type or "promotion" in event_type or "retirement" in event_type else \
-                        "family" if "relationship" in event_type or "marriage" in event_type or "child" in event_type else \
-                        "health" if "diagnosis" in event_type or "recovered" in event_type else \
-                        "finance" if "financial" in event_type or "inheritance" in event_type else \
-                        random.choice(domains)
+                domain = (
+                    "education"
+                    if "school" in event_type or "college" in event_type
+                    else (
+                        "career"
+                        if "job" in event_type or "promotion" in event_type or "retirement" in event_type
+                        else (
+                            "family"
+                            if "relationship" in event_type or "marriage" in event_type or "child" in event_type
+                            else (
+                                "health"
+                                if "diagnosis" in event_type or "recovered" in event_type
+                                else (
+                                    "finance"
+                                    if "financial" in event_type or "inheritance" in event_type
+                                    else random.choice(domains)
+                                )
+                            )
+                        )
+                    )
+                )
 
                 event = Event(
-                    event_type=event_type,
-                    timestamp=datetime(event_year, event_month, event_day),
-                    domain=domain
+                    event_type=event_type, timestamp=datetime(event_year, event_month, event_day), domain=domain
                 )
                 events.append(event)
                 used_events.add(event_type)
@@ -749,8 +791,9 @@ def generate_synthetic_life_events(
                 outcome = random.choice([0, 1])
             elif outcome_relationship == "event_based":
                 # Outcome based on presence of certain events
-                has_negative_events = any(e.event_type in ["diagnosis", "divorce", "financial_difficulty"]
-                                        for e in events)
+                has_negative_events = any(
+                    e.event_type in ["diagnosis", "divorce", "financial_difficulty"] for e in events
+                )
                 outcome = 1 if has_negative_events else 0
             elif outcome_relationship == "temporal":
                 # Outcome based on event density/timing

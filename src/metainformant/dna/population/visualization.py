@@ -15,9 +15,11 @@ from metainformant.core import logging
 logger = logging.get_logger(__name__)
 
 
-def plot_fst_matrix(data: Dict[str, List[str]] | np.ndarray | List[List[float]],
-                    pop_names: Optional[List[str]] = None,
-                    output_file: Optional[str] = None) -> Optional[any]:
+def plot_fst_matrix(
+    data: Dict[str, List[str]] | np.ndarray | List[List[float]],
+    pop_names: Optional[List[str]] = None,
+    output_file: Optional[str] = None,
+) -> Optional[any]:
     """Create F_ST matrix heatmap visualization.
 
     Args:
@@ -41,16 +43,17 @@ def plot_fst_matrix(data: Dict[str, List[str]] | np.ndarray | List[List[float]],
         pop_names_list = list(populations.keys())
         n_pops = len(pop_names_list)
         fst_matrix = np.zeros((n_pops, n_pops))
-        
+
         for i in range(n_pops):
             for j in range(i + 1, n_pops):
                 pop1_seqs = populations[pop_names_list[i]]
                 pop2_seqs = populations[pop_names_list[j]]
                 from .analysis import calculate_fst
+
                 fst = calculate_fst(pop1_seqs, pop2_seqs)
                 fst_matrix[i, j] = fst
                 fst_matrix[j, i] = fst
-        
+
         plot_names = pop_names_list
     else:
         # Use provided matrix
@@ -59,13 +62,12 @@ def plot_fst_matrix(data: Dict[str, List[str]] | np.ndarray | List[List[float]],
 
     # Create heatmap
     plt.figure(figsize=(8, 6))
-    sns.heatmap(fst_matrix, annot=True, cmap='YlOrRd', square=True,
-                xticklabels=plot_names, yticklabels=plot_names)
-    plt.title('F_ST Matrix')
+    sns.heatmap(fst_matrix, annot=True, cmap="YlOrRd", square=True, xticklabels=plot_names, yticklabels=plot_names)
+    plt.title("F_ST Matrix")
     plt.tight_layout()
 
     if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved F_ST matrix plot to {output_file}")
 
     return plt.gcf()
@@ -95,8 +97,8 @@ def plot_tajima_d_distribution(tajima_d_values: List[float], output_file: Option
     plt.figure(figsize=(10, 6))
 
     # Plot histogram
-    plt.hist(tajima_d_values, bins=30, alpha=0.7, color='skyblue', edgecolor='black')
-    plt.axvline(x=0, color='red', linestyle='--', alpha=0.7, label='Neutral expectation')
+    plt.hist(tajima_d_values, bins=30, alpha=0.7, color="skyblue", edgecolor="black")
+    plt.axvline(x=0, color="red", linestyle="--", alpha=0.7, label="Neutral expectation")
 
     plt.xlabel("Tajima's D")
     plt.ylabel("Frequency")
@@ -105,7 +107,7 @@ def plot_tajima_d_distribution(tajima_d_values: List[float], output_file: Option
     plt.grid(True, alpha=0.3)
 
     if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved Tajima's D distribution plot to {output_file}")
 
     return plt.gcf()
@@ -138,8 +140,8 @@ def plot_selection_statistics(statistics: Dict[str, List[float]], output_file: O
 
     for i, (stat_name, values) in enumerate(statistics.items()):
         plt.subplot(n_stats, 1, i + 1)
-        plt.plot(values, 'o-', alpha=0.7)
-        plt.axhline(y=0, color='red', linestyle='--', alpha=0.5)
+        plt.plot(values, "o-", alpha=0.7)
+        plt.axhline(y=0, color="red", linestyle="--", alpha=0.5)
         plt.ylabel(stat_name)
         plt.title(f"{stat_name} along sequence")
         plt.grid(True, alpha=0.3)
@@ -147,13 +149,15 @@ def plot_selection_statistics(statistics: Dict[str, List[float]], output_file: O
     plt.tight_layout()
 
     if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved selection statistics plot to {output_file}")
 
     return plt.gcf()
 
 
-def plot_population_diversity(diversity_data: Dict[str, float], output_file: Optional[str] = None, output_path: Optional[str] = None) -> Optional[any]:
+def plot_population_diversity(
+    diversity_data: Dict[str, float], output_file: Optional[str] = None, output_path: Optional[str] = None
+) -> Optional[any]:
     """Plot population diversity comparison.
 
     Args:
@@ -180,20 +184,19 @@ def plot_population_diversity(diversity_data: Dict[str, float], output_file: Opt
     populations = list(diversity_data.keys())
     diversities = list(diversity_data.values())
 
-    bars = plt.bar(populations, diversities, color='lightblue', alpha=0.7, edgecolor='black')
-    plt.ylabel('Nucleotide Diversity (π)')
-    plt.title('Population Diversity Comparison')
+    bars = plt.bar(populations, diversities, color="lightblue", alpha=0.7, edgecolor="black")
+    plt.ylabel("Nucleotide Diversity (π)")
+    plt.title("Population Diversity Comparison")
     plt.xticks(rotation=45)
 
     # Add value labels on bars
     for bar, value in zip(bars, diversities):
-        plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 0.001,
-                '.4f', ha='center', va='bottom')
+        plt.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.001, ".4f", ha="center", va="bottom")
 
-    plt.grid(True, alpha=0.3, axis='y')
+    plt.grid(True, alpha=0.3, axis="y")
 
     if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved population diversity plot to {output_file}")
 
     return plt.gcf()
@@ -226,7 +229,7 @@ def plot_ld_decay(ld_data: List[Tuple[int, float]], output_file: Optional[str] =
     distances, ld_values = zip(*ld_data)
 
     plt.figure(figsize=(10, 6))
-    plt.plot(distances, ld_values, 'o-', color='darkgreen', alpha=0.7, markersize=4)
+    plt.plot(distances, ld_values, "o-", color="darkgreen", alpha=0.7, markersize=4)
 
     # Add exponential decay fit if enough points
     if len(distances) > 3:
@@ -239,26 +242,26 @@ def plot_ld_decay(ld_data: List[Tuple[int, float]], output_file: Optional[str] =
             popt, _ = curve_fit(exp_decay, distances, ld_values, p0=[1, 0.1])
             x_fit = np.linspace(min(distances), max(distances), 100)
             y_fit = exp_decay(x_fit, *popt)
-            plt.plot(x_fit, y_fit, '--', color='red', alpha=0.7,
-                    label='.3f')
+            plt.plot(x_fit, y_fit, "--", color="red", alpha=0.7, label=".3f")
         except ImportError:
             pass  # scipy not available
 
-    plt.xlabel('Distance (bp)')
-    plt.ylabel('Linkage Disequilibrium (r²)')
-    plt.title('LD Decay with Distance')
+    plt.xlabel("Distance (bp)")
+    plt.ylabel("Linkage Disequilibrium (r²)")
+    plt.title("LD Decay with Distance")
     plt.grid(True, alpha=0.3)
     plt.legend()
 
     if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved LD decay plot to {output_file}")
 
     return plt.gcf()
 
 
-def plot_population_structure(pca_coords: np.ndarray, cluster_labels: Optional[List[int]] = None,
-                            output_file: Optional[str] = None) -> Optional[any]:
+def plot_population_structure(
+    pca_coords: np.ndarray, cluster_labels: Optional[List[int]] = None, output_file: Optional[str] = None
+) -> Optional[any]:
     """Plot population structure using PCA coordinates.
 
     Args:
@@ -289,47 +292,46 @@ def plot_population_structure(pca_coords: np.ndarray, cluster_labels: Optional[L
 
     if pca_coords.shape[1] >= 3:
         # 3D plot
-        ax = plt.axes(projection='3d')
+        ax = plt.axes(projection="3d")
 
         if cluster_labels is not None:
-            scatter = ax.scatter(pca_coords[:, 0], pca_coords[:, 1], pca_coords[:, 2],
-                               c=cluster_labels, cmap='tab10', alpha=0.7)
-            plt.colorbar(scatter, label='Population Cluster')
+            scatter = ax.scatter(
+                pca_coords[:, 0], pca_coords[:, 1], pca_coords[:, 2], c=cluster_labels, cmap="tab10", alpha=0.7
+            )
+            plt.colorbar(scatter, label="Population Cluster")
         else:
-            ax.scatter(pca_coords[:, 0], pca_coords[:, 1], pca_coords[:, 2],
-                      alpha=0.7, color='blue')
+            ax.scatter(pca_coords[:, 0], pca_coords[:, 1], pca_coords[:, 2], alpha=0.7, color="blue")
 
-        ax.set_xlabel('PC1')
-        ax.set_ylabel('PC2')
-        ax.set_zlabel('PC3')
-        plt.title('Population Structure (3D PCA)')
+        ax.set_xlabel("PC1")
+        ax.set_ylabel("PC2")
+        ax.set_zlabel("PC3")
+        plt.title("Population Structure (3D PCA)")
 
     else:
         # 2D plot
         if cluster_labels is not None:
-            scatter = plt.scatter(pca_coords[:, 0], pca_coords[:, 1],
-                                c=cluster_labels, cmap='tab10', alpha=0.7)
-            plt.colorbar(scatter, label='Population Cluster')
+            scatter = plt.scatter(pca_coords[:, 0], pca_coords[:, 1], c=cluster_labels, cmap="tab10", alpha=0.7)
+            plt.colorbar(scatter, label="Population Cluster")
         else:
-            plt.scatter(pca_coords[:, 0], pca_coords[:, 1],
-                       alpha=0.7, color='blue')
+            plt.scatter(pca_coords[:, 0], pca_coords[:, 1], alpha=0.7, color="blue")
 
-        plt.xlabel('PC1')
-        plt.ylabel('PC2')
-        plt.title('Population Structure (2D PCA)')
+        plt.xlabel("PC1")
+        plt.ylabel("PC2")
+        plt.title("Population Structure (2D PCA)")
         plt.grid(True, alpha=0.3)
 
     plt.tight_layout()
 
     if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved population structure plot to {output_file}")
 
     return plt.gcf()
 
 
-def plot_demographic_history(ne_estimates: List[float], generations: List[int],
-                           output_file: Optional[str] = None) -> Optional[any]:
+def plot_demographic_history(
+    ne_estimates: List[float], generations: List[int], output_file: Optional[str] = None
+) -> Optional[any]:
     """Plot demographic history (effective population size over time).
 
     Args:
@@ -353,29 +355,28 @@ def plot_demographic_history(ne_estimates: List[float], generations: List[int],
 
     plt.figure(figsize=(12, 6))
 
-    plt.plot(generations, ne_estimates, 'o-', color='purple', linewidth=2, alpha=0.8)
+    plt.plot(generations, ne_estimates, "o-", color="purple", linewidth=2, alpha=0.8)
 
-    plt.xlabel('Generation')
-    plt.ylabel('Effective Population Size (Ne)')
-    plt.title('Demographic History')
+    plt.xlabel("Generation")
+    plt.ylabel("Effective Population Size (Ne)")
+    plt.title("Demographic History")
     plt.grid(True, alpha=0.3)
-    plt.yscale('log')  # Often more informative on log scale
+    plt.yscale("log")  # Often more informative on log scale
 
     # Add generation markers
     for gen, ne in zip(generations, ne_estimates):
-        plt.annotate('.0f', (gen, ne),
-                    xytext=(5, 5), textcoords='offset points',
-                    fontsize=8, alpha=0.8)
+        plt.annotate(".0f", (gen, ne), xytext=(5, 5), textcoords="offset points", fontsize=8, alpha=0.8)
 
     if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved demographic history plot to {output_file}")
 
     return plt.gcf()
 
 
-def create_population_summary_plot(population_data: Dict[str, Dict[str, float]],
-                                 output_file: Optional[str] = None) -> Optional[any]:
+def create_population_summary_plot(
+    population_data: Dict[str, Dict[str, float]], output_file: Optional[str] = None
+) -> Optional[any]:
     """Create comprehensive population summary plot.
 
     Args:
@@ -426,20 +427,26 @@ def create_population_summary_plot(population_data: Dict[str, Dict[str, float]],
 
     for i, (metric, values) in enumerate(metrics.items()):
         ax = axes[i]
-        bars = ax.bar(populations, values, color='lightcoral', alpha=0.7, edgecolor='black')
-        ax.set_ylabel(metric.replace('_', ' ').title())
+        bars = ax.bar(populations, values, color="lightcoral", alpha=0.7, edgecolor="black")
+        ax.set_ylabel(metric.replace("_", " ").title())
         ax.set_title(f'{metric.replace("_", " ").title()} by Population')
-        ax.grid(True, alpha=0.3, axis='y')
+        ax.grid(True, alpha=0.3, axis="y")
 
         # Add value labels
         for bar, value in zip(bars, values):
-            ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(values) * 0.01,
-                   '.4f', ha='center', va='bottom', fontsize=8)
+            ax.text(
+                bar.get_x() + bar.get_width() / 2,
+                bar.get_height() + max(values) * 0.01,
+                ".4f",
+                ha="center",
+                va="bottom",
+                fontsize=8,
+            )
 
     plt.tight_layout()
 
     if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved population summary plot to {output_file}")
 
     return plt.gcf()
@@ -473,20 +480,25 @@ def plot_mutation_spectrum(mutation_counts: Dict[str, int], output_file: Optiona
     mutation_types = list(mutation_counts.keys())
     counts = list(mutation_counts.values())
 
-    bars = plt.bar(mutation_types, counts, color='lightgreen', alpha=0.7, edgecolor='black')
-    plt.ylabel('Count')
-    plt.title('Mutation Spectrum')
+    bars = plt.bar(mutation_types, counts, color="lightgreen", alpha=0.7, edgecolor="black")
+    plt.ylabel("Count")
+    plt.title("Mutation Spectrum")
     plt.xticks(rotation=45)
 
     # Add value labels
     for bar, count in zip(bars, counts):
-        plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(counts) * 0.01,
-                str(count), ha='center', va='bottom')
+        plt.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + max(counts) * 0.01,
+            str(count),
+            ha="center",
+            va="bottom",
+        )
 
-    plt.grid(True, alpha=0.3, axis='y')
+    plt.grid(True, alpha=0.3, axis="y")
 
     if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved mutation spectrum plot to {output_file}")
 
     return plt.gcf()
@@ -519,26 +531,27 @@ def plot_allele_frequency_spectrum(allele_frequencies: List[float], output_file:
 
     # Create histogram bins for frequency classes
     bins = np.linspace(0, 1, 11)  # 10 bins from 0 to 1
-    plt.hist(allele_frequencies, bins=bins, alpha=0.7, color='skyblue', edgecolor='black')
+    plt.hist(allele_frequencies, bins=bins, alpha=0.7, color="skyblue", edgecolor="black")
 
-    plt.xlabel('Allele Frequency')
-    plt.ylabel('Number of Variants')
-    plt.title('Allele Frequency Spectrum')
-    plt.grid(True, alpha=0.3, axis='y')
+    plt.xlabel("Allele Frequency")
+    plt.ylabel("Number of Variants")
+    plt.title("Allele Frequency Spectrum")
+    plt.grid(True, alpha=0.3, axis="y")
 
     # Add bin labels
     bin_centers = (bins[:-1] + bins[1:]) / 2
-    plt.xticks(bin_centers, [f'{center:.1f}' for center in bin_centers], rotation=45)
+    plt.xticks(bin_centers, [f"{center:.1f}" for center in bin_centers], rotation=45)
 
     if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved allele frequency spectrum plot to {output_file}")
 
     return plt.gcf()
 
 
-def plot_bootstrap_distribution(bootstrap_values: List[float], observed_value: float | None = None,
-                               output_file: Optional[str] = None) -> Optional[any]:
+def plot_bootstrap_distribution(
+    bootstrap_values: List[float], observed_value: float | None = None, output_file: Optional[str] = None
+) -> Optional[any]:
     """Plot bootstrap distribution with confidence intervals.
 
     Args:
@@ -566,51 +579,50 @@ def plot_bootstrap_distribution(bootstrap_values: List[float], observed_value: f
     plt.figure(figsize=(10, 6))
 
     # Plot histogram
-    plt.hist(bootstrap_values, bins=30, alpha=0.7, color='lightblue', edgecolor='black', density=True)
+    plt.hist(bootstrap_values, bins=30, alpha=0.7, color="lightblue", edgecolor="black", density=True)
 
     # Add kernel density estimate
     try:
         density = stats.gaussian_kde(bootstrap_values)
         x_vals = np.linspace(min(bootstrap_values), max(bootstrap_values), 200)
-        plt.plot(x_vals, density(x_vals), 'r-', linewidth=2, label='KDE')
+        plt.plot(x_vals, density(x_vals), "r-", linewidth=2, label="KDE")
     except Exception:
         pass  # Skip KDE if it fails
 
     # Mark observed value
     if observed_value is not None:
-        plt.axvline(observed_value, color='red', linestyle='--', linewidth=2,
-                   label=f'Observed: {observed_value:.3f}')
+        plt.axvline(observed_value, color="red", linestyle="--", linewidth=2, label=f"Observed: {observed_value:.3f}")
 
     # Add confidence intervals
     ci_lower, ci_upper = np.percentile(bootstrap_values, [2.5, 97.5])
-    plt.axvline(ci_lower, color='green', linestyle=':', linewidth=2,
-               label=f'95% CI: [{ci_lower:.3f}, {ci_upper:.3f}]')
-    plt.axvline(ci_upper, color='green', linestyle=':', linewidth=2)
+    plt.axvline(ci_lower, color="green", linestyle=":", linewidth=2, label=f"95% CI: [{ci_lower:.3f}, {ci_upper:.3f}]")
+    plt.axvline(ci_upper, color="green", linestyle=":", linewidth=2)
 
     # Add mean and median
     mean_val = np.mean(bootstrap_values)
     median_val = np.median(bootstrap_values)
-    plt.axvline(mean_val, color='orange', linestyle='-.', linewidth=2,
-               label=f'Mean: {mean_val:.3f}')
-    plt.axvline(median_val, color='purple', linestyle='-.', linewidth=2,
-               label=f'Median: {median_val:.3f}')
+    plt.axvline(mean_val, color="orange", linestyle="-.", linewidth=2, label=f"Mean: {mean_val:.3f}")
+    plt.axvline(median_val, color="purple", linestyle="-.", linewidth=2, label=f"Median: {median_val:.3f}")
 
-    plt.xlabel('Bootstrap Values')
-    plt.ylabel('Density')
-    plt.title('Bootstrap Distribution')
+    plt.xlabel("Bootstrap Values")
+    plt.ylabel("Density")
+    plt.title("Bootstrap Distribution")
     plt.legend()
-    plt.grid(True, alpha=0.3, axis='y')
+    plt.grid(True, alpha=0.3, axis="y")
 
     if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved bootstrap distribution plot to {output_file}")
 
     return plt.gcf()
 
 
-def plot_demographic_comparison(pop1_data: Dict[str, Any], pop2_data: Optional[Dict[str, Any]] = None,
-                               output_file: Optional[str] = None,
-                               output_path: Optional[str] = None) -> Optional[any]:
+def plot_demographic_comparison(
+    pop1_data: Dict[str, Any],
+    pop2_data: Optional[Dict[str, Any]] = None,
+    output_file: Optional[str] = None,
+    output_path: Optional[str] = None,
+) -> Optional[any]:
     """Compare demographic histories between populations.
 
     Args:
@@ -631,19 +643,19 @@ def plot_demographic_comparison(pop1_data: Dict[str, Any], pop2_data: Optional[D
 
     # Placeholder implementation - would need actual demographic data
     fig, axes = plt.subplots(1, 2, figsize=(12, 6))
-    fig.suptitle('Population Demographic Comparison')
-    axes[0].text(0.5, 0.5, 'Demographic Comparison\n(Not implemented)', ha='center', va='center')
+    fig.suptitle("Population Demographic Comparison")
+    axes[0].text(0.5, 0.5, "Demographic Comparison\n(Not implemented)", ha="center", va="center")
 
     if output:
-        plt.savefig(output, dpi=300, bbox_inches='tight')
+        plt.savefig(output, dpi=300, bbox_inches="tight")
         logger.info(f"Saved demographic comparison plot to {output}")
 
     return plt.gcf()
 
 
-def plot_diversity_comparison(diversity_data: Dict[str, float],
-                             output_file: Optional[str] = None,
-                             output_path: Optional[str] = None) -> Optional[any]:
+def plot_diversity_comparison(
+    diversity_data: Dict[str, float], output_file: Optional[str] = None, output_path: Optional[str] = None
+) -> Optional[any]:
     """Compare diversity metrics across populations.
 
     Args:
@@ -669,29 +681,34 @@ def plot_diversity_comparison(diversity_data: Dict[str, float],
     populations = list(diversity_data.keys())
     diversities = list(diversity_data.values())
 
-    bars = plt.bar(populations, diversities, color='skyblue', alpha=0.7, edgecolor='black')
+    bars = plt.bar(populations, diversities, color="skyblue", alpha=0.7, edgecolor="black")
 
-    plt.ylabel('Diversity Index')
-    plt.title('Population Diversity Comparison')
+    plt.ylabel("Diversity Index")
+    plt.title("Population Diversity Comparison")
     plt.xticks(rotation=45)
 
     # Add value labels
     for bar, diversity in zip(bars, diversities):
-        plt.text(bar.get_x() + bar.get_width()/2, bar.get_height() + max(diversities) * 0.01,
-                f'{diversity:.3f}', ha='center', va='bottom')
+        plt.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height() + max(diversities) * 0.01,
+            f"{diversity:.3f}",
+            ha="center",
+            va="bottom",
+        )
 
-    plt.grid(True, alpha=0.3, axis='y')
+    plt.grid(True, alpha=0.3, axis="y")
 
     if output:
-        plt.savefig(output, dpi=300, bbox_inches='tight')
+        plt.savefig(output, dpi=300, bbox_inches="tight")
         logger.info(f"Saved diversity comparison plot to {output}")
 
     return plt.gcf()
 
 
-def plot_fst_comparison(fst_data: Dict[str, float],
-                       output_file: Optional[str] = None,
-                       output_path: Optional[str] = None) -> Optional[any]:
+def plot_fst_comparison(
+    fst_data: Dict[str, float], output_file: Optional[str] = None, output_path: Optional[str] = None
+) -> Optional[any]:
     """Compare F_ST values across loci or populations.
 
     Args:
@@ -717,26 +734,25 @@ def plot_fst_comparison(fst_data: Dict[str, float],
     loci = list(fst_data.keys())
     fst_values = list(fst_data.values())
 
-    plt.bar(loci, fst_values, color='lightcoral', alpha=0.7, edgecolor='black')
+    plt.bar(loci, fst_values, color="lightcoral", alpha=0.7, edgecolor="black")
 
-    plt.ylabel('F_ST')
-    plt.title('F_ST Comparison Across Loci')
+    plt.ylabel("F_ST")
+    plt.title("F_ST Comparison Across Loci")
     plt.xticks(rotation=45)
-    plt.grid(True, alpha=0.3, axis='y')
+    plt.grid(True, alpha=0.3, axis="y")
 
     # Add significance line at 0.05
-    plt.axhline(y=0.05, color='red', linestyle='--', alpha=0.7, label='Significance threshold (0.05)')
+    plt.axhline(y=0.05, color="red", linestyle="--", alpha=0.7, label="Significance threshold (0.05)")
     plt.legend()
 
     if output:
-        plt.savefig(output, dpi=300, bbox_inches='tight')
+        plt.savefig(output, dpi=300, bbox_inches="tight")
         logger.info(f"Saved F_ST comparison plot to {output}")
 
     return plt.gcf()
 
 
-def plot_hardy_weinberg_test(results: List[Dict[str, Any]],
-                           output_file: Optional[str] = None) -> Optional[any]:
+def plot_hardy_weinberg_test(results: List[Dict[str, Any]], output_file: Optional[str] = None) -> Optional[any]:
     """Plot Hardy-Weinberg equilibrium test results.
 
     Args:
@@ -757,30 +773,30 @@ def plot_hardy_weinberg_test(results: List[Dict[str, Any]],
 
     plt.figure(figsize=(12, 6))
 
-    loci = [r.get('locus', f'Locus_{i}') for i, r in enumerate(results)]
-    p_values = [r.get('p_value', 1.0) for r in results]
+    loci = [r.get("locus", f"Locus_{i}") for i, r in enumerate(results)]
+    p_values = [r.get("p_value", 1.0) for r in results]
 
-    plt.bar(loci, [-np.log10(p) for p in p_values], color='lightgreen', alpha=0.7, edgecolor='black')
+    plt.bar(loci, [-np.log10(p) for p in p_values], color="lightgreen", alpha=0.7, edgecolor="black")
 
-    plt.ylabel('-log10(p-value)')
-    plt.title('Hardy-Weinberg Equilibrium Test Results')
+    plt.ylabel("-log10(p-value)")
+    plt.title("Hardy-Weinberg Equilibrium Test Results")
     plt.xticks(rotation=45)
 
     # Add significance line
-    plt.axhline(y=-np.log10(0.05), color='red', linestyle='--', alpha=0.7,
-               label='Significance threshold (p=0.05)')
+    plt.axhline(y=-np.log10(0.05), color="red", linestyle="--", alpha=0.7, label="Significance threshold (p=0.05)")
     plt.legend()
-    plt.grid(True, alpha=0.3, axis='y')
+    plt.grid(True, alpha=0.3, axis="y")
 
     if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved HWE test plot to {output_file}")
 
     return plt.gcf()
 
 
-def plot_heterozygosity_distribution(het_data: Dict[str, List[float]] | List[float],
-                                   output_file: Optional[str] = None) -> Optional[any]:
+def plot_heterozygosity_distribution(
+    het_data: Dict[str, List[float]] | List[float], output_file: Optional[str] = None
+) -> Optional[any]:
     """Plot distribution of heterozygosity across loci.
 
     Args:
@@ -807,25 +823,27 @@ def plot_heterozygosity_distribution(het_data: Dict[str, List[float]] | List[flo
         plt.legend()
     else:
         # List of values
-        plt.hist(het_data, alpha=0.7, bins=20, color='skyblue', edgecolor='black')
+        plt.hist(het_data, alpha=0.7, bins=20, color="skyblue", edgecolor="black")
 
-    plt.xlabel('Heterozygosity')
-    plt.ylabel('Frequency')
-    plt.title('Heterozygosity Distribution')
+    plt.xlabel("Heterozygosity")
+    plt.ylabel("Frequency")
+    plt.title("Heterozygosity Distribution")
     plt.grid(True, alpha=0.3)
 
     if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved heterozygosity distribution plot to {output_file}")
 
     return plt.gcf()
 
 
-def plot_kinship_matrix(kinship_matrix: np.ndarray | Dict[str, Any],
-                        sample_names: Optional[List[str]] = None,
-                        output_file: Optional[str] = None,
-                        output_path: Optional[str] = None,
-                        max_samples: Optional[int] = None) -> Optional[any]:
+def plot_kinship_matrix(
+    kinship_matrix: np.ndarray | Dict[str, Any],
+    sample_names: Optional[List[str]] = None,
+    output_file: Optional[str] = None,
+    output_path: Optional[str] = None,
+    max_samples: Optional[int] = None,
+) -> Optional[any]:
     """Plot kinship matrix as heatmap.
 
     Args:
@@ -842,10 +860,11 @@ def plot_kinship_matrix(kinship_matrix: np.ndarray | Dict[str, Any],
 
     if isinstance(kinship_matrix, dict) and kinship_matrix.get("status") == "failed":
         from metainformant.core.utils.errors import ValidationError
+
         raise ValidationError("Kinship result status is not 'success'")
 
-    if isinstance(kinship_matrix, dict) and 'kinship_matrix' in kinship_matrix:
-        kinship_matrix = np.array(kinship_matrix['kinship_matrix'])
+    if isinstance(kinship_matrix, dict) and "kinship_matrix" in kinship_matrix:
+        kinship_matrix = np.array(kinship_matrix["kinship_matrix"])
         if max_samples and len(kinship_matrix) > max_samples:
             kinship_matrix = kinship_matrix[:max_samples, :max_samples]
     try:
@@ -861,27 +880,28 @@ def plot_kinship_matrix(kinship_matrix: np.ndarray | Dict[str, Any],
     if sample_names:
         labels = sample_names
     else:
-        labels = [f'Sample_{i}' for i in range(len(kinship_matrix))]
+        labels = [f"Sample_{i}" for i in range(len(kinship_matrix))]
 
-    sns.heatmap(kinship_matrix, annot=False, cmap='YlOrRd', square=True,
-               xticklabels=labels, yticklabels=labels)
+    sns.heatmap(kinship_matrix, annot=False, cmap="YlOrRd", square=True, xticklabels=labels, yticklabels=labels)
 
-    plt.title('Kinship Matrix')
-    plt.xticks(rotation=45, ha='right')
+    plt.title("Kinship Matrix")
+    plt.xticks(rotation=45, ha="right")
     plt.yticks(rotation=0)
 
     if output:
-        plt.savefig(output, dpi=300, bbox_inches='tight')
+        plt.savefig(output, dpi=300, bbox_inches="tight")
         logger.info(f"Saved kinship matrix plot to {output}")
 
     return plt.gcf()
 
 
 # Additional placeholder functions for completeness
-def plot_linkage_disequilibrium_decay(ld_data: List[Tuple[int, float]] | List[float],
-                                     distances: Optional[List[float]] = None,
-                                     output_file: Optional[str] = None,
-                                     output_path: Optional[str] = None) -> Optional[any]:
+def plot_linkage_disequilibrium_decay(
+    ld_data: List[Tuple[int, float]] | List[float],
+    distances: Optional[List[float]] = None,
+    output_file: Optional[str] = None,
+    output_path: Optional[str] = None,
+) -> Optional[any]:
     """Plot linkage disequilibrium decay with distance."""
     output = output_file or output_path
     try:
@@ -891,28 +911,28 @@ def plot_linkage_disequilibrium_decay(ld_data: List[Tuple[int, float]] | List[fl
         return None
 
     plt.figure(figsize=(10, 6))
-    
+
     # Check if we have data to plot
     if distances is not None and isinstance(ld_data, list):
-         plt.plot(distances, ld_data, 'o-', alpha=0.7)
+        plt.plot(distances, ld_data, "o-", alpha=0.7)
     elif ld_data and isinstance(ld_data[0], tuple):
-         # list of tuples
-         dists, values = zip(*ld_data)
-         plt.plot(dists, values, 'o-', alpha=0.7)
+        # list of tuples
+        dists, values = zip(*ld_data)
+        plt.plot(dists, values, "o-", alpha=0.7)
     else:
-         plt.text(0.5, 0.5, 'LD Decay Plot\n(Not fully implemented)', ha='center', va='center')
+        plt.text(0.5, 0.5, "LD Decay Plot\n(Not fully implemented)", ha="center", va="center")
 
-    plt.title('Linkage Disequilibrium Decay')
+    plt.title("Linkage Disequilibrium Decay")
 
     if output:
-        plt.savefig(output, dpi=300, bbox_inches='tight')
+        plt.savefig(output, dpi=300, bbox_inches="tight")
 
     return plt.gcf()
 
 
-def plot_neutrality_test_suite(results: Dict[str, Any],
-                               output_file: Optional[str] = None,
-                               output_path: Optional[str] = None) -> Optional[any]:
+def plot_neutrality_test_suite(
+    results: Dict[str, Any], output_file: Optional[str] = None, output_path: Optional[str] = None
+) -> Optional[any]:
     """Plot comprehensive neutrality test results."""
     output = output_file or output_path
     try:
@@ -922,18 +942,18 @@ def plot_neutrality_test_suite(results: Dict[str, Any],
         return None
 
     plt.figure(figsize=(12, 8))
-    plt.text(0.5, 0.5, 'Neutrality Test Suite\n(Not fully implemented)', ha='center', va='center')
-    plt.title('Neutrality Test Results')
+    plt.text(0.5, 0.5, "Neutrality Test Suite\n(Not fully implemented)", ha="center", va="center")
+    plt.title("Neutrality Test Results")
 
     if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
 
     return plt.gcf()
 
 
-def plot_neutrality_test_summary(summary: Dict[str, Any],
-                                output_file: Optional[str] = None,
-                                output_path: Optional[str] = None) -> Optional[any]:
+def plot_neutrality_test_summary(
+    summary: Dict[str, Any], output_file: Optional[str] = None, output_path: Optional[str] = None
+) -> Optional[any]:
     """Plot summary of neutrality test interpretations."""
     output = output_file or output_path
     try:
@@ -943,20 +963,22 @@ def plot_neutrality_test_summary(summary: Dict[str, Any],
         return None
 
     fig, axes = plt.subplots(2, 2, figsize=(10, 8))
-    fig.suptitle('Neutrality Test Summary')
+    fig.suptitle("Neutrality Test Summary")
     # Use axes so they exist
-    axes[0, 0].text(0.5, 0.5, 'Neutrality Test Summary\n(Not fully implemented)', ha='center', va='center')
+    axes[0, 0].text(0.5, 0.5, "Neutrality Test Summary\n(Not fully implemented)", ha="center", va="center")
 
     if output:
-        plt.savefig(output, dpi=300, bbox_inches='tight')
+        plt.savefig(output, dpi=300, bbox_inches="tight")
 
     return plt.gcf()
 
 
-def plot_outlier_detection(results: List[Dict[str, Any]] | List[float],
-                           outliers: Optional[List[int]] = None,
-                           output_file: Optional[str] = None,
-                           output_path: Optional[str] = None) -> Optional[any]:
+def plot_outlier_detection(
+    results: List[Dict[str, Any]] | List[float],
+    outliers: Optional[List[int]] = None,
+    output_file: Optional[str] = None,
+    output_path: Optional[str] = None,
+) -> Optional[any]:
     """Plot outlier detection results."""
     output = output_file or output_path
     try:
@@ -966,25 +988,28 @@ def plot_outlier_detection(results: List[Dict[str, Any]] | List[float],
         return None
 
     plt.figure(figsize=(10, 6))
-    plt.text(0.5, 0.5, 'Outlier Detection\n(Not fully implemented)', ha='center', va='center')
-    plt.title('Outlier Detection Results')
+    plt.text(0.5, 0.5, "Outlier Detection\n(Not fully implemented)", ha="center", va="center")
+    plt.title("Outlier Detection Results")
 
     if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
 
     return plt.gcf()
 
 
-def plot_pca_results(pca_result: Tuple[np.ndarray, np.ndarray, np.ndarray] | Dict[str, Any],
-                     sample_names: Optional[List[str]] = None,
-                     output_file: Optional[str] = None,
-                     output_path: Optional[str] = None,
-                     n_components: Optional[int] = None) -> Optional[any]:
+def plot_pca_results(
+    pca_result: Tuple[np.ndarray, np.ndarray, np.ndarray] | Dict[str, Any],
+    sample_names: Optional[List[str]] = None,
+    output_file: Optional[str] = None,
+    output_path: Optional[str] = None,
+    n_components: Optional[int] = None,
+) -> Optional[any]:
     """Plot PCA results."""
     output = output_file or output_path
 
     if isinstance(pca_result, dict) and pca_result.get("status") == "failed":
         from metainformant.core.utils.errors import ValidationError
+
         raise ValidationError("PCA result status is not 'success'")
 
     try:
@@ -994,24 +1019,26 @@ def plot_pca_results(pca_result: Tuple[np.ndarray, np.ndarray, np.ndarray] | Dic
         return None
 
     fig, axes = plt.subplots(1, 3, figsize=(18, 6))
-    fig.suptitle('Principal Component Analysis')
-    
+    fig.suptitle("Principal Component Analysis")
+
     # Placeholder for actual plotting logic or if real data passed
-    axes[0].text(0.5, 0.5, 'PC1 vs PC2', ha='center', va='center')
-    axes[1].text(0.5, 0.5, 'PC2 vs PC3', ha='center', va='center')
-    axes[2].text(0.5, 0.5, 'Explained Variance', ha='center', va='center')
+    axes[0].text(0.5, 0.5, "PC1 vs PC2", ha="center", va="center")
+    axes[1].text(0.5, 0.5, "PC2 vs PC3", ha="center", va="center")
+    axes[2].text(0.5, 0.5, "Explained Variance", ha="center", va="center")
 
     if output:
-        plt.savefig(output, dpi=300, bbox_inches='tight')
+        plt.savefig(output, dpi=300, bbox_inches="tight")
 
     return plt.gcf()
 
 
-def plot_permutation_test(results: Dict[str, Any] | List[float],
-                          observed_value: Optional[float] = None,
-                          p_value: Optional[float] = None,
-                          output_file: Optional[str] = None,
-                          output_path: Optional[str] = None) -> Optional[any]:
+def plot_permutation_test(
+    results: Dict[str, Any] | List[float],
+    observed_value: Optional[float] = None,
+    p_value: Optional[float] = None,
+    output_file: Optional[str] = None,
+    output_path: Optional[str] = None,
+) -> Optional[any]:
     """Plot permutation test results."""
     output = output_file or output_path
     try:
@@ -1021,18 +1048,21 @@ def plot_permutation_test(results: Dict[str, Any] | List[float],
         return None
 
     plt.figure(figsize=(10, 6))
-    plt.text(0.5, 0.5, 'Permutation Test\n(Not fully implemented)', ha='center', va='center')
-    plt.title('Permutation Test Results')
+    plt.text(0.5, 0.5, "Permutation Test\n(Not fully implemented)", ha="center", va="center")
+    plt.title("Permutation Test Results")
 
     if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
 
     return plt.gcf()
 
 
-def plot_pi_vs_theta(pi_values: List[float], theta_values: List[float],
-                    locus_names: Optional[List[str]] = None,
-                    output_file: Optional[str] = None) -> Optional[any]:
+def plot_pi_vs_theta(
+    pi_values: List[float],
+    theta_values: List[float],
+    locus_names: Optional[List[str]] = None,
+    output_file: Optional[str] = None,
+) -> Optional[any]:
     """Plot π vs θ comparison."""
     try:
         import matplotlib.pyplot as plt
@@ -1042,28 +1072,28 @@ def plot_pi_vs_theta(pi_values: List[float], theta_values: List[float],
 
     plt.figure(figsize=(8, 8))
 
-    plt.scatter(theta_values, pi_values, alpha=0.7, color='blue', edgecolors='black')
+    plt.scatter(theta_values, pi_values, alpha=0.7, color="blue", edgecolors="black")
 
     # Add diagonal line
     max_val = max(max(pi_values), max(theta_values))
-    plt.plot([0, max_val], [0, max_val], 'r--', alpha=0.7, label='π = θ')
+    plt.plot([0, max_val], [0, max_val], "r--", alpha=0.7, label="π = θ")
 
-    plt.xlabel('Watterson\'s θ')
-    plt.ylabel('Nucleotide diversity (π)')
-    plt.title('π vs θ Comparison')
+    plt.xlabel("Watterson's θ")
+    plt.ylabel("Nucleotide diversity (π)")
+    plt.title("π vs θ Comparison")
     plt.legend()
     plt.grid(True, alpha=0.3)
 
     if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved π vs θ plot to {output_file}")
 
     return plt.gcf()
 
 
-def plot_site_frequency_spectrum(sfs_data: List[int],
-                               output_file: Optional[str] = None,
-                               output_path: Optional[str] = None) -> Optional[any]:
+def plot_site_frequency_spectrum(
+    sfs_data: List[int], output_file: Optional[str] = None, output_path: Optional[str] = None
+) -> Optional[any]:
     """Plot site frequency spectrum."""
     output = output_file or output_path
     try:
@@ -1081,22 +1111,23 @@ def plot_site_frequency_spectrum(sfs_data: List[int],
     frequencies = list(range(1, len(sfs_data) + 1))
     counts = sfs_data
 
-    plt.bar(frequencies, counts, color='lightblue', alpha=0.7, edgecolor='black')
+    plt.bar(frequencies, counts, color="lightblue", alpha=0.7, edgecolor="black")
 
-    plt.xlabel('Allele Frequency')
-    plt.ylabel('Number of Sites')
-    plt.title('Site Frequency Spectrum')
-    plt.grid(True, alpha=0.3, axis='y')
+    plt.xlabel("Allele Frequency")
+    plt.ylabel("Number of Sites")
+    plt.title("Site Frequency Spectrum")
+    plt.grid(True, alpha=0.3, axis="y")
 
     if output:
-        plt.savefig(output, dpi=300, bbox_inches='tight')
+        plt.savefig(output, dpi=300, bbox_inches="tight")
         logger.info(f"Saved SFS plot to {output}")
 
     return plt.gcf()
 
 
-def plot_statistic_correlation_matrix(stats_data: Dict[str, List[float]],
-                                     output_file: Optional[str] = None) -> Optional[any]:
+def plot_statistic_correlation_matrix(
+    stats_data: Dict[str, List[float]], output_file: Optional[str] = None
+) -> Optional[any]:
     """Plot correlation matrix of population statistics."""
     try:
         import matplotlib.pyplot as plt
@@ -1112,25 +1143,27 @@ def plot_statistic_correlation_matrix(stats_data: Dict[str, List[float]],
 
     # Create correlation matrix
     import pandas as pd
+
     df = pd.DataFrame(stats_data)
     corr_matrix = df.corr()
 
-    sns.heatmap(corr_matrix, annot=True, cmap='coolwarm', center=0,
-               square=True, cbar_kws={'shrink': 0.8})
+    sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", center=0, square=True, cbar_kws={"shrink": 0.8})
 
-    plt.title('Population Statistics Correlation Matrix')
+    plt.title("Population Statistics Correlation Matrix")
 
     if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved correlation matrix plot to {output_file}")
 
     return plt.gcf()
 
 
-def plot_statistic_distribution(stat_values: List[float] | Dict[str, List[float]], 
-                               stat_name: str = "Statistic",
-                               output_file: Optional[str] = None,
-                               plot_type: str = "histogram") -> Optional[any]:
+def plot_statistic_distribution(
+    stat_values: List[float] | Dict[str, List[float]],
+    stat_name: str = "Statistic",
+    output_file: Optional[str] = None,
+    plot_type: str = "histogram",
+) -> Optional[any]:
     """Plot distribution of a population statistic."""
     try:
         import matplotlib.pyplot as plt
@@ -1142,38 +1175,36 @@ def plot_statistic_distribution(stat_values: List[float] | Dict[str, List[float]
         return None
 
     plt.figure(figsize=(10, 6))
-    
+
     if isinstance(stat_values, dict):
         for name, values in stat_values.items():
             plt.hist(values, bins=20, alpha=0.5, label=name)
         plt.legend()
     else:
-        plt.hist(stat_values, bins=20, alpha=0.7, color='lightgreen', edgecolor='black')
-        
+        plt.hist(stat_values, bins=20, alpha=0.7, color="lightgreen", edgecolor="black")
+
         # Add statistics only for single list
         mean_val = np.mean(stat_values)
         median_val = np.median(stat_values)
-        plt.axvline(mean_val, color='red', linestyle='--', alpha=0.8,
-                   label=f'Mean: {mean_val:.3f}')
-        plt.axvline(median_val, color='blue', linestyle='--', alpha=0.8,
-                   label=f'Median: {median_val:.3f}')
+        plt.axvline(mean_val, color="red", linestyle="--", alpha=0.8, label=f"Mean: {mean_val:.3f}")
+        plt.axvline(median_val, color="blue", linestyle="--", alpha=0.8, label=f"Median: {median_val:.3f}")
         plt.legend()
 
     plt.xlabel(stat_name)
-    plt.ylabel('Frequency')
-    plt.title(f'{stat_name} Distribution')
-    plt.grid(True, alpha=0.3, axis='y')
+    plt.ylabel("Frequency")
+    plt.title(f"{stat_name} Distribution")
+    plt.grid(True, alpha=0.3, axis="y")
 
     if output_file:
-        plt.savefig(output_file, dpi=300, bbox_inches='tight')
+        plt.savefig(output_file, dpi=300, bbox_inches="tight")
         logger.info(f"Saved {stat_name} distribution plot to {output_file}")
 
     return plt.gcf()
 
 
-def plot_summary_statistics_grid(stats_dict: Dict[str, Dict[str, float]],
-                                output_file: Optional[str] = None,
-                                output_path: Optional[str] = None) -> Optional[any]:
+def plot_summary_statistics_grid(
+    stats_dict: Dict[str, Dict[str, float]], output_file: Optional[str] = None, output_path: Optional[str] = None
+) -> Optional[any]:
     """Plot grid of summary statistics for multiple populations."""
     output = output_file or output_path
     try:
@@ -1186,18 +1217,18 @@ def plot_summary_statistics_grid(stats_dict: Dict[str, Dict[str, float]],
         return None
 
     fig, axes = plt.subplots(3, 2, figsize=(15, 12))
-    fig.suptitle('Population Summary Statistics')
-    axes[0, 0].text(0.5, 0.5, 'Summary Statistics Grid\n(Not fully implemented)', ha='center', va='center')
+    fig.suptitle("Population Summary Statistics")
+    axes[0, 0].text(0.5, 0.5, "Summary Statistics Grid\n(Not fully implemented)", ha="center", va="center")
 
     if output:
-        plt.savefig(output, dpi=300, bbox_inches='tight')
+        plt.savefig(output, dpi=300, bbox_inches="tight")
 
     return plt.gcf()
 
 
-def plot_tajimas_d_comparison(tajima_d_values: Dict[str, float],
-                              output_file: Optional[str] = None,
-                              output_path: Optional[str] = None) -> Optional[any]:
+def plot_tajimas_d_comparison(
+    tajima_d_values: Dict[str, float], output_file: Optional[str] = None, output_path: Optional[str] = None
+) -> Optional[any]:
     """Compare Tajima's D values across populations."""
     output = output_file or output_path
     try:
@@ -1214,27 +1245,24 @@ def plot_tajimas_d_comparison(tajima_d_values: Dict[str, float],
     populations = list(tajima_d_values.keys())
     d_values = list(tajima_d_values.values())
 
-    colors = ['red' if d < -2 else 'green' if d > 2 else 'blue' for d in d_values]
+    colors = ["red" if d < -2 else "green" if d > 2 else "blue" for d in d_values]
 
-    bars = plt.bar(populations, d_values, color=colors, alpha=0.7, edgecolor='black')
+    bars = plt.bar(populations, d_values, color=colors, alpha=0.7, edgecolor="black")
 
     plt.ylabel("Tajima's D")
     plt.title("Tajima's D Comparison Across Populations")
     plt.xticks(rotation=45)
 
     # Add reference lines
-    plt.axhline(y=0, color='black', linestyle='-', alpha=0.5)
-    plt.axhline(y=2, color='green', linestyle='--', alpha=0.7, label='Balancing selection')
-    plt.axhline(y=-2, color='red', linestyle='--', alpha=0.7, label='Positive selection')
+    plt.axhline(y=0, color="black", linestyle="-", alpha=0.5)
+    plt.axhline(y=2, color="green", linestyle="--", alpha=0.7, label="Balancing selection")
+    plt.axhline(y=-2, color="red", linestyle="--", alpha=0.7, label="Positive selection")
     plt.legend()
 
-    plt.grid(True, alpha=0.3, axis='y')
+    plt.grid(True, alpha=0.3, axis="y")
 
     if output:
-        plt.savefig(output, dpi=300, bbox_inches='tight')
+        plt.savefig(output, dpi=300, bbox_inches="tight")
         logger.info(f"Saved Tajima's D comparison plot to {output}")
 
     return plt.gcf()
-
-
-
