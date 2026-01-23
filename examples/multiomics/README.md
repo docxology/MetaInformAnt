@@ -1,15 +1,21 @@
-# Multi-Omics Integration Examples
+# MULTIOMICS
 
-This directory contains examples demonstrating METAINFORMANT's multi-omic data integration capabilities.
+## Overview
+Functionality for multiomics.
 
-## Examples
+## 📦 Contents
+- `[example_integration.py](example_integration.py)`
 
-### Cross-Omics Integration (`example_integration.py`)
+## 📊 Structure
 
-Learn integration of DNA, RNA, and protein data.
-
-```bash
-python examples/multiomics/example_integration.py
+```mermaid
+graph TD
+    multiomics[multiomics]
+    style multiomics fill:#f9f,stroke:#333,stroke-width:2px
 ```
 
-**Output:** `output/examples/multiomics/integration_analysis.json`
+## Usage
+Import module:
+```python
+from metainformant.multiomics import ...
+```

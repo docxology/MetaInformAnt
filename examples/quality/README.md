@@ -1,15 +1,21 @@
-# Quality Control Examples
+# QUALITY
 
-This directory contains examples demonstrating METAINFORMANT's data quality assessment capabilities.
+## Overview
+Functionality for quality.
 
-## Examples
+## 📦 Contents
+- `[example_qc.py](example_qc.py)`
 
-### Data Quality Assessment (`example_qc.py`)
+## 📊 Structure
 
-Learn data validation and quality control metrics.
-
-```bash
-python examples/quality/example_qc.py
+```mermaid
+graph TD
+    quality[quality]
+    style quality fill:#f9f,stroke:#333,stroke-width:2px
 ```
 
-**Output:** `output/examples/quality/qc_analysis.json`
+## Usage
+Import module:
+```python
+from metainformant.quality import ...
+```

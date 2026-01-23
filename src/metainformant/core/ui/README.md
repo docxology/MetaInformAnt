@@ -1,20 +1,22 @@
-# Terminal UI (TUI) Module
+# UI
 
 ## Overview
-The `metainformant.core.ui` module provides a lightweight, dependency-free framework for creating "oldschool" terminal visualizations. It is designed to handle multi-threaded progress tracking, colorized output, and cursor management using standard ANSI escape codes.
+Core UI utilities for METAINFORMANT.
 
-## Design Philosophy
-- **Zero Dependencies**: Uses only Python standard library.
-- **Thread Safe**: Can safely receive updates from multiple background threads.
-- **Elegant Aesthetic**: Uses ANSI colors and block characters for a clean, retro feel.
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[tui.py](tui.py)`
 
-## Key Components
-### `TerminalInterface`
-The main controller that manages the rendering loop and screen updates.
-- `add_bar()`: Registers a new tracked task.
-- `update()`: Updates the state of a specific task.
-- `start()`: Begins the background rendering thread (10fps).
-- `stop()`: Cleanly shuts down the renderer and restores the cursor.
+## 📊 Structure
 
-### `ProgressState`
-Data class holding the current state of a task (progress, speed, status, color).
+```mermaid
+graph TD
+    ui[ui]
+    style ui fill:#f9f,stroke:#333,stroke-width:2px
+```
+
+## Usage
+Import module:
+```python
+from metainformant.metainformant.core.ui import ...
+```

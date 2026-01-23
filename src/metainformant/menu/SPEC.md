@@ -1,18 +1,16 @@
-# Menu Module Technical Specification
+# Specification: menu
 
-## Architecture
-The `menu` module is a component of the `metainformant` package, designed to encapsulate interactive cli menu system.
+## 🎯 Scope
+Interactive menu and CLI interface for METAINFORMANT.
 
-## Components
-*   **`__init__.py`**: Exposes public API.
-*   **Submodules**: Specialized components for domain logic.
+## 🧱 Architecture
+- **Dependency Level**: Domain
+- **Component Type**: Source Code
 
-## Dependencies
-*   **Internal**: `metainformant.core` and related domain modules.
-*   **External**: Standard scientific stack (numpy, pandas, scipy) and domain-specific tools.
+## 💾 Data Structures
+- **Modules**: 1 Python modules
+- **Key Concepts**: Refer to Pydantic models in source.
 
-## Standards
-*   **Code Style**: PEP 8
-*   **Docstrings**: Google Style
-*   **Type Hints**: Full coverage required
-*   **Testing**: Pytest with 100% coverage target
+## 🔌 API Definition
+### Exports
+- `__init__.py`

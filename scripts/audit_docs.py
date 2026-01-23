@@ -2,40 +2,45 @@
 import os
 from pathlib import Path
 
-def check_triple_play(root_dir):
-    root = Path(root_dir)
-    src_dir = root / "src" / "metainformant"
+REQUIRED_FILES = ["README.md", "AGENTS.md", "SPEC.md", "PAI.md"]
+
+def is_relevant_dir(path: Path) -> bool:
+    # Skip hidden folders, venv, cache, etc.
+    if any(part.startswith(".") for part in path.parts):
+        return False
+    if "output" in path.parts or "__pycache__" in path.parts:
+        return False
     
-    # Modules to check (top-level directories in src/metainformant excluding __pycache__ etc)
-    modules = [d for d in src_dir.iterdir() if d.is_dir() and not d.name.startswith("__") and d.name != "tests"]
+    # Needs to be a significant folder. 
+    # Logic: Contains __init__.py OR is a direct child of 'scripts', 'docs', 'tests'
+    if (path / "__init__.py").exists():
+        return True
     
-    print(f"Checking {len(modules)} top-level modules in {src_dir}...\n")
-    
-    missing_docs = {}
-    
-    for module in sorted(modules):
-        module_name = module.name
-        required_files = ["README.md", "AGENTS.md", "SPEC.md"]
-        missing = []
+    if path.parent.name in ["scripts", "docs", "tests", "config", "examples"]:
+        return True
         
-        for f in required_files:
-            if not (module / f).exists():
-                missing.append(f)
-                
-        if missing:
-            missing_docs[module_name] = missing
-            print(f"[FAIL] {module_name}: Missing {', '.join(missing)}")
-        else:
-            print(f"[PASS] {module_name}")
-            
-    # Also check subdirectories recursively? 
-    # The prompt listed top-level modules specifically, but let's see.
-    # For now, top-level is the primary requirement.
+    return False
+
+def audit_directory(root_path: Path):
+    print(f"{'Directory':<60} | {'Missing Files'}")
+    print("-" * 80)
     
-    if not missing_docs:
-        print("\nAll top-level modules have Triple Play documentation!")
-    else:
-        print(f"\nFound missing documentation in {len(missing_docs)} modules.")
+    for root, dirs, files in os.walk(root_path):
+        current_dir = Path(root)
+        
+        # Skip checking the root itself again for now, as I just did it (or I can double check)
+        # Check relevance
+        if not is_relevant_dir(current_dir) and current_dir != root_path:
+            continue
+            
+        missing = []
+        for req in REQUIRED_FILES:
+            if not (current_dir / req).exists():
+                missing.append(req)
+        
+        if missing:
+            rel_path = current_dir.relative_to(root_path)
+            print(f"{str(rel_path):<60} | {', '.join(missing)}")
 
 if __name__ == "__main__":
-    check_triple_play(".")
+    audit_directory(Path("."))

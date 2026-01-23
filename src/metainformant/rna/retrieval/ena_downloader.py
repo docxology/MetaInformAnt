@@ -44,8 +44,9 @@ def get_ena_links(sra_id: str) -> List[Tuple[str, str]]:
 
         results = []
         for ftp, md5 in zip(ftps, md5s):
-            # ENA links often lack protocol
-            if not ftp.startswith("http") and not ftp.startswith("ftp"):
+            # ENA links often lack protocol prefix (just "ftp.sra.ebi.ac.uk/...")
+            # Check for actual protocol prefixes (ftp://, http://, https://)
+            if not ftp.startswith(("ftp://", "http://", "https://")):
                 # Prefer FTP as HTTP seems to hang on port 80 for this host
                 full_url = f"ftp://{ftp}"
             else:

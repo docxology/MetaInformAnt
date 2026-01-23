@@ -267,30 +267,90 @@ def load_bedgraph_track(path: str | Path, name: str = "", description: str = "")
 read_bedgraph = load_bedgraph_track
 
 
-def load_bigwig_track(path: str | Path, name: str = "", description: str = "") -> GenomicTrack:
+def load_bigwig_track(
+    path: str | Path,
+    name: str = "",
+    description: str = "",
+    region: tuple[str, int, int] | None = None,
+) -> GenomicTrack:
     """Load a bigWig format track.
-
-    Note: This is a simplified implementation. Real bigWig parsing would require
-    a proper bigWig library like pyBigWig.
 
     Args:
         path: Path to bigWig file
         name: Track name
         description: Track description
+        region: Optional tuple of (chrom, start, end) to load specific region
 
     Returns:
-        GenomicTrack object
+        GenomicTrack object with loaded data
+
+    Raises:
+        ImportError: If pyBigWig library is not available
+        FileNotFoundError: If the file does not exist
     """
     path = validation.validate_path_exists(Path(path))
 
-    logger.info(f"Loading bigWig track from {path} (simplified implementation)")
+    # Try to import pyBigWig
+    try:
+        import pyBigWig
+    except ImportError:
+        raise ImportError(
+            "pyBigWig library is required to load bigWig files. "
+            "Install with: pip install pyBigWig (or: uv pip install pyBigWig)"
+        )
 
-    # This is a placeholder - real implementation would use pyBigWig or similar
-    track = GenomicTrack(name=name, description=description)
+    logger.info(f"Loading bigWig track from {path}")
+
+    track = GenomicTrack(name=name or path.stem, description=description)
     track.metadata["format"] = "bigwig"
-    track.metadata["note"] = "Simplified loading - full bigWig support requires pyBigWig library"
+    track.metadata["source_file"] = str(path)
 
-    logger.warning("bigWig loading is simplified - consider using pyBigWig for full functionality")
+    # Open bigWig file
+    bw = pyBigWig.open(str(path))
+
+    try:
+        # Get chromosome information
+        chroms = bw.chroms()
+        track.metadata["chromosomes"] = list(chroms.keys())
+        track.metadata["total_length"] = sum(chroms.values())
+
+        if region:
+            # Load specific region
+            chrom, start, end = region
+            if chrom in chroms:
+                values = bw.values(chrom, start, end)
+                if values:
+                    # Store as genomic feature
+                    track.add_feature({
+                        "chrom": chrom,
+                        "start": start,
+                        "end": end,
+                        "values": values,
+                        "mean": sum(v for v in values if v is not None) / len([v for v in values if v is not None]) if any(v is not None for v in values) else 0,
+                    })
+        else:
+            # Load summary statistics for each chromosome
+            for chrom, length in chroms.items():
+                # Get stats for each chromosome
+                try:
+                    stats = bw.stats(chrom, 0, length)
+                    if stats and stats[0] is not None:
+                        track.add_feature({
+                            "chrom": chrom,
+                            "start": 0,
+                            "end": length,
+                            "mean": stats[0],
+                        })
+                except Exception as e:
+                    logger.warning(f"Could not load stats for {chrom}: {e}")
+                    continue
+
+        track.metadata["loaded"] = True
+        logger.info(f"Loaded bigWig track with {track.get_total_features()} chromosome entries")
+
+    finally:
+        bw.close()
+
     return track
 
 

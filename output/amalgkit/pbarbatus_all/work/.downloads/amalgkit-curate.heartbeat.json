@@ -3,7 +3,7 @@
   "destination": "output/amalgkit/pbarbatus_all/work/curate",
   "errors": [],
   "eta_seconds": null,
-  "last_update": "2026-01-22T02:13:14Z",
+  "last_update": "2026-01-23T16:19:20Z",
   "progress": {
     "current": 0,
     "percent": 0.0,
@@ -11,9 +11,9 @@
     "type": "file_count"
   },
   "progress_percent": 0.0,
-  "speed_mbps": 11.74421893585778,
-  "started_at": "2026-01-22T02:13:13Z",
-  "status": "completed",
+  "speed_mbps": 11.74768677369973,
+  "started_at": "2026-01-23T16:19:19Z",
+  "status": "failed",
   "step": "amalgkit curate",
   "total_bytes": null,
   "url": "['amalgkit', 'curate', '--out_dir', 'output/amalgkit/pbarbatus_all/work', '--metadata', 'output/amalgkit/pbarbatus_all/merged/merge/metadata.tsv']"

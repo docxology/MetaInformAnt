@@ -10,7 +10,13 @@ from pathlib import Path
 
 import pytest
 
-from metainformant.rna import discovery
+from metainformant.rna.engine import discovery
+from metainformant.rna.engine.discovery import (
+    _construct_ftp_path,
+    _parse_sra_xml,
+    BIOPYTHON_AVAILABLE,
+    NCBI_DATASETS_AVAILABLE,
+)
 
 
 class TestGenerateConfigYaml:
@@ -142,33 +148,103 @@ class TestDiscoveryDocumentation:
     @pytest.mark.network
     def test_search_species_with_rnaseq_requires_biopython(self):
         """Test that search_species_with_rnaseq requires Biopython."""
-        try:
-            from metainformant.rna.analysis.discovery import BIOPYTHON_AVAILABLE
+        if not BIOPYTHON_AVAILABLE:
+            pytest.skip("Biopython not available")
 
-            if not BIOPYTHON_AVAILABLE:
-                pytest.skip("Biopython not available")
-
-            # If available, test basic functionality
-            result = discovery.search_species_with_rnaseq(
-                '"Homo sapiens"[Organism] AND RNA-Seq[Strategy]',
-                max_records=10,
-            )
-            assert isinstance(result, dict)
-        except ImportError:
-            pytest.skip("Biopython not available for SRA search")
+        # If available, test basic functionality
+        result = discovery.search_species_with_rnaseq(
+            "Homo sapiens",
+            max_records=3,
+        )
+        assert isinstance(result, dict)
+        assert "query" in result
+        assert "results" in result
+        assert "total" in result
 
     @pytest.mark.network
     def test_get_genome_info_requires_ncbi_datasets(self):
         """Test that get_genome_info requires ncbi-datasets-pylib."""
+        if not NCBI_DATASETS_AVAILABLE and not BIOPYTHON_AVAILABLE:
+            pytest.skip("Neither ncbi-datasets-pylib nor Biopython available")
+
+        # If available, test basic functionality (may use fallback with BioPython)
         try:
-            from metainformant.rna.analysis.discovery import NCBI_DATASETS_AVAILABLE
-
-            if not NCBI_DATASETS_AVAILABLE:
-                pytest.skip("ncbi-datasets-pylib not available")
-
-            # If available, test basic functionality
             result = discovery.get_genome_info("9606", "Homo sapiens")
             # May return None if no assemblies found, or dict if found
             assert result is None or isinstance(result, dict)
         except ImportError:
-            pytest.skip("ncbi-datasets-pylib not available for genome info")
+            pytest.skip("Required dependencies not available for genome info")
+
+
+class TestConstructFtpPath:
+    """Tests for FTP path construction from assembly accession."""
+
+    def test_construct_refseq_path(self):
+        """Test FTP path construction for RefSeq assembly."""
+        path = _construct_ftp_path("GCF_000001405.40")
+        assert "GCF" in path
+        assert "000" in path
+        assert "001" in path
+        assert "405" in path
+        assert path.startswith("https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/")
+
+    def test_construct_genbank_path(self):
+        """Test FTP path construction for GenBank assembly."""
+        path = _construct_ftp_path("GCA_000001635.8")
+        assert "GCA" in path
+        assert path.startswith("https://ftp.ncbi.nlm.nih.gov/genomes/all/GCA/")
+
+    def test_construct_empty_accession(self):
+        """Test that empty accession returns empty path."""
+        assert _construct_ftp_path("") == ""
+
+    def test_construct_invalid_prefix(self):
+        """Test that invalid prefix returns empty path."""
+        assert _construct_ftp_path("XYZ_000001") == ""
+
+
+class TestParseSraXml:
+    """Tests for SRA XML parsing."""
+
+    def test_parse_empty_xml(self):
+        """Test parsing empty XML."""
+        xml_data = b"<EXPERIMENT_PACKAGE_SET></EXPERIMENT_PACKAGE_SET>"
+        results = _parse_sra_xml(xml_data, "test")
+        assert results == []
+
+    def test_parse_sample_xml(self):
+        """Test parsing sample SRA XML structure."""
+        xml_data = b"""<?xml version="1.0"?>
+        <EXPERIMENT_PACKAGE_SET>
+            <EXPERIMENT_PACKAGE>
+                <EXPERIMENT accession="SRX123456">
+                    <TITLE>Test RNA-Seq</TITLE>
+                    <LIBRARY_DESCRIPTOR>
+                        <LIBRARY_STRATEGY>RNA-Seq</LIBRARY_STRATEGY>
+                        <LIBRARY_SOURCE>TRANSCRIPTOMIC</LIBRARY_SOURCE>
+                    </LIBRARY_DESCRIPTOR>
+                </EXPERIMENT>
+                <STUDY accession="SRP123">
+                    <STUDY_TITLE>Test Study</STUDY_TITLE>
+                </STUDY>
+                <SAMPLE accession="SRS456">
+                    <SAMPLE_NAME>
+                        <TAXON_ID>9606</TAXON_ID>
+                        <SCIENTIFIC_NAME>Homo sapiens</SCIENTIFIC_NAME>
+                    </SAMPLE_NAME>
+                </SAMPLE>
+                <RUN accession="SRR789"/>
+            </EXPERIMENT_PACKAGE>
+        </EXPERIMENT_PACKAGE_SET>
+        """
+        results = _parse_sra_xml(xml_data, "test")
+        assert len(results) == 1
+        assert results[0]["experiment_accession"] == "SRX123456"
+        assert results[0]["library_strategy"] == "RNA-Seq"
+        assert results[0]["taxonomy_id"] == "9606"
+        assert "SRR789" in results[0]["run_accessions"]
+
+    def test_parse_invalid_xml(self):
+        """Test handling of invalid XML."""
+        results = _parse_sra_xml(b"<not valid xml", "test")
+        assert results == []

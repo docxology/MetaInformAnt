@@ -1,15 +1,21 @@
-# Mathematical Biology Examples
+# MATH
 
-This directory contains examples demonstrating METAINFORMANT's mathematical biology capabilities.
+## Overview
+Functionality for math.
 
-## Examples
+## 📦 Contents
+- `[example_dynamics.py](example_dynamics.py)`
 
-### Population Dynamics (`example_dynamics.py`)
+## 📊 Structure
 
-Learn mathematical modeling of population dynamics.
-
-```bash
-python examples/math/example_dynamics.py
+```mermaid
+graph TD
+    math[math]
+    style math fill:#f9f,stroke:#333,stroke-width:2px
 ```
 
-**Output:** `output/examples/math/dynamics_model.json`
+## Usage
+Import module:
+```python
+from metainformant.math import ...
+```

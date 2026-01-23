@@ -1,11 +1,24 @@
-# GWAS Data Preparation
+# PREPARATION
 
-This directory contains scripts for acquiring and preparing data for GWAS analysis.
+## Overview
+Functionality for preparation.
 
-## Scripts
+## 📦 Contents
+- `[download_honeybee_variants.py](download_honeybee_variants.py)`
+- `[generate_phenotypes.py](generate_phenotypes.py)`
+- `[generate_synthetic_variants.py](generate_synthetic_variants.py)`
+- `[query_bioproject_metadata.py](query_bioproject_metadata.py)`
 
-- `download_genome_scale_data.sh`: Bash script to batch download SRA data.
-- `download_honeybee_variants.py`: Guide and utilities for downloading real honeybee data.
-- `generate_phenotypes.py`: Generate synthetic phenotype files.
-- `generate_synthetic_variants.py`: Generate synthetic VCF files.
-- `query_bioproject_metadata.py`: Query NCBI for project metadata.
+## 📊 Structure
+
+```mermaid
+graph TD
+    preparation[preparation]
+    style preparation fill:#f9f,stroke:#333,stroke-width:2px
+```
+
+## Usage
+Import module:
+```python
+from metainformant.preparation import ...
+```

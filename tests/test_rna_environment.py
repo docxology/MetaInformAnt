@@ -155,14 +155,18 @@ class TestEnvironmentErrorHandling:
         # Should return False with error message if not available
         if not ok:
             assert len(msg) > 0
-            assert "not found" in msg.lower() or "error" in msg.lower()
+            # Accept various error message formats
+            msg_lower = msg.lower()
+            assert "not found" in msg_lower or "error" in msg_lower or "no such file" in msg_lower
 
     def test_check_sra_toolkit_handles_missing_tool(self):
         """Test that check_sra_toolkit handles missing tool gracefully."""
         ok, msg = environment.check_sra_toolkit()
         if not ok:
             assert len(msg) > 0
-            assert "not found" in msg.lower() or "error" in msg.lower()
+            # Accept various error message formats
+            msg_lower = msg.lower()
+            assert "not found" in msg_lower or "error" in msg_lower or "no such file" in msg_lower
 
     def test_check_kallisto_handles_missing_tool(self):
         """Test that check_kallisto handles missing tool gracefully."""

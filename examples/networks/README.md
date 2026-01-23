@@ -1,15 +1,21 @@
-# Network Analysis Examples
+# NETWORKS
 
-This directory contains examples demonstrating METAINFORMANT's biological network analysis capabilities.
+## Overview
+Functionality for networks.
 
-## Examples
+## 📦 Contents
+- `[example_networks.py](example_networks.py)`
 
-### Network Construction (`example_networks.py`)
+## 📊 Structure
 
-Learn biological network construction and analysis.
-
-```bash
-python examples/networks/example_networks.py
+```mermaid
+graph TD
+    networks[networks]
+    style networks fill:#f9f,stroke:#333,stroke-width:2px
 ```
 
-**Output:** `output/examples/networks/network_analysis.json`
+## Usage
+Import module:
+```python
+from metainformant.networks import ...
+```

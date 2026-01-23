@@ -1,16 +1,22 @@
-# Core Math Utilities
+# CORE
 
-This submodule contains shared utilities and visualization tools used across the math module.
+## Overview
+Functionality for core.
 
-## Components
+## 📦 Contents
+- `[utilities.py](utilities.py)`
+- `[visualization.py](visualization.py)`
 
-- **utilities.py**: Statistical functions (correlation, regression, entropy).
-- **visualization.py**: Plotting functions for evolutionary data.
+## 📊 Structure
+
+```mermaid
+graph TD
+    core[core]
+    style core fill:#f9f,stroke:#333,stroke-width:2px
+```
 
 ## Usage
-
+Import module:
 ```python
-from metainformant.math.core import utilities
-
-r2 = utilities.r_squared(x_values, y_values)
+from metainformant.metainformant.math.core import ...
 ```

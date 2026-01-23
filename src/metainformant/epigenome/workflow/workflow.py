@@ -641,23 +641,103 @@ def _detect_peak_format(file_path: Path) -> str:
 def _analyze_methylation_chip_associations(
     methylation_results: Dict[str, Any], chipseq_results: Dict[str, Any], config: EpigenomeConfig
 ) -> Dict[str, Any]:
-    """Analyze associations between methylation and ChIP-seq data."""
-    # This is a simplified analysis - in practice would do statistical testing
+    """Analyze associations between methylation and ChIP-seq data.
+
+    Performs coordinate-based intersection analysis to identify overlapping
+    epigenetic marks between methylation sites and ChIP-seq peaks.
+    """
     associations = {
         "analysis_type": "methylation_chipseq_association",
         "max_distance": config.max_distance_for_integration,
         "correlation_threshold": config.correlation_threshold,
         "findings": [],
+        "statistics": {},
     }
 
-    # Placeholder for actual association analysis
-    associations["findings"].append(
-        {
-            "type": "placeholder",
-            "description": "Methylation-ChIP-seq association analysis framework ready",
-            "note": "Actual implementation would require coordinate-based statistical testing",
-        }
-    )
+    # Extract methylation sites
+    meth_sites = methylation_results.get("sites", [])
+    chip_peaks = chipseq_results.get("peaks", [])
+
+    if not meth_sites:
+        associations["findings"].append({
+            "type": "warning",
+            "description": "No methylation sites provided for analysis",
+        })
+        return associations
+
+    if not chip_peaks:
+        associations["findings"].append({
+            "type": "warning",
+            "description": "No ChIP-seq peaks provided for analysis",
+        })
+        return associations
+
+    # Perform intersection analysis
+    max_dist = config.max_distance_for_integration
+    overlapping = 0
+    proximal = 0
+    distal = 0
+
+    for meth in meth_sites:
+        meth_chrom = meth.get("chrom", meth.get("chromosome"))
+        meth_pos = meth.get("position", meth.get("pos"))
+        if meth_chrom is None or meth_pos is None:
+            continue
+
+        min_distance = float("inf")
+        for peak in chip_peaks:
+            peak_chrom = peak.get("chrom", peak.get("chromosome"))
+            if peak_chrom != meth_chrom:
+                continue
+
+            peak_start = peak.get("start", peak.get("position"))
+            peak_end = peak.get("end", peak_start + 1 if peak_start else None)
+            if peak_start is None:
+                continue
+
+            # Calculate distance
+            if peak_start <= meth_pos <= peak_end:
+                distance = 0
+            elif meth_pos < peak_start:
+                distance = peak_start - meth_pos
+            else:
+                distance = meth_pos - peak_end
+
+            min_distance = min(min_distance, distance)
+
+        # Categorize based on distance
+        if min_distance == 0:
+            overlapping += 1
+        elif min_distance <= max_dist:
+            proximal += 1
+        elif min_distance < float("inf"):
+            distal += 1
+
+    total_sites = len(meth_sites)
+    associations["statistics"] = {
+        "total_methylation_sites": total_sites,
+        "total_chip_peaks": len(chip_peaks),
+        "overlapping": overlapping,
+        "proximal": proximal,
+        "distal": distal,
+        "overlap_rate": overlapping / total_sites if total_sites > 0 else 0,
+        "proximal_rate": proximal / total_sites if total_sites > 0 else 0,
+    }
+
+    # Generate findings based on statistics
+    if overlapping > 0:
+        associations["findings"].append({
+            "type": "overlap",
+            "description": f"{overlapping} methylation sites ({associations['statistics']['overlap_rate']:.1%}) overlap with ChIP-seq peaks",
+            "count": overlapping,
+        })
+
+    if proximal > 0:
+        associations["findings"].append({
+            "type": "proximal",
+            "description": f"{proximal} methylation sites are within {max_dist}bp of ChIP-seq peaks",
+            "count": proximal,
+        })
 
     return associations
 
@@ -665,22 +745,127 @@ def _analyze_methylation_chip_associations(
 def _analyze_methylation_atac_associations(
     methylation_results: Dict[str, Any], atacseq_results: Dict[str, Any], config: EpigenomeConfig
 ) -> Dict[str, Any]:
-    """Analyze associations between methylation and ATAC-seq data."""
+    """Analyze associations between methylation and ATAC-seq data.
+
+    Analyzes chromatin accessibility around methylated sites to identify
+    relationships between methylation and open chromatin regions.
+    """
     associations = {
         "analysis_type": "methylation_atacseq_association",
         "max_distance": config.max_distance_for_integration,
         "correlation_threshold": config.correlation_threshold,
         "findings": [],
+        "statistics": {},
     }
 
-    # Placeholder for actual association analysis
-    associations["findings"].append(
-        {
-            "type": "placeholder",
-            "description": "Methylation-ATAC-seq association analysis framework ready",
-            "note": "Actual implementation would analyze chromatin accessibility around methylated sites",
-        }
-    )
+    # Extract methylation sites and ATAC-seq peaks
+    meth_sites = methylation_results.get("sites", [])
+    atac_peaks = atacseq_results.get("peaks", atacseq_results.get("accessible_regions", []))
+
+    if not meth_sites:
+        associations["findings"].append({
+            "type": "warning",
+            "description": "No methylation sites provided for analysis",
+        })
+        return associations
+
+    if not atac_peaks:
+        associations["findings"].append({
+            "type": "warning",
+            "description": "No ATAC-seq peaks/accessible regions provided for analysis",
+        })
+        return associations
+
+    # Analyze methylation in accessible vs closed chromatin
+    max_dist = config.max_distance_for_integration
+    in_accessible = 0
+    near_accessible = 0
+    in_closed = 0
+
+    meth_values_accessible = []
+    meth_values_closed = []
+
+    for meth in meth_sites:
+        meth_chrom = meth.get("chrom", meth.get("chromosome"))
+        meth_pos = meth.get("position", meth.get("pos"))
+        meth_level = meth.get("methylation_level", meth.get("beta", None))
+        if meth_chrom is None or meth_pos is None:
+            continue
+
+        # Check if in accessible region
+        is_accessible = False
+        min_distance = float("inf")
+
+        for peak in atac_peaks:
+            peak_chrom = peak.get("chrom", peak.get("chromosome"))
+            if peak_chrom != meth_chrom:
+                continue
+
+            peak_start = peak.get("start", peak.get("position"))
+            peak_end = peak.get("end", peak_start + 1 if peak_start else None)
+            if peak_start is None:
+                continue
+
+            if peak_start <= meth_pos <= peak_end:
+                is_accessible = True
+                min_distance = 0
+                break
+            else:
+                if meth_pos < peak_start:
+                    distance = peak_start - meth_pos
+                else:
+                    distance = meth_pos - peak_end
+                min_distance = min(min_distance, distance)
+
+        if is_accessible:
+            in_accessible += 1
+            if meth_level is not None:
+                meth_values_accessible.append(meth_level)
+        elif min_distance <= max_dist:
+            near_accessible += 1
+            if meth_level is not None:
+                meth_values_accessible.append(meth_level)
+        else:
+            in_closed += 1
+            if meth_level is not None:
+                meth_values_closed.append(meth_level)
+
+    total_sites = len(meth_sites)
+    associations["statistics"] = {
+        "total_methylation_sites": total_sites,
+        "total_accessible_regions": len(atac_peaks),
+        "sites_in_accessible": in_accessible,
+        "sites_near_accessible": near_accessible,
+        "sites_in_closed": in_closed,
+        "accessible_rate": (in_accessible + near_accessible) / total_sites if total_sites > 0 else 0,
+    }
+
+    # Calculate mean methylation levels if available
+    if meth_values_accessible:
+        mean_accessible = sum(meth_values_accessible) / len(meth_values_accessible)
+        associations["statistics"]["mean_methylation_accessible"] = mean_accessible
+    if meth_values_closed:
+        mean_closed = sum(meth_values_closed) / len(meth_values_closed)
+        associations["statistics"]["mean_methylation_closed"] = mean_closed
+
+    # Generate findings
+    if in_accessible > 0:
+        associations["findings"].append({
+            "type": "accessible_overlap",
+            "description": f"{in_accessible} methylation sites ({in_accessible/total_sites:.1%}) located within accessible chromatin",
+            "count": in_accessible,
+        })
+
+    if meth_values_accessible and meth_values_closed:
+        mean_acc = sum(meth_values_accessible) / len(meth_values_accessible)
+        mean_clo = sum(meth_values_closed) / len(meth_values_closed)
+        if mean_acc < mean_clo:
+            associations["findings"].append({
+                "type": "methylation_pattern",
+                "description": f"Lower methylation in accessible regions (mean: {mean_acc:.3f}) vs closed chromatin (mean: {mean_clo:.3f})",
+                "accessible_mean": mean_acc,
+                "closed_mean": mean_clo,
+            })
 
     return associations
 

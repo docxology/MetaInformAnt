@@ -27,7 +27,7 @@ genome:
   accession: GCF_000187915.1
   assembly_name: Pbar_UMD_V03
   annotation_release: 101
-  dest_dir: output/amalgkit/pbarbatus_test25/genome  # Reuse existing genome
+  dest_dir: output/amalgkit/shared/genome/Pogonomyrmex_barbatus  # Reuse shared genome
   include:
     - genome
     - gff3
@@ -63,17 +63,17 @@ steps:
     aws: yes
     gcp: no
     ncbi: no
-    pfd: yes
+    pfd: no  # parallel-fastq-dump not installed
     fastp: no
     max_bp: 50000000  # Downsampling for speed
   quant:
     out_dir: output/amalgkit/pbarbatus_all/work
     threads: 6
     redo: no  # CRITICAL: Skip already-quantified samples
-    build_index: yes
+    build_index: no  # Use existing index
     keep_fastq: no  # Delete FASTQs after quantification
-    index_dir: output/amalgkit/pbarbatus_test25/work/index  # Reuse existing index
-    fasta_dir: output/amalgkit/pbarbatus_test25/genome  # Reuse existing genome
+    index_dir: output/amalgkit/shared/genome/Pogonomyrmex_barbatus/index  # Reuse existing index
+    fasta_dir: output/amalgkit/shared/genome/Pogonomyrmex_barbatus  # Reuse existing genome
   merge:
     out: output/amalgkit/pbarbatus_all/merged/merged_abundance.tsv
     out_dir: output/amalgkit/pbarbatus_all/merged

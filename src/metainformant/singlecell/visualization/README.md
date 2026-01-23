@@ -1,12 +1,22 @@
-# Visualization
+# VISUALIZATION
 
 ## Overview
-This module provides functionality for visualization within the MetaInformAnt framework.
+Functionality for visualization.
 
-## Features
-*   **Modular Design**: Organized for clarity and reusability.
-*   **Type Safety**: Comprehensive type hinting.
-*   **Documentation**: Adheres to the Triple Play standard.
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[visualization.py](visualization.py)`
 
-## Structure
-This module is part of the `metainformant` package.
+## 📊 Structure
+
+```mermaid
+graph TD
+    visualization[visualization]
+    style visualization fill:#f9f,stroke:#333,stroke-width:2px
+```
+
+## Usage
+Import module:
+```python
+from metainformant.metainformant.singlecell.visualization import ...
+```

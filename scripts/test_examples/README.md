@@ -1,43 +1,26 @@
-# Test Examples Runner
+# TEST_EXAMPLES
 
-A comprehensive test runner for discovering, executing, and reporting on MetaInformAnt example scripts.
+## Overview
+Test examples package for METAINFORMANT.
 
-## Purpose
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[discover.py](discover.py)`
+- `[main.py](main.py)`
+- `[reporting.py](reporting.py)`
+- `[runner.py](runner.py)`
+- `[validator.py](validator.py)`
 
-This module provides infrastructure to:
-- Discover example scripts across all domains
-- Run them sequentially or in parallel
-- Generate reports in JSON, HTML, or JUnit XML formats
+## 📊 Structure
 
-## Key Components
-
-| File | Description |
-|------|-------------|
-| [main.py](main.py) | Entry point with `ExampleTester` class |
-| [discover.py](discover.py) | `discover_examples()` for finding scripts |
-| [runner.py](runner.py) | Sequential/parallel execution logic |
-| [validator.py](validator.py) | Verifies script outputs |
-| [reporting.py](reporting.py) | JSON, HTML, JUnit report generation |
-
-## Usage
-
-```bash
-python -m scripts.test_examples.main --verbose --parallel
+```mermaid
+graph TD
+    test_examples[test_examples]
+    style test_examples fill:#f9f,stroke:#333,stroke-width:2px
 ```
 
-### CLI Options
-
-| Flag | Description |
-|------|-------------|
-| `--verbose`, `-v` | Enable verbose output |
-| `--domain`, `-d` | Filter by domain (e.g., `dna`, `rna`) |
-| `--parallel`, `-p` | Run examples in parallel |
-| `--html` | Generate HTML report |
-| `--junit-xml` | Generate JUnit XML for CI/CD |
-
-## Related Documentation
-
-- **Parent**: [scripts/README.md](../README.md)
-- **SPEC**: [SPEC.md](SPEC.md) - Technical specification.
-- **AGENTS**: [AGENTS.md](AGENTS.md) - AI contributions.
-- **Test Suite**: [tests/README.md](../../tests/README.md)
+## Usage
+Import module:
+```python
+from metainformant.test_examples import ...
+```

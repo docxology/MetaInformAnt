@@ -35,22 +35,24 @@ def deduplicate_metadata(file_path: str | Path, output_path: str | Path = None) 
         if "scientific_name" in df.columns:
             # Drop rows with placeholder scientific name if duplicates exist
             placeholder = "Please add in format: Genus species"
-            is_placeholder = df["scientific_name"] == placeholder
 
             # If we find placeholders, we only keep them if there's no better name for that run
             # But in our case, amalgkit integrate ADDs these placeholders even if the original exists
             # So we prefer non-placeholder names.
 
-            # Sort by run and scientific_name (so placeholders come after real names if real names exist)
-            # Actually, reverse sort to put 'Please...' at the end of each run group
-            df = df.sort_values(by=["run", "scientific_name"], ascending=[True, False])
+            # Create a sort key that puts placeholders last (1) and real names first (0)
+            df["_is_placeholder"] = (df["scientific_name"] == placeholder).astype(int)
+
+            # Sort by run first, then by placeholder status (real names first)
+            df = df.sort_values(by=["run", "_is_placeholder"], ascending=[True, True])
 
             # Deduplicate by run, keeping the first (which should be the real name if available)
             df = df.drop_duplicates(subset=["run"], keep="first")
 
-            # Final check: if we still have a placeholder as the ONLY name, try to replace it if possible
-            # (In our specific P. barbatus case, we know what it should be, but let's be general)
-            # For now, just logging it.
+            # Remove the helper column
+            df = df.drop(columns=["_is_placeholder"])
+
+            # Final check: if we still have a placeholder as the ONLY name, log it
             if (df["scientific_name"] == placeholder).any():
                 logger.info(f"Found {sum(df['scientific_name'] == placeholder)} remaining placeholders in {path.name}")
         else:

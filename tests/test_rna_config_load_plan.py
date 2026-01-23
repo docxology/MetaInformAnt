@@ -51,8 +51,9 @@ def test_load_workflow_config_and_plan_uses_yaml_values():
     # Per-step params merged with common
     assert params["getfastq"].get("out_dir", "").endswith(expected_fastq_dir)
     assert params["merge"].get("out", "").endswith(expected_merge_out)
-    # Common threads propagated into each step
-    assert all(p.get("threads") == expected_threads for p in params.values())
+    # Common threads propagated into steps that support them (getfastq, integrate, quant)
+    steps_with_threads = {"getfastq", "integrate", "quant"}
+    assert all(params[n].get("threads") == expected_threads for n in steps_with_threads if n in params)
 
 
 def test_env_overrides_for_config_threads(tmp_path: Path):

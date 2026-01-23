@@ -379,19 +379,30 @@ def find_compatible_enzymes(seq: str, min_sites: int = 1, max_sites: int = 5) ->
 
 
 def simulate_cloning(
-    seq: str, insert_enzyme1: str, insert_enzyme2: str, vector_enzyme1: str, vector_enzyme2: str
+    seq: str,
+    insert_enzyme1: str,
+    insert_enzyme2: str,
+    vector_enzyme1: str,
+    vector_enzyme2: str,
+    vector_sequence: str | None = None,
 ) -> Dict[str, any]:
     """Simulate molecular cloning with restriction enzymes.
 
     Args:
         seq: Insert DNA sequence
-        insert_enzyme1: First enzyme for insert
-        insert_enzyme2: Second enzyme for insert
-        vector_enzyme1: First enzyme for vector
-        vector_enzyme2: Second enzyme for vector
+        insert_enzyme1: First enzyme for insert digestion
+        insert_enzyme2: Second enzyme for insert digestion
+        vector_enzyme1: First enzyme for vector digestion
+        vector_enzyme2: Second enzyme for vector digestion
+        vector_sequence: Optional vector DNA sequence for full simulation
 
     Returns:
-        Dictionary with cloning simulation results
+        Dictionary with cloning simulation results including:
+        - insert_fragments: Fragments from insert digestion
+        - vector_fragments: Fragments from vector digestion (if vector provided)
+        - compatible_enzymes: Enzymes used
+        - ligation_possible: Whether ligation is theoretically possible
+        - enzyme_compatibility: Analysis of enzyme sticky end compatibility
 
     Example:
         >>> insert = "GAATTCATCGGGATCC"
@@ -402,13 +413,36 @@ def simulate_cloning(
     # Digest insert
     insert_fragments = double_digest(seq, insert_enzyme1, insert_enzyme2)
 
-    # Simulate vector digestion (we don't have vector sequence)
-    # In real implementation, would need vector sequence
-    vector_fragments = ["VECTOR_BACKBONE"]  # Placeholder
+    # Analyze enzyme compatibility
+    insert_enzymes = {insert_enzyme1, insert_enzyme2}
+    vector_enzymes = {vector_enzyme1, vector_enzyme2}
 
-    return {
-        "insert_fragments": insert_fragments,
-        "vector_fragments": vector_fragments,
-        "compatible_enzymes": [insert_enzyme1, insert_enzyme2],
-        "ligation_possible": len(insert_fragments) > 0,
+    # Check if enzymes create compatible sticky ends
+    enzyme_compatibility = {
+        "insert_vector_compatible": insert_enzyme1 == vector_enzyme1 and insert_enzyme2 == vector_enzyme2,
+        "insert_enzymes": list(insert_enzymes),
+        "vector_enzymes": list(vector_enzymes),
     }
+
+    result = {
+        "insert_fragments": insert_fragments,
+        "compatible_enzymes": [insert_enzyme1, insert_enzyme2],
+        "enzyme_compatibility": enzyme_compatibility,
+    }
+
+    # Digest vector if sequence provided
+    if vector_sequence:
+        vector_fragments = double_digest(vector_sequence, vector_enzyme1, vector_enzyme2)
+        result["vector_fragments"] = vector_fragments
+        result["ligation_possible"] = (
+            len(insert_fragments) > 0
+            and len(vector_fragments) > 0
+            and enzyme_compatibility["insert_vector_compatible"]
+        )
+    else:
+        # Without vector sequence, we can only analyze the insert
+        result["vector_fragments"] = None
+        result["ligation_possible"] = len(insert_fragments) > 0 and enzyme_compatibility["insert_vector_compatible"]
+        result["note"] = "Vector sequence not provided - full simulation requires vector_sequence parameter"
+
+    return result

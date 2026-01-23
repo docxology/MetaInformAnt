@@ -1,15 +1,21 @@
-# Protein Analysis Examples
+# PROTEIN
 
-This directory contains examples demonstrating METAINFORMANT's protein sequence and structure analysis capabilities.
+## Overview
+Functionality for protein.
 
-## Examples
+## 📦 Contents
+- `[example_sequences.py](example_sequences.py)`
 
-### Protein Sequence Analysis (`example_sequences.py`)
+## 📊 Structure
 
-Learn protein sequence processing and analysis.
-
-```bash
-python examples/protein/example_sequences.py
+```mermaid
+graph TD
+    protein[protein]
+    style protein fill:#f9f,stroke:#333,stroke-width:2px
 ```
 
-**Output:** `output/examples/protein/sequence_analysis.json`
+## Usage
+Import module:
+```python
+from metainformant.protein import ...
+```

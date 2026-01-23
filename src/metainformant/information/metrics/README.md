@@ -1,12 +1,26 @@
-# Metrics
+# METRICS
 
 ## Overview
-This module provides functionality for metrics within the MetaInformAnt framework.
+Functionality for metrics.
 
-## Features
-*   **Modular Design**: Organized for clarity and reusability.
-*   **Type Safety**: Comprehensive type hinting.
-*   **Documentation**: Adheres to the Triple Play standard.
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[analysis.py](analysis.py)`
+- `[continuous.py](continuous.py)`
+- `[estimation.py](estimation.py)`
+- `[semantic.py](semantic.py)`
+- `[syntactic.py](syntactic.py)`
 
-## Structure
-This module is part of the `metainformant` package.
+## 📊 Structure
+
+```mermaid
+graph TD
+    metrics[metrics]
+    style metrics fill:#f9f,stroke:#333,stroke-width:2px
+```
+
+## Usage
+Import module:
+```python
+from metainformant.metainformant.information.metrics import ...
+```

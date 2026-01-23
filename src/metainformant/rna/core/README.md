@@ -1,12 +1,25 @@
-# Core
+# CORE
 
 ## Overview
-This module provides functionality for core within the MetaInformAnt framework.
+Core utilities and configurations for RNA analysis.
 
-## Features
-*   **Modular Design**: Organized for clarity and reusability.
-*   **Type Safety**: Comprehensive type hinting.
-*   **Documentation**: Adheres to the Triple Play standard.
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[cleanup.py](cleanup.py)`
+- `[configs.py](configs.py)`
+- `[deps.py](deps.py)`
+- `[environment.py](environment.py)`
 
-## Structure
-This module is part of the `metainformant` package.
+## 📊 Structure
+
+```mermaid
+graph TD
+    core[core]
+    style core fill:#f9f,stroke:#333,stroke-width:2px
+```
+
+## Usage
+Import module:
+```python
+from metainformant.metainformant.rna.core import ...
+```

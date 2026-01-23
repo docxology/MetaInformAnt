@@ -1,15 +1,21 @@
-# Single-Cell Configuration Notes
+# CONFIG
 
-This directory captures reference material for configuring METAINFORMANT single-cell workflows (preprocessing, integration, visualization).
+## Overview
+Functionality for config.
 
-## Purpose
-- Document canonical configuration blocks for frequently used pipelines (QC, normalization, clustering, trajectory)
-- Track environment variables and dataset-specific overrides that complement files in `config/`
-- Provide guidance for mapping configuration values to `metainformant.singlecell` APIs and CLI parameters
-
-## Maintenance Guidelines
-- Add a markdown file per configuration pattern or dataset family (e.g., 10x Genomics, SMART-seq)
-- Embed runnable command or API snippets that demonstrate how to apply the configuration
-- Update references when new single-cell modules or flags are introduced
+## 📦 Contents
 
 
+## 📊 Structure
+
+```mermaid
+graph TD
+    config[config]
+    style config fill:#f9f,stroke:#333,stroke-width:2px
+```
+
+## Usage
+Import module:
+```python
+from metainformant.config import ...
+```

@@ -1,12 +1,22 @@
-# Analysis
+# ANALYSIS
 
 ## Overview
-This module provides functionality for analysis within the MetaInformAnt framework.
+Functionality for analysis.
 
-## Features
-*   **Modular Design**: Organized for clarity and reusability.
-*   **Type Safety**: Comprehensive type hinting.
-*   **Documentation**: Adheres to the Triple Play standard.
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[integration.py](integration.py)`
 
-## Structure
-This module is part of the `metainformant` package.
+## 📊 Structure
+
+```mermaid
+graph TD
+    analysis[analysis]
+    style analysis fill:#f9f,stroke:#333,stroke-width:2px
+```
+
+## Usage
+Import module:
+```python
+from metainformant.metainformant.multiomics.analysis import ...
+```

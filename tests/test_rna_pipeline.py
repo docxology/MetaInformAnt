@@ -36,13 +36,15 @@ class TestSummarizeCurateTables:
         empty_dir = tmp_path / "empty"
         empty_dir.mkdir()
         counts = summarize_curate_tables(empty_dir)
-        assert counts == {}
+        assert counts["_total"] == 0
+        assert "_error" not in counts
 
     def test_summarize_nonexistent_directory(self, tmp_path: Path):
         """Test summarizing non-existent directory."""
         nonexistent = tmp_path / "does_not_exist"
         counts = summarize_curate_tables(nonexistent)
-        assert counts == {}
+        assert counts["_total"] == 0
+        assert "_error" in counts
 
     def test_summarize_with_tsv_files(self, tmp_path: Path):
         """Test summarizing directory with TSV files."""

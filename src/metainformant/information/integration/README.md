@@ -1,12 +1,23 @@
-# Integration
+# INTEGRATION
 
 ## Overview
-This module provides functionality for integration within the MetaInformAnt framework.
+Functionality for integration.
 
-## Features
-*   **Modular Design**: Organized for clarity and reusability.
-*   **Type Safety**: Comprehensive type hinting.
-*   **Documentation**: Adheres to the Triple Play standard.
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[integration.py](integration.py)`
+- `[networks.py](networks.py)`
 
-## Structure
-This module is part of the `metainformant` package.
+## 📊 Structure
+
+```mermaid
+graph TD
+    integration[integration]
+    style integration fill:#f9f,stroke:#333,stroke-width:2px
+```
+
+## Usage
+Import module:
+```python
+from metainformant.metainformant.information.integration import ...
+```

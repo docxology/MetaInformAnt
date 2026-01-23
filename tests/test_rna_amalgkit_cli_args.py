@@ -22,7 +22,7 @@ def test_build_cli_args_basic():
     )
     # flags normalized and ordered per input iteration
     assert "--threads" in args and "8" in args
-    assert "--dry-run" in args
+    assert "--dry_run" in args  # amalgkit uses underscores per line 139 in amalgkit.py
     # repeat flags for lists
     assert args.count("--species") == 2
     # path stringified

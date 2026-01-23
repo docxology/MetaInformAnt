@@ -1,30 +1,26 @@
-# Statistical Analysis Visualization Module
-
-The `metainformant.visualization.analysis` module provides tools for visualizing statistical and quality metrics.
+# ANALYSIS
 
 ## Overview
+Functionality for analysis.
 
-This module covers common statistical plots like histograms, box plots, and correlation heatmaps, as well as specialized visualizations for dimensional reduction (PCA, UMAP) and data quality.
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[dimred.py](dimred.py)`
+- `[information.py](information.py)`
+- `[quality.py](quality.py)`
+- `[statistical.py](statistical.py)`
+- `[timeseries.py](timeseries.py)`
 
-## Key Functions
+## 📊 Structure
 
-- **`histogram`**: Visualizing distribution of single variables.
-- **`box_plot`**: Comparing distributions across categories.
-- **`correlation_heatmap`**: Visualizing relationships between multiple variables.
-- **`plot_pca`**: 2D/3D visualization of dimensionality reduction results.
-- **`plot_quality_metrics`**: Summarizing FASTQ or assembly quality results.
+```mermaid
+graph TD
+    analysis[analysis]
+    style analysis fill:#f9f,stroke:#333,stroke-width:2px
+```
 
-## Usage Example
-
+## Usage
+Import module:
 ```python
-from metainformant.visualization.analysis import plot_pca
-import numpy as np
-
-# Sample data
-data = np.random.rand(100, 2)
-labels = [0] * 50 + [1] * 50
-
-# Plot PCA
-ax = plot_pca(data, labels=labels)
-ax.set_title("PCA Result")
+from metainformant.metainformant.visualization.analysis import ...
 ```

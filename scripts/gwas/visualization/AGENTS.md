@@ -1,11 +1,15 @@
-# Visualization Agents
+# Agent Directives: scripts/gwas/visualization
 
-The Visualization module handles creating publication-ready plots.
+## Role
+GWAS result visualization scripts.
 
-## Capabilities
-- **GWAS Plots**: Manhattan, Q-Q plots.
-- **Structure Plots**: PCA scatter, Scree, Kinship heatmaps.
-- **Reports**: Can regenerate plots from saved state.
+## Contents
+- `visualizations.py` - Core visualization functions
+- `generate_missing_plots.py` - Generate any missing plots
 
-## Key Files
-- `visualizations.py`: Core plotting logic wrapper.
+## Plot Types
+- Manhattan plots
+- QQ plots
+- Regional association plots
+- PCA scatter plots
+- Kinship heatmaps

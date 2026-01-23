@@ -1,29 +1,23 @@
-# Behavior Module
-
-The `behavior` module provides tools for analyzing behavioral data, including ethograms, behavioral sequences, and time-budget analysis.
+# BEHAVIOR
 
 ## Overview
-This module handles:
-- **Ethograms**: Definitions of behavioral repertoires.
-- **Behavior Sequences**: Time-stamped sequences of behaviors.
-- **State Analysis**: Markov chains and transition matrices for behavioral states.
+Behavioral phenotype analysis module.
 
-## Components
-- `Ethogram`: Class for defining a set of valid behaviors and their descriptions.
-- `BehaviorSequence`: Class for handling time-series behavioral data.
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[ethogram.py](ethogram.py)`
+- `[sequence.py](sequence.py)`
+
+## 📊 Structure
+
+```mermaid
+graph TD
+    behavior[behavior]
+    style behavior fill:#f9f,stroke:#333,stroke-width:2px
+```
 
 ## Usage
+Import module:
 ```python
-from metainformant.phenotype.behavior import Ethogram, BehaviorSequence
-
-# Define an ethogram
-ethogram = Ethogram({
-    "rest": "Stationary with no movement",
-    "walk": "Locomotion",
-    "forage": "Searching for food"
-})
-
-# Analyze a sequence
-seq = BehaviorSequence(data=..., ethogram=ethogram)
-print(seq.calculate_time_budget())
+from metainformant.metainformant.phenotype.behavior import ...
 ```

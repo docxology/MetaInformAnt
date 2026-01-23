@@ -1,12 +1,22 @@
-# GWAS Visualization
+# VISUALIZATION
 
-Scripts for plotting GWAS results.
+## Overview
+Functionality for visualization.
 
-## Scripts
+## 📦 Contents
+- `[generate_missing_plots.py](generate_missing_plots.py)`
+- `[visualizations.py](visualizations.py)`
 
-- `visualizations.py`: Library of plotting functions (can be run to see capabilities).
-- `generate_missing_plots.py`: Utility to regenerate plots from JSON results.
+## 📊 Structure
+
+```mermaid
+graph TD
+    visualization[visualization]
+    style visualization fill:#f9f,stroke:#333,stroke-width:2px
+```
 
 ## Usage
-
-Use these scripts primarily as utilities imported by pipelines, or run `generate_missing_plots.py` to fix missing outputs.
+Import module:
+```python
+from metainformant.visualization import ...
+```

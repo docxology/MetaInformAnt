@@ -61,7 +61,6 @@ Each domain directory follows a consistent pattern:
 ```
 docs/<domain>/
 ├── README.md       # Domain overview and quick start
-├── AGENTS.md       # AI contributions to this domain
 ├── index.md        # Detailed index of all submodules
 └── <topic>.md      # Topic-specific documentation
 ```
@@ -101,9 +100,9 @@ Source code documentation mirrors the `src/metainformant/` structure:
 - Link to detailed documentation
 
 ### AGENTS.md Files
-- Document AI contributions to each module
+- Document AI contributions to the project
+- Located at repository root and in `src/metainformant/` module directories
 - Track development history and design decisions
-- Present in all major directories (65+ files)
 
 ### Topic Documentation
 - Detailed coverage of specific functionality
@@ -158,7 +157,7 @@ Source code documentation mirrors the `src/metainformant/` structure:
 
 ---
 
-*This guide provides navigation for 70+ documentation files organized across 20+ domains, ensuring comprehensive coverage of METAINFORMANT's bioinformatics capabilities.*
+*This guide provides navigation for documentation organized across 19 biological domains, ensuring comprehensive coverage of METAINFORMANT's bioinformatics capabilities.*
 
 
 

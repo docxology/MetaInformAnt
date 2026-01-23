@@ -1,12 +1,23 @@
-# Features
+# FEATURES
 
 ## Overview
-This module provides functionality for features within the MetaInformAnt framework.
+Feature selection and engineering module.
 
-## Features
-*   **Modular Design**: Organized for clarity and reusability.
-*   **Type Safety**: Comprehensive type hinting.
-*   **Documentation**: Adheres to the Triple Play standard.
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[dimensionality.py](dimensionality.py)`
+- `[features.py](features.py)`
 
-## Structure
-This module is part of the `metainformant` package.
+## 📊 Structure
+
+```mermaid
+graph TD
+    features[features]
+    style features fill:#f9f,stroke:#333,stroke-width:2px
+```
+
+## Usage
+Import module:
+```python
+from metainformant.metainformant.ml.features import ...
+```

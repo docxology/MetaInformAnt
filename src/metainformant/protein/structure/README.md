@@ -1,12 +1,28 @@
-# Structure
+# STRUCTURE
 
 ## Overview
-This module provides functionality for structure within the MetaInformAnt framework.
+Functionality for structure.
 
-## Features
-*   **Modular Design**: Organized for clarity and reusability.
-*   **Type Safety**: Comprehensive type hinting.
-*   **Documentation**: Adheres to the Triple Play standard.
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[alphafold.py](alphafold.py)`
+- `[analysis.py](analysis.py)`
+- `[contacts.py](contacts.py)`
+- `[general.py](general.py)`
+- `[io.py](io.py)`
+- `[pdb.py](pdb.py)`
+- `[secondary.py](secondary.py)`
 
-## Structure
-This module is part of the `metainformant` package.
+## 📊 Structure
+
+```mermaid
+graph TD
+    structure[structure]
+    style structure fill:#f9f,stroke:#333,stroke-width:2px
+```
+
+## Usage
+Import module:
+```python
+from metainformant.metainformant.protein.structure import ...
+```

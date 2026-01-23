@@ -3,7 +3,7 @@
   "destination": "output/amalgkit/pbarbatus_all/work/cstmm",
   "errors": [],
   "eta_seconds": null,
-  "last_update": "2026-01-22T02:13:09Z",
+  "last_update": "2026-01-23T16:19:18Z",
   "progress": {
     "current": 0,
     "percent": 0.0,
@@ -11,9 +11,9 @@
     "type": "file_count"
   },
   "progress_percent": 0.0,
-  "speed_mbps": 1.966478685347824,
-  "started_at": "2026-01-22T02:13:05Z",
-  "status": "completed",
+  "speed_mbps": 7.835193768128577,
+  "started_at": "2026-01-23T16:19:17Z",
+  "status": "failed",
   "step": "amalgkit cstmm",
   "total_bytes": null,
   "url": "['amalgkit', 'cstmm', '--out_dir', 'output/amalgkit/pbarbatus_all/work', '--orthogroup_table', '']"

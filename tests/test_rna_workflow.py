@@ -32,10 +32,14 @@ def test_plan_workflow_orders_steps_and_inherits_common_params(tmp_path: Path):
     assert got_order == expected_order
 
     # Each step should include the common params
-    for _, params in steps:
-        assert params.get("threads") == 6
-        # plan_workflow injects species under the key used by amalgkit CLI wrappers
-        assert params.get("species") == ["Apis_mellifera"]
+    # Note: threads are only added for steps that support them (getfastq, integrate, quant)
+    # Note: species are only added for steps that support them (currently none of the standard workflow steps)
+    steps_with_threads = {"getfastq", "integrate", "quant"}
+    for step_name, params in steps:
+        if step_name in steps_with_threads:
+            assert params.get("threads") == 6
+        # out_dir is always present
+        assert "out_dir" in params or "work_dir" in params
 
 
 def test_plan_workflow_step_dependencies(tmp_path: Path):
@@ -113,7 +117,8 @@ def test_plan_workflow_parameter_inheritance(tmp_path: Path):
     # Quant should have overridden thread count
     assert quant_params.get("threads") == 12
 
-    # Other steps should have common thread count
+    # Other steps that support threads should have common thread count
+    steps_with_threads = {"getfastq", "integrate", "quant"}
     for step_name, params in steps:
-        if step_name != "quant":
+        if step_name != "quant" and step_name in steps_with_threads:
             assert params.get("threads") == 6

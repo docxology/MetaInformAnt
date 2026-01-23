@@ -60,12 +60,18 @@ def run_quant_single(sra_id, work_dir, fastq_dir, genome_dir, index_dir, full_me
         
     print(f"[{sra_id}] Quantifying...")
             
-    amalgkit_exe = sys.executable.replace("python", "amalgkit")
-    if not os.path.exists(amalgkit_exe):
-         amalgkit_exe = "/Users/mini/Documents/GitHub/metainformant/.venv/bin/amalgkit"
     
-    # We pass the single-entry metadata. amalgkit will process all rows in it (which is just one).
-    # No --batch needed.
+    # Try to find amalgkit in PATH
+    amalgkit_exe = shutil.which("amalgkit")
+    if not amalgkit_exe:
+        # Fallback to .venv/bin/amalgkit
+        try_path = Path.cwd() / ".venv" / "bin" / "amalgkit"
+        if try_path.exists():
+            amalgkit_exe = str(try_path)
+        else:
+            # Fallback for when running via python directly? wrapper script?
+            # We know it is installed now.
+            amalgkit_exe = "amalgkit"
     
     cmd = [
         amalgkit_exe, "quant",

@@ -1,12 +1,21 @@
-# Output
+# OUTPUT
 
 ## Overview
-This module provides functionality for output within the MetaInformAnt framework.
+Functionality for output.
 
-## Features
-*   **Modular Design**: Organized for clarity and reusability.
-*   **Type Safety**: Comprehensive type hinting.
-*   **Documentation**: Adheres to the Triple Play standard.
+## 📦 Contents
 
-## Structure
-This module is part of the `metainformant` package.
+
+## 📊 Structure
+
+```mermaid
+graph TD
+    output[output]
+    style output fill:#f9f,stroke:#333,stroke-width:2px
+```
+
+## Usage
+Import module:
+```python
+from metainformant.metainformant.core.output import ...
+```

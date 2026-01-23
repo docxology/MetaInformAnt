@@ -1,15 +1,21 @@
-# Information Theory Examples
+# INFORMATION
 
-This directory contains examples demonstrating METAINFORMANT's information-theoretic analysis capabilities.
+## Overview
+Functionality for information.
 
-## Examples
+## 📦 Contents
+- `[example_entropy.py](example_entropy.py)`
 
-### Entropy Analysis (`example_entropy.py`)
+## 📊 Structure
 
-Learn information entropy and complexity analysis.
-
-```bash
-python examples/information/example_entropy.py
+```mermaid
+graph TD
+    information[information]
+    style information fill:#f9f,stroke:#333,stroke-width:2px
 ```
 
-**Output:** `output/examples/information/entropy_analysis.json`
+## Usage
+Import module:
+```python
+from metainformant.information import ...
+```

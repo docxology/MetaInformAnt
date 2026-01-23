@@ -377,17 +377,18 @@ def transition_transversion_plot(
         logger.error("No transition/transversion data provided")
         return None
 
-    # Extract data - this would typically come from variant analysis
-    # For now, create mock data structure
+    # Extract data from the provided ts_tv_data dictionary
     transitions = ts_tv_data.get("transitions", [])
     transversions = ts_tv_data.get("transversions", [])
     positions = ts_tv_data.get("positions", [])
 
     if not transitions or not transversions:
-        # Generate mock data for testing
-        positions = list(range(1, 101))
-        transitions = np.random.poisson(10, len(positions))
-        transversions = np.random.poisson(3, len(positions))
+        logger.error("Transition/transversion data must include 'transitions' and 'transversions' arrays")
+        return None
+
+    if not positions:
+        # If no positions provided, use indices
+        positions = list(range(1, len(transitions) + 1))
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
 

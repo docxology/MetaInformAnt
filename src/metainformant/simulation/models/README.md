@@ -1,12 +1,25 @@
-# Models
+# MODELS
 
 ## Overview
-This module provides functionality for models within the MetaInformAnt framework.
+Functionality for models.
 
-## Features
-*   **Modular Design**: Organized for clarity and reusability.
-*   **Type Safety**: Comprehensive type hinting.
-*   **Documentation**: Adheres to the Triple Play standard.
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[agents.py](agents.py)`
+- `[popgen.py](popgen.py)`
+- `[rna.py](rna.py)`
+- `[sequences.py](sequences.py)`
 
-## Structure
-This module is part of the `metainformant` package.
+## 📊 Structure
+
+```mermaid
+graph TD
+    models[models]
+    style models fill:#f9f,stroke:#333,stroke-width:2px
+```
+
+## Usage
+Import module:
+```python
+from metainformant.metainformant.simulation.models import ...
+```

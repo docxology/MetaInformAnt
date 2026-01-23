@@ -1,15 +1,21 @@
-# Machine Learning Examples
+# ML
 
-This directory contains examples demonstrating METAINFORMANT's machine learning capabilities for biological data.
+## Overview
+Functionality for ml.
 
-## Examples
+## 📦 Contents
+- `[example_pipeline.py](example_pipeline.py)`
 
-### ML Pipeline (`example_pipeline.py`)
+## 📊 Structure
 
-Learn machine learning workflows for biological data classification and regression.
-
-```bash
-python examples/ml/example_pipeline.py
+```mermaid
+graph TD
+    ml[ml]
+    style ml fill:#f9f,stroke:#333,stroke-width:2px
 ```
 
-**Output:** `output/examples/ml/pipeline_results.json`
+## Usage
+Import module:
+```python
+from metainformant.ml import ...
+```

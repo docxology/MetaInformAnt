@@ -1,157 +1,23 @@
-# AI Agents in Visualization Documentation Development
+# Agent Directives: docs/visualization
 
-This document outlines AI assistance in creating METAINFORMANT's comprehensive data visualization documentation, including the major expansion and modularization in 2024.
+## Role
+Documentation for METAINFORMANT's comprehensive visualization system.
 
-## AI Contributions
+## Contents
+- `index.md` - Visualization module overview
+- `gallery.md` - Plot gallery with examples
+- Domain-specific visualization docs:
+  - `genomics.md` - Manhattan, QQ, regional plots
+  - `statistical.md` - Statistical analysis plots
+  - `networks.md` - Network visualization
+  - `expression.md` - Expression heatmaps
+  - `trees.md` - Phylogenetic trees
+  - `dimred.md` - Dimensionality reduction plots
+  - `timeseries.md` - Time series plots
+  - `animations.md` - Animated visualizations
 
-### Documentation Architecture
-**Documentation Agent** designed:
-- Hierarchical visualization documentation structure
-- Plot type explanation frameworks
-- Publication-quality figure documentation patterns
-- Integration guide organization for plotting workflows
-- Modular documentation structure matching code organization
-
-### Content Generation
-**Documentation Agent** assisted with:
-- Complete visualization module documentation
-- Algorithm explanations for plotting functions
-- Usage examples for statistical visualization
-- Integration patterns with analysis modules
-- Comprehensive documentation for all 10+ category modules
-- User guides for each visualization type
-- Integration guides for domain-specific visualizations
-
-### Technical Writing
-**Code Assistant Agent** contributed to:
-- API reference accuracy verification for plotting functions
-- Code example validation for figure generation
-- Performance consideration documentation for large datasets
-- Troubleshooting guide development for visualization issues
-- Complete API reference for all modules
-- Function signature documentation
-- Return type documentation
-
-### Documentation Expansion (2024)
-**Documentation Agent** created:
-- **Core documentation files**:
-  - `basic.md`: Basic plotting functions documentation
-  - `statistical.md`: Statistical visualization documentation
-  - `genomics.md`: Genomic visualization documentation
-  - `expression.md`: Expression analysis documentation
-  - `dimred.md`: Dimensionality reduction documentation
-  - `networks.md`: Network visualization documentation
-  - `timeseries.md`: Time series documentation
-  - `multidim.md`: Multi-dimensional plots documentation
-  - `quality.md`: Quality control documentation
-  - `information.md`: Information theory documentation
-
-- **Enhanced existing documentation**:
-  - `trees.md`: Expanded with new tree plot functions
-  - `animations.md`: Expanded with new animation types
-  - `index.md`: Fixed typo, expanded with comprehensive module index
-  - `README.md`: Expanded with complete navigation and examples
-
-- **Additional documentation**:
-  - `styling.md`: Styling and customization guide
-  - `integration.md`: Domain integration patterns
-  - `examples.md`: Comprehensive usage examples
-  - `gallery.md`: Visualization gallery with code
-
-## Documentation Strategy
-
-### Comprehensive Coverage
-- Every visualization function documented
-- Publication-quality figure generation guidance
-- Integration patterns between visualization and analysis modules
-- Performance and testing guidance
-- Module-specific documentation for all categories
-- Cross-references between related functions
-
-### Quality Standards
-- Clear, technical writing style for scientific visualization
-- Consistent formatting across visualization docs
-- Practical, runnable code examples
-- Regular updates with code changes
-- Function signatures with full parameter documentation
-- Return type documentation
-
-### Maintenance Approach
-- Documentation evolves with visualization capabilities
-- AI assistance accelerates content creation
-- Human review ensures accuracy and clarity
-- Community contributions encouraged
-- Modular structure enables focused documentation updates
-
-## Technical Implementation Details
-
-### Core Plotting Functions (`visualization/plots.py`)
-**Code Assistant Agent** implemented:
-- Unified plotting API with matplotlib/seaborn integration
-- Consistent parameter handling across all plot types
-- Publication-quality figure styling
-- Multi-format output support (PNG, SVG, PDF)
-
-### Basic Plotting (`visualization/basic.py`)
-**Code Assistant Agent** developed:
-- Line plots, scatter plots, bar plots, histograms
-- Error bars and confidence intervals
-- Multiple subplot support
-- Color mapping and styling
-
-### Statistical Visualization (`visualization/statistical.py`)
-**Code Assistant Agent** created:
-- `histogram(data: np.ndarray, bins: int = 30, ax: plt.Axes = None) -> plt.Axes`: Distribution visualization
-- `box_plot(data: dict[str, np.ndarray], ax: plt.Axes = None) -> plt.Axes`: Comparative statistics
-- `violin_plot(data: dict[str, np.ndarray], ax: plt.Axes = None) -> plt.Axes`: Distribution comparison
-- `qq_plot(data: np.ndarray, ax: plt.Axes = None) -> plt.Axes`: Quantile-quantile plots
-- `correlation_heatmap(matrix: np.ndarray, labels: list[str] = None, ax: plt.Axes = None) -> plt.Axes`: Correlation matrices
-- `density_plot(data: np.ndarray, ax: plt.Axes = None) -> plt.Axes`: Kernel density estimation
-
-### Time Series (`visualization/timeseries.py`)
-**Code Assistant Agent** implemented:
-- `time_series_plot(data: pd.DataFrame, time_col: str, value_col: str, ax: plt.Axes = None) -> plt.Axes`: Time series visualization
-- `autocorrelation_plot(data: np.ndarray, lags: int = 40, ax: plt.Axes = None) -> plt.Axes`: Autocorrelation analysis
-- `seasonal_decomposition_plot(data: pd.Series, period: int = None, ax: plt.Axes = None) -> plt.Axes`: Seasonal decomposition
-- `forecast_plot(historical: np.ndarray, forecast: np.ndarray, confidence: np.ndarray = None, ax: plt.Axes = None) -> plt.Axes`: Forecasting visualization
-- `trend_plot(data: pd.Series, window: int = 30, ax: plt.Axes = None) -> plt.Axes`: Trend analysis
-
-### Phylogenetic Trees (`visualization/trees.py`)
-**Code Assistant Agent** developed:
-- `plot_phylo_tree(tree: Any, *, ax: plt.Axes | None = None) -> plt.Axes`: Rectangular tree plots
-- `circular_tree_plot(tree: Any, *, ax: plt.Axes | None = None) -> plt.Axes`: Circular tree layouts
-- `unrooted_tree_plot(tree: Any, *, ax: plt.Axes | None = None) -> plt.Axes`: Unrooted tree visualization
-- `tree_comparison_plot(trees: list, *, ax: plt.Axes | None = None) -> plt.Axes`: Tree comparison
-- `tree_annotation_plot(tree: Any, annotations: dict, *, ax: plt.Axes | None = None) -> plt.Axes`: Annotated trees
-
-### Styling and Layout (`visualization/style.py`)
-**Code Assistant Agent** created:
-- `apply_publication_style(**overrides) -> None`: Publication-quality styling
-- `get_color_palette(name: str = 'primary') -> list[str]`: Color scheme selection
-- `get_figure_size(size: str = 'medium') -> tuple[float, float]`: Standard figure dimensions
-- `set_font_family(family: str = 'sans-serif') -> None`: Font family configuration
-- `set_font_size(size: float = 10) -> None`: Font size management
-- `reset_style() -> None`: Style reset functionality
-- `apply_style(style_name: str) -> None`: Named style application
-
-### Domain Integration Modules
-**Code Assistant Agent** implemented:
-- `genomics.py`: Genome browser-style plots, coverage plots, variant visualization
-- `expression.py`: Heatmaps, expression profiles, differential expression plots
-- `dimred.py`: PCA plots, t-SNE/UMAP visualization, cluster annotation
-- `networks.py`: Network graphs, community visualization, centrality plots
-- `multidim.py`: Parallel coordinates, radar plots, multi-dimensional scaling
-- `quality.py`: QC metrics plots, distribution comparisons, outlier detection
-- `information.py`: Entropy landscapes, mutual information matrices, complexity plots
-- `animations.py`: Time series animations, trajectory visualization, parameter sweeps
-
-## Statistics
-
-The visualization documentation now includes:
-- **15+ documentation files** covering all visualization categories
-- **100+ function examples** with code snippets
-- **Complete API reference** for all modules
-- **Integration guides** for domain-specific visualizations
-- **Examples and gallery** for practical usage
-
-This comprehensive visualization system provides publication-quality plotting capabilities with extensive documentation covering both technical implementation and scientific visualization best practices.
+## Key Patterns
+- All functions return matplotlib Figure objects (never None)
+- Output to `output/visualization/` by default
+- Consistent styling across plot types
+- Support for both interactive and publication-quality figures

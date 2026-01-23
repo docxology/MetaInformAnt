@@ -1,17 +1,23 @@
-# Quantitative Genetics
+# QUANTITATIVE_GENETICS
 
-This submodule focuses on the evolution of continuous traits.
+## Overview
+Functionality for quantitative_genetics.
 
-## Components
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[core.py](core.py)`
+- `[price.py](price.py)`
 
-- **core.py**: Heritability and response to selection (Breeder's equation support).
-- **price.py**: The Price equation for decomposing evolutionary change.
+## 📊 Structure
+
+```mermaid
+graph TD
+    quantitative_genetics[quantitative_genetics]
+    style quantitative_genetics fill:#f9f,stroke:#333,stroke-width:2px
+```
 
 ## Usage
-
+Import module:
 ```python
-from metainformant.math.quantitative_genetics import price_equation
-
-# Decompose evolutionary change
-cov, trans, total = price_equation(fitness, parent_traits, offspring_traits)
+from metainformant.metainformant.math.quantitative_genetics import ...
 ```

@@ -829,19 +829,13 @@ def _predict_by_similarity(
             candidate_predictions.sort(key=lambda x: x["confidence"], reverse=True)
             predictions[target] = candidate_predictions[:max_predictions]
         else:
-            # Target not in network, predict based on common neighbors
+            # Target not in network, predict based on sequence/feature similarity
             candidate_predictions = []
 
-            # Find proteins that interact with similar sets of proteins
-            for protein in network_proteins:
-                # This is a simplified approach - in practice would use more sophisticated methods
-                confidence = 0.5  # Placeholder confidence
-                if confidence >= threshold:
-                    candidate_predictions.append(
-                        {"partner": protein, "confidence": confidence, "method": "network_similarity"}
-                    )
-
-            predictions[target] = candidate_predictions[:max_predictions]
+            # Since target is not in network, we can't use topology
+            # Return empty predictions with explanation
+            predictions[target] = []
+            logger.info(f"Target protein {target} not found in network - cannot predict interactions without additional features")
 
     return predictions
 

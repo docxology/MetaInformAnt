@@ -1,25 +1,22 @@
-# Sonic Phenotype Module
-
-The `sonic` module handles acoustic and vibrational signaling data, including stridulation recordings and substrate-borne vibrations.
+# SONIC
 
 ## Overview
-This module handles:
-- **Acoustic Signals**: Pulse rate, duration, carrier frequency.
-- **Signal Processing**: Basic filtering and property extraction.
-- **Classification**: Signal categorization.
+Sonic phenotype analysis module.
 
-## Components
-- `AcousticSignal`: Class representing a raw or processed audio signal.
-- `SignalAnalyst`: Utilities for signal processing.
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[signal.py](signal.py)`
+
+## 📊 Structure
+
+```mermaid
+graph TD
+    sonic[sonic]
+    style sonic fill:#f9f,stroke:#333,stroke-width:2px
+```
 
 ## Usage
+Import module:
 ```python
-from metainformant.phenotype.sonic import AcousticSignal
-
-# Load a signal
-signal = AcousticSignal.from_file("stridulation_001.wav")
-
-# Analyze properties
-print(f"Duration: {signal.duration}s")
-print(f"Dominant Frequency: {signal.dominant_frequency}Hz")
+from metainformant.metainformant.phenotype.sonic import ...
 ```

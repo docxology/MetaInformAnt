@@ -1,108 +1,18 @@
-# AI Agents in Protein Documentation Development
+# Agent Directives: docs/protein
 
-This document outlines AI assistance in creating METAINFORMANT's comprehensive protein analysis documentation and technical implementation details.
+## Role
+Documentation for protein sequence and structure analysis.
 
-## AI Contributions by Module
+## Contents
+- Protein sequence alignment
+- Structure prediction (AlphaFold integration)
+- Domain annotation (InterPro)
+- UniProt/PDB data retrieval
+- RMSD calculations
+- Secondary structure analysis
 
-### Protein Sequences (`protein/sequences.py`)
-**Code Assistant Agent** implemented:
-- `parse_fasta(path: Path) -> Dict[str, str]`: FASTA file parsing with sequence ID mapping
-- `is_valid_protein_sequence(seq: str) -> bool`: Amino acid alphabet validation
-- `calculate_aa_composition(seq: str) -> Dict[str, float]`: Amino acid frequency analysis
-- `kmer_frequencies(seq: str, *, k: int) -> Dict[str, int]`: K-mer occurrence counting
-
-### Sequence Alignment (`protein/alignment.py`)
-**Code Assistant Agent** developed:
-- `pairwise_identity(a: str, b: str) -> float`: Sequence identity calculation
-- `needleman_wunsch(a: str, b: str, *, match: int = 1, mismatch: int = -1, gap: int = -1) -> Tuple[int, str, str]`: Global protein alignment
-
-### AlphaFold Integration (`protein/alphafold.py`)
-**Code Assistant Agent** created:
-- `build_alphafold_url(uniprot_acc: str, *, version: int = 4, fmt: str = "pdb") -> str`: AlphaFold URL construction
-- `fetch_alphafold_model(uniprot_acc: str, out_dir: Path, *, version: int = 4, fmt: str = "pdb") -> Path`: Structure model download
-
-### Contact Analysis (`protein/contacts.py`)
-**Code Assistant Agent** implemented:
-- `compute_ca_contact_pairs(ca_coords: List[tuple[float, float, float]], threshold: float = 8.0) -> List[tuple[int, int]]`: C-alpha contact detection
-
-### InterPro Integration (`protein/interpro.py`)
-**Code Assistant Agent** developed:
-- `fetch_interpro_domains(uniprot_acc: str) -> List[Dict]`: Domain annotation retrieval
-
-### PDB Integration (`protein/pdb.py`)
-**Code Assistant Agent** created:
-- `fetch_pdb_structure(pdb_id: str, out_dir: Path, *, fmt: str = "pdb") -> Path`: PDB structure download
-
-### Proteome Analysis (`protein/proteomes.py`)
-**Code Assistant Agent** implemented:
-- `read_taxon_ids(taxon_id_file: Path) -> list[int]`: Taxonomy ID parsing
-
-### Secondary Structure (`protein/secondary.py`)
-**Code Assistant Agent** developed:
-- `simple_helix_coil_propensity(seq: str) -> List[float]`: Secondary structure prediction
-
-### Structure I/O (`protein/structure_io.py`)
-**Code Assistant Agent** created:
-- `read_pdb_ca_coordinates(pdb_path: Path) -> List[tuple[float, float, float]]`: PDB C-alpha coordinate extraction
-
-### Structure Analysis (`protein/structure_analysis.py`)
-**Code Assistant Agent** implemented:
-- `predict_secondary_structure(sequence: str) -> str`: Secondary structure prediction from sequence
-- `identify_domains(sequence: str) -> List[tuple[int, int, str]]`: Protein domain identification
-- `analyze_protein_stability(sequence: str) -> Dict[str, float]`: Stability analysis metrics
-- `predict_protein_family(sequence: str) -> str`: Protein family classification
-- `analyze_post_translational_modifications(sequence: str) -> List[Dict]`: PTM site prediction
-
-### Structure Comparison (`protein/structure.py`)
-**Code Assistant Agent** developed:
-- `compute_rmsd_kabsch(coords_ref: np.ndarray, coords_mobile: np.ndarray) -> float`: RMSD calculation using Kabsch algorithm
-
-### UniProt Integration (`protein/uniprot.py`)
-**Code Assistant Agent** created:
-- `map_ids_uniprot(ids: Iterable[str]) -> Dict[str, str]`: ID mapping via UniProt
-- `fetch_uniprot_fasta(accession: str) -> str`: FASTA sequence retrieval
-
-## Technical Implementation Details
-
-### Algorithm Optimizations
-AI-assisted implementations include:
-- **Efficient Sequence Processing**: O(n) algorithms for large proteome analysis
-- **Structure Parsing**: Memory-efficient PDB file handling
-- **Alignment Scoring**: Optimized dynamic programming for protein sequences
-- **Database Integration**: Robust API handling for external protein databases
-
-### Data Structure Design
-AI contributed to:
-- **Protein Collections**: Efficient storage of large protein sequence datasets
-- **Structure Objects**: 3D coordinate handling and manipulation
-- **Annotation Storage**: Flexible metadata structures for protein features
-- **Alignment Results**: Structured output with scores and coordinate mapping
-
-### Integration Patterns
-AI developed:
-- **Database APIs**: Seamless integration with UniProt, PDB, InterPro, AlphaFold
-- **Format Handling**: Support for FASTA, PDB, and various annotation formats
-- **Workflow Composition**: Modular design for complex proteomic pipelines
-- **Error Handling**: Robust failure recovery for external service dependencies
-
-## Documentation Strategy
-
-### Technical Accuracy
-- Function signatures with complete type hints and parameter descriptions
-- Biological context for protein analysis methods
-- Performance characteristics for different data scales
-- Integration examples with other METAINFORMANT modules
-
-### Biological Context
-- Protein structure-function relationships
-- Evolutionary conservation principles
-- Functional annotation methodologies
-- Quality control for proteomic data
-
-### Integration Guidance
-- Cross-module workflows (DNA → Protein translation, RNA → Protein correlation)
-- External tool integration patterns
-- Database API usage best practices
-- Troubleshooting common proteomic analysis issues
-
-This comprehensive protein analysis implementation provides production-ready tools for structural biology and proteomics research with extensive documentation covering both technical implementation and biological applications.
+## Key APIs
+- UniProt REST API
+- AlphaFold database
+- InterPro API
+- PDB file parsing

@@ -211,10 +211,44 @@ def fst_confidence_interval(fst_value: float, sample_size: int, confidence_level
     Returns:
         Tuple of (lower_bound, upper_bound)
     """
-    # Simplified confidence interval calculation
-    # In practice, this would use bootstrap resampling of the original data
-    se = 0.1  # Placeholder standard error
-    z_score = 1.96 if confidence_level == 0.95 else 2.576  # Approximate z-scores
+    import math
+
+    # Calculate standard error using Weir & Cockerham approximation
+    # SE(F_ST) ≈ sqrt(F_ST * (1 - F_ST) / n) for large samples
+    # For small samples, add correction factor
+
+    if sample_size < 2:
+        raise ValueError("Sample size must be at least 2 for confidence interval calculation")
+
+    # Variance approximation for F_ST estimator
+    # Based on asymptotic variance formula: Var(F_ST) ≈ 2*F_ST^2*(1-F_ST)^2 / n
+    # for the case of two populations with equal sample sizes
+
+    # Clamp F_ST to valid range to avoid math errors
+    fst_clamped = max(0.001, min(0.999, fst_value))
+
+    # Calculate variance using improved approximation
+    # This uses the delta method approximation
+    variance = (2 * fst_clamped * fst_clamped * (1 - fst_clamped) * (1 - fst_clamped)) / sample_size
+
+    # Add small-sample correction (Hedges correction)
+    if sample_size < 30:
+        correction_factor = 1 + 3 / (4 * sample_size - 4)
+        variance *= correction_factor
+
+    se = math.sqrt(variance)
+
+    # Get z-score for confidence level
+    if confidence_level == 0.99:
+        z_score = 2.576
+    elif confidence_level == 0.95:
+        z_score = 1.96
+    elif confidence_level == 0.90:
+        z_score = 1.645
+    else:
+        # Use normal approximation for other confidence levels
+        from scipy import stats
+        z_score = stats.norm.ppf((1 + confidence_level) / 2)
 
     lower = max(0.0, fst_value - z_score * se)
     upper = min(1.0, fst_value + z_score * se)

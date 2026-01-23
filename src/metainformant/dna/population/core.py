@@ -318,27 +318,85 @@ def fu_and_li_f_star_from_sequences(seqs: Sequence[str]) -> float:
     return f_star
 
 
-def fay_wu_h_from_sequences(seqs: Sequence[str]) -> float:
+def fay_wu_h_from_sequences(
+    seqs: Sequence[str], outgroup: str | None = None
+) -> float:
     """Calculate Fay and Wu's H statistic from sequences.
 
-    H compares high-frequency derived alleles with nucleotide diversity.
+    H = π - θ_H, where θ_H weights each SNP by the square of its derived
+    allele frequency. This statistic detects positive selection.
+
+    When no outgroup is provided, the most frequent allele at each site
+    is assumed to be ancestral (parsimony assumption).
 
     Args:
         seqs: Sequence of aligned DNA sequences
+        outgroup: Optional outgroup sequence for ancestral state inference
 
     Returns:
-        Fay and Wu's H value
+        Fay and Wu's H value (negative values suggest positive selection)
     """
     if len(seqs) < 4:
         raise ValueError("Fay and Wu's H requires at least 4 sequences")
 
-    # This is a simplified implementation
-    # Full implementation would require ancestral state inference
+    n = len(seqs)
+    if not seqs[0]:
+        raise ValueError("Sequences cannot be empty")
+
+    seq_len = len(seqs[0])
+
+    # Check all sequences have same length
+    if not all(len(s) == seq_len for s in seqs):
+        raise ValueError("All sequences must have the same length")
+
+    # Calculate π (nucleotide diversity)
     pi = nucleotide_diversity(seqs)
 
-    # Simplified H calculation (approximation)
-    # In practice, this requires knowing ancestral alleles
-    h = pi * 0.8  # Placeholder approximation
+    # Calculate θ_H (Fay and Wu's theta)
+    # θ_H = Σ 2 * i^2 * S_i / (n * (n-1))
+    # where S_i is the number of sites where derived allele is at frequency i/n
+
+    theta_h = 0.0
+    valid_sites = 0
+
+    for pos in range(seq_len):
+        # Get nucleotides at this position
+        nucs = [s[pos].upper() for s in seqs if s[pos].upper() in "ACGT"]
+
+        if len(nucs) < 2:
+            continue
+
+        # Count allele frequencies
+        from collections import Counter
+        allele_counts = Counter(nucs)
+
+        if len(allele_counts) < 2:
+            # Not a polymorphic site
+            continue
+
+        valid_sites += 1
+
+        # Determine ancestral allele
+        if outgroup and pos < len(outgroup):
+            ancestral = outgroup[pos].upper()
+            if ancestral not in "ACGT":
+                # If outgroup has ambiguous base, use most frequent
+                ancestral = allele_counts.most_common(1)[0][0]
+        else:
+            # Assume most frequent allele is ancestral (parsimony)
+            ancestral = allele_counts.most_common(1)[0][0]
+
+        # Calculate contribution to theta_H
+        # Sum over derived alleles
+        for allele, count in allele_counts.items():
+            if allele != ancestral:
+                # This is a derived allele
+                i = count  # Frequency count of derived allele
+                # Contribution: 2 * i^2 / (n * (n-1))
+                theta_h += (2 * i * i) / (n * (n - 1))
+
+    # Fay and Wu's H = π - θ_H
+    h = pi - theta_h
 
     return h
 

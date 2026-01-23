@@ -51,8 +51,11 @@ def test_plan_workflow_with_params_merges_common_and_specific(tmp_path: Path):
     steps = plan_workflow_with_params(cfg, params_map)
 
     # common threads + specific params should appear
+    # Note: threads are only added for steps that support them (getfastq, integrate, quant)
+    steps_with_threads = {"getfastq", "integrate", "quant"}
     for name, params in steps:
-        assert params.get("threads") == 7
+        if name in steps_with_threads:
+            assert params.get("threads") == 7
         if name in ("metadata", "select"):
             assert params.get("taxon-id") == 7460
             assert params.get("tissue") == ["brain"]

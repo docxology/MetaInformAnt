@@ -1,33 +1,24 @@
-# Core Execution Module
+# EXECUTION
 
-Workflow orchestration, parallel processing, and script discovery for MetaInformAnt.
+## Overview
+Core execution utilities for METAINFORMANT.
 
-## Purpose
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[discovery.py](discovery.py)`
+- `[parallel.py](parallel.py)`
+- `[workflow.py](workflow.py)`
 
-This module provides:
-- Config-driven workflow execution
-- Parallel processing with `ParallelProcessor`
-- Dynamic script and config discovery
+## 📊 Structure
 
-## Key Components
-
-| File | Description |
-|------|-------------|
-| [workflow.py](workflow.py) | `run_config_based_workflow`, `validate_config_file` |
-| [parallel.py](parallel.py) | `ParallelProcessor`, `run_parallel` |
-| [discovery.py](discovery.py) | `discover_functions`, `discover_configs` |
-
-## Usage
-
-```python
-from metainformant.core.execution import run_config_based_workflow
-
-results = run_config_based_workflow("config.yaml")
+```mermaid
+graph TD
+    execution[execution]
+    style execution fill:#f9f,stroke:#333,stroke-width:2px
 ```
 
-## Related Documentation
-
-- **Parent**: [src/metainformant/core/README.md](../README.md)
-- **SPEC**: [SPEC.md](SPEC.md)
-- **AGENTS**: [AGENTS.md](AGENTS.md)
-- **Engine Module**: [../engine/README.md](../engine/README.md)
+## Usage
+Import module:
+```python
+from metainformant.metainformant.core.execution import ...
+```

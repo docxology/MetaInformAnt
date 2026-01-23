@@ -1,37 +1,84 @@
-# SPEC: Test Infrastructure
+# Specification: tests
 
-The MetaInformAnt test suite is designed to ensure mathematical and biological accuracy through rigorous, mock-free verification.
+## Scope
 
-## Testing Strategy
+Comprehensive pytest test suite for METAINFORMANT. Contains real-implementation tests covering all 19 domain modules with strict adherence to the NO MOCKING policy. Tests validate functionality using actual algorithms, real file I/O, and genuine API calls.
 
-### 1. No-Mocking Policy
-We do not use `unittest.mock` or similar libraries. All tests must use real data and live methods. If a method requires an external resource (e.g., a database or API), a local instance or a file-based cache must be provided.
+## Architecture
 
-### 2. Composition Over Integration
-Tests are categorized by their scope:
-- **Unit**: Single function verification with minimal dependencies.
-- **Comprehensive**: Domain-level testing involving multiple functions within a module.
-- **Integration**: Cross-domain workflows (e.g., DNA + RNA + Multi-omics).
+- **Dependency Level**: Test
+- **Component Type**: Test Suite
+- **Framework**: pytest with custom markers and fixtures
 
-## Test Data Management
-
-Test data is located in `tests/data/`.
-- **Static Assets**: Small FASTA/FASTQ files, configuration templates.
-- **Dynamic Caching**: Downloads from NCBI/SRA are cached in `temp` or `tests/data/cache` during test runs to avoid redundant network calls.
-
-## Verification Requirements
-
-- **Accuracy**: Mathematical results must match known benchmarks or analytical solutions.
-- **Reproducibility**: Tests must pass consistently across different environments (macOS/Linux).
-- **Compliance**: All new features must include tests that verify the "Triple Play" documentation exists.
-
-## Usage
-
-Tests are executed using `pytest`:
-```bash
-uv run pytest tests/
+### Test Hierarchy
 ```
-Specific domain tests:
-```bash
-uv run pytest tests/rna/
+tests/
+├── conftest.py              # Global fixtures and pytest configuration
+├── conftest_examples.py     # Fixtures for example validation
+├── data/                    # Real test data fixtures (not mocks)
+├── rna/                     # RNA-specific test modules
+└── test_{module}_{feature}.py  # Module-specific tests
 ```
+
+## Data Structures
+
+### Test File Types
+- **test_core_*.py**: Core infrastructure tests (I/O, config, paths, logging, validation)
+- **test_dna_*.py**: DNA sequence analysis, alignment, population genetics
+- **test_rna_*.py**: RNA-seq workflows, amalgkit integration
+- **test_gwas_*.py**: GWAS pipelines, association studies
+- **test_*_comprehensive.py**: Full coverage tests for modules
+- **conftest.py**: pytest fixtures providing real sample data and temp directories
+
+### Test Markers (pytest.mark)
+- `slow`: Tests taking >30 seconds
+- `network`: Tests requiring real network/API calls
+- `external_tool`: Tests requiring CLI tools (amalgkit, muscle, bcftools)
+- `integration`: Cross-module integration tests
+
+## Interface
+
+### Running Tests
+```bash
+# Fast tests (~15s)
+bash scripts/package/test.sh
+
+# Ultra-fast core tests (~5s)
+bash scripts/package/test.sh --mode ultra-fast
+
+# Full coverage (~2-5min)
+bash scripts/package/test.sh --mode coverage
+
+# Single file
+pytest tests/test_core_io.py -v
+
+# Pattern match
+bash scripts/package/test.sh --pattern "test_rna_*"
+
+# Specific test
+pytest tests/test_core_functionality.py::TestCoreIO::test_json_operations -v
+```
+
+### Writing Tests
+```python
+# Real implementation test pattern
+def test_real_functionality(tmp_path: Path) -> None:
+    """Test with real implementation."""
+    result = actual_function(tmp_path / "output.json")
+    assert result is not None
+    assert (tmp_path / "output.json").exists()
+
+# Network test with graceful skip
+@pytest.mark.network
+def test_api_call() -> None:
+    try:
+        result = fetch_from_api()
+        assert result is not None
+    except requests.RequestException as e:
+        pytest.skip(f"API unavailable: {e}")
+```
+
+### Policy Enforcement
+- **NO MOCKING**: Never use unittest.mock, pytest-mock, or fake data
+- **Real Fixtures**: All test data in data/ contains actual biological samples
+- **Graceful Skips**: Use pytest.skip() when external dependencies unavailable

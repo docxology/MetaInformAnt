@@ -3,7 +3,7 @@
   "destination": "output/amalgkit/pbarbatus_all/work/csca",
   "errors": [],
   "eta_seconds": null,
-  "last_update": "2026-01-22T02:13:16Z",
+  "last_update": "2026-01-23T16:19:22Z",
   "progress": {
     "current": 0,
     "percent": 0.0,
@@ -11,9 +11,9 @@
     "type": "file_count"
   },
   "progress_percent": 0.0,
-  "speed_mbps": 11.407811136864417,
-  "started_at": "2026-01-22T02:13:15Z",
-  "status": "completed",
+  "speed_mbps": 11.361008851313992,
+  "started_at": "2026-01-23T16:19:21Z",
+  "status": "failed",
   "step": "amalgkit csca",
   "total_bytes": null,
   "url": "['amalgkit', 'csca', '--out_dir', 'output/amalgkit/pbarbatus_all/work', '--orthogroup_table', '']"

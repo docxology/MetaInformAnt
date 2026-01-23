@@ -428,7 +428,7 @@ See `scripts/core/run_demo.py` for the workflow demonstration. Outputs are saved
 - **[Documentation Guide](docs/DOCUMENTATION_GUIDE.md)** - Complete navigation guide
 - **[Quick Start](QUICKSTART.md)** - Fast setup commands
 - **[Architecture](docs/architecture.md)** - System design
-- **[Technical Specification](src/metainformant/SPEC.md)** - Design standards
+- **[Technical Specification](SPEC.md)** - Design standards
 - **[Testing Guide](docs/testing.md)** - Comprehensive testing documentation
 - **[CLI Reference](docs/cli.md)** - Command-line interface
 

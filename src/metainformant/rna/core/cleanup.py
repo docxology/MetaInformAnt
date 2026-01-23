@@ -253,8 +253,8 @@ def cleanup_workflow_artifacts(work_dir: Path, keep_logs: bool = True) -> Dict[s
             try:
                 temp_file.unlink()
                 stats["temp_files"] += 1
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Failed to delete temp file {temp_file}: {e}")
 
     # Clean up cache files
     cache_dir = work_dir / ".cache"
@@ -265,8 +265,8 @@ def cleanup_workflow_artifacts(work_dir: Path, keep_logs: bool = True) -> Dict[s
                     if cache_file.is_file():
                         cache_file.unlink()
                         stats["cache_files"] += 1
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.debug(f"Failed to delete cache file {cache_file}: {e}")
 
     # Clean up intermediate files
     intermediate_patterns = ["**/intermediate_*", "**/*.intermediate", "**/temp_*"]
@@ -275,16 +275,16 @@ def cleanup_workflow_artifacts(work_dir: Path, keep_logs: bool = True) -> Dict[s
             try:
                 f.unlink()
                 stats["intermediate_files"] += 1
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Failed to delete intermediate file {f}: {e}")
 
     if not keep_logs:
         for log_file in work_dir.glob("**/*.log"):
             try:
                 log_file.unlink()
                 stats["log_files"] += 1
-            except Exception:
-                pass
+            except Exception as e:
+                logger.debug(f"Failed to delete log file {log_file}: {e}")
 
     total_cleaned = sum(stats.values())
     logger.info(f"Cleaned up {total_cleaned} workflow artifacts")

@@ -1,12 +1,22 @@
-# Workflow
+# WORKFLOW
 
 ## Overview
-This module provides functionality for workflow within the MetaInformAnt framework.
+Functionality for workflow.
 
-## Features
-*   **Modular Design**: Organized for clarity and reusability.
-*   **Type Safety**: Comprehensive type hinting.
-*   **Documentation**: Adheres to the Triple Play standard.
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[workflow.py](workflow.py)`
 
-## Structure
-This module is part of the `metainformant` package.
+## 📊 Structure
+
+```mermaid
+graph TD
+    workflow[workflow]
+    style workflow fill:#f9f,stroke:#333,stroke-width:2px
+```
+
+## Usage
+Import module:
+```python
+from metainformant.metainformant.simulation.workflow import ...
+```

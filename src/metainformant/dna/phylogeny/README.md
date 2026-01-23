@@ -1,12 +1,21 @@
-# Phylogeny
+# PHYLOGENY
 
 ## Overview
-This module provides functionality for phylogeny within the MetaInformAnt framework.
+Functionality for phylogeny.
 
-## Features
-*   **Modular Design**: Organized for clarity and reusability.
-*   **Type Safety**: Comprehensive type hinting.
-*   **Documentation**: Adheres to the Triple Play standard.
+## 📦 Contents
+- `[tree.py](tree.py)`
 
-## Structure
-This module is part of the `metainformant` package.
+## 📊 Structure
+
+```mermaid
+graph TD
+    phylogeny[phylogeny]
+    style phylogeny fill:#f9f,stroke:#333,stroke-width:2px
+```
+
+## Usage
+Import module:
+```python
+from metainformant.metainformant.dna.phylogeny import ...
+```

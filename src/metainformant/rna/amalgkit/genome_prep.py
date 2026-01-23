@@ -106,13 +106,20 @@ def download_rna_fasta_from_ftp(accession: str, output_dir: Path, **kwargs: Any)
 
     # If ftp_url is a directory (ends with /), append filename
     if not ftp_url.endswith(".gz") and not ftp_url.endswith(".fna") and not ftp_url.endswith(".fa"):
-        # We need to guess filename if not provided?
-        # Actually config provided exact maps sometimes.
-        # But if the URL is "https://ftp.../GCA_.../", we usually look for "GCA_..._rna_from_genomic.fna.gz"
-
+        # Construct standard NCBI filename pattern if not explicitly provided
         # Standard NCBI naming: {AssemblyAccession}_{AssemblyName}_rna_from_genomic.fna.gz
-        # We might need to construct it if filename not explicit.
-        pass
+        # or {AssemblyAccession}_{AssemblyName}_rna.fna.gz
+        if not filename or filename == f"{accession}_rna.fna.gz":
+            # Try to construct proper filename from URL structure
+            # URL pattern: https://ftp.../GCF/000/001/405/GCF_000001405.40_GRCh38.p14/
+            url_parts = ftp_url.rstrip("/").split("/")
+            if url_parts:
+                # Last part might be like "GCF_000001405.40_GRCh38.p14"
+                dir_name = url_parts[-1]
+                if dir_name.startswith(("GCF_", "GCA_")):
+                    # Construct RNA filename from directory name
+                    filename = f"{dir_name}_rna_from_genomic.fna.gz"
+                    logger.debug(f"Constructed RNA filename: {filename}")
 
     target_url = ftp_url
     if filename and not target_url.endswith(filename) and not target_url.endswith(".gz"):

@@ -1,15 +1,21 @@
-# Epigenome Analysis Examples
+# EPIGENOME
 
-This directory contains examples demonstrating METAINFORMANT's epigenetic modification analysis capabilities.
+## Overview
+Functionality for epigenome.
 
-## Examples
+## 📦 Contents
+- `[example_methylation.py](example_methylation.py)`
 
-### Methylation Analysis (`example_methylation.py`)
+## 📊 Structure
 
-Learn DNA methylation pattern analysis and visualization.
-
-```bash
-python examples/epigenome/example_methylation.py
+```mermaid
+graph TD
+    epigenome[epigenome]
+    style epigenome fill:#f9f,stroke:#333,stroke-width:2px
 ```
 
-**Output:** `output/examples/epigenome/methylation_analysis.json`
+## Usage
+Import module:
+```python
+from metainformant.epigenome import ...
+```

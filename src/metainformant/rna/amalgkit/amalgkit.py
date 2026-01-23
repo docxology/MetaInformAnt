@@ -108,8 +108,6 @@ def build_cli_args(
             "num_download_workers",
         }
 
-        pass
-
         # Flags that expect explicit yes/no instead of just being present/absent
         yes_no_flags = {
             "redo",
@@ -266,9 +264,8 @@ def ensure_cli_available(*, auto_install: bool = False) -> Tuple[bool, str, Dict
     # Attempt automatic installation using UV package manager
     logger.info("Attempting to install amalgkit via UV package manager...")
     try:
-        import subprocess
-
         # Use UV package manager (per METAINFORMANT policy)
+        # Note: subprocess is imported at module level
         install_result = subprocess.run(
             ["uv", "pip", "install", "amalgkit"], capture_output=True, text=True, timeout=300
         )
@@ -842,8 +839,8 @@ def _run_parallel_getfastq(
     # Cleanup temp chunks
     try:
         shutil.rmtree(chunk_paths[0].parent)
-    except (OSError, PermissionError, FileNotFoundError):
-        pass
+    except (OSError, PermissionError, FileNotFoundError) as e:
+        logger.debug(f"Failed to cleanup temp chunk directory: {e}")
 
     # Aggregate results for return
     # Combine stdout and stderr from all workers so summary parsing works for all

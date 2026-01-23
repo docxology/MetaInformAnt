@@ -342,30 +342,90 @@ def information_community_detection(graph: Any, method: str = "infomap", **kwarg
 
 
 def _infomap_community_detection(graph: Any, **kwargs: Any) -> Dict[str, Any]:
-    """InfoMap community detection algorithm."""
-    # InfoMap implementation would require external library
-    # For now, return placeholder
-    logger.warning("InfoMap implementation requires external library")
+    """InfoMap community detection algorithm.
+
+    Uses the infomap package to detect communities based on information flow.
+
+    Args:
+        graph: NetworkX graph
+        **kwargs: Additional arguments for infomap
+
+    Returns:
+        Dictionary with community detection results
+
+    Raises:
+        ImportError: If infomap package is not installed
+    """
+    try:
+        import infomap
+    except ImportError:
+        raise ImportError(
+            "infomap package is required for InfoMap community detection. "
+            "Install with: pip install infomap (or: uv pip install infomap)"
+        )
+
+    import networkx as nx
+
+    # Create infomap object
+    im = infomap.Infomap(**kwargs)
+
+    # Add edges from graph
+    node_to_id = {node: i for i, node in enumerate(graph.nodes())}
+    id_to_node = {i: node for node, i in node_to_id.items()}
+
+    for u, v in graph.edges():
+        weight = graph[u][v].get('weight', 1.0)
+        im.add_link(node_to_id[u], node_to_id[v], weight)
+
+    # Run infomap
+    im.run()
+
+    # Extract communities
+    communities = {}
+    for node in im.tree:
+        if node.is_leaf:
+            node_name = id_to_node[node.node_id]
+            community_id = node.module_id
+            if community_id not in communities:
+                communities[community_id] = []
+            communities[community_id].append(node_name)
 
     return {
         "method": "infomap",
-        "status": "not_implemented",
-        "message": "InfoMap requires infomap package",
-        "communities": {},
+        "status": "success",
+        "communities": communities,
+        "n_communities": len(communities),
+        "codelength": im.codelength,
     }
 
 
 def _map_equation_community_detection(graph: Any, **kwargs: Any) -> Dict[str, Any]:
-    """Map equation community detection."""
-    # Map equation implementation would require external library
-    logger.warning("Map equation implementation requires external library")
+    """Map equation community detection.
 
-    return {
-        "method": "map_equation",
-        "status": "not_implemented",
-        "message": "Map equation requires map equation package",
-        "communities": {},
-    }
+    Uses the infomap package (which implements the map equation) for
+    community detection based on random walk dynamics.
+
+    Args:
+        graph: NetworkX graph
+        **kwargs: Additional arguments
+
+    Returns:
+        Dictionary with community detection results
+
+    Raises:
+        ImportError: If infomap package is not installed
+    """
+    # Map equation is implemented by infomap
+    try:
+        import infomap
+    except ImportError:
+        raise ImportError(
+            "infomap package is required for map equation community detection. "
+            "Install with: pip install infomap (or: uv pip install infomap)"
+        )
+
+    # Use infomap with two-level partition (map equation default)
+    return _infomap_community_detection(graph, two_level=True, **kwargs)
 
 
 def _louvain_community_detection(graph: Any, **kwargs: Any) -> Dict[str, Any]:

@@ -1,48 +1,47 @@
-# AI Agents in Test Data Documentation Development
+# Agent Directives: tests/data
 
-This document outlines AI assistance in creating METAINFORMANT's comprehensive test data organization documentation.
+## Role
+Test fixture data directory containing REAL sample data for test validation.
 
-## AI Contributions
+## Directory Structure
+- `dna/` - DNA sequence test fixtures (FASTA, FASTQ samples)
+- `epigenome/` - Epigenomic test data (methylation, ChIP-seq)
+- `ontology/` - Gene Ontology test files (OBO format)
+- `phenotype/` - Phenotype test data
+- `protein/` - Protein structure/sequence test files
+- `rna/` - RNA-seq and amalgkit test data
 
-### Documentation Architecture
-**Documentation Agent** designed:
-- Hierarchical test data documentation structure
-- Data organization and categorization frameworks
-- Test fixture explanation patterns
-- Integration guide organization for test data workflows
+## Rules and Constraints
 
-### Content Generation
-**Documentation Agent** assisted with:
-- Complete test data organization documentation
-- Data source and maintenance guidelines
-- Usage patterns for test fixtures
-- Integration patterns with testing frameworks
+### Real Data Only
+- All fixtures contain REAL biological data, not synthetic placeholders
+- Sample data is minimal but representative of actual file formats
+- Data should be small enough for fast tests but valid for parsing
 
-### Technical Writing
-**Code Assistant Agent** contributed to:
-- API reference accuracy verification for test data utilities
-- Code example validation for test data usage
-- Performance consideration documentation for large datasets
-- Troubleshooting guide development for test data issues
+### File Formats
+Test data must match production formats exactly:
+- FASTA/FASTQ for sequences
+- OBO for ontology
+- VCF for variants
+- BED/bedGraph for genomic intervals
+- JSON/YAML for configurations
 
-## Documentation Strategy
+### Adding Test Data
+When adding new test fixtures:
+1. Use real data samples (anonymized if necessary)
+2. Keep files minimal (<100KB when possible)
+3. Document data source in file comments or README
+4. Ensure fixtures exercise edge cases
 
-### Comprehensive Coverage
-- Every test data source and fixture documented
-- Data organization and maintenance guidelines
-- Integration patterns between test data and testing workflows
-- Performance and testing guidance
+## Usage in Tests
+```python
+from pathlib import Path
 
-### Quality Standards
-- Clear, technical writing style for data management
-- Consistent formatting across test data docs
-- Practical, runnable code examples
-- Regular updates with code changes
+@pytest.fixture
+def test_data_dir():
+    return Path(__file__).parent / "data"
 
-### Maintenance Approach
-- Documentation evolves with test data needs
-- AI assistance accelerates content creation
-- Human review ensures accuracy and clarity
-- Community contributions encouraged
-
-This documentation system provides comprehensive guidance for test data management while maintaining high standards of clarity and accuracy.
+def test_with_fixture(test_data_dir):
+    fasta_path = test_data_dir / "dna" / "sample.fasta"
+    sequences = read_fasta(fasta_path)
+```

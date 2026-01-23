@@ -1,12 +1,24 @@
-# Assays
+# ASSAYS
 
 ## Overview
-This module provides functionality for assays within the MetaInformAnt framework.
+Functionality for assays.
 
-## Features
-*   **Modular Design**: Organized for clarity and reusability.
-*   **Type Safety**: Comprehensive type hinting.
-*   **Documentation**: Adheres to the Triple Play standard.
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[atacseq.py](atacseq.py)`
+- `[chipseq.py](chipseq.py)`
+- `[methylation.py](methylation.py)`
 
-## Structure
-This module is part of the `metainformant` package.
+## 📊 Structure
+
+```mermaid
+graph TD
+    assays[assays]
+    style assays fill:#f9f,stroke:#333,stroke-width:2px
+```
+
+## Usage
+Import module:
+```python
+from metainformant.metainformant.epigenome.assays import ...
+```

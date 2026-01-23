@@ -1,15 +1,21 @@
-# Ontology Analysis Examples
+# ONTOLOGY
 
-This directory contains examples demonstrating METAINFORMANT's Gene Ontology analysis capabilities.
+## Overview
+Functionality for ontology.
 
-## Examples
+## 📦 Contents
+- `[example_go.py](example_go.py)`
 
-### GO Term Analysis (`example_go.py`)
+## 📊 Structure
 
-Learn Gene Ontology term analysis and semantic similarity.
-
-```bash
-python examples/ontology/example_go.py
+```mermaid
+graph TD
+    ontology[ontology]
+    style ontology fill:#f9f,stroke:#333,stroke-width:2px
 ```
 
-**Output:** `output/examples/ontology/go_analysis.json`
+## Usage
+Import module:
+```python
+from metainformant.ontology import ...
+```

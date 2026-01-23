@@ -1,15 +1,22 @@
-# Population Structure Analysis
+# STRUCTURE
 
-Scripts for analyzing and accounting for population structure.
+## Overview
+Functionality for structure.
 
-## Scripts
+## 📦 Contents
+- `[run_kinship.py](run_kinship.py)`
+- `[run_pca.py](run_pca.py)`
 
-- `run_pca.py`: Calculate Principal Components Analysis (PCA).
-- `run_kinship.py`: Calculate Kinship/Relatedness matrices.
+## 📊 Structure
+
+```mermaid
+graph TD
+    structure[structure]
+    style structure fill:#f9f,stroke:#333,stroke-width:2px
+```
 
 ## Usage
-
-```bash
-python scripts/gwas/structure/run_pca.py --vcf filtered.vcf --output pca_results.json
-python scripts/gwas/structure/run_kinship.py --vcf filtered.vcf --output kinship.json
+Import module:
+```python
+from metainformant.structure import ...
 ```

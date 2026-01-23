@@ -14,6 +14,8 @@ Complete function and method reference for the METAINFORMANT RNA analysis module
 - [Monitoring Functions](#monitoring-functions) - Workflow progress and sample status tracking
 - [Environment Functions](#environment-functions) - Tool availability and environment validation
 - [Cleanup Functions](#cleanup-functions) - Partial download cleanup and file naming fixes
+- [Analysis Functions](#analysis-functions) - RNA-protein integration and translation analysis
+- [Validation Functions](#validation-functions) - Sample and pipeline validation
 - [Discovery Functions](#discovery-functions) - Species discovery and configuration generation
 
 ---
@@ -1359,6 +1361,105 @@ def fix_abundance_naming_for_species(
 **Purpose**: Fix abundance naming for all samples in a species.
 
 **Returns**: Tuple of `(created_count, already_exists_count)`
+
+---
+
+## Analysis Functions
+
+Functions for RNA-protein integration, translation efficiency analysis, and ribosome profiling.
+
+### `calculate_translation_efficiency`
+
+```python
+def calculate_translation_efficiency(
+    rna_df: pd.DataFrame,
+    protein_df: pd.DataFrame,
+    method: str = "ratio",
+) -> pd.DataFrame
+```
+
+**Module**: `metainformant.rna.analysis.protein_integration`
+
+**Purpose**: Calculate translation efficiency from RNA and protein levels.
+
+**Parameters**:
+- `rna_df`: RNA expression data (samples × genes)
+- `protein_df`: Protein abundance data (samples × genes)
+- `method`: Calculation method ("ratio" or "correlation")
+
+**Returns**: DataFrame with columns `gene_id`, `efficiency`, `method`
+
+---
+
+### `predict_protein_abundance_from_rna`
+
+```python
+def predict_protein_abundance_from_rna(
+    rna_df: pd.DataFrame,
+    training_rna: pd.DataFrame | None = None,
+    training_protein: pd.DataFrame | None = None,
+    method: str = "linear",
+) -> pd.DataFrame
+```
+
+**Module**: `metainformant.rna.analysis.protein_integration`
+
+**Purpose**: Predict protein abundance levels from RNA expression data.
+
+**Parameters**:
+- `rna_df`: RNA expression data for prediction
+- `training_rna`: Optional RNA data from training set
+- `training_protein`: Optional protein data from training set
+- `method`: Prediction method ("linear" or "lognormal")
+
+**Returns**: DataFrame with predicted protein abundance (same shape as `rna_df`)
+
+---
+
+### `ribosome_profiling_integration`
+
+```python
+def ribosome_profiling_integration(
+    rna_df: pd.DataFrame,
+    ribo_df: pd.DataFrame,
+) -> pd.DataFrame
+```
+
+**Module**: `metainformant.rna.analysis.protein_integration`
+
+**Purpose**: Integrate ribosome profiling data with RNA-seq to identify translationally regulated genes.
+
+**Parameters**:
+- `rna_df`: RNA-seq expression data (samples × genes)
+- `ribo_df`: Ribosome profiling data (samples × genes)
+
+**Returns**: DataFrame with columns:
+- `gene_id`: Gene identifier
+- `rna_level`: Mean RNA expression
+- `ribo_level`: Mean ribosome occupancy
+- `translation_rate`: Ribo/RNA ratio
+- `translationally_regulated`: Boolean indicating significant regulation
+
+---
+
+## Validation Functions
+
+Functions for validating RNA-seq pipeline outputs and sample quality.
+
+### `validate_all_samples`
+
+```python
+def validate_all_samples(config: AmalgkitWorkflowConfig) -> dict[str, Any]
+```
+
+**Module**: `metainformant.rna.analysis.validation`
+
+**Purpose**: Validate all samples in a workflow for pipeline completion.
+
+**Parameters**:
+- `config`: Workflow configuration
+
+**Returns**: Dictionary with validation results including per-sample status and summary statistics
 
 ---
 

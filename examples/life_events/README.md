@@ -1,15 +1,21 @@
-# Life Events Analysis Examples
+# LIFE_EVENTS
 
-This directory contains examples demonstrating METAINFORMANT's life course event analysis capabilities.
+## Overview
+Functionality for life_events.
 
-## Examples
+## 📦 Contents
+- `[example_events.py](example_events.py)`
 
-### Event Sequence Analysis (`example_events.py`)
+## 📊 Structure
 
-Learn life course event sequence modeling and prediction.
-
-```bash
-python examples/life_events/example_events.py
+```mermaid
+graph TD
+    life_events[life_events]
+    style life_events fill:#f9f,stroke:#333,stroke-width:2px
 ```
 
-**Output:** `output/examples/life_events/event_analysis.json`
+## Usage
+Import module:
+```python
+from metainformant.life_events import ...
+```

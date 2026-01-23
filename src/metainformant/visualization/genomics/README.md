@@ -1,28 +1,25 @@
-# Genomics Visualization Module
-
-The `metainformant.visualization.genomics` module provides specialized plotting functions for genomic data.
+# GENOMICS
 
 ## Overview
+Functionality for genomics.
 
-This module includes visualizations for GWAS results, phylogenetic trees, gene expression heatmaps, and chromosome ideograms.
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[expression.py](expression.py)`
+- `[genomics.py](genomics.py)`
+- `[networks.py](networks.py)`
+- `[trees.py](trees.py)`
 
-## Key Functions
+## 📊 Structure
 
-- **`manhattan_plot`**: Standard visualization for association studies.
-- **`volcano_plot`**: Visualizing differential expression or association results.
-- **`plot_phylo_tree`**: Drawing phylogenetic trees from various data structures.
-- **`chromosome_ideogram`**: Visualizing features across the genome.
+```mermaid
+graph TD
+    genomics[genomics]
+    style genomics fill:#f9f,stroke:#333,stroke-width:2px
+```
 
-## Usage Example
-
+## Usage
+Import module:
 ```python
-from metainformant.visualization.genomics import manhattan_plot
-import pandas as pd
-
-# Load results
-results = pd.read_csv("gwas_results.tsv", sep="\t")
-
-# Plot
-ax = manhattan_plot(results)
-ax.figure.savefig("manhattan.png")
+from metainformant.metainformant.visualization.genomics import ...
 ```

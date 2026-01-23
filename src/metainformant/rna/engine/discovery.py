@@ -209,34 +209,169 @@ def _select_best_assembly(assemblies: list[Dict[str, Any]]) -> Optional[Dict[str
     return best
 
 
-def search_species_with_rnaseq(query: str, max_records: int = 10) -> Dict[str, Any]:
+def search_species_with_rnaseq(query: str, max_records: int = 10, email: Optional[str] = None) -> Dict[str, Any]:
     """Search for species with RNA-seq data available.
 
-    Searches NCBI Entrez for RNA-seq studies related to the given query.
+    Searches NCBI Entrez SRA database for RNA-seq studies related to the given query.
     Requires BioPython (Entrez module).
 
     Args:
         query: Search query (species name, taxonomy ID, etc.)
         max_records: Maximum number of results to return
+        email: Email for NCBI Entrez (required by NCBI, uses env var NCBI_EMAIL if not provided)
 
     Returns:
-        Dictionary with search results and metadata
+        Dictionary with:
+            - query: Original search query
+            - results: List of SRA study records with metadata
+            - total: Total number of matching records in database
+            - returned: Number of records returned in this query
 
     Raises:
         ImportError: If BioPython is not installed
+        RuntimeError: If NCBI Entrez query fails
 
     Example:
         >>> if BIOPYTHON_AVAILABLE:
-        ...     results = search_species_with_rnaseq("Homo sapiens")
+        ...     results = search_species_with_rnaseq("Homo sapiens", max_records=5)
+        ...     print(f"Found {results['total']} studies")
     """
     if not BIOPYTHON_AVAILABLE:
-        raise ImportError("BioPython required for species search. " "Install with: uv pip install biopython")
+        raise ImportError("BioPython required for species search. Install with: uv pip install biopython")
 
-    logger.info(f"Searching for RNA-seq data: {query}")
+    import os
 
-    # Simple placeholder that would use Entrez in real implementation
-    # This is defined here to satisfy the test expectations
-    return {"query": query, "results": [], "total": 0}
+    # Set email for NCBI (required by NCBI policy)
+    entrez_email = email or os.environ.get("NCBI_EMAIL", "metainformant@example.com")
+    Entrez.email = entrez_email
+
+    logger.info(f"Searching NCBI SRA for RNA-seq data: {query}")
+
+    # Build search query for RNA-seq data
+    # Combine species query with RNA-seq library strategy
+    search_query = f'({query}[Organism]) AND ("RNA-Seq"[Strategy] OR "RNA Seq"[Title])'
+
+    try:
+        # Search SRA database
+        handle = Entrez.esearch(
+            db="sra",
+            term=search_query,
+            retmax=max_records,
+            usehistory="y"
+        )
+        search_results = Entrez.read(handle)
+        handle.close()
+
+        total_count = int(search_results.get("Count", 0))
+        id_list = search_results.get("IdList", [])
+
+        if not id_list:
+            logger.info(f"No RNA-seq data found for query: {query}")
+            return {"query": query, "results": [], "total": 0, "returned": 0}
+
+        # Fetch detailed records for the found IDs
+        logger.info(f"Found {total_count} records, fetching details for {len(id_list)}")
+
+        fetch_handle = Entrez.efetch(
+            db="sra",
+            id=",".join(id_list),
+            rettype="xml",
+            retmode="xml"
+        )
+        fetch_data = fetch_handle.read()
+        fetch_handle.close()
+
+        # Parse the XML response
+        results = _parse_sra_xml(fetch_data, query)
+
+        return {
+            "query": query,
+            "results": results,
+            "total": total_count,
+            "returned": len(results)
+        }
+
+    except Exception as e:
+        logger.error(f"NCBI Entrez query failed: {e}")
+        raise RuntimeError(f"Failed to search NCBI SRA: {e}") from e
+
+
+def _parse_sra_xml(xml_data: bytes, query: str) -> list:
+    """Parse SRA XML response into structured records.
+
+    Args:
+        xml_data: Raw XML bytes from Entrez efetch
+        query: Original search query for reference
+
+    Returns:
+        List of dictionaries with study metadata
+    """
+    import xml.etree.ElementTree as ET
+
+    results = []
+
+    try:
+        root = ET.fromstring(xml_data)
+
+        # SRA XML structure has EXPERIMENT_PACKAGE elements
+        for package in root.findall(".//EXPERIMENT_PACKAGE"):
+            record = {}
+
+            # Extract experiment info
+            experiment = package.find(".//EXPERIMENT")
+            if experiment is not None:
+                record["experiment_accession"] = experiment.get("accession", "")
+                record["experiment_alias"] = experiment.get("alias", "")
+
+                # Get title
+                title_elem = experiment.find(".//TITLE")
+                if title_elem is not None and title_elem.text:
+                    record["title"] = title_elem.text
+
+                # Get library info
+                library = experiment.find(".//LIBRARY_DESCRIPTOR")
+                if library is not None:
+                    strategy = library.find("LIBRARY_STRATEGY")
+                    if strategy is not None and strategy.text:
+                        record["library_strategy"] = strategy.text
+                    source = library.find("LIBRARY_SOURCE")
+                    if source is not None and source.text:
+                        record["library_source"] = source.text
+
+            # Extract study info
+            study = package.find(".//STUDY")
+            if study is not None:
+                record["study_accession"] = study.get("accession", "")
+                study_title = study.find(".//STUDY_TITLE")
+                if study_title is not None and study_title.text:
+                    record["study_title"] = study_title.text
+
+            # Extract sample info
+            sample = package.find(".//SAMPLE")
+            if sample is not None:
+                record["sample_accession"] = sample.get("accession", "")
+
+                # Get organism info
+                sample_name = sample.find(".//SAMPLE_NAME")
+                if sample_name is not None:
+                    taxon_id = sample_name.find("TAXON_ID")
+                    if taxon_id is not None and taxon_id.text:
+                        record["taxonomy_id"] = taxon_id.text
+                    scientific_name = sample_name.find("SCIENTIFIC_NAME")
+                    if scientific_name is not None and scientific_name.text:
+                        record["organism"] = scientific_name.text
+
+            # Extract run info
+            runs = package.findall(".//RUN")
+            record["run_accessions"] = [r.get("accession", "") for r in runs if r.get("accession")]
+
+            if record:
+                results.append(record)
+
+    except ET.ParseError as e:
+        logger.warning(f"Failed to parse SRA XML: {e}")
+
+    return results
 
 
 def get_genome_info(taxonomy_id: str, species_name: str) -> Optional[Dict[str, Any]]:
@@ -250,22 +385,181 @@ def get_genome_info(taxonomy_id: str, species_name: str) -> Optional[Dict[str, A
         species_name: Scientific species name for reference
 
     Returns:
-        Dictionary with genome info or None if not found
+        Dictionary with genome info including:
+            - accession: Assembly accession (e.g., "GCF_000001405.40")
+            - assembly_name: Human-readable assembly name
+            - level: Assembly level (chromosome, scaffold, contig)
+            - organism: Scientific name
+            - taxonomy_id: NCBI taxonomy ID
+            - annotation_release: Annotation release info if available
+            - ftp_path: FTP download path
+        Returns None if no genome found
 
     Raises:
         ImportError: If ncbi-datasets-pylib is not installed
+        RuntimeError: If API query fails
 
     Example:
         >>> if NCBI_DATASETS_AVAILABLE:
         ...     info = get_genome_info("9606", "Homo sapiens")
+        ...     print(f"Assembly: {info['accession']}")
     """
     if not NCBI_DATASETS_AVAILABLE:
         raise ImportError(
-            "ncbi-datasets-pylib required for genome info. " "Install with: uv pip install ncbi-datasets-pylib"
+            "ncbi-datasets-pylib required for genome info. Install with: uv pip install ncbi-datasets-pylib"
         )
 
     logger.info(f"Fetching genome info for {species_name} (taxonomy: {taxonomy_id})")
 
-    # Simple placeholder that would use ncbi_datasets in real implementation
-    # This is defined here to satisfy the test expectations
-    return None
+    try:
+        from ncbi.datasets import GenomeApi
+        from ncbi.datasets.openapi import ApiClient
+
+        # Create API client and genome API instance
+        with ApiClient() as api_client:
+            genome_api = GenomeApi(api_client)
+
+            # Query by taxonomy ID
+            try:
+                response = genome_api.genome_tax_id(int(taxonomy_id))
+            except Exception:
+                # Fallback: try by species name
+                logger.info(f"Taxonomy ID query failed, trying species name: {species_name}")
+                response = genome_api.genome_tax_name(species_name)
+
+            if not response or not hasattr(response, "assemblies") or not response.assemblies:
+                logger.warning(f"No genome assemblies found for {species_name}")
+                return None
+
+            # Select best assembly using existing helper
+            assemblies = []
+            for assembly_data in response.assemblies:
+                if hasattr(assembly_data, "assembly"):
+                    asm = assembly_data.assembly
+                    assemblies.append({
+                        "assembly": {
+                            "assembly_accession": getattr(asm, "assembly_accession", ""),
+                            "assembly_level": getattr(asm, "assembly_level", ""),
+                            "assembly_name": getattr(asm, "assembly_name", ""),
+                            "org": {
+                                "sci_name": getattr(getattr(asm, "org", None), "sci_name", species_name) if hasattr(asm, "org") else species_name,
+                                "tax_id": taxonomy_id
+                            }
+                        },
+                        "assembly_stats": {
+                            "contig_n50": getattr(getattr(assembly_data, "assembly_stats", None), "contig_n50", 0) if hasattr(assembly_data, "assembly_stats") else 0
+                        }
+                    })
+
+            best = _select_best_assembly(assemblies)
+
+            if not best:
+                return None
+
+            asm_info = best.get("assembly", {})
+            accession = asm_info.get("assembly_accession", "")
+
+            # Construct FTP path from accession
+            ftp_path = _construct_ftp_path(accession)
+
+            return {
+                "accession": accession,
+                "assembly_name": asm_info.get("assembly_name", ""),
+                "level": asm_info.get("assembly_level", ""),
+                "organism": asm_info.get("org", {}).get("sci_name", species_name),
+                "taxonomy_id": taxonomy_id,
+                "ftp_path": ftp_path,
+            }
+
+    except ImportError as e:
+        # Handle case where ncbi.datasets module structure is different
+        logger.warning(f"ncbi-datasets API structure issue: {e}")
+        return _get_genome_info_fallback(taxonomy_id, species_name)
+    except Exception as e:
+        logger.error(f"Failed to fetch genome info: {e}")
+        raise RuntimeError(f"NCBI Datasets API query failed: {e}") from e
+
+
+def _construct_ftp_path(accession: str) -> str:
+    """Construct NCBI FTP path from assembly accession.
+
+    Args:
+        accession: Assembly accession (e.g., "GCF_000001405.40")
+
+    Returns:
+        FTP URL for the assembly directory
+    """
+    if not accession:
+        return ""
+
+    # Parse accession: GCF_000001405.40 or GCA_000001405.40
+    prefix = accession[:3]  # GCF or GCA
+    if prefix not in ("GCF", "GCA"):
+        return ""
+
+    # Remove prefix and version
+    base = accession[4:].split(".")[0]  # "000001405"
+
+    # Pad to 9 digits if needed
+    base = base.zfill(9)
+
+    # Split into 3-character segments
+    seg1 = base[0:3]
+    seg2 = base[3:6]
+    seg3 = base[6:9]
+
+    ftp_base = f"https://ftp.ncbi.nlm.nih.gov/genomes/all/{prefix}/{seg1}/{seg2}/{seg3}"
+    return ftp_base
+
+
+def _get_genome_info_fallback(taxonomy_id: str, species_name: str) -> Optional[Dict[str, Any]]:
+    """Fallback genome info lookup using NCBI Entrez when Datasets API unavailable.
+
+    Args:
+        taxonomy_id: NCBI taxonomy ID
+        species_name: Scientific species name
+
+    Returns:
+        Genome info dict or None
+    """
+    if not BIOPYTHON_AVAILABLE:
+        return None
+
+    import os
+
+    try:
+        Entrez.email = os.environ.get("NCBI_EMAIL", "metainformant@example.com")
+
+        # Search NCBI Assembly database
+        search_query = f'({species_name}[Organism]) AND "latest refseq"[filter]'
+        handle = Entrez.esearch(db="assembly", term=search_query, retmax=5)
+        results = Entrez.read(handle)
+        handle.close()
+
+        id_list = results.get("IdList", [])
+        if not id_list:
+            return None
+
+        # Fetch assembly summary
+        handle = Entrez.esummary(db="assembly", id=id_list[0])
+        summary = Entrez.read(handle)
+        handle.close()
+
+        if not summary or "DocumentSummarySet" not in summary:
+            return None
+
+        doc_summary = summary["DocumentSummarySet"]["DocumentSummary"][0]
+
+        accession = doc_summary.get("AssemblyAccession", "")
+        return {
+            "accession": accession,
+            "assembly_name": doc_summary.get("AssemblyName", ""),
+            "level": doc_summary.get("AssemblyStatus", ""),
+            "organism": doc_summary.get("Organism", species_name),
+            "taxonomy_id": taxonomy_id,
+            "ftp_path": _construct_ftp_path(accession),
+        }
+
+    except Exception as e:
+        logger.warning(f"Fallback genome lookup failed: {e}")
+        return None

@@ -1,59 +1,88 @@
-# Repository Specification: MetaInformAnt
+# METAINFORMANT Technical Specification
 
-MetaInformAnt is a domain-driven, modular bioinformatics toolkit designed for high-performance genomic and phenomic analysis.
+Comprehensive bioinformatics toolkit for multi-omic analysis. Domain-driven, modular architecture designed for performance and scientific rigor.
 
 ## Design Philosophy
 
-- **Domain-Driven Design (DDD)**: Logic is partitioned into biological domains (DNA, RNA, Phenotype, etc.).
-- **Triple Play Documentation**: Every module must contain `README.md`, `AGENTS.md`, and `SPEC.md`.
-- **No-Mock Testing**: Evolution of the codebase is verified using real, functional methods; mocks are strictly prohibited.
-- **AI-Native Construction**: Designed to be navigated and maintained by AI agents, requiring high-fidelity function indices.
+- **Domain-Driven Design (DDD)**: Logic partitioned into biological domains (DNA, RNA, Protein, etc.)
+- **No-Mock Testing**: All tests use real implementations; mocks are strictly prohibited
+- **UV Package Management**: Dependencies managed exclusively via `uv` (never pip)
+- **AI-Native Documentation**: High-fidelity function indices for AI agent navigation
 
 ## Repository Structure
 
-```mermaid
-graph TD
-    Root["/"]
-    Src["src/metainformant/"]
-    Scripts["scripts/"]
-    Tests["tests/"]
-    Docs["docs/"]
-
-    Root --> Src
-    Root --> Scripts
-    Root --> Tests
-    Root --> Docs
-
-    subgraph src_layer sourceLayer[Source Layer]
-        Core["core/"]
-        Domains"domains(dna,Rna,Etc.)"["domains (dna, rna, etc.)"]
-        Viz["visualization/"]
-    end
-
-    Src --> Core
-    Src --> Domains
-    Src --> Viz
+```
+metainformant/
+├── src/metainformant/     # Source code (19 domain modules)
+│   ├── core/              # Shared infrastructure (I/O, config, logging)
+│   ├── dna/               # Genomic analysis, alignment, population genetics
+│   ├── rna/               # Transcriptomic workflows, Amalgkit integration
+│   ├── protein/           # Proteomic analysis, structure modeling
+│   ├── gwas/              # Genome-wide association studies
+│   ├── epigenome/         # Methylation, ChIP-seq, ATAC-seq
+│   ├── networks/          # Biological networks, community detection
+│   ├── multiomics/        # Multi-omic data integration
+│   ├── singlecell/        # Single-cell RNA-seq analysis
+│   ├── visualization/     # 57+ plot types, publication-quality output
+│   ├── quality/           # QC metrics, contamination detection
+│   ├── ml/                # Machine learning pipelines
+│   ├── math/              # Population genetics theory, coalescent
+│   ├── information/       # Information theory (entropy, MI)
+│   ├── ontology/          # GO analysis, semantic similarity
+│   ├── phenotype/         # Trait analysis, curation
+│   ├── ecology/           # Community diversity
+│   ├── simulation/        # Synthetic data generation
+│   └── life_events/       # Event sequence analysis
+├── scripts/               # Thin wrapper orchestrators
+├── tests/                 # Pytest test suite (real implementations only)
+├── docs/                  # Documentation by domain
+├── config/                # YAML configuration templates
+├── data/                  # Input data (read-mostly)
+└── output/                # Program-generated results (ephemeral)
 ```
 
 ## Architectural Patterns
 
 ### 1. Sequential Failover (I/O)
-The system prioritizes local data sources before attempting remote acquisition (NCBI, SRA).
+Prioritize local data sources before remote acquisition (NCBI, SRA).
 
 ### 2. Thin Wrapper Orchestration
-Scripts in `scripts/` are "thin" wrappers around core modular methods, ensuring that business logic resides in `src/`.
+Scripts in `scripts/` are thin wrappers around core methods. Business logic resides in `src/`.
 
-### 3. TUI Progress Monitoring
-Long-running workflows use a standardized `ProgressTracker` and Terminal UI (TUI) for real-time observability.
+### 3. Configuration with Environment Overrides
+YAML configs in `config/` can be overridden via environment variables with domain prefixes (`AK_`, `GWAS_`, `DNA_`, etc.).
+
+### 4. Output Isolation
+All program-generated results go to `output/`. Never create documentation or reports in `output/`.
+
+## Implementation Standards
+
+### Testing Policy
+- **No Mocking**: Tests use real implementations with actual file I/O and API calls
+- **Graceful Skips**: When external dependencies unavailable, skip with clear messages
+- **Markers**: `@pytest.mark.network`, `@pytest.mark.external_tool`, `@pytest.mark.slow`
+
+### Code Quality
+- Python 3.11+ minimum
+- Black formatting (120 char lines)
+- mypy type checking (strict)
+- All functions must have type hints
+
+### Documentation
+- Module README.md: User-facing documentation and examples
+- docs/<domain>/: Extended guides and tutorials
+
+## Data Flow
+
+```
+Raw Data (FASTQ/VCF) → Preprocessing & QC → Domain Analysis → Multi-Omic Integration → Visualization
+         ↑                    ↑                    ↑                    ↑
+    data/ directory    quality/ module      domain modules      visualization/
+```
 
 ## Cross-Module Communication
 
-Modules communicate via standard Python protocols and shared data structures (primarily `pandas` DataFrames and `numpy` arrays). The `core` module provides the shared infrastructure for I/O, configuration, and logging that all domain modules utilize.
-
-## Documentation Standards
-
-All specifications must detail:
-1. Design Goals
-2. Key Components
-3. State Management (where applicable)
-4. Data Flow
+Modules communicate via:
+- Standard Python protocols
+- Shared data structures (`pandas` DataFrames, `numpy` arrays)
+- Core infrastructure (`metainformant.core`) for I/O, config, and logging

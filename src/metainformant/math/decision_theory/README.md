@@ -1,15 +1,22 @@
-# Decision Theory
+# DECISION_THEORY
 
-This submodule implements mathematical models of decision making.
+## Overview
+Functionality for decision_theory.
 
-## Components
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[ddm.py](ddm.py)`
 
-- **ddm.py**: Drift-Diffusion Models for reaction times and accuracy.
+## 📊 Structure
+
+```mermaid
+graph TD
+    decision_theory[decision_theory]
+    style decision_theory fill:#f9f,stroke:#333,stroke-width:2px
+```
 
 ## Usage
-
+Import module:
 ```python
-from metainformant.math.decision_theory import ddm_analytic_accuracy
-
-acc = ddm_analytic_accuracy(drift_rate=0.5, boundary=1.0)
+from metainformant.metainformant.math.decision_theory import ...
 ```

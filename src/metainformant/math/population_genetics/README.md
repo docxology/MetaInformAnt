@@ -1,23 +1,29 @@
-# Population Genetics
+# POPULATION_GENETICS
 
-This submodule contains mathematical models and statistical tools for population genetics.
+## Overview
+Functionality for population_genetics.
 
-## Components
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[coalescent.py](coalescent.py)`
+- `[core.py](core.py)`
+- `[demography.py](demography.py)`
+- `[effective_size.py](effective_size.py)`
+- `[fst.py](fst.py)`
+- `[ld.py](ld.py)`
+- `[selection.py](selection.py)`
+- `[statistics.py](statistics.py)`
 
-- **core.py**: Fundamental Hardy-Weinberg and mutation-selection balance models.
-- **statistics.py**: Summary statistics (diversity, Tajima's D, etc.).
-- **coalescent.py**: Coalescent theory simulations and theory.
-- **demography.py**: Demographic models (growth, bottlenecks).
-- **effective_size.py**: Effective population size calculations.
-- **fst.py**: Fixation index (Fst) calculations.
-- **ld.py**: Linkage disequilibrium analysis.
-- **selection.py**: Selection coefficients and response to selection.
+## 📊 Structure
+
+```mermaid
+graph TD
+    population_genetics[population_genetics]
+    style population_genetics fill:#f9f,stroke:#333,stroke-width:2px
+```
 
 ## Usage
-
+Import module:
 ```python
-from metainformant.math.population_genetics import tajimas_D, expected_pairwise_diversity
-
-# Calculate Tajima's D
-d = tajimas_D(segregating_sites=[1, 0, 1])
+from metainformant.metainformant.math.population_genetics import ...
 ```

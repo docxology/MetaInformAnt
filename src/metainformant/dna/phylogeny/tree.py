@@ -479,21 +479,111 @@ def nj_tree_from_kmer(id_to_seq: Dict[str, str], *, k: int = 3, metric: str = "c
     # Calculate k-mer distance matrix
     distance_matrix = _calculate_kmer_distance_matrix(id_to_seq, k, metric)
 
-    # Convert to the format expected by neighbor_joining_tree
-    # This is a simplified implementation
+    # Apply full neighbor-joining algorithm using k-mer distances
     taxa = list(id_to_seq.keys())
 
-    # Use simplified NJ-like algorithm for k-mer data
+    # Initialize tree with taxa as leaves
     tree = {taxon: None for taxon in taxa}
+    active_taxa = set(taxa)
 
-    # For now, create a simple star phylogeny
-    # Real implementation would use full NJ algorithm
-    if len(taxa) > 2:
-        center_node = "Kmer_Center"
-        tree[center_node] = {}
+    # Work with a copy of distance matrix that we can modify
+    working_matrix = [row[:] for row in distance_matrix]
+    working_taxa = taxa[:]
 
-        for taxon in taxa:
-            tree[center_node][taxon] = 0.1  # Placeholder branch length
+    while len(active_taxa) > 2:
+        # Find closest pair using NJ criterion
+        min_dist = float("inf")
+        closest_pair = None
+
+        active_list = list(active_taxa)
+        n_active = len(active_list)
+
+        for i in range(len(active_list)):
+            for j in range(i + 1, len(active_list)):
+                taxon1, taxon2 = active_list[i], active_list[j]
+                idx1 = working_taxa.index(taxon1)
+                idx2 = working_taxa.index(taxon2)
+
+                # Calculate Q matrix element (NJ criterion)
+                r_i = sum(working_matrix[idx1][l] for l in range(len(working_taxa))
+                         if working_taxa[l] in active_taxa and l != idx1)
+                r_j = sum(working_matrix[idx2][l] for l in range(len(working_taxa))
+                         if working_taxa[l] in active_taxa and l != idx2)
+
+                q_ij = (n_active - 2) * working_matrix[idx1][idx2] - r_i - r_j
+
+                if q_ij < min_dist:
+                    min_dist = q_ij
+                    closest_pair = (taxon1, taxon2)
+
+        if not closest_pair:
+            break
+
+        taxon1, taxon2 = closest_pair
+        idx1 = working_taxa.index(taxon1)
+        idx2 = working_taxa.index(taxon2)
+
+        # Calculate branch lengths using NJ formula
+        r1 = sum(working_matrix[idx1][j] for j in range(len(working_taxa))
+                 if working_taxa[j] in active_taxa and j != idx1 and j != idx2)
+        r2 = sum(working_matrix[idx2][j] for j in range(len(working_taxa))
+                 if working_taxa[j] in active_taxa and j != idx1 and j != idx2)
+
+        d_ij = working_matrix[idx1][idx2]
+        n_remaining = len(active_taxa) - 2
+
+        if n_remaining > 0:
+            branch1 = max(0, d_ij / 2 + (r1 - r2) / (2 * n_remaining))
+            branch2 = max(0, d_ij - branch1)
+        else:
+            branch1 = d_ij / 2
+            branch2 = d_ij / 2
+
+        # Create new internal node
+        new_node = f"KmerNode_{len(tree)}"
+
+        # Update tree structure
+        tree[new_node] = {taxon1: branch1, taxon2: branch2}
+
+        # Calculate distances to new node
+        new_distances = []
+        for k_idx in range(len(working_taxa)):
+            if working_taxa[k_idx] == taxon1 or working_taxa[k_idx] == taxon2:
+                new_distances.append(0.0)
+            else:
+                # NJ distance to new node
+                d_ik = working_matrix[idx1][k_idx]
+                d_jk = working_matrix[idx2][k_idx]
+                d_uk = (d_ik + d_jk - d_ij) / 2
+                new_distances.append(max(0, d_uk))
+
+        # Update working matrix
+        new_row = new_distances + [0.0]
+        for row in working_matrix:
+            row.append(0.0)
+        working_matrix.append(new_row)
+        for k_idx in range(len(working_matrix) - 1):
+            working_matrix[-1][k_idx] = new_distances[k_idx]
+            working_matrix[k_idx][-1] = new_distances[k_idx]
+
+        # Update taxa tracking
+        working_taxa.append(new_node)
+        active_taxa.remove(taxon1)
+        active_taxa.remove(taxon2)
+        active_taxa.add(new_node)
+
+    # Connect final two nodes
+    if len(active_taxa) == 2:
+        remaining = list(active_taxa)
+        idx1 = working_taxa.index(remaining[0])
+        idx2 = working_taxa.index(remaining[1])
+        final_dist = working_matrix[idx1][idx2]
+
+        final_node = f"KmerRoot_{len(tree)}"
+        tree[final_node] = {
+            remaining[0]: final_dist / 2,
+            remaining[1]: final_dist / 2,
+        }
 
     return tree
 

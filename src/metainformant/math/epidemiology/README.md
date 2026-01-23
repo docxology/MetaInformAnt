@@ -1,16 +1,22 @@
-# Epidemiology
+# EPIDEMIOLOGY
 
-This submodule implements mathematical models for disease spread and control.
+## Overview
+Functionality for epidemiology.
 
-## Components
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[models.py](models.py)`
 
-- **models.py**: Core epidemiological models (SIR, SEIR, SIS) and reproduction numbers.
+## 📊 Structure
+
+```mermaid
+graph TD
+    epidemiology[epidemiology]
+    style epidemiology fill:#f9f,stroke:#333,stroke-width:2px
+```
 
 ## Usage
-
+Import module:
 ```python
-from metainformant.math.epidemiology import sir_step, basic_reproduction_number
-
-# Calculate R0
-R0 = basic_reproduction_number(transmission_rate=0.3, recovery_rate=0.1)
+from metainformant.metainformant.math.epidemiology import ...
 ```

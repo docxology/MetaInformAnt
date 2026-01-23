@@ -154,8 +154,8 @@ def analyze_species_status(species_dir: Path | str) -> Dict[str, Any]:
                 rows = list(reader)
                 status["total_in_metadata"] = len(rows)
                 status["categories"]["undownloaded"] = len(rows)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to parse metadata file {metadata_file}: {e}")
 
     # Check for completion markers
     sanity_file = species_dir / "sanity_check.txt"
@@ -167,8 +167,8 @@ def analyze_species_status(species_dir: Path | str) -> Dict[str, Any]:
         try:
             mtime = sanity_file.stat().st_mtime
             status["last_updated"] = mtime
-        except Exception:
-            pass
+        except Exception as e:
+            logger.debug(f"Failed to get mtime for {sanity_file}: {e}")
     else:
         # Check individual step completion
         workflow_steps = [
@@ -202,8 +202,8 @@ def analyze_species_status(species_dir: Path | str) -> Dict[str, Any]:
                             log_content = f.read()
                             if "error" in log_content.lower() or "failed" in log_content.lower():
                                 status["steps_failed"].append(step)
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        logger.debug(f"Failed to read log file {step_logs}: {e}")
 
         status["progress_percentage"] = (completed_steps / total_steps) * 100.0
 
@@ -348,8 +348,16 @@ def find_unquantified_samples(config_path: Path) -> List[str]:
 def check_active_downloads() -> set[str]:
     """Check for active amalgkit download processes.
 
+    Scans running processes for fasterq-dump and amalgkit getfastq
+    operations, extracting SRA accession IDs from command lines.
+
     Returns:
-        Set of sample IDs currently being downloaded
+        Set of sample IDs (SRR accessions) currently being downloaded.
+        Empty set if no active downloads or if process scanning fails.
+
+    Note:
+        Uses `ps aux` to scan processes, which may not capture all
+        download methods (e.g., curl, wget direct downloads).
     """
     import subprocess
 
@@ -406,12 +414,27 @@ def initialize_progress_tracking(config_path: Path) -> Dict[str, Any]:
 def _get_step_output_files(species_dir: Path, step: str) -> List[Path]:
     """Get expected output files for a workflow step.
 
+    Maps each amalgkit workflow step to its expected output locations,
+    used for determining step completion status.
+
     Args:
-        species_dir: Species directory
-        step: Workflow step name
+        species_dir: Species working directory (e.g., output/amalgkit/species_name/work)
+        step: Workflow step name. Valid values:
+            - "metadata": Initial metadata file
+            - "integrate": Integrated metadata
+            - "config": Configuration file
+            - "select": Selected samples metadata
+            - "getfastq": Downloaded FASTQ directory
+            - "quant": Quantification results directory
+            - "merge": Merged abundance tables
+            - "cstmm": Cross-species TMM normalization
+            - "curate": Curated output files
+            - "csca": Cross-species correlation analysis
+            - "sanity": Sanity check completion marker
 
     Returns:
-        List of expected output file paths
+        List of Path objects for expected output locations.
+        Empty list if step is not recognized.
     """
     step_outputs = {
         "metadata": [species_dir / "metadata" / "metadata.tsv", species_dir / "metadata.tsv"],
@@ -433,11 +456,25 @@ def _get_step_output_files(species_dir: Path, step: str) -> List[Path]:
 def get_sample_progress_report(config_path: Path) -> Dict[str, Any]:
     """Get detailed per-sample progress report for a workflow.
 
+    Generates a comprehensive report of sample-level progress through
+    the RNA-seq pipeline, including download, quantification, and
+    validation status for each sample.
+
     Args:
-        config_path: Path to workflow configuration file
+        config_path: Path to workflow configuration YAML file
 
     Returns:
-        Dictionary with per-sample pipeline status
+        Dictionary with structure:
+            - config_path: str - Original config path
+            - work_dir: str - Working directory path
+            - total_samples: int - Total samples in metadata
+            - summary: dict - Aggregated status counts
+            - per_sample: dict - Per-sample status details
+            - missing_stages: dict - Samples missing each pipeline stage
+            - error: str - Error message (only if operation failed)
+
+    Raises:
+        No exceptions raised; errors are captured in return dict.
     """
     from metainformant.rna.engine.workflow import load_workflow_config
     from metainformant.rna.analysis.validation import validate_all_samples

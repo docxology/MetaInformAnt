@@ -135,22 +135,174 @@ def _calculate_fastq_quality_score(data: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _calculate_vcf_quality_score(data: Dict[str, Any]) -> Dict[str, Any]:
-    """Calculate quality score for VCF data."""
-    # Placeholder for VCF quality scoring
+    """Calculate quality score for VCF data.
+
+    Args:
+        data: VCF quality metrics data with keys like 'variant_count', 'quality_scores',
+              'filter_stats', 'depth_stats', 'genotype_quality'
+
+    Returns:
+        Dictionary with overall_score, components breakdown, and grade
+    """
+    score_components = {}
+
+    # Variant quality component (40% weight)
+    if "quality_scores" in data:
+        qual_scores = data["quality_scores"]
+        if qual_scores:
+            mean_qual = sum(qual_scores) / len(qual_scores) if qual_scores else 0
+            # Quality score: 0-40 points based on mean QUAL field (0-100 scale)
+            qual_score = min(40, max(0, mean_qual * 0.4))
+            score_components["variant_quality"] = {
+                "score": qual_score,
+                "weight": 0.4,
+                "details": f"Mean QUAL: {mean_qual:.1f}",
+            }
+
+    # Filter pass rate component (30% weight)
+    if "filter_stats" in data:
+        filter_stats = data["filter_stats"]
+        total_variants = filter_stats.get("total", 0)
+        passed_variants = filter_stats.get("PASS", 0)
+        if total_variants > 0:
+            pass_rate = passed_variants / total_variants
+            filter_score = pass_rate * 30
+            score_components["filter_pass_rate"] = {
+                "score": filter_score,
+                "weight": 0.3,
+                "details": f"PASS rate: {pass_rate:.1%}",
+            }
+
+    # Depth coverage component (15% weight)
+    if "depth_stats" in data:
+        depth_stats = data["depth_stats"]
+        mean_depth = depth_stats.get("mean", 0)
+        # Score higher for depth >= 30x (standard target)
+        depth_score = min(15, max(0, mean_depth / 30 * 15))
+        score_components["depth_coverage"] = {
+            "score": depth_score,
+            "weight": 0.15,
+            "details": f"Mean depth: {mean_depth:.1f}x",
+        }
+
+    # Genotype quality component (15% weight)
+    if "genotype_quality" in data:
+        gq_values = data["genotype_quality"]
+        if gq_values:
+            mean_gq = sum(gq_values) / len(gq_values)
+            # GQ typically 0-99, score based on mean
+            gq_score = min(15, max(0, mean_gq / 99 * 15))
+            score_components["genotype_quality"] = {
+                "score": gq_score,
+                "weight": 0.15,
+                "details": f"Mean GQ: {mean_gq:.1f}",
+            }
+
+    # Calculate total score
+    total_score = sum(c["score"] for c in score_components.values())
+    max_score = sum(c["score"] / c["weight"] * c["weight"] for c in score_components.values()) if score_components else 100
+    overall_score = (total_score / max_score * 100) if max_score > 0 else 0
+
+    # If no components were calculated, return error state
+    if not score_components:
+        return {
+            "overall_score": 0.0,
+            "components": {},
+            "grade": "F",
+            "error": "No VCF quality metrics provided - cannot calculate score",
+        }
+
     return {
-        "overall_score": 85.0,  # Placeholder
-        "components": {},
-        "grade": "B",
+        "overall_score": overall_score,
+        "total_score": total_score,
+        "max_possible_score": max_score,
+        "components": score_components,
+        "grade": _score_to_grade(overall_score),
     }
 
 
 def _calculate_bam_quality_score(data: Dict[str, Any]) -> Dict[str, Any]:
-    """Calculate quality score for BAM data."""
-    # Placeholder for BAM quality scoring
+    """Calculate quality score for BAM data.
+
+    Args:
+        data: BAM quality metrics data with keys like 'mapping_quality', 'mapped_reads',
+              'properly_paired', 'duplicate_rate', 'coverage_stats'
+
+    Returns:
+        Dictionary with overall_score, components breakdown, and grade
+    """
+    score_components = {}
+
+    # Mapping quality component (35% weight)
+    if "mapping_quality" in data:
+        mq_values = data["mapping_quality"]
+        if mq_values:
+            mean_mq = sum(mq_values) / len(mq_values)
+            # MQ typically 0-60, score based on mean
+            mq_score = min(35, max(0, mean_mq / 60 * 35))
+            score_components["mapping_quality"] = {
+                "score": mq_score,
+                "weight": 0.35,
+                "details": f"Mean MAPQ: {mean_mq:.1f}",
+            }
+
+    # Mapping rate component (25% weight)
+    if "mapped_reads" in data and "total_reads" in data:
+        mapped = data["mapped_reads"]
+        total = data["total_reads"]
+        if total > 0:
+            map_rate = mapped / total
+            map_score = map_rate * 25
+            score_components["mapping_rate"] = {
+                "score": map_score,
+                "weight": 0.25,
+                "details": f"Mapped: {map_rate:.1%}",
+            }
+
+    # Properly paired rate component (20% weight)
+    if "properly_paired" in data and "total_reads" in data:
+        paired = data["properly_paired"]
+        total = data["total_reads"]
+        if total > 0:
+            pair_rate = paired / total
+            pair_score = pair_rate * 20
+            score_components["properly_paired"] = {
+                "score": pair_score,
+                "weight": 0.2,
+                "details": f"Properly paired: {pair_rate:.1%}",
+            }
+
+    # Duplication rate component (20% weight) - lower is better
+    if "duplicate_rate" in data:
+        dup_rate = data["duplicate_rate"]
+        # 0% duplicates = 20 points, 50%+ = 0 points
+        dup_score = max(0, 20 - dup_rate * 40)
+        score_components["duplication"] = {
+            "score": dup_score,
+            "weight": 0.2,
+            "details": f"Duplicate rate: {dup_rate:.1%}",
+        }
+
+    # Calculate total score
+    total_score = sum(c["score"] for c in score_components.values())
+    max_score = sum(c["score"] / c["weight"] * c["weight"] for c in score_components.values()) if score_components else 100
+    overall_score = (total_score / max_score * 100) if max_score > 0 else 0
+
+    # If no components were calculated, return error state
+    if not score_components:
+        return {
+            "overall_score": 0.0,
+            "components": {},
+            "grade": "F",
+            "error": "No BAM quality metrics provided - cannot calculate score",
+        }
+
     return {
-        "overall_score": 82.0,  # Placeholder
-        "components": {},
-        "grade": "B",
+        "overall_score": overall_score,
+        "total_score": total_score,
+        "max_possible_score": max_score,
+        "components": score_components,
+        "grade": _score_to_grade(overall_score),
     }
 
 

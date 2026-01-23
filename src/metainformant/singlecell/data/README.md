@@ -1,12 +1,23 @@
-# Data
+# DATA
 
 ## Overview
-This module provides functionality for data within the MetaInformAnt framework.
+Functionality for data.
 
-## Features
-*   **Modular Design**: Organized for clarity and reusability.
-*   **Type Safety**: Comprehensive type hinting.
-*   **Documentation**: Adheres to the Triple Play standard.
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[integration.py](integration.py)`
+- `[preprocessing.py](preprocessing.py)`
 
-## Structure
-This module is part of the `metainformant` package.
+## 📊 Structure
+
+```mermaid
+graph TD
+    data[data]
+    style data fill:#f9f,stroke:#333,stroke-width:2px
+```
+
+## Usage
+Import module:
+```python
+from metainformant.metainformant.singlecell.data import ...
+```

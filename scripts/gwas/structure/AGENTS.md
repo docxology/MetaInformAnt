@@ -1,11 +1,13 @@
-# Structure Agents
+# Agent Directives: scripts/gwas/structure
 
-The Structure module analyzes population stratification.
+## Role
+Population structure analysis scripts for GWAS.
 
-## Capabilities
-- **PCA**: Compute principal components to identify population clusters.
-- **Kinship**: Compute IBD or IBS matrices to model relatedness.
+## Contents
+- `run_kinship.py` - Calculate kinship/relatedness matrix
+- `run_pca.py` - Principal component analysis
 
-## Key Files
-- `run_pca.py`: PCA runner.
-- `run_kinship.py`: Kinship runner.
+## Purpose
+Account for population structure in association testing:
+- Kinship matrices for mixed models
+- PCA for population stratification correction

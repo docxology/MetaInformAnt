@@ -479,30 +479,79 @@ def regional_ld_plot(
         logger.warning(f"VCF file not found: {vcf_path}")
         return {"status": "skipped", "reason": "VCF file not found"}
 
-    # Note: Real LD calculation would require tools like PLINK or vcftools
-    # For now, generate mock LD data for testing
-    logger.info("Generating mock LD data for regional plot (real LD calculation requires external tools)")
+    # Parse VCF file to extract SNP positions and genotypes for LD calculation
+    logger.info(f"Parsing VCF file for LD calculation: {vcf_path}")
 
-    # Generate mock SNP positions in the region
-    n_snps = 20
-    positions = np.linspace(start, end, n_snps, dtype=int)
+    try:
+        positions = []
+        genotypes = []
 
-    # Generate mock LD matrix (r² values)
-    np.random.seed(42)  # For reproducible mock data
-    ld_matrix = np.random.uniform(0, 1, (n_snps, n_snps))
+        with open(vcf_path, "r") as f:
+            for line in f:
+                if line.startswith("#"):
+                    continue
 
-    # Make LD matrix symmetric and add some structure
-    ld_matrix = (ld_matrix + ld_matrix.T) / 2
+                fields = line.strip().split("\t")
+                if len(fields) < 10:
+                    continue
 
-    # Add distance-based decay (closer SNPs have higher LD)
-    for i in range(n_snps):
-        for j in range(n_snps):
-            distance = abs(positions[i] - positions[j])
-            decay_factor = np.exp(-distance / 10000)  # Exponential decay
-            ld_matrix[i, j] *= decay_factor
+                vcf_chrom = fields[0]
+                vcf_pos = int(fields[1])
 
-    # Ensure diagonal is 1.0
-    np.fill_diagonal(ld_matrix, 1.0)
+                # Filter to region
+                if str(vcf_chrom) != str(chrom):
+                    continue
+                if not (start <= vcf_pos <= end):
+                    continue
+
+                positions.append(vcf_pos)
+
+                # Parse genotypes (simplified: count alt alleles)
+                sample_genotypes = []
+                for gt_field in fields[9:]:
+                    gt = gt_field.split(":")[0]
+                    if "/" in gt:
+                        alleles = gt.split("/")
+                    elif "|" in gt:
+                        alleles = gt.split("|")
+                    else:
+                        alleles = [".", "."]
+
+                    # Count alt alleles (0, 1, or 2)
+                    alt_count = sum(1 for a in alleles if a not in [".", "0"])
+                    sample_genotypes.append(alt_count)
+
+                genotypes.append(sample_genotypes)
+
+        if len(positions) < 2:
+            logger.warning(f"Insufficient SNPs in region {chrom}:{start}-{end} for LD calculation")
+            return {"status": "skipped", "reason": f"Only {len(positions)} SNPs found in region (need at least 2)"}
+
+        n_snps = len(positions)
+        positions = np.array(positions)
+        genotypes = np.array(genotypes, dtype=float)
+
+        # Calculate LD matrix (r² values) using correlation
+        # Handle missing data by replacing with mean
+        for i in range(genotypes.shape[0]):
+            col = genotypes[i]
+            valid_mask = ~np.isnan(col)
+            if valid_mask.sum() > 0:
+                col[~valid_mask] = np.mean(col[valid_mask])
+
+        # Calculate pairwise correlations (r²)
+        ld_matrix = np.corrcoef(genotypes)
+        ld_matrix = np.square(ld_matrix)  # Convert r to r²
+
+        # Handle NaN values (e.g., constant genotypes)
+        ld_matrix = np.nan_to_num(ld_matrix, nan=0.0)
+
+        # Ensure diagonal is 1.0
+        np.fill_diagonal(ld_matrix, 1.0)
+
+    except Exception as e:
+        logger.error(f"Failed to parse VCF for LD calculation: {e}")
+        return {"status": "error", "reason": f"VCF parsing error: {e}"}
 
     fig, (ax1, ax2) = plt.subplots(2, 1, figsize=figsize, gridspec_kw={"height_ratios": [1, 3]})
 
@@ -557,11 +606,11 @@ def regional_ld_plot(
 
     return {
         "status": "success",
-        "n_snps": n_snps,
+        "n_snps": int(n_snps),
         "chromosome": chrom,
         "region_start": start,
         "region_end": end,
         "lead_snp_pos": lead_snp_pos,
         "ld_threshold": ld_threshold,
-        "mock_data": True,  # Indicates this used mock LD data
+        "output_path": str(output_file) if output_file else None,
     }

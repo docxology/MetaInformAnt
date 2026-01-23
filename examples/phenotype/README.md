@@ -1,15 +1,21 @@
-# Phenotype Analysis Examples
+# PHENOTYPE
 
-This directory contains examples demonstrating METAINFORMANT's phenotypic trait analysis capabilities.
+## Overview
+Functionality for phenotype.
 
-## Examples
+## 📦 Contents
+- `[example_traits.py](example_traits.py)`
 
-### Trait Analysis (`example_traits.py`)
+## 📊 Structure
 
-Learn phenotypic trait correlation and analysis.
-
-```bash
-python examples/phenotype/example_traits.py
+```mermaid
+graph TD
+    phenotype[phenotype]
+    style phenotype fill:#f9f,stroke:#333,stroke-width:2px
 ```
 
-**Output:** `output/examples/phenotype/trait_analysis.json`
+## Usage
+Import module:
+```python
+from metainformant.phenotype import ...
+```

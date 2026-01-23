@@ -1,38 +1,25 @@
-# DNA Sequence Analysis
+# SEQUENCE
 
-Core tools for fundamental DNA sequence operations.
+## Overview
+Functionality for sequence.
 
-## Purpose
+## 📦 Contents
+- `[composition.py](composition.py)`
+- `[consensus.py](consensus.py)`
+- `[core.py](core.py)`
+- `[motifs.py](motifs.py)`
+- `[restriction.py](restriction.py)`
 
-This module provides:
-- Basic sequence string operations
-- Composition analysis (GC content, skews)
-- Motif discovery
-- Restriction enzyme simulation
-- Consensus sequence generation
+## 📊 Structure
 
-## Key Components
-
-| File | Description |
-|------|-------------|
-| [core.py](core.py) | `reverse_complement`, `validate_dna_sequence` |
-| [composition.py](composition.py) | `gc_content`, `at_skew`, `gc_skew` |
-| [motifs.py](motifs.py) | `find_motifs`, `find_repeats` |
-| [restriction.py](restriction.py) | `cut_with_enzyme`, `find_restriction_sites` |
-| [consensus.py](consensus.py) | `generate_consensus` from MSA |
-
-## Usage
-
-```python
-from metainformant.dna.sequence import gc_content, reverse_complement
-
-rc = reverse_complement("ACGT")
-gc = gc_content("ACGTAGCT")
+```mermaid
+graph TD
+    sequence[sequence]
+    style sequence fill:#f9f,stroke:#333,stroke-width:2px
 ```
 
-## Related Documentation
-
-- **Parent**: [src/metainformant/dna/README.md](../README.md)
-- **SPEC**: [SPEC.md](SPEC.md)
-- **AGENTS**: [AGENTS.md](AGENTS.md)
-- **Alignment Module**: [../alignment/README.md](../alignment/README.md)
+## Usage
+Import module:
+```python
+from metainformant.metainformant.dna.sequence import ...
+```

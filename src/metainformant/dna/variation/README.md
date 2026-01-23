@@ -1,12 +1,22 @@
-# Variation
+# VARIATION
 
 ## Overview
-This module provides functionality for variation within the MetaInformAnt framework.
+Functionality for variation.
 
-## Features
-*   **Modular Design**: Organized for clarity and reusability.
-*   **Type Safety**: Comprehensive type hinting.
-*   **Documentation**: Adheres to the Triple Play standard.
+## 📦 Contents
+- `[mutations.py](mutations.py)`
+- `[variants.py](variants.py)`
 
-## Structure
-This module is part of the `metainformant` package.
+## 📊 Structure
+
+```mermaid
+graph TD
+    variation[variation]
+    style variation fill:#f9f,stroke:#333,stroke-width:2px
+```
+
+## Usage
+Import module:
+```python
+from metainformant.metainformant.dna.variation import ...
+```

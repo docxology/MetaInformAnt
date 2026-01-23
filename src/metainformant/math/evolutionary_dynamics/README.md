@@ -1,17 +1,23 @@
-# Evolutionary Dynamics
+# EVOLUTIONARY_DYNAMICS
 
-This submodule models population dynamics and ecological interactions.
+## Overview
+Functionality for evolutionary_dynamics.
 
-## Components
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[core.py](core.py)`
+- `[egt.py](egt.py)`
 
-- **core.py**: Discrete and continuous time dynamics (Logistic map, Lotka-Volterra).
-- **egt.py**: Evolutionary Game Theory (Replicator dynamics).
+## 📊 Structure
+
+```mermaid
+graph TD
+    evolutionary_dynamics[evolutionary_dynamics]
+    style evolutionary_dynamics fill:#f9f,stroke:#333,stroke-width:2px
+```
 
 ## Usage
-
+Import module:
 ```python
-from metainformant.math.evolutionary_dynamics import lotka_volterra_step
-
-# Simulate receptor-prey step
-prey, pred = lotka_volterra_step(prey=100, predator=10)
+from metainformant.metainformant.math.evolutionary_dynamics import ...
 ```

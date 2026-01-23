@@ -281,7 +281,9 @@ def ribosome_profiling_integration(
     rna_subset = rna_df.loc[common_samples, common_genes]
     ribo_subset = ribo_df.loc[common_samples, common_genes]
 
-    results = []
+    # Calculate translation rates for all genes first
+    translation_rates = {}
+    gene_data = {}
 
     for gene in common_genes:
         rna_vals = rna_subset[gene]
@@ -297,20 +299,50 @@ def ribosome_profiling_integration(
         else:
             translation_rate = 0.0
 
-        # Determine if translationally regulated
-        # Simple heuristic: compare to median translation rate
+        translation_rates[gene] = translation_rate
+        gene_data[gene] = {
+            "rna_level": rna_level,
+            "ribo_level": ribo_level,
+            "translation_rate": translation_rate,
+        }
+
+    # Calculate statistics for determining translational regulation
+    # Use z-score approach: genes with translation rate > 2 standard deviations
+    # from the mean are considered translationally regulated
+    valid_rates = [r for r in translation_rates.values() if r > 0 and not np.isnan(r)]
+
+    if len(valid_rates) >= 3:
+        # Use log-transform for better normality
+        log_rates = np.log2([r + 1e-10 for r in valid_rates])
+        mean_log_rate = float(np.mean(log_rates))
+        std_log_rate = float(np.std(log_rates))
+
+        # z-score threshold of 2 corresponds to ~95% confidence
+        z_threshold = 2.0
+    else:
+        # Fallback to simple percentile when insufficient data
+        mean_log_rate = 0.0
+        std_log_rate = 1.0
+        z_threshold = float("inf")  # Disable detection with too few genes
+
+    results = []
+    for gene in common_genes:
+        data = gene_data[gene]
+        translation_rate = data["translation_rate"]
+
+        # Determine if translationally regulated using z-score
         translationally_regulated = False
-        if translation_rate > 0:
-            # Would use statistical test in full implementation
-            median_rate = (ribo_subset.mean() / rna_subset.mean()).median()
-            if not np.isnan(median_rate) and median_rate > 0:
-                translationally_regulated = translation_rate > median_rate * 1.5
+        if translation_rate > 0 and std_log_rate > 0:
+            log_rate = np.log2(translation_rate + 1e-10)
+            z_score = (log_rate - mean_log_rate) / std_log_rate
+            # Consider both up-regulated and down-regulated
+            translationally_regulated = abs(z_score) > z_threshold
 
         results.append(
             {
                 "gene_id": gene,
-                "rna_level": rna_level,
-                "ribo_level": ribo_level,
+                "rna_level": data["rna_level"],
+                "ribo_level": data["ribo_level"],
                 "translation_rate": translation_rate,
                 "translationally_regulated": translationally_regulated,
             }

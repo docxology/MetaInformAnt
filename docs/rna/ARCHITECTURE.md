@@ -18,11 +18,25 @@ This document provides a comprehensive overview of the METAINFORMANT RNA module 
 ```
 src/metainformant/rna/
 ├── __init__.py              # Public API exports
-├── workflow.py              # Main workflow orchestration
-├── orchestration.py         # High-level workflow execution
-├── amalgkit.py              # Amalgkit CLI wrapper
-├── genome_prep.py           # Genome preparation utilities
-├── configs.py               # Configuration management
+├── core/                    # Core utilities
+│   ├── configs.py           # Configuration management
+│   └── cleanup.py           # Cleanup and maintenance utilities
+├── engine/                  # Workflow engine
+│   ├── workflow.py          # Main workflow orchestration
+│   ├── orchestration.py     # High-level workflow execution
+│   ├── monitoring.py        # Progress tracking and status
+│   ├── pipeline.py          # Pipeline utilities
+│   └── discovery.py         # Species discovery and config generation
+├── amalgkit/                # Amalgkit integration
+│   ├── amalgkit.py          # CLI wrapper
+│   ├── genome_prep.py       # Genome preparation utilities
+│   ├── metadata_filter.py   # Metadata filtering
+│   └── metadata_utils.py    # Metadata manipulation
+├── analysis/                # Analysis functions
+│   ├── protein_integration.py  # RNA-protein integration
+│   └── validation.py        # Pipeline validation
+├── retrieval/               # Data retrieval
+│   └── ena_downloader.py    # ENA/SRA download utilities
 ├── steps/                   # Step implementations
 │   ├── __init__.py          # Step runner registry
 │   ├── metadata.py          # Step 1: Metadata retrieval
@@ -43,20 +57,34 @@ src/metainformant/rna/
 
 ### Component Responsibilities
 
-#### Core Orchestration
+#### Engine (`engine/`)
 - **`workflow.py`**: Plans and executes complete workflows based on configuration
 - **`orchestration.py`**: High-level functions for running workflows for species
-- **`amalgkit.py`**: Low-level wrapper for `amalgkit` CLI commands
+- **`monitoring.py`**: Workflow progress tracking and sample status
+- **`pipeline.py`**: Pipeline utilities and result summarization
+- **`discovery.py`**: Species discovery via NCBI and configuration generation
 
-#### Step Runners
+#### Amalgkit Integration (`amalgkit/`)
+- **`amalgkit.py`**: Low-level wrapper for `amalgkit` CLI commands
+- **`genome_prep.py`**: Downloads and indexes reference genomes
+- **`metadata_filter.py`**: Filter metadata based on selection criteria
+- **`metadata_utils.py`**: Deduplication and metadata manipulation
+
+#### Analysis (`analysis/`)
+- **`protein_integration.py`**: RNA-protein integration and translation efficiency
+- **`validation.py`**: Pipeline output validation and sample quality checks
+
+#### Retrieval (`retrieval/`)
+- **`ena_downloader.py`**: Download FASTQ files from ENA with MD5 verification
+
+#### Step Runners (`steps/`)
 - **11 step modules**: Thin wrappers around `amalgkit` subcommands
 - **`process_samples.py`**: Unified workflow for download-quantify-delete operations
 - Each step is independent and can be run standalone or as part of a workflow
 
-#### Utilities
-- **`genome_prep.py`**: Downloads and indexes reference genomes
+#### Core Utilities (`core/`)
 - **`configs.py`**: Loads and validates workflow configurations
-- **`download_progress.py`**: Real-time progress tracking
+- **`cleanup.py`**: Partial download cleanup and workflow maintenance
 
 ## Processing Workflows
 

@@ -1,26 +1,23 @@
-# Morphological Phenotype Module
-
-The `morphological` module handles morphometric measurements, shape analysis, and allometric Scaling integration.
+# MORPHOLOGICAL
 
 ## Overview
-This module handles:
-- **Measurements**: Linear dimensions (e.g., Weber's length, head width).
-- **Indices**: Ratios and calculated indices (e.g., CI, SI).
-- **Geometric Morphometrics**: Landmark-based shape data (future).
+Morphological phenotype analysis module.
 
-## Components
-- `Measurement`: Typed class for individual measurements with units.
-- `MorphometricProfile`: Collection of measurements for a specimen.
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[measurement.py](measurement.py)`
+- `[profile.py](profile.py)`
+
+## 📊 Structure
+
+```mermaid
+graph TD
+    morphological[morphological]
+    style morphological fill:#f9f,stroke:#333,stroke-width:2px
+```
 
 ## Usage
+Import module:
 ```python
-from metainformant.phenotype.morphological import Measurement, MorphometricProfile
-
-# Define measurements
-hw = Measurement(value=1.5, unit="mm", name="Head Width")
-hl = Measurement(value=1.6, unit="mm", name="Head Length")
-
-# Create profile
-profile = MorphometricProfile(specimen_id="spec_001", measurements=[hw, hl])
-print(profile.calculate_index("CI", "Head Width", "Head Length"))
+from metainformant.metainformant.phenotype.morphological import ...
 ```

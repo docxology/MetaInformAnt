@@ -1,26 +1,22 @@
-# Electronic Phenotype Module
-
-The `electronic` module handles data from electronic sensors, such as RFID tags, GPS tracking, and automated monitoring systems.
+# ELECTRONIC
 
 ## Overview
-This module handles:
-- **Tracking Data**: Spatiotemporal points (x, y, z, t).
-- **Sensor Readings**: Environmental data associated with phenotypes.
-- **RFID**: Interaction events from tagged individuals.
+Electronic phenotype analysis module.
 
-## Components
-- `TrackingPoint`: Class for a single spatiotemporal datum.
-- `Trajectory`: Sequence of tracking points.
+## 📦 Contents
+- `[__init__.py](__init__.py)`
+- `[tracking.py](tracking.py)`
+
+## 📊 Structure
+
+```mermaid
+graph TD
+    electronic[electronic]
+    style electronic fill:#f9f,stroke:#333,stroke-width:2px
+```
 
 ## Usage
+Import module:
 ```python
-from metainformant.phenotype.electronic import TrackingPoint, Trajectory
-
-# Define a point
-p1 = TrackingPoint(x=10.5, y=20.0, timestamp=1620000000)
-p2 = TrackingPoint(x=10.6, y=20.1, timestamp=1620000001)
-
-# Create trajectory
-traj = Trajectory(id="ant_001", points=[p1, p2])
-print(f"Total distance: {traj.distance()} units")
+from metainformant.metainformant.phenotype.electronic import ...
 ```

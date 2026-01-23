@@ -18,21 +18,27 @@ logger = logging.get_logger(__name__)
 def summarize_curate_tables(curate_dir: str | Path) -> Dict[str, int]:
     """Summarize the contents of amalgkit curate output directory.
 
+    Scans the curate output directory for TSV files and other expected
+    amalgkit curate outputs (stats.json, outlier_samples.txt).
+
     Args:
         curate_dir: Path to the curate output directory
 
     Returns:
-        Dictionary mapping file patterns to counts
+        Dictionary mapping filename to count of occurrences.
+        Special keys:
+            - "_error": Error message if directory doesn't exist or is inaccessible
+            - "_total": Total file count
 
     Example:
         >>> counts = summarize_curate_tables("output/amalgkit/curate/")
         >>> print(counts)
-        {'metadata.tsv': 1, 'tc.tsv': 1, 'stats.json': 1}
+        {'metadata.tsv': 1, 'tc.tsv': 1, 'stats.json': 1, '_total': 3}
     """
     curate_path = Path(curate_dir)
     if not curate_path.exists():
         logger.warning(f"Curate directory does not exist: {curate_path}")
-        return {}
+        return {"_error": f"Directory not found: {curate_path}", "_total": 0}
 
     counts = {}
 
@@ -52,5 +58,7 @@ def summarize_curate_tables(curate_dir: str | Path) -> Dict[str, int]:
         if (curate_path / expected_file).exists():
             counts[expected_file] = counts.get(expected_file, 0) + 1
 
-    logger.info(f"Summarized {sum(counts.values())} files in curate directory")
+    total = sum(counts.values())
+    counts["_total"] = total
+    logger.info(f"Summarized {total} files in curate directory")
     return counts

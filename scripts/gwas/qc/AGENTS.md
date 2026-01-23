@@ -1,10 +1,14 @@
-# QC Agents
+# Agent Directives: scripts/gwas/qc
 
-The QC module ensures data quality before analysis.
+## Role
+Quality control scripts for GWAS data.
 
-## Capabilities
-- **Filtering**: Apply MAF, HWE, Missingness, and Quality threshold filters.
-- **Reporting**: Generate JSON reports of filtered variant counts.
+## Contents
+- `run_qc.py` - Run QC filters on variant data
 
-## Key Files
-- `run_qc.py`: Main CLI entry point.
+## QC Steps
+- MAF filtering
+- Missingness filtering
+- HWE testing
+- Sample QC
+- Variant QC

@@ -1,41 +1,23 @@
-# Integration Examples
-
-This directory contains examples demonstrating cross-domain workflows and multi-omic data integration in METAINFORMANT.
+# INTEGRATION
 
 ## Overview
+Functionality for integration.
 
-These examples show how to combine analyses from different biological domains for comprehensive insights.
+## 📦 Contents
+- `[example_complete_workflow.py](example_complete_workflow.py)`
+- `[example_dna_rna.py](example_dna_rna.py)`
+- `[example_multiomics.py](example_multiomics.py)`
 
-## Examples
+## 📊 Structure
 
-### DNA-RNA Integration (`example_dna_rna.py`)
-
-Learn how to use DNA coordinates for RNA analysis.
-
-```bash
-# Integrate DNA sequence features with RNA expression
-python examples/integration/example_dna_rna.py
+```mermaid
+graph TD
+    integration[integration]
+    style integration fill:#f9f,stroke:#333,stroke-width:2px
 ```
 
-**Output:** `output/examples/integration/dna_rna_integration.json`
-
-### Multi-Omics Analysis (`example_multiomics.py`)
-
-Master cross-omics correlation and integration analysis.
-
-```bash
-python examples/integration/example_multiomics.py
+## Usage
+Import module:
+```python
+from metainformant.integration import ...
 ```
-
-**Output:** `output/examples/integration/multiomics_analysis.json`
-
-### Complete Workflow (`example_complete_workflow.py`)
-
-See a full end-to-end bioinformatics analysis pipeline.
-
-```bash
-# Complete multi-stage bioinformatics workflow
-python examples/integration/example_complete_workflow.py
-```
-
-**Output:** `output/examples/integration/complete_workflow.json`

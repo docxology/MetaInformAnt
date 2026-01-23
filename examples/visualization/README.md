@@ -1,15 +1,21 @@
-# Visualization Examples
+# VISUALIZATION
 
-This directory contains examples demonstrating METAINFORMANT's plotting and visualization capabilities.
+## Overview
+Functionality for visualization.
 
-## Examples
+## 📦 Contents
+- `[example_plots.py](example_plots.py)`
 
-### Biological Data Visualization (`example_plots.py`)
+## 📊 Structure
 
-Learn publication-quality plotting for biological data.
-
-```bash
-python examples/visualization/example_plots.py
+```mermaid
+graph TD
+    visualization[visualization]
+    style visualization fill:#f9f,stroke:#333,stroke-width:2px
 ```
 
-**Output:** `output/examples/visualization/plots_demo.json`
+## Usage
+Import module:
+```python
+from metainformant.visualization import ...
+```

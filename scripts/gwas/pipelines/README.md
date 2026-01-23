@@ -1,13 +1,24 @@
-# GWAS Pipelines
+# PIPELINES
 
-End-to-end orchestration scripts for Genome-Wide Association Studies.
+## Overview
+Functionality for pipelines.
 
-## Scripts
+## 📦 Contents
+- `[run_analysis.py](run_analysis.py)`
+- `[run_genome_scale_gwas.py](run_genome_scale_gwas.py)`
+- `[run_pbarbatus_analysis.py](run_pbarbatus_analysis.py)`
+- `[run_pbarbatus_gwas.py](run_pbarbatus_gwas.py)`
 
-- `run_genome_scale_gwas.py`: The flagship pipeline for large-scale analysis.
-- `run_pbarbatus_gwas.py`: Specialized pipeline for P. barbatus including QC and reporting.
-- `run_analysis.py`: Generic wrapper for running analysis on existing files.
+## 📊 Structure
+
+```mermaid
+graph TD
+    pipelines[pipelines]
+    style pipelines fill:#f9f,stroke:#333,stroke-width:2px
+```
 
 ## Usage
-
-See the main [GWAS README](../README.md) for detailed usage instructions.
+Import module:
+```python
+from metainformant.pipelines import ...
+```

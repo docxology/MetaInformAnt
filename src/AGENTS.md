@@ -1,41 +1,63 @@
-# AI Agents in Source Code Development
+# AI Agents in Source Code
 
-This document outlines AI assistance in developing METAINFORMANT's source code infrastructure and organization.
+This document captures AI agent guidance for the METAINFORMANT source code directory.
 
-## AI Contributions
+## Role
 
-### Source Architecture
-**Code Assistant Agent** designed:
-- Modular source code organization by biological domain
-- Consistent API patterns across all modules
-- Package structure and import organization
-- Integration patterns between modules
+The `src/` directory contains the main Python package source code. AI agents working here should understand the module organization and follow project conventions.
 
-### Code Organization
-**Documentation Agent** assisted with:
-- Source code documentation structure
-- Module relationship mapping and dependencies
-- Integration workflow documentation
-- Development guidelines and standards
+## Structure
 
-### Quality Assurance
-**Code Assistant Agent** contributed to:
-- Code structure validation and optimization
-- API consistency verification
-- Integration testing frameworks
-- Performance optimization patterns
+```
+src/
+├── metainformant/          # Main package (see src/metainformant/AGENTS.md)
+│   ├── core/               # Shared infrastructure
+│   ├── dna/                # DNA sequence analysis
+│   ├── rna/                # RNA-seq workflows
+│   ├── protein/            # Protein analysis
+│   ├── gwas/               # GWAS pipeline
+│   └── ...                 # 15+ domain modules
+└── metainformant.egg-info/ # Package metadata (auto-generated)
+```
 
-## Development Approach
+## Key Rules
 
-- **Modular Design**: AI helped establish domain-specific module organization
-- **API Consistency**: Unified interface patterns across all modules
-- **Integration Focus**: Seamless module interaction and data flow
-- **Maintainability**: Clear structure for easy extension and maintenance
+### Package Management
+- **ALWAYS use `uv`** for package operations
+- Never use `pip` directly
+- Editable install: `uv pip install -e .`
 
-## Quality Assurance
+### NO MOCKING Policy
+- All functions must use real implementations
+- Never return dummy/placeholder data
+- When external dependencies unavailable, raise errors or skip gracefully
 
-- Human oversight ensures code quality and biological accuracy
-- AI assistance accelerates development while maintaining standards
-- Comprehensive testing validates source code functionality
+### Core Utilities
+Always use `metainformant.core` for:
+- **I/O**: `from metainformant.core import io` (never `import json` directly)
+- **Paths**: `from metainformant.core import paths`
+- **Config**: `from metainformant.core import config`
+- **Logging**: `from metainformant.core.logging import get_logger`
 
-This source code infrastructure provides a solid foundation for METAINFORMANT's modular bioinformatics toolkit.
+### Output Directory
+- All execution outputs go to `output/`
+- Never write to `src/` or create files in source directories
+
+### Type Hints
+- Python 3.11+ required
+- All functions must have type hints
+- Use `from __future__ import annotations`
+
+## Module Navigation
+
+Each module in `src/metainformant/` has its own:
+- `README.md` - User documentation
+- `AGENTS.md` - AI agent guidance
+- `SPEC.md` - Technical specification
+- `__init__.py` - Public API exports
+
+## Related
+
+- [Main Package](metainformant/AGENTS.md)
+- [Tests](../tests/AGENTS.md)
+- [Documentation](../docs/AGENTS.md)

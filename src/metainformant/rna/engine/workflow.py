@@ -225,13 +225,105 @@ def apply_config_defaults(config: Dict[str, Any]) -> Dict[str, Any]:
 def apply_step_defaults(config: AmalgkitWorkflowConfig) -> AmalgkitWorkflowConfig:
     """Apply default values to workflow step configurations.
 
+    Each amalgkit workflow step has sensible defaults that are applied
+    if not explicitly configured. This function ensures consistent
+    behavior across workflows.
+
     Args:
         config: Workflow configuration
 
     Returns:
         Configuration with step defaults applied
+
+    Step defaults applied:
+        - getfastq: out_dir, layout detection, retry settings
+        - integrate: fastq_dir, out_dir
+        - quant: out_dir, index settings, bootstrap count
+        - merge: out_dir, batch size
+        - cstmm: out_dir, normalization method
+        - curate: out_dir, metadata path
     """
-    # This is a placeholder - in practice, step-specific defaults would be applied
+    # Define step-specific defaults
+    step_defaults: Dict[str, Dict[str, Any]] = {
+        "getfastq": {
+            "out_dir": str(config.work_dir / "fastq"),
+            "layout": "auto",  # Auto-detect paired/single-end
+            "num_retries": 3,
+            "retry_delay": 30,  # seconds between retries
+            "validate_md5": True,
+        },
+        "integrate": {
+            "out_dir": str(config.work_dir),
+            # fastq_dir is computed dynamically in plan_workflow
+        },
+        "quant": {
+            "out_dir": str(config.work_dir),
+            "bootstrap": 100,  # Bootstrap samples for kallisto
+            "fragment_length": 200,  # For single-end reads
+            "fragment_sd": 20,  # Standard deviation for single-end
+        },
+        "merge": {
+            "out_dir": str(config.work_dir / "merged"),
+            "batch_size": 100,  # Samples per batch for large datasets
+            "output_format": "tsv",
+        },
+        "cstmm": {
+            "out_dir": str(config.work_dir),
+            "normalization": "tpm",  # TPM normalization by default
+            "min_expression": 1.0,  # Minimum expression threshold
+        },
+        "curate": {
+            "out_dir": str(config.work_dir / "curate"),
+            # metadata path computed from merge output in plan_workflow
+        },
+        "csca": {
+            "out_dir": str(config.work_dir),
+            "correlation_method": "pearson",
+        },
+    }
+
+    # Get current per_step configuration
+    per_step = config.per_step.copy() if config.per_step else {}
+
+    # Apply defaults for each step that has defaults defined
+    for step_name, defaults in step_defaults.items():
+        if step_name not in per_step:
+            per_step[step_name] = {}
+
+        # Apply defaults only for keys not already set
+        for key, default_value in defaults.items():
+            if key not in per_step[step_name]:
+                per_step[step_name][key] = default_value
+
+    # Handle environment variable overrides for step settings
+    env_prefix_map = {
+        "getfastq": "AK_GETFASTQ_",
+        "integrate": "AK_INTEGRATE_",
+        "quant": "AK_QUANT_",
+        "merge": "AK_MERGE_",
+        "cstmm": "AK_CSTMM_",
+        "curate": "AK_CURATE_",
+    }
+
+    for step_name, prefix in env_prefix_map.items():
+        if step_name in per_step:
+            for key in per_step[step_name]:
+                env_key = f"{prefix}{key.upper()}"
+                env_value = os.environ.get(env_key)
+                if env_value is not None:
+                    # Try to parse as int or float if applicable
+                    try:
+                        if "." in env_value:
+                            per_step[step_name][key] = float(env_value)
+                        else:
+                            per_step[step_name][key] = int(env_value)
+                    except ValueError:
+                        # Keep as string if not numeric
+                        per_step[step_name][key] = env_value
+
+    # Update config with merged per_step settings
+    config.per_step = per_step
+
     return config
 
 
@@ -557,8 +649,21 @@ def _log_getfastq_summary(output_text: str, logger: Any) -> None:
 def _cleanup_incorrectly_placed_sra_files(getfastq_dir: Path) -> None:
     """Find and move SRA files from wrong locations to correct location.
 
+    SRA Toolkit's prefetch command sometimes downloads SRA files to default
+    locations (~/ncbi/public/sra or /tmp/ncbi/public/sra) instead of the
+    specified output directory. This function finds these files and moves
+    them to the correct amalgkit directory structure.
+
+    The expected structure is: getfastq_dir/{sample_id}/{sample_id}.sra
+
     Args:
         getfastq_dir: Directory where amalgkit expects SRA files
+            (typically work_dir/fastq/getfastq/)
+
+    Side Effects:
+        - Moves .sra files from default locations to correct directory
+        - Removes duplicate SRA files if target already exists
+        - Logs all file operations
     """
     # Common locations where prefetch might download SRA files
     default_locations = [
@@ -1282,8 +1387,28 @@ def _execute_streaming_mode(
     )
 
 
-def cleanup_fastqs(config, sample_ids):
-    """Delete FASTQ files for specific samples."""
+def cleanup_fastqs(config: AmalgkitWorkflowConfig, sample_ids: List[str]) -> None:
+    """Delete FASTQ files for specific samples after quantification.
+
+    Removes FASTQ directories for the specified samples from all possible
+    locations in the workflow directory structure. This is typically called
+    after successful quantification to reclaim disk space.
+
+    Args:
+        config: Workflow configuration containing work_dir and step settings
+        sample_ids: List of sample identifiers (SRR accessions) to clean up
+
+    Side Effects:
+        - Removes sample directories containing FASTQ files
+        - Operates on multiple possible locations:
+            - work_dir/fastq/getfastq/{sample_id}/
+            - work_dir/fastq/{sample_id}/
+            - work_dir/getfastq/{sample_id}/
+            - configured getfastq out_dir/getfastq/{sample_id}/
+
+    Note:
+        Errors during deletion are silently ignored (best-effort cleanup).
+    """
     # Determine configured getfastq output directory
     getfastq_conf_dir = None
     if config.per_step and "getfastq" in config.per_step:
@@ -2725,7 +2850,24 @@ def manual_integration_fallback(config: AmalgkitWorkflowConfig) -> bool:
     """Fallback for when 'amalgkit integrate' fails (e.g. path detection bugs).
 
     Manually exposes FASTQ files from getfastq subdirectories to the location
-    expected by 'amalgkit quant'.
+    expected by 'amalgkit quant'. This works around cases where amalgkit's
+    internal path detection fails to find downloaded FASTQ files.
+
+    The function:
+    1. Finds all FASTQ files in the getfastq directory structure
+    2. Creates symlinks (or copies as fallback) to quant input directory
+    3. Copies metadata if missing
+
+    Args:
+        config: Workflow configuration with work_dir and step settings
+
+    Returns:
+        True if any FASTQ files were successfully linked/copied.
+        False if getfastq directory not found or no files processed.
+
+    Side Effects:
+        - Creates symlinks in work_dir/getfastq/{sample_id}/
+        - May copy metadata_selected.tsv to metadata.tsv
     """
     logger.info("Attempting Manual Integration Fallback...")
 

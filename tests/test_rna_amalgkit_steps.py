@@ -547,7 +547,13 @@ class TestAmalgkitCoreUtilities:
         ok, msg, install_rec = amalgkit.ensure_cli_available(auto_install=False)
         assert isinstance(ok, bool)
         assert isinstance(msg, str)
-        assert install_rec is None
+        # When amalgkit is installed, version_info is returned
+        # When not installed, install_rec is None (since auto_install=False)
+        if ok:
+            assert install_rec is not None
+            assert "version" in install_rec
+        else:
+            assert install_rec is None
 
 
 class TestAmalgkitParameterNormalization:

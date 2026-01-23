@@ -1,13 +1,21 @@
-# GWAS Quality Control
+# QC
 
-Scripts for filtering and validating variant data.
+## Overview
+Functionality for qc.
 
-## Scripts
+## 📦 Contents
+- `[run_qc.py](run_qc.py)`
 
-- `run_qc.py`: Standalone CLI for applying QC filters to VCF files.
+## 📊 Structure
+
+```mermaid
+graph TD
+    qc[qc]
+    style qc fill:#f9f,stroke:#333,stroke-width:2px
+```
 
 ## Usage
-
-```bash
-python scripts/gwas/qc/run_qc.py --vcf input.vcf --output filtered.vcf --min-maf 0.05
+Import module:
+```python
+from metainformant.qc import ...
 ```

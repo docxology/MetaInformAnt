@@ -1,13 +1,21 @@
-# GWAS Association Testing
+# ASSOCIATION
 
-Scripts for performing statistical association tests.
+## Overview
+Functionality for association.
 
-## Scripts
+## 📦 Contents
+- `[run_association.py](run_association.py)`
 
-- `run_association.py`: Main driver for running regression tests (linear/logistic).
+## 📊 Structure
+
+```mermaid
+graph TD
+    association[association]
+    style association fill:#f9f,stroke:#333,stroke-width:2px
+```
 
 ## Usage
-
-```bash
-python scripts/gwas/association/run_association.py --vcf filtered.vcf --phenotypes data.tsv --trait BodySize --output results.tsv
+Import module:
+```python
+from metainformant.association import ...
 ```

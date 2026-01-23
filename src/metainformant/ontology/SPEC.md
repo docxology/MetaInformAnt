@@ -1,16 +1,22 @@
-# Ontology Technical Specification
+# Specification: ontology
 
-## Architecture
-The `ontology` module is a subdirectory of its parent package, designed to encapsulate specific logical functionality.
+## 🎯 Scope
+Gene ontology and functional annotation module for METAINFORMANT.
 
-## Components
-*   **`__init__.py`**: Exposes public API.
+## 🧱 Architecture
+- **Dependency Level**: Domain
+- **Component Type**: Source Code
 
-## Dependencies
-*   Internal: `metainformant` modules.
-*   External: Standard library and typical scientific stack (numpy, pandas) as needed.
+## 💾 Data Structures
+- **Modules**: 7 Python modules
+- **Key Concepts**: Refer to Pydantic models in source.
 
-## Standards
-*   **Code Style**: PEP 8
-*   **Docstrings**: Google Style
-*   **Type Hints**: Full coverage required
+## 🔌 API Definition
+### Exports
+- `__init__.py`
+- `go.py`
+- `obo.py`
+- `query.py`
+- `serialize.py`
+- `types.py`
+- `visualization.py`

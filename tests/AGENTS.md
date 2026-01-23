@@ -1,49 +1,79 @@
-# AI Agents in Testing Documentation Development
+# Agent Directives: tests
 
-This document outlines AI assistance in creating METAINFORMANT's comprehensive testing framework documentation.
+## Role
+Test suite agent context for METAINFORMANT's comprehensive testing infrastructure.
 
-## AI Contributions
+## Directory Structure
+- `conftest.py` - pytest fixtures and shared test configuration
+- `conftest_examples.py` - fixtures for example validation tests
+- `utils.py` - shared test utilities and helper functions
+- `data/` - test data fixtures organized by module
+- `rna/` - RNA-specific test modules
 
-### Documentation Architecture
-**Documentation Agent** designed:
-- Hierarchical testing documentation structure
-- Test organization and categorization frameworks
-- NO_MOCKING_POLICY explanation patterns
-- Integration guide organization for test workflows
+## Test Organization
+Tests follow the naming convention `test_{module}_{feature}.py`:
+- `test_core_*` - Core infrastructure tests (I/O, config, paths, validation)
+- `test_dna_*` - DNA sequence analysis tests
+- `test_rna_*` - RNA/amalgkit workflow tests
+- `test_gwas_*` - GWAS pipeline tests
+- `test_visualization_*` - Plotting and visualization tests
+- `test_*_comprehensive.py` - Full coverage tests for modules
 
-### Content Generation
-**Documentation Agent** assisted with:
-- Complete testing philosophy documentation
-- Test execution and organization guidelines
-- Coverage analysis and reporting documentation
-- Integration patterns with CI/CD systems
+## Rules and Constraints
 
-### Technical Writing
-**Code Assistant Agent** contributed to:
-- API reference accuracy verification for testing utilities
-- Code example validation for test implementations
-- Performance consideration documentation for test execution
-- Troubleshooting guide development for test failures
+### NO MOCKING POLICY
+**CRITICAL**: This project enforces a strict NO MOCKING policy:
+- All tests use REAL implementations, REAL API calls, REAL algorithms
+- Never use `unittest.mock`, `pytest-mock`, or fake data
+- When external services unavailable, use `pytest.skip()` not mocks
+- Test fixtures contain REAL sample data, not generated placeholders
 
-## Documentation Strategy
+### Test Markers
+Use these pytest markers appropriately:
+- `@pytest.mark.slow` - Tests taking >30 seconds
+- `@pytest.mark.network` - Tests requiring real network/API calls
+- `@pytest.mark.external_tool` - Tests requiring CLI tools (amalgkit, muscle)
+- `@pytest.mark.integration` - Cross-module integration tests
 
-### Comprehensive Coverage
-- Every testing approach and methodology documented
-- Test execution patterns and best practices
-- Integration patterns between testing and development workflows
-- Performance and testing guidance
+### Test Patterns
+```python
+# Correct: Real implementation test
+def test_real_functionality(tmp_path: Path) -> None:
+    result = actual_function(tmp_path / "output.json")
+    assert result is not None
 
-### Quality Standards
-- Clear, technical writing style for software testing
-- Consistent formatting across testing docs
-- Practical, runnable code examples
-- Regular updates with code changes
+# Correct: Network test with graceful skip
+@pytest.mark.network
+def test_api_call() -> None:
+    try:
+        result = fetch_from_api()
+    except requests.RequestException as e:
+        pytest.skip(f"API unavailable: {e}")
 
-### Maintenance Approach
-- Documentation evolves with testing capabilities
-- AI assistance accelerates content creation
-- Human review ensures accuracy and clarity
-- Community contributions encouraged
+# WRONG: Never mock
+def test_bad_example(mocker):  # PROHIBITED
+    mocker.patch("module.function")  # NEVER DO THIS
+```
 
-This documentation system provides comprehensive guidance for software testing while maintaining high standards of clarity and accuracy.
+## Running Tests
+```bash
+# Fast tests (~15s)
+bash scripts/package/test.sh
 
+# Ultra-fast core tests (~5s)
+bash scripts/package/test.sh --mode ultra-fast
+
+# Full coverage (~2-5min)
+bash scripts/package/test.sh --mode coverage
+
+# Single file
+pytest tests/test_core_io.py -v
+
+# Pattern match
+bash scripts/package/test.sh --pattern "test_rna_*"
+```
+
+## Key Files
+- `NO_MOCKING_POLICY.md` - Detailed policy documentation
+- `README.md` - Test suite overview
+- `README_tests.md` - Additional test guidelines

@@ -749,7 +749,8 @@ def allelic_series_plot(
 ) -> dict[str, Any]:
     """Create an allelic series plot showing effect sizes across alleles at a locus.
 
-    This is a placeholder implementation for future development.
+    This visualizes multiple variants within a gene/region, ordered by position,
+    with effect sizes shown as a bar chart to identify allelic series patterns.
 
     Args:
         results: GWAS results with CHROM, POS, BETA columns
@@ -759,13 +760,118 @@ def allelic_series_plot(
     Returns:
         Dictionary with plot status and metadata
     """
-    logger.info("Allelic series plot requested - currently a placeholder implementation")
+    try:
+        import matplotlib.pyplot as plt
 
-    # Placeholder return - this would be implemented with actual plotting logic
-    return {
-        "status": "skipped",
-        "message": "Allelic series plot not yet implemented - requires complex haplotype analysis",
-        "n_variants": len(results) if results else 0,
-        "gene_region": gene_region,
-        "output_path": str(output_path) if output_path else None,
-    }
+        HAS_MATPLOTLIB = True
+    except ImportError:
+        HAS_MATPLOTLIB = False
+
+    if not HAS_MATPLOTLIB:
+        return {"status": "error", "message": "matplotlib not available"}
+
+    if not results:
+        return {"status": "error", "message": "No results provided"}
+
+    try:
+        # Extract and filter variants
+        variants = []
+        for result in results:
+            chrom = result.get("CHROM", result.get("chr", result.get("chromosome")))
+            pos = result.get("POS", result.get("pos", result.get("position")))
+            beta = result.get("BETA", result.get("beta", result.get("effect_size")))
+            rsid = result.get("ID", result.get("rsid", result.get("variant_id", f"var_{pos}")))
+            p_value = result.get("P", result.get("p_value", result.get("pval", 1.0)))
+
+            if beta is None or pos is None:
+                continue
+
+            # Filter by gene region if specified
+            if gene_region:
+                region_chrom, region_start, region_end = gene_region
+                if str(chrom) != str(region_chrom):
+                    continue
+                if not (region_start <= pos <= region_end):
+                    continue
+
+            variants.append({
+                "chrom": chrom,
+                "pos": pos,
+                "beta": float(beta),
+                "rsid": rsid,
+                "p_value": float(p_value),
+            })
+
+        if not variants:
+            return {"status": "error", "message": "No variants found in specified region"}
+
+        # Sort by position
+        variants.sort(key=lambda x: x["pos"])
+
+        # Create the plot
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
+        fig.suptitle("Allelic Series Plot", fontsize=14)
+
+        positions = [v["pos"] for v in variants]
+        betas = [v["beta"] for v in variants]
+        p_values = [v["p_value"] for v in variants]
+        rsids = [v["rsid"] for v in variants]
+
+        # Top panel: Effect sizes
+        colors = ["red" if b < 0 else "blue" for b in betas]
+        bars = ax1.bar(range(len(variants)), betas, color=colors, alpha=0.7, edgecolor="black")
+
+        ax1.axhline(y=0, color="black", linestyle="-", alpha=0.5)
+        ax1.set_ylabel("Effect Size (Beta)", fontsize=12)
+        ax1.set_title("Effect Sizes by Variant", fontsize=12)
+        ax1.grid(True, alpha=0.3, axis="y")
+
+        # Add legend
+        import matplotlib.patches as mpatches
+        red_patch = mpatches.Patch(color="red", label="Negative effect", alpha=0.7)
+        blue_patch = mpatches.Patch(color="blue", label="Positive effect", alpha=0.7)
+        ax1.legend(handles=[red_patch, blue_patch], loc="upper right")
+
+        # Bottom panel: -log10(p-value)
+        neg_log_p = [-np.log10(max(p, 1e-300)) for p in p_values]
+        ax2.bar(range(len(variants)), neg_log_p, color="green", alpha=0.7, edgecolor="black")
+        ax2.axhline(y=-np.log10(5e-8), color="red", linestyle="--", alpha=0.7, label="p = 5e-8")
+        ax2.set_ylabel("-log₁₀(p-value)", fontsize=12)
+        ax2.set_xlabel("Variant", fontsize=12)
+        ax2.set_title("Significance by Variant", fontsize=12)
+        ax2.grid(True, alpha=0.3, axis="y")
+        ax2.legend()
+
+        # Set x-axis labels
+        ax2.set_xticks(range(len(variants)))
+        ax2.set_xticklabels(rsids, rotation=45, ha="right", fontsize=8)
+
+        # Add summary statistics
+        positive_effects = sum(1 for b in betas if b > 0)
+        negative_effects = sum(1 for b in betas if b < 0)
+        significant = sum(1 for p in p_values if p < 5e-8)
+
+        stats_text = f"Variants: {len(variants)} | Positive: {positive_effects} | Negative: {negative_effects} | Significant: {significant}"
+        fig.text(0.5, 0.02, stats_text, ha="center", fontsize=10,
+                 bbox=dict(boxstyle="round", facecolor="wheat", alpha=0.8))
+
+        plt.tight_layout()
+        plt.subplots_adjust(bottom=0.15)
+
+        if output_path:
+            plt.savefig(output_path, dpi=300, bbox_inches="tight")
+            logger.info(f"Saved allelic series plot to {output_path}")
+
+        return {
+            "status": "success",
+            "n_variants": len(variants),
+            "positive_effects": positive_effects,
+            "negative_effects": negative_effects,
+            "significant_variants": significant,
+            "gene_region": gene_region,
+            "output_path": str(output_path) if output_path else None,
+        }
+
+    except Exception as e:
+        logger.error(f"Error creating allelic series plot: {e}")
+        return {"status": "error", "message": str(e)}
