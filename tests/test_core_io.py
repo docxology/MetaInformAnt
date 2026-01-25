@@ -285,3 +285,165 @@ def test_open_text_auto_handles_gz(tmp_path: Path) -> None:
     with io.open_text_auto(txt_gz, mode="rt") as fh:
         content = fh.read()
     assert content.strip() == "hello world"
+
+
+# Edge case tests
+class TestIOEdgeCases:
+    """Edge case tests for I/O functionality."""
+
+    def test_read_delimited_empty_file(self, tmp_path: Path) -> None:
+        """Test reading an empty delimited file."""
+        empty_file = tmp_path / "empty.csv"
+        empty_file.write_text("")
+
+        result = list(io.read_delimited(empty_file))
+        assert result == []
+
+    def test_read_delimited_header_only(self, tmp_path: Path) -> None:
+        """Test reading a delimited file with only headers, no data rows."""
+        header_only = tmp_path / "header_only.csv"
+        header_only.write_text("name,value,count\n")
+
+        result = list(io.read_delimited(header_only))
+        assert result == []
+
+    def test_read_delimited_with_none_values(self, tmp_path: Path) -> None:
+        """Test reading delimited file with missing values."""
+        csv_file = tmp_path / "with_nulls.csv"
+        csv_file.write_text("a,b,c\n1,,3\n,2,\n")
+
+        result = list(io.read_delimited(csv_file))
+        assert len(result) == 2
+        # csv.DictReader returns None for missing values, our wrapper converts to ""
+        assert result[0]["b"] == ""
+        assert result[1]["a"] == ""
+        assert result[1]["c"] == ""
+
+    def test_write_delimited_empty_rows(self, tmp_path: Path) -> None:
+        """Test writing empty rows list creates empty file."""
+        empty_csv = tmp_path / "empty_write.csv"
+        io.write_delimited([], empty_csv)
+
+        assert empty_csv.exists()
+        content = empty_csv.read_text()
+        assert content == ""
+
+    def test_json_file_not_found(self, tmp_path: Path) -> None:
+        """Test load_json raises FileNotFoundError for non-existent file."""
+        non_existent = tmp_path / "does_not_exist.json"
+
+        with pytest.raises(FileNotFoundError):
+            io.load_json(non_existent)
+
+    def test_json_invalid_syntax(self, tmp_path: Path) -> None:
+        """Test load_json handles invalid JSON syntax."""
+        from metainformant.core.io.errors import IOError as CoreIOError
+
+        invalid_json = tmp_path / "invalid.json"
+        invalid_json.write_text("{ invalid json syntax")
+
+        with pytest.raises(CoreIOError):
+            io.load_json(invalid_json)
+
+    def test_dump_json_creates_parent_dirs(self, tmp_path: Path) -> None:
+        """Test dump_json creates parent directories if they don't exist."""
+        nested_path = tmp_path / "deep" / "nested" / "path" / "data.json"
+        data = {"test": "data"}
+
+        io.dump_json(data, nested_path)
+
+        assert nested_path.exists()
+        loaded = io.load_json(nested_path)
+        assert loaded == data
+
+    def test_read_csv_without_pandas(self, tmp_path: Path) -> None:
+        """Test read_csv fallback behavior when pandas is available."""
+        csv_file = tmp_path / "test.csv"
+        csv_file.write_text("name,value\ntest,123\n")
+
+        result = io.read_csv(csv_file)
+        # Either pandas DataFrame or dict of lists
+        assert result is not None
+
+    def test_jsonl_empty_lines_skipped(self, tmp_path: Path) -> None:
+        """Test that empty lines in JSONL are skipped."""
+        jsonl_file = tmp_path / "with_blanks.jsonl"
+        jsonl_file.write_text('{"a": 1}\n\n{"b": 2}\n\n\n{"c": 3}\n')
+
+        result = list(io.read_jsonl(jsonl_file))
+        assert len(result) == 3
+        assert result[0] == {"a": 1}
+        assert result[1] == {"b": 2}
+        assert result[2] == {"c": 3}
+
+    def test_download_file_invalid_url_returns_false(self, tmp_path: Path) -> None:
+        """Test download_file returns False for malformed URLs."""
+        dest = tmp_path / "test.txt"
+        # Use clearly invalid URL
+        result = io.download_file("not-a-valid-url", dest)
+        assert result is False
+
+    def test_ensure_directory_idempotent(self, tmp_path: Path) -> None:
+        """Test ensure_directory can be called multiple times safely."""
+        target = tmp_path / "test_dir"
+
+        # First call creates directory
+        result1 = io.ensure_directory(target)
+        assert result1.exists()
+
+        # Second call should not raise
+        result2 = io.ensure_directory(target)
+        assert result2.exists()
+        assert result1 == result2
+
+    def test_read_tsv_returns_list_of_lists(self, tmp_path: Path) -> None:
+        """Test read_tsv returns list of lists format."""
+        tsv_file = tmp_path / "test.tsv"
+        tsv_file.write_text("a\tb\tc\n1\t2\t3\n4\t5\t6\n")
+
+        result = io.read_tsv(tsv_file)
+        assert len(result) == 3
+        assert result[0] == ["a", "b", "c"]
+        assert result[1] == ["1", "2", "3"]
+
+    def test_write_tsv_handles_list_of_lists(self, tmp_path: Path) -> None:
+        """Test write_tsv handles list of lists."""
+        tsv_file = tmp_path / "output.tsv"
+        data = [["a", "b"], ["1", "2"]]
+
+        io.write_tsv(data, tsv_file)
+
+        assert tsv_file.exists()
+        content = tsv_file.read_text()
+        assert "a\tb" in content
+        assert "1\t2" in content
+
+    def test_yaml_roundtrip(self, tmp_path: Path) -> None:
+        """Test YAML write/read roundtrip (if PyYAML is available)."""
+        yaml_file = tmp_path / "test.yaml"
+        data = {"key": "value", "nested": {"list": [1, 2, 3]}}
+
+        io.dump_yaml(data, yaml_file)
+        assert yaml_file.exists()
+
+        try:
+            loaded = io.load_yaml(yaml_file)
+            assert loaded["key"] == "value"
+            assert loaded["nested"]["list"] == [1, 2, 3]
+        except ImportError:
+            pytest.skip("PyYAML not available")
+
+    def test_atomic_write_json(self, tmp_path: Path) -> None:
+        """Test atomic write leaves no temp files on success."""
+        json_file = tmp_path / "atomic.json"
+        data = {"atomic": True}
+
+        io.dump_json(data, json_file, atomic=True)
+
+        assert json_file.exists()
+        # Temp file should be cleaned up
+        temp_file = json_file.with_suffix(".json.tmp")
+        assert not temp_file.exists()
+
+        loaded = io.load_json(json_file)
+        assert loaded == data

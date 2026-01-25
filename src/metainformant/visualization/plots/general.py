@@ -53,7 +53,21 @@ _original_scatter_plot = None
 
 
 def _import_existing_functions() -> None:
-    """Safely import functions from existing visualization modules."""
+    """Safely import functions from existing visualization modules.
+
+    This function attempts to import plotting functions from specialized modules
+    (statistical, genomics, basic) and stores references to them in module-level
+    variables. If a module is not available, the corresponding function will
+    remain None and wrapper functions will raise ImportError when called.
+
+    Side Effects:
+        Sets module-level variables:
+        - _original_correlation_heatmap
+        - _original_qq_plot
+        - _original_volcano_plot
+        - _original_manhattan_plot
+        - _original_scatter_plot
+    """
     global _original_correlation_heatmap, _original_qq_plot
     global _original_volcano_plot, _original_manhattan_plot
     global _original_scatter_plot
@@ -64,7 +78,7 @@ def _import_existing_functions() -> None:
         _original_correlation_heatmap = ch
         _original_qq_plot = qqp
     except ImportError:
-        pass
+        logger.debug("Statistical plotting module not available")
 
     try:
         from .genomics import volcano_plot as vp, manhattan_plot as mp
@@ -72,14 +86,14 @@ def _import_existing_functions() -> None:
         _original_volcano_plot = vp
         _original_manhattan_plot = mp
     except ImportError:
-        pass
+        logger.debug("Genomics plotting module not available")
 
     try:
         from .basic import scatter_plot as sp
 
         _original_scatter_plot = sp
     except ImportError:
-        pass
+        logger.debug("Basic plotting module not available")
 
 
 # Import on module load

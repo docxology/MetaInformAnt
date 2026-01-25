@@ -3,7 +3,7 @@
   "destination": "output/amalgkit/pbarbatus_all/fastq/getfastq",
   "errors": [],
   "eta_seconds": 0.0,
-  "last_update": "2026-01-23T16:19:11Z",
+  "last_update": "2026-01-24T07:29:44Z",
   "progress": {
     "current": 11086096213,
     "percent": 100.0,
@@ -11,10 +11,10 @@
     "type": "directory_size"
   },
   "progress_percent": 100.0,
-  "speed_mbps": 10540.218306886356,
-  "started_at": "2026-01-23T16:19:10Z",
+  "speed_mbps": 5229.9548954507545,
+  "started_at": "2026-01-24T07:29:42Z",
   "status": "failed",
   "step": "amalgkit getfastq",
   "total_bytes": 739262368,
-  "url": "['amalgkit', 'getfastq', '--out_dir', 'output/amalgkit/pbarbatus_all/fastq', '--threads', '8', '--redo', 'no', '--aws', 'yes', '--gcp', 'no', '--ncbi', 'no', '--pfd', 'yes', '--fastp', 'no', '--max_bp', '50000000', '--metadata', 'output/amalgkit/pbarbatus_all/work/metadata/metadata_chunk_8.tsv']"
+  "url": "['amalgkit', 'getfastq', '--out_dir', 'output/amalgkit/pbarbatus_all/fastq', '--threads', '8', '--redo', 'no', '--aws', 'yes', '--gcp', 'no', '--ncbi', 'no', '--pfd', 'no', '--fastp', 'no', '--max_bp', '50000000', '--metadata', 'output/amalgkit/pbarbatus_all/work/metadata/metadata_chunk_8.tsv']"
 }

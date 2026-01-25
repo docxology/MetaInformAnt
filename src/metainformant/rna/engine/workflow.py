@@ -184,8 +184,10 @@ def load_workflow_config(config_file: Union[str, Path]) -> AmalgkitWorkflowConfi
 
         return AmalgkitWorkflowConfig.from_dict(config_dict)
 
-    except Exception as e:
-        raise ValueError(f"Error loading configuration from {config_path}: {e}")
+    except (OSError, IOError) as e:
+        raise ValueError(f"Error reading configuration file {config_path}: {e}") from e
+    except (KeyError, TypeError) as e:
+        raise ValueError(f"Invalid configuration format in {config_path}: {e}") from e
 
 
 def apply_config_defaults(config: Dict[str, Any]) -> Dict[str, Any]:
@@ -428,7 +430,7 @@ def plan_workflow(config: AmalgkitWorkflowConfig) -> List[Tuple[str, Any]]:
             overrides = per_step_dict[step].copy()
 
             step_params.update(overrides)
-            print(f"DEBUG workflow step {step} params: {step_params}")
+            logger.debug(f"Workflow step {step} params: {step_params}")
 
             # Warn if redo: yes is set for getfastq (usually unnecessary)
             if step == "getfastq":
@@ -1890,8 +1892,8 @@ def execute_workflow(
                     ok, free_gb = _check_disk_space(config.work_dir, min_free_gb=10.0)
                     estimated_need = remaining_count * 3.0  # 3GB per sample conservative estimate
 
-                    logger.info(
-                        f"DEBUG: Streaming detection - Remaining: {remaining_count}, Free: {free_gb:.2f}GB, Need: {estimated_need:.2f}GB"
+                    logger.debug(
+                        f"Streaming detection - Remaining: {remaining_count}, Free: {free_gb:.2f}GB, Need: {estimated_need:.2f}GB"
                     )
 
                     if remaining_count > 5 and estimated_need > (free_gb * 0.8):

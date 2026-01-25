@@ -220,8 +220,11 @@ def feature_attribution(
 
         return {"attributions": attributions, "method": "permutation", "library": None}
 
-    except Exception as e:
-        logger.error(f"Feature attribution failed: {e}")
+    except (ValueError, TypeError, AttributeError) as e:
+        logger.error(f"Feature attribution failed due to data error: {e}")
+        return {"attributions": {}, "method": "failed", "error": str(e)}
+    except (IndexError, KeyError) as e:
+        logger.error(f"Feature attribution failed due to sequence access error: {e}")
         return {"attributions": {}, "method": "failed", "error": str(e)}
 
 

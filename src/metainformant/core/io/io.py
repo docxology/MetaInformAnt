@@ -459,12 +459,16 @@ def download_file(url: str, dest_path: str | Path, *, chunk_size: int = 8192, ti
     Args:
         url: URL to download from
         dest_path: Local path to save the file
-        chunk_size: Size of download chunks
+        chunk_size: Size of download chunks (in bytes)
         timeout: Request timeout in seconds
 
     Returns:
         True if download successful, False otherwise
     """
+    from metainformant.core import logging as core_logging
+
+    logger = core_logging.get_logger(__name__)
+
     try:
         from .download import download_with_progress
 
@@ -481,7 +485,14 @@ def download_file(url: str, dest_path: str | Path, *, chunk_size: int = 8192, ti
             resume=True,
         )
         return bool(result.success)
-    except Exception:
+    except (OSError, IOError) as e:
+        logger.debug(f"Download failed due to I/O error: {e}")
+        return False
+    except ImportError as e:
+        logger.warning(f"Download module unavailable: {e}")
+        return False
+    except ValueError as e:
+        logger.debug(f"Download failed due to invalid value: {e}")
         return False
 
 
@@ -497,11 +508,22 @@ def download_json(url: str, *, timeout: int = 30) -> Any:
     """
     import requests
 
+    from metainformant.core import logging as core_logging
+
+    logger = core_logging.get_logger(__name__)
+
     try:
         response = requests.get(url, timeout=timeout)
         response.raise_for_status()
         return response.json()
-    except Exception:
+    except requests.RequestException as e:
+        logger.debug(f"Failed to download JSON from {url}: {e}")
+        return None
+    except json.JSONDecodeError as e:
+        logger.debug(f"Failed to parse JSON from {url}: {e}")
+        return None
+    except (ValueError, TypeError) as e:
+        logger.debug(f"Invalid JSON data from {url}: {e}")
         return None
 
 
@@ -517,11 +539,19 @@ def download_text(url: str, *, timeout: int = 30) -> str | None:
     """
     import requests
 
+    from metainformant.core import logging as core_logging
+
+    logger = core_logging.get_logger(__name__)
+
     try:
         response = requests.get(url, timeout=timeout)
         response.raise_for_status()
         return response.text
-    except Exception:
+    except requests.RequestException as e:
+        logger.debug(f"Failed to download text from {url}: {e}")
+        return None
+    except (UnicodeDecodeError, ValueError) as e:
+        logger.debug(f"Failed to decode text from {url}: {e}")
         return None
 
 
@@ -536,15 +566,21 @@ def download_csv(url: str, *, timeout: int = 30, **kwargs) -> Any:
     Returns:
         DataFrame or None if failed
     """
+    from metainformant.core import logging as core_logging
+
+    logger = core_logging.get_logger(__name__)
+
     try:
         import pandas as pd
-        import io
+        import io as std_io
 
         text_content = download_text(url, timeout=timeout)
         if text_content:
-            return pd.read_csv(io.StringIO(text_content), **kwargs)
-    except Exception:
-        pass
+            return pd.read_csv(std_io.StringIO(text_content), **kwargs)
+    except ImportError as e:
+        logger.debug(f"pandas not available for CSV parsing: {e}")
+    except (ValueError, TypeError) as e:
+        logger.debug(f"Failed to parse CSV from {url}: {e}")
 
     return None
 
@@ -560,6 +596,10 @@ def batch_download(urls: list[str], dest_dir: str | Path, *, timeout: int = 30) 
     Returns:
         Dictionary mapping URLs to success status
     """
+    from metainformant.core import logging as core_logging
+
+    logger = core_logging.get_logger(__name__)
+
     dest_dir = Path(dest_dir)
     ensure_directory(dest_dir)
 
@@ -577,7 +617,8 @@ def batch_download(urls: list[str], dest_dir: str | Path, *, timeout: int = 30) 
             success = download_file(url, dest_path, timeout=timeout)
             results[url] = success
 
-        except Exception:
+        except (ValueError, OSError) as e:
+            logger.debug(f"Failed to download {url}: {e}")
             results[url] = False
 
     return results

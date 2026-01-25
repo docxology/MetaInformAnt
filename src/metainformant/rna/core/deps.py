@@ -104,7 +104,7 @@ def check_cpu_cores() -> int:
         import multiprocessing
 
         return multiprocessing.cpu_count()
-    except Exception:
+    except (NotImplementedError, OSError):
         return 1  # Conservative estimate
 
 
@@ -258,7 +258,7 @@ def check_step_dependencies(step_name: str, params: Dict[str, Any], config: Any)
             result = subprocess.run(["Rscript", "--version"], capture_output=True, text=True, timeout=5)
             if result.returncode != 0:
                 return False, "Rscript not available (required for R-based steps)"
-        except (subprocess.CalledProcessError, FileNotFoundError):
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, FileNotFoundError, OSError):
             return False, "Rscript not available (required for R-based steps)"
 
     return True, ""

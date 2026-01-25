@@ -71,12 +71,26 @@ def build_cli_args(
 ) -> List[str]:
     """Build command-line arguments for amalgkit.
 
+    Converts an AmalgkitParams object or dictionary into a list of command-line
+    arguments suitable for passing to subprocess.run() or similar.
+
     Args:
-        params: Amalgkit parameters (AmalgkitParams object or dict)
-        for_cli: Whether to format for CLI usage
+        params: Amalgkit parameters. Can be:
+            - AmalgkitParams: Structured parameter object with work_dir, threads, species_list
+            - Dict[str, Any]: Dictionary with parameter key-value pairs
+            - None: Returns empty list
+        subcommand: The amalgkit subcommand being run (e.g., 'getfastq', 'quant').
+            Used to filter out unsupported arguments for specific subcommands.
+        for_cli: Whether to format for direct CLI usage. Currently unused but
+            reserved for future formatting options.
 
     Returns:
-        List of command-line arguments
+        List of command-line argument strings, e.g. ['--out_dir', '/path', '--threads', '8']
+
+    Example:
+        >>> params = {'out_dir': '/work', 'threads': 4, 'redo': True}
+        >>> build_cli_args(params, subcommand='getfastq')
+        ['--out_dir', '/work', '--threads', '4', '--redo', 'yes']
     """
     args = []
 
@@ -233,7 +247,7 @@ def check_cli_available() -> Tuple[bool, str]:
         return False, "amalgkit CLI not found in PATH"
     except subprocess.TimeoutExpired:
         return False, "amalgkit CLI check timed out"
-    except Exception as e:
+    except (OSError, PermissionError) as e:
         return False, f"Error checking amalgkit CLI: {e}"
 
 
@@ -497,7 +511,8 @@ def _estimate_total_bytes_from_metadata(metadata_path: Path) -> int | None:
                 except ValueError:
                     continue
             return total if total > 0 else None
-    except Exception:
+    except (OSError, IOError, csv.Error) as e:
+        logger.debug(f"Could not estimate bytes from metadata: {e}")
         return None
 
 
@@ -514,7 +529,8 @@ def _estimate_total_runs_from_metadata(metadata_path: Path) -> int | None:
             for _ in reader:
                 n += 1
             return n if n > 0 else None
-    except Exception:
+    except (OSError, IOError, csv.Error) as e:
+        logger.debug(f"Could not estimate runs from metadata: {e}")
         return None
 
 

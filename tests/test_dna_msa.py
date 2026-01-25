@@ -1,4 +1,8 @@
-"""Tests for DNA multiple sequence alignment."""
+"""Tests for DNA multiple sequence alignment.
+
+These tests use external alignment tools (muscle, mafft, clustalo) when available.
+Tests will skip gracefully if tools are not installed.
+"""
 
 from __future__ import annotations
 
@@ -9,6 +13,7 @@ import pytest
 from metainformant.dna import msa, sequences
 
 
+@pytest.mark.external_tool
 def test_align_msa_returns_equal_length_alignment() -> None:
     """Test MSA alignment returns equal-length sequences."""
     fasta_path = Path(__file__).parent / "data" / "dna" / "toy.fasta"
@@ -25,6 +30,7 @@ def test_align_msa_returns_equal_length_alignment() -> None:
         pytest.skip(f"MSA functions unavailable: {e}")
 
 
+@pytest.mark.external_tool
 def test_align_msa_with_tmp_file(tmp_path: Path) -> None:
     """Test MSA alignment with temporary FASTA file."""
     fasta_content = """>seq1

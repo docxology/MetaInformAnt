@@ -177,7 +177,8 @@ def _http_head_size(url: str, *, timeout: int) -> int | None:
             return None
         cl = resp.headers.get("Content-Length")
         return int(cl) if cl is not None else None
-    except Exception:
+    except (requests.RequestException, requests.Timeout, ValueError, OSError) as e:
+        logger.debug(f"Could not determine file size for {url}: {e}")
         return None
 
 

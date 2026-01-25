@@ -1,7 +1,68 @@
 """Life events and trajectory analysis module for METAINFORMANT.
 
-This module provides tools for analyzing life events, trajectories,
-and temporal patterns in biological data.
+This module provides comprehensive tools for analyzing life events, trajectories,
+and temporal patterns in biological and longitudinal data. It supports event sequence
+modeling, prediction, and interpretation.
+
+Capabilities:
+    - **Event Representation**: Model life events with timestamps, types, and metadata
+    - **Sequence Analysis**: Analyze temporal sequences of events
+    - **Prediction Models**: Train models to predict future events or outcomes
+    - **Embedding Learning**: Learn vector representations of events
+    - **Interpretability**: Explain model predictions using attention and attribution
+
+Key Classes:
+    - Event: Single life event with timestamp and type
+    - EventSequence: Ordered sequence of events with filtering/aggregation
+    - EventDatabase: Collection of sequences with querying capabilities
+    - EventSequencePredictor: ML model for event-based predictions
+    - EnsemblePredictor: Combine multiple predictors
+    - GRUSequenceModel, LSTMSequenceModel: Neural sequence models
+
+Key Functions:
+    - analyze_life_course: Analyze patterns in life course data
+    - compare_populations: Compare event distributions between groups
+    - intervention_analysis: Analyze effects of interventions
+    - temporal_patterns: Discover temporal patterns in sequences
+    - learn_event_embeddings: Train word2vec-style event embeddings
+
+Submodules:
+    - core.events: Event and EventSequence data structures
+    - core.config: Configuration for life events analysis
+    - core.utils: Utility functions (loading, validation, generation)
+    - models.models: Prediction models (sklearn, PyTorch)
+    - models.embeddings: Event embedding methods
+    - analysis: Interpretability and pattern analysis
+    - workflow: High-level analysis workflows
+    - visualization: Timeline, attention, and trajectory plots
+
+Typical Workflow:
+    1. Create Event objects with timestamps and types
+    2. Build EventSequence objects from events
+    3. Learn embeddings or use domain-specific embeddings
+    4. Train prediction model (e.g., EventSequencePredictor)
+    5. Interpret predictions with attention_weights or feature_attribution
+    6. Visualize with plot_event_timeline, plot_attention_heatmap, etc.
+
+Example:
+    >>> from metainformant.life_events import Event, EventSequence, EventSequencePredictor
+    >>> # Create events
+    >>> events = [
+    ...     Event(timestamp=0, event_type="diagnosis"),
+    ...     Event(timestamp=30, event_type="treatment"),
+    ...     Event(timestamp=90, event_type="followup"),
+    ... ]
+    >>> sequence = EventSequence(events=events, subject_id="patient_001")
+    >>>
+    >>> # Train predictor
+    >>> predictor = EventSequencePredictor()
+    >>> predictor.fit(sequences, labels)
+    >>> predictions = predictor.predict(new_sequences)
+
+See Also:
+    - docs/life_events/ for detailed documentation
+    - metainformant.networks for event network analysis
+    - metainformant.visualization for additional plotting
 """
 
 from __future__ import annotations

@@ -2,8 +2,10 @@
 # Species: Pogonomyrmex barbatus (ALL samples)
 # NCBI Taxonomy ID: 144034
 # Assembly: GCF_000187915.1 (Pbar_UMD_V03)
-# Notes: Full-sample run, reusing existing kallisto index and skipping already-processed samples.
+# Notes: Full-sample production run, reusing existing kallisto index.
+# Status: ✅ COMPLETE - 95/110 samples quantified, expression matrices generated
 # Generated: 2026-01-20
+# Completed: 2026-01-24
 
 # Paths are resolved relative to repository root
 work_dir: output/amalgkit/pbarbatus_all/work

@@ -1,8 +1,45 @@
 """Evolutionary and Population Genetics Simulation module for METAINFORMANT.
 
-This module provides tools for simulating evolutionary processes, including
-agent-based modeling, population genetics simulation (forward and backward time),
-molecular evolution, and sequence simulation.
+This module provides comprehensive tools for simulating evolutionary processes,
+including agent-based modeling, population genetics simulation, molecular evolution,
+and sequence generation.
+
+Capabilities:
+    - **Sequence Simulation**: Generate random DNA/protein sequences and apply mutations
+    - **RNA-seq Simulation**: Simulate count data using negative binomial distributions
+    - **Agent-based Models**: Create agents in grid-based environments for ecological modeling
+    - **Population Genetics**: Forward and backward-time coalescent simulations
+    - **Molecular Evolution**: Simulate substitution models and phylogenetic trees
+
+Key Classes:
+    - Agent: Individual agent for agent-based modeling
+    - GridWorld: 2D grid environment for agent simulations
+
+Key Functions:
+    - generate_random_dna: Generate random DNA sequences
+    - generate_random_protein: Generate random protein sequences
+    - mutate_sequence: Apply mutations to sequences
+    - simulate_counts_negative_binomial: Simulate RNA-seq count data
+
+Submodules:
+    - models.sequences: DNA/protein sequence simulation
+    - models.rna: RNA-seq count simulation
+    - models.popgen: Population genetics simulations
+    - models.agents: Agent-based modeling
+    - workflow: Simulation workflow management
+    - visualization: Plotting simulation results
+
+Example:
+    >>> from metainformant.simulation import generate_random_dna, mutate_sequence
+    >>> seq = generate_random_dna(length=100)
+    >>> mutated = mutate_sequence(seq, mutation_rate=0.01)
+
+    >>> from metainformant.simulation import simulate_counts_negative_binomial
+    >>> counts = simulate_counts_negative_binomial(n_genes=1000, n_samples=10)
+
+See Also:
+    - docs/simulation/ for detailed simulation documentation
+    - metainformant.math for population genetics theory
 """
 
 from __future__ import annotations
