@@ -1,0 +1,7 @@
+{"step": "metadata", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769444425.309473}
+{"step": "select", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1769444425.309495}
+{"step": "config", "return_code": 0, "success": true, "duration_seconds": 0, "timestamp": 1769444524.9487512}
+{"step": "select", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1769444524.948771}
+{"step": "select", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1769444674.75311}
+{"step": "getfastq", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1769444775.614431}
+{"step": "quant", "return_code": 1, "success": false, "duration_seconds": 0, "timestamp": 1769444775.614482}

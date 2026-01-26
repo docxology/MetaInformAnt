@@ -1,0 +1,92 @@
+# METAINFORMANT Amalgkit Configuration
+# Species: Apis mellifera (Western honeybee) - ALL samples
+# NCBI Taxonomy ID: 7460
+# Assembly: GCF_003254395.2 (Amel_HAv3.1)
+# Genome Size: 225.2 Mb, 16 chromosomes
+# Notes: Full-sample production run for Apis mellifera RNA-seq data
+# Status: 🔄 IN PROGRESS - Streaming mode (5 samples/chunk, 1,457 chunks)
+# Generated: 2026-01-26
+# Started: 2026-01-26
+# SRA Metadata: 7,285 RNA-seq samples retrieved (4,077 paired, 3,215 single)
+
+# Paths are resolved relative to repository root
+work_dir: output/amalgkit/apis_mellifera_all/work
+log_dir: output/amalgkit/apis_mellifera_all/logs
+threads: 12
+
+auto_install_amalgkit: true
+
+# Pre-selection filtering rules
+filters:
+  require_tissue: false
+
+# Species configuration
+species_list:
+  - Apis_mellifera
+
+taxon_id: 7460
+
+# Reference genome configuration
+genome:
+  accession: GCF_003254395.2
+  assembly_name: Amel_HAv3.1
+  annotation_release: 104
+  dest_dir: output/amalgkit/shared/genome/Apis_mellifera
+  include:
+    - genome
+    - gff3
+    - rna
+    - cds
+    - protein
+  ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/003/254/395/GCF_003254395.2_Amel_HAv3.1/
+  files:
+    genomic_fasta: GCF_003254395.2_Amel_HAv3.1_genomic.fna.gz
+    transcriptome_fasta: GCF_003254395.2_Amel_HAv3.1_rna_from_genomic.fna.gz
+    cds_fasta: GCF_003254395.2_Amel_HAv3.1_cds_from_genomic.fna.gz
+    protein_fasta: GCF_003254395.2_Amel_HAv3.1_protein.faa.gz
+    annotation_gff: GCF_003254395.2_Amel_HAv3.1_genomic.gff.gz
+
+# Per-step parameters
+steps:
+  metadata:
+    out_dir: output/amalgkit/apis_mellifera_all/work
+    search_string: '"Apis mellifera"[Organism] AND "RNA-Seq"[Strategy] AND "Illumina"[Platform]'
+    redo: no  # Reuse existing metadata if available
+  integrate:
+    fastq_dir: output/amalgkit/apis_mellifera_all/fastq/getfastq
+  select:
+    max_sample: 999999  # No artificial limit - process all available samples
+    mark_missing_rank: none
+    priority: "completeness"
+    redo: no  # Reuse existing selection
+  getfastq:
+    out_dir: output/amalgkit/apis_mellifera_all/fastq
+    threads: 8
+    jobs: 4
+    redo: no  # CRITICAL: Skip already-downloaded samples
+    aws: yes
+    gcp: no
+    ncbi: no
+    pfd: no  # parallel-fastq-dump not installed
+    fastp: no
+    max_bp: 50000000  # Downsampling for speed (50M bp per sample)
+  quant:
+    out_dir: output/amalgkit/apis_mellifera_all/work
+    threads: 6
+    redo: no  # CRITICAL: Skip already-quantified samples
+    build_index: yes  # Build kallisto index on first run
+    keep_fastq: no  # Delete FASTQs after quantification (stream-and-clean)
+    index_dir: output/amalgkit/shared/genome/Apis_mellifera/index
+    fasta_dir: output/amalgkit/shared/genome/Apis_mellifera
+  merge:
+    out: output/amalgkit/apis_mellifera_all/merged/merged_abundance.tsv
+    out_dir: output/amalgkit/apis_mellifera_all/merged
+  cstmm:
+    out_dir: output/amalgkit/apis_mellifera_all/work
+    orthogroup_table: ""
+  curate:
+    out_dir: output/amalgkit/apis_mellifera_all/work
+  csca:
+    out_dir: output/amalgkit/apis_mellifera_all/work
+    orthogroup_table: ""
+  sanity: {}

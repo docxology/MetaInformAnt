@@ -14,6 +14,7 @@ YAML configurations for the **amalgkit** RNA-seq data integration pipeline. Thes
 | `amalgkit_pbarbatus_25sample.yaml` | 25-sample validation run | Test |
 | `amalgkit_pbarbatus_all.yaml` | **Production**: All 110 P. barbatus samples | ✅ Complete |
 | `amalgkit_pogonomyrmex_barbatus.yaml` | Full species configuration template | Reference |
+| `amalgkit_apis_mellifera_all.yaml` | **Production**: All ~7,292 A. mellifera samples | 🔄 Pending |
 
 ## 🏆 Production Run Results
 

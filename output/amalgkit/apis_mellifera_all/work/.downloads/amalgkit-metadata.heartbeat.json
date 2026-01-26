@@ -1,0 +1,20 @@
+{
+  "bytes_downloaded": 9403842,
+  "destination": "output/amalgkit/apis_mellifera_all/work/metadata",
+  "errors": [],
+  "eta_seconds": null,
+  "last_update": "2026-01-26T16:20:23Z",
+  "progress": {
+    "current": 1,
+    "percent": 25.0,
+    "total": 4,
+    "type": "file_count"
+  },
+  "progress_percent": 25.0,
+  "speed_mbps": 0.061233117267654784,
+  "started_at": "2026-01-26T16:17:57Z",
+  "status": "completed",
+  "step": "amalgkit metadata",
+  "total_bytes": null,
+  "url": "['amalgkit', 'metadata', '--out_dir', 'output/amalgkit/apis_mellifera_all/work', '--search_string', '\"Apis mellifera\"[Organism] AND \"RNA-Seq\"[Strategy] AND \"Illumina\"[Platform]', '--redo', 'no']"
+}
