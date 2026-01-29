@@ -14,7 +14,8 @@ YAML configurations for the **amalgkit** RNA-seq data integration pipeline. Thes
 | `amalgkit_pbarbatus_25sample.yaml` | 25-sample validation run | Test |
 | `amalgkit_pbarbatus_all.yaml` | **Production**: All 110 P. barbatus samples | ✅ Complete |
 | `amalgkit_pogonomyrmex_barbatus.yaml` | Full species configuration template | Reference |
-| `amalgkit_apis_mellifera_all.yaml` | **Production**: All ~7,292 A. mellifera samples | 🔄 Pending |
+| `amalgkit_apis_mellifera_all.yaml` | **Production**: All ~7,242 A. mellifera samples | 🔄 In Progress |
+| `amalgkit_faq.md` | FAQ with common errors and solutions | Reference |
 
 ## 🏆 Production Run Results
 
@@ -93,5 +94,6 @@ This allows processing 100+ samples with only ~50GB free disk space.
 ## 🔗 Related Resources
 
 - [Amalgkit Documentation](https://github.com/kfuku52/amalgkit)
+- [Amalgkit FAQ](./amalgkit_faq.md) - Common errors and solutions
 - [Workflow Knowledge Base](/.gemini/antigravity/knowledge/metainformant_rna_workflow/)
-- [Recovery Scripts](../../../scripts/rna/)
+- [RNA Scripts](../../../scripts/rna/)

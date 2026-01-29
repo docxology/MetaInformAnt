@@ -4,10 +4,10 @@
 # Assembly: GCF_003254395.2 (Amel_HAv3.1)
 # Genome Size: 225.2 Mb, 16 chromosomes
 # Notes: Full-sample production run for Apis mellifera RNA-seq data
-# Status: 🔄 IN PROGRESS - Streaming mode (5 samples/chunk, 1,457 chunks)
+# Status: 🔄 IN PROGRESS - Streaming mode (5 samples/chunk, 1,454 chunks)
 # Generated: 2026-01-26
 # Started: 2026-01-26
-# SRA Metadata: 7,285 RNA-seq samples retrieved (4,077 paired, 3,215 single)
+# SRA Metadata: 7,270 RNA-seq samples (filtered: removed 15 metagenomic from PRJNA1364028)
 
 # Paths are resolved relative to repository root
 work_dir: output/amalgkit/apis_mellifera_all/work

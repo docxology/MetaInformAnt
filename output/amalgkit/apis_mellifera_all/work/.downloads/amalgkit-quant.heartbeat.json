@@ -1,0 +1,20 @@
+{
+  "bytes_downloaded": 0,
+  "destination": "output/amalgkit/apis_mellifera_all/work/quant",
+  "errors": [],
+  "eta_seconds": null,
+  "last_update": "2026-01-26T19:23:49Z",
+  "progress": {
+    "current": 0,
+    "percent": 0.0,
+    "total": 5,
+    "type": "sample_count"
+  },
+  "progress_percent": 0.0,
+  "speed_mbps": 0.0,
+  "started_at": "2026-01-26T19:23:47Z",
+  "status": "failed",
+  "step": "amalgkit quant",
+  "total_bytes": null,
+  "url": "['amalgkit', 'quant', '--out_dir', 'output/amalgkit/apis_mellifera_all/work', '--threads', '6', '--redo', 'no', '--build_index', 'yes', '--index_dir', 'output/amalgkit/shared/genome/Apis_mellifera/index', '--fasta_dir', 'output/amalgkit/shared/genome/Apis_mellifera', '--metadata', 'output/amalgkit/apis_mellifera_all/work/metadata/metadata_chunk_0.tsv']"
+}
