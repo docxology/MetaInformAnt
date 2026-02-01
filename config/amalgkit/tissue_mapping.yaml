@@ -1,0 +1,458 @@
+# Tissue Mapping Configuration
+# Maps canonical tissue names to their synonyms/variants
+# Used by tissue_normalizer.py to create standardized tissue values
+
+# Brain and neural tissues
+brain:
+  - brain
+  - Brain
+  - whole brain
+  - Whole brain
+  - brain tissue
+  - Brain tissue
+  - head (brain)
+  - cerebrum
+  - honeybee brain
+  - brain (pool of 4 brains)
+  - 5 pooled brains
+
+optic_lobe:
+  - optic lobe
+  - optic lobes
+  - optic lobes (OL) region of the brain
+  - OL
+
+antennal_lobe:
+  - antennal lobe
+  - antennal lobes
+  - Antennal Lobes
+  - antennal lobes and subaesophageal ganglion (AL) region of the brain
+  - AL
+
+mushroom_body:
+  - mushroom body
+  - Mushroom body
+  - mushroom bodies
+  - Mushroom bodies
+  - Mushroom bodies (brain region)
+  - mushroom bodies (MB) region of the brain
+  - mushroom body (dissected from brain)
+  - Mushroom Bodies of brain
+  - MB
+
+antenna:
+  - antenna
+  - Antenna
+  - antennae
+  - Antennae
+
+# Body regions
+whole_body:
+  - whole body
+  - Whole Body
+  - Whole body
+  - whole bee
+  - whole
+  - Whole
+  - whole body homogenates
+  - whole organism
+  - whole animal
+  - 10 pooled whole bodies
+  - Whole adult female
+  - total
+  - total body
+  - Intact insect body
+  - whole insect
+
+head:
+  - head
+  - Head
+  - head tissue
+  - heads
+  - entire worker head
+  - Larval Head
+
+thorax:
+  - thorax
+  - Thorax
+  - thorax tissue
+  - thorax and abdomen
+  - Flight muscle and thoracic exoskeleton
+
+abdomen:
+  - abdomen
+  - Abdomen
+  - Whole abdomen
+  - abdominal tissue
+  - abdomen(gut removed)
+  - Eviscerated abdomen with attached fat bodies and inactive ovaries
+  - Eviscerated abdomen with attached fat bodies and active ovaries
+  - Eviscerated abdomen and fat body
+  - abdominal integument
+
+# Digestive system
+gut:
+  - gut
+  - Gut
+  - Gut tissue
+  - midgut
+  - Midgut
+  - hindgut
+  - Hindgut
+  - intestine
+  - Intestine
+  - digestive tract
+  - Intestinal tissue
+  - ileum
+  - Pooled pylori from 7 honey bees
+  - Apis mellifera rectum
+  - midgut organization
+
+# Fat and metabolic tissues  
+fat_body:
+  - fat body
+  - Fat body
+  - Fat-body
+  - fat-body
+  - fatbody
+
+# Reproductive tissues
+ovary:
+  - ovary
+  - Ovary
+  - ovaries
+  - Ovaries
+  - ovarian tissue
+
+testes:
+  - testes
+  - Testes
+  - testis
+  - Testis
+
+spermatheca:
+  - spermatheca
+  - Spermatheca
+
+# Hemolymph and circulatory
+hemolymph:
+  - hemolymph
+  - Hemolymph
+  - haemolymph
+
+# Glands
+hypopharyngeal_gland:
+  - hypopharyngeal gland
+  - Hypopharyngeal gland
+  - hypopharyngeal glands
+  - HPG
+
+mandibular_gland:
+  - mandibular gland
+  - Mandibular gland
+  - mandibular glands
+
+venom_gland:
+  - venom gland
+  - Venom gland
+  - poison gland
+
+# Flight tissues
+flight_muscle:
+  - flight muscle
+  - Flight muscle
+  - thoracic muscle
+  - wing muscle
+
+wing:
+  - wing
+  - Wing
+  - wings
+  - Wings
+  - wings and thoracic dorsum
+
+# Larval stages
+larva:
+  - larva
+  - Larva
+  - larvae
+  - Larvae
+  - Whole larvae
+  - whole larvae
+  - larval tissue
+
+pupa:
+  - pupa
+  - Pupa
+  - pupae
+  - Pupae
+
+embryo:
+  - embryo
+  - Embryo
+  - embryos
+  - egg
+
+# Cuticle and external
+cuticle:
+  - cuticle
+  - Cuticle
+  - exoskeleton
+
+# Additional body parts
+leg:
+  - leg
+  - Leg
+  - legs
+
+eye:
+  - eye
+  - Eye
+  - eyes
+  - eyes from dark eye single bee
+  - eyes white white eye single bee
+
+mouthparts:
+  - mouthparts
+  - Mouthparts
+  - tentacles
+
+muscle:
+  - muscle
+  - Muscle
+  - muscles
+
+# Additional glands
+nasonov_gland:
+  - nasonov gland
+  - Nasonov gland
+
+sting_gland:
+  - sting gland
+  - Sting Gland
+  - Venom system
+
+# Additional reproductive
+semen:
+  - semen
+  - Semen
+  - Spermetheca_virgin
+  - Spermethecia_mated
+
+gonad:
+  - gonad
+  - Gonadal
+  - gonadal
+
+germline:
+  - germline
+  - Germline
+  - Drone germline
+  - Queen germline
+  - germ cells
+
+# Additional digestive
+malpighian_tubule:
+  - malpighian tubule
+  - Malpighian tubule
+  - Malpighian tubules
+  - ventriculus
+  - Ventriculus
+  - larval gut
+
+# Neural ganglia
+thoracic_ganglia:
+  - thoracic ganglia
+  - Second Thoracic Ganglia
+  - 2nd Thoracic Ganglia
+
+# Larval and developmental additions
+larva:
+  - larva
+  - Larva
+  - larvae
+  - Larvae
+  - Whole larvae
+  - whole larvae
+  - larval tissue
+  - Whole larva
+  - larvae body
+  - whole body larvae
+  - larvea
+  - whole larva body
+  - whole larvae inoculated with C6 rep 1
+  - whole larvae inoculated with C6 rep 2
+  - whole larvae inoculated with C6 rep 3
+  - whole larvae inoculated with B8 rep 1
+  - whole larvae inoculated with B8 rep 2
+  - whole larvae inoculated with B8 rep 3
+
+pupa:
+  - pupa
+  - Pupa
+  - pupae
+  - Pupae
+  - RNA of the whole pupae
+
+embryo:
+  - embryo
+  - Embryo
+  - embryos
+  - egg
+  - whole embryos
+  - drone embryo
+  - worker embryo
+
+# Wing additions
+wing:
+  - wing
+  - Wing
+  - wings
+  - Wings
+  - wings and thoracic dorsum
+  - Membranous wings
+  - wing disc
+
+# Additional whole body synonyms
+whole_body:
+  - whole body
+  - Whole Body
+  - Whole body
+  - whole bee
+  - whole
+  - Whole
+  - whole body homogenates
+  - whole organism
+  - whole animal
+  - 10 pooled whole bodies
+  - Whole adult female
+  - total
+  - total body
+  - Intact insect body
+  - whole insect
+  - whole tissue
+  - entirety
+  - body
+  - whole bodies
+  - total individuals
+  - total individual
+  - whole worker bees
+  - Whole_Body_1
+  - Whole_Body_2
+  - Whole_Body_3
+  - Whole_Body_4
+  - Whole_Body_5
+  - Whole_Body_6
+  - Whole_Body_7
+  - Whole_Body_8
+  - Whole_Body_9
+  - Whole_Body_10
+  - Whole_Body_11
+  - Whole_Body_12
+  - Whole_Body_13
+  - Whole_Body_14
+  - Whole_Body_15
+  - Whole_Body_16
+  - Whole_Body_17
+  - Whole_Body_18
+  - Whole_Body_19
+  - Whole_Body_20
+  - Whole_Body_21
+  - Whole_Body_22
+  - Whole_Body_23
+  - Whole_Body_24
+  - Whole_Body_25
+  - Whole_Body_26
+  - Whole_Body_27
+  - Whole_Body_28
+  - unknow
+  - tissue
+
+# Antenna additions
+antenna:
+  - antenna
+  - Antenna
+  - antennae
+  - Antennae
+  - 4 pairs of antennae
+
+# Head additions
+head:
+  - head
+  - Head
+  - head tissue
+  - heads
+  - entire worker head
+  - Larval Head
+  - head and thorax
+  - head,chest
+
+# Thorax additions
+thorax:
+  - thorax
+  - Thorax
+  - thorax tissue
+  - thorax and abdomen
+  - Flight muscle and thoracic exoskeleton
+  - bee thorax
+  - Drone thorax
+  - Queen thorax
+
+# Abdomen additions
+abdomen:
+  - abdomen
+  - Abdomen
+  - Whole abdomen
+  - abdominal tissue
+  - abdomen(gut removed)
+  - Eviscerated abdomen with attached fat bodies and inactive ovaries
+  - Eviscerated abdomen with attached fat bodies and active ovaries
+  - Eviscerated abdomen and fat body
+  - abdominal integument
+  - Eviscerated abdomen with attached fat bodies
+
+# Ovary additions
+ovary:
+  - ovary
+  - Ovary
+  - ovaries
+  - Ovaries
+  - ovarian tissue
+  - larvae ovary
+
+# Testes additions
+testes:
+  - testes
+  - Testes
+  - testis
+  - Testis
+  - Testicles
+
+# Gland additions
+hypopharyngeal_gland:
+  - hypopharyngeal gland
+  - Hypopharyngeal gland
+  - hypopharyngeal glands
+  - HPG
+  - Hypopharyngeal gland tissue
+  - Hypopharyngeal glands tissue
+  - gland
+
+# Cell culture
+cell_culture:
+  - Ame-711 cells
+  - cell line
+  - cells
+
+# Excluded/not applicable
+not_applicable:
+  - not applicable
+  - N/A
+  - NA
+  - virus augmented bee lysate
+
+# Royal jelly (secretion, not tissue)
+royal_jelly:
+  - royal jelly
+  - Royal jelly
+  - royal jelly RNA

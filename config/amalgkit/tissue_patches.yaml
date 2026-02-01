@@ -1,0 +1,94 @@
+# Tissue Patches Configuration
+# Sample-specific tissue overrides for cases where:
+# 1. Tissue is missing from metadata
+# 2. Tissue value needs correction based on manual research
+# 3. Entire bioproject has uniform tissue type
+
+# Per-sample overrides
+# Format: run_accession: canonical_tissue
+samples:
+  # Examples - add real mappings as needed
+  # SRR12345678: brain
+  # ERR87654321: hemolymph
+
+# Per-bioproject overrides (applies to all samples in project)
+# Format: bioproject_accession: canonical_tissue
+bioprojects:
+  # Research findings from NCBI BioProject pages
+  PRJNA339620: mushroom_body  # "Transcriptomic and epigenetic responses to social challenge" - mushroom body confirmed via BioSample
+  PRJEB35177: antenna         # "RNA-seq of antennal tissue of male and female honey bees"
+  PRJNA260604: larva          # "Transcriptome of honey bee larvae"
+  PRJNA104931: brain          # "Reversible switching between epigenetic states in honeybee behavioral subcastes" - brain
+  PRJNA194157: gut            # "Transcriptional profiling of honeybee abdomens, digestive tracts"
+  PRJNA211831: brain          # "Transcriptional profiling of Apis mellifera brains"
+  PRJNA325930: larva          # "mRNA profiling of Apis mellifera larvae"
+  PRJNA549281: whole_body     # "Gene expression in honeybees" - general expression study
+  # Batch 2 - from browser research 2026-02-01
+  PRJEB39369: whole_body      # "Apis mellifera from Edinburgh" - drone whole bodies (pupae/adults) for HapMap
+  PRJDB12699: gut             # "Honey bee larval and adult microbiome" - gut dissection for metatranscriptomics
+  PRJEB49136: abdomen         # "Honey bee varroa infestation" - BioSample confirms abdomen tissue
+  PRJNA1098086: mushroom_body # "Circadian clock and memory" - sKC-enriched (small Kenyon Cells) = mushroom body
+  PRJNA656275: brain          # "Tissue specific transcription patterns" - brain dissection per SRA metadata
+  # Batch 3 - from browser research 2026-02-01
+  PRJDB6980: abdomen          # "Sex determination pathway" - BioSample confirms abdomen tissue
+  PRJEB45881: pupa            # "Cellular heterogeneity in developing worker" - whole organism at pupal stage
+  PRJNA1165990: gut           # "Gut microbiota of overwintering bees" - title explicitly mentions gut
+  PRJEB5249: whole_body       # "Virus transmission routes" - whole pupae and adults per SRA
+  PRJNA207482: head           # "KD dnmt3" - Li-Byarlay et al. 2013 PNAS confirms RNA-seq on heads
+  PRJNA175445: fat_body       # "Transcriptome or Gene expression" - description mentions fat body
+  PRJDB5532: brain            # "Honeybee Hr38 Target gene" - BioSample attributes confirm brain
+  PRJEB1945: pupa             # "Deformed wing virus infection" - individual whole pupae per SRA
+  # Batch 4 - from browser research 2026-02-01 (final batch)
+  PRJDB5837: brain            # "Novel neural immediate early genes" - title mentions neural IEGs
+  PRJEB100586: brain          # "fru gene specifies male cooperative behaviors" - nervous system expression
+  PRJDB6538: brain            # "Queen pheromone effects" - Morandin et al. 2019 confirms worker brains
+  PRJEB6511: pupa             # "Artificially reared honey" - individual honeybee pupae per description
+  PRJEB26475: royal_jelly     # RNA found within secreted royal jelly (not bee tissue)
+  PRJNA228948: hypopharyngeal_gland  # Title explicitly mentions hypopharyngeal glands
+  PRJNA200755: head           # Li et al. 2014 specifies worker heads
+  PRJNA204963: head           # Title explicitly says "Royal nurse honeybees head"
+  PRJNA229500: larva          # Description: "4th-6th day worker larvae and queen larvae"
+  PRJNA201010: head           # Li et al. 2014 specifies worker heads
+  PRJNA450078: brain          # "Neurogenomic responses" - part of brain transcriptomic umbrella
+  # Note: PRJNA172020 skipped - mixed (pupae, larvae, various dissected adult organs)
+  # Batch 5 - from browser research 2026-02-01 (final micro-projects)
+  PRJEB64276: pupa             # "Cellular heterogeneity" - BioSample: 'whole organism' at stage 1 prepupa
+  PRJNA192195: royal_jelly     # Samples are royal jelly and worker jelly small RNA
+  PRJNA192448: larva           # Whole queen larvae to study miR-184 effects
+  PRJNA201386: brain           # Y-maze visual learning - Qin et al. 2014 confirms worker brains
+  PRJNA201395: head            # Adults from RJ-fed larvae - Shi et al. 2013 confirms worker heads
+  PRJNA205104: hypopharyngeal_gland  # Title explicitly names hypopharyngeal gland
+  PRJNA205329: brain           # Courted vs non-courted virgin queens - Liu et al. 2013 brain tissue
+  PRJNA209400: head            # Varroa infestation - Ji et al. 2014 confirms heads
+  PRJNA122153: pupa            # Zemach et al. 2010 Science - DNA from entire pupae
+  PRJNA478161: brain           # Algorithm benchmarking using SRP013261 = honeybee brain transcriptome
+  PRJNA594208: brain           # BioSample explicitly named 'mC_brain_honey_bee'
+
+# Per-biosample overrides
+# Format: biosample_accession: canonical_tissue
+biosamples: {}
+
+# Source documentation for patches
+# Record where tissue information was found
+_sources:
+  # SRR12345678: "Smith et al. 2023, Methods section"
+  # PRJEB100586: "Study title indicates brain tissue only"
+
+# Notes about problematic samples
+_notes: |
+  This file contains manual tissue annotations for samples where:
+  - The metadata.tsv tissue field is empty
+  - The tissue field contains incorrect/ambiguous values
+  - Manual research revealed the true tissue type
+  
+  Always document the source of information in _sources section.
+  
+  ## Remaining Empty (5 samples)
+  
+  PRJNA172020 (4 samples): Mixed tissues - study includes pupae, larvae, 
+  and various dissected adult organs (malpighian tubules, etc.). Cannot 
+  assign a single tissue type to entire bioproject.
+  
+  1 additional sample: Unknown origin, likely from a multi-tissue study.
+  
+  Coverage: 99.9% (7,265/7,270 samples normalized as of 2026-02-01)

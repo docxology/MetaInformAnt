@@ -187,6 +187,45 @@ tail -50 output/amalgkit/apis_mellifera_all/work/parallel_processing.log
 
 ---
 
+## 🧬 Tissue Normalization
+
+### Q: How do I normalize tissue metadata?
+
+Use the tissue normalization script:
+
+```bash
+uv run python scripts/rna/normalize_tissue_metadata.py \
+  --input output/amalgkit/apis_mellifera_all/work/metadata/metadata.tsv \
+  --mapping config/amalgkit/tissue_mapping.yaml \
+  --patches config/amalgkit/tissue_patches.yaml \
+  --output output/amalgkit/apis_mellifera_all/work/metadata/metadata_normalized.tsv
+```
+
+### Q: How do I add tissue mappings?
+
+Edit `config/amalgkit/tissue_mapping.yaml`:
+
+```yaml
+brain:
+  - brain
+  - Brain
+  - whole brain
+  - mushroom body
+```
+
+### Q: How do I patch missing tissue values?
+
+Edit `config/amalgkit/tissue_patches.yaml`:
+
+```yaml
+samples:
+  SRR12345678: brain  # From manual research
+bioprojects:
+  PRJEB100586: brain  # All samples in project
+```
+
+---
+
 ## 🔗 Related Resources
 
 - [Amalgkit GitHub](https://github.com/kfuku52/amalgkit)

@@ -33,7 +33,7 @@ PROGRESS_FILE = WORK_DIR / "parallel_progress.json"
 LOG_FILE = WORK_DIR / "parallel_processing.log"
 
 # Parallel processing settings
-NUM_WORKERS = 4  # Number of parallel workers
+NUM_WORKERS = 8  # Number of parallel workers (increased from 4 with more disk space)
 THREADS_PER_SAMPLE = 2  # Threads for fasterq-dump and kallisto per sample
 DISK_CHECK_INTERVAL = 10  # Check disk every N samples
 MIN_FREE_GB = 20  # Minimum free disk space in GB
