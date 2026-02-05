@@ -1,0 +1,11 @@
+{
+  "start_time": "2026-02-05T09:34:51.700449",
+  "end_time": "2026-02-05T09:34:52.602605",
+  "elapsed_seconds": 0.902156,
+  "n_genes": 100,
+  "n_variants": 500,
+  "n_samples": 50,
+  "n_tests": 3680,
+  "n_significant": 3584,
+  "n_egenes": 96
+}

@@ -1,0 +1,7 @@
+{
+  "n_tests": 3680,
+  "n_egenes": 96,
+  "n_eqtls": 3584,
+  "fdr_threshold": 0.05,
+  "mean_effect_size": 0.09483033006149204
+}
