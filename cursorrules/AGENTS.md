@@ -24,6 +24,12 @@ Each `.cursorrules` file contains domain-specific guidelines:
 - `simulation.cursorrules` - Simulation patterns
 - `singlecell.cursorrules` - Single-cell patterns
 - `visualization.cursorrules` - Visualization patterns
+- `longread.cursorrules` - Long-read sequencing (PacBio/Nanopore) patterns
+- `metagenomics.cursorrules` - Metagenomics (amplicon, shotgun) patterns
+- `structural_variants.cursorrules` - Structural variant detection patterns
+- `spatial.cursorrules` - Spatial transcriptomics patterns
+- `pharmacogenomics.cursorrules` - Clinical pharmacogenomics patterns
+- `menu.cursorrules` - Interactive menu system patterns
 
 ## Usage
 These rules are automatically loaded by Cursor AI when working in the corresponding module directories. They ensure:

@@ -30,6 +30,11 @@
 - **Networks**: `output/networks/<network_type>/` (e.g., `ppi/`, `regulatory/`, `pathways/`)
 - **ML**: `output/ml/<task>/` (e.g., `classification/`, `regression/`, `features/`)
 - **Multi-Omics**: `output/multiomics/<integration>/` (e.g., `integrated/`, `plots/`)
+- **Long Read**: `output/longread/<analysis_type>/` (e.g., `basecalling/`, `assembly/`, `methylation/`)
+- **Metagenomics**: `output/metagenomics/<analysis_type>/` (e.g., `amplicon/`, `assembly/`, `functional/`)
+- **Structural Variants**: `output/structural_variants/<analysis_type>/` (e.g., `detection/`, `annotation/`)
+- **Spatial**: `output/spatial/<analysis_type>/` (e.g., `clustering/`, `deconvolution/`, `integration/`)
+- **Pharmacogenomics**: `output/pharmacogenomics/<analysis_type>/` (e.g., `alleles/`, `clinical/`, `reports/`)
 
 ## Path and I/O
 
@@ -167,6 +172,11 @@ with io.open_text_auto("data/large_file.txt.gz") as f:
 - **Networks Module**: Use prefix `NET_` (e.g., `NET_THREADS`, `NET_WORK_DIR`)
 - **ML Module**: Use prefix `ML_` (e.g., `ML_THREADS`, `ML_WORK_DIR`, `ML_MODEL_DIR`)
 - **Multi-Omics Module**: Use prefix `MULTI_` (e.g., `MULTI_THREADS`, `MULTI_WORK_DIR`)
+- **Long Read Module**: Use prefix `LR_` (e.g., `LR_THREADS`, `LR_WORK_DIR`)
+- **Metagenomics Module**: Use prefix `META_` (e.g., `META_THREADS`, `META_WORK_DIR`)
+- **Structural Variants Module**: Use prefix `SV_` (e.g., `SV_THREADS`, `SV_WORK_DIR`)
+- **Spatial Module**: Use prefix `SPATIAL_` (e.g., `SPATIAL_THREADS`, `SPATIAL_WORK_DIR`)
+- **Pharmacogenomics Module**: Use prefix `PHARMA_` (e.g., `PHARMA_THREADS`, `PHARMA_DB_PATH`)
 
 ### Configuration File Structure
 ```yaml
@@ -202,7 +212,7 @@ def load_domain_config(config_file: str | Path, prefix: str = "DOMAIN") -> Domai
 - RNA: `AmalgkitWorkflowConfig` with prefix `"AK"`
 - GWAS: `GWASWorkflowConfig` with prefix `"GWAS"`
 - Life Events: `LifeEventsWorkflowConfig` with prefix `"LE"`
-- Other modules: Follow pattern `{MODULE}_` prefix (e.g., `DNA_`, `PROT_`, `EPI_`, `ONT_`, `PHEN_`, `ECO_`, `MATH_`, `INFO_`, `VIZ_`, `SIM_`, `SC_`, `QC_`, `NET_`, `ML_`, `MULTI_`)
+- Other modules: Follow pattern `{MODULE}_` prefix (e.g., `DNA_`, `PROT_`, `EPI_`, `ONT_`, `PHEN_`, `ECO_`, `MATH_`, `INFO_`, `VIZ_`, `SIM_`, `SC_`, `QC_`, `NET_`, `ML_`, `MULTI_`, `LR_`, `META_`, `SV_`, `SPATIAL_`, `PHARMA_`)
 
 ## Code Quality Policy (STRICTLY NO MOCKS/FAKES/PLACEHOLDERS)
 
@@ -303,6 +313,12 @@ Module-specific rules are organized in the `cursorrules/` directory. Each module
 - `cursorrules/networks.cursorrules` - Biological network analysis
 - `cursorrules/ml.cursorrules` - Machine learning for biological data
 - `cursorrules/multiomics.cursorrules` - Multi-omic data integration
+- `cursorrules/longread.cursorrules` - Long-read sequencing (PacBio/Nanopore)
+- `cursorrules/metagenomics.cursorrules` - Metagenomic analysis (amplicon, shotgun)
+- `cursorrules/structural_variants.cursorrules` - CNV/SV detection and annotation
+- `cursorrules/spatial.cursorrules` - Spatial transcriptomics (Visium, MERFISH, Xenium)
+- `cursorrules/pharmacogenomics.cursorrules` - Clinical pharmacogenomics
+- `cursorrules/menu.cursorrules` - Interactive menu and discovery system
 
 **See `cursorrules/README.md` for detailed information about the modular structure.**
 
@@ -489,6 +505,19 @@ Each module should have:
 - **Quality → All**: Quality control for all data types
 - **Simulation → All**: Synthetic data generation for testing
 - **Multi-Omics**: Integration of DNA, RNA, protein, epigenome, and other omics types
+- **Longread → DNA**: Long-read variant calling and genomic coordinates
+- **Longread → Epigenome**: Methylation from modified base detection
+- **Longread → Structural Variants**: SV detection complements short-read methods
+- **Metagenomics → Ecology**: Community diversity from amplicon/shotgun data
+- **Metagenomics → Networks**: Microbial co-occurrence networks
+- **Metagenomics → Ontology**: Functional annotation via GO/KEGG
+- **Structural Variants → DNA**: Genomic coordinates and variant calling
+- **Structural Variants → GWAS**: Structural variants in association studies
+- **Spatial → Single-Cell**: scRNA-seq reference for deconvolution
+- **Spatial → Networks**: Spatial interaction networks, ligand-receptor
+- **Pharmacogenomics → GWAS**: Variant data from association studies
+- **Pharmacogenomics → DNA**: Genomic coordinates and variant calling
+- **Pharmacogenomics → Phenotype**: Clinical phenotype data
 
 ### Workflow Patterns
 ```python

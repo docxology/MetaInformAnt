@@ -53,6 +53,12 @@ Each `.cursorrules` file is a plain text file containing:
 | ecology.cursorrules | Community diversity |
 | simulation.cursorrules | Synthetic data |
 | life_events.cursorrules | Event sequences |
+| longread.cursorrules | Long-read sequencing (PacBio/Nanopore) |
+| metagenomics.cursorrules | Amplicon, shotgun metagenomics |
+| structural_variants.cursorrules | CNV/SV detection and annotation |
+| spatial.cursorrules | Spatial transcriptomics |
+| pharmacogenomics.cursorrules | Clinical pharmacogenomics |
+| menu.cursorrules | Interactive menu system |
 
 ## Interface
 

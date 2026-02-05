@@ -28,6 +28,23 @@ genome:
   ftp_url: https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/003/254/395/GCF_003254395.2_Amel_HAv3.1/
 
 # =============================================================================
+# DATA GENERATION (for synthetic/simulated data pipeline)
+# =============================================================================
+# Controls how run_amellifera_gwas.py generates VCF, phenotype, and metadata.
+# All values are defaults; CLI flags (--scale-factor, --n-variants, etc.) override.
+data_generation:
+  subspecies:
+    A.m.ligustica:  {label: Italian, n_samples: 25, pop_effect: 0.0}
+    A.m.carnica:    {label: Carniolan, n_samples: 20, pop_effect: 0.3}
+    A.m.mellifera:  {label: Dark European, n_samples: 15, pop_effect: -0.2}
+    A.m.caucasica:  {label: Caucasian, n_samples: 10, pop_effect: 0.1}
+    A.m.scutellata: {label: African, n_samples: 10, pop_effect: -0.5}
+  n_drones: 10
+  n_variants: 10000
+  scale_factor: 5   # multiply all counts: 400 diploid + 50 drones = 450 samples
+  seed: 42
+
+# =============================================================================
 # VARIANT DATA SOURCES
 # =============================================================================
 # Note: Apis mellifera has extensive genomic datasets available from multiple sources:
@@ -117,6 +134,13 @@ samples:
   # Covariates file (TSV format: sample_id, age, sex, population, PC1, PC2, ...)
   # Important for honeybees: population/subspecies, sampling location, season
   # covariates_file: data/covariates/amellifera/covariates.tsv
+
+  # Subset options (all optional; omit or comment out to use all samples):
+  # sample_list: path/to/sample_ids.txt    # one ID per line
+  # subset:
+  #   subspecies: [A.m.ligustica, A.m.carnica]  # filter by subspecies
+  #   caste: [worker]                            # filter by caste
+  #   max_per_subspecies: 10                     # balanced design cap
 
 # =============================================================================
 # POPULATION STRUCTURE

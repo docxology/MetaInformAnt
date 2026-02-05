@@ -7,6 +7,20 @@ Protein sequence and structure analysis, database integration, and 3D structure 
 - **Required**: `core`
 - **Optional**: `biopython`, external databases (UniProt, InterPro, AlphaFold, PDB)
 
+## Source Structure
+```
+src/metainformant/protein/
+├── orchestration.py
+├── database/
+│   ├── interpro.py, uniprot.py
+├── sequence/
+│   ├── alignment.py, proteomes.py, sequences.py
+├── structure/
+│   ├── alphafold.py, analysis.py, contacts.py, general.py, io.py, pdb.py, secondary.py
+└── visualization/
+    └── general.py
+```
+
 ## Package Management
 - **ALWAYS use `uv`** for all Python package management and environment operations
 - Install optional dependencies: `uv add biopython`
@@ -36,7 +50,7 @@ Protein sequence and structure analysis, database integration, and 3D structure 
 
 **Patterns**:
 ```python
-from metainformant.protein import structure_io
+from metainformant.protein.structure import io as structure_io
 
 structure = structure_io.read_pdb("data/structure.pdb")
 structure_io.write_pdb(structure, "output/protein/structure.pdb")

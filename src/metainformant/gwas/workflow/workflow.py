@@ -108,6 +108,14 @@ def _normalize_config(config: Dict[str, Any]) -> Dict[str, Any]:
             if pheno:
                 normalized["phenotype_path"] = pheno
 
+    # Map samples.sample_list and samples.subset
+    samples = normalized.get("samples", {})
+    if isinstance(samples, dict):
+        if samples.get("sample_list"):
+            normalized["sample_list"] = samples["sample_list"]
+        if samples.get("subset"):
+            normalized["sample_subset"] = samples["subset"]
+
     # Map qc.* -> quality_control.*
     if "quality_control" not in normalized:
         qc = normalized.get("qc", {})
@@ -525,6 +533,73 @@ def _load_phenotypes(phenotype_path: str | Path, trait: str | None = None) -> Li
         raise ValueError(f"Error loading phenotypes from {phenotype_path}: {e}")
 
 
+def _load_phenotypes_by_id(
+    phenotype_path: str | Path, trait: str | None = None
+) -> Dict[str, float]:
+    """Load phenotype data as a dict keyed by sample_id.
+
+    Args:
+        phenotype_path: Path to phenotype file (TSV with sample_id column).
+        trait: Optional trait column name.
+
+    Returns:
+        Dict mapping sample_id -> phenotype value.
+    """
+    phenotype_path = Path(phenotype_path)
+    if not phenotype_path.exists():
+        raise FileNotFoundError(f"Phenotype file not found: {phenotype_path}")
+
+    result: Dict[str, float] = {}
+    with open(phenotype_path) as f:
+        lines = [line.strip() for line in f if line.strip()]
+
+    if not lines:
+        return result
+
+    first_line = lines[0]
+    delimiter = "\t" if "\t" in first_line else ","
+    parts = first_line.split(delimiter)
+
+    # Check for header
+    has_header = any(
+        keyword in parts[0].strip().lower()
+        for keyword in ["sample", "id", "phenotype", "trait", "subject", "individual"]
+    )
+
+    if not has_header:
+        return result  # Can't do ID-based matching without headers
+
+    header = [col.strip() for col in parts]
+    header_lower = [col.lower() for col in header]
+
+    # Find phenotype column
+    pheno_col_idx = -1
+    if trait:
+        for i, col in enumerate(header_lower):
+            if col == trait.lower():
+                pheno_col_idx = i
+                break
+    if pheno_col_idx == -1:
+        # Default: second column (after sample_id)
+        if len(header) >= 2:
+            pheno_col_idx = 1
+
+    if pheno_col_idx == -1:
+        return result
+
+    for line in lines[1:]:
+        row = line.split(delimiter)
+        if len(row) > pheno_col_idx:
+            sample_id = row[0].strip()
+            try:
+                value = float(row[pheno_col_idx].strip())
+                result[sample_id] = value
+            except ValueError:
+                continue
+
+    return result
+
+
 # Import required functions from GWAS modules
 from metainformant.gwas.analysis.quality import parse_vcf_full, apply_qc_filters, check_haplodiploidy
 from metainformant.gwas.analysis.structure import compute_pca, compute_kinship_matrix
@@ -606,6 +681,33 @@ def run_gwas(
             "num_variants": len(vcf_data.get("variants", [])),
             "num_samples": len(vcf_data.get("samples", [])),
         }
+
+        # Step 1b: Sample subsetting (optional)
+        sample_list = config.get("sample_list")
+        sample_subset = config.get("sample_subset")
+        if sample_list or sample_subset:
+            from metainformant.gwas.analysis.quality import subset_vcf_data
+
+            meta_for_subset = None
+            if sample_subset:
+                metadata_path_sub = (
+                    config.get("metadata_file")
+                    or (config.get("samples", {}).get("metadata_file") if isinstance(config.get("samples"), dict) else None)
+                )
+                if metadata_path_sub and Path(metadata_path_sub).exists():
+                    meta_result_sub = load_sample_metadata(metadata_path_sub)
+                    if meta_result_sub.get("status") == "success":
+                        meta_for_subset = meta_result_sub.get("metadata")
+
+            vcf_data = subset_vcf_data(
+                vcf_data,
+                sample_list_file=sample_list,
+                subset_config=sample_subset,
+                metadata=meta_for_subset,
+            )
+            results["steps_completed"].append("sample_subsetting")
+            results["results"]["vcf_summary"]["num_samples_after_subset"] = len(vcf_data.get("samples", []))
+            logger.info(f"After subsetting: {len(vcf_data.get('samples', []))} samples")
 
         # Step 2: Apply QC filters
         logger.info("Step 2: Applying QC filters")
@@ -730,7 +832,20 @@ def run_gwas(
             except Exception as e:
                 logger.warning(f"Metadata loading failed: {e}")
 
-        # Align sample counts
+        # Align phenotypes to genotyped samples by ID when possible
+        sample_ids = filtered_data.get("samples", [])
+        pheno_by_id = _load_phenotypes_by_id(phenotype_path, trait=trait_name)
+        if pheno_by_id and sample_ids:
+            # ID-based alignment: match phenotype to each genotyped sample
+            aligned_phenotypes = []
+            for sid in sample_ids:
+                if sid in pheno_by_id:
+                    aligned_phenotypes.append(pheno_by_id[sid])
+            if aligned_phenotypes:
+                phenotypes = aligned_phenotypes
+                logger.info(f"ID-based phenotype alignment: {len(aligned_phenotypes)}/{len(sample_ids)} samples matched")
+
+        # Fallback: positional alignment
         min_samples = min(len(phenotypes), n_samples) if genotypes_by_variant else 0
         if min_samples > 0 and len(phenotypes) != n_samples:
             logger.warning(
@@ -1009,5 +1124,213 @@ def run_gwas(
         results["status"] = "failed"
         results["error"] = str(e)
         logger.error(f"GWAS workflow failed: {e}")
+
+    return results
+
+
+def run_multi_trait_gwas(
+    vcf_path: Union[str, Path],
+    phenotype_path: Union[str, Path],
+    traits: List[str],
+    config: Dict[str, Any],
+    output_dir: Union[str, Path] | None = None,
+) -> Dict[str, Any]:
+    """Run GWAS for multiple traits, sharing VCF parse/QC/PCA/kinship.
+
+    VCF parsed once -> QC once -> PCA once -> kinship once ->
+    for each trait: load phenotype column -> association -> correction -> output.
+
+    Args:
+        vcf_path: Path to VCF file.
+        phenotype_path: Path to phenotype file (TSV with multiple trait columns).
+        traits: List of trait column names to analyze.
+        config: GWAS configuration dictionary.
+        output_dir: Base output directory; each trait gets a subdirectory.
+
+    Returns:
+        Combined results dict with per-trait results.
+    """
+    import tempfile
+
+    logger.info(f"Starting multi-trait GWAS: {len(traits)} traits")
+
+    config = _normalize_config(config)
+    vcf_path = Path(vcf_path)
+    phenotype_path = Path(phenotype_path)
+
+    if not vcf_path.exists():
+        raise FileNotFoundError(f"VCF file not found: {vcf_path}")
+    if not phenotype_path.exists():
+        raise FileNotFoundError(f"Phenotype file not found: {phenotype_path}")
+
+    if output_dir is None:
+        output_dir = Path(tempfile.mkdtemp())
+    else:
+        output_dir = Path(output_dir)
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+    results: Dict[str, Any] = {
+        "status": "running",
+        "traits": traits,
+        "output_dir": str(output_dir),
+        "steps_completed": [],
+        "trait_results": {},
+    }
+
+    try:
+        # Shared step 1: Parse VCF
+        logger.info("Multi-trait: Parsing VCF (shared)")
+        vcf_data = parse_vcf_full(vcf_path)
+        results["steps_completed"].append("parse_vcf")
+
+        # Shared step 2: QC
+        logger.info("Multi-trait: Applying QC (shared)")
+        qc_config = config.get("quality_control", {})
+        qc_result = apply_qc_filters(vcf_data, qc_config)
+        filtered_data = qc_result.get("filtered_data", vcf_data)
+        results["steps_completed"].append("qc_filters")
+
+        # Shared step 2b: Haplodiploidy
+        haplodiploidy_config = config.get("haplodiploidy", {})
+        if isinstance(haplodiploidy_config, dict) and haplodiploidy_config.get("enabled", False):
+            het_threshold = haplodiploidy_config.get("het_threshold", 0.05)
+            haplo_result = check_haplodiploidy(filtered_data, het_threshold=het_threshold)
+            if haplodiploidy_config.get("exclude_haploid", False) and haplo_result["haploid_samples"]:
+                diploid_indices = haplo_result["diploid_samples"]
+                genotypes_by_sample = filtered_data.get("genotypes", [])
+                if genotypes_by_sample and diploid_indices:
+                    filtered_data = dict(filtered_data)
+                    filtered_data["genotypes"] = [genotypes_by_sample[i] for i in diploid_indices]
+                    old_samples = filtered_data.get("samples", [])
+                    if old_samples:
+                        filtered_data["samples"] = [old_samples[i] for i in diploid_indices]
+            results["steps_completed"].append("haplodiploidy_check")
+
+        genotypes_by_sample = filtered_data.get("genotypes", [])
+        n_samples = len(genotypes_by_sample)
+        n_variants = len(genotypes_by_sample[0]) if genotypes_by_sample else 0
+        if genotypes_by_sample and genotypes_by_sample[0]:
+            genotypes_by_variant = [[genotypes_by_sample[s][v] for s in range(n_samples)] for v in range(n_variants)]
+        else:
+            genotypes_by_variant = []
+
+        # Shared step 3: LD pruning
+        ld_config = config.get("ld_pruning", {})
+        if isinstance(ld_config, dict) and ld_config.get("enabled", False) and genotypes_by_variant:
+            ld_pruned_indices = ld_prune(
+                genotypes_by_variant,
+                window_size=ld_config.get("window_size", 50),
+                step_size=ld_config.get("step_size", 5),
+                r2_threshold=ld_config.get("r2_threshold", 0.2),
+            )
+            ld_pruned_genotypes = [genotypes_by_variant[i] for i in ld_pruned_indices]
+            results["steps_completed"].append("ld_pruning")
+        else:
+            ld_pruned_genotypes = genotypes_by_variant
+
+        # Shared step 4: PCA + kinship
+        kinship_result = None
+        pca_result = None
+        if genotypes_by_sample:
+            if ld_pruned_genotypes:
+                pca_geno = [
+                    [ld_pruned_genotypes[v][s] for v in range(len(ld_pruned_genotypes))] for s in range(n_samples)
+                ]
+            else:
+                pca_geno = genotypes_by_sample
+            pca_result = compute_pca(pca_geno, n_components=min(10, n_samples))
+            kinship_result = compute_kinship_matrix(genotypes_by_sample)
+            results["steps_completed"].append("population_structure")
+
+        # Per-trait loop
+        for trait_name in traits:
+            logger.info(f"Multi-trait: Running trait '{trait_name}'")
+            trait_dir = output_dir / trait_name
+            trait_dir.mkdir(parents=True, exist_ok=True)
+
+            trait_result: Dict[str, Any] = {"trait": trait_name, "steps": []}
+
+            try:
+                # Load phenotypes for this trait
+                pheno_by_id = _load_phenotypes_by_id(phenotype_path, trait=trait_name)
+                sample_ids = filtered_data.get("samples", [])
+                phenotypes = [pheno_by_id[sid] for sid in sample_ids if sid in pheno_by_id]
+                min_s = min(len(phenotypes), n_samples) if genotypes_by_variant else 0
+                phenotypes = phenotypes[:min_s]
+
+                # Association testing
+                model = config.get("model", "linear")
+                assoc_results = []
+                if genotypes_by_variant and phenotypes:
+                    if model == "mixed" and kinship_result and kinship_result.get("status") == "success":
+                        assoc_results = run_mixed_model_gwas(
+                            genotype_matrix=genotypes_by_variant,
+                            phenotypes=phenotypes[:min_s],
+                            kinship_matrix=kinship_result["kinship_matrix"],
+                            variant_info=filtered_data.get("variants"),
+                        )
+                    else:
+                        for i, genotype in enumerate(genotypes_by_variant):
+                            try:
+                                result = association_test_linear(genotype[:min_s], phenotypes[:min_s])
+                                result["variant_id"] = f"variant_{i}"
+                                if filtered_data.get("variants") and i < len(filtered_data["variants"]):
+                                    vinfo = filtered_data["variants"][i]
+                                    result["chrom"] = vinfo.get("chrom", "")
+                                    result["pos"] = vinfo.get("pos", 0)
+                                assoc_results.append(result)
+                            except Exception:
+                                continue
+
+                trait_result["steps"].append("association_testing")
+                trait_result["n_tests"] = len(assoc_results)
+
+                # Multiple testing correction
+                if assoc_results:
+                    p_values = [r.get("p_value", 1.0) for r in assoc_results]
+                    fdr_result = fdr_correction(p_values)
+                    if isinstance(fdr_result, dict):
+                        q_values = fdr_result.get("adjusted_p_values", [])
+                    else:
+                        _, q_values = fdr_result
+                    for i, q_val in enumerate(q_values):
+                        if i < len(assoc_results):
+                            assoc_results[i]["q_value"] = q_val
+                    trait_result["steps"].append("correction")
+
+                # Summary stats
+                if assoc_results and filtered_data.get("variants"):
+                    stats_path = trait_dir / "summary_statistics.tsv"
+                    write_summary_statistics(assoc_results, filtered_data["variants"], stats_path)
+                    trait_result["steps"].append("summary_statistics")
+
+                trait_result["status"] = "success"
+                trait_result["association_results"] = assoc_results
+
+            except Exception as e:
+                trait_result["status"] = "failed"
+                trait_result["error"] = str(e)
+                logger.warning(f"Trait '{trait_name}' failed: {e}")
+
+            results["trait_results"][trait_name] = trait_result
+
+        results["status"] = "success"
+        # Provide a combined results dict compatible with visualization
+        if results["trait_results"]:
+            first_trait = list(results["trait_results"].values())[0]
+            results["results"] = {
+                "association_results": first_trait.get("association_results", []),
+                "pca": pca_result,
+                "kinship": kinship_result,
+                "vcf_summary": {
+                    "num_variants": n_variants,
+                    "num_samples": n_samples,
+                },
+            }
+
+    except Exception as e:
+        results["status"] = "failed"
+        results["error"] = str(e)
+        logger.error(f"Multi-trait GWAS failed: {e}")
 
     return results

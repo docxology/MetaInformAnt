@@ -6,6 +6,17 @@ Synthetic data generation and modeling: sequence generation, agent-based ecosyst
 ## Dependencies
 - **Required**: `core`
 
+## Source Structure
+```
+src/metainformant/simulation/
+├── models/
+│   ├── agents.py, popgen.py, rna.py, sequences.py
+├── visualization/
+│   └── visualization.py
+└── workflow/
+    └── workflow.py
+```
+
 ## Package Management
 - **ALWAYS use `uv`** for all Python package management and environment operations
 - Use `uv run` to execute commands: `uv run pytest`, `uv run metainformant simulation --help`
@@ -18,10 +29,12 @@ Synthetic data generation and modeling: sequence generation, agent-based ecosyst
 - Realistic sequence properties
 - Evolutionary simulation
 - Sequence mutation
+- **Actual path**: `metainformant.simulation.models.sequences`
 
 **Patterns**:
 ```python
-from metainformant.simulation import generate_random_dna, mutate_sequence
+# Import from actual path
+from metainformant.simulation.models.sequences import generate_random_dna, mutate_sequence
 
 seq = generate_random_dna(length=1000, gc_content=0.5, rng=rng)
 mutated = mutate_sequence(seq, n_mut=10, rng=rng)
@@ -32,10 +45,12 @@ mutated = mutate_sequence(seq, n_mut=10, rng=rng)
 - GridWorld simulation
 - Population dynamics
 - Environmental interactions
+- **Actual path**: `metainformant.simulation.models.agents`
 
 **Patterns**:
 ```python
-from metainformant.simulation import Agent, GridWorld
+# Import from actual path
+from metainformant.simulation.models.agents import Agent, GridWorld
 
 world = GridWorld(width=100, height=100)
 agent = Agent(world, x=50, y=50)
@@ -47,10 +62,12 @@ agent.move(dx=1, dy=0)
 - Realistic expression distributions
 - Negative binomial count generation
 - Batch effects and noise
+- **Actual path**: `metainformant.simulation.models.rna`
 
 **Patterns**:
 ```python
-from metainformant.simulation import simulate_counts_negative_binomial
+# Import from actual path
+from metainformant.simulation.models.rna import simulate_counts_negative_binomial
 
 counts = simulate_counts_negative_binomial(
     n_genes=1000,
@@ -66,10 +83,12 @@ counts = simulate_counts_negative_binomial(
 - Linkage disequilibrium simulation
 - Site frequency spectrum
 - Population bottlenecks and expansions
+- **Actual path**: `metainformant.simulation.models.popgen`
 
 **Patterns**:
 ```python
-from metainformant.simulation import (
+# Import from actual path
+from metainformant.simulation.models.popgen import (
     generate_population_sequences,
     generate_genotype_matrix,
     simulate_bottleneck_population

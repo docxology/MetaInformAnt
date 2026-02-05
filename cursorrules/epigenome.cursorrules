@@ -6,6 +6,19 @@ Epigenetic modification analysis: DNA methylation analysis and epigenomic track 
 ## Dependencies
 - **Required**: `core`, `dna` (for genomic coordinates)
 
+## Source Structure
+```
+src/metainformant/epigenome/
+├── analysis/
+│   └── tracks.py
+├── assays/
+│   ├── atacseq.py, chipseq.py, methylation.py
+├── visualization/
+│   └── visualization.py
+└── workflow/
+    └── workflow.py
+```
+
 ## Package Management
 - **ALWAYS use `uv`** for all Python package management and environment operations
 - Use `uv run` to execute commands: `uv run pytest`, `uv run metainformant epigenome --help`
@@ -20,7 +33,7 @@ Epigenetic modification analysis: DNA methylation analysis and epigenomic track 
 
 **Patterns**:
 ```python
-from metainformant.epigenome import methylation
+from metainformant.epigenome.assays import methylation
 
 methylation_data = methylation.analyze_methylation(
     bam_file="data/methylation.bam",

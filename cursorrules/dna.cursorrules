@@ -7,6 +7,29 @@ DNA sequence analysis, genomics, population genetics, and variant calling.
 - **Required**: `core`
 - **Optional**: `biopython`, `ncbi-datasets-pylib`, `pysam`
 
+## Source Structure
+```
+src/metainformant/dna/
+├── alignment/
+│   ├── distances.py, msa.py, pairwise.py
+├── expression/
+│   ├── codon.py, transcription.py, translation.py
+├── external/
+│   ├── entrez.py, genomes.py, ncbi.py
+├── integration/
+│   └── rna.py
+├── io/
+│   ├── fasta.py, fastq.py
+├── phylogeny/
+│   └── tree.py
+├── population/
+│   ├── analysis.py, core.py, visualization.py
+├── sequence/
+│   ├── composition.py, consensus.py, core.py, kmer.py, motifs.py, restriction.py
+└── variation/
+    ├── mutations.py, variants.py
+```
+
 ## Package Management
 - **ALWAYS use `uv`** for all Python package management and environment operations
 - Install optional dependencies: `uv add biopython`, `uv add ncbi-datasets-pylib`, `uv add pysam`
@@ -22,7 +45,7 @@ DNA sequence analysis, genomics, population genetics, and variant calling.
 
 **Patterns**:
 ```python
-from metainformant.dna import sequences
+from metainformant.dna.sequence import core as sequences
 
 seqs = sequences.read_fasta("data/sequences.fasta")
 for seq_id, sequence in seqs:
@@ -49,9 +72,9 @@ for seq_id, sequence in seqs:
 
 **Patterns**:
 ```python
-from metainformant.dna import phylogeny
+from metainformant.dna.phylogeny import tree
 
-tree = phylogeny.neighbor_joining_tree(sequences)
+tree_result = tree.neighbor_joining_tree(sequences)
 # Returns Newick format string or tree object
 ```
 
@@ -62,7 +85,7 @@ tree = phylogeny.neighbor_joining_tree(sequences)
 
 **Patterns**:
 ```python
-from metainformant.dna import population
+from metainformant.dna.population import core as population
 
 stats = population.calculate_pi(sequences)
 # Returns: {"pi": 0.001, "segregating_sites": 42, ...}
@@ -95,7 +118,7 @@ stats = population.calculate_pi(sequences)
 
 **Patterns**:
 ```python
-from metainformant.dna import ncbi, genomes
+from metainformant.dna.external import ncbi, genomes
 
 # Validate accession
 accession = genomes.validate_accession("GCF_000001405.40")

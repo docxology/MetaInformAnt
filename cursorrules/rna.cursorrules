@@ -8,6 +8,25 @@ RNA transcriptomic analysis via amalgkit integration and workflow orchestration.
 - **External**: `amalgkit` CLI tool (must be on PATH)
 - Install amalgkit: `uv pip install git+https://github.com/kfuku52/amalgkit`
 
+## Source Structure
+```
+src/metainformant/rna/
+├── progress_tracker.py, steps.py
+├── amalgkit/
+│   ├── amalgkit.py, genome_prep.py, metadata_filter.py
+│   ├── metadata_utils.py, tissue_normalizer.py
+├── analysis/
+│   ├── cross_species.py, expression.py, protein_integration.py, qc.py, validation.py
+├── core/
+│   ├── cleanup.py, configs.py, deps.py, environment.py
+├── engine/
+│   ├── discovery.py, monitoring.py, orchestration.py, pipeline.py
+│   ├── progress_tracker.py, sra_extraction.py, workflow.py
+│   ├── workflow_cleanup.py, workflow_steps.py
+└── retrieval/
+    └── ena_downloader.py
+```
+
 ## Package Management
 - **ALWAYS use `uv`** for all Python package management and environment operations
 - Install amalgkit: `uv pip install git+https://github.com/kfuku52/amalgkit`
@@ -20,10 +39,12 @@ RNA transcriptomic analysis via amalgkit integration and workflow orchestration.
 - Workflow orchestration for amalgkit pipeline
 - Configuration loading and validation
 - Step planning and execution
+- **Actual path**: `metainformant.rna.engine.workflow`
 
 **Patterns**:
 ```python
-from metainformant.rna.workflow import load_workflow_config, plan_workflow
+# Import from actual path
+from metainformant.rna.engine.workflow import load_workflow_config, plan_workflow
 
 config = load_workflow_config("config/amalgkit/species.yaml")
 steps = plan_workflow(config)
@@ -110,10 +131,12 @@ quantify_sample(
 - Check amalgkit, kallisto, SRA toolkit, R script availability
 - Virtual environment validation
 - Comprehensive environment validation
+- **Actual path**: `metainformant.rna.core.environment`
 
 **Patterns**:
 ```python
-from metainformant.rna.environment import (
+# Import from actual path
+from metainformant.rna.core.environment import (
     check_amalgkit,
     check_dependencies,
     validate_environment
@@ -133,10 +156,12 @@ is_valid, issues = validate_environment()
 - Sample status checking
 - Active download monitoring
 - Quantification progress assessment
+- **Actual path**: `metainformant.rna.engine.monitoring`
 
 **Patterns**:
 ```python
-from metainformant.rna.monitoring import (
+# Import from actual path
+from metainformant.rna.engine.monitoring import (
     check_workflow_progress,
     analyze_species_status,
     get_sample_status,
@@ -154,10 +179,12 @@ status = analyze_species_status(species_name, work_dir)
 - Workflow monitoring
 - Cleanup of unquantified samples
 - Run workflows for specific species
+- **Actual path**: `metainformant.rna.engine.orchestration`
 
 **Patterns**:
 ```python
-from metainformant.rna.orchestration import (
+# Import from actual path
+from metainformant.rna.engine.orchestration import (
     discover_species_configs,
     run_workflow_for_species,
     monitor_workflows
@@ -174,10 +201,12 @@ run_workflow_for_species(species_name, config_path)
 - Partial download cleanup
 - Abundance file naming fixes
 - Workflow cleanup utilities
+- **Actual path**: `metainformant.rna.core.cleanup`
 
 **Patterns**:
 ```python
-from metainformant.rna.cleanup import (
+# Import from actual path
+from metainformant.rna.core.cleanup import (
     cleanup_partial_downloads,
     fix_abundance_naming_for_species
 )
@@ -193,10 +222,12 @@ fix_abundance_naming_for_species(species_name, work_dir)
 - Species discovery with RNA-seq data
 - Config YAML generation
 - Genome information retrieval
+- **Actual path**: `metainformant.rna.engine.discovery`
 
 **Patterns**:
 ```python
-from metainformant.rna.discovery import (
+# Import from actual path
+from metainformant.rna.engine.discovery import (
     search_species_with_rnaseq,
     generate_config_yaml,
     get_genome_info

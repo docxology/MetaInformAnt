@@ -7,6 +7,17 @@ Biological network analysis: protein-protein interactions, regulatory networks, 
 - **Required**: `core`, `protein` (PPI networks), `ontology` (functional annotation)
 - **Optional**: `networkx`, `python-louvain`
 
+## Source Structure
+```
+src/metainformant/networks/
+├── config.py
+├── workflow.py
+├── analysis/
+│   ├── community.py, graph.py, pathway.py
+└── interaction/
+    ├── ppi.py, regulatory.py
+```
+
 ## Package Management
 - **ALWAYS use `uv`** for all Python package management and environment operations
 - Install optional dependencies: `uv add networkx python-louvain`
@@ -22,7 +33,7 @@ Biological network analysis: protein-protein interactions, regulatory networks, 
 
 **Patterns**:
 ```python
-from metainformant.networks import graph
+from metainformant.networks.analysis import graph
 
 # Create graph from edge list
 G = graph.create_from_edges(edges, directed=False)
@@ -52,7 +63,7 @@ metrics = graph.calculate_centrality(G)
 
 **Patterns**:
 ```python
-from metainformant.networks import community
+from metainformant.networks.analysis import community
 
 communities = community.detect_communities(
     graph=G,

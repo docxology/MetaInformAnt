@@ -7,6 +7,15 @@ Ecological metadata and community analysis: community structure analysis and div
 - **Required**: `core`
 - **Optional**: `math` (diversity calculations)
 
+## Source Structure
+```
+src/metainformant/ecology/
+├── analysis/
+│   ├── community.py, functional.py, indicators.py, macroecology.py, ordination.py
+└── visualization/
+    └── visualization.py
+```
+
 ## Package Management
 - **ALWAYS use `uv`** for all Python package management and environment operations
 - Use `uv run` to execute commands: `uv run pytest`, `uv run metainformant ecology --help`
@@ -19,20 +28,30 @@ Ecological metadata and community analysis: community structure analysis and div
 - Species abundance
 - Diversity metrics
 
-### Environmental (`environmental`)
-- Environmental metadata integration
-- Ecological parameter analysis
-- Environmental variable processing
+### Functional (`functional`)
+- Functional trait analysis
+- Functional diversity
+- Trait-based ecology
 
-### Interactions (`interactions`)
-- Ecological interaction analysis
-- Species interaction networks
-- Interaction pattern detection
+### Indicators (`indicators`)
+- Ecological indicators
+- Environmental health metrics
+- Biodiversity indicators
 
-### Workflow (`workflow`)
-- End-to-end ecology analysis workflows
-- Workflow orchestration
-- Configuration-based execution
+### Macroecology (`macroecology`)
+- Macroecological patterns
+- Species-area relationships
+- Abundance distributions
+
+### Ordination (`ordination`)
+- Ordination methods (PCA, NMDS, CCA)
+- Community composition analysis
+- Multivariate statistics
+
+### Visualization (`visualization`)
+- Ecological data visualization
+- Community structure plots
+- Diversity visualizations
 
 ## Patterns
 

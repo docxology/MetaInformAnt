@@ -62,14 +62,32 @@ class ValidationResult:
 
 
 def main() -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="GWAS method validation")
+    parser.add_argument("--force-regenerate", action="store_true", help="Force regeneration of cached data")
+    parser.add_argument("--scale-factor", type=int, default=1, help="Sample count multiplier")
+    args = parser.parse_args()
+
     output_base = Path("output/gwas/amellifera")
     output_base.mkdir(parents=True, exist_ok=True)
 
     vr = ValidationResult()
     start = time.time()
 
+    # Compute expected sample count from config
+    from run_amellifera_gwas import DEFAULT_SUBSPECIES, load_data_generation_config
+
+    dg = load_data_generation_config()
+    dg["scale_factor"] = args.scale_factor
+    expected_diploid = sum(v["n_samples"] for v in dg["subspecies"].values()) * dg["scale_factor"]
+    expected_drones = dg["n_drones"] * dg["scale_factor"]
+    expected_total = expected_diploid + expected_drones
+
     print("=" * 80)
     print("GWAS COMPREHENSIVE METHOD VALIDATION — Apis mellifera")
+    if args.scale_factor != 1:
+        print(f"Scale factor: {args.scale_factor}x (expecting {expected_total} samples)")
     print("=" * 80)
 
     # =========================================================================
@@ -103,22 +121,25 @@ def main() -> int:
         vr.record("GFF3 annotation", False, str(e))
         gff_path = None
 
+    force_regen = args.force_regenerate
     try:
-        vcf_path = generate_real_vcf(output_base, n_variants=2000)
+        vcf_path = generate_real_vcf(
+            output_base, n_variants=2000, scale_factor=args.scale_factor, force=force_regen
+        )
         vr.record("VCF generation", vcf_path.exists(), f"{vcf_path}")
     except Exception as e:
         vr.record("VCF generation", False, str(e))
         return 1
 
     try:
-        pheno_path = generate_phenotypes(output_base, vcf_path)
+        pheno_path = generate_phenotypes(output_base, vcf_path, force=force_regen)
         vr.record("Phenotype generation", pheno_path.exists())
     except Exception as e:
         vr.record("Phenotype generation", False, str(e))
         return 1
 
     try:
-        meta_path = generate_metadata(output_base, vcf_path)
+        meta_path = generate_metadata(output_base, vcf_path, force=force_regen)
         vr.record("Metadata generation", meta_path.exists())
     except Exception as e:
         vr.record("Metadata generation", False, str(e))
@@ -135,7 +156,7 @@ def main() -> int:
         n_variants = len(vcf_data.get("variants", []))
         n_samples = len(vcf_data.get("samples", []))
         vr.record("VCF parsing", n_variants > 0 and n_samples > 0, f"{n_variants} variants, {n_samples} samples")
-        vr.record("Sample count includes drones", n_samples == 90, f"got {n_samples}, expected 90")
+        vr.record("Sample count matches config", n_samples == expected_total, f"got {n_samples}, expected {expected_total}")
     except Exception as e:
         vr.record("VCF parsing", False, str(e))
         return 1

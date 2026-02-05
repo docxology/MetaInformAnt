@@ -7,6 +7,19 @@ Plotting and animation utilities for biological data visualization across all do
 - **Required**: `core`
 - **Optional**: `matplotlib`, `seaborn`, `plotly`
 
+## Source Structure
+```
+src/metainformant/visualization/
+├── composite.py, interactive.py, palettes.py, themes.py
+├── analysis/
+│   ├── dimred.py, information.py, quality.py, quality_assessment.py
+│   ├── quality_omics.py, quality_sequencing.py, statistical.py, timeseries.py
+├── genomics/
+│   ├── expression.py, genomics.py, networks.py, trees.py
+└── plots/
+    ├── animations.py, basic.py, general.py, multidim.py, specialized.py
+```
+
 ## Package Management
 - **ALWAYS use `uv`** for all Python package management and environment operations
 - Install optional dependencies: `uv add matplotlib seaborn plotly`
@@ -32,7 +45,7 @@ Plotting and animation utilities for biological data visualization across all do
 
 **Patterns**:
 ```python
-from metainformant.visualization import trees
+from metainformant.visualization.genomics import trees
 
 trees.visualize_tree(
     tree=phylogenetic_tree,
@@ -151,7 +164,7 @@ output_path = paths.expand_and_resolve("output/visualization/plots/")
 
 **Pattern**:
 ```python
-from metainformant.visualization import trees
+from metainformant.visualization.genomics import trees
 
 trees.visualize_tree(
     tree=phylogenetic_tree,

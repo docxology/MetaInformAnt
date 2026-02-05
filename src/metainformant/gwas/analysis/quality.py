@@ -564,6 +564,116 @@ def write_filtered_vcf(filtered_data: Dict[str, Any], output_path: Union[str, Pa
     logger.info(f"Filtered VCF written with {len(filtered_data.get('variants', []))} variants")
 
 
+def subset_vcf_data(
+    vcf_data: Dict[str, Any],
+    sample_ids: List[str] | None = None,
+    sample_list_file: Union[str, Path, None] = None,
+    subset_config: Dict[str, Any] | None = None,
+    metadata: Dict[str, Dict[str, Any]] | None = None,
+) -> Dict[str, Any]:
+    """Subset parsed VCF data to specific samples.
+
+    Priority: sample_ids > sample_list_file > subset_config (with metadata).
+    Preserves genotype alignment (samples x variants format).
+    Returns a new dict — does not modify the original.
+
+    Args:
+        vcf_data: Parsed VCF data dictionary from parse_vcf_full().
+        sample_ids: Explicit list of sample IDs to keep.
+        sample_list_file: Path to file with one sample ID per line.
+        subset_config: Dict with keys like 'subspecies', 'caste',
+            'max_per_subspecies' for metadata-based filtering.
+        metadata: Dict mapping sample_id -> {subspecies, caste, ...}.
+
+    Returns:
+        New VCF data dict with only the selected samples.
+    """
+    all_samples = vcf_data.get("samples", [])
+    if not all_samples:
+        logger.warning("No samples in VCF data, returning as-is")
+        return dict(vcf_data)
+
+    # Determine target sample IDs
+    target_ids: List[str] | None = None
+
+    if sample_ids is not None:
+        target_ids = sample_ids
+    elif sample_list_file is not None:
+        sample_list_path = Path(sample_list_file)
+        if sample_list_path.exists():
+            with open(sample_list_path) as f:
+                target_ids = [line.strip() for line in f if line.strip()]
+        else:
+            logger.warning(f"Sample list file not found: {sample_list_file}")
+    elif subset_config and metadata:
+        # Metadata-based filtering
+        target_ids = list(all_samples)  # Start with all
+
+        allowed_subspecies = subset_config.get("subspecies")
+        allowed_caste = subset_config.get("caste")
+        max_per_sub = subset_config.get("max_per_subspecies")
+
+        if allowed_subspecies or allowed_caste:
+            filtered = []
+            for sid in target_ids:
+                meta = metadata.get(sid, {})
+                if allowed_subspecies:
+                    sample_sub = meta.get("subspecies", meta.get("population", ""))
+                    if sample_sub not in allowed_subspecies:
+                        continue
+                if allowed_caste:
+                    sample_caste = meta.get("caste", "")
+                    if sample_caste not in allowed_caste:
+                        continue
+                filtered.append(sid)
+            target_ids = filtered
+
+        if max_per_sub and metadata:
+            # Cap per subspecies
+            from collections import defaultdict
+            counts: Dict[str, int] = defaultdict(int)
+            capped = []
+            for sid in target_ids:
+                meta = metadata.get(sid, {})
+                sub = meta.get("subspecies", meta.get("population", "unknown"))
+                if counts[sub] < max_per_sub:
+                    capped.append(sid)
+                    counts[sub] += 1
+            target_ids = capped
+
+    if target_ids is None:
+        logger.info("No subsetting criteria specified, returning all samples")
+        return dict(vcf_data)
+
+    # Find indices of target samples in the VCF
+    sample_to_idx = {s: i for i, s in enumerate(all_samples)}
+    keep_indices = []
+    kept_ids = []
+    for sid in target_ids:
+        idx = sample_to_idx.get(sid)
+        if idx is not None:
+            keep_indices.append(idx)
+            kept_ids.append(sid)
+        else:
+            logger.warning(f"Sample '{sid}' not found in VCF, skipping")
+
+    if not keep_indices:
+        logger.warning("No matching samples found after subsetting")
+        return {**vcf_data, "samples": [], "genotypes": []}
+
+    # Subset genotypes (samples x variants format)
+    genotypes = vcf_data.get("genotypes", [])
+    subset_genotypes = [genotypes[i] for i in keep_indices] if genotypes else []
+
+    logger.info(f"Subset VCF: {len(all_samples)} -> {len(kept_ids)} samples")
+
+    return {
+        **vcf_data,
+        "samples": kept_ids,
+        "genotypes": subset_genotypes,
+    }
+
+
 def extract_variant_regions(
     vcf_data: Dict[str, Any], regions: List[Tuple[str, int, int]], padding: int = 0
 ) -> Dict[str, Any]:

@@ -7,6 +7,21 @@ Life course event analysis and prediction: event extraction, embedding generatio
 - **Required**: `core`
 - **Optional**: `ml` (sequence models)
 
+## Source Structure
+```
+src/metainformant/life_events/
+├── analysis/
+│   └── interpretability.py
+├── core/
+│   ├── config.py, events.py, utils.py
+├── models/
+│   ├── embeddings.py, models.py
+├── visualization/
+│   └── visualization.py
+└── workflow/
+    └── workflow.py
+```
+
 ## Package Management
 - **ALWAYS use `uv`** for all Python package management and environment operations
 - Use `uv run` to execute commands: `uv run pytest`, `uv run metainformant life-events --help`
@@ -23,10 +38,12 @@ Life course event analysis and prediction: event extraction, embedding generatio
 - Event embedding generation
 - Configurable embedding methods
 - Window-based embeddings
+- **Actual path**: `metainformant.life_events.models.embeddings`
 
 **Patterns**:
 ```python
-from metainformant.life_events import embeddings
+# Import from actual path
+from metainformant.life_events.models import embeddings
 
 embeddings_dict = embeddings.generate_embeddings(
     events=event_sequence,

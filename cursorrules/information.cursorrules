@@ -6,6 +6,19 @@ Information-theoretic analysis of biological data: entropy, mutual information, 
 ## Dependencies
 - **Required**: `core`
 
+## Source Structure
+```
+src/metainformant/information/
+├── integration/
+│   ├── integration.py, networks.py
+├── metrics/
+│   ├── advanced.py, analysis.py, channel.py, continuous.py
+│   ├── decomposition.py, estimation.py, geometry.py
+│   ├── hypothesis.py, semantic.py, syntactic.py
+└── workflow/
+    └── workflows.py
+```
+
 ## Package Management
 - **ALWAYS use `uv`** for all Python package management and environment operations
 - Use `uv run` to execute commands: `uv run pytest`, `uv run metainformant information --help`
@@ -20,7 +33,7 @@ Information-theoretic analysis of biological data: entropy, mutual information, 
 
 **Patterns**:
 ```python
-from metainformant.information import syntactic
+from metainformant.information.metrics import syntactic
 
 entropy = syntactic.sequence_entropy(sequence)
 complexity = syntactic.complexity_score(sequence)
@@ -35,6 +48,31 @@ complexity = syntactic.complexity_score(sequence)
 - Continuous entropy estimation
 - Kernel density estimation
 - Non-parametric entropy
+
+### Advanced (`advanced`)
+- Advanced information measures
+- Higher-order statistics
+- Complex information metrics
+
+### Channel (`channel`)
+- Channel capacity analysis
+- Information transmission
+- Communication channel metrics
+
+### Decomposition (`decomposition`)
+- Information decomposition
+- Partial information
+- Redundancy and synergy
+
+### Geometry (`geometry`)
+- Information geometry
+- Geometric approaches to information
+- Fisher information metric
+
+### Hypothesis (`hypothesis`)
+- Hypothesis testing with information theory
+- Statistical inference
+- Information-based model selection
 
 ### Networks (`networks`)
 - Network information measures

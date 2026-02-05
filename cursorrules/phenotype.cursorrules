@@ -7,6 +7,31 @@ Phenotypic trait analysis: life course phenotype extraction and AntWiki integrat
 - **Required**: `core`
 - **Optional**: `life_events` (for life course integration)
 
+## Source Structure
+```
+src/metainformant/phenotype/
+├── analysis/
+│   └── life_course.py
+├── behavior/
+│   ├── ethogram.py, sequence.py
+├── chemical/
+│   ├── compound.py, profile.py
+├── data/
+│   ├── antwiki.py, scraper.py
+├── electronic/
+│   └── tracking.py
+├── integration/
+│   └── cross_omic.py
+├── morphological/
+│   ├── measurement.py, profile.py
+├── sonic/
+│   └── signal.py
+├── visualization/
+│   └── visualization.py
+└── workflow/
+    └── pipeline.py
+```
+
 ## Package Management
 - **ALWAYS use `uv`** for all Python package management and environment operations
 - Use `uv run` to execute commands: `uv run pytest`, `uv run metainformant phenotype --help`
@@ -23,6 +48,41 @@ Phenotypic trait analysis: life course phenotype extraction and AntWiki integrat
 - AntWiki integration
 - Species trait data
 - Ecological metadata
+
+### Behavior (`behavior`)
+- Ethogram construction and analysis
+- Behavioral sequence analysis
+- Behavioral state transitions
+
+### Chemical (`chemical`)
+- Chemical compound profiling
+- Chemical trait analysis
+- Metabolomic phenotypes
+
+### Electronic (`electronic`)
+- Electronic tracking data
+- Movement and activity tracking
+- Sensor-based phenotyping
+
+### Morphological (`morphological`)
+- Morphological measurements
+- Morphometric profiles
+- Body size and shape traits
+
+### Sonic (`sonic`)
+- Acoustic signal processing
+- Sound-based phenotypes
+- Bioacoustic analysis
+
+### Integration (`cross_omic`)
+- Cross-omic phenotype integration
+- Multi-modal phenotype analysis
+- Phenotype-genotype integration
+
+### Workflow (`pipeline`)
+- End-to-end phenotype analysis pipelines
+- Workflow orchestration
+- Configuration-based execution
 
 ## Patterns
 

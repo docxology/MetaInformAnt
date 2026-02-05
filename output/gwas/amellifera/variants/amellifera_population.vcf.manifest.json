@@ -1,0 +1,13 @@
+{
+  "n_variants": 10000,
+  "subspecies": {
+    "A.m.ligustica": 25,
+    "A.m.carnica": 20,
+    "A.m.mellifera": 15,
+    "A.m.caucasica": 10,
+    "A.m.scutellata": 10
+  },
+  "n_drones": 10,
+  "scale_factor": 5,
+  "seed": 42
+}

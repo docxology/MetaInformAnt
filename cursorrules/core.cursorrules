@@ -7,6 +7,26 @@ Shared utilities across all domains. Foundation for all other modules.
 - **Required**: Standard library only
 - **Optional**: Handled defensively (try/except imports)
 
+## Source Structure
+```
+src/metainformant/core/
+├── data/
+│   ├── db.py, validation.py
+├── engine/
+│   └── workflow_manager.py
+├── execution/
+│   ├── discovery.py, parallel.py, workflow.py
+├── io/
+│   ├── atomic.py, cache.py, checksums.py, disk.py
+│   ├── download.py, download_manager.py, download_robust.py
+│   ├── errors.py, io.py, paths.py
+├── ui/
+│   └── tui.py
+└── utils/
+    ├── config.py, errors.py, hash.py, logging.py
+    ├── optional_deps.py, progress.py, symbols.py, text.py, timing.py
+```
+
 ## Package Management
 - **ALWAYS use `uv`** for all Python package management and environment operations
 - Use `uv venv` to create virtual environments

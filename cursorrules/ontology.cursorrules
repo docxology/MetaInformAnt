@@ -7,6 +7,17 @@ Functional annotation and ontologies: Gene Ontology operations, OBO format parsi
 - **Required**: `core`
 - **Optional**: External databases (Gene Ontology)
 
+## Source Structure
+```
+src/metainformant/ontology/
+├── go.py          # Gene Ontology operations
+├── obo.py         # OBO format parsing
+├── query.py       # Ontology querying
+├── serialize.py   # Ontology serialization
+├── types.py       # Core data structures (Term, Ontology)
+└── visualization.py  # Ontology visualization
+```
+
 ## Package Management
 - **ALWAYS use `uv`** for all Python package management and environment operations
 - Use `uv run` to execute commands: `uv run pytest`, `uv run metainformant ontology --help`

@@ -23,6 +23,12 @@ This directory contains module-specific cursor rules for the METAINFORMANT proje
 - **`epigenome.cursorrules`**: Epigenetic modification analysis
 - **`ecology.cursorrules`**: Ecological metadata and community analysis
 - **`simulation.cursorrules`**: Synthetic data generation
+- **`longread.cursorrules`**: Long-read sequencing (PacBio/Nanopore)
+- **`metagenomics.cursorrules`**: Metagenomic analysis (amplicon, shotgun)
+- **`structural_variants.cursorrules`**: CNV/SV detection and annotation
+- **`spatial.cursorrules`**: Spatial transcriptomics (Visium, MERFISH, Xenium)
+- **`pharmacogenomics.cursorrules`**: Clinical pharmacogenomics
+- **`menu.cursorrules`**: Interactive menu and discovery system
 
 ## Usage
 

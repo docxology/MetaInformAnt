@@ -11,7 +11,8 @@ Scripts for RNA-seq workflow execution, monitoring, and recovery.
 | [`run_workflow.py`](run_workflow.py) | Main workflow orchestrator - runs full amalgkit pipeline |
 | [`run_workflow_tui.py`](run_workflow_tui.py) | Terminal UI for interactive workflow control |
 | [`process_apis_mellifera.py`](process_apis_mellifera.py) | Sequential processor for A. mellifera samples |
-| [`process_apis_mellifera_parallel.py`](process_apis_mellifera_parallel.py) | **Parallel processor** (4 workers) for A. mellifera |
+| [`process_apis_mellifera_parallel.py`](process_apis_mellifera_parallel.py) | **NCBI parallel processor** (10 workers) with 4-hour timeout |
+| [`process_apis_mellifera_ena.py`](process_apis_mellifera_ena.py) | **ENA parallel processor** (20 workers) - 10x faster, skips extraction |
 | [`process_samples_sequential.py`](process_samples_sequential.py) | Generic sequential sample processor |
 
 ### Monitoring
@@ -51,15 +52,27 @@ Scripts for RNA-seq workflow execution, monitoring, and recovery.
 
 ## 🚀 Quick Start
 
-### Run A. mellifera Parallel Processing
+### Run A. mellifera Processing (Dual-Pipeline Strategy)
+
+**Recommended**: Use ENA pipeline for 10x faster processing, then NCBI fallback for failures.
 
 ```bash
-# Start parallel processor (4 workers)
-nohup uv run python scripts/rna/process_apis_mellifera_parallel.py &
+# Step 1: Run ENA pipeline (20 workers, pre-extracted FASTQs)
+nohup python scripts/rna/process_apis_mellifera_ena.py &
 
-# Monitor progress
-uv run python scripts/rna/monitor_apis_mellifera.py --watch
+# Monitor ENA progress
+tail -f output/amalgkit/apis_mellifera_all/work/ena_parallel_processing.log
+
+# Step 2: After ENA completes, run NCBI fallback for failures
+nohup python scripts/rna/process_apis_mellifera_parallel.py &
 ```
+
+**Performance Comparison:**
+
+| Pipeline | Workers | Time/Sample | ETA (5000 samples) |
+|----------|---------|-------------|-------------------|
+| ENA | 20 | 0.5-5 min | ~12-24 hours |
+| NCBI | 10 | 45-60 min | ~7 days |
 
 ### Check Environment
 

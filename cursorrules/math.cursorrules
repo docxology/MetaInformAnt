@@ -7,6 +7,27 @@ Mathematical and theoretical biology: population genetics theory, selection mode
 - **Required**: `core`, `numpy`
 - **Optional**: `scipy` (for advanced statistical functions)
 
+## Source Structure
+```
+src/metainformant/math/
+├── coalescent.py
+├── core/
+│   ├── utilities.py, visualization.py
+├── decision_theory/
+│   └── ddm.py
+├── epidemiology/
+│   └── models.py
+├── evolutionary_dynamics/
+│   ├── core.py, egt.py
+├── perception/
+│   ├── psychophysics.py, signal_detection.py
+├── population_genetics/
+│   ├── coalescent.py, core.py, demography.py, effective_size.py
+│   ├── fst.py, ld.py, selection.py, statistics.py
+└── quantitative_genetics/
+    ├── core.py, price.py
+```
+
 ## Package Management
 - **ALWAYS use `uv`** for all Python package management and environment operations
 - Install optional dependencies: `uv add scipy`
@@ -44,6 +65,12 @@ Mathematical and theoretical biology: population genetics theory, selection mode
 - SIR/SIRS models
 - Disease dynamics
 
+### Perception (`perception`)
+- Psychophysics functions
+- Signal detection theory
+- Perceptual thresholds
+- Sensitivity and bias measures
+
 ### Coalescent (`coalescent`)
 - Coalescent theory and neutrality tests
 - Tajima's D, Fu & Li's tests
@@ -52,10 +79,10 @@ Mathematical and theoretical biology: population genetics theory, selection mode
 
 **Patterns**:
 ```python
-from metainformant.math import tajimas_D, expected_time_to_mrca
+from metainformant.math.population_genetics import coalescent
 
-d = tajimas_D(segregating_sites, Ne=1000)
-t_mrca = expected_time_to_mrca(n=10, Ne=1000)
+d = coalescent.tajimas_D(segregating_sites, Ne=1000)
+t_mrca = coalescent.expected_time_to_mrca(n=10, Ne=1000)
 ```
 
 ### Demography (`demography`)
@@ -77,10 +104,10 @@ t_mrca = expected_time_to_mrca(n=10, Ne=1000)
 
 **Patterns**:
 ```python
-from metainformant.math import fst_from_allele_freqs, fst_from_heterozygosity
+from metainformant.math.population_genetics import fst
 
-fst = fst_from_allele_freqs(subpop_freqs)
-fst = fst_from_heterozygosity(Hs=0.4, Ht=0.5)
+fst_val = fst.fst_from_allele_freqs(subpop_freqs)
+fst_val = fst.fst_from_heterozygosity(Hs=0.4, Ht=0.5)
 ```
 
 ### Linkage Disequilibrium (`ld`)
@@ -91,10 +118,10 @@ fst = fst_from_heterozygosity(Hs=0.4, Ht=0.5)
 
 **Patterns**:
 ```python
-from metainformant.math import ld_coefficients, r_squared
+from metainformant.math.population_genetics import ld
 
-D, D_prime = ld_coefficients(pA, pa, pB, pb, haplotype_pAB)
-r2 = r_squared(pA, pa, pB, pb, haplotype_pAB)
+D, D_prime = ld.ld_coefficients(pA, pa, pB, pb, haplotype_pAB)
+r2 = ld.r_squared(pA, pa, pB, pb, haplotype_pAB)
 ```
 
 ### Quantitative Genetics (`quantgen`)
@@ -105,10 +132,10 @@ r2 = r_squared(pA, pa, pB, pb, haplotype_pAB)
 
 **Patterns**:
 ```python
-from metainformant.math import narrow_sense_heritability, breeders_equation_response
+from metainformant.math.quantitative_genetics import core as quantgen
 
-h2 = narrow_sense_heritability(genetic_variance, phenotypic_variance)
-response = breeders_equation_response(heritability, selection_differential)
+h2 = quantgen.narrow_sense_heritability(genetic_variance, phenotypic_variance)
+response = quantgen.breeders_equation_response(heritability, selection_differential)
 ```
 
 ### Dynamics (`dynamics`)

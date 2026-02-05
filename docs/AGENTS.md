@@ -5,12 +5,31 @@ Documentation agent context for METAINFORMANT's technical documentation.
 
 ## Directory Structure
 Documentation is organized by module domain:
-- `core/` - Core infrastructure documentation (I/O, config, paths, logging)
-- `dna/` - DNA sequence analysis documentation
+- `core/` - Core infrastructure (I/O, config, paths, logging, parallel, caching)
+- `dna/` - DNA sequence analysis (alignment, phylogeny, population genetics)
 - `rna/` - RNA-seq and amalgkit workflow documentation
-- `gwas/` - GWAS pipeline documentation
-- `visualization/` - Plotting and visualization documentation
-- `{module}/` - Domain-specific documentation for each module
+- `gwas/` - GWAS pipeline (association, QC, visualization)
+- `protein/` - Protein analysis (sequences, structures, AlphaFold, UniProt, InterPro)
+- `epigenome/` - Epigenomics (methylation, ChIP-seq, ATAC-seq)
+- `networks/` - Biological networks (PPI, regulatory, community detection, pathways)
+- `multiomics/` - Multi-omic integration methods
+- `singlecell/` - Single-cell RNA-seq (preprocessing, clustering, trajectory)
+- `visualization/` - Plotting and visualization (80+ plot types)
+- `quality/` - QC metrics and assessment
+- `ml/` - Machine learning pipelines
+- `math/` - Population genetics theory (coalescent, FST, LD, selection)
+- `information/` - Information theory (entropy, mutual information)
+- `ontology/` - Gene Ontology analysis and semantic similarity
+- `phenotype/` - Trait analysis
+- `ecology/` - Community diversity and ecology
+- `simulation/` - Synthetic data generation
+- `life_events/` - Event sequence analysis
+- `metagenomics/` - Microbiome (amplicon, shotgun, functional annotation)
+- `structural_variants/` - CNV/SV detection, annotation, visualization
+- `longread/` - Long-read sequencing (PacBio/Nanopore, modified bases, assembly)
+- `spatial/` - Spatial transcriptomics (Visium, MERFISH, Xenium)
+- `pharmacogenomics/` - Clinical variants (CPIC, PharmGKB, ACMG, star alleles)
+- `menu/` - Interactive menu and discovery system
 
 ## Key Root Files
 - `architecture.md` - System architecture overview
@@ -21,6 +40,8 @@ Documentation is organized by module domain:
 - `ERROR_HANDLING.md` - Error handling patterns
 - `NO_MOCKING_POLICY.md` - Testing policy (no mocks allowed)
 - `UV_SETUP.md` - UV package manager setup guide
+- `setup.md` - Environment setup instructions
+- `DISK_SPACE_MANAGEMENT.md` - Disk space management for large datasets
 
 ## Rules and Constraints
 

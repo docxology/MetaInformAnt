@@ -6,6 +6,15 @@ Multi-omic data integration: cross-platform data harmonization, joint statistica
 ## Dependencies
 - **Required**: `core`, `dna`, `rna`, `protein`, `singlecell`, `ml.dimensionality`
 
+## Source Structure
+```
+src/metainformant/multiomics/
+├── analysis/
+│   └── integration.py
+└── visualization/
+    └── visualization.py
+```
+
 ## Package Management
 - **ALWAYS use `uv`** for all Python package management and environment operations
 - Use `uv run` to execute commands: `uv run pytest`, `uv run metainformant multiomics --help`
@@ -20,7 +29,7 @@ Multi-omic data integration: cross-platform data harmonization, joint statistica
 
 **Patterns**:
 ```python
-from metainformant.multiomics import integration
+from metainformant.multiomics.analysis import integration
 
 # Integrate multiple omics types
 integrated = integration.integrate_omics(

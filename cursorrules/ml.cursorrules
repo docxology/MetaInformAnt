@@ -7,6 +7,20 @@ Machine learning for biological data: classification, regression, dimensionality
 - **Required**: `core`
 - **Optional**: `scikit-learn`, `xgboost`, `lightgbm`
 
+## Source Structure
+```
+src/metainformant/ml/
+├── evaluation/
+│   └── validation.py
+├── features/
+│   ├── dimensionality.py, features.py
+├── llm/
+│   └── ollama/
+│       ├── chains.py, client.py, config.py, prompts.py
+└── models/
+    ├── classification.py, regression.py
+```
+
 ## Package Management
 - **ALWAYS use `uv`** for all Python package management and environment operations
 - Install optional dependencies: `uv add scikit-learn xgboost lightgbm`
@@ -29,7 +43,7 @@ Machine learning for biological data: classification, regression, dimensionality
 
 **Patterns**:
 ```python
-from metainformant.ml import regression
+from metainformant.ml.models import regression
 
 model = regression.fit_linear_model(
     X=features,
@@ -46,9 +60,9 @@ predictions = model.predict(X_test)
 
 **Patterns**:
 ```python
-from metainformant.ml.dimensionality import pca
+from metainformant.ml.features import dimensionality
 
-pca_result = pca(
+pca_result = dimensionality.pca(
     data=expression_matrix,
     n_components=50
 )
@@ -67,7 +81,7 @@ pca_result = pca(
 
 **Patterns**:
 ```python
-from metainformant.ml import validation
+from metainformant.ml.evaluation import validation
 
 scores = validation.cross_validate(
     model=model,
